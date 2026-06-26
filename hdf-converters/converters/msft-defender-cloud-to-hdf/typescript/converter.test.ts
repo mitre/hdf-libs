@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertMsftDefenderCloudToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -45,6 +46,7 @@ describe('Microsoft Defender for Cloud to HDF converter', async () => {
       expect(hdf.tool?.name).toBe('Microsoft Defender for Cloud');
       expect(hdf.tool?.format).toBe('JSON');
       expect(hdf.baselines).toHaveLength(1);
+      expectValidResults(hdf);
     });
 
     it('should create 2 requirements from 2 assessments', async () => {

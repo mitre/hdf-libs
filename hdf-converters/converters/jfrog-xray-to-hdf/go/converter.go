@@ -157,7 +157,7 @@ func groupByID(entries []XrayEntry) ([]string, map[string][]XrayEntry) {
 
 // buildRequirement converts a group of entries sharing an ID into one
 // EvaluatedRequirement with multiple results.
-func buildRequirement(entryID string, entries []XrayEntry) hdf.EvaluatedRequirement {
+func buildRequirement(entryID string, entries []XrayEntry, scanTime time.Time) hdf.EvaluatedRequirement {
 	rep := entries[0]
 
 	cweIDs := extractCWEs(rep)
@@ -178,8 +178,9 @@ func buildRequirement(entryID string, entries []XrayEntry) hdf.EvaluatedRequirem
 	results := make([]hdf.RequirementResult, len(entries))
 	for i, entry := range entries {
 		results[i] = hdf.RequirementResult{
-			Status:   hdf.Failed,
-			CodeDesc: formatCodeDesc(entry),
+			Status:    hdf.Failed,
+			CodeDesc:  formatCodeDesc(entry),
+			StartTime: scanTime,
 		}
 	}
 
@@ -275,10 +276,16 @@ func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	limitedEntries := shared.LimitSliceWithWarning(report.Data, 0, "entry")
 
+	// JFrog Xray output carries no scan-level timestamp (only per-entry `edited`
+	// dates, which mark when each vuln-DB record was last edited, not when the
+	// scan ran). Use a single conversion timestamp for all results, the doc
+	// timestamp, and the no-findings placeholder.
+	scanTime := time.Now().UTC()
+
 	order, groups := groupByID(limitedEntries)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, entryID := range order {
-		requirements[i] = buildRequirement(entryID, groups[entryID])
+		requirements[i] = buildRequirement(entryID, groups[entryID], scanTime)
 	}
 
 	if len(requirements) == 0 {
@@ -286,7 +293,7 @@ func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			shared.BuildNoFindingsRequirement(
 				"jfrog-xray-no-findings",
 				"JFrog Xray scanned the target artifact and reported zero vulnerable components.",
-				time.Now().UTC(),
+				scanTime,
 			),
 		}
 	}
@@ -297,8 +304,6 @@ func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ResultsChecksum: checksum,
 	}
 
-	now := time.Now().UTC()
-
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "jfrog-xray-to-hdf",
 		ConverterVersion: converterVersion,
@@ -308,6 +313,6 @@ func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Components: []hdf.Component{
 			{Name: "JFrog Xray Scan", Type: hdf.Application},
 		},
-		Timestamp: &now,
+		Timestamp: &scanTime,
 	}), nil
 }

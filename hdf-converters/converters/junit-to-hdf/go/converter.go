@@ -75,16 +75,16 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		return nil, err
 	}
 
-	requirements := buildRequirements(suites)
+	scanTime := resolveScanTime(suites)
 
-	now := time.Now().UTC()
+	requirements := buildRequirements(suites, scanTime)
 
 	if len(requirements) == 0 {
 		requirements = []hdf.EvaluatedRequirement{
 			shared.BuildNoFindingsRequirement(
 				"junit-no-findings",
 				fmt.Sprintf("JUnit scanned %s and reported zero findings.", noFindingsTarget(name, suites)),
-				now,
+				scanTime,
 			),
 		}
 	}
@@ -107,8 +107,22 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ToolFormat:       "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       []hdf.Component{target},
-		Timestamp:        &now,
+		Timestamp:        &scanTime,
 	}), nil
+}
+
+// resolveScanTime computes one timestamp per conversion: the first available
+// <testsuite> timestamp, falling back to conversion time. Used for every result's
+// StartTime, the document Timestamp, and any no-findings placeholder.
+func resolveScanTime(suites []junitTestSuite) time.Time {
+	for _, suite := range suites {
+		if suite.Timestamp != "" {
+			if t := hdfutil.ParseTimestamp(suite.Timestamp); !t.IsZero() {
+				return t
+			}
+		}
+	}
+	return time.Now().UTC()
 }
 
 // parseJUnitXML parses JUnit XML that may have <testsuites> or <testsuite> as root.
@@ -147,14 +161,14 @@ func noFindingsTarget(baselineName string, suites []junitTestSuite) string {
 }
 
 // buildRequirements creates HDF requirements from all test cases across all suites.
-func buildRequirements(suites []junitTestSuite) []hdf.EvaluatedRequirement {
+func buildRequirements(suites []junitTestSuite, scanTime time.Time) []hdf.EvaluatedRequirement {
 	limitedSuites := shared.LimitSliceWithWarning(suites, 0, "test suite")
 	var requirements []hdf.EvaluatedRequirement
 
 	for _, suite := range limitedSuites {
 		limitedTestCases := shared.LimitSliceWithWarning(suite.TestCases, 0, "test case")
 		for _, tc := range limitedTestCases {
-			requirements = append(requirements, testCaseToRequirement(tc, suite.Timestamp))
+			requirements = append(requirements, testCaseToRequirement(tc, scanTime))
 		}
 	}
 
@@ -162,26 +176,21 @@ func buildRequirements(suites []junitTestSuite) []hdf.EvaluatedRequirement {
 }
 
 // testCaseToRequirement converts a single JUnit test case to an HDF requirement.
-func testCaseToRequirement(tc junitTestCase, suiteTimestamp string) hdf.EvaluatedRequirement {
+func testCaseToRequirement(tc junitTestCase, scanTime time.Time) hdf.EvaluatedRequirement {
 	id := buildID(tc)
 	status, message := resolveStatus(tc)
 	codeDesc := buildCodeDesc(tc)
 
 	result := hdf.RequirementResult{
-		Status:   status,
-		CodeDesc: codeDesc,
-		Message:  message,
+		Status:    status,
+		CodeDesc:  codeDesc,
+		Message:   message,
+		StartTime: scanTime,
 	}
 
 	if tc.Time != "" {
 		if f, err := strconv.ParseFloat(tc.Time, 64); err == nil {
 			result.RunTime = &f
-		}
-	}
-
-	if suiteTimestamp != "" {
-		if t := hdfutil.ParseTimestamp(suiteTimestamp); !t.IsZero() {
-			result.StartTime = t
 		}
 	}
 

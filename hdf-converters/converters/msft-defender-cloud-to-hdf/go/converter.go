@@ -110,6 +110,8 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 		return nil, fmt.Errorf("msft-defender-cloud: missing or invalid value array")
 	}
 
+	scanTime := time.Now().UTC()
+
 	checksum := shared.InputChecksum(input)
 
 	limitedAssessments := shared.LimitSliceWithWarning(raw.Value, 0, "assessment")
@@ -126,7 +128,7 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, assessmentID := range order {
-		requirements[i] = buildRequirement(assessmentID, groups[assessmentID])
+		requirements[i] = buildRequirement(assessmentID, groups[assessmentID], scanTime)
 	}
 
 	subscriptionID := ""
@@ -143,7 +145,7 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 			shared.BuildNoFindingsRequirement(
 				"msft-defender-cloud-no-findings",
 				fmt.Sprintf("Microsoft Defender for Cloud scanned %s and reported zero findings.", targetName),
-				time.Now().UTC(),
+				scanTime,
 			),
 		}
 	}
@@ -171,7 +173,6 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 		}
 	}
 
-	now := time.Now().UTC()
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "msft-defender-cloud-to-hdf",
 		ConverterVersion: converterVersion,
@@ -179,13 +180,13 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       targets,
-		Timestamp:        &now,
+		Timestamp:        &scanTime,
 	}), nil
 }
 
 // buildRequirement converts a group of assessments sharing an assessment ID
 // into one EvaluatedRequirement with one result per assessment.
-func buildRequirement(assessmentID string, assessments []assessment) hdf.EvaluatedRequirement {
+func buildRequirement(assessmentID string, assessments []assessment, scanTime time.Time) hdf.EvaluatedRequirement {
 	rep := assessments[0]
 	meta := rep.Properties.Metadata
 
@@ -238,7 +239,7 @@ func buildRequirement(assessmentID string, assessments []assessment) hdf.Evaluat
 	// Build results
 	results := make([]hdf.RequirementResult, len(assessments))
 	for i, a := range assessments {
-		results[i] = buildResult(a)
+		results[i] = buildResult(a, scanTime)
 	}
 
 	title := rep.Properties.DisplayName
@@ -254,7 +255,7 @@ func buildRequirement(assessmentID string, assessments []assessment) hdf.Evaluat
 }
 
 // buildResult converts a single assessment into an HDF RequirementResult.
-func buildResult(a assessment) hdf.RequirementResult {
+func buildResult(a assessment, scanTime time.Time) hdf.RequirementResult {
 	status := mapStatus(a.Properties.Status.Code)
 
 	codeDesc := fmt.Sprintf("Resource: %s", a.Properties.ResourceDetails.ID)
@@ -267,8 +268,9 @@ func buildResult(a assessment) hdf.RequirementResult {
 	}
 
 	return hdf.RequirementResult{
-		Status:   status,
-		CodeDesc: codeDesc,
-		Message:  message,
+		Status:    status,
+		CodeDesc:  codeDesc,
+		Message:   message,
+		StartTime: scanTime,
 	}
 }

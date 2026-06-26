@@ -89,7 +89,7 @@ function getImpact(severity: string | null): number {
 /**
  * Converts a single CheckovCheck to an HDF RequirementResult.
  */
-function checkToResult(check: CheckovCheck): RequirementResult {
+function checkToResult(check: CheckovCheck, scanTime: Date): RequirementResult {
   const status = mapStatus(check.check_result.result);
   const codeDesc = `Resource: ${check.resource}\nFile: ${check.file_path} (lines ${JSON.stringify(check.file_line_range)})`;
 
@@ -98,13 +98,13 @@ function checkToResult(check: CheckovCheck): RequirementResult {
     message = check.check_result.suppress_comment;
   }
 
-  return createResult(status, message ?? '', { codeDesc });
+  return createResult(status, message ?? '', { codeDesc, startTime: scanTime });
 }
 
 /**
  * Converts a group of checks sharing a check_id into one EvaluatedRequirement.
  */
-function buildRequirement(checkId: string, checks: CheckovCheck[]): EvaluatedRequirement {
+function buildRequirement(checkId: string, checks: CheckovCheck[], scanTime: Date): EvaluatedRequirement {
   const rep = checks[0]!;
   const impact = getImpact(rep.severity);
 
@@ -119,7 +119,7 @@ function buildRequirement(checkId: string, checks: CheckovCheck[]): EvaluatedReq
     descriptions.push({ label: 'check', data: rep.guideline });
   }
 
-  const results = checks.map(checkToResult);
+  const results = checks.map((check) => checkToResult(check, scanTime));
 
   const req = createRequirement(checkId, rep.check_name, descriptions, impact, results, { tags }) as EvaluatedRequirement;
   req.verificationMethod = VerificationMethodEnum.Automated;
@@ -169,6 +169,10 @@ export async function convertCheckovToHdf(input: string): Promise<string> {
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 
+  // Checkov native JSON carries no per-finding or scan timestamp; use conversion time
+  // for every result's startTime, the no-findings placeholder, and the document timestamp.
+  const scanTime = new Date();
+
   const reports = parseInput(input);
 
   // Merge all checks from all frameworks
@@ -206,7 +210,7 @@ export async function convertCheckovToHdf(input: string): Promise<string> {
 
   const requirements: EvaluatedRequirement[] = [];
   for (const [checkId, checks] of groups) {
-    requirements.push(buildRequirement(checkId, checks));
+    requirements.push(buildRequirement(checkId, checks, scanTime));
   }
 
   const format = checkTypes.join(', ');
@@ -216,7 +220,7 @@ export async function convertCheckovToHdf(input: string): Promise<string> {
     requirements.push(buildNoFindingsRequirement(
       'checkov-no-findings',
       `Checkov scanned ${target} and reported zero findings.`,
-      new Date(),
+      scanTime,
     ));
   }
 
@@ -233,6 +237,6 @@ export async function convertCheckovToHdf(input: string): Promise<string> {
     toolVersion: version,
     toolFormat: format,
     baselines: [baseline],
-    timestamp: new Date(),
+    timestamp: scanTime,
   });
 }

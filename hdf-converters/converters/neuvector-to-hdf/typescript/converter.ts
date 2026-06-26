@@ -127,7 +127,7 @@ function vulnMessage(vuln: NeuVectorVuln): string {
 /**
  * Builds a single EvaluatedRequirement from a NeuVector vulnerability.
  */
-function buildRequirement(vuln: NeuVectorVuln): EvaluatedRequirement {
+function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequirement {
   const cweIDs = extractCWEs(vuln.description);
   const nist = mapCWEToNIST(cweIDs, DEFAULT_REMEDIATION_NIST_TAGS);
   const cciTags = nistToCci(nist);
@@ -148,6 +148,7 @@ function buildRequirement(vuln: NeuVectorVuln): EvaluatedRequirement {
   const results = [
     createResult(ResultStatus.Failed, vulnMessage(vuln), {
       codeDesc: '',
+      startTime: scanTime,
     }),
   ];
 
@@ -237,6 +238,11 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
     );
   }
 
+  // NeuVector reports carry image build time (created_at) and CVE-DB version
+  // time (cvedb_create_time), but neither is the scan time, so use conversion
+  // time as the single timestamp shared by every result.
+  const scanTime = new Date();
+
   // Deduplicate by composite ID (name/package_name/package_version)
   const seen = new Set<string>();
   const requirements: EvaluatedRequirement[] = [];
@@ -246,16 +252,15 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
       continue;
     }
     seen.add(id);
-    requirements.push(buildRequirement(vuln));
+    requirements.push(buildRequirement(vuln, scanTime));
   }
 
-  const now = new Date();
   const target = targetNameFromReport(scan.report);
   if (requirements.length === 0) {
     requirements.push(buildNoFindingsRequirement(
       'neuvector-no-findings',
       `NeuVector scanned ${target} and reported zero vulnerable components.`,
-      now,
+      scanTime,
     ));
   }
 
@@ -286,6 +291,6 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
         },
       },
     ],
-    timestamp: now,
+    timestamp: scanTime,
   });
 }

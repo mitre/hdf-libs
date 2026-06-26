@@ -194,8 +194,12 @@ func findingToRequirementResult(
 	// Build message from risk descriptions
 	message := buildRiskMessage(f, riskMap)
 
-	// Parse start time from result
+	// Parse start time from result; fall back to conversion time when the
+	// source omits it (startTime is required and must be a valid date-time).
 	startTime := parseResultStartTime(result)
+	if startTime.IsZero() {
+		startTime = time.Now().UTC()
+	}
 
 	reqResult := hdf.RequirementResult{
 		Status:    status,

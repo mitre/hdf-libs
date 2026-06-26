@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertCyclonedxToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -43,6 +44,7 @@ describe('cyclonedx to HDF converter', async () => {
       );
       const hdf = JSON.parse(output) as HDFResults;
 
+      expectValidResults(hdf);
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.baselines).toHaveLength(1);
       // minimal-vulns.json has 3 vulnerabilities

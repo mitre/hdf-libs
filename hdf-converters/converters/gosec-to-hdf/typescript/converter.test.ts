@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertGosecToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -30,6 +31,7 @@ describe('gosec to HDF converter', async () => {
     it('should produce valid HDF structure from Go Ethereum fixture', async () => {
       const output = await convertGosecToHdf(loadFixture('ethereum.json'));
       const hdf = JSON.parse(output) as HDFResults;
+      expectValidResults(hdf);
 
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('gosec-to-hdf');

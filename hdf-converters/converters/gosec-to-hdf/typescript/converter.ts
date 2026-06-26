@@ -96,7 +96,7 @@ function formatSkipMessage(suppressions: GosecSuppression[] | null): string | un
 /**
  * Converts a single GosecIssue to an HDF RequirementResult.
  */
-function issueToResult(issue: GosecIssue): RequirementResult {
+function issueToResult(issue: GosecIssue, scanTime: Date): RequirementResult {
   const suppressed = isSuppressed(issue);
   const status = suppressed ? ResultStatus.NotReviewed : ResultStatus.Failed;
 
@@ -110,13 +110,13 @@ function issueToResult(issue: GosecIssue): RequirementResult {
 
   const codeDesc = `Rule ${issue.rule_id} violation detected at:\nFile: ${issue.file}\nLine: ${issue.line}\nColumn: ${issue.column}`;
 
-  return createResult(status, message, { codeDesc });
+  return createResult(status, message, { codeDesc, startTime: scanTime });
 }
 
 /**
  * Converts a group of issues sharing a rule_id into one EvaluatedRequirement.
  */
-function buildRequirement(ruleId: string, issues: GosecIssue[]): EvaluatedRequirement {
+function buildRequirement(ruleId: string, issues: GosecIssue[], scanTime: Date): EvaluatedRequirement {
   const rep = issues[0]!;
   const impact = IMPACT_MAPPING[rep.severity.toUpperCase()] ?? 0.5;
   const nist = mapCWEToNIST([rep.cwe.id], DEFAULT_REMEDIATION_NIST_TAGS);
@@ -126,7 +126,7 @@ function buildRequirement(ruleId: string, issues: GosecIssue[]): EvaluatedRequir
     cwe: { id: rep.cwe.id, url: rep.cwe.url },
   };
 
-  const results = issues.map(issueToResult);
+  const results = issues.map((issue) => issueToResult(issue, scanTime));
 
   const descriptions: Description[] = [
     { label: 'default', data: rep.details },
@@ -188,16 +188,20 @@ export async function convertGosecToHdf(input: string): Promise<string> {
     }
   }
 
+  // gosec output carries no per-finding timestamp; use one conversion-time
+  // value for every result's startTime and the document timestamp.
+  const scanTime = new Date();
+
   const requirements: EvaluatedRequirement[] = [];
   for (const [ruleId, issues] of groups) {
-    requirements.push(buildRequirement(ruleId, issues));
+    requirements.push(buildRequirement(ruleId, issues, scanTime));
   }
 
   if (requirements.length === 0) {
     requirements.push(buildNoFindingsRequirement(
       'gosec-no-findings',
       'gosec scanned Go codebase and reported zero findings.',
-      new Date(),
+      scanTime,
     ));
   }
 
@@ -213,6 +217,6 @@ export async function convertGosecToHdf(input: string): Promise<string> {
     toolName: 'gosec',
     toolVersion: report.GosecVersion || undefined,
     baselines: [baseline],
-    timestamp: new Date(),
+    timestamp: scanTime,
   });
 }

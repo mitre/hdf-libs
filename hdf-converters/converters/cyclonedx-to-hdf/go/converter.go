@@ -211,6 +211,14 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	checksum := shared.InputChecksum(input)
 
+	// Prefer the BOM creation time as the scan timestamp; fall back to now.
+	scanTime := time.Now().UTC()
+	if bom.Metadata != nil && bom.Metadata.Timestamp != "" {
+		if parsed, err := time.Parse(time.RFC3339, bom.Metadata.Timestamp); err == nil {
+			scanTime = parsed
+		}
+	}
+
 	// Flatten nested components and build lookup by bom-ref
 	allComponents := flattenComponents(bom.Components)
 	componentLookup := make(map[string]CDXComponent, len(allComponents))
@@ -291,14 +299,16 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		if len(vuln.Affects) > 0 {
 			for _, affect := range vuln.Affects {
 				results = append(results, hdf.RequirementResult{
-					Status:   hdf.Failed,
-					CodeDesc: formatCodeDesc(componentLookup, affect.Ref),
+					Status:    hdf.Failed,
+					CodeDesc:  formatCodeDesc(componentLookup, affect.Ref),
+					StartTime: scanTime,
 				})
 			}
 		} else {
 			results = append(results, hdf.RequirementResult{
-				Status:   hdf.Failed,
-				CodeDesc: fmt.Sprintf("Vulnerability %s", vuln.ID),
+				Status:    hdf.Failed,
+				CodeDesc:  fmt.Sprintf("Vulnerability %s", vuln.ID),
+				StartTime: scanTime,
 			})
 		}
 
@@ -329,8 +339,6 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ResultsChecksum: checksum,
 	}
 
-	now := time.Now().UTC()
-
 	comp := hdf.Component{
 		Type: hdf.Application,
 	}
@@ -356,6 +364,6 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       []hdf.Component{comp},
-		Timestamp:        &now,
+		Timestamp:        &scanTime,
 	}), nil
 }

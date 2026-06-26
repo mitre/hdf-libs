@@ -86,7 +86,7 @@ func formatCodeDesc(check CheckovCheck) string {
 }
 
 // checkToResult converts a single CheckovCheck into an HDF RequirementResult.
-func checkToResult(check CheckovCheck) hdf.RequirementResult {
+func checkToResult(check CheckovCheck, now time.Time) hdf.RequirementResult {
 	status := mapStatus(check.CheckResult.Result)
 	codeDesc := formatCodeDesc(check)
 
@@ -97,9 +97,10 @@ func checkToResult(check CheckovCheck) hdf.RequirementResult {
 	}
 
 	return hdf.RequirementResult{
-		Status:   status,
-		CodeDesc: codeDesc,
-		Message:  message,
+		Status:    status,
+		CodeDesc:  codeDesc,
+		Message:   message,
+		StartTime: now,
 	}
 }
 
@@ -117,7 +118,7 @@ func groupByCheckID(checks []CheckovCheck) ([]string, map[string][]CheckovCheck)
 }
 
 // buildRequirement converts a group of checks sharing a check_id into one EvaluatedRequirement.
-func buildRequirement(checkID string, checks []CheckovCheck) hdf.EvaluatedRequirement {
+func buildRequirement(checkID string, checks []CheckovCheck, now time.Time) hdf.EvaluatedRequirement {
 	rep := checks[0]
 
 	nist := make([]string, len(shared.DefaultStaticAnalysisNIST))
@@ -139,7 +140,7 @@ func buildRequirement(checkID string, checks []CheckovCheck) hdf.EvaluatedRequir
 
 	results := make([]hdf.RequirementResult, len(checks))
 	for i, check := range checks {
-		results[i] = checkToResult(check)
+		results[i] = checkToResult(check, now)
 	}
 
 	title := rep.CheckName
@@ -217,11 +218,15 @@ func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		allChecks = append(allChecks, report.Results.SkippedChecks...)
 	}
 
+	// Checkov native JSON carries no per-finding or scan timestamp; use conversion time
+	// for every result's StartTime, the no-findings placeholder, and the doc Timestamp.
+	now := time.Now().UTC()
+
 	limitedChecks := shared.LimitSliceWithWarning(allChecks, 0, "check")
 	order, groups := groupByCheckID(limitedChecks)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, checkID := range order {
-		requirements[i] = buildRequirement(checkID, groups[checkID])
+		requirements[i] = buildRequirement(checkID, groups[checkID], now)
 	}
 
 	// Build tool format from check_types
@@ -236,7 +241,7 @@ func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 			shared.BuildNoFindingsRequirement(
 				"checkov-no-findings",
 				fmt.Sprintf("Checkov scanned %s and reported zero findings.", target),
-				time.Now().UTC(),
+				now,
 			),
 		}
 	}
@@ -247,7 +252,6 @@ func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		ResultsChecksum: checksum,
 	}
 
-	now := time.Now().UTC()
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "checkov-to-hdf",
 		ConverterVersion: converterVersion,

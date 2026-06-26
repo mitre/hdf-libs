@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertJunitToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
 
@@ -42,6 +43,25 @@ describe('junit to HDF converter', async () => {
     });
   });
 
+  // --- startTime fallback ---
+
+  describe('startTime fallback', async () => {
+    it('uses conversion time when no testsuite carries a timestamp', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites>
+  <testsuite name="s" tests="1" failures="1">
+    <testcase name="t" classname="c"><failure message="m">trace</failure></testcase>
+  </testsuite>
+</testsuites>`;
+      const before = Date.now();
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
+      expectValidResults(hdf);
+      const startTime = hdf.baselines[0]!.requirements[0]!.results[0]!.startTime;
+      expect(startTime).toBeDefined();
+      expect(new Date(startTime as string | Date).getTime()).toBeGreaterThanOrEqual(before);
+    });
+  });
+
   // --- Conversion basics ---
 
   describe('conversion basics (surefire-failing)', async () => {
@@ -52,6 +72,11 @@ describe('junit to HDF converter', async () => {
       expect(hdf.generator?.name).toBe('junit-to-hdf');
       expect(hdf.generator?.version).toBeTruthy();
       expect(hdf.baselines).toHaveLength(1);
+    });
+
+    it('should produce schema-valid HDF results', async () => {
+      const hdf = await parseHdf('surefire-failing.xml');
+      expectValidResults(hdf);
     });
 
     it('should set tool', async () => {

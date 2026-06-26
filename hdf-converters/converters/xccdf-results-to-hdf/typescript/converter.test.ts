@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertXccdfResultsToHdf, convertXccdfBenchmarkToHdf, convertXccdfToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults, HDFBaseline, BaselineRequirement, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
 
@@ -75,6 +76,7 @@ describe('xccdf-results-to-hdf converter', async () => {
   describe('minimal fixture', () => {
     it('should produce valid HDF structure', async () => {
       const hdf = await parseHdf('minimal.xml');
+      expectValidResults(hdf);
 
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.generator).toBeDefined();
@@ -126,6 +128,39 @@ describe('xccdf-results-to-hdf converter', async () => {
       const hdf = await parseHdf('minimal.xml');
       const ts = new Date(hdf.timestamp as unknown as string);
       expect(ts.getFullYear()).toBe(2012);
+    });
+  });
+
+  // --- Required-field fallbacks ---
+
+  describe('schema-required field fallbacks', () => {
+    // A rule with neither description nor fixtext, and a TestResult with no
+    // start-time, exercises the descriptions-minItems and startTime fallbacks.
+    const bareXml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_bare">
+  <Rule id="xccdf_test_rule_bare" selected="true">
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:x:def:1" href="oval.xml"/>
+    </check>
+  </Rule>
+  <TestResult id="xccdf_test_testresult_bare">
+    <target>bare-target</target>
+    <rule-result idref="xccdf_test_rule_bare">
+      <result>pass</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`;
+
+    it('produces schema-valid HDF with a default description and a startTime', async () => {
+      const before = Date.now();
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(bareXml)) as HDFResults;
+      expectValidResults(hdf);
+
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.descriptions.length).toBeGreaterThanOrEqual(1);
+      const startTime = req.results[0]!.startTime;
+      expect(startTime).toBeDefined();
+      expect(new Date(startTime as string | Date).getTime()).toBeGreaterThanOrEqual(before);
     });
   });
 

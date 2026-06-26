@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertCklbToHdf } from './converter.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -27,6 +28,20 @@ describe('cklb-to-hdf converter', () => {
 
   it('throws on non-CKLB JSON', async () => {
     await expect(convertCklbToHdf('not valid json at all')).rejects.toThrow();
+  });
+
+  it('produces schema-valid HDF Results', async () => {
+    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HDFResults;
+    expectValidResults(hdf);
+  });
+
+  it('stamps a startTime on every result', async () => {
+    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HDFResults;
+    for (const req of hdf.baselines[0].requirements) {
+      for (const result of req.results) {
+        expect(result.startTime).toBeTruthy();
+      }
+    }
   });
 
   it('produces the expected top-level HDF structure', async () => {

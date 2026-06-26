@@ -111,7 +111,7 @@ function extractSubscriptionID(resourcePath: string): string {
 /**
  * Converts a group of assessments sharing an assessment ID into one EvaluatedRequirement.
  */
-function buildRequirement(assessmentID: string, assessments: Assessment[]): EvaluatedRequirement {
+function buildRequirement(assessmentID: string, assessments: Assessment[], scanTime: Date): EvaluatedRequirement {
   const rep = assessments[0]!;
   const meta = rep.properties.metadata;
 
@@ -150,7 +150,7 @@ function buildRequirement(assessmentID: string, assessments: Assessment[]): Eval
     descriptions.push({ label: 'fix', data: meta.remediationDescription });
   }
 
-  const results = assessments.map(buildResultFromAssessment);
+  const results = assessments.map((a) => buildResultFromAssessment(a, scanTime));
 
   const req = createRequirement(assessmentID, rep.properties.displayName, descriptions, impact, results, { tags }) as EvaluatedRequirement;
   req.verificationMethod = VerificationMethodEnum.Automated;
@@ -160,12 +160,12 @@ function buildRequirement(assessmentID: string, assessments: Assessment[]): Eval
 /**
  * Converts a single assessment into an HDF RequirementResult.
  */
-function buildResultFromAssessment(a: Assessment): RequirementResult {
+function buildResultFromAssessment(a: Assessment, scanTime: Date): RequirementResult {
   const status = mapStatus(a.properties.status.code);
   const codeDesc = `Resource: ${a.properties.resourceDetails.id}`;
   const message = a.properties.status.description || a.properties.status.cause || undefined;
 
-  return createResult(status, message, { codeDesc });
+  return createResult(status, message, { codeDesc, startTime: scanTime });
 }
 
 /**
@@ -176,6 +176,8 @@ function buildResultFromAssessment(a: Assessment): RequirementResult {
  */
 export async function convertMsftDefenderCloudToHdf(input: string): Promise<string> {
   validateInputSize(input, 'msft-defender-cloud');
+
+  const scanTime = new Date();
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 
@@ -209,7 +211,7 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
 
   const requirements: EvaluatedRequirement[] = [];
   for (const [assessmentID, assessments] of groups) {
-    requirements.push(buildRequirement(assessmentID, assessments));
+    requirements.push(buildRequirement(assessmentID, assessments, scanTime));
   }
 
   const subscriptionID = limitedAssessments.length > 0
@@ -221,7 +223,7 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
     requirements.push(buildNoFindingsRequirement(
       'msft-defender-cloud-no-findings',
       `Microsoft Defender for Cloud scanned ${targetName} and reported zero findings.`,
-      new Date(),
+      scanTime,
     ));
   }
 
@@ -249,6 +251,6 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
     toolFormat: 'JSON',
     baselines: [baseline],
     components,
-    timestamp: new Date(),
+    timestamp: scanTime,
   });
 }

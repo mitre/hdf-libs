@@ -120,7 +120,7 @@ func vulnMessage(vuln NeuVectorVuln) string {
 }
 
 // buildRequirement converts a NeuVector vulnerability to an EvaluatedRequirement.
-func buildRequirement(vuln NeuVectorVuln) hdf.EvaluatedRequirement {
+func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequirement {
 	cweIDs := extractCWEs(vuln.Description)
 	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultRemediationNIST)
 	cciTags := cci.NISTToCCI(nist)
@@ -138,9 +138,10 @@ func buildRequirement(vuln NeuVectorVuln) hdf.EvaluatedRequirement {
 	msg := vulnMessage(vuln)
 	results := []hdf.RequirementResult{
 		{
-			Status:   hdf.Failed,
-			CodeDesc: "",
-			Message:  &msg,
+			Status:    hdf.Failed,
+			CodeDesc:  "",
+			Message:   &msg,
+			StartTime: scanTime,
 		},
 	}
 
@@ -216,6 +217,11 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	vulns := shared.LimitSliceWithWarning(scan.Report.Vulnerabilities, 0, "vulnerability")
 
+	// NeuVector reports carry image build time (created_at) and CVE-DB version
+	// time (cvedb_create_time), but neither is the scan time, so use conversion
+	// time as the single timestamp shared by every result.
+	now := time.Now().UTC()
+
 	// Each vulnerability is unique by name/package_name/package_version,
 	// so no grouping is needed (unlike Snyk which groups by vuln ID).
 	// However, we still deduplicate by the composite ID in case the input
@@ -229,10 +235,9 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			continue
 		}
 		seen[id] = true
-		requirements = append(requirements, buildRequirement(vuln))
+		requirements = append(requirements, buildRequirement(vuln, now))
 	}
 
-	now := time.Now().UTC()
 	target := targetName(scan.Report)
 	if len(requirements) == 0 {
 		requirements = []hdf.EvaluatedRequirement{

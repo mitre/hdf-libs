@@ -197,7 +197,7 @@ func groupByHostname(records []prismaRecord) ([]string, map[string][]prismaRecor
 }
 
 // buildRequirement converts a single Prisma record to an HDF requirement.
-func buildRequirement(rec prismaRecord) hdf.EvaluatedRequirement {
+func buildRequirement(rec prismaRecord, scanTime time.Time) hdf.EvaluatedRequirement {
 	id := makeRequirementID(rec)
 	title := makeTitle(rec)
 	codeDesc := makeCodeDesc(rec)
@@ -225,9 +225,10 @@ func buildRequirement(rec prismaRecord) hdf.EvaluatedRequirement {
 	}
 
 	result := hdf.RequirementResult{
-		Status:   hdf.Failed,
-		CodeDesc: codeDesc,
-		Message:  &message,
+		Status:    hdf.Failed,
+		CodeDesc:  codeDesc,
+		Message:   &message,
+		StartTime: scanTime,
 	}
 
 	req := hdf.EvaluatedRequirement{
@@ -292,12 +293,12 @@ func buildAffectedPackageFromRecord(rec prismaRecord) *hdf.AffectedPackage {
 }
 
 // buildBaseline converts all records for a single host into an HDF baseline.
-func buildBaseline(hostname string, records []prismaRecord, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
+func buildBaseline(hostname string, records []prismaRecord, checksum *hdf.Checksum, scanTime time.Time) hdf.EvaluatedBaseline {
 	limitedRecords := shared.LimitSliceWithWarning(records, 0, "finding")
 
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedRecords))
 	for i, rec := range limitedRecords {
-		requirements[i] = buildRequirement(rec)
+		requirements[i] = buildRequirement(rec, scanTime)
 	}
 
 	title := fmt.Sprintf("Prisma Cloud Scan (%s)", hostname)
@@ -326,6 +327,9 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	}
 
 	checksum := shared.InputChecksum(input)
+	// Prisma Cloud CSV exports carry no scan-level timestamp (the Published
+	// column is a per-finding CVE publish date), so use conversion time for
+	// every result, the doc timestamp, and any no-findings placeholder.
 	now := time.Now().UTC()
 
 	var baselines []hdf.EvaluatedBaseline
@@ -352,7 +356,7 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		baselines = make([]hdf.EvaluatedBaseline, len(hostOrder))
 		targets = make([]hdf.Component, len(hostOrder))
 		for i, hostname := range hostOrder {
-			baselines[i] = buildBaseline(hostname, hostGroups[hostname], checksum)
+			baselines[i] = buildBaseline(hostname, hostGroups[hostname], checksum, now)
 			targets[i] = hdf.Component{
 				Name: hostname,
 				Type: hdf.Host,

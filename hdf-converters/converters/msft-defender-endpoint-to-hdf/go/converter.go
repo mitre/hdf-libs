@@ -170,22 +170,26 @@ func buildTags(alert mdeAlert) map[string]interface{} {
 }
 
 // alertToRequirement converts a single MDE alert into an HDF EvaluatedRequirement.
-func alertToRequirement(alert mdeAlert) hdf.EvaluatedRequirement {
+func alertToRequirement(alert mdeAlert, scanTime time.Time) hdf.EvaluatedRequirement {
 	impact := severityToImpact(alert.Severity)
 	status := statusToResult(alert.Status, alert.Classification)
 
 	codeDesc := formatEvidence(alert.Evidence)
 	msg := formatMessage(alert)
 
-	result := hdf.RequirementResult{
-		Status:   status,
-		CodeDesc: codeDesc,
-		Message:  &msg,
+	startTime := hdfutil.ParseTimestamp(alert.FirstActivityDateTime)
+	if startTime.IsZero() {
+		startTime = hdfutil.ParseTimestamp(alert.CreatedDateTime)
+	}
+	if startTime.IsZero() {
+		startTime = scanTime
 	}
 
-	startTime := hdfutil.ParseTimestamp(alert.FirstActivityDateTime)
-	if !startTime.IsZero() {
-		result.StartTime = startTime
+	result := hdf.RequirementResult{
+		Status:    status,
+		CodeDesc:  codeDesc,
+		Message:   &msg,
+		StartTime: startTime,
 	}
 
 	descriptions := []hdf.Description{
@@ -233,11 +237,13 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 
 	checksum := shared.InputChecksum(input)
 
+	scanTime := time.Now().UTC()
+
 	limitedAlerts := shared.LimitSliceWithWarning(response.Value, 0, "alert")
 
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedAlerts))
 	for i, alert := range limitedAlerts {
-		requirements[i] = alertToRequirement(alert)
+		requirements[i] = alertToRequirement(alert, scanTime)
 	}
 
 	seenTargets := make(map[string]bool)
@@ -255,7 +261,7 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 			shared.BuildNoFindingsRequirement(
 				"msft-defender-endpoint-no-findings",
 				"Microsoft Defender for Endpoint scanned the tenant and reported zero findings.",
-				time.Now().UTC(),
+				scanTime,
 			),
 		}
 	}
@@ -266,13 +272,12 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 		ResultsChecksum: checksum,
 	}
 
-	now := time.Now().UTC()
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "msft-defender-endpoint-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Microsoft Defender for Endpoint",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       targets,
-		Timestamp:        &now,
+		Timestamp:        &scanTime,
 	}), nil
 }

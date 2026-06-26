@@ -108,7 +108,7 @@ func synthesizeSnykPurl(ecosystem hdf.Ecosystem, name, version string) string {
 
 // buildRequirement converts a group of vulnerabilities sharing an ID into one
 // EvaluatedRequirement with multiple results.
-func buildRequirement(vulnID string, vulns []SnykVuln, packageManager string) hdf.EvaluatedRequirement {
+func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageManager string) hdf.EvaluatedRequirement {
 	rep := vulns[0]
 
 	nist := shared.MapCWEToNIST(rep.Identifiers.CWE, shared.DefaultStaticAnalysisNIST)
@@ -133,8 +133,9 @@ func buildRequirement(vulnID string, vulns []SnykVuln, packageManager string) hd
 	results := make([]hdf.RequirementResult, len(vulns))
 	for i, vuln := range vulns {
 		results[i] = hdf.RequirementResult{
-			Status:   hdf.Failed,
-			CodeDesc: formatDependencyPath(vuln.From),
+			Status:    hdf.Failed,
+			CodeDesc:  formatDependencyPath(vuln.From),
+			StartTime: now,
 		}
 	}
 
@@ -174,12 +175,12 @@ func buildRequirement(vulnID string, vulns []SnykVuln, packageManager string) hd
 }
 
 // convertSingleProject converts a single Snyk project report to an HDF baseline.
-func convertSingleProject(report SnykReport, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
+func convertSingleProject(report SnykReport, checksum *hdf.Checksum, now time.Time) hdf.EvaluatedBaseline {
 	limitedVulns := shared.LimitSliceWithWarning(report.Vulnerabilities, 0, "vulnerability")
 	order, groups := groupByID(limitedVulns)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, vulnID := range order {
-		requirements[i] = buildRequirement(vulnID, groups[vulnID], report.PackageManager)
+		requirements[i] = buildRequirement(vulnID, groups[vulnID], now, report.PackageManager)
 	}
 
 	if len(requirements) == 0 {
@@ -194,7 +195,7 @@ func convertSingleProject(report SnykReport, checksum *hdf.Checksum) hdf.Evaluat
 			shared.BuildNoFindingsRequirement(
 				"snyk-no-findings",
 				fmt.Sprintf("Snyk scanned %s and reported zero vulnerable components.", target),
-				time.Now().UTC(),
+				now,
 			),
 		}
 	}
@@ -257,14 +258,14 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 		// has "vulnerabilities": [] which parses as nil slice vs null
 	}
 
-	baseline := convertSingleProject(report, checksum)
+	now := time.Now().UTC()
+
+	baseline := convertSingleProject(report, checksum, now)
 
 	targetName := report.ProjectName
 	if targetName == "" {
 		targetName = report.Path
 	}
-
-	now := time.Now().UTC()
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "snyk-to-hdf",
@@ -280,13 +281,13 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 }
 
 func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converterVersion string) (*hdf.HDFResults, error) {
+	now := time.Now().UTC()
+
 	limitedReports := shared.LimitSliceWithWarning(reports, 0, "project")
 	baselines := make([]hdf.EvaluatedBaseline, len(limitedReports))
 	for i, report := range limitedReports {
-		baselines[i] = convertSingleProject(report, checksum)
+		baselines[i] = convertSingleProject(report, checksum, now)
 	}
-
-	now := time.Now().UTC()
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "snyk-to-hdf",

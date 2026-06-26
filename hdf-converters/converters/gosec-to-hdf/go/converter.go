@@ -116,7 +116,7 @@ func nistTagsForIssue(issue GosecIssue) []string {
 }
 
 // issueToResult converts a single GosecIssue into an HDF RequirementResult.
-func issueToResult(issue GosecIssue) hdf.RequirementResult {
+func issueToResult(issue GosecIssue, startTime time.Time) hdf.RequirementResult {
 	var status hdf.ResultStatus
 	var message *string
 
@@ -135,9 +135,10 @@ func issueToResult(issue GosecIssue) hdf.RequirementResult {
 	}
 
 	return hdf.RequirementResult{
-		Status:   status,
-		CodeDesc: formatCodeDesc(issue),
-		Message:  message,
+		Status:    status,
+		CodeDesc:  formatCodeDesc(issue),
+		Message:   message,
+		StartTime: startTime,
 	}
 }
 
@@ -157,7 +158,7 @@ func groupByRuleID(issues []GosecIssue) ([]string, map[string][]GosecIssue) {
 
 // buildRequirement converts a group of issues sharing a rule_id into one
 // EvaluatedRequirement with multiple results.
-func buildRequirement(ruleID string, issues []GosecIssue) hdf.EvaluatedRequirement {
+func buildRequirement(ruleID string, issues []GosecIssue, startTime time.Time) hdf.EvaluatedRequirement {
 	// Use the first issue as the representative for rule-level fields.
 	rep := issues[0]
 
@@ -180,7 +181,7 @@ func buildRequirement(ruleID string, issues []GosecIssue) hdf.EvaluatedRequireme
 
 	results := make([]hdf.RequirementResult, len(issues))
 	for i, issue := range issues {
-		results[i] = issueToResult(issue)
+		results[i] = issueToResult(issue, startTime)
 	}
 
 	title := rep.Details
@@ -219,11 +220,15 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	checksum := shared.InputChecksum(input)
 
+	// gosec output carries no per-finding timestamp; use one conversion-time
+	// value for every result's startTime and the document timestamp.
+	now := time.Now().UTC()
+
 	limitedIssues := shared.LimitSliceWithWarning(report.Issues, 0, "issue")
 	order, groups := groupByRuleID(limitedIssues)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, ruleID := range order {
-		requirements[i] = buildRequirement(ruleID, groups[ruleID])
+		requirements[i] = buildRequirement(ruleID, groups[ruleID], now)
 	}
 
 	if len(requirements) == 0 {
@@ -231,7 +236,7 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 			shared.BuildNoFindingsRequirement(
 				"gosec-no-findings",
 				"gosec scanned Go codebase and reported zero findings.",
-				time.Now().UTC(),
+				now,
 			),
 		}
 	}
@@ -242,7 +247,6 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ResultsChecksum: checksum,
 	}
 
-	now := time.Now().UTC()
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "gosec-to-hdf",
 		ConverterVersion: converterVersion,

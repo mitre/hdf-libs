@@ -137,7 +137,7 @@ function formatCodeDesc(entry: XrayEntry): string {
 /**
  * Builds a single EvaluatedRequirement from a group of entries sharing an ID.
  */
-function buildRequirement(entryID: string, entries: XrayEntry[]): EvaluatedRequirement {
+function buildRequirement(entryID: string, entries: XrayEntry[], scanTime: Date): EvaluatedRequirement {
   const rep = entries[0]!;
   const cweIDs = extractCWEs(rep);
   const nist = mapCWEToNIST(cweIDs, DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
@@ -159,6 +159,7 @@ function buildRequirement(entryID: string, entries: XrayEntry[]): EvaluatedRequi
   const results = entries.map(entry =>
     createResult(ResultStatus.Failed, undefined, {
       codeDesc: formatCodeDesc(entry),
+      startTime: scanTime,
     })
   );
 
@@ -254,6 +255,12 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
     throw new Error('jfrog-xray: invalid JSON structure');
   }
 
+  // JFrog Xray output carries no scan-level timestamp (only per-entry `edited`
+  // dates, which mark when each vuln-DB record was last edited, not when the
+  // scan ran). Use a single conversion timestamp for all results, the doc
+  // timestamp, and the no-findings placeholder.
+  const scanTime = new Date();
+
   const { items: limitedEntries, truncated } = limitArray(parsed.data);
   /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncated) {
@@ -284,14 +291,14 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
 
   const requirements: EvaluatedRequirement[] = [];
   for (const [entryID, entries] of groups) {
-    requirements.push(buildRequirement(entryID, entries));
+    requirements.push(buildRequirement(entryID, entries, scanTime));
   }
 
   if (requirements.length === 0) {
     requirements.push(buildNoFindingsRequirement(
       'jfrog-xray-no-findings',
       'JFrog Xray scanned the target artifact and reported zero vulnerable components.',
-      new Date(),
+      scanTime,
     ));
   }
 
@@ -308,6 +315,6 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
     toolFormat: 'JSON',
     baselines: [baseline],
     components: [{ name: 'JFrog Xray Scan', type: TargetType.Application }],
-    timestamp: new Date(),
+    timestamp: scanTime,
   });
 }

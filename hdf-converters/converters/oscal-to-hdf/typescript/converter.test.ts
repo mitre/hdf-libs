@@ -27,6 +27,7 @@ import {
   parseOscalDocument,
   toKebabCase,
 } from './shared.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults, HDFBaseline } from '@mitre/hdf-schema';
 import type { HDFSystem } from '@mitre/hdf-schema';
 import type { HDFPlan } from '@mitre/hdf-schema';
@@ -409,6 +410,7 @@ describe('convertOscalSarToHdf', () => {
   it('should convert SAR FedRAMP fixture', async () => {
     const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
     const results = JSON.parse(output) as HDFResults;
+    expectValidResults(results);
 
     expect(results.baselines).toBeDefined();
     expect(results.baselines.length).toBeGreaterThan(0);
@@ -460,12 +462,30 @@ describe('convertOscalSarToHdf', () => {
     }
   });
 
-  it('should have multiple result sets (baselines)', async () => {
+  it('falls back to conversion time when a result has no start', async () => {
+    const doc = JSON.parse(loadFixture('sar-fedramp.json')) as {
+      'assessment-results': { results: Array<Record<string, unknown>> };
+    };
+    // Drop the start on the only finding-bearing result to exercise the fallback.
+    for (const r of doc['assessment-results'].results) delete r['start'];
+    const before = Date.now();
+    const output = await convertOscalSarToHdf(JSON.stringify(doc));
+    const results = JSON.parse(output) as HDFResults;
+    expectValidResults(results);
+
+    const startTime = results.baselines[0]!.requirements[0]!.results[0]!.startTime;
+    expect(startTime).toBeDefined();
+    // A fresh conversion-time value, not the 1970 epoch placeholder.
+    expect(new Date(startTime as string | Date).getTime()).toBeGreaterThanOrEqual(before);
+  });
+
+  it('should only include result sets that have findings', async () => {
     const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
     const results = JSON.parse(output) as HDFResults;
 
-    // FedRAMP SAR fixture has 3 result sets
-    expect(results.baselines).toHaveLength(3);
+    // The FedRAMP SAR fixture has 3 result sets but only 1 carries findings;
+    // the empty ones are skipped (an empty baseline violates minItems=1).
+    expect(results.baselines).toHaveLength(1);
   });
 
   it('should produce valid round-trip JSON', async () => {

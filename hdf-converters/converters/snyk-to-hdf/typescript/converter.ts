@@ -99,7 +99,7 @@ function synthesizePurl(ecosystem: Ecosystem, name: string, version: string): st
   return `pkg:${ecosystem}/${name}@${version}`;
 }
 
-function buildRequirement(vulnID: string, vulns: SnykVuln[], packageManager?: string): EvaluatedRequirement {
+function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, packageManager?: string): EvaluatedRequirement {
   const rep = vulns[0]!;
   const cweIDs = rep.identifiers.CWE ?? [];
   const nist = mapCWEToNIST(cweIDs, DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
@@ -127,6 +127,7 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[], packageManager?: st
   const results = vulns.map(vuln =>
     createResult(ResultStatus.Failed, undefined, {
       codeDesc: formatDependencyPath(vuln.from),
+      startTime: scanTime,
     })
   );
 
@@ -169,7 +170,8 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[], packageManager?: st
  */
 function convertSingleProject(
   report: SnykReport,
-  resultsChecksum: Checksum
+  resultsChecksum: Checksum,
+  scanTime: Date
 ): EvaluatedBaseline {
   // Group vulnerabilities by ID, preserving insertion order
   const { items: limitedVulns, truncated: truncatedVulns } = limitArray(report.vulnerabilities);
@@ -190,7 +192,7 @@ function convertSingleProject(
 
   const requirements: EvaluatedRequirement[] = [];
   for (const [vulnID, vulns] of groups) {
-    requirements.push(buildRequirement(vulnID, vulns, report.packageManager));
+    requirements.push(buildRequirement(vulnID, vulns, scanTime, report.packageManager));
   }
 
   if (requirements.length === 0) {
@@ -199,7 +201,7 @@ function convertSingleProject(
       buildNoFindingsRequirement(
         'snyk-no-findings',
         `Snyk scanned ${target} and reported zero vulnerable components.`,
-        new Date(),
+        scanTime,
       ),
     );
   }
@@ -241,6 +243,10 @@ export async function convertSnykToHdf(input: string): Promise<string> {
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 
+  // Snyk native JSON carries no scan timestamp, so use one conversion-time
+  // value for every result's startTime and the document timestamp.
+  const scanTime = new Date();
+
   const parsed = parseJSON<SnykReport | SnykReport[]>(input);
 
   if (!parsed || typeof parsed !== 'object') {
@@ -258,11 +264,11 @@ export async function convertSnykToHdf(input: string): Promise<string> {
       // eslint-disable-next-line no-console
       console.warn(`WARNING: Input truncated at ${limitedProjects.length} project items (original: ${parsed.length})`);
     }
-    baselines = limitedProjects.map(report => convertSingleProject(report, resultsChecksum));
+    baselines = limitedProjects.map(report => convertSingleProject(report, resultsChecksum, scanTime));
     targetName = limitedProjects[0]?.projectName ?? limitedProjects[0]?.path ?? '';
   } else {
     // Single project
-    baselines = [convertSingleProject(parsed, resultsChecksum)];
+    baselines = [convertSingleProject(parsed, resultsChecksum, scanTime)];
     targetName = parsed.projectName ?? parsed.path ?? '';
   }
 
@@ -273,6 +279,6 @@ export async function convertSnykToHdf(input: string): Promise<string> {
     toolFormat: 'JSON',
     baselines,
     components: [{ name: targetName, type: TargetType.Application }],
-    timestamp: new Date(),
+    timestamp: scanTime,
   });
 }

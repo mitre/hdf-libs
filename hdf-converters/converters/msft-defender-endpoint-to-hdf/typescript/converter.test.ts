@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertMsftDefenderEndpointToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -28,6 +29,22 @@ describe('msft-defender-endpoint to HDF converter', async () => {
     });
   });
 
+  describe('startTime fallback', async () => {
+    it('uses conversion time when an alert has no activity/created timestamps', async () => {
+      const doc = JSON.parse(loadFixture('minimal.json')) as { value: Array<Record<string, unknown>> };
+      for (const alert of doc.value) {
+        delete alert['firstActivityDateTime'];
+        delete alert['createdDateTime'];
+      }
+      const before = Date.now();
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(JSON.stringify(doc))) as HDFResults;
+      expectValidResults(hdf);
+      const startTime = hdf.baselines[0]!.requirements[0]!.results[0]!.startTime;
+      expect(startTime).toBeDefined();
+      expect(new Date(startTime as string | Date).getTime()).toBeGreaterThanOrEqual(before);
+    });
+  });
+
   describe('minimal fixture conversion', async () => {
     it('should produce valid HDF structure from minimal fixture', async () => {
       const output = await convertMsftDefenderEndpointToHdf(loadFixture('minimal.json'));
@@ -38,6 +55,12 @@ describe('msft-defender-endpoint to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
       expect(hdf.tool?.name).toBe('Microsoft Defender for Endpoint');
       expect(hdf.baselines).toHaveLength(1);
+    });
+
+    it('should produce schema-valid HDF results', async () => {
+      const output = await convertMsftDefenderEndpointToHdf(loadFixture('sample.json'));
+      const hdf = JSON.parse(output) as HDFResults;
+      expectValidResults(hdf);
     });
 
     it('should convert 1 alert to 1 requirement', async () => {

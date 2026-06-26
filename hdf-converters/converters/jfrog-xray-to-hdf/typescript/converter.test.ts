@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertJfrogXrayToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -25,6 +26,7 @@ describe('jfrog-xray to HDF converter', async () => {
       const output = await convertJfrogXrayToHdf(loadFixture('jfrog_xray_sample.json'));
       const hdf = JSON.parse(output) as HDFResults;
 
+      expectValidResults(hdf);
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('jfrog-xray-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');

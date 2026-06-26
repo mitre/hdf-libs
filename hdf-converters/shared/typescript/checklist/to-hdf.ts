@@ -28,13 +28,16 @@ const CONVERTER_VERSION = '1.0.0';
  * Original-format metadata is stashed in extensions/tags for round-trip.
  */
 export function checklistToHdf(cl: Checklist, resultsChecksum: Checksum, generatorName: string): HDFResults {
-  const baselines = cl.stigs.map((s) => stigToBaseline(s, resultsChecksum));
+  // Checklists carry no per-finding timestamp; use one conversion-time value
+  // for every result's startTime and the document timestamp.
+  const scanTime = new Date();
+  const baselines = cl.stigs.map((s) => stigToBaseline(s, resultsChecksum, scanTime));
 
   const hdf: HDFResults = {
     baselines,
     generator: { name: generatorName, version: CONVERTER_VERSION },
     tool: { name: 'DISA STIG Viewer', format: cl.format === 'cklb' ? 'CKLB' : 'CKL' },
-    timestamp: new Date(),
+    timestamp: scanTime,
   };
 
   const component = assetToComponent(cl.asset);
@@ -45,8 +48,8 @@ export function checklistToHdf(cl: Checklist, resultsChecksum: Checksum, generat
   return hdf;
 }
 
-function stigToBaseline(s: Stig, resultsChecksum: Checksum): EvaluatedBaseline {
-  const requirements = s.vulns.map(vulnToRequirement);
+function stigToBaseline(s: Stig, resultsChecksum: Checksum, scanTime: Date): EvaluatedBaseline {
+  const requirements = s.vulns.map((v) => vulnToRequirement(v, scanTime));
   const baseline = createMinimalBaseline('STIG Checklist Scan', requirements, {
     resultsChecksum,
   }) as EvaluatedBaseline;
@@ -57,7 +60,7 @@ function stigToBaseline(s: Stig, resultsChecksum: Checksum): EvaluatedBaseline {
   return baseline;
 }
 
-function vulnToRequirement(v: Vuln): EvaluatedRequirement {
+function vulnToRequirement(v: Vuln, scanTime: Date): EvaluatedRequirement {
   const severity = (v.severity ?? '').toLowerCase();
   const impact = severity ? severityToImpact(severity) : 0.5;
 
@@ -74,6 +77,7 @@ function vulnToRequirement(v: Vuln): EvaluatedRequirement {
     .join('\n\n');
   const result = createResult(statusToHdf(v.status), message, {
     codeDesc: `STIG rule ${v.ruleVer ?? ''}`,
+    startTime: scanTime,
   });
 
   const tags: Record<string, unknown> = {};

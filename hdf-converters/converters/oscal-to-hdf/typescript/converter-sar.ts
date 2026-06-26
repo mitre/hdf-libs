@@ -59,8 +59,17 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
   const sar = doc['assessment-results'];
   const meta = extractMetadata(sar.metadata);
 
+  // Skip results with no findings — an empty baseline would violate the
+  // schema's requirements.minItems=1. Mirrors the Go SAR converter.
   const baselines: EvaluatedBaseline[] = [];
   for (const result of sar.results) {
+    if (!result.findings || result.findings.length === 0) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `WARNING: Skipping assessment result "${result.title || result.uuid}": no findings (empty result set)`,
+      );
+      continue;
+    }
     const baseline = await resultToEvaluatedBaseline(result, sar, input);
     baselines.push(baseline);
   }
@@ -189,11 +198,13 @@ function findingToRequirementResult(
   const status = mapFindingStatus(f);
   const codeDesc = buildCodeDesc(f, obsMap);
   const message = buildRiskMessage(f, riskMap);
+  // The OSCAL result's assessment-period start applies to all its findings;
+  // fall back to conversion time when the source omits it (startTime is required).
   const startTime = parseResultStartTime(result);
 
   return createResult(status, message || undefined, {
     codeDesc,
-    startTime: startTime.getTime() > 0 ? startTime : undefined,
+    startTime: startTime.getTime() > 0 ? startTime : new Date(),
   });
 }
 

@@ -21,9 +21,13 @@ import (
 // Original-format metadata is stashed in HDF extensions/tags so a subsequent
 // HDFToChecklist can reproduce the checklist losslessly (round-trip).
 func ChecklistToHDF(cl *Checklist, resultsChecksum *hdf.Checksum, converterVersion, generatorName string) *hdf.HDFResults {
+	// Checklists carry no per-finding execution timestamp; use one
+	// conversion-time value for every result's StartTime and the doc timestamp.
+	now := time.Now().UTC()
+
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(cl.Stigs))
 	for i := range cl.Stigs {
-		baselines = append(baselines, stigToBaseline(&cl.Stigs[i], resultsChecksum))
+		baselines = append(baselines, stigToBaseline(&cl.Stigs[i], resultsChecksum, now))
 	}
 
 	toolName := "DISA STIG Viewer"
@@ -42,7 +46,6 @@ func ChecklistToHDF(cl *Checklist, resultsChecksum *hdf.Checksum, converterVersi
 	if comp, ok := assetToComponent(&cl.Asset); ok {
 		opts.Components = []hdf.Component{comp}
 	}
-	now := time.Now().UTC()
 	opts.Timestamp = &now
 
 	results := shared.BuildHDFResults(opts)
@@ -52,10 +55,10 @@ func ChecklistToHDF(cl *Checklist, resultsChecksum *hdf.Checksum, converterVersi
 	return results
 }
 
-func stigToBaseline(s *Stig, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
+func stigToBaseline(s *Stig, checksum *hdf.Checksum, startTime time.Time) hdf.EvaluatedBaseline {
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(s.Vulns))
 	for i := range s.Vulns {
-		requirements = append(requirements, vulnToRequirement(&s.Vulns[i]))
+		requirements = append(requirements, vulnToRequirement(&s.Vulns[i], startTime))
 	}
 	bl := hdf.EvaluatedBaseline{
 		Name:            "STIG Checklist Scan",
@@ -74,7 +77,7 @@ func stigToBaseline(s *Stig, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
 	return bl
 }
 
-func vulnToRequirement(v *Vuln) hdf.EvaluatedRequirement {
+func vulnToRequirement(v *Vuln, startTime time.Time) hdf.EvaluatedRequirement {
 	severity := strings.ToLower(v.Severity)
 	impact := hdfutil.SeverityToImpact(severity, 0.5)
 
@@ -85,7 +88,7 @@ func vulnToRequirement(v *Vuln) hdf.EvaluatedRequirement {
 		Impact:       impact,
 		Descriptions: buildDescriptions(v),
 		Tags:         tags,
-		Results:      []hdf.RequirementResult{buildResult(v)},
+		Results:      []hdf.RequirementResult{buildResult(v, startTime)},
 		ControlType:  shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
 	}
 	if severity != "" {
@@ -137,15 +140,14 @@ func buildDescriptions(v *Vuln) []hdf.Description {
 	return descriptions
 }
 
-func buildResult(v *Vuln) hdf.RequirementResult {
+func buildResult(v *Vuln, startTime time.Time) hdf.RequirementResult {
 	result := hdf.RequirementResult{
 		Status:   v.Status.ToHDF(),
 		CodeDesc: "STIG rule " + v.RuleVer,
-		// CKL/CKLB carry no per-finding execution timestamp. Leave StartTime as
-		// the zero value rather than time.Now() so conversion is deterministic
-		// and the output doesn't misrepresent when the assessment occurred.
-		// (The TS mapping likewise omits startTime via createResult.)
-		StartTime: time.Time{},
+		// CKL/CKLB carry no per-finding execution timestamp; use the conversion
+		// time so the schema-required startTime is a valid value (the TS mapping
+		// uses the same value).
+		StartTime: startTime,
 	}
 	var parts []string
 	if fd := strings.TrimSpace(v.FindingDetails); fd != "" {

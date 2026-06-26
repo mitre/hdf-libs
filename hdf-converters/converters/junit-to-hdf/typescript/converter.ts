@@ -79,13 +79,14 @@ export async function convertJunitToHdf(input: string): Promise<string> {
   validateInputSize(input, 'junit');
 
   const { suites, name } = parseJUnitXML(input);
-  const requirements = buildRequirements(suites);
+  const scanTime = resolveScanTime(suites);
+  const requirements = buildRequirements(suites, scanTime);
 
   if (requirements.length === 0) {
     requirements.push(buildNoFindingsRequirement(
       'junit-no-findings',
       `JUnit scanned ${noFindingsTarget(name, suites)} and reported zero findings.`,
-      new Date(),
+      scanTime,
     ));
   }
 
@@ -105,8 +106,23 @@ export async function convertJunitToHdf(input: string): Promise<string> {
       type: TargetType.Application,
       name,
     }],
-    timestamp: new Date(),
+    timestamp: scanTime,
   });
+}
+
+// Computes one timestamp per conversion: the first available <testsuite> timestamp,
+// falling back to conversion time. Used for every result's startTime, the document
+// timestamp, and any no-findings placeholder.
+function resolveScanTime(suites: JUnitTestSuite[]): Date {
+  for (const suite of suites) {
+    if (suite.timestamp) {
+      const parsed = new Date(suite.timestamp);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+  }
+  return new Date();
 }
 
 function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string } {
@@ -132,7 +148,7 @@ function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string 
   throw new Error('Input is not a JUnit XML document: expected <testsuites> or <testsuite> root element');
 }
 
-function buildRequirements(suites: JUnitTestSuite[]): EvaluatedRequirement[] {
+function buildRequirements(suites: JUnitTestSuite[], scanTime: Date): EvaluatedRequirement[] {
   const { items: limitedSuites, truncated: truncatedSuites } = limitArray(suites);
   /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedSuites) {
@@ -150,7 +166,7 @@ function buildRequirements(suites: JUnitTestSuite[]): EvaluatedRequirement[] {
       console.warn(`WARNING: Input truncated at ${limitedTestCases.length} test case items (original: ${testcases.length})`);
     }
     for (const tc of limitedTestCases) {
-      requirements.push(testCaseToRequirement(tc, suite.timestamp));
+      requirements.push(testCaseToRequirement(tc, scanTime));
     }
   }
 
@@ -159,21 +175,18 @@ function buildRequirements(suites: JUnitTestSuite[]): EvaluatedRequirement[] {
 
 function testCaseToRequirement(
   tc: JUnitTestCase,
-  suiteTimestamp?: string
+  scanTime: Date
 ): EvaluatedRequirement {
   const id = buildID(tc);
   const { status, message } = resolveStatus(tc);
   const codeDesc = buildCodeDesc(tc);
 
-  const resultOptions: Record<string, unknown> = { codeDesc };
+  const resultOptions: Record<string, unknown> = { codeDesc, startTime: scanTime };
   if (tc.time) {
     const parsed = parseFloat(tc.time);
     if (!isNaN(parsed)) {
       resultOptions.runTime = parsed;
     }
-  }
-  if (suiteTimestamp) {
-    resultOptions.startTime = suiteTimestamp;
   }
 
   const result = createResult(status, message ?? '', resultOptions) as RequirementResult;

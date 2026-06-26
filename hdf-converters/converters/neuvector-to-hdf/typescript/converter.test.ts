@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertNeuvectorToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -31,6 +32,7 @@ describe('neuvector to HDF converter', async () => {
       expect(hdf.baselines).toHaveLength(1);
       // minimal.json has 8 unique vulnerability IDs (name/package_name/package_version)
       expect(hdf.baselines[0]!.requirements).toHaveLength(8);
+      expectValidResults(hdf);
     });
 
     it('should use "NeuVector Scan" as the baseline name', async () => {

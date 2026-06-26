@@ -219,6 +219,15 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 
+  // Prefer the BOM creation time as the scan timestamp; fall back to now.
+  const parsedTimestamp = bom.metadata?.timestamp
+    ? new Date(bom.metadata.timestamp)
+    : undefined;
+  const scanTime =
+    parsedTimestamp && !isNaN(parsedTimestamp.getTime())
+      ? parsedTimestamp
+      : new Date();
+
   // Flatten nested components and build lookup by bom-ref
   const allComponents = flattenComponents(bom.components ?? []);
   const componentLookup = new Map<string, CycloneDXComponent>();
@@ -294,11 +303,13 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
         ? affects.map((affect) =>
             createResult(ResultStatus.Failed, undefined, {
               codeDesc: formatCodeDesc(componentLookup, affect.ref),
+              startTime: scanTime,
             })
           )
         : [
             createResult(ResultStatus.Failed, undefined, {
               codeDesc: `Vulnerability ${vuln.id}`,
+              startTime: scanTime,
             }),
           ];
 
@@ -332,6 +343,6 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     toolFormat: 'JSON',
     baselines: [baseline],
     components: [{ name: targetName, type: TargetType.Application }],
-    timestamp: new Date(),
+    timestamp: scanTime,
   });
 }

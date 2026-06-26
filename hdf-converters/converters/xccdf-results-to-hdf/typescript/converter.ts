@@ -361,8 +361,14 @@ async function convertBenchmarkResultsToHdf(
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedRuleResults.length} rule-result items (original: ${ruleResults.length})`);
   }
+  // The test result's start-time applies to every rule-result; fall back to
+  // conversion time when absent (startTime is required on each result).
+  const scanTime = testResult['start-time']
+    ? new Date(testResult['start-time'])
+    : new Date();
+
   const requirements = limitedRuleResults.map((rr) =>
-    ruleResultToRequirement(rr, ruleIndex)
+    ruleResultToRequirement(rr, ruleIndex, scanTime)
   );
 
   if (requirements.length === 0) {
@@ -371,7 +377,7 @@ async function convertBenchmarkResultsToHdf(
       buildNoFindingsRequirement(
         'xccdf-results-no-findings',
         `XCCDF scanned ${target} and reported zero findings.`,
-        new Date(),
+        scanTime,
       ),
     );
   }
@@ -388,9 +394,7 @@ async function convertBenchmarkResultsToHdf(
 
   const components = buildTargets(testResult);
 
-  const timestamp = testResult['start-time']
-    ? new Date(testResult['start-time'])
-    : new Date();
+  const timestamp = scanTime;
 
   let durationSeconds: number | undefined;
   if (testResult['start-time'] && testResult['end-time']) {
@@ -613,6 +617,12 @@ async function convertArfCollection(
       }
     }
 
+    // The test result's start-time applies to its rule-results; fall back to
+    // conversion time when absent (startTime is required on each result).
+    const scanTime = testResult['start-time']
+      ? new Date(testResult['start-time'])
+      : new Date();
+
     // Convert rule-results
     const ruleResults = testResult['rule-result'] ?? [];
     const { items: limitedARFRuleResults, truncated: truncatedARFRR } = limitArray(ruleResults);
@@ -622,7 +632,7 @@ async function convertArfCollection(
     console.warn(`WARNING: Input truncated at ${limitedARFRuleResults.length} rule-result items (original: ${ruleResults.length})`);
     }
     const requirements = limitedARFRuleResults.map((rr) =>
-      ruleResultToRequirement(rr, ruleIndex)
+      ruleResultToRequirement(rr, ruleIndex, scanTime)
     );
 
     if (requirements.length === 0) {
@@ -631,7 +641,7 @@ async function convertArfCollection(
         buildNoFindingsRequirement(
           'xccdf-results-no-findings',
           `XCCDF scanned ${target} and reported zero findings.`,
-          new Date(),
+          scanTime,
         ),
       );
     }
@@ -782,7 +792,8 @@ function buildRuleIndex(benchmark: BenchmarkElement): Map<string, RuleElement> {
  */
 function ruleResultToRequirement(
   rr: RuleResultElement,
-  ruleIndex: Map<string, RuleElement>
+  ruleIndex: Map<string, RuleElement>,
+  scanTime: Date
 ): EvaluatedRequirement {
   const ruleId = rr.idref ?? '';
   const ruleDef = ruleIndex.get(ruleId);
@@ -805,12 +816,18 @@ function ruleResultToRequirement(
   if (fixtext) {
     descriptions.push({ label: 'fix', data: fixtext });
   }
+  // descriptions requires minItems=1; guarantee a default when the rule
+  // definition carried neither a description nor a fixtext.
+  if (descriptions.length === 0) {
+    descriptions.push({ label: 'default', data: '' });
+  }
 
   const xccdfResult = (rr.result ?? '').toLowerCase();
   const status = STATUS_MAP[xccdfResult] ?? ResultStatus.NotReviewed;
 
   const result = createResult(status, '', {
     codeDesc: `XCCDF rule ${id}`,
+    startTime: scanTime,
   }) as RequirementResult;
 
   const tags: Record<string, unknown> = {};

@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertPrismaToHdf } from './converter.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -28,6 +29,13 @@ describe('prisma to HDF converter', () => {
 
     it('should throw on invalid CSV (missing required columns)', async () => {
       await expect(convertPrismaToHdf('a,b,c\n1,2,3')).rejects.toThrow();
+    });
+  });
+
+  describe('schema validity', () => {
+    it('should produce schema-valid HDF results', async () => {
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
+      expectValidResults(hdf);
     });
   });
 

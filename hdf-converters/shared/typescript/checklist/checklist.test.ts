@@ -130,9 +130,11 @@ describe('checklist shared model', () => {
     expect(data).not.toContain('<b>');
   });
 
-  it('omits a per-finding startTime (CKL has no timestamp; deterministic)', () => {
+  it('stamps a conversion-time startTime on every result (schema requires it)', () => {
     const hdf = checklistToHdf(parseCkl(SAMPLE_CKL), CHECKSUM, 'test-converter');
-    expect(hdf.baselines[0].requirements[0].results[0].startTime).toBeUndefined();
+    const startTime = hdf.baselines[0].requirements[0].results[0].startTime;
+    expect(startTime).toBeDefined();
+    expect(new Date(startTime as string | Date).getTime()).toBeGreaterThan(0);
   });
 
   it('maps checklist to HDF with controlType and no verificationMethod', () => {

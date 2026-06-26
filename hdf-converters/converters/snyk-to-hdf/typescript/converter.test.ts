@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { convertSnykToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { DEFAULT_MAX_INPUT_SIZE } from '../../../shared/typescript/converterutil.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -33,6 +34,7 @@ describe('snyk to HDF converter', async () => {
       const output = await convertSnykToHdf(loadFixture('minimal.json'));
       const hdf = JSON.parse(output) as HDFResults;
 
+      expectValidResults(hdf);
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('snyk-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');

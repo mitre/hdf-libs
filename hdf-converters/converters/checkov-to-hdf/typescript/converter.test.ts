@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertCheckovToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -38,6 +39,11 @@ describe('checkov to HDF converter', async () => {
       expect(hdf.tool?.version).toBe('3.2.524');
       expect(hdf.tool?.format).toBe('terraform');
       expect(hdf.baselines).toHaveLength(1);
+    });
+
+    it('should produce schema-valid HDF results', async () => {
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json')));
+      expectValidResults(hdf);
     });
 
     it('should use "Checkov Scan" as the baseline name', async () => {

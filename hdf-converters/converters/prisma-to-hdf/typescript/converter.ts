@@ -150,7 +150,7 @@ function makeTitle(rec: PrismaRecord): string {
 /**
  * Builds a single EvaluatedRequirement from a Prisma record.
  */
-function buildRequirement(rec: PrismaRecord): EvaluatedRequirement {
+function buildRequirement(rec: PrismaRecord, scanTime: Date): EvaluatedRequirement {
   const id = makeRequirementID(rec);
   const title = makeTitle(rec);
   const codeDesc = makeCodeDesc(rec);
@@ -173,6 +173,7 @@ function buildRequirement(rec: PrismaRecord): EvaluatedRequirement {
   const results = [
     createResult(ResultStatus.Failed, message, {
       codeDesc,
+      startTime: scanTime,
     }),
   ];
 
@@ -266,10 +267,11 @@ function buildBaseline(
   hostname: string,
   records: PrismaRecord[],
   resultsChecksum: Checksum,
+  scanTime: Date,
 ): EvaluatedBaseline {
   const limitedRecords = limitArrayWithWarning(records, 'finding');
 
-  const requirements = limitedRecords.map(rec => buildRequirement(rec));
+  const requirements = limitedRecords.map(rec => buildRequirement(rec, scanTime));
 
   const title = `Prisma Cloud Scan (${hostname})`;
 
@@ -308,6 +310,10 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
 
   const records = parseCsv<PrismaRecord>(input);
   const resultsChecksum = await inputChecksum(input);
+  // Prisma Cloud CSV exports carry no scan-level timestamp (the `Published`
+  // column is a per-finding CVE publish date), so use conversion time for
+  // every result, the doc timestamp, and any no-findings placeholder.
+  const scanTime = new Date();
   const baselines: EvaluatedBaseline[] = [];
   const components: HDFResults['components'] = [];
 
@@ -317,7 +323,7 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
       [buildNoFindingsRequirement(
         'prisma-no-findings',
         'Prisma Cloud scanned the workload and reported zero vulnerable components.',
-        new Date(),
+        scanTime,
       )],
       {
         resultsChecksum,
@@ -327,7 +333,7 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
   } else {
     const hostGroups = groupByHostname(records);
     for (const [hostname, hostRecords] of hostGroups) {
-      baselines.push(buildBaseline(hostname, hostRecords, resultsChecksum));
+      baselines.push(buildBaseline(hostname, hostRecords, resultsChecksum, scanTime));
       components.push({ name: hostname, type: TargetType.Host });
     }
   }
@@ -339,6 +345,6 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
     toolFormat: 'CSV',
     baselines,
     components,
-    timestamp: new Date(),
+    timestamp: scanTime,
   });
 }

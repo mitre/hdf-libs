@@ -221,17 +221,32 @@ function buildTags(alert: MdeAlert): Record<string, unknown> {
 }
 
 /**
+ * Resolves a clean per-finding source timestamp, falling back to the conversion time.
+ */
+function resolveStartTime(alert: MdeAlert, scanTime: Date): Date {
+  const source = alert.firstActivityDateTime ?? alert.createdDateTime;
+  if (source) {
+    const parsed = new Date(source);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+  return scanTime;
+}
+
+/**
  * Converts a single MDE alert to an HDF EvaluatedRequirement.
  */
-function alertToRequirement(alert: MdeAlert): EvaluatedRequirement {
+function alertToRequirement(alert: MdeAlert, scanTime: Date): EvaluatedRequirement {
   const impact = severityToImpact(alert.severity);
   const status = statusToResultStatus(alert.status, alert.classification);
 
   const codeDesc = formatEvidence(alert.evidence ?? []);
   const message = formatMessage(alert);
+  const startTime = resolveStartTime(alert, scanTime);
 
   const results: RequirementResult[] = [
-    createResult(status, message, { codeDesc }),
+    createResult(status, message, { codeDesc, startTime }),
   ];
 
   const descriptions: Description[] = [
@@ -275,6 +290,8 @@ export async function convertMsftDefenderEndpointToHdf(input: string): Promise<s
     throw new Error('Invalid Microsoft Defender for Endpoint structure: missing or invalid value array');
   }
 
+  const scanTime = new Date();
+
   const { items: limitedAlerts, truncated } = limitArray(response.value);
   /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncated) {
@@ -282,7 +299,7 @@ export async function convertMsftDefenderEndpointToHdf(input: string): Promise<s
     console.warn(`WARNING: Input truncated at ${limitedAlerts.length} alert items (original: ${response.value.length})`);
   }
 
-  const requirements: EvaluatedRequirement[] = limitedAlerts.map(alertToRequirement);
+  const requirements: EvaluatedRequirement[] = limitedAlerts.map((alert) => alertToRequirement(alert, scanTime));
 
   const seenTargets = new Set<string>();
   const components: Component[] = [];
@@ -298,7 +315,7 @@ export async function convertMsftDefenderEndpointToHdf(input: string): Promise<s
     requirements.push(buildNoFindingsRequirement(
       'msft-defender-endpoint-no-findings',
       'Microsoft Defender for Endpoint scanned the tenant and reported zero findings.',
-      new Date(),
+      scanTime,
     ));
   }
 
@@ -314,6 +331,6 @@ export async function convertMsftDefenderEndpointToHdf(input: string): Promise<s
     toolName: 'Microsoft Defender for Endpoint',
     baselines: [baseline],
     components,
-    timestamp: new Date(),
+    timestamp: scanTime,
   });
 }

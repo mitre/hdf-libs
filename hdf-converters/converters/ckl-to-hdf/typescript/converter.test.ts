@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertCklToHdf } from './converter.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -58,6 +59,7 @@ describe('ckl-to-hdf converter', () => {
   it('produces the expected top-level HDF structure', async () => {
     const hdf = JSON.parse(await convertCklToHdf(loadFixture('firefox-stig.ckl'))) as HDFResults;
 
+    expectValidResults(hdf);
     expect(hdf.timestamp).toBeTruthy();
     expect(hdf.generator?.name).toBe('ckl-to-hdf');
     expect(hdf.tool?.name).toBe('DISA STIG Viewer');
