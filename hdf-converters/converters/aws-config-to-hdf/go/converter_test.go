@@ -202,6 +202,16 @@ func TestBuildNISTTags_BySourceIdentifier(t *testing.T) {
 	assert.Contains(t, tags, "AC-3(15)")
 }
 
+func TestBuildNISTTags_SourceIdentifierWithNonCanonicalRuleName(t *testing.T) {
+	// A deploy-time ConfigRuleName that differs from the canonical kebab-case
+	// name must still resolve NIST tags via its mapped SourceIdentifier. This
+	// is the case the rule-name index cannot serve (identifiers are
+	// UPPERCASE_SNAKE, the rule-name index is kebab-case).
+	tags := buildNISTTags("ACCESS_KEYS_ROTATED", "my-org-custom-access-keys-rule")
+	assert.NotEmpty(t, tags, "SourceIdentifier should resolve tags even when ConfigRuleName is non-canonical")
+	assert.Contains(t, tags, "AC-3(15)")
+}
+
 func TestBuildNISTTags_ByRuleNameFallback(t *testing.T) {
 	// iam-user-group-membership-check is in the mapping
 	tags := buildNISTTags("", "iam-user-group-membership-check")

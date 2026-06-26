@@ -48,7 +48,7 @@ export {
 export { findValuesByKey, extractColumn, findRows } from './object/index.js';
 
 // String utilities
-export { stripHtml, parseTimestamp } from './string/index.js';
+export { stripHtml, parseTimestamp, formatTimestamp, trimUtcFraction } from './string/index.js';
 
 // Severity/impact mapping
 export { severityToImpact, impactToSeverity, cvssScoreToSeverity } from './severity/index.js';

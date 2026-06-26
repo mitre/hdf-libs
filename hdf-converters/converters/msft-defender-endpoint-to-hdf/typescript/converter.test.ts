@@ -43,6 +43,20 @@ describe('msft-defender-endpoint to HDF converter', async () => {
       expect(startTime).toBeDefined();
       expect(new Date(startTime as string | Date).getTime()).toBeGreaterThanOrEqual(before);
     });
+
+    it('falls through to createdDateTime when firstActivityDateTime is present but unparseable', async () => {
+      const doc = JSON.parse(loadFixture('minimal.json')) as { value: Array<Record<string, unknown>> };
+      for (const alert of doc.value) {
+        alert['firstActivityDateTime'] = 'not-a-date';
+        alert['createdDateTime'] = '2024-03-04T05:06:07Z';
+      }
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(JSON.stringify(doc))) as HDFResults;
+      expectValidResults(hdf);
+      const startTime = hdf.baselines[0]!.requirements[0]!.results[0]!.startTime;
+      // Matches the Go converter: an unparseable firstActivityDateTime must not
+      // skip a valid createdDateTime in favor of the conversion time.
+      expect(startTime).toBe('2024-03-04T05:06:07Z');
+    });
   });
 
   describe('minimal fixture conversion', async () => {

@@ -131,6 +131,25 @@ describe('xccdf-results-to-hdf converter', async () => {
     });
   });
 
+  // --- Per-rule startTime (parity with the Go converter) ---
+
+  describe('per-rule-result startTime', () => {
+    it('uses each rule-result @time (UTC-normalized), not a single scan-level time', async () => {
+      const hdf = await parseHdf('xccdf-results-scc-rhel8.xml');
+      expectValidResults(hdf);
+      const startTimes = hdf.baselines[0]!.requirements.map(
+        (r) => r.results[0]!.startTime as unknown as string,
+      );
+      // The fixture's rule-results carry distinct @time values; a correct
+      // converter reflects them rather than stamping one TestResult start-time.
+      expect(new Set(startTimes).size).toBeGreaterThan(1);
+      // Zone-less @time values must be emitted as UTC ('Z').
+      expect(startTimes.every((t) => t.endsWith('Z'))).toBe(true);
+      // A per-rule time that differs from the TestResult start-time (10:24:33).
+      expect(startTimes).toContain('2021-12-17T10:24:35Z');
+    });
+  });
+
   // --- Required-field fallbacks ---
 
   describe('schema-required field fallbacks', () => {

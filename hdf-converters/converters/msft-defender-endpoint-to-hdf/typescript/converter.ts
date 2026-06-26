@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
@@ -224,12 +224,16 @@ function buildTags(alert: MdeAlert): Record<string, unknown> {
  * Resolves a clean per-finding source timestamp, falling back to the conversion time.
  */
 function resolveStartTime(alert: MdeAlert, scanTime: Date): Date {
-  const source = alert.firstActivityDateTime ?? alert.createdDateTime;
-  if (source) {
-    const parsed = new Date(source);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed;
-    }
+  // Resolve each candidate independently (matching the Go converter): a
+  // present-but-unparseable firstActivityDateTime must still fall through to
+  // createdDateTime, not skip straight to the conversion time.
+  const first = alert.firstActivityDateTime ? parseTimestamp(alert.firstActivityDateTime) : null;
+  if (first) {
+    return first;
+  }
+  const created = alert.createdDateTime ? parseTimestamp(alert.createdDateTime) : null;
+  if (created) {
+    return created;
   }
   return scanTime;
 }

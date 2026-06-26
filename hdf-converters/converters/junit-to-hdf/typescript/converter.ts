@@ -1,4 +1,4 @@
-import { parseXmlWithArrays } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
 import { inputChecksum, limitArray, validateInputSize, buildHdfResults, buildNoFindingsRequirement, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
@@ -116,8 +116,8 @@ export async function convertJunitToHdf(input: string): Promise<string> {
 function resolveScanTime(suites: JUnitTestSuite[]): Date {
   for (const suite of suites) {
     if (suite.timestamp) {
-      const parsed = new Date(suite.timestamp);
-      if (!isNaN(parsed.getTime())) {
+      const parsed = parseTimestamp(suite.timestamp);
+      if (parsed) {
         return parsed;
       }
     }

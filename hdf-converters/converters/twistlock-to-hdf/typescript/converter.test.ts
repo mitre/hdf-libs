@@ -284,7 +284,8 @@ describe('twistlock to HDF converter', async () => {
       ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228');
       expect(req).toBeDefined();
-      expect(req!.results[0]?.startTime).toBe('2021-12-10T10:15:00.000Z');
+      // Canonical trimmed-UTC RFC3339 (matches the Go converter's RFC3339Nano).
+      expect(req!.results[0]?.startTime).toBe('2021-12-10T10:15:00Z');
     });
   });
 

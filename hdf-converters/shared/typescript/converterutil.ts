@@ -334,7 +334,30 @@ export function buildHdfResults(opts: HdfResultsOptions): string {
   if (opts.timestamp) hdf.timestamp = opts.timestamp;
   if (opts.statistics) hdf.statistics = opts.statistics;
 
-  return JSON.stringify(hdf, null, 2);
+  return serializeHdf(hdf);
+}
+
+// Full-match ISO-8601 UTC datetime carrying a fractional-second part. Date
+// values serialize via toISOString() as `...sssZ` (fixed 3-digit ms); Go emits
+// RFC3339Nano (trailing zeros trimmed). The replacer rewrites the former into
+// the latter so the two languages produce byte-identical output.
+const ISO_UTC_WITH_FRACTION = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z$/;
+
+function hdfTimestampReplacer(_key: string, value: unknown): unknown {
+  if (typeof value === 'string' && ISO_UTC_WITH_FRACTION.test(value)) {
+    return value.replace(/\.(\d*?)0+Z$/, (_m, keep: string) => (keep ? `.${keep}Z` : 'Z'));
+  }
+  return value;
+}
+
+/**
+ * Serialize an HDF document to pretty-printed JSON, normalizing Date-derived
+ * timestamps to canonical trimmed-UTC RFC3339 (byte-identical to the Go
+ * converters). Use this instead of a bare `JSON.stringify` for any HDF output
+ * so the fractional-second trim is applied consistently.
+ */
+export function serializeHdf(doc: unknown, space = 2): string {
+  return JSON.stringify(doc, hdfTimestampReplacer, space);
 }
 
 /**

@@ -425,7 +425,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 	for i := range limitedRuleResults {
 		rr := &limitedRuleResults[i]
 		rule := ruleMap[rr.IDRef]
-		req := convertRuleResult(rr, rule)
+		req := convertRuleResult(rr, rule, startTime)
 		requirements = append(requirements, req)
 	}
 
@@ -726,7 +726,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		for j := range limitedARFRuleResults {
 			rr := &limitedARFRuleResults[j]
 			rule := ruleMap[rr.IDRef]
-			req := convertRuleResult(rr, rule)
+			req := convertRuleResult(rr, rule, startTime)
 			requirements = append(requirements, req)
 		}
 
@@ -915,13 +915,13 @@ func calculateTiming(tr *TestResult) (time.Time, float64) {
 
 // convertRuleResult converts a single XCCDF rule-result into an HDF
 // EvaluatedRequirement, enriching it with the Rule definition if available.
-func convertRuleResult(rr *RuleResult, rule *Rule) hdf.EvaluatedRequirement {
+func convertRuleResult(rr *RuleResult, rule *Rule, fallback time.Time) hdf.EvaluatedRequirement {
 	id := determineID(rr, rule)
 	title := determineTitle(rr, rule)
 	impact := determineImpact(rr, rule)
 	descriptions := buildDescriptions(rule)
 	tags := buildTags(rr, rule)
-	results := []hdf.RequirementResult{buildResult(rr)}
+	results := []hdf.RequirementResult{buildResult(rr, fallback)}
 
 	return hdf.EvaluatedRequirement{
 		ID:           id,
@@ -1069,13 +1069,16 @@ func dedup(items []string) []string {
 	return result
 }
 
-// buildResult converts a rule-result into an HDF RequirementResult.
-func buildResult(rr *RuleResult) hdf.RequirementResult {
+// buildResult converts a rule-result into an HDF RequirementResult. The
+// per-rule @time is preferred; when absent it falls back to the TestResult
+// start-time (already defaulted to conversion time when that too is missing),
+// keeping parity with the TypeScript converter.
+func buildResult(rr *RuleResult, fallback time.Time) hdf.RequirementResult {
 	status := mapResultStatus(rr.Result)
 
 	startTime := hdfutil.ParseTimestamp(rr.Time)
 	if startTime.IsZero() {
-		startTime = time.Now()
+		startTime = fallback
 	}
 
 	return hdf.RequirementResult{

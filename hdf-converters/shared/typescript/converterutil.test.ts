@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod } from './converterutil.js';
+import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -53,6 +53,36 @@ describe('buildNistCciTags', () => {
   it('should handle undefined extras', () => {
     const tags = buildNistCciTags(['SA-11'], []);
     expect(Object.keys(tags)).toEqual(['nist']);
+  });
+});
+
+describe('buildHdfResults timestamp serialization', () => {
+  const baseOpts = (timestamp: Date, startTime: Date) => ({
+    generatorName: 'test-to-hdf',
+    converterVersion: '1.0.0',
+    timestamp,
+    baselines: [
+      {
+        name: 'test',
+        requirements: [buildNoFindingsRequirement('TEST-1', 'clean', startTime)],
+      },
+    ],
+  });
+
+  it('serializes a whole-second startTime/timestamp as trimmed-UTC (no .000)', () => {
+    const doc = JSON.parse(
+      buildHdfResults(baseOpts(new Date('2024-11-15T10:30:00Z'), new Date('2024-11-15T10:30:00Z'))),
+    );
+    expect(doc.timestamp).toBe('2024-11-15T10:30:00Z');
+    expect(doc.baselines[0].requirements[0].results[0].startTime).toBe('2024-11-15T10:30:00Z');
+  });
+
+  it('trims trailing fractional zeros to match Go RFC3339Nano', () => {
+    const doc = JSON.parse(
+      buildHdfResults(baseOpts(new Date('2024-11-15T10:30:00.120Z'), new Date('2024-11-15T10:30:00.100Z'))),
+    );
+    expect(doc.timestamp).toBe('2024-11-15T10:30:00.12Z');
+    expect(doc.baselines[0].requirements[0].results[0].startTime).toBe('2024-11-15T10:30:00.1Z');
   });
 });
 

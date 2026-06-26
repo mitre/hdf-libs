@@ -11,7 +11,7 @@
 
 import { flattenOverlays } from '@mitre/hdf-parsers';
 import type { HDFResults } from '@mitre/hdf-schema';
-import { impactToSeverity } from '@mitre/hdf-utilities';
+import { impactToSeverity, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
 import { deriveControlTypeFromTags, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
@@ -281,12 +281,17 @@ function computeEffectiveStatus(impact: number, results: V2Result[]): string {
  * Convert v1.0 result to v2.0 result.
  * Transforms snake_case field names to camelCase.
  */
-// Match the Go converter's startTime formatting: RFC3339 in UTC, dropping the
-// ".000" fraction Date#toISOString always adds when there are no milliseconds.
-function toRfc3339Z(s: string): string {
-  const d = new Date(s);
-  if (isNaN(d.getTime())) return s;
-  return d.toISOString().replace(/\.000Z$/, 'Z');
+// Go's zero time.Time marshals as this; matched when a v1 result carries no
+// (or an unparseable) start_time so startTime — schema-required — stays present.
+const LEGACY_ZERO_TIME = '0001-01-01T00:00:00Z';
+
+// Match the Go converter's startTime: canonical trimmed-UTC RFC3339 for a
+// parseable value, else Go's zero-value time. Offset-bearing inputs normalize
+// to UTC (ParseTimestamp().UTC() on the Go side).
+function legacyStartTime(s: string | undefined): string {
+  if (s === undefined) return LEGACY_ZERO_TIME;
+  const d = parseTimestamp(s);
+  return d ? formatTimestamp(d) : LEGACY_ZERO_TIME;
 }
 
 // Emits only schema-valid Requirement_Result fields, mirroring the Go converter
@@ -298,9 +303,11 @@ function convertResult(v1Result: V1Result): V2Result {
     status: normalizeStatus(v1Result.status),
   };
 
-  if (v1Result.code_desc !== undefined) v2Result.codeDesc = v1Result.code_desc;
+  // codeDesc and startTime are schema-required; the Go converter always emits
+  // them (zero values when absent), so mirror that rather than omitting.
+  v2Result.codeDesc = v1Result.code_desc ?? '';
   if (v1Result.run_time !== undefined) v2Result.runTime = v1Result.run_time;
-  if (v1Result.start_time !== undefined) v2Result.startTime = toRfc3339Z(v1Result.start_time);
+  v2Result.startTime = legacyStartTime(v1Result.start_time);
   if (v1Result.message !== undefined) v2Result.message = v1Result.message;
   if (v1Result.exception !== undefined) v2Result.exception = v1Result.exception;
   if (v1Result.backtrace !== undefined) v2Result.backtrace = v1Result.backtrace;

@@ -1,5 +1,5 @@
-import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, validateInputSize, serializeHdf } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   HDFBaseline,
@@ -245,8 +245,8 @@ const STATUS_MAP: Record<string, ResultStatus> = {
 // throw in JSON.stringify (Date#toISOString RangeError).
 function parseStartTime(raw: string | undefined): Date {
   if (raw) {
-    const t = new Date(raw);
-    if (!Number.isNaN(t.getTime())) return t;
+    const t = parseTimestamp(raw);
+    if (t) return t;
   }
   return new Date();
 }
@@ -427,7 +427,7 @@ async function convertBenchmarkResultsToHdf(
     hdf.statistics = { duration: durationSeconds };
   }
 
-  return JSON.stringify(hdf, null, 2);
+  return serializeHdf(hdf);
 }
 
 // ---------------------------------------------------------------------------
@@ -483,7 +483,7 @@ async function convertBenchmarkToBaselineJson(
     generator: { name: 'xccdf-results-to-hdf', version: CONVERTER_VERSION },
   };
 
-  return JSON.stringify(baseline, null, 2);
+  return serializeHdf(baseline);
 }
 
 /**
@@ -617,8 +617,8 @@ async function convertArfCollection(
 
     // Timing
     if (testResult['start-time'] && !firstTimestamp) {
-      const t = new Date(testResult['start-time']);
-      if (!isNaN(t.getTime())) firstTimestamp = t;
+      const t = parseTimestamp(testResult['start-time']);
+      if (t) firstTimestamp = t;
     }
     if (testResult['start-time'] && testResult['end-time']) {
       const start = new Date(testResult['start-time']).getTime();
@@ -702,7 +702,7 @@ async function convertArfCollection(
     hdf.statistics = { duration: totalDuration };
   }
 
-  return JSON.stringify(hdf, null, 2);
+  return serializeHdf(hdf);
 }
 
 /**
@@ -834,9 +834,13 @@ function ruleResultToRequirement(
   const xccdfResult = (rr.result ?? '').toLowerCase();
   const status = STATUS_MAP[xccdfResult] ?? ResultStatus.NotReviewed;
 
+  // Prefer each rule-result's own @time (per-finding evaluation time), matching
+  // the Go converter; fall back to the TestResult-level start-time (scanTime).
+  const perRuleTime = rr.time ? parseTimestamp(rr.time) : null;
+
   const result = createResult(status, '', {
     codeDesc: `XCCDF rule ${id}`,
-    startTime: scanTime,
+    startTime: perRuleTime ?? scanTime,
   }) as RequirementResult;
 
   const tags: Record<string, unknown> = {};

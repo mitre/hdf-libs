@@ -281,7 +281,7 @@ func joinInts(s []int) string {
 // buildNISTTags looks up NIST controls for the rule, preferring SourceIdentifier.
 func buildNISTTags(sourceIdentifier, ruleName string) []string {
 	if sourceIdentifier != "" {
-		if tags := awsconfigmap.NISTControls(sourceIdentifier); len(tags) > 0 {
+		if tags := awsconfigmap.NISTControlsByIdentifier(sourceIdentifier); len(tags) > 0 {
 			return tags
 		}
 	}

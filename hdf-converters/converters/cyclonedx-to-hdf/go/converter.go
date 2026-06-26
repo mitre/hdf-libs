@@ -214,7 +214,7 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	// Prefer the BOM creation time as the scan timestamp; fall back to now.
 	scanTime := time.Now().UTC()
 	if bom.Metadata != nil && bom.Metadata.Timestamp != "" {
-		if parsed, err := time.Parse(time.RFC3339, bom.Metadata.Timestamp); err == nil {
+		if parsed := hdfutil.ParseTimestamp(bom.Metadata.Timestamp); !parsed.IsZero() {
 			scanTime = parsed
 		}
 	}

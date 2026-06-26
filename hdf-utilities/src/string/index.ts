@@ -30,15 +30,20 @@ export function stripHtml(html: string): string {
   return stripped.replace(/\s+/g, ' ').trim();
 }
 
+// A bare ISO-8601 datetime with a time component but no timezone designator.
+// JavaScript's Date constructor interprets such a value as host-LOCAL time,
+// whereas Go's time.Parse (and HDF's canonical model) treats it as UTC. We
+// append 'Z' to force UTC so output is host-timezone-independent.
+const ISO_DATETIME_NO_ZONE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/;
+
 /**
- * Parse a timestamp string in various common formats.
+ * Parse a timestamp string in various common formats into a Date.
  *
- * Attempts to parse the input using the JavaScript Date constructor, which
- * supports ISO 8601, RFC 2822, and several other formats natively.
+ * A zone-less ISO datetime (e.g. `2024-01-15T10:30:00`) is interpreted as
+ * UTC — matching Go's `hdfutil.ParseTimestamp` — rather than host-local time,
+ * so converter output does not depend on the machine's timezone.
  *
  * Returns `null` if the input is empty or cannot be parsed.
- *
- * Equivalent to the Go `ParseTimestamp` in shared/go/converterutil.go.
  *
  * @param s - Timestamp string to parse
  * @returns Parsed Date or null if unparseable
@@ -46,7 +51,7 @@ export function stripHtml(html: string): string {
  * @example
  * ```typescript
  * parseTimestamp('2024-01-15T10:30:00Z'); // Date object
- * parseTimestamp('Mon, 15 Jan 2024 10:30:00 UTC'); // Date object
+ * parseTimestamp('2024-01-15T10:30:00');  // Date object (interpreted as UTC)
  * parseTimestamp('not a date'); // null
  * parseTimestamp(''); // null
  * ```
@@ -56,10 +61,40 @@ export function parseTimestamp(s: string): Date | null {
     return null;
   }
 
-  const parsed = new Date(s);
+  const trimmed = s.trim();
+  const normalized = ISO_DATETIME_NO_ZONE.test(trimmed)
+    ? `${trimmed.replace(' ', 'T')}Z`
+    : trimmed;
+
+  const parsed = new Date(normalized);
   if (isNaN(parsed.getTime())) {
     return null;
   }
 
   return parsed;
+}
+
+/**
+ * Trim trailing fractional-second zeros from an RFC3339 UTC timestamp string,
+ * matching Go's RFC3339Nano marshaling (which drops trailing zeros and the
+ * decimal point when the fraction is all zeros).
+ *
+ * @example
+ *   trimUtcFraction('2024-11-15T10:30:00.000Z'); // '2024-11-15T10:30:00Z'
+ *   trimUtcFraction('2024-01-01T00:00:00.120Z'); // '2024-01-01T00:00:00.12Z'
+ */
+export function trimUtcFraction(s: string): string {
+  return s.replace(/\.(\d*?)0+Z$/, (_m, keep: string) => (keep ? `.${keep}Z` : 'Z'));
+}
+
+/**
+ * Format a Date as HDF's canonical timestamp: RFC3339 in UTC with trailing
+ * fractional-second zeros trimmed. Byte-identical to what the Go converters
+ * emit for the same instant (a UTC `time.Time` marshaled as RFC3339Nano).
+ *
+ * @example
+ *   formatTimestamp(new Date('2024-11-15T10:30:00Z')); // '2024-11-15T10:30:00Z'
+ */
+export function formatTimestamp(d: Date): string {
+  return trimUtcFraction(d.toISOString());
 }

@@ -286,7 +286,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(result.skipMessage).toBeUndefined();
     });
 
-    it('leaves an unparseable start_time unchanged', () => {
+    it('emits Go zero-value time for an unparseable start_time (schema-valid, not passthrough)', () => {
       const v1: HDFV1Results = {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -297,7 +297,37 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
       const v2 = convertV1ToV2(v1);
-      expect(v2.baselines[0].requirements![0].results[0].startTime).toBe('not-a-date');
+      // Matches the Go converter: an unparseable value becomes time.Time{}'s
+      // zero rendering rather than an invalid passthrough string.
+      expect(v2.baselines[0].requirements![0].results[0].startTime).toBe('0001-01-01T00:00:00Z');
+    });
+
+    it('emits Go zero-value time when start_time is absent (startTime stays present)', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'p',
+          controls: [{ id: 'c', impact: 0.5, results: [{ status: 'passed' }] }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].results[0].startTime).toBe('0001-01-01T00:00:00Z');
+    });
+
+    it('normalizes an offset-bearing start_time to UTC', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'p',
+          controls: [{ id: 'c', impact: 0.5, results: [{ status: 'passed', start_time: '2026-02-22T15:57:06-05:00' }] }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].results[0].startTime).toBe('2026-02-22T20:57:06Z');
     });
 
     it('should convert all control/requirement optional fields', () => {
