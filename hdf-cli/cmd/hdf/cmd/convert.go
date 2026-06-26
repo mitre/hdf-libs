@@ -256,8 +256,9 @@ func normalizeLegacyHDFInput(data []byte, fromFormat, fromVersion, toFormat stri
 	if strings.EqualFold(toFormat, "hdf") {
 		return data, fromFormat, fromVersion, nil
 	}
-	// Only HDF-source conversions are candidates: explicit --from hdf, the
-	// auto-detected legacyhdf fingerprint, or an explicit hdf@1.
+	// Only HDF-source conversions are candidates: explicit --from hdf (with or
+	// without an @version) or the auto-detected legacyhdf fingerprint. Whether
+	// the bytes are actually v1 is decided by content below, not by the version.
 	if !strings.EqualFold(fromFormat, "hdf") && !strings.EqualFold(fromFormat, "legacyhdf") {
 		return data, fromFormat, fromVersion, nil
 	}
