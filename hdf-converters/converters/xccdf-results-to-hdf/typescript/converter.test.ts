@@ -162,6 +162,22 @@ describe('xccdf-results-to-hdf converter', async () => {
       expect(startTime).toBeDefined();
       expect(new Date(startTime as string | Date).getTime()).toBeGreaterThanOrEqual(before);
     });
+
+    it('treats a present-but-invalid start-time as missing (does not throw)', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_badtime">
+  <Rule id="xccdf_test_rule_x" selected="true"><check system="x"><check-content-ref name="o" href="o.xml"/></check></Rule>
+  <TestResult id="xccdf_test_testresult_badtime" start-time="not-a-real-date">
+    <target>t</target>
+    <rule-result idref="xccdf_test_rule_x"><result>pass</result></rule-result>
+  </TestResult>
+</Benchmark>`;
+      const before = Date.now();
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
+      expectValidResults(hdf);
+      const startTime = hdf.baselines[0]!.requirements[0]!.results[0]!.startTime;
+      expect(new Date(startTime as string | Date).getTime()).toBeGreaterThanOrEqual(before);
+    });
   });
 
   // --- STIG RHEL7 fixture ---

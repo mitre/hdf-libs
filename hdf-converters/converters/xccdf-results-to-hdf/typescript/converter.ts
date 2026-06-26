@@ -239,6 +239,18 @@ const STATUS_MAP: Record<string, ResultStatus> = {
  * @param input - Raw XML string (XCCDF Benchmark with TestResult, or ARF asset-report-collection)
  * @returns Stringified HDF Results JSON
  */
+
+// Parse an XCCDF start-time attribute, treating a present-but-invalid value the
+// same as missing: fall back to conversion time. An Invalid Date would later
+// throw in JSON.stringify (Date#toISOString RangeError).
+function parseStartTime(raw: string | undefined): Date {
+  if (raw) {
+    const t = new Date(raw);
+    if (!Number.isNaN(t.getTime())) return t;
+  }
+  return new Date();
+}
+
 export async function convertXccdfResultsToHdf(input: string): Promise<string> {
   if (!input || !input.trim()) {
     throw new Error('Empty input');
@@ -362,10 +374,8 @@ async function convertBenchmarkResultsToHdf(
     console.warn(`WARNING: Input truncated at ${limitedRuleResults.length} rule-result items (original: ${ruleResults.length})`);
   }
   // The test result's start-time applies to every rule-result; fall back to
-  // conversion time when absent (startTime is required on each result).
-  const scanTime = testResult['start-time']
-    ? new Date(testResult['start-time'])
-    : new Date();
+  // conversion time when absent or invalid (startTime is required on each result).
+  const scanTime = parseStartTime(testResult['start-time']);
 
   const requirements = limitedRuleResults.map((rr) =>
     ruleResultToRequirement(rr, ruleIndex, scanTime)
@@ -607,7 +617,8 @@ async function convertArfCollection(
 
     // Timing
     if (testResult['start-time'] && !firstTimestamp) {
-      firstTimestamp = new Date(testResult['start-time']);
+      const t = new Date(testResult['start-time']);
+      if (!isNaN(t.getTime())) firstTimestamp = t;
     }
     if (testResult['start-time'] && testResult['end-time']) {
       const start = new Date(testResult['start-time']).getTime();
@@ -618,10 +629,8 @@ async function convertArfCollection(
     }
 
     // The test result's start-time applies to its rule-results; fall back to
-    // conversion time when absent (startTime is required on each result).
-    const scanTime = testResult['start-time']
-      ? new Date(testResult['start-time'])
-      : new Date();
+    // conversion time when absent or invalid (startTime is required on each result).
+    const scanTime = parseStartTime(testResult['start-time']);
 
     // Convert rule-results
     const ruleResults = testResult['rule-result'] ?? [];

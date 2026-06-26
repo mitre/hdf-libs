@@ -26,6 +26,10 @@ func ConvertAssessmentResultsToHDF(input []byte, converterVersion string) (*hdf.
 func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion string) (*hdf.HDFResults, error) {
 	meta := ExtractMetadata(sar.Metadata)
 
+	// One conversion-time value, shared as the startTime fallback for any
+	// finding whose OSCAL result lacks a usable start.
+	scanTime := time.Now().UTC()
+
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(sar.Results))
 	for i := range sar.Results {
 		r := &sar.Results[i]
@@ -37,7 +41,7 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 			log.Printf("WARNING: Skipping assessment result %q: no findings (empty result set)", title)
 			continue
 		}
-		baseline := resultToEvaluatedBaseline(r, sar, rawInput)
+		baseline := resultToEvaluatedBaseline(r, sar, rawInput, scanTime)
 		baselines = append(baselines, baseline)
 	}
 
@@ -73,7 +77,7 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 // EvaluatedBaseline. Findings are grouped by control ID so that multiple
 // findings for the same control produce multiple results on the same
 // requirement.
-func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput []byte) hdf.EvaluatedBaseline {
+func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput []byte, scanTime time.Time) hdf.EvaluatedBaseline {
 	checksum := shared.InputChecksum(rawInput)
 	integrity := shared.InputIntegrity(rawInput)
 
@@ -108,7 +112,7 @@ func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput 
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(controlOrder))
 	for _, controlID := range controlOrder {
 		cf := controlMap[controlID]
-		req := findingsToEvaluatedRequirement(cf.controlID, cf.findings, obsMap, riskMap, result)
+		req := findingsToEvaluatedRequirement(cf.controlID, cf.findings, obsMap, riskMap, result, scanTime)
 		requirements = append(requirements, req)
 	}
 
@@ -140,6 +144,7 @@ func findingsToEvaluatedRequirement(
 	obsMap map[string]*Observation,
 	riskMap map[string]*Risk,
 	result *Result,
+	scanTime time.Time,
 ) hdf.EvaluatedRequirement {
 	nistTag := ControlIDToNistTag(controlID)
 
@@ -159,7 +164,7 @@ func findingsToEvaluatedRequirement(
 	// Build results from each finding
 	results := make([]hdf.RequirementResult, 0, len(findings))
 	for _, f := range findings {
-		reqResult := findingToRequirementResult(f, obsMap, riskMap, result)
+		reqResult := findingToRequirementResult(f, obsMap, riskMap, result, scanTime)
 		results = append(results, reqResult)
 	}
 
@@ -184,6 +189,7 @@ func findingToRequirementResult(
 	obsMap map[string]*Observation,
 	riskMap map[string]*Risk,
 	result *Result,
+	scanTime time.Time,
 ) hdf.RequirementResult {
 	// Map status
 	status := mapFindingStatus(f)
@@ -194,11 +200,11 @@ func findingToRequirementResult(
 	// Build message from risk descriptions
 	message := buildRiskMessage(f, riskMap)
 
-	// Parse start time from result; fall back to conversion time when the
-	// source omits it (startTime is required and must be a valid date-time).
+	// Parse start time from result; fall back to the single conversion-time
+	// value when the source omits it (startTime is required and must be valid).
 	startTime := parseResultStartTime(result)
 	if startTime.IsZero() {
-		startTime = time.Now().UTC()
+		startTime = scanTime
 	}
 
 	reqResult := hdf.RequirementResult{
