@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
@@ -194,7 +194,7 @@ function buildRequirement(
   const codeDesc = cs.implementationStatus || 'No implementation status provided';
 
   // StartTime from createdDateTime
-  const startTime = createdDateTime ? new Date(createdDateTime) : undefined;
+  const startTime = createdDateTime ? (parseTimestamp(createdDateTime) ?? undefined) : undefined;
 
   const results = [
     createResult(status, undefined, {

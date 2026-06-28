@@ -1,4 +1,4 @@
-import { parseXmlWithArrays } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   nistToCci,
@@ -121,19 +121,26 @@ function formatSummary(f: Finding): string {
   ].join('\n');
 }
 
+const MONTH_ABBR: Record<string, string> = {
+  Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
+  Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
+};
+
 /**
- * Parses DBProtect date format "Feb 18 2021 15:57"
+ * Parses DBProtect date formats ("Feb 18 2021 15:57" or "2021-02-18 15:55").
+ * Month-name values are normalized to ISO so parseTimestamp interprets them as
+ * UTC, matching the Go peer and keeping output host-timezone-independent.
  */
 function parseDate(dateStr: string): Date {
   const trimmed = dateStr.trim();
   if (!trimmed) {
     return new Date();
   }
-  const parsed = new Date(trimmed);
-  if (!isNaN(parsed.getTime())) {
-    return parsed;
-  }
-  return new Date();
+  const month = /^([A-Z][a-z]{2}) (\d{1,2}) (\d{4}) (\d{2}:\d{2})$/.exec(trimmed);
+  const normalized = month
+    ? `${month[3]}-${MONTH_ABBR[month[1]!] ?? '00'}-${month[2]!.padStart(2, '0')} ${month[4]}`
+    : trimmed;
+  return parseTimestamp(normalized) ?? new Date();
 }
 
 /**

@@ -1,4 +1,4 @@
-import { parseJSON, cvssScoreToSeverity } from '@mitre/hdf-utilities';
+import { parseJSON, cvssScoreToSeverity, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
@@ -333,7 +333,7 @@ function buildRequirement(
     { label: 'default', data: vuln.description },
   ];
 
-  const startTime = vuln.discoveredDate ? new Date(vuln.discoveredDate) : undefined;
+  const startTime = vuln.discoveredDate ? (parseTimestamp(vuln.discoveredDate) ?? undefined) : undefined;
 
   const results = [
     createResult(ResultStatus.Failed, undefined, {

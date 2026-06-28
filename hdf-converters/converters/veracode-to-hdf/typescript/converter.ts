@@ -11,7 +11,7 @@
  * `<component>`).
  */
 
-import { parseXml } from '@mitre/hdf-utilities';
+import { parseXml, parseTimestamp } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
@@ -66,8 +66,8 @@ function parseVeracodeTimestamp(ts: string): Date | undefined {
   if (!ts) return undefined;
   // Decode XML entities in timestamps (e.g., &#x3a; -> :)
   const decoded = decodeXmlEntities(ts);
-  const d = new Date(decoded.replace(' UTC', 'Z').replace(' ', 'T'));
-  return isNaN(d.getTime()) ? undefined : d;
+  const normalized = decoded.replace(' UTC', 'Z').replace(' ', 'T');
+  return parseTimestamp(normalized) ?? undefined;
 }
 
 /** Format description paragraphs into text. */

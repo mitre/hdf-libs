@@ -54,7 +54,7 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 	// Parse timestamp from metadata
 	var timestamp *time.Time
 	if meta.LastModified != "" {
-		if t, err := time.Parse(time.RFC3339, meta.LastModified); err == nil {
+		if t := hdfutil.ParseTimestamp(meta.LastModified); !t.IsZero() {
 			timestamp = &t
 		}
 	}
@@ -391,7 +391,7 @@ func buildObservationMap(observations []Observation) map[string]*Observation {
 // parseResultStartTime parses the start time from an OSCAL Result.
 func parseResultStartTime(result *Result) time.Time {
 	if result.Start != "" {
-		if t, err := time.Parse(time.RFC3339, result.Start); err == nil {
+		if t := hdfutil.ParseTimestamp(result.Start); !t.IsZero() {
 			return t
 		}
 	}

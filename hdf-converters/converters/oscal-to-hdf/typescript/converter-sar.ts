@@ -4,8 +4,8 @@
  * Mirrors the Go implementation in converters/oscal-to-hdf/go/converter_sar.go.
  */
 
-import { parseJSON } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, inputChecksum, inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { deriveControlTypeFromTags, inputChecksum, inputIntegrity, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -84,8 +84,8 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
   // Parse timestamp from metadata
   let timestamp: Date | undefined;
   if (meta.lastModified) {
-    const t = new Date(meta.lastModified);
-    if (!isNaN(t.getTime())) {
+    const t = parseTimestamp(meta.lastModified);
+    if (t) {
       timestamp = t;
     }
   }
@@ -104,7 +104,7 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
     planRef,
   };
 
-  return JSON.stringify(hdf, null, 2);
+  return serializeHdf(hdf);
 }
 
 async function resultToEvaluatedBaseline(
@@ -367,8 +367,10 @@ function buildRiskMap(risks: IdentifiedRisk[]): Map<string, IdentifiedRisk> {
 
 function parseResultStartTime(result: AssessmentResult): Date {
   if (result.start) {
-    const t = new Date(result.start);
-    if (!isNaN(t.getTime())) {
+    // Generator types this as Date, but it is a string at runtime (parsed
+    // without a Date reviver); coerce so parseTimestamp applies UTC handling.
+    const t = parseTimestamp(String(result.start));
+    if (t) {
       return t;
     }
   }

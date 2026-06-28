@@ -1,4 +1,4 @@
-import { parseXml } from '@mitre/hdf-utilities';
+import { parseXml, parseTimestamp } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
 import {
   buildNoFindingsRequirement,
@@ -10,6 +10,7 @@ import {
   ensureArray,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   validateInputSize,
+  serializeHdf,
 } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
@@ -255,7 +256,7 @@ function buildRequirement(
   const results: RequirementResult[] = limitedVulns.map(vuln => ({
     status: ResultStatus.Failed,
     codeDesc: buildCodeDesc(vuln, snippetMap),
-    startTime: new Date(startTimeStr),
+    startTime: parseTimestamp(startTimeStr) ?? new Date(),
   }));
 
   const req: EvaluatedRequirement = {
@@ -384,8 +385,8 @@ export async function convertFortifyToHdf(input: string): Promise<string> {
 
   // Set timestamp from CreatedTS
   if (createdDate) {
-    hdfResult.timestamp = new Date(startTimeStr);
+    hdfResult.timestamp = parseTimestamp(startTimeStr) ?? new Date();
   }
 
-  return JSON.stringify(hdfResult, null, 2);
+  return serializeHdf(hdfResult);
 }

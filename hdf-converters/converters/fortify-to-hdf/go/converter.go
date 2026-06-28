@@ -251,9 +251,8 @@ func parseCreatedTS(ts CreatedTS) time.Time {
 		return time.Now().UTC()
 	}
 	combined := fmt.Sprintf("%s %s", ts.Date, ts.Time)
-	t, err := time.Parse("2006-01-02 15:04:05", combined)
-	if err != nil {
-		return time.Now().UTC()
+	if t := hdfutil.ParseTimestamp(combined); !t.IsZero() {
+		return t
 	}
-	return t
+	return time.Now().UTC()
 }

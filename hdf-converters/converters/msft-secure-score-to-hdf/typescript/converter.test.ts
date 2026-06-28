@@ -186,7 +186,7 @@ describe('msft-secure-score to HDF converter', async () => {
     it('should set start_time from createdDateTime', async () => {
       const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
-      expect(req?.results[0]?.startTime).toBeTruthy();
+      expect(req?.results[0]?.startTime).toBe('2024-01-01T00:00:00Z');
     });
   });
 

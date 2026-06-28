@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   getScoutsuiteNistControl,
   nistToCci,
@@ -197,7 +197,7 @@ function buildRequirement(
 
   const resultObj = createResult(status, message, {
     codeDesc: finding.description,
-    startTime: startTime ? new Date(startTime) : undefined,
+    startTime: startTime ? (parseTimestamp(startTime) ?? undefined) : undefined,
   });
 
   const req = createRequirement(
@@ -287,6 +287,6 @@ export async function convertScoutsuiteToHdf(input: string): Promise<string> {
         provider: report.provider_code ?? report.provider_name,
       },
     }],
-    timestamp: report.last_run.time ? new Date(report.last_run.time) : new Date(),
+    timestamp: report.last_run.time ? (parseTimestamp(report.last_run.time) ?? new Date()) : new Date(),
   });
 }

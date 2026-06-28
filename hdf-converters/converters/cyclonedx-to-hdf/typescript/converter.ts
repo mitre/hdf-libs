@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -221,7 +221,7 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
 
   // Prefer the BOM creation time as the scan timestamp; fall back to now.
   const parsedTimestamp = bom.metadata?.timestamp
-    ? new Date(bom.metadata.timestamp)
+    ? (parseTimestamp(bom.metadata.timestamp) ?? undefined)
     : undefined;
   const scanTime =
     parsedTimestamp && !isNaN(parsedTimestamp.getTime())

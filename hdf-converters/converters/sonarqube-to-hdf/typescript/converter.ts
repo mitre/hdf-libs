@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   nistToCci,
 } from '@mitre/hdf-mappings';
@@ -481,7 +481,7 @@ function createResultFromIssue(
 
   return createResult(status, issue.message, {
     codeDesc,
-    startTime: new Date(issue.creationDate),
+    startTime: parseTimestamp(issue.creationDate) ?? undefined,
   });
 }
 

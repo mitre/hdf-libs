@@ -111,11 +111,7 @@ describe('Fortify to HDF Converter', () => {
     it('should set timestamp from CreatedTS', async () => {
       const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
       const out = parseOutput(await convertFortifyToHdf(fvdl));
-      expect(out.timestamp).toBeDefined();
-      const ts = new Date(out.timestamp as string);
-      expect(ts.getFullYear()).toBe(2019);
-      expect(ts.getMonth() + 1).toBe(10);
-      expect(ts.getDate()).toBe(2);
+      expect(out.timestamp).toBe('2019-10-02T23:00:39Z');
     });
 
     it('should set target as Repository type', async () => {

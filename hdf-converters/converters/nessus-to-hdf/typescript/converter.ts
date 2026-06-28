@@ -1,4 +1,4 @@
-import { parseXmlWithArrays, cvssScoreToSeverity } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, cvssScoreToSeverity, parseTimestamp } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
@@ -194,8 +194,8 @@ function calculateTiming(hosts: ReportHost[]): { startTime: Date; endTime: Date;
   const startTimeStr = getHostPropertyValue(firstHost, 'HOST_START');
   const endTimeStr = getHostPropertyValue(lastHost, 'HOST_END') || getHostPropertyValue(lastHost, 'HOST_START');
 
-  const startTime = startTimeStr ? new Date(startTimeStr) : new Date();
-  const endTime = endTimeStr ? new Date(endTimeStr) : startTime;
+  const startTime = startTimeStr ? (parseTimestamp(startTimeStr) ?? new Date()) : new Date();
+  const endTime = endTimeStr ? (parseTimestamp(endTimeStr) ?? startTime) : startTime;
 
   const duration = (endTime.getTime() - startTime.getTime()) / 1000; // seconds
 
@@ -235,7 +235,7 @@ function convertReportHostToBaseline(
   if (requirements.length === 0) {
     const target = host.name || getHostPropertyValue(host, 'host-ip') || 'host';
     const startTimeStr = getHostPropertyValue(host, 'HOST_START');
-    const startTime = startTimeStr ? new Date(startTimeStr) : new Date();
+    const startTime = startTimeStr ? (parseTimestamp(startTimeStr) ?? new Date()) : new Date();
     requirements = [
       buildNoFindingsRequirement(
         'nessus-no-findings',
@@ -449,8 +449,8 @@ function buildEpss(item: ReportItem, host: ReportHost): Epss | undefined {
 function epssDate(host: ReportHost): string | undefined {
   const hs = getHostPropertyValue(host, 'HOST_START');
   if (hs) {
-    const d = new Date(hs);
-    if (!Number.isNaN(d.getTime())) {
+    const d = parseTimestamp(hs);
+    if (d) {
       return d.toISOString().slice(0, 10);
     }
   }
@@ -565,7 +565,7 @@ function buildResult(item: ReportItem, host: ReportHost, isCompliance: boolean):
   const codeDesc = getCodeDesc(item);
   const message = item.plugin_output || item['compliance-actual-value'];
   const startTimeStr = getHostPropertyValue(host, 'HOST_START');
-  const startTime = startTimeStr ? new Date(startTimeStr) : new Date();
+  const startTime = startTimeStr ? (parseTimestamp(startTimeStr) ?? new Date()) : new Date();
 
   return {
     status,

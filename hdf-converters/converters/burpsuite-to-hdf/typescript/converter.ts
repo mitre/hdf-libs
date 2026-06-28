@@ -1,4 +1,4 @@
-import { parseXmlWithArrays } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -13,6 +13,7 @@ import {
   mapCWEToNIST,
   extractCWEIDs,
   validateInputSize,
+  serializeHdf,
 } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
@@ -207,10 +208,10 @@ export async function convertBurpsuiteToHdf(input: string): Promise<string> {
   };
 
   if (exportTime) {
-    hdf.timestamp = new Date(exportTime);
+    hdf.timestamp = parseTimestamp(exportTime) ?? undefined;
   }
 
-  return JSON.stringify(hdf, null, 2);
+  return serializeHdf(hdf);
 }
 
 // --- Build requirement ---

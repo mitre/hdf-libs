@@ -151,7 +151,21 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      expect(hdf.timestamp).toBeDefined();
+      expect(hdf.timestamp).toBe('2018-12-06T10:53:11Z');
+    });
+
+    it('parses a non-RFC1123 (ISO) @generated via the shared parser as UTC', async () => {
+      const doc = JSON.parse(loadFixture('minimal.json'));
+      doc['@generated'] = '2020-05-01T12:00:00'; // zone-less ISO -> UTC
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(JSON.stringify(doc)));
+      expect(hdf.timestamp).toBe('2020-05-01T12:00:00Z');
+    });
+
+    it('omits the document timestamp when @generated is unparseable', async () => {
+      const doc = JSON.parse(loadFixture('minimal.json'));
+      doc['@generated'] = 'not-a-date';
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(JSON.stringify(doc)));
+      expect(hdf.timestamp).toBeUndefined();
     });
   });
 
@@ -407,7 +421,7 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      expect(hdf.timestamp).toBeDefined();
+      expect(hdf.timestamp).toBe('2018-12-06T10:53:11Z');
     });
 
     it('should map riskcode 0 to impact 0.3', async () => {

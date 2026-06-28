@@ -1,5 +1,5 @@
-import { parseJSON } from '@mitre/hdf-utilities';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -154,8 +154,8 @@ function buildCodeDesc(f: TrufflehogFinding): string {
  */
 function getTimestamp(f: TrufflehogFinding): Date {
   if (f.SourceMetadata?.Data?.Git?.timestamp) {
-    const ts = new Date(f.SourceMetadata.Data.Git.timestamp);
-    if (!isNaN(ts.getTime())) {
+    const ts = parseTimestamp(f.SourceMetadata.Data.Git.timestamp);
+    if (ts) {
       return ts;
     }
   }
@@ -303,5 +303,5 @@ export async function convertTrufflehogToHdf(input: string): Promise<string> {
     hdf.components = [{ name: repoURL, type: TargetType.Repository }];
   }
 
-  return JSON.stringify(hdf, null, 2);
+  return serializeHdf(hdf);
 }

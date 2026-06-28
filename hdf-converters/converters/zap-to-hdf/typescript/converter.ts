@@ -15,11 +15,11 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import {parseJSON} from '@mitre/hdf-utilities';
+import {parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
 import {detectConverter} from '../../../shared/typescript/fingerprint.js';
 import {registerAllFingerprints} from '../../../shared/typescript/register-all.js';
 import {convertSarifToHdf} from '../../sarif-to-hdf/typescript/converter.js';
-import {buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, stripHTML, validateInputSize} from '../../../shared/typescript/converterutil.js';
+import {buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, stripHTML, validateInputSize, serializeHdf} from '../../../shared/typescript/converterutil.js';
 
 // --- ZAP JSON input types ---
 
@@ -144,6 +144,21 @@ function selectSite(sites: ZapSite[]): ZapSite | undefined {
     }
   }
   return best;
+}
+
+// ZAP emits a zone-less RFC1123-like timestamp ("Thu, 6 Dec 2018 10:53:11");
+// parse it as UTC to match the Go peer's parseZapTimestamp and stay host-independent.
+const ZAP_RFC1123_LIKE = /^[A-Za-z]{3}, \d{1,2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2}$/;
+
+function parseZapTimestamp(s: string): Date | undefined {
+  const trimmed = s.trim();
+  if (ZAP_RFC1123_LIKE.test(trimmed)) {
+    const d = new Date(`${trimmed} GMT`);
+    if (!isNaN(d.getTime())) {
+      return d;
+    }
+  }
+  return parseTimestamp(s) ?? undefined;
 }
 
 // --- Main converter ---
@@ -304,8 +319,11 @@ export async function convertZapToHdf(input: string): Promise<string> {
   };
 
   if (zapData['@generated']) {
-    hdf.timestamp = new Date(zapData['@generated']);
+    const ts = parseZapTimestamp(zapData['@generated']);
+    if (ts) {
+      hdf.timestamp = ts;
+    }
   }
 
-  return JSON.stringify(hdf, null, 2);
+  return serializeHdf(hdf);
 }

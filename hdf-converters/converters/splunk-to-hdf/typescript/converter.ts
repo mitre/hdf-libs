@@ -1,5 +1,5 @@
-import { parseJSON } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { deriveControlTypeFromTags, inputChecksum, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -224,7 +224,7 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
             ? control.results.map((result) =>
                 createResult(mapStatus(result.status), result.message, {
                   codeDesc: result.code_desc,
-                  startTime: new Date(result.start_time),
+                  startTime: parseTimestamp(result.start_time) ?? undefined,
                   runTime: result.run_time,
                   exception: result.exception,
                   backtrace: result.backtrace,
@@ -313,5 +313,5 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
     },
   };
 
-  return JSON.stringify(hdf, null, 2);
+  return serializeHdf(hdf);
 }

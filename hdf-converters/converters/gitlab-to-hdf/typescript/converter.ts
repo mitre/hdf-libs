@@ -17,8 +17,8 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import {parseJSON} from '@mitre/hdf-utilities';
-import {buildNoFindingsRequirement, inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, validateInputSize} from '../../../shared/typescript/converterutil.js';
+import {parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
+import {buildNoFindingsRequirement, inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, validateInputSize, serializeHdf} from '../../../shared/typescript/converterutil.js';
 
 // --- GitLab Security Report input types ---
 
@@ -279,7 +279,7 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
     const result: RequirementResult = {
       status: ResultStatus.Failed,
       codeDesc: buildCodeDesc(scanType, vuln.location),
-      startTime: startTime ? new Date(startTime) : new Date('0001-01-01T00:00:00Z'),
+      startTime: startTime ? (parseTimestamp(startTime) ?? new Date('0001-01-01T00:00:00Z')) : new Date('0001-01-01T00:00:00Z'),
     };
 
     const impact = gitlabSeverityToImpact(vuln.severity ?? 'Unknown');
@@ -305,7 +305,7 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
   const label = scanTypeLabel(scanType);
 
   if (requirements.length === 0) {
-    const ts = startTime ? new Date(startTime) : new Date();
+    const ts = startTime ? (parseTimestamp(startTime) ?? new Date()) : new Date();
     requirements.push(buildNoFindingsRequirement(
       'gitlab-no-findings',
       `GitLab ${label} scan via ${scannerName} reported zero findings.`,
@@ -345,8 +345,11 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
   };
 
   if (report.scan?.end_time) {
-    hdf.timestamp = new Date(report.scan.end_time);
+    const endTime = parseTimestamp(report.scan.end_time);
+    if (endTime) {
+      hdf.timestamp = endTime;
+    }
   }
 
-  return JSON.stringify(hdf, null, 2);
+  return serializeHdf(hdf);
 }

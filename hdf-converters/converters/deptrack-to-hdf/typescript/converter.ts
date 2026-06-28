@@ -1,4 +1,4 @@
-import { parseJSON, parsePurl } from '@mitre/hdf-utilities';
+import { parseJSON, parsePurl, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -179,7 +179,7 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
   const results = [
     createResult(ResultStatus.Failed, undefined, {
       codeDesc,
-      startTime: timestamp ? new Date(timestamp) : undefined,
+      startTime: timestamp ? (parseTimestamp(timestamp) ?? undefined) : undefined,
     }),
   ];
 

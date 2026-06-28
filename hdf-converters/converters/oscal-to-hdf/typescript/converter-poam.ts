@@ -4,8 +4,8 @@
  * Mirrors the Go implementation in converters/oscal-to-hdf/go/converter_poam.go.
  */
 
-import { parseJSON } from '@mitre/hdf-utilities';
-import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { inputIntegrity, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFAmendments,
   StandaloneOverride,
@@ -87,7 +87,7 @@ export async function convertOscalPoamToHdf(input: string): Promise<string> {
     },
   };
 
-  return JSON.stringify(amendments, null, 2);
+  return serializeHdf(amendments);
 }
 
 function buildRiskMap(risks: IdentifiedRisk[]): Map<string, IdentifiedRisk> {
@@ -201,8 +201,10 @@ function poamItemAppliedBy(
 
 function poamItemAppliedAt(poam: PlanOfActionAndMilestonesPOAM): Date {
   if (poam.metadata['last-modified']) {
-    const t = new Date(poam.metadata['last-modified']);
-    if (!isNaN(t.getTime())) {
+    // Generator types this as Date, but it is a string at runtime (parsed
+    // without a Date reviver); coerce so parseTimestamp applies UTC handling.
+    const t = parseTimestamp(String(poam.metadata['last-modified']));
+    if (t) {
       return t;
     }
   }

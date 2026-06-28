@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
@@ -156,7 +156,7 @@ function buildResult(r: EvaluationResult): RequirementResult {
   const status = mapComplianceStatus(r.ComplianceType);
   const codeDesc = buildCodeDesc(q);
   const message = buildResultMessage(codeDesc, r.Annotation, status);
-  const startTime = r.ConfigRuleInvokedTime ? new Date(r.ConfigRuleInvokedTime) : undefined;
+  const startTime = r.ConfigRuleInvokedTime ? (parseTimestamp(r.ConfigRuleInvokedTime) ?? undefined) : undefined;
 
   return createResult(status, message ?? codeDesc, {
     codeDesc,

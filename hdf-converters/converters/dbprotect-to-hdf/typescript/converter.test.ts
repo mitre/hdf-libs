@@ -165,7 +165,7 @@ describe('dbprotect to HDF converter', () => {
     it('should set startTime from Date column', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
-      expect(req!.results[0]!.startTime).toBeTruthy();
+      expect(req!.results[0]!.startTime).toBe('2021-02-18T15:57:00Z');
     });
   });
 

@@ -185,7 +185,7 @@ func poamItemAppliedBy(poam *PlanOfActionAndMilestones) hdf.Identity {
 // document's last-modified date. Falls back to now when the metadata is absent.
 func poamItemAppliedAt(poam *PlanOfActionAndMilestones, now time.Time) time.Time {
 	if poam.Metadata.LastModified != "" {
-		if t, err := time.Parse(time.RFC3339, poam.Metadata.LastModified); err == nil {
+		if t := hdfutil.ParseTimestamp(poam.Metadata.LastModified); !t.IsZero() {
 			return t
 		}
 	}
