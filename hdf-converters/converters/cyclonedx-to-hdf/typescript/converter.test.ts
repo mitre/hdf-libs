@@ -20,6 +20,14 @@ runConverterContractTests({
   minimalFixture: 'minimal-vulns.json',
 });
 
+describe('timestamp parse fallback', () => {
+  it('uses conversion time when the BOM metadata timestamp is unparseable', async () => {
+    const input = loadFixture('minimal-vulns.json').replace(/2024-07-08T17:30:28Z/g, 'not-a-date');
+    const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+    expectValidResults(hdf);
+  });
+});
+
 describe('cyclonedx to HDF converter', async () => {
   describe('input validation', async () => {
     it('should throw on missing bomFormat', async () => {

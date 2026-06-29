@@ -194,7 +194,7 @@ function buildRequirement(
   const codeDesc = cs.implementationStatus || 'No implementation status provided';
 
   // StartTime from createdDateTime
-  const startTime = createdDateTime ? (parseTimestamp(createdDateTime) ?? undefined) : undefined;
+  const startTime = (createdDateTime ? parseTimestamp(createdDateTime) : null) ?? new Date();
 
   const results = [
     createResult(status, undefined, {

@@ -21,6 +21,14 @@ runConverterContractTests({
   minimalFixture: 'minimal-dast.json',
 });
 
+describe('timestamp parse fallback', () => {
+  it('uses conversion time when the scan timestamp is unparseable', async () => {
+    const input = loadFixture('empty.json').replace(/2024-01-15T10:00:00/g, 'not-a-date');
+    const hdf = JSON.parse(await convertGitlabToHdf(input)) as HDFResults;
+    expectValidResults(hdf);
+  });
+});
+
 describe('GitLab to HDF converter', () => {
   describe('validation', () => {
     it('should synthesize a passed placeholder when vulnerabilities array is missing', async () => {

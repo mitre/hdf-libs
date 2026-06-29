@@ -156,7 +156,7 @@ function buildResult(r: EvaluationResult): RequirementResult {
   const status = mapComplianceStatus(r.ComplianceType);
   const codeDesc = buildCodeDesc(q);
   const message = buildResultMessage(codeDesc, r.Annotation, status);
-  const startTime = r.ConfigRuleInvokedTime ? (parseTimestamp(r.ConfigRuleInvokedTime) ?? undefined) : undefined;
+  const startTime = (r.ConfigRuleInvokedTime ? parseTimestamp(r.ConfigRuleInvokedTime) : null) ?? new Date();
 
   return createResult(status, message ?? codeDesc, {
     codeDesc,

@@ -29,6 +29,20 @@ runConverterContractTests({
   minimalFixture: 'twistlock-twistcli-coderepo-scan-sample.json',
 });
 
+describe('timestamp parse fallback', () => {
+  it('falls back to conversion time when discoveredDate is unparseable', async () => {
+    const input = loadFixture('twistlock-twistcli-sample-1.json').replace(/2021-12-01T00:00:00Z/g, 'not-a-date');
+    const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+    expectValidResults(hdf);
+  });
+
+  it('falls back to conversion time when discoveredDate is absent', async () => {
+    const input = loadFixture('twistlock-twistcli-sample-1.json').replace(/"discoveredDate"/g, '"discoveredDateAbsent"');
+    const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+    expectValidResults(hdf);
+  });
+});
+
 describe('twistlock to HDF converter', async () => {
   describe('container scan (results wrapper)', async () => {
     it('should produce 1 baseline from sample-1', async () => {

@@ -856,4 +856,13 @@ describe('Nessus to HDF Converter', async () => {
       expect(req!.cvss![0].threatVector).toBe('E:A');
     });
   });
+
+  describe('timestamp parse fallback', () => {
+    it('falls back to conversion time when scan timestamps are unparseable', async () => {
+      const xml = readFileSync(join(FIXTURES_DIR, 'input', 'sample.nessus'), 'utf-8')
+        .replace(/[A-Z][a-z]{2} [A-Z][a-z]{2} [ 0-9]{1,2} [0-9:]{8} [0-9]{4}/g, 'not-a-date');
+      const result = await convertNessusToHdf(xml);
+      expectValidResults(result);
+    });
+  });
 });

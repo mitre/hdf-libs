@@ -167,6 +167,29 @@ describe('dbprotect to HDF converter', () => {
       const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
       expect(req!.results[0]!.startTime).toBe('2021-02-18T15:57:00Z');
     });
+
+    it('normalizes an ISO-style Date column to UTC', async () => {
+      const xml = loadFixture('sample-check-results.xml').replace(/Feb 18 2021 15:57/g, '2021-02-18 15:55');
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
+      expect(req!.results[0]!.startTime).toBe('2021-02-18T15:55:00Z');
+    });
+
+    it('falls back to conversion time when the Date column is empty', async () => {
+      const before = Date.now();
+      const xml = loadFixture('sample-check-results.xml').replace(/Feb 18 2021 15:57/g, '');
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
+      expect(new Date(req!.results[0]!.startTime as string).getTime()).toBeGreaterThanOrEqual(before);
+    });
+
+    it('falls back to conversion time for an unrecognized month name', async () => {
+      const before = Date.now();
+      const xml = loadFixture('sample-check-results.xml').replace(/Feb 18 2021 15:57/g, 'Xyz 18 2021 15:57');
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
+      expect(new Date(req!.results[0]!.startTime as string).getTime()).toBeGreaterThanOrEqual(before);
+    });
   });
 
   describe('NIST tags', () => {
