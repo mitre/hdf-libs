@@ -497,6 +497,7 @@ func createResultFromIssue(issue Issue, componentMap map[string]Component) hdf.R
 	}
 
 	creationTime, _ := time.Parse(sonarTimestampFormat, issue.CreationDate)
+	creationTime = hdfutil.NormalizeTimestamp(creationTime)
 
 	return hdf.RequirementResult{
 		Status:    status,

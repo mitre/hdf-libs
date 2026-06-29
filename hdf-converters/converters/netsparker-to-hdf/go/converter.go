@@ -153,7 +153,7 @@ func parseNetsparkerTimestamp(s string) time.Time {
 	}
 	// Netsparker format: "01/02/2006 03:04 PM"
 	if t, err := time.Parse("01/02/2006 03:04 PM", s); err == nil {
-		return t
+		return hdfutil.NormalizeTimestamp(t)
 	}
 	return hdfutil.ParseTimestamp(s)
 }

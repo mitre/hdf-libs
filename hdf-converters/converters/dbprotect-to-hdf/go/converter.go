@@ -126,7 +126,7 @@ func parseDate(dateStr string) time.Time {
 
 	for _, format := range formats {
 		if t, err := time.Parse(format, dateStr); err == nil {
-			return t
+			return hdfutil.NormalizeTimestamp(t)
 		}
 	}
 

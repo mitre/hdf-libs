@@ -102,11 +102,11 @@ func parseBurpTimestamp(s string) time.Time {
 	}
 	// BurpSuite format: "Mon Jan 02 15:04:05 MST 2006"
 	if t, err := time.Parse("Mon Jan 02 15:04:05 MST 2006", s); err == nil {
-		return t
+		return hdfutil.NormalizeTimestamp(t)
 	}
 	// Try shorter format without timezone: "Mon Jan 2 15:04:05 2006"
 	if t, err := time.Parse("Mon Jan 2 15:04:05 2006", s); err == nil {
-		return t
+		return hdfutil.NormalizeTimestamp(t)
 	}
 	return hdfutil.ParseTimestamp(s)
 }

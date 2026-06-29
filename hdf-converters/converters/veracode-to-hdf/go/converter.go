@@ -776,7 +776,7 @@ func parseVeracodeTimestamp(s string) time.Time {
 
 	for _, layout := range layouts {
 		if t, err := time.Parse(layout, s); err == nil {
-			return t
+			return hdfutil.NormalizeTimestamp(t)
 		}
 	}
 

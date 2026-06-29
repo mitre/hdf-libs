@@ -2,6 +2,16 @@ package hdfutil
 
 import "time"
 
+// NormalizeTimestamp converts a parsed time to HDF's canonical form: UTC at
+// millisecond precision. Apply it to the result of any custom time.Parse (for
+// a vendor-specific layout ParseTimestamp does not cover) so converter output
+// is UTC and byte-identical to the TypeScript converters, regardless of the
+// source offset or sub-millisecond precision. The zero time is returned
+// unchanged.
+func NormalizeTimestamp(t time.Time) time.Time {
+	return t.UTC().Truncate(time.Millisecond)
+}
+
 // ParseTimestamp tries multiple common timestamp formats and returns the first
 // successful parse, normalized to HDF's canonical form: UTC at millisecond
 // precision. Returns zero time if none match.
@@ -32,7 +42,7 @@ func ParseTimestamp(s string) time.Time {
 
 	for _, format := range formats {
 		if t, err := time.Parse(format, s); err == nil {
-			return t.UTC().Truncate(time.Millisecond)
+			return NormalizeTimestamp(t)
 		}
 	}
 

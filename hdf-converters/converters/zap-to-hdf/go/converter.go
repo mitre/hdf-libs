@@ -72,7 +72,7 @@ func parseZapTimestamp(s string) time.Time {
 	}
 	// ZAP-specific format: "Mon, 2 Jan 2006 15:04:05"
 	if t, err := time.Parse("Mon, 2 Jan 2006 15:04:05", s); err == nil {
-		return t
+		return hdfutil.NormalizeTimestamp(t)
 	}
 	return hdfutil.ParseTimestamp(s)
 }

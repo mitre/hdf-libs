@@ -197,7 +197,7 @@ func buildRequirement(ruleID string, finding Finding, startTime string) hdf.Eval
 		// Try ScoutSuite-specific format: "2021-02-19 19:16:10+0000"
 		t, err := time.Parse("2006-01-02 15:04:05-0700", startTime)
 		if err == nil {
-			parsedTime = t
+			parsedTime = hdfutil.NormalizeTimestamp(t)
 		}
 	}
 
@@ -288,7 +288,7 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		// Try ScoutSuite format: "2021-02-19 19:16:10+0000"
 		t, err := time.Parse("2006-01-02 15:04:05-0700", report.LastRun.Time)
 		if err == nil {
-			parsedTime = t
+			parsedTime = hdfutil.NormalizeTimestamp(t)
 		}
 	}
 	if !parsedTime.IsZero() {

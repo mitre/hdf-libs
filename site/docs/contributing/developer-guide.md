@@ -137,8 +137,9 @@ re-implement timestamp parsing.
   or unparseable, fall back to a *valid* value (conversion time `new Date()` /
   the Go zero `time.Time`) — never `undefined` / omitted.
 - A custom-layout `time.Parse("<layout>", ...)` is allowed **only** for formats
-  `hdfutil.ParseTimestamp` does not cover (e.g. vendor-specific strings); wrap
-  the result in `.UTC().Truncate(time.Millisecond)` to keep it canonical.
+  `hdfutil.ParseTimestamp` does not cover (e.g. vendor-specific strings); pass
+  the result through `hdfutil.NormalizeTimestamp(t)` (UTC + millisecond
+  precision) to keep it canonical.
 
 ### Enforcement
 

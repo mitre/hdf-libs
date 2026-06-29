@@ -167,7 +167,7 @@ func getTimestamp(f TrufflehogFinding) time.Time {
 		}
 		// Try TruffleHog-specific format: "2023-10-19 02:56:37 +0000"
 		if t, err := time.Parse("2006-01-02 15:04:05 -0700", f.SourceMetadata.Data.Git.Timestamp); err == nil {
-			return t
+			return hdfutil.NormalizeTimestamp(t)
 		}
 	}
 	return time.Now().UTC()
