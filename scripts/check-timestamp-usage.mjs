@@ -21,7 +21,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const convertersDir = join(root, 'hdf-converters', 'converters');
 
 // Bare RFC3339 / RFC3339Nano parse — should be hdfutil.ParseTimestamp.
-const FORBIDDEN = /time\.Parse\(\s*time\.RFC3339/;
+// `g` flag + whole-file scan so a call wrapped across lines
+// (e.g. `time.Parse(\n  time.RFC3339, ...)`) is still detected — \s* spans newlines.
+const FORBIDDEN = /time\.Parse\(\s*time\.RFC3339/g;
 
 const offenders = [];
 for (const conv of readdirSync(convertersDir, { withFileTypes: true })) {
@@ -36,13 +38,12 @@ for (const conv of readdirSync(convertersDir, { withFileTypes: true })) {
   for (const file of entries) {
     if (!file.endsWith('.go') || file.endsWith('_test.go')) continue;
     const path = join(goDir, file);
-    readFileSync(path, 'utf8')
-      .split('\n')
-      .forEach((line, i) => {
-        if (FORBIDDEN.test(line)) {
-          offenders.push(`${path}:${i + 1}: ${line.trim()}`);
-        }
-      });
+    const content = readFileSync(path, 'utf8');
+    for (const match of content.matchAll(FORBIDDEN)) {
+      const line = content.slice(0, match.index).split('\n').length;
+      const snippet = content.slice(match.index, match.index + 60).replace(/\s+/g, ' ').trim();
+      offenders.push(`${path}:${line}: ${snippet}`);
+    }
   }
 }
 

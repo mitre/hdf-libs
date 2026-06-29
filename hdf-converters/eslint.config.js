@@ -65,6 +65,11 @@ export default [
     // site/docs/contributing/developer-guide.md (Timestamp Handling).
     // Allowed: `new Date()` (now), `new Date(0)` / `new Date('0001-...')`
     // literals, and arithmetic like `new Date(t.getTime() + n)`.
+    //
+    // `X.arguments` is esquery's field-selector syntax: "an X node located in
+    // the parent's `arguments` field" — i.e. a `new Date(...)` call whose first
+    // argument is an Identifier or MemberExpression. Verified to flag both
+    // `new Date(value)` and `new Date(obj.prop)`.
     files: ['converters/*-to-hdf/**/*.ts'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
