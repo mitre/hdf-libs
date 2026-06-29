@@ -38,10 +38,13 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(v2.baselines).toEqual([]);
       expect(v2.statistics).toEqual({});
       expect(v2.components).toHaveLength(1);
-      // No target_id → component is just {type, name} (mirrors Go).
+      // release present → osName/osVersion populated even without target_id
+      // (mirrors Go).
       expect(v2.components![0]).toEqual({
         type: 'host',
         name: 'ubuntu',
+        osName: 'ubuntu',
+        osVersion: '20.04',
       });
       expect(v2.tool?.name).toBe('Heimdall Data Format v1');
       expect(v2.tool?.version).toBeUndefined();
@@ -710,6 +713,21 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         checksum: expect.stringMatching(/^[a-f0-9]{64}$/),
       });
     });
+
+    it('maps profile supports onto the baseline (real data)', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].supports).toEqual([{ platformFamily: 'redhat', release: '9.*' }]);
+    });
+
+    it('maps control refs onto requirements (real DPMS ref)', () => {
+      const v2 = convertV1ToV2(v1);
+      const sawDpms = v2.baselines[0].requirements!.some(
+        (r) =>
+          Array.isArray(r.refs) &&
+          r.refs.some((ref) => (ref as { ref?: unknown }).ref === 'DPMS Target Red Hat Enterprise Linux 9'),
+      );
+      expect(sawDpms).toBe(true);
+    });
   });
 
   describe('overlay flattening — deep nesting (3-layer overlay)', () => {
@@ -1093,6 +1111,135 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         r => r.effectiveStatus === 'notApplicable' && r.severity === 'none'
       );
       expect(naWithNone).toHaveLength(0);
+    });
+  });
+
+  // ── v1 field fidelity (bead hdf-libs-9q8o) ──────────────────
+  describe('v1 field fidelity', () => {
+    function singleControl(control: Record<string, unknown>): HDFV1Results {
+      return {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{ name: 'p', controls: [control as never] }],
+        statistics: {},
+      };
+    }
+
+    it('maps a string-valued control ref to requirement refs', () => {
+      const v2 = convertV1ToV2(
+        singleControl({ id: 'V-1', impact: 0.5, refs: [{ ref: 'DPMS Target Red Hat Enterprise Linux 9' }] }),
+      );
+      expect(v2.baselines[0].requirements![0].refs).toEqual([
+        { ref: 'DPMS Target Red Hat Enterprise Linux 9' },
+      ]);
+    });
+
+    it('maps a bare-string ref element', () => {
+      const v2 = convertV1ToV2(singleControl({ id: 'V-1', impact: 0.5, refs: ['NIST SP 800-53'] }));
+      expect(v2.baselines[0].requirements![0].refs).toEqual([{ ref: 'NIST SP 800-53' }]);
+    });
+
+    it('preserves url and uri on a ref', () => {
+      const v2 = convertV1ToV2(
+        singleControl({ id: 'V-1', impact: 0.5, refs: [{ ref: 'doc', url: 'https://example.com', uri: 'urn:x' }] }),
+      );
+      expect(v2.baselines[0].requirements![0].refs).toEqual([
+        { ref: 'doc', url: 'https://example.com', uri: 'urn:x' },
+      ]);
+    });
+
+    it('maps an array-of-objects ref through unchanged', () => {
+      const v2 = convertV1ToV2(
+        singleControl({ id: 'V-1', impact: 0.5, refs: [{ ref: [{ url: 'https://example.com/doc' }] }] }),
+      );
+      expect(v2.baselines[0].requirements![0].refs).toEqual([
+        { ref: [{ url: 'https://example.com/doc' }] },
+      ]);
+    });
+
+    it('drops an empty ref array (no content)', () => {
+      const v2 = convertV1ToV2(singleControl({ id: 'V-1', impact: 0.5, refs: [{ ref: [] }] }));
+      expect(v2.baselines[0].requirements![0].refs).toBeUndefined();
+    });
+
+    it('maps result skip_message to result.message when message is absent', () => {
+      const v2 = convertV1ToV2(
+        singleControl({
+          id: 'V-1',
+          impact: 0.5,
+          results: [{ status: 'skipped', skip_message: 'Skipped control due to only_if condition' }],
+        }),
+      );
+      expect(v2.baselines[0].requirements![0].results![0].message).toBe(
+        'Skipped control due to only_if condition',
+      );
+    });
+
+    it('does not override an explicit result message with skip_message', () => {
+      const v2 = convertV1ToV2(
+        singleControl({
+          id: 'V-1',
+          impact: 0.5,
+          results: [{ status: 'failed', message: 'real message', skip_message: 'skip message' }],
+        }),
+      );
+      expect(v2.baselines[0].requirements![0].results![0].message).toBe('real message');
+    });
+
+    it('maps profile supports (hyphenated keys) to baseline supports (camelCase)', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'p',
+          supports: [
+            { 'platform-family': 'redhat', release: '9.*' },
+            { 'platform-name': 'centos', release: '7.*' },
+            { platform: 'os' },
+          ],
+          controls: [{ id: 'V-1', impact: 0.5, results: [{ status: 'passed' }] }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].supports).toEqual([
+        { platformFamily: 'redhat', release: '9.*' },
+        { platformName: 'centos', release: '7.*' },
+        { platform: 'os' },
+      ]);
+    });
+
+    it('drops supports entries with no recognized keys', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{ name: 'p', supports: [{ 'unknown-key': 'x' }, {}], controls: [] }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].supports).toBeUndefined();
+    });
+
+    it('populates osName/osVersion from release even without target_id', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'centos', release: '7.9.2009' },
+        profiles: [],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.components![0]).toEqual({ type: 'host', name: 'centos', osName: 'centos', osVersion: '7.9.2009' });
+    });
+
+    it('leaves OS fields unset when neither release nor target_id present', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.components![0]).toEqual({ type: 'host', name: 'test' });
     });
   });
 

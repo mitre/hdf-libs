@@ -933,6 +933,175 @@ func TestConvertV1ToV2_ControlType(t *testing.T) {
 	assert.True(t, sawDerivation, "at least one requirement should derive controlType")
 }
 
+// ── v1 field fidelity (bead hdf-libs-9q8o) ──────────────────
+
+func TestConvertControl_RefsMapped(t *testing.T) {
+	t.Run("string-valued ref maps to Reference.Ref.String", func(t *testing.T) {
+		v1 := V1Control{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+			map[string]interface{}{"ref": "DPMS Target Red Hat Enterprise Linux 9"},
+		}}
+		v2 := convertControl(v1)
+		require.Len(t, v2.Refs, 1)
+		require.NotNil(t, v2.Refs[0].Ref)
+		require.NotNil(t, v2.Refs[0].Ref.String)
+		assert.Equal(t, "DPMS Target Red Hat Enterprise Linux 9", *v2.Refs[0].Ref.String)
+	})
+
+	t.Run("bare string element maps to Reference.Ref.String", func(t *testing.T) {
+		v1 := V1Control{ID: "V-1", Impact: 0.5, Refs: []interface{}{"NIST SP 800-53"}}
+		v2 := convertControl(v1)
+		require.Len(t, v2.Refs, 1)
+		require.NotNil(t, v2.Refs[0].Ref.String)
+		assert.Equal(t, "NIST SP 800-53", *v2.Refs[0].Ref.String)
+	})
+
+	t.Run("url and uri are preserved", func(t *testing.T) {
+		v1 := V1Control{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+			map[string]interface{}{"ref": "doc", "url": "https://example.com", "uri": "urn:x"},
+		}}
+		v2 := convertControl(v1)
+		require.Len(t, v2.Refs, 1)
+		require.NotNil(t, v2.Refs[0].URL)
+		assert.Equal(t, "https://example.com", *v2.Refs[0].URL)
+		require.NotNil(t, v2.Refs[0].URI)
+		assert.Equal(t, "urn:x", *v2.Refs[0].URI)
+	})
+
+	t.Run("array-of-objects ref maps to Reference.Ref.AnythingMapArray", func(t *testing.T) {
+		v1 := V1Control{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+			map[string]interface{}{"ref": []interface{}{
+				map[string]interface{}{"url": "https://example.com/doc"},
+			}},
+		}}
+		v2 := convertControl(v1)
+		require.Len(t, v2.Refs, 1)
+		require.NotNil(t, v2.Refs[0].Ref)
+		require.Len(t, v2.Refs[0].Ref.AnythingMapArray, 1)
+		assert.Equal(t, "https://example.com/doc", v2.Refs[0].Ref.AnythingMapArray[0]["url"])
+	})
+
+	t.Run("empty ref array carries no content and is dropped", func(t *testing.T) {
+		v1 := V1Control{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+			map[string]interface{}{"ref": []interface{}{}},
+		}}
+		v2 := convertControl(v1)
+		assert.Empty(t, v2.Refs)
+	})
+
+	t.Run("absent refs yield nil", func(t *testing.T) {
+		v2 := convertControl(V1Control{ID: "V-1", Impact: 0.5})
+		assert.Nil(t, v2.Refs)
+	})
+}
+
+func TestConvertResult_SkipMessageMapsToMessage(t *testing.T) {
+	t.Run("skip_message becomes message when message is absent", func(t *testing.T) {
+		skip := "Skipped control due to only_if condition"
+		v1 := V1Result{Status: "skipped", SkipMessage: &skip}
+		v2 := convertResult(v1)
+		require.NotNil(t, v2.Message)
+		assert.Equal(t, skip, *v2.Message)
+	})
+
+	t.Run("explicit message is not overridden by skip_message", func(t *testing.T) {
+		msg := "real message"
+		skip := "skip message"
+		v1 := V1Result{Status: "failed", Message: &msg, SkipMessage: &skip}
+		v2 := convertResult(v1)
+		require.NotNil(t, v2.Message)
+		assert.Equal(t, msg, *v2.Message)
+	})
+}
+
+func TestConvertProfile_SupportsMapped(t *testing.T) {
+	v1 := V1Profile{Name: "p", Supports: []map[string]interface{}{
+		{"platform-family": "redhat", "release": "9.*"},
+		{"platform-name": "centos", "release": "7.*"},
+		{"platform": "os"},
+	}}
+	v2 := convertProfile(v1)
+	require.Len(t, v2.Supports, 3)
+
+	require.NotNil(t, v2.Supports[0].PlatformFamily)
+	assert.Equal(t, "redhat", *v2.Supports[0].PlatformFamily)
+	require.NotNil(t, v2.Supports[0].Release)
+	assert.Equal(t, "9.*", *v2.Supports[0].Release)
+
+	require.NotNil(t, v2.Supports[1].PlatformName)
+	assert.Equal(t, "centos", *v2.Supports[1].PlatformName)
+
+	require.NotNil(t, v2.Supports[2].Platform)
+	assert.Equal(t, "os", *v2.Supports[2].Platform)
+}
+
+func TestConvertProfile_SupportsEmptyOrUnknownDropped(t *testing.T) {
+	v1 := V1Profile{Name: "p", Supports: []map[string]interface{}{
+		{"unknown-key": "x"},
+		{},
+	}}
+	v2 := convertProfile(v1)
+	assert.Empty(t, v2.Supports)
+}
+
+func TestConvertV1ToV2_UBI9RefsAndSupports(t *testing.T) {
+	inputPath := sharedOrLocalInputPath(t, "ubi9-scan.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+	var v1 HDFV1Results
+	require.NoError(t, json.Unmarshal(inputData, &v1))
+
+	v2 := ConvertV1ToV2(&v1)
+	require.NotEmpty(t, v2.Baselines)
+
+	t.Run("profile supports mapped onto baseline", func(t *testing.T) {
+		require.Len(t, v2.Baselines[0].Supports, 1)
+		require.NotNil(t, v2.Baselines[0].Supports[0].PlatformFamily)
+		assert.Equal(t, "redhat", *v2.Baselines[0].Supports[0].PlatformFamily)
+		require.NotNil(t, v2.Baselines[0].Supports[0].Release)
+		assert.Equal(t, "9.*", *v2.Baselines[0].Supports[0].Release)
+	})
+
+	t.Run("control refs mapped onto requirements (real DPMS ref)", func(t *testing.T) {
+		sawDPMS := false
+		for _, r := range v2.Baselines[0].Requirements {
+			for _, ref := range r.Refs {
+				if ref.Ref != nil && ref.Ref.String != nil &&
+					*ref.Ref.String == "DPMS Target Red Hat Enterprise Linux 9" {
+					sawDPMS = true
+				}
+			}
+		}
+		assert.True(t, sawDPMS, "expected at least one requirement carrying the DPMS ref")
+	})
+}
+
+func TestConvertV1ToV2_PlatformReleaseWithoutTargetID(t *testing.T) {
+	t.Run("release present without target_id still populates osName/osVersion", func(t *testing.T) {
+		release := "7.9.2009"
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "centos", Release: &release},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.Len(t, v2.Components, 1)
+		require.NotNil(t, v2.Components[0].OSName)
+		assert.Equal(t, "centos", *v2.Components[0].OSName)
+		require.NotNil(t, v2.Components[0].OSVersion)
+		assert.Equal(t, "7.9.2009", *v2.Components[0].OSVersion)
+	})
+
+	t.Run("neither release nor target_id leaves OS fields unset", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.Len(t, v2.Components, 1)
+		assert.Nil(t, v2.Components[0].OSName)
+		assert.Nil(t, v2.Components[0].OSVersion)
+	})
+}
+
 func TestConvertV1ToV2_VerificationMethodNotFabricated(t *testing.T) {
 	inputPath := sharedOrLocalInputPath(t, "ubi9-scan.json")
 	inputData, err := os.ReadFile(inputPath)

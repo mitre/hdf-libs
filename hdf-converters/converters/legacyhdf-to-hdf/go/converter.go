@@ -102,6 +102,11 @@ func convertResult(v1 V1Result) hdf.RequirementResult {
 	}
 	if v1.Message != nil {
 		v2.Message = v1.Message
+	} else if v1.SkipMessage != nil {
+		// v1 skipped results carry their reason in skip_message; v2 has no
+		// dedicated field, so surface it as the result message rather than
+		// dropping it.
+		v2.Message = v1.SkipMessage
 	}
 	if v1.Exception != nil {
 		v2.Exception = v1.Exception
@@ -154,6 +159,81 @@ func impactToSeverity(impact float64) hdf.Severity {
 	return hdf.Severity(hdfutil.ImpactToSeverity(impact))
 }
 
+// toRef converts a v1 ref value (a string or an array of objects) to the v2
+// Reference.Ref union. Returns nil when the value carries no content (e.g. an
+// empty array), so callers can drop empty references.
+func toRef(raw interface{}) *hdf.Ref {
+	switch v := raw.(type) {
+	case string:
+		if v == "" {
+			return nil
+		}
+		s := v
+		return &hdf.Ref{String: &s}
+	case []interface{}:
+		maps := make([]map[string]interface{}, 0, len(v))
+		for _, e := range v {
+			if m, ok := e.(map[string]interface{}); ok {
+				maps = append(maps, m)
+			}
+		}
+		if len(maps) == 0 {
+			return nil
+		}
+		return &hdf.Ref{AnythingMapArray: maps}
+	}
+	return nil
+}
+
+// convertRef converts a single v1 refs[] element to a v2 Reference. v1 elements
+// are either a bare string or an object with ref/url/uri keys. Returns nil when
+// the element carries no usable content.
+func convertRef(raw interface{}) *hdf.Reference {
+	switch v := raw.(type) {
+	case string:
+		if v == "" {
+			return nil
+		}
+		s := v
+		return &hdf.Reference{Ref: &hdf.Ref{String: &s}}
+	case map[string]interface{}:
+		ref := &hdf.Reference{}
+		has := false
+		if r := toRef(v["ref"]); r != nil {
+			ref.Ref = r
+			has = true
+		}
+		if u, ok := v["url"].(string); ok && u != "" {
+			ref.URL = &u
+			has = true
+		}
+		if u, ok := v["uri"].(string); ok && u != "" {
+			ref.URI = &u
+			has = true
+		}
+		if !has {
+			return nil
+		}
+		return ref
+	}
+	return nil
+}
+
+// convertRefs maps v1 control-level refs to v2 Requirement refs, dropping
+// empty/contentless entries. Returns nil when nothing maps.
+func convertRefs(refs []interface{}) []hdf.Reference {
+	out := make([]hdf.Reference, 0, len(refs))
+	for _, raw := range refs {
+		if ref := convertRef(raw); ref != nil {
+			out = append(out, *ref)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
 // convertControl converts a v1.0 control to v2.0 EvaluatedRequirement.
 func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 	v2 := hdf.EvaluatedRequirement{
@@ -167,6 +247,9 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 	}
 	if v1.Code != nil {
 		v2.Code = v1.Code
+	}
+	if v1.Refs != nil {
+		v2.Refs = convertRefs(v1.Refs)
 	}
 
 	// Convert descriptions
@@ -322,6 +405,40 @@ func convertDependency(v1 V1Dependency) hdf.Dependency {
 	}
 }
 
+// convertSupports maps v1 profile `supports` entries (InSpec hyphenated keys)
+// to v2 SupportedPlatform structs. Entries that map no recognized key are
+// dropped. Returns nil when nothing maps.
+func convertSupports(supports []map[string]interface{}) []hdf.SupportedPlatform {
+	out := make([]hdf.SupportedPlatform, 0, len(supports))
+	for _, s := range supports {
+		var sp hdf.SupportedPlatform
+		has := false
+		if v, ok := s["platform"].(string); ok && v != "" {
+			sp.Platform = &v
+			has = true
+		}
+		if v, ok := s["platform-family"].(string); ok && v != "" {
+			sp.PlatformFamily = &v
+			has = true
+		}
+		if v, ok := s["platform-name"].(string); ok && v != "" {
+			sp.PlatformName = &v
+			has = true
+		}
+		if v, ok := s["release"].(string); ok && v != "" {
+			sp.Release = &v
+			has = true
+		}
+		if has {
+			out = append(out, sp)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
 // convertProfile converts a v1.0 profile to v2.0 EvaluatedBaseline.
 func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
 	v2 := hdf.EvaluatedBaseline{
@@ -345,6 +462,11 @@ func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
 			Algorithm: &alg,
 			Checksum:  v1.SHA256,
 		}
+	}
+
+	// Map supported platforms (InSpec hyphenated keys → v2 camelCase fields).
+	if v1.Supports != nil {
+		v2.Supports = convertSupports(v1.Supports)
 	}
 
 	// Transform attributes to inputs
@@ -410,7 +532,10 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 		Type: hdf.Host,
 		Name: v1.Platform.Name,
 	}
-	if v1.Platform.TargetID != nil {
+	// Populate OS details whenever the platform carries an OS signal (a release
+	// or a target_id). Previously gated on target_id alone, which dropped a
+	// release-bearing platform that lacked a target_id.
+	if v1.Platform.TargetID != nil || v1.Platform.Release != nil {
 		target.OSName = &v1.Platform.Name // Use platform name as OS name
 		target.OSVersion = v1.Platform.Release
 	}

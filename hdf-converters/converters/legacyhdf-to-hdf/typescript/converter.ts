@@ -308,13 +308,78 @@ function convertResult(v1Result: V1Result): V2Result {
   v2Result.codeDesc = v1Result.code_desc ?? '';
   if (v1Result.run_time !== undefined) v2Result.runTime = v1Result.run_time;
   v2Result.startTime = legacyStartTime(v1Result.start_time);
+  // v1 skipped results carry their reason in skip_message; v2 has no dedicated
+  // field, so surface it as the result message (without clobbering an explicit
+  // message), mirroring the Go converter.
   if (v1Result.message !== undefined) v2Result.message = v1Result.message;
+  else if (v1Result.skip_message !== undefined) v2Result.message = v1Result.skip_message;
   if (v1Result.exception !== undefined) v2Result.exception = v1Result.exception;
   if (v1Result.backtrace !== undefined) v2Result.backtrace = v1Result.backtrace;
   if (v1Result.resource_class !== undefined) v2Result.resource = v1Result.resource_class;
   if (v1Result.resource_id !== undefined) v2Result.resourceId = v1Result.resource_id;
 
   return v2Result;
+}
+
+/**
+ * Convert a v1 ref value (a string or an array of objects) to the v2
+ * Reference.ref union value. Returns undefined when there is no content (e.g.
+ * an empty array), so callers can drop empty references — matching the Go
+ * converter's toRef.
+ */
+function toRefValue(raw: unknown): string | Record<string, unknown>[] | undefined {
+  if (typeof raw === 'string') return raw === '' ? undefined : raw;
+  if (Array.isArray(raw)) {
+    const maps = raw.filter(
+      (e): e is Record<string, unknown> => !!e && typeof e === 'object' && !Array.isArray(e),
+    );
+    return maps.length === 0 ? undefined : maps;
+  }
+  return undefined;
+}
+
+/**
+ * Convert a single v1 refs[] element (a bare string or an object with
+ * ref/url/uri) to a v2 Reference object. Returns null when the element carries
+ * no usable content. Key order (ref, url, uri) matches the Go Reference struct.
+ */
+function convertRef(raw: unknown): Record<string, unknown> | null {
+  if (typeof raw === 'string') {
+    return raw === '' ? null : { ref: raw };
+  }
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const m = raw as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    let has = false;
+    const refVal = toRefValue(m.ref);
+    if (refVal !== undefined) {
+      out.ref = refVal;
+      has = true;
+    }
+    if (typeof m.url === 'string' && m.url !== '') {
+      out.url = m.url;
+      has = true;
+    }
+    if (typeof m.uri === 'string' && m.uri !== '') {
+      out.uri = m.uri;
+      has = true;
+    }
+    return has ? out : null;
+  }
+  return null;
+}
+
+/**
+ * Map v1 control-level refs to v2 requirement refs, dropping empty/contentless
+ * entries. Returns undefined when nothing maps.
+ */
+function convertRefs(refs: unknown[]): Record<string, unknown>[] | undefined {
+  const out: Record<string, unknown>[] = [];
+  for (const raw of refs) {
+    const ref = convertRef(raw);
+    if (ref) out.push(ref);
+  }
+  return out.length ? out : undefined;
 }
 
 /**
@@ -334,6 +399,10 @@ function convertControl(v1Control: V1Control): V2Requirement {
   if (v1Control.descriptions !== undefined) v2Req.descriptions = v1Control.descriptions;
   if (v1Control.tags !== undefined) v2Req.tags = v1Control.tags;
   if (v1Control.code !== undefined) v2Req.code = v1Control.code;
+  if (Array.isArray(v1Control.refs)) {
+    const refs = convertRefs(v1Control.refs);
+    if (refs) v2Req.refs = refs;
+  }
 
   // Transform snake_case to camelCase
   if (v1Control.source_location !== undefined) {
@@ -449,6 +518,29 @@ function convertDependency(v1Dep: V1Dependency): V2Dependency {
 }
 
 /**
+ * Map v1 profile `supports` entries (InSpec hyphenated keys) to v2
+ * SupportedPlatform objects. Entries that map no recognized key are dropped.
+ * Key order (platform, platformFamily, platformName, release) matches the Go
+ * SupportedPlatform struct. Returns undefined when nothing maps.
+ */
+function convertSupports(supports: unknown[]): Record<string, string>[] | undefined {
+  const out: Record<string, string>[] = [];
+  for (const raw of supports) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+    const s = raw as Record<string, unknown>;
+    const sp: Record<string, string> = {};
+    if (typeof s.platform === 'string' && s.platform !== '') sp.platform = s.platform;
+    if (typeof s['platform-family'] === 'string' && s['platform-family'] !== '')
+      sp.platformFamily = s['platform-family'] as string;
+    if (typeof s['platform-name'] === 'string' && s['platform-name'] !== '')
+      sp.platformName = s['platform-name'] as string;
+    if (typeof s.release === 'string' && s.release !== '') sp.release = s.release;
+    if (Object.keys(sp).length > 0) out.push(sp);
+  }
+  return out.length ? out : undefined;
+}
+
+/**
  * Convert v1.0 profile to v2.0 baseline.
  * Transforms field names and nested structures.
  */
@@ -467,7 +559,10 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
   if (v1Profile.copyright_email !== undefined) v2Baseline.copyrightEmail = v1Profile.copyright_email;
   // Omit empty optional arrays so output matches the Go converter (which uses
   // omitempty); only emit when there is data to carry.
-  if (v1Profile.supports?.length) v2Baseline.supports = v1Profile.supports;
+  if (v1Profile.supports?.length) {
+    const supports = convertSupports(v1Profile.supports);
+    if (supports) v2Baseline.supports = supports;
+  }
   if (v1Profile.attributes?.length) v2Baseline.inputs = v1Profile.attributes;
   if (v1Profile.status !== undefined) v2Baseline.status = v1Profile.status;
 
@@ -549,7 +644,10 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
       type: 'host', // v2.0 uses 'host' instead of 'system'
       name: v1Data.platform.name,
     };
-    if (v1Data.platform.target_id) {
+    // Populate OS details whenever the platform carries an OS signal (a release
+    // or a target_id). Previously gated on target_id alone, which dropped a
+    // release-bearing platform that lacked a target_id.
+    if (v1Data.platform.target_id || v1Data.platform.release !== undefined) {
       component.osName = v1Data.platform.name;
       if (v1Data.platform.release !== undefined) component.osVersion = v1Data.platform.release;
     }

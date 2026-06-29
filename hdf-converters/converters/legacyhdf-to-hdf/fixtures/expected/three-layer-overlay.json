@@ -1556,6 +1556,7 @@
               "codeDesc": "This control consistently takes a long time to run and has been disabled\n    using the disable_slow_controls attribute.",
               "runTime": 0.000014285,
               "startTime": "2022-03-06T22:05:48Z",
+              "message": "This control consistently takes a long time to run and has been disabled\n            using the disable_slow_controls attribute. You must enable this control for a\n            full accredidation for production.",
               "resource": "Object"
             }
           ],
@@ -1610,6 +1611,7 @@
               "codeDesc": "This control consistently takes a long to run and has been disabled\n    using the disable_slow_controls attribute.",
               "runTime": 0.000008675,
               "startTime": "2022-03-06T22:05:48Z",
+              "message": "This control consistently takes a long to run and has been disabled\n      using the disable_slow_controls attribute. You must enable this control for a\n      full accredidation for production.",
               "resource": "Object"
             }
           ],
@@ -1669,6 +1671,7 @@
               "codeDesc": "The GNOME desktop is not installed",
               "runTime": 0.000007091,
               "startTime": "2022-03-06T22:05:48Z",
+              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -1728,6 +1731,7 @@
               "codeDesc": "The system does not have GNOME installed",
               "runTime": 0.000005985,
               "startTime": "2022-03-06T22:05:48Z",
+              "message": "The system does not have GNOME installed, this requirement is Not\n        Applicable.",
               "resource": "Object"
             }
           ],
@@ -1855,6 +1859,7 @@
               "codeDesc": "The system does not have GNOME installed",
               "runTime": 0.000006798,
               "startTime": "2022-03-06T22:05:48Z",
+              "message": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
               "resource": "Object"
             }
           ],
@@ -1909,6 +1914,7 @@
               "codeDesc": "The system does not have GNOME installed",
               "runTime": 0.000004607,
               "startTime": "2022-03-06T22:05:48Z",
+              "message": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
               "resource": "Object"
             }
           ],
@@ -2028,6 +2034,7 @@
               "codeDesc": "The system does not have GNOME installed",
               "runTime": 0.000008448,
               "startTime": "2022-03-06T22:05:48Z",
+              "message": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
               "resource": "Object"
             }
           ],
@@ -2082,6 +2089,7 @@
               "codeDesc": "The system does not have GNOME installed",
               "runTime": 0.000007923,
               "startTime": "2022-03-06T22:05:48Z",
+              "message": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
               "resource": "Object"
             }
           ],
@@ -2985,6 +2993,7 @@
               "codeDesc": "This is Not Applicable for the project since we have an approved risk-based decision on 10/1/2021 allowing reuse of old passwords",
               "runTime": 0.000010459,
               "startTime": "2022-03-06T22:05:48Z",
+              "message": "This is Not Applicable for the project since we have an approved risk-based decision on 10/1/2021 allowing reuse of old passwords",
               "resource": "Object"
             }
           ],
@@ -3868,6 +3877,7 @@
               "codeDesc": "The system does not have GDM installed",
               "runTime": 0.000012677,
               "startTime": "2022-03-06T22:05:49Z",
+              "message": "The system does not have GDM installed, this requirement is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -3922,6 +3932,7 @@
               "codeDesc": "The system does not have GDM installed",
               "runTime": 0.000007698,
               "startTime": "2022-03-06T22:05:49Z",
+              "message": "The system does not have GDM installed, this requirement is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -4086,6 +4097,7 @@
               "codeDesc": "System running version of RHEL that is equal to or newer than 7.2",
               "runTime": 0.000008234,
               "startTime": "2022-03-06T22:05:49Z",
+              "message": "The System is running version 7.9.2009 of RHEL, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -4140,6 +4152,7 @@
               "codeDesc": "System running BIOS",
               "runTime": 0.000007806,
               "startTime": "2022-03-06T22:05:49Z",
+              "message": "The System is running BIOS, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -7054,6 +7067,7 @@
               "codeDesc": "This control consistently takes a long to run and has been disabled\n  using the disable_slow_controls attribute.",
               "runTime": 0.000008098,
               "startTime": "2022-03-06T22:06:04Z",
+              "message": "This control consistently takes a long to run and has been disabled\n  using the disable_slow_controls attribute. You must enable this control for a\n  full accredidation for production.",
               "resource": "Object"
             }
           ],
@@ -8590,6 +8604,7 @@
               "codeDesc": "File '/etc/audisp/audisp-remote.conf' cannot be found. This test cannot be checked in a automated fashion and you must check it manually",
               "runTime": 0.000014542,
               "startTime": "2022-03-06T22:06:06Z",
+              "message": "File '/etc/audisp/audisp-remote.conf' cannot be found. This check must be performed manually",
               "resource": "Object"
             }
           ],
@@ -8648,6 +8663,7 @@
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
               "runTime": 0.000012562,
               "startTime": "2022-03-06T22:06:06Z",
+              "message": "Can't find file: /etc/audisp/audisp-remote.conf",
               "resource": "parse_config_file"
             }
           ],
@@ -8702,6 +8718,7 @@
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
               "runTime": 0.000006069,
               "startTime": "2022-03-06T22:06:06Z",
+              "message": "Can't find file: /etc/audisp/audisp-remote.conf",
               "resource": "parse_config_file"
             },
             {
@@ -8709,6 +8726,7 @@
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
               "runTime": 0.00000989,
               "startTime": "2022-03-06T22:06:06Z",
+              "message": "Can't find file: /etc/audisp/audisp-remote.conf",
               "resource": "parse_config_file"
             }
           ],
@@ -13970,6 +13988,7 @@
               "codeDesc": "LDAP not enabled",
               "runTime": 0.000010836,
               "startTime": "2022-03-06T22:06:06Z",
+              "message": "LDAP not enabled using any known mechanisms, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -14024,6 +14043,7 @@
               "codeDesc": "LDAP not enabled",
               "runTime": 0.000034353,
               "startTime": "2022-03-06T22:06:06Z",
+              "message": "LDAP not enabled using any known mechanisms, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -14078,6 +14098,7 @@
               "codeDesc": "LDAP not enabled",
               "runTime": 0.00000823,
               "startTime": "2022-03-06T22:06:06Z",
+              "message": "LDAP not enabled using any known mechanisms, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -14408,6 +14429,7 @@
               "codeDesc": "The release is 7.9.2009",
               "runTime": 0.00001005,
               "startTime": "2022-03-06T22:06:07Z",
+              "message": "The release is newer than 7.4; this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -14695,6 +14717,7 @@
               "codeDesc": "The release is 7.9.2009",
               "runTime": 0.000009681,
               "startTime": "2022-03-06T22:06:07Z",
+              "message": "The release is newer than 7.4; this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -16285,6 +16308,7 @@
               "codeDesc": "The TFTP package is not installed",
               "runTime": 0.000012685,
               "startTime": "2022-03-06T22:06:09Z",
+              "message": "If a TFTP server is not installed, this is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -16501,6 +16525,7 @@
               "codeDesc": "The `snmpd.conf` does not exist",
               "runTime": 0.000007803,
               "startTime": "2022-03-06T22:06:09Z",
+              "message": "The snmpd.conf file does not exist, this control is Not Applicable",
               "resource": "Object"
             }
           ],
@@ -16609,6 +16634,7 @@
               "codeDesc": "The system does not have libreswan installed or the ipsec.service isn't running",
               "runTime": 0.000011027,
               "startTime": "2022-03-06T22:06:09Z",
+              "message": "The system does not have libreswan installed or the ipsec.service isn't running, this requirement is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -16895,6 +16921,7 @@
               "codeDesc": "The SSSD Package is not installed on the system",
               "runTime": 0.000009471,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "This control is Not Appliciable without the SSSD Package installed.",
               "resource": "Object"
             }
           ],
@@ -17013,6 +17040,7 @@
               "codeDesc": "The GNOME desktop is not installed",
               "runTime": 0.000007159,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -17067,6 +17095,7 @@
               "codeDesc": "The GNOME desktop is not installed",
               "runTime": 0.000007752,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -17243,6 +17272,7 @@
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
               "runTime": 0.000008056,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "Can't find file: /etc/audisp/audisp-remote.conf",
               "resource": "parse_config_file"
             }
           ],
@@ -17690,6 +17720,7 @@
               "codeDesc": "The GNOME desktop is not installed",
               "runTime": 0.000013842,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
               "resource": "Object"
             },
             {
@@ -17697,6 +17728,7 @@
               "codeDesc": "The pcsc-lite package is not installed",
               "runTime": 0.000010141,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "The pcsc-lite package is not installed, this control is Not Applicable.",
               "resource": "Object"
             },
             {
@@ -17704,6 +17736,7 @@
               "codeDesc": "The esc package is not installed",
               "runTime": 0.000009305,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "The esc package is not installed, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -17927,6 +17960,7 @@
               "codeDesc": "The GNOME desktop is not installed",
               "runTime": 0.000092067,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -17981,6 +18015,7 @@
               "codeDesc": "The GNOME desktop is not installed",
               "runTime": 0.000009117,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -18255,6 +18290,7 @@
               "codeDesc": "Parse Config File /boot/grub2/user.cfg",
               "runTime": 0.000011909,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "Can't find file: /boot/grub2/user.cfg",
               "resource": "parse_config_file"
             },
             {
@@ -18316,6 +18352,7 @@
               "codeDesc": "System running BIOS",
               "runTime": 0.000010374,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "The System is running BIOS, this control is Not Applicable.",
               "resource": "Object"
             }
           ],
@@ -18537,6 +18574,7 @@
               "codeDesc": "File '/etc/audisp/plugins.d/au-remote.conf' cannot be found. This test cannot be checked in a automated fashion and you must check it manually",
               "runTime": 0.000015853,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "File '/etc/audisp/plugins.d/au-remote.conf' cannot be found. This check must be performed manually",
               "resource": "Object"
             }
           ],
@@ -18595,6 +18633,7 @@
               "codeDesc": "File '/etc/audisp/plugins.d/au-remote.conf' cannot be found. This test cannot be checked in a automated fashion and you must check it manually",
               "runTime": 0.000009621,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "File '/etc/audisp/plugins.d/au-remote.conf' cannot be found. This check must be performed manually",
               "resource": "Object"
             }
           ],
@@ -18936,6 +18975,7 @@
               "codeDesc": "The system does not have GNOME installed",
               "runTime": 0.00001088,
               "startTime": "2022-03-06T22:06:10Z",
+              "message": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
               "resource": "Object"
             }
           ],
@@ -18952,7 +18992,9 @@
   "components": [
     {
       "type": "host",
-      "name": "centos"
+      "name": "centos",
+      "osName": "centos",
+      "osVersion": "7.9.2009"
     }
   ],
   "tool": {

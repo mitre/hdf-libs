@@ -44,7 +44,9 @@
   "components": [
     {
       "type": "host",
-      "name": "test-system"
+      "name": "test-system",
+      "osName": "test-system",
+      "osVersion": "1.0"
     }
   ],
   "tool": {
