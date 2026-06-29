@@ -117,6 +117,9 @@ hdf-converters/converters/<name>/
 - **Go**: `shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"` — `BuildHDFResults()`, `SeverityToImpact()`, `ValidateJSONSize()`, `LimitSliceWithWarning()`, `MapCWEToNIST()`
 - **TS**: `converterutil.ts` — `buildHdfResults()`, `inputChecksum()`, `validateInputSize()`, `mapCWEToNIST()`, `limitArrayWithWarning()`
 
+### Timestamps (canonical = trimmed-UTC RFC3339)
+Always parse tool timestamps with `hdfutil.ParseTimestamp` (Go) / `parseTimestamp` from `@mitre/hdf-utilities` (TS) — **never** raw `new Date(value)` or `time.Parse(time.RFC3339, ...)` (zone-less input is read as host-local and diverges across languages). Serialize via `buildHdfResults`/`serializeHdf` (TS) so the fraction is trimmed. Result `startTime` is schema-required → on a missing/unparseable source time, fall back to a valid value (never omit). Enforced by an ESLint rule + `pnpm lint:timestamps`. Full convention: `site/docs/contributing/developer-guide.md` (Timestamp Handling); rationale in beads memory `hdf-timestamp-canonical-utc`.
+
 ### CLI integration
 Every converter registers in `hdf-cli/cmd/hdf/cmd/converter_registry.go` via `registerHDFConverter()`. CLI thin wrappers live in `converter_<name>.go`.
 

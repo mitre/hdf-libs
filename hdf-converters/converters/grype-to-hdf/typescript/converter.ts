@@ -16,7 +16,7 @@ import {
   Version as CvssVersion,
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
-import {cvssScoreToSeverity, parseJSON} from '@mitre/hdf-utilities';
+import {cvssScoreToSeverity, parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
 import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 
 // Input types for Grype JSON
@@ -551,6 +551,6 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
       type: TargetType.Artifact,
       name: targetName,
     }],
-    timestamp: grypeData.descriptor?.timestamp ? new Date(grypeData.descriptor.timestamp) : new Date(),
+    timestamp: (grypeData.descriptor?.timestamp ? parseTimestamp(grypeData.descriptor.timestamp) : null) ?? new Date(),
   });
 }

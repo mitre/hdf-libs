@@ -20,6 +20,14 @@ runConverterContractTests({
   minimalFixture: 'sample-results.json',
 });
 
+describe('timestamp parse fallback', () => {
+  it('falls back to conversion time when service_started is unparseable', async () => {
+    const input = loadFixture('sample-results.json').replace(/2023-08-31T12:23:51\.158629Z/g, 'not-a-date');
+    const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
+    expectValidResults(hdf);
+  });
+});
+
 describe('conveyor to HDF converter', async () => {
   describe('input validation', async () => {
     it('should throw when api_response is missing', async () => {

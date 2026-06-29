@@ -40,6 +40,14 @@ runConverterContractTests({
   minimalFixture: 'sample-netsparker-invicti.xml',
 });
 
+describe('timestamp parse fallback', () => {
+  it('falls back to a default startTime when the initiated date is unparseable', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml').replace(/05\/05\/2023 04:57 PM/g, 'not-a-date');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    expectValidResults(hdf);
+  });
+});
+
 describe('Netsparker to HDF converter', () => {
   // ---- Baseline structure ----
 

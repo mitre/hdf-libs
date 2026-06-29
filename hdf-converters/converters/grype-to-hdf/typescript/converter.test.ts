@@ -19,6 +19,15 @@ runConverterContractTests({
   minimalFixture: 'amazon.json',
 });
 
+describe('timestamp parse fallback', () => {
+  it('falls back to conversion time when the descriptor timestamp is unparseable', async () => {
+    const doc = JSON.parse(loadFixture('amazon.json'));
+    if (doc.descriptor) doc.descriptor.timestamp = 'not-a-date';
+    const hdf = JSON.parse(await convertGrypeToHdf(JSON.stringify(doc))) as HDFResults;
+    expectValidResults(hdf);
+  });
+});
+
 describe('Grype Converter', async () => {
   describe('convertGrypeToHdf', async () => {
     it('should convert real Grype report to HDF', async () => {

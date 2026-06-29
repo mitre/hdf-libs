@@ -39,6 +39,13 @@ describe('SonarQube to HDF Converter', async () => {
       expect(hdf.tool?.format).toBeUndefined();
     });
 
+    it('falls back to conversion time when creationDate is unparseable', async () => {
+      const inputPath = join(__dirname, '../fixtures/input/minimal.json');
+      const input = readFileSync(inputPath, 'utf-8').replace(/2026-03-01T10:00:00\+0000/g, 'not-a-date');
+      const hdf: HDFResults = JSON.parse(await convertSonarqubeToHdf(input));
+      expectValidResults(hdf);
+    });
+
     it('should create baselines per project', async () => {
       const inputPath = join(__dirname, '../fixtures/input/minimal.json');
       const input = readFileSync(inputPath, 'utf-8');

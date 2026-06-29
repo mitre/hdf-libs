@@ -1,4 +1,4 @@
-import { parseXmlWithArrays } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -252,7 +252,7 @@ function buildRequirement(
   const codeDesc = formatCodeDesc(vuln['http-request']);
   const message = formatMessage(vuln['http-response']);
 
-  const startTime = initiated ? new Date(initiated) : new Date('0001-01-01T00:00:00Z');
+  const startTime = (initiated ? parseTimestamp(initiated) : null) ?? new Date('0001-01-01T00:00:00Z');
 
   const results: RequirementResult[] = [{
     status: ResultStatus.Failed,
@@ -325,7 +325,7 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
   );
 
   if (requirements.length === 0) {
-    const initiatedDate = initiated ? new Date(initiated) : new Date();
+    const initiatedDate = (initiated ? parseTimestamp(initiated) : null) ?? new Date();
     const startTime = isNaN(initiatedDate.getTime()) ? new Date() : initiatedDate;
     requirements.push(buildNoFindingsRequirement(
       'netsparker-no-findings',

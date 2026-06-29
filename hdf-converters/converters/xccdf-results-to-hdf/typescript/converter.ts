@@ -408,9 +408,9 @@ async function convertBenchmarkResultsToHdf(
 
   let durationSeconds: number | undefined;
   if (testResult['start-time'] && testResult['end-time']) {
-    const start = new Date(testResult['start-time']).getTime();
-    const end = new Date(testResult['end-time']).getTime();
-    if (!isNaN(start) && !isNaN(end) && end >= start) {
+    const start = parseTimestamp(testResult['start-time'])?.getTime();
+    const end = parseTimestamp(testResult['end-time'])?.getTime();
+    if (start !== undefined && end !== undefined && end >= start) {
       durationSeconds = (end - start) / 1000;
     }
   }
@@ -621,9 +621,9 @@ async function convertArfCollection(
       if (t) firstTimestamp = t;
     }
     if (testResult['start-time'] && testResult['end-time']) {
-      const start = new Date(testResult['start-time']).getTime();
-      const end = new Date(testResult['end-time']).getTime();
-      if (!isNaN(start) && !isNaN(end) && end >= start) {
+      const start = parseTimestamp(testResult['start-time'])?.getTime();
+      const end = parseTimestamp(testResult['end-time'])?.getTime();
+      if (start !== undefined && end !== undefined && end >= start) {
         totalDuration += (end - start) / 1000;
       }
     }

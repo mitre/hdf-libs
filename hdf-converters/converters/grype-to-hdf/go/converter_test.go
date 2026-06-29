@@ -45,8 +45,9 @@ func TestConvertGrypeToHDF(t *testing.T) {
 		t.Errorf("Expected generator version %q, got '%s'", testConverterVersion, hdfResults.Generator.Version)
 	}
 
-	// Timestamp from real Grype output: "2024-08-29T13:47:41.623667-04:00"
-	expectedTime, _ := time.Parse(time.RFC3339Nano, "2024-08-29T13:47:41.623667-04:00")
+	// Real Grype output "2024-08-29T13:47:41.623667-04:00" is normalized by
+	// hdfutil.ParseTimestamp to canonical UTC at millisecond precision.
+	expectedTime, _ := time.Parse(time.RFC3339Nano, "2024-08-29T17:47:41.623Z")
 	if hdfResults.Timestamp == nil || !hdfResults.Timestamp.Equal(expectedTime) {
 		if hdfResults.Timestamp == nil {
 			t.Error("Expected timestamp to be defined")

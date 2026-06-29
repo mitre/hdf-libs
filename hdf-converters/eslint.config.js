@@ -57,6 +57,33 @@ export default [
     },
   },
   {
+    // Timestamp-handling guard for *-to-hdf input converters. Parsing a
+    // tool-supplied timestamp with `new Date(value)` reads a zone-less value as
+    // host-local time, diverging from the Go converters (which normalize to
+    // UTC). Route all tool timestamps through `parseTimestamp` from
+    // @mitre/hdf-utilities instead. See
+    // site/docs/contributing/developer-guide.md (Timestamp Handling).
+    // Allowed: `new Date()` (now), `new Date(0)` / `new Date('0001-...')`
+    // literals, and arithmetic like `new Date(t.getTime() + n)`.
+    files: ['converters/*-to-hdf/**/*.ts'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "NewExpression[callee.name='Date'] > Identifier.arguments",
+          message:
+            'Do not parse a tool timestamp with `new Date(value)` (zone-less values are read as host-local). Use `parseTimestamp` from @mitre/hdf-utilities. See site/docs/contributing/developer-guide.md (Timestamp Handling).',
+        },
+        {
+          selector: "NewExpression[callee.name='Date'] > MemberExpression.arguments",
+          message:
+            'Do not parse a tool timestamp with `new Date(value)` (zone-less values are read as host-local). Use `parseTimestamp` from @mitre/hdf-utilities. See site/docs/contributing/developer-guide.md (Timestamp Handling).',
+        },
+      ],
+    },
+  },
+  {
     files: ['test/**/*.ts', 'converters/**/*.test.ts', 'shared/**/*.test.ts'],
     languageOptions: {
       parser: tsparser,

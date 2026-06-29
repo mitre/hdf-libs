@@ -89,6 +89,70 @@ HDF document types (hdf-system, hdf-plan, hdf-amendments, hdf-evidence).
 
 ---
 
+## Timestamp Handling
+
+### Canonical form
+
+Every timestamp in an HDF document (`timestamp`, result `startTime`, etc.) is
+**RFC 3339 in UTC, with trailing fractional-second zeros trimmed and at most
+millisecond precision** — e.g. `2024-11-15T10:30:00Z`, `2024-01-01T00:00:00.12Z`.
+This is the single canonical form both the TypeScript and Go converters emit, so
+their output is byte-identical and independent of the host machine's timezone.
+
+UTC is canonical because `startTime`/`timestamp` are *instants* (when something
+ran), not wall-clock-with-offset; UTC has exactly one rendering, which makes
+cross-language parity trivial and eliminates the entire class of
+host-timezone-dependent bugs.
+
+### The Problem
+
+Two traps produce drift:
+
+1. **Zone-less parsing.** `new Date("2012-12-10T13:47:29")` (no `Z`/offset) is
+   read as **host-local** time in JavaScript, but as **UTC** by Go's
+   `time.Parse`. A converter using raw `new Date(value)` therefore produces
+   different output depending on the machine it runs on.
+2. **Offset / precision divergence.** A bare `time.Parse(time.RFC3339, ...)` in
+   Go preserves the source offset (`-05:00`) and nanoseconds, while the TS side
+   serializes a `Date` as UTC milliseconds — the two never match byte-for-byte.
+
+### The Fix — always go through the shared helpers
+
+| | TypeScript | Go |
+|---|---|---|
+| **Parse** a tool timestamp | `parseTimestamp(s)` from `@mitre/hdf-utilities` (zone-less → UTC, returns `Date \| null`) | `hdfutil.ParseTimestamp(s)` (zone-less → UTC, `.UTC().Truncate(ms)`, returns zero `time.Time` if unparseable) |
+| **Format** for output | `formatTimestamp(d)` / let `buildHdfResults` / `serializeHdf` serialize the `Date` (they trim the fraction) | marshal the `time.Time` (RFC3339Nano of a UTC value is already trimmed) |
+
+These helpers are the **single source of truth** — import them, never
+re-implement timestamp parsing.
+
+### Rules
+
+- **Never** parse a tool-supplied timestamp with raw `new Date(value)` (TS) or
+  `time.Parse(time.RFC3339, ...)` (Go). Use the shared helpers.
+- A converter that builds HDF output by hand (a direct `JSON.stringify`) must use
+  `serializeHdf()` from `converterutil`, not a bare `JSON.stringify`, so the
+  fractional-second trim is applied.
+- Result `startTime` is **schema-required**. When the source timestamp is absent
+  or unparseable, fall back to a *valid* value (conversion time `new Date()` /
+  the Go zero `time.Time`) — never `undefined` / omitted.
+- A custom-layout `time.Parse("<layout>", ...)` is allowed **only** for formats
+  `hdfutil.ParseTimestamp` does not cover (e.g. vendor-specific strings); wrap
+  the result in `.UTC().Truncate(time.Millisecond)` to keep it canonical.
+
+### Enforcement
+
+These rules are enforced mechanically so the drift cannot recur:
+
+- **TS:** a `no-restricted-syntax` ESLint rule in `hdf-converters/eslint.config.js`
+  bans `new Date(<identifier|member>)` in `converters/*-to-hdf/**`.
+- **Go:** `scripts/check-timestamp-usage.mjs` (run as `pnpm lint:timestamps`,
+  part of `pnpm check`) bans `time.Parse(time.RFC3339...)` in converter Go.
+
+Decision and rationale are recorded in beads memory `hdf-timestamp-canonical-utc`.
+
+---
+
 ## Exit Code Conventions
 
 The `hdf diff` CLI uses a researched exit code scheme. All future HDF CLI commands

@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   nistToCci,
@@ -213,7 +213,7 @@ function buildRequirementFromResult(
 
   const scannerName = result.response.service_name;
   const startTimeStr = result.response.milestones?.service_started ?? '';
-  const startTime = startTimeStr ? new Date(startTimeStr) : new Date();
+  const startTime = (startTimeStr ? parseTimestamp(startTimeStr) : null) ?? new Date();
   const score = result.result.score;
   const status = determineStatus(score);
 

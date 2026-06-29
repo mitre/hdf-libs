@@ -608,11 +608,7 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	// Build timestamp
 	var timestamp *time.Time
 	if grypeData.Descriptor.Timestamp != "" {
-		parsedTime, err := time.Parse(time.RFC3339Nano, grypeData.Descriptor.Timestamp)
-		if err != nil {
-			parsedTime, err = time.Parse(time.RFC3339, grypeData.Descriptor.Timestamp)
-		}
-		if err == nil {
+		if parsedTime := hdfutil.ParseTimestamp(grypeData.Descriptor.Timestamp); !parsedTime.IsZero() {
 			timestamp = &parsedTime
 		}
 	}
