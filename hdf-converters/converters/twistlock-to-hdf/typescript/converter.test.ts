@@ -30,13 +30,13 @@ runConverterContractTests({
 });
 
 describe('timestamp parse fallback', () => {
-  it('falls back to conversion time when discoveredDate is unparseable', async () => {
+  it('falls back to a valid startTime when discoveredDate is unparseable', async () => {
     const input = loadFixture('twistlock-twistcli-sample-1.json').replace(/2021-12-01T00:00:00Z/g, 'not-a-date');
     const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
     expectValidResults(hdf);
   });
 
-  it('falls back to conversion time when discoveredDate is absent', async () => {
+  it('falls back to a valid startTime when discoveredDate is absent', async () => {
     const input = loadFixture('twistlock-twistcli-sample-1.json').replace(/"discoveredDate"/g, '"discoveredDateAbsent"');
     const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
     expectValidResults(hdf);

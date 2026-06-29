@@ -197,7 +197,7 @@ function buildRequirement(
 
   const resultObj = createResult(status, message, {
     codeDesc: finding.description,
-    startTime: (startTime ? parseTimestamp(startTime) : null) ?? new Date(),
+    startTime: (startTime ? parseTimestamp(startTime) : null) ?? new Date('0001-01-01T00:00:00Z'),
   });
 
   const req = createRequirement(

@@ -333,7 +333,7 @@ function buildRequirement(
     { label: 'default', data: vuln.description },
   ];
 
-  const startTime = (vuln.discoveredDate ? parseTimestamp(vuln.discoveredDate) : null) ?? new Date();
+  const startTime = (vuln.discoveredDate ? parseTimestamp(vuln.discoveredDate) : null) ?? new Date('0001-01-01T00:00:00Z');
 
   const results = [
     createResult(ResultStatus.Failed, undefined, {

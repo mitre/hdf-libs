@@ -213,7 +213,7 @@ function buildRequirementFromResult(
 
   const scannerName = result.response.service_name;
   const startTimeStr = result.response.milestones?.service_started ?? '';
-  const startTime = (startTimeStr ? parseTimestamp(startTimeStr) : null) ?? new Date();
+  const startTime = (startTimeStr ? parseTimestamp(startTimeStr) : null) ?? new Date('0001-01-01T00:00:00Z');
   const score = result.result.score;
   const status = determineStatus(score);
 

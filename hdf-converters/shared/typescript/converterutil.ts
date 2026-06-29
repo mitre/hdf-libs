@@ -6,7 +6,7 @@
  * - Re-exports of shared constants and utilities
  */
 
-import { sha256 } from '@mitre/hdf-utilities';
+import { sha256, trimUtcFraction } from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
@@ -345,7 +345,7 @@ const ISO_UTC_WITH_FRACTION = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z$/;
 
 function hdfTimestampReplacer(_key: string, value: unknown): unknown {
   if (typeof value === 'string' && ISO_UTC_WITH_FRACTION.test(value)) {
-    return value.replace(/\.(\d*?)0+Z$/, (_m, keep: string) => (keep ? `.${keep}Z` : 'Z'));
+    return trimUtcFraction(value);
   }
   return value;
 }

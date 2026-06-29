@@ -153,6 +153,9 @@ const ZAP_RFC1123_LIKE = /^[A-Za-z]{3}, \d{1,2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d
 function parseZapTimestamp(s: string): Date | undefined {
   const trimmed = s.trim();
   if (ZAP_RFC1123_LIKE.test(trimmed)) {
+    // Appending GMT forces UTC interpretation, so this new Date() is
+    // host-independent and safe — unlike a bare tool value.
+    // eslint-disable-next-line no-restricted-syntax
     const d = new Date(`${trimmed} GMT`);
     if (!isNaN(d.getTime())) {
       return d;

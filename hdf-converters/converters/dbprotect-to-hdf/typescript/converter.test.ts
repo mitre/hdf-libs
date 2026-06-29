@@ -175,20 +175,18 @@ describe('dbprotect to HDF converter', () => {
       expect(req!.results[0]!.startTime).toBe('2021-02-18T15:55:00Z');
     });
 
-    it('falls back to conversion time when the Date column is empty', async () => {
-      const before = Date.now();
+    it('falls back to the Go zero-value time when the Date column is empty', async () => {
       const xml = loadFixture('sample-check-results.xml').replace(/Feb 18 2021 15:57/g, '');
       const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
-      expect(new Date(req!.results[0]!.startTime as string).getTime()).toBeGreaterThanOrEqual(before);
+      expect(req!.results[0]!.startTime).toBe('0001-01-01T00:00:00Z');
     });
 
-    it('falls back to conversion time for an unrecognized month name', async () => {
-      const before = Date.now();
+    it('falls back to the Go zero-value time for an unrecognized month name', async () => {
       const xml = loadFixture('sample-check-results.xml').replace(/Feb 18 2021 15:57/g, 'Xyz 18 2021 15:57');
       const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
-      expect(new Date(req!.results[0]!.startTime as string).getTime()).toBeGreaterThanOrEqual(before);
+      expect(req!.results[0]!.startTime).toBe('0001-01-01T00:00:00Z');
     });
   });
 

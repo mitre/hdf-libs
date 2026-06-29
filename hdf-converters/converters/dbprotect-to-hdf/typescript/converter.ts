@@ -133,14 +133,18 @@ const MONTH_ABBR: Record<string, string> = {
  */
 function parseDate(dateStr: string): Date {
   const trimmed = dateStr.trim();
+  // Go's parseDate returns the zero time.Time (serializes as 0001-01-01T00:00:00Z)
+  // for an empty or unparseable Date column; mirror that for byte-parity instead
+  // of a non-deterministic conversion-time fallback.
+  const ZERO = new Date('0001-01-01T00:00:00Z');
   if (!trimmed) {
-    return new Date();
+    return ZERO;
   }
   const month = /^([A-Z][a-z]{2}) (\d{1,2}) (\d{4}) (\d{2}:\d{2})$/.exec(trimmed);
   const normalized = month
     ? `${month[3]}-${MONTH_ABBR[month[1]!] ?? '00'}-${month[2]!.padStart(2, '0')} ${month[4]}`
     : trimmed;
-  return parseTimestamp(normalized) ?? new Date();
+  return parseTimestamp(normalized) ?? ZERO;
 }
 
 /**

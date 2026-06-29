@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import {
   stripHtml,
   parseTimestamp,
@@ -109,6 +109,39 @@ describe('parseTimestamp', () => {
   it('respects an explicit Z designator', () => {
     const result = parseTimestamp('2024-11-15T10:30:00Z');
     expect(result!.toISOString()).toBe('2024-11-15T10:30:00.000Z');
+  });
+
+  // C ctime layout (e.g. Nessus HOST_START) — Go's hdfutil.ParseTimestamp treats
+  // "Mon Jan 02 15:04:05 2006" as UTC; we must too, not host-local.
+  it('treats a C ctime datetime as UTC (matches Go)', () => {
+    const result = parseTimestamp('Tue Mar 22 14:54:47 2022');
+    expect(result).not.toBeNull();
+    expect(result!.toISOString()).toBe('2022-03-22T14:54:47.000Z');
+  });
+
+  it('treats a single-digit-day ctime as UTC', () => {
+    const result = parseTimestamp('Mon Jan  2 15:04:05 2006');
+    expect(result).not.toBeNull();
+    expect(result!.toISOString()).toBe('2006-01-02T15:04:05.000Z');
+  });
+});
+
+// Proves the zone-less formats are coerced to UTC regardless of the host
+// timezone — under UTC CI a host-local parse bug would pass silently, so this
+// runs under a non-UTC TZ where the bug would shift the instant.
+describe('parseTimestamp host-timezone independence (TZ=America/New_York)', () => {
+  const original = process.env.TZ;
+  beforeAll(() => { process.env.TZ = 'America/New_York'; });
+  afterAll(() => { process.env.TZ = original; });
+
+  it('ISO zone-less -> UTC', () => {
+    expect(parseTimestamp('2012-12-10T13:47:29')!.toISOString()).toBe('2012-12-10T13:47:29.000Z');
+  });
+  it('InSpec space zone-less -> UTC', () => {
+    expect(parseTimestamp('2012-12-10 13:47:29')!.toISOString()).toBe('2012-12-10T13:47:29.000Z');
+  });
+  it('C ctime (Nessus HOST_START) -> UTC', () => {
+    expect(parseTimestamp('Tue Mar 22 14:54:47 2022')!.toISOString()).toBe('2022-03-22T14:54:47.000Z');
   });
 });
 

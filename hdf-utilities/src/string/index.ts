@@ -36,6 +36,11 @@ export function stripHtml(html: string): string {
 // append 'Z' to force UTC so output is host-timezone-independent.
 const ISO_DATETIME_NO_ZONE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/;
 
+// C ctime layout ("Tue Mar 22 14:54:47 2022", or "Mon Jan  2 ..." for a
+// single-digit day). Go's hdfutil.ParseTimestamp parses this layout as UTC;
+// V8's Date treats it as host-local, so we append a 'GMT' designator to match.
+const CTIME_NO_ZONE = /^[A-Za-z]{3} [A-Za-z]{3} +\d{1,2} \d{2}:\d{2}:\d{2} \d{4}$/;
+
 /**
  * Parse a timestamp string in various common formats into a Date.
  *
@@ -62,9 +67,12 @@ export function parseTimestamp(s: string): Date | null {
   }
 
   const trimmed = s.trim();
-  const normalized = ISO_DATETIME_NO_ZONE.test(trimmed)
-    ? `${trimmed.replace(' ', 'T')}Z`
-    : trimmed;
+  let normalized = trimmed;
+  if (ISO_DATETIME_NO_ZONE.test(trimmed)) {
+    normalized = `${trimmed.replace(' ', 'T')}Z`;
+  } else if (CTIME_NO_ZONE.test(trimmed)) {
+    normalized = `${trimmed} GMT`;
+  }
 
   const parsed = new Date(normalized);
   if (isNaN(parsed.getTime())) {

@@ -16,7 +16,7 @@ runConverterContractTests({
 });
 
 describe('timestamp parse fallback', () => {
-  it('falls back to conversion time when result.start_time is unparseable', async () => {
+  it('falls back to a valid startTime when result.start_time is unparseable', async () => {
     const input = loadFixture('splunk-events.json').replace(/2019-11-04T16:17:17-05:00/g, 'not-a-date');
     const hdf = JSON.parse(await convertSplunkToHdf(input)) as HDFResults;
     expectValidResults(hdf);

@@ -1,6 +1,27 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 
+// Timestamp guard: forbid `new Date(<value>)` on a tool-supplied value in
+// *-to-hdf converters (zone-less values are read as host-local; use
+// parseTimestamp). Match the first argument across the forms converters
+// actually use to feed it — bare identifier, member access, and the coercion
+// wrappers `as`/`!`/call/template-literal — so the guard can't be bypassed by
+// `new Date(raw as string)`, `new Date(raw!)`, `new Date(String(raw))`, etc.
+// Safe forms (no-arg now, numeric/string literals, arithmetic) are not matched.
+const DATE_GUARD_MSG =
+  'Do not parse a tool timestamp with `new Date(value)` (zone-less values are read as host-local). Use `parseTimestamp` from @mitre/hdf-utilities. See site/docs/contributing/developer-guide.md (Timestamp Handling).';
+const DATE_GUARD_RULES = [
+  'Identifier',
+  'MemberExpression',
+  'TSAsExpression',
+  'TSNonNullExpression',
+  'CallExpression',
+  'TemplateLiteral',
+].map((argType) => ({
+  selector: `NewExpression[callee.name='Date'] > ${argType}.arguments`,
+  message: DATE_GUARD_MSG,
+}));
+
 export default [
   {
     files: ['src/**/*.ts'],
@@ -64,28 +85,12 @@ export default [
     // @mitre/hdf-utilities instead. See
     // site/docs/contributing/developer-guide.md (Timestamp Handling).
     // Allowed: `new Date()` (now), `new Date(0)` / `new Date('0001-...')`
-    // literals, and arithmetic like `new Date(t.getTime() + n)`.
-    //
-    // `X.arguments` is esquery's field-selector syntax: "an X node located in
-    // the parent's `arguments` field" — i.e. a `new Date(...)` call whose first
-    // argument is an Identifier or MemberExpression. Verified to flag both
-    // `new Date(value)` and `new Date(obj.prop)`.
+    // literals, and arithmetic like `new Date(t.getTime() + n)`. See
+    // DATE_GUARD_RULES above for the matched argument forms.
     files: ['converters/*-to-hdf/**/*.ts'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: "NewExpression[callee.name='Date'] > Identifier.arguments",
-          message:
-            'Do not parse a tool timestamp with `new Date(value)` (zone-less values are read as host-local). Use `parseTimestamp` from @mitre/hdf-utilities. See site/docs/contributing/developer-guide.md (Timestamp Handling).',
-        },
-        {
-          selector: "NewExpression[callee.name='Date'] > MemberExpression.arguments",
-          message:
-            'Do not parse a tool timestamp with `new Date(value)` (zone-less values are read as host-local). Use `parseTimestamp` from @mitre/hdf-utilities. See site/docs/contributing/developer-guide.md (Timestamp Handling).',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...DATE_GUARD_RULES],
     },
   },
   {

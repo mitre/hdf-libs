@@ -21,13 +21,13 @@ runConverterContractTests({
 });
 
 describe('timestamp parse fallback', () => {
-  it('uses conversion time when createdDateTime is unparseable', async () => {
+  it('uses a valid startTime when createdDateTime is unparseable', async () => {
     const input = loadFixture('minimal.json').replace(/2024-01-01T00:00:00Z/g, 'not-a-date');
     const hdf = JSON.parse(await convertMsftSecureScoreToHdf(input)) as HDFResults;
     expectValidResults(hdf);
   });
 
-  it('uses conversion time when createdDateTime is absent', async () => {
+  it('uses a valid startTime when createdDateTime is absent', async () => {
     const input = loadFixture('minimal.json').replace(/"createdDateTime"/g, '"createdDateTimeAbsent"');
     const hdf = JSON.parse(await convertMsftSecureScoreToHdf(input)) as HDFResults;
     expectValidResults(hdf);

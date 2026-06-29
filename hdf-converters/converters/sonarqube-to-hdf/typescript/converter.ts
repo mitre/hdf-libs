@@ -481,7 +481,7 @@ function createResultFromIssue(
 
   return createResult(status, issue.message, {
     codeDesc,
-    startTime: parseTimestamp(issue.creationDate) ?? new Date(),
+    startTime: parseTimestamp(issue.creationDate) ?? new Date('0001-01-01T00:00:00Z'),
   });
 }
 

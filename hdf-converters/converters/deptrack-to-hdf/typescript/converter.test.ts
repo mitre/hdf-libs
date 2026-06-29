@@ -21,13 +21,13 @@ runConverterContractTests({
 });
 
 describe('timestamp parse fallback', () => {
-  it('falls back to conversion time when the report timestamp is unparseable', async () => {
+  it('falls back to a valid startTime when the report timestamp is unparseable', async () => {
     const input = loadFixture('fpf-default.json').replace(/2022-02-18T23:31:42Z/g, 'not-a-date');
     const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
     expectValidResults(hdf);
   });
 
-  it('falls back to conversion time when the report timestamp is absent', async () => {
+  it('falls back to a valid startTime when the report timestamp is absent', async () => {
     const input = loadFixture('fpf-default.json').replace(/"timestamp"/g, '"timestampAbsent"');
     const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
     expectValidResults(hdf);

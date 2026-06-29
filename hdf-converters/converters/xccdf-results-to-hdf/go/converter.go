@@ -792,7 +792,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 	}
 
 	if firstTimestamp.IsZero() {
-		firstTimestamp = time.Now()
+		firstTimestamp = time.Now().UTC()
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
@@ -899,7 +899,7 @@ func calculateTiming(tr *TestResult) (time.Time, float64) {
 	endTime := hdfutil.ParseTimestamp(tr.EndTime)
 
 	if startTime.IsZero() {
-		startTime = time.Now()
+		startTime = time.Now().UTC()
 	}
 
 	var duration float64

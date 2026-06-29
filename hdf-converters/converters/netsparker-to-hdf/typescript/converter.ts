@@ -109,6 +109,25 @@ function getImpact(severity: string): number {
   return IMPACT_MAPPING[severity.toLowerCase()] ?? 0.5;
 }
 
+// Netsparker <initiated> uses the US format "MM/DD/YYYY hh:mm AM/PM"
+// (e.g. "05/05/2023 04:57 PM"), which the shared parseTimestamp does not
+// recognize — so it would fall to host-local `new Date()`. Parse it explicitly
+// as UTC (mirroring the Go converter's parseNetsparkerTimestamp + UTC
+// normalization); fall back to the shared parser for any other shape.
+const NETSPARKER_US_DATETIME = /^\d{2}\/\d{2}\/\d{4} \d{1,2}:\d{2} (AM|PM)$/;
+
+function parseNetsparkerTimestamp(s: string): Date | null {
+  const trimmed = s.trim();
+  if (NETSPARKER_US_DATETIME.test(trimmed)) {
+    // Appending GMT forces UTC interpretation (the whole point of this parser),
+    // so this new Date() is host-independent and safe — unlike a bare value.
+    // eslint-disable-next-line no-restricted-syntax
+    const d = new Date(`${trimmed} GMT`);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return parseTimestamp(s);
+}
+
 // --- Format helpers ---
 
 function formatCodeDesc(request: NetsparkerHttpRequest | undefined): string {
@@ -252,7 +271,7 @@ function buildRequirement(
   const codeDesc = formatCodeDesc(vuln['http-request']);
   const message = formatMessage(vuln['http-response']);
 
-  const startTime = (initiated ? parseTimestamp(initiated) : null) ?? new Date('0001-01-01T00:00:00Z');
+  const startTime = (initiated ? parseNetsparkerTimestamp(initiated) : null) ?? new Date('0001-01-01T00:00:00Z');
 
   const results: RequirementResult[] = [{
     status: ResultStatus.Failed,
@@ -325,8 +344,7 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
   );
 
   if (requirements.length === 0) {
-    const initiatedDate = (initiated ? parseTimestamp(initiated) : null) ?? new Date();
-    const startTime = isNaN(initiatedDate.getTime()) ? new Date() : initiatedDate;
+    const startTime = (initiated ? parseNetsparkerTimestamp(initiated) : null) ?? new Date();
     requirements.push(buildNoFindingsRequirement(
       'netsparker-no-findings',
       `${toolName} scanned ${targetName} and reported zero findings.`,

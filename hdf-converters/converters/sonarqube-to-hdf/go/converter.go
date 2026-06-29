@@ -203,7 +203,7 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 
 	// Build HDF
-	timestamp := time.Now()
+	timestamp := time.Now().UTC()
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "sonarqube-to-hdf",

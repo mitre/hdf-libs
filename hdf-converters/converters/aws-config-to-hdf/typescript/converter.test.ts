@@ -22,13 +22,13 @@ runConverterContractTests({
 });
 
 describe('timestamp parse fallback', () => {
-  it('falls back to conversion time when ConfigRuleInvokedTime is unparseable', async () => {
+  it('falls back to a valid startTime when ConfigRuleInvokedTime is unparseable', async () => {
     const input = loadFixture('minimal.json').replace(/2021-04-09T14:39:21Z/g, 'not-a-date');
     const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HDFResults;
     expectValidResults(hdf);
   });
 
-  it('falls back to conversion time when ConfigRuleInvokedTime is absent', async () => {
+  it('falls back to a valid startTime when ConfigRuleInvokedTime is absent', async () => {
     const input = loadFixture('minimal.json').replace(/"ConfigRuleInvokedTime"/g, '"ConfigRuleInvokedTimeAbsent"');
     const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HDFResults;
     expectValidResults(hdf);

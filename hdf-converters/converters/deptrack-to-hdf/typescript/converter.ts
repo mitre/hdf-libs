@@ -179,7 +179,7 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
   const results = [
     createResult(ResultStatus.Failed, undefined, {
       codeDesc,
-      startTime: (timestamp ? parseTimestamp(timestamp) : null) ?? new Date(),
+      startTime: (timestamp ? parseTimestamp(timestamp) : null) ?? new Date('0001-01-01T00:00:00Z'),
     }),
   ];
 

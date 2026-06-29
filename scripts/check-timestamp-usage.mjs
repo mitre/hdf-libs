@@ -23,7 +23,8 @@ const convertersDir = join(root, 'hdf-converters', 'converters');
 // Bare RFC3339 / RFC3339Nano parse — should be hdfutil.ParseTimestamp.
 // `g` flag + whole-file scan so a call wrapped across lines
 // (e.g. `time.Parse(\n  time.RFC3339, ...)`) is still detected — \s* spans newlines.
-const FORBIDDEN = /time\.Parse\(\s*time\.RFC3339/g;
+// Matches both time.Parse(...) and time.ParseInLocation(...) on an RFC3339 layout.
+const FORBIDDEN = /time\.Parse(InLocation)?\(\s*time\.RFC3339/g;
 
 const offenders = [];
 for (const conv of readdirSync(convertersDir, { withFileTypes: true })) {

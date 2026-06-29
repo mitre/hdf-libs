@@ -224,7 +224,7 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
             ? control.results.map((result) =>
                 createResult(mapStatus(result.status), result.message, {
                   codeDesc: result.code_desc,
-                  startTime: parseTimestamp(result.start_time) ?? new Date(),
+                  startTime: parseTimestamp(result.start_time) ?? new Date('0001-01-01T00:00:00Z'),
                   runTime: result.run_time,
                   exception: result.exception,
                   backtrace: result.backtrace,
