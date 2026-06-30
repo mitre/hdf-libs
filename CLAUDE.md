@@ -193,6 +193,7 @@ The sections below apply to Claude (and other AI coding agents) working in this 
 - **Comments only when the WHY is non-obvious.** A clear function name beats a multi-line preamble. No issue numbers, no "addresses bug X", no "see PR #Y" — that belongs in commit messages and PR descriptions, where it doesn't rot as the codebase evolves.
 - **Multi-line comment blocks are almost never justified.** Default to a single line. Only spend more space when a non-obvious invariant, hidden constraint, or subtle cross-file interaction genuinely needs it. If the WHY fits in one line, write one line. Resist the urge to narrate design decisions — that's what the commit message is for.
 - **No `docs/` folders inside individual library packages.** All documentation lives under the top-level `site/docs/` tree, which feeds the VitePress site. Put new docs in the appropriate `site/docs/` subtree (architecture, guides, contributing, specification) — not next to the code, where it fragments and never reaches the published site.
+- **No emoji in the docs site.** The schema reference site (`site/`) is a technical reference; pictographic emoji read as sloppy. Do not use them in docs content, headings, nav, or VitePress config. Technical typography is fine and expected — flow/mapping arrows (`→ ← ↑ ↓`), ASCII box-drawing in diagrams, and monochrome text marks (`✓`/`✗`) in support matrices are not emoji and may stay.
 
 ## Converter Requirements
 
