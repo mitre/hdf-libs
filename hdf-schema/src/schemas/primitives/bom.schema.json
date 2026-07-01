@@ -50,7 +50,7 @@
           "items": {
             "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Checksum"
           },
-          "description": "Integrity of the carried BOM artifact itself (the referenced/embedded document), NOT the identity of the BOM's subject. Subject identity is inherited from the host component/system; per-node identity lives in the type-extension."
+          "description": "Integrity of the carried BOM *document* itself (the referenced/embedded manifest file), NOT the integrity of the BOM's subject artifact. Subject/artifact integrity (model weights, dataset archive) is a component-level concern, not carried here. Subject identity is inherited from the host component/system; per-node identity lives in the type-extension."
         },
         "uniqueId": {
           "type": "string",
@@ -137,14 +137,16 @@
           }
         },
         {
-          "$comment": "Normalized dataset BOM referenced by an ai-model via baseModelRef/datasetRefs correlation.",
+          "$comment": "Normalized dataset BOM with lineage — a filtered derivative of a base dataset, referenced by an ai-model via datasetRefs.",
           "bomType": "dataset",
           "format": "croissant",
           "dataset": {
             "recordCount": 2500000,
             "datasetFormat": "parquet",
             "dataClassification": "public",
-            "intendedUse": "instruction fine-tuning"
+            "intendedUse": "instruction fine-tuning",
+            "baseDatasetRefs": ["HuggingFaceH4/ultrachat_200k"],
+            "derivation": "filtered"
           }
         }
       ]
@@ -181,7 +183,7 @@
         "datasetRefs": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "References to the training/evaluation dataset BOMs (uniqueId or URI) this model was produced from."
+          "description": "References to the training/evaluation datasets this model was produced from — preferably a dataset component's componentId (correlating to a first-class dataset subject rather than duplicating dataset detail, per ADR §10), or a dataset BOM uniqueId/URI when no component exists."
         },
         "intendedUse": {
           "type": "string",
@@ -192,7 +194,7 @@
     "Dataset_Extension": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Normalized dataset fields (SPDX 3.0 Dataset profile / MLCommons Croissant aligned). All optional; open for partial-fidelity passthrough of unmapped native fields.",
+      "description": "Normalized dataset fields (SPDX 3.0 Dataset profile / MLCommons Croissant aligned). All optional; open for partial-fidelity passthrough of unmapped native fields. Symmetric with AI_Model_Extension: carries the dataset's own lineage (baseDatasetRefs/derivation) just as the model extension carries baseModelRef/adaptationType.",
       "title": "Dataset BOM Extension",
       "properties": {
         "recordCount": {
@@ -211,6 +213,17 @@
         "intendedUse": {
           "type": "string",
           "description": "Free-text statement of the dataset's intended use (CISA/G7 minimum element)."
+        },
+        "baseDatasetRefs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "References to the source dataset(s) this one was derived from — a dataset componentId, or a dataset BOM uniqueId/URI when no component exists. The lineage edge parallel to ai-model's baseModelRef; the base dataset may carry its own dataset BOM."
+        },
+        "derivation": {
+          "type": "string",
+          "title": "Dataset Derivation Type",
+          "enum": ["filtered", "augmented", "merged", "sampled"],
+          "description": "Relationship of this dataset to baseDatasetRefs, parallel to the model extension's adaptationType. Minimal + extensible: filtered (subset by rule), augmented (added/synthesized records), merged (union of sources), sampled (statistical draw)."
         }
       }
     },

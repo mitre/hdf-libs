@@ -1237,9 +1237,10 @@
                 "artifact",
                 "network",
                 "database",
-                "aiModel"
+                "aiModel",
+                "dataset"
               ],
-              "description": "Component type discriminator. Same values as Target types, plus aiModel (a thin AI-model component whose detail lives in an attached ai-model BOM)."
+              "description": "Component type discriminator. Same values as Target types, plus aiModel and dataset (thin AI subject components whose detail lives in an attached ai-model / dataset BOM)."
             },
             "name": {
               "type": "string",
@@ -1340,6 +1341,9 @@
             },
             {
               "$ref": "#/$defs/AI_Model_Component"
+            },
+            {
+              "$ref": "#/$defs/Dataset_Component"
             }
           ]
         },
@@ -1781,6 +1785,55 @@
           ],
           "description": "A thin AI-model component: identity and correlation only (parallel to Host_Component's fqdn/ip). All model detail — architecture, parameter count, serialization format, lineage — lives in an attached ai-model BOM (boms[]), never on the component itself.",
           "title": "AI Model Component"
+        },
+        "Dataset_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "dataset"
+                },
+                "datasetId": {
+                  "type": "string",
+                  "description": "Provider/registry identifier for the dataset. Examples: a Hugging Face dataset repo id ('HuggingFaceH4/ultrachat_200k'), a DOI, or a dataset purl. Correlates the component to its dataset BOM(s) and to datasetRefs from ai-model components."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Dataset version, release identifier, or — for highly dynamic datasets — a timestamped release marker."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "dataset",
+              "name": "UltraChat-200k (filtered)",
+              "componentId": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+              "datasetId": "acme/ultrachat-200k-filtered",
+              "version": "2026-06-01",
+              "boms": [
+                {
+                  "bomType": "dataset",
+                  "format": "croissant",
+                  "dataset": {
+                    "recordCount": 180000,
+                    "datasetFormat": "parquet",
+                    "dataClassification": "public",
+                    "baseDatasetRefs": [
+                      "HuggingFaceH4/ultrachat_200k"
+                    ],
+                    "derivation": "filtered"
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "A thin dataset component: identity and correlation only, symmetric with AI_Model_Component. All dataset detail — record count, format, classification, lineage — lives in an attached dataset BOM (boms[]), never on the component itself.",
+          "title": "Dataset Component"
         }
       }
     },
@@ -1836,7 +1889,7 @@
               "items": {
                 "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Checksum"
               },
-              "description": "Integrity of the carried BOM artifact itself (the referenced/embedded document), NOT the identity of the BOM's subject. Subject identity is inherited from the host component/system; per-node identity lives in the type-extension."
+              "description": "Integrity of the carried BOM *document* itself (the referenced/embedded manifest file), NOT the integrity of the BOM's subject artifact. Subject/artifact integrity (model weights, dataset archive) is a component-level concern, not carried here. Subject identity is inherited from the host component/system; per-node identity lives in the type-extension."
             },
             "uniqueId": {
               "type": "string",
@@ -1956,14 +2009,18 @@
               }
             },
             {
-              "$comment": "Normalized dataset BOM referenced by an ai-model via baseModelRef/datasetRefs correlation.",
+              "$comment": "Normalized dataset BOM with lineage — a filtered derivative of a base dataset, referenced by an ai-model via datasetRefs.",
               "bomType": "dataset",
               "format": "croissant",
               "dataset": {
                 "recordCount": 2500000,
                 "datasetFormat": "parquet",
                 "dataClassification": "public",
-                "intendedUse": "instruction fine-tuning"
+                "intendedUse": "instruction fine-tuning",
+                "baseDatasetRefs": [
+                  "HuggingFaceH4/ultrachat_200k"
+                ],
+                "derivation": "filtered"
               }
             }
           ]
@@ -2007,7 +2064,7 @@
               "items": {
                 "type": "string"
               },
-              "description": "References to the training/evaluation dataset BOMs (uniqueId or URI) this model was produced from."
+              "description": "References to the training/evaluation datasets this model was produced from — preferably a dataset component's componentId (correlating to a first-class dataset subject rather than duplicating dataset detail, per ADR §10), or a dataset BOM uniqueId/URI when no component exists."
             },
             "intendedUse": {
               "type": "string",
@@ -2018,7 +2075,7 @@
         "Dataset_Extension": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Normalized dataset fields (SPDX 3.0 Dataset profile / MLCommons Croissant aligned). All optional; open for partial-fidelity passthrough of unmapped native fields.",
+          "description": "Normalized dataset fields (SPDX 3.0 Dataset profile / MLCommons Croissant aligned). All optional; open for partial-fidelity passthrough of unmapped native fields. Symmetric with AI_Model_Extension: carries the dataset's own lineage (baseDatasetRefs/derivation) just as the model extension carries baseModelRef/adaptationType.",
           "title": "Dataset BOM Extension",
           "properties": {
             "recordCount": {
@@ -2037,6 +2094,24 @@
             "intendedUse": {
               "type": "string",
               "description": "Free-text statement of the dataset's intended use (CISA/G7 minimum element)."
+            },
+            "baseDatasetRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "References to the source dataset(s) this one was derived from — a dataset componentId, or a dataset BOM uniqueId/URI when no component exists. The lineage edge parallel to ai-model's baseModelRef; the base dataset may carry its own dataset BOM."
+            },
+            "derivation": {
+              "type": "string",
+              "title": "Dataset Derivation Type",
+              "enum": [
+                "filtered",
+                "augmented",
+                "merged",
+                "sampled"
+              ],
+              "description": "Relationship of this dataset to baseDatasetRefs, parallel to the model extension's adaptationType. Minimal + extensible: filtered (subset by rule), augmented (added/synthesized records), merged (union of sources), sampled (statistical draw)."
             }
           }
         },

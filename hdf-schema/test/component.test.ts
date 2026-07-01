@@ -298,6 +298,47 @@ describe('component.schema.json', () => {
       };
       expect(validate(valid)).toBe(true);
     });
+
+    it('should validate a dataset BOM with lineage (baseDatasetRefs + derivation)', () => {
+      const valid = {
+        name: 'TrainingCorpus',
+        type: 'application',
+        boms: [
+          {
+            bomType: 'dataset',
+            format: 'croissant',
+            dataset: {
+              recordCount: 1000000,
+              baseDatasetRefs: ['b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f'],
+              derivation: 'filtered',
+            },
+          },
+        ],
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should reject an invalid dataset derivation enum value', () => {
+      const invalid = {
+        name: 'TrainingCorpus',
+        type: 'application',
+        boms: [
+          { bomType: 'dataset', format: 'croissant', dataset: { derivation: 'synthesized' } },
+        ],
+      };
+      expect(validate(invalid)).toBe(false);
+    });
+
+    it('should reject dataset lineage carried on a non-dataset BOM (three-tier)', () => {
+      const invalid = {
+        name: 'M',
+        type: 'application',
+        boms: [
+          { bomType: 'ai-model', format: 'cyclonedx-ml', dataset: { derivation: 'filtered' } },
+        ],
+      };
+      expect(validate(invalid)).toBe(false);
+    });
   });
 
   // ── Polymorphic Component variants ──
@@ -465,6 +506,30 @@ describe('component.schema.json', () => {
             bomType: 'ai-model',
             format: 'cyclonedx-ml',
             model: { parameterCount: 6738415616, serializationFormat: 'safetensors', adaptationType: 'finetune' },
+          },
+        ],
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate a Dataset_Component', () => {
+      const valid = {
+        type: 'dataset',
+        name: 'UltraChat-200k (filtered)',
+        componentId: 'c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f',
+        datasetId: 'acme/ultrachat-200k-filtered',
+        version: '2026-06-01',
+        boms: [
+          {
+            bomType: 'dataset',
+            format: 'croissant',
+            dataset: {
+              recordCount: 180000,
+              datasetFormat: 'parquet',
+              dataClassification: 'public',
+              baseDatasetRefs: ['HuggingFaceH4/ultrachat_200k'],
+              derivation: 'filtered',
+            },
           },
         ],
       };
