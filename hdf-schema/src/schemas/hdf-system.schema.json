@@ -59,7 +59,7 @@
       "items": {
         "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.3.0#/$defs/Component"
       },
-      "description": "System components within the authorization boundary. Uses the full polymorphic Component type with stable identity (componentId), external references, and SBOM support."
+      "description": "System components within the authorization boundary. Uses the full polymorphic Component type with stable identity (componentId), external references, and generalized BOM attachment (boms[])."
     },
     "controlDesignations": {
       "type": "array",
@@ -74,6 +74,13 @@
         "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.3.0#/$defs/Data_Flow"
       },
       "description": "Inter-component data flows describing how components communicate. Supports local, cross-system, and external flows. Replaces the interconnections[] field."
+    },
+    "boms": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.3.0#/$defs/Bom"
+      },
+      "description": "System-scoped Bills of Materials whose subject is the authorization boundary rather than a single component (e.g. a SaaSBOM of services, a KBOM of cluster inventory, an OBOM). Component-scoped BOMs (SBOM, ai-model) attach on the component instead. See primitives/bom.schema.json."
     },
     "labels": {
       "type": "object",
@@ -111,8 +118,13 @@
           "componentId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
           "description": "RHEL 9 web servers running the portal",
           "baselineRefs": ["RHEL9-STIG", "DISA-Container-STIG"],
-          "sbomRef": "https://artifacts.agency.gov/sbom/webtier-2026-03.cdx.json",
-          "sbomFormat": "cyclonedx"
+          "boms": [
+            {
+              "bomType": "sbom",
+              "format": "cyclonedx",
+              "ref": "https://artifacts.agency.gov/sbom/webtier-2026-03.cdx.json"
+            }
+          ]
         },
         {
           "name": "DatabaseTier",

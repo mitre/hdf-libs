@@ -563,17 +563,24 @@
       "type": "object",
       "unevaluatedProperties": false,
       "required": [
-        "purl",
         "state"
+      ],
+      "anyOf": [
+        { "required": ["purl"] },
+        { "required": ["identifier"] }
       ],
       "properties": {
         "purl": {
           "type": "string",
-          "description": "Package URL (purl) used as the identity key for matching across SBOMs."
+          "description": "Package URL (purl) — the preferred identity key for matching software packages across BOMs. Optional: BOM nodes without a purl (AI models, datasets, hardware parts, crypto algorithms) key on identifier instead."
+        },
+        "identifier": {
+          "type": "string",
+          "description": "Generic identity key for matching a BOM node across versions when no purl applies — e.g. a Hugging Face model ref, dataset uniqueId, crypto algorithm OID, or hardware part number. At least one of purl or identifier is required."
         },
         "name": {
           "type": "string",
-          "description": "Human-readable package name."
+          "description": "Human-readable node name."
         },
         "state": {
           "type": "string",
@@ -600,7 +607,24 @@
           "description": "License identifiers for this package."
         }
       },
-      "description": "Comparison of a single package between two SBOM versions, matched by purl.",
+      "examples": [
+        {
+          "$comment": "Software package diff keyed by purl (the SBOM case).",
+          "purl": "pkg:npm/express@4.18.2",
+          "name": "express",
+          "state": "updated",
+          "oldVersion": "4.18.1",
+          "newVersion": "4.18.2"
+        },
+        {
+          "$comment": "AI-model node diff keyed by identifier when no purl applies.",
+          "identifier": "acme/llama-2-7b-chat-support",
+          "name": "Llama-2-7b-chat (finetuned)",
+          "state": "added",
+          "newVersion": "1.2.0"
+        }
+      ],
+      "description": "Comparison of a single BOM node between two BOM versions, matched by purl (software) or identifier (models, datasets, hardware, crypto).",
       "title": "Package Diff"
     },
     "Scanner_Conflict": {

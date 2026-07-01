@@ -5,6 +5,7 @@ import commonSchema from '../src/schemas/primitives/common.schema.json';
 import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
 import systemSchema from '../src/schemas/primitives/system.schema.json';
 import componentSchema from '../src/schemas/primitives/component.schema.json';
+import bomSchema from '../src/schemas/primitives/bom.schema.json';
 import dataFlowSchema from '../src/schemas/primitives/data-flow.schema.json';
 import hdfSystemSchema from '../src/schemas/hdf-system.schema.json';
 import { schemaRef } from './schema-ref';
@@ -16,6 +17,7 @@ describe('hdf-system.schema.json', () => {
   ajv.addSchema(commonSchema);
   ajv.addSchema(extensionsSchema);
   ajv.addSchema(systemSchema);
+  ajv.addSchema(bomSchema);
   ajv.addSchema(componentSchema);
   ajv.addSchema(dataFlowSchema);
   const validate = ajv.compile(hdfSystemSchema);
@@ -55,8 +57,7 @@ describe('hdf-system.schema.json', () => {
         description: 'RHEL 9 web servers',
         targetSelector: { 'labels.component': 'WebTier' },
         baselineRefs: ['RHEL9-STIG', 'DISA-Container-STIG'],
-        sbomRef: 'https://artifacts.agency.gov/sbom/webtier.cdx.json',
-        sbomFormat: 'cyclonedx',
+        boms: [{ bomType: 'sbom', format: 'cyclonedx', ref: 'https://artifacts.agency.gov/sbom/webtier.cdx.json' }],
         inputOverrides: [
           {
             baselineRef: 'RHEL9-STIG',
@@ -435,6 +436,7 @@ describe('hdf-system.schema.json — controlDesignations array', () => {
   ajv.addSchema(commonSchema);
   ajv.addSchema(extensionsSchema);
   ajv.addSchema(systemSchema);
+  ajv.addSchema(bomSchema);
   ajv.addSchema(componentSchema);
   ajv.addSchema(dataFlowSchema);
   const validate = ajv.compile(hdfSystemSchema);

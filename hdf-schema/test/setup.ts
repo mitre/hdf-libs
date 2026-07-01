@@ -32,6 +32,7 @@ export function createAjvWithPrimitives(): Ajv2020 {
     'parameter.schema.json',
     'comparison.schema.json',
     'system.schema.json',
+    'bom.schema.json',          // before component + hdf-system (both $ref the Bom type)
     'component.schema.json',
     'data-flow.schema.json',
   ];

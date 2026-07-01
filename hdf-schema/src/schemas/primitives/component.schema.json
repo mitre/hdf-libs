@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.3.0",
   "title": "HDF Component Primitives",
-  "description": "First-class system component with identity, polymorphic type, SBOM embedding, and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and software inventory.",
+  "description": "First-class system component with identity, polymorphic type, generalized BOM attachment (boms[]), and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and manifest inventory (SBOM, AI model/dataset, and reserved future BOM kinds).",
   "$defs": {
     "Base_Component": {
       "type": "object",
@@ -26,9 +26,10 @@
             "application",
             "artifact",
             "network",
-            "database"
+            "database",
+            "aiModel"
           ],
-          "description": "Component type discriminator. Same values as Target types."
+          "description": "Component type discriminator. Same values as Target types, plus aiModel (a thin AI-model component whose detail lives in an attached ai-model BOM)."
         },
         "name": {
           "type": "string",
@@ -61,23 +62,12 @@
           },
           "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
         },
-        "sbom": {
-          "description": "Embedded CycloneDX or SPDX SBOM document representing this component's software inventory. The sbomFormat field determines which format constraints apply.",
-          "$comment": "Validated conditionally: CycloneDX requires bomFormat='CycloneDX' + specVersion; SPDX requires spdxVersion + SPDXID. Full SBOM schema validation is a tool-level concern."
-        },
-        "sbomRef": {
-          "type": "string",
-          "format": "uri-reference",
-          "description": "URI reference to an external CycloneDX or SPDX SBOM document for this component. May be a relative path, absolute URI, or fragment identifier."
-        },
-        "sbomFormat": {
-          "type": "string",
-          "title": "SBOM Format",
-          "enum": [
-            "cyclonedx",
-            "spdx"
-          ],
-          "description": "Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present."
+        "boms": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.3.0#/$defs/Bom"
+          },
+          "description": "Component-scoped Bills of Materials (SBOM, ai-model, dataset, or any reserved bomType), each carried by passthrough (ref/document) or normalized. Replaces the former sbom/sbomRef/sbomFormat trio; a component may carry several BOMs (e.g. an SBOM plus an ai-model BOM). See primitives/bom.schema.json."
         },
         "baselineRefs": {
           "type": "array",
@@ -98,76 +88,7 @@
           "description": "Label selector to match targets belonging to this component during migration. Targets with matching labels are automatically included."
         }
       },
-      "allOf": [
-        {
-          "if": {
-            "allOf": [
-              {
-                "properties": { "sbomFormat": { "const": "cyclonedx" } },
-                "required": ["sbomFormat"]
-              },
-              {
-                "properties": { "sbom": { "type": "object" } },
-                "required": ["sbom"]
-              }
-            ]
-          },
-          "then": {
-            "properties": {
-              "sbom": {
-                "type": "object",
-                "required": ["bomFormat", "specVersion"],
-                "properties": {
-                  "bomFormat": {
-                    "type": "string",
-                    "const": "CycloneDX",
-                    "description": "Must be 'CycloneDX' for CycloneDX SBOM documents."
-                  },
-                  "specVersion": {
-                    "type": "string",
-                    "description": "CycloneDX specification version (e.g., '1.4', '1.5', '1.6')."
-                  }
-                },
-                "additionalProperties": true
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "allOf": [
-              {
-                "properties": { "sbomFormat": { "const": "spdx" } },
-                "required": ["sbomFormat"]
-              },
-              {
-                "properties": { "sbom": { "type": "object" } },
-                "required": ["sbom"]
-              }
-            ]
-          },
-          "then": {
-            "properties": {
-              "sbom": {
-                "type": "object",
-                "required": ["spdxVersion", "SPDXID"],
-                "properties": {
-                  "spdxVersion": {
-                    "type": "string",
-                    "description": "SPDX specification version (e.g., 'SPDX-2.3')."
-                  },
-                  "SPDXID": {
-                    "type": "string",
-                    "description": "SPDX document identifier (e.g., 'SPDXRef-DOCUMENT')."
-                  }
-                },
-                "additionalProperties": true
-              }
-            }
-          }
-        }
-      ],
-      "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, and SBOM embedding.",
+      "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, and generalized BOM attachment (boms[]).",
       "title": "Base Component"
     },
     "Component": {
@@ -184,7 +105,8 @@
         { "$ref": "#/$defs/Application_Component" },
         { "$ref": "#/$defs/Artifact_Component" },
         { "$ref": "#/$defs/Network_Component" },
-        { "$ref": "#/$defs/Database_Component" }
+        { "$ref": "#/$defs/Database_Component" },
+        { "$ref": "#/$defs/AI_Model_Component" }
       ]
     },
     "Host_Component": {
@@ -528,6 +450,49 @@
       ],
       "description": "A database instance.",
       "title": "Database Component"
+    },
+    "AI_Model_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "aiModel" },
+            "modelId": {
+              "type": "string",
+              "description": "Provider/registry identifier for the model. Examples: a Hugging Face repo id ('meta-llama/Llama-2-7b-hf') or a model purl. Correlates the component to its ai-model BOM(s) and to lineage references from other models."
+            },
+            "version": {
+              "type": "string",
+              "description": "Model version, revision, or checkpoint tag."
+            }
+          }
+        }
+      ],
+      "examples": [
+        {
+          "type": "aiModel",
+          "name": "Llama-2-7b-chat (finetuned)",
+          "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+          "modelId": "acme/llama-2-7b-chat-support",
+          "version": "1.2.0",
+          "boms": [
+            {
+              "bomType": "ai-model",
+              "format": "cyclonedx-ml",
+              "model": {
+                "modelArchitecture": "transformer",
+                "parameterCount": 6738415616,
+                "serializationFormat": "safetensors",
+                "adaptationType": "finetune",
+                "baseModelRef": "meta-llama/Llama-2-7b-hf"
+              }
+            }
+          ]
+        }
+      ],
+      "description": "A thin AI-model component: identity and correlation only (parallel to Host_Component's fqdn/ip). All model detail — architecture, parameter count, serialization format, lineage — lives in an attached ai-model BOM (boms[]), never on the component itself.",
+      "title": "AI Model Component"
     }
   }
 }

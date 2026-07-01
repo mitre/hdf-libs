@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.3.0",
+  "title": "HDF BOM Primitives",
+  "description": "Generalized Bill-of-Materials / manifest representation. One extensible Bom shape, discriminated by bomType, carries any manifest kind (SBOM, AI model/dataset, and reserved future kinds) either by passthrough (opaque ref/embed of the native document) or normalized (converted into HDF's queryable shape). Subject identity (name, version, componentId) is inherited from the host component or system — the BOM never re-owns it. See ADR-0001.",
+  "$defs": {
+    "Bom_Type": {
+      "type": "string",
+      "title": "BOM Type",
+      "enum": [
+        "sbom",
+        "ai-model",
+        "dataset",
+        "hbom",
+        "cbom",
+        "saasbom",
+        "obom",
+        "mbom",
+        "kbom"
+      ],
+      "description": "Discriminator for the manifest kind. Reserved, CycloneDX-aligned set: sbom (software), ai-model, dataset, hbom (hardware), cbom (cryptography), saasbom (services), obom (operations), mbom (manufacturing), kbom (Kubernetes). Normalized now: sbom, ai-model, dataset; reserved + passthrough-capable now, normalized in later releases: the rest. Adding a value is a schema version bump (rapid-iteration phase). VEX/VDR/SecurityProfile are vulnerability assertions, not BOMs, and are intentionally excluded."
+    },
+    "Bom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bomType",
+        "format"
+      ],
+      "properties": {
+        "bomType": {
+          "$ref": "#/$defs/Bom_Type",
+          "description": "The manifest kind. Determines which normalized type-extension (model/dataset/packages) may appear."
+        },
+        "format": {
+          "type": "string",
+          "description": "Source manifest format the BOM was produced from or references. Examples: cyclonedx, cyclonedx-ml, spdx, spdx-ai, huggingface, croissant. Free-form so new formats need no schema change; the converter that emits the BOM owns the value."
+        },
+        "ref": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "Passthrough by reference: URI (relative path, absolute URI, or fragment) to the native manifest document. Present for externally-hosted BOMs."
+        },
+        "document": {
+          "type": "object",
+          "description": "Passthrough by embedding: the native manifest carried opaquely (e.g. a raw CycloneDX or SPDX object). HDF does not constrain its internal shape — full manifest validation is a tool-level concern."
+        },
+        "hashes": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Checksum"
+          },
+          "description": "Integrity of the carried BOM artifact itself (the referenced/embedded document), NOT the identity of the BOM's subject. Subject identity is inherited from the host component/system; per-node identity lives in the type-extension."
+        },
+        "uniqueId": {
+          "type": "string",
+          "description": "Optional stable identifier for this BOM document (e.g. CycloneDX serialNumber, SPDX documentNamespace). Correlates the same BOM across evidence packages."
+        },
+        "license": {
+          "type": ["string", "null"],
+          "description": "Optional license of the BOM document as a whole (SPDX license expression). Nullable and often meaningless (CBOM algorithms, many HBOM parts have no license); per-node licenses live in the type-extension, not here."
+        },
+        "model": {
+          "$ref": "#/$defs/AI_Model_Extension",
+          "description": "Normalized ai-model extension. Permitted only when bomType is ai-model."
+        },
+        "dataset": {
+          "$ref": "#/$defs/Dataset_Extension",
+          "description": "Normalized dataset extension. Permitted only when bomType is dataset."
+        },
+        "packages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SBOM_Package"
+          },
+          "description": "Normalized sbom extension: the flattened software package inventory. Permitted only when bomType is sbom."
+        }
+      },
+      "allOf": [
+        {
+          "$comment": "Three-tier discipline: the ai-model extension may appear only on an ai-model BOM.",
+          "if": {
+            "properties": { "bomType": { "const": "ai-model" } },
+            "required": ["bomType"]
+          },
+          "else": {
+            "properties": { "model": false }
+          }
+        },
+        {
+          "$comment": "The dataset extension may appear only on a dataset BOM.",
+          "if": {
+            "properties": { "bomType": { "const": "dataset" } },
+            "required": ["bomType"]
+          },
+          "else": {
+            "properties": { "dataset": false }
+          }
+        },
+        {
+          "$comment": "The normalized packages extension may appear only on an sbom BOM.",
+          "if": {
+            "properties": { "bomType": { "const": "sbom" } },
+            "required": ["bomType"]
+          },
+          "else": {
+            "properties": { "packages": false }
+          }
+        }
+      ],
+      "examples": [
+        {
+          "$comment": "Passthrough SBOM by external reference — the universal escape hatch, available to every bomType.",
+          "bomType": "sbom",
+          "format": "cyclonedx",
+          "ref": "https://artifacts.agency.gov/sbom/webtier.cdx.json",
+          "hashes": [
+            { "algorithm": "sha256", "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
+          ]
+        },
+        {
+          "$comment": "Passthrough for a reserved-but-not-yet-normalized type (cbom) — carried opaquely until a normalized extension ships.",
+          "bomType": "cbom",
+          "format": "cyclonedx",
+          "document": { "bomFormat": "CycloneDX", "specVersion": "1.6" }
+        },
+        {
+          "$comment": "Normalized ai-model BOM: CISA/G7-aligned fields live in the model extension, never at the component root or shared base.",
+          "bomType": "ai-model",
+          "format": "cyclonedx-ml",
+          "model": {
+            "modelArchitecture": "transformer",
+            "parameterCount": 6738415616,
+            "serializationFormat": "safetensors",
+            "adaptationType": "finetune",
+            "baseModelRef": "meta-llama/Llama-2-7b-hf"
+          }
+        },
+        {
+          "$comment": "Normalized dataset BOM referenced by an ai-model via baseModelRef/datasetRefs correlation.",
+          "bomType": "dataset",
+          "format": "croissant",
+          "dataset": {
+            "recordCount": 2500000,
+            "datasetFormat": "parquet",
+            "dataClassification": "public",
+            "intendedUse": "instruction fine-tuning"
+          }
+        }
+      ]
+    },
+    "AI_Model_Extension": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Normalized AI-model fields, aligned to the CISA/G7 'SBOM for AI' minimum elements. All fields optional (standards-correct; only the EU AI Act makes a subset binding for high-risk/GPAI). Left open (additionalProperties: true) so a converter can carry unmapped native fields opaquely (partial-fidelity pattern). Subject name/version are inherited from the host aiModel component, not repeated here.",
+      "title": "AI Model BOM Extension",
+      "properties": {
+        "modelArchitecture": {
+          "type": "string",
+          "description": "Model architecture family. Examples: transformer, cnn, diffusion, mixture-of-experts."
+        },
+        "parameterCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total trainable parameter count. No native CycloneDX/SPDX field exists; first-class here because the EU AI Act keys GPAI obligations off model scale."
+        },
+        "serializationFormat": {
+          "type": "string",
+          "description": "On-disk weight serialization format. Security-critical yet under-modeled by BOM specs: pickle/pytorch permits arbitrary code execution on load; safetensors does not. Examples: safetensors, pytorch, gguf, onnx, tensorflow."
+        },
+        "adaptationType": {
+          "type": "string",
+          "title": "Model Adaptation Type",
+          "enum": ["finetune", "adapter", "quantized", "merge"],
+          "description": "Lineage relationship to baseModelRef, adopting Hugging Face's base_model_relation vocabulary (the only typed lineage enum in the ecosystem)."
+        },
+        "baseModelRef": {
+          "type": "string",
+          "description": "Reference to the base model this one was adapted from (e.g. a Hugging Face repo id or purl). Correlates the lineage edge; the base model itself may carry its own ai-model BOM."
+        },
+        "datasetRefs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "References to the training/evaluation dataset BOMs (uniqueId or URI) this model was produced from."
+        },
+        "intendedUse": {
+          "type": "string",
+          "description": "Free-text statement of intended use and out-of-scope uses (CISA/G7 minimum element)."
+        }
+      }
+    },
+    "Dataset_Extension": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Normalized dataset fields (SPDX 3.0 Dataset profile / MLCommons Croissant aligned). All optional; open for partial-fidelity passthrough of unmapped native fields.",
+      "title": "Dataset BOM Extension",
+      "properties": {
+        "recordCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of records/examples in the dataset."
+        },
+        "datasetFormat": {
+          "type": "string",
+          "description": "Physical format of the dataset. Examples: parquet, csv, jsonl, tfrecord, webdataset."
+        },
+        "dataClassification": {
+          "type": "string",
+          "description": "Sensitivity/classification of the data. Examples: public, internal, confidential, pii, phi."
+        },
+        "intendedUse": {
+          "type": "string",
+          "description": "Free-text statement of the dataset's intended use (CISA/G7 minimum element)."
+        }
+      }
+    },
+    "SBOM_Package": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "A single normalized software package entry within an sbom BOM. Minimal identity + version for querying/diffing; the full native record remains available via passthrough (document/ref).",
+      "title": "SBOM Package",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Package name."
+        },
+        "version": {
+          "type": "string",
+          "description": "Package version."
+        },
+        "purl": {
+          "type": "string",
+          "description": "Package URL (purl) — the preferred cross-BOM identity key when present."
+        },
+        "licenses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "SPDX license identifiers/expressions for this package."
+        }
+      }
+    }
+  }
+}

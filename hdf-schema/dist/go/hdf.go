@@ -858,7 +858,7 @@ type SupportedPlatform struct {
 // A physical or virtual server, workstation, or network device.
 //
 // Base properties shared by all component types. Extends the Target concept with stable
-// identity, external references, and SBOM embedding.
+// identity, external references, and generalized BOM attachment (boms[]).
 //
 // A static container image (not running).
 //
@@ -879,121 +879,224 @@ type SupportedPlatform struct {
 // A network segment or network device.
 //
 // A database instance.
+//
+// A thin AI-model component: identity and correlation only (parallel to Host_Component's
+// fqdn/ip). All model detail — architecture, parameter count, serialization format, lineage
+// — lives in an attached ai-model BOM (boms[]), never on the component itself.
 type Component struct {
-	// Names of baselines that apply to this component.                                                           
-	BaselineRefs                                                                                []string          `json:"baselineRefs,omitempty"`
-	// Stable UUID (RFC 4122) for this component. Required in hdf-system documents, optional in                   
-	// hdf-results. Enables cross-document correlation, diffing, and data flow references.                        
-	ComponentID                                                                                 *string           `json:"componentId,omitempty"`
-	// Description of this component's role or purpose.                                                           
-	Description                                                                                 *string           `json:"description,omitempty"`
-	// Map of external identifier scheme to value. Well-known schemes: aws (instance ID), azure                   
-	// (resource ID), cmdb (asset ID), emass (system ID), cve (CVE ID). Custom schemes are                        
-	// allowed.                                                                                                   
-	ExternalIDS                                                                                 map[string]string `json:"externalIds,omitempty"`
-	// System-specific overrides for baseline input values.                                                       
-	InputOverrides                                                                              []InputOverride   `json:"inputOverrides,omitempty"`
-	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                       
-	// environment, region, team. Values must be strings.                                                         
-	Labels                                                                                      map[string]string `json:"labels,omitempty"`
-	// Human-readable name for this component.                                                                    
-	Name                                                                                        string            `json:"name"`
-	// Team or individual responsible for this component. Enables per-component ownership when                    
-	// different teams manage different parts of a system.                                                        
-	Owner                                                                                       *Identity         `json:"owner,omitempty"`
-	// Embedded CycloneDX or SPDX SBOM document representing this component's software                            
-	// inventory. The sbomFormat field determines which format constraints apply.                                 
-	Sbom                                                                                        interface{}       `json:"sbom,omitempty"`
-	// Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present.                     
-	SbomFormat                                                                                  *SBOMFormat       `json:"sbomFormat,omitempty"`
-	// URI reference to an external CycloneDX or SPDX SBOM document for this component. May be a                  
-	// relative path, absolute URI, or fragment identifier.                                                       
-	SbomRef                                                                                     *string           `json:"sbomRef,omitempty"`
-	// Label selector to match targets belonging to this component during migration. Targets                      
-	// with matching labels are automatically included.                                                           
-	TargetSelector                                                                              map[string]string `json:"targetSelector,omitempty"`
-	// Component type discriminator. Same values as Target types.                                                 
-	Type                                                                                        TargetType        `json:"type"`
-	// Fully qualified domain name.                                                                               
-	FQDN                                                                                        *string           `json:"fqdn,omitempty"`
-	// IP address of the host.                                                                                    
-	IPAddress                                                                                   *string           `json:"ipAddress,omitempty"`
-	// MAC address in colon-separated hexadecimal format.                                                         
-	MACAddress                                                                                  *string           `json:"macAddress,omitempty"`
-	// Operating system name.                                                                                     
-	OSName                                                                                      *string           `json:"osName,omitempty"`
-	// Operating system version.                                                                                  
-	OSVersion                                                                                   *string           `json:"osVersion,omitempty"`
-	// Image digest for immutable reference.                                                                      
-	Digest                                                                                      *string           `json:"digest,omitempty"`
-	// Container image ID.                                                                                        
-	ImageID                                                                                     *string           `json:"imageId,omitempty"`
-	// Container registry. Example: 'docker.io'.                                                                  
-	Registry                                                                                    *string           `json:"registry,omitempty"`
-	// Repository name. Example: 'library/nginx'.                                                                 
-	Repository                                                                                  *string           `json:"repository,omitempty"`
-	// Image tag. Example: '1.25'.                                                                                
-	Tag                                                                                         *string           `json:"tag,omitempty"`
-	// Running container ID.                                                                                      
-	ContainerID                                                                                 *string           `json:"containerId,omitempty"`
-	// Image the container was started from.                                                                      
-	Image                                                                                       *string           `json:"image,omitempty"`
-	// Container runtime. Example: 'docker', 'containerd', 'cri-o'.                                               
-	Runtime                                                                                     *string           `json:"runtime,omitempty"`
-	// Cluster name.                                                                                              
-	ClusterName                                                                                 *string           `json:"clusterName,omitempty"`
-	// Namespace within the cluster, if applicable.                                                               
-	Namespace                                                                                   *string           `json:"namespace,omitempty"`
-	// Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'.                                  
-	PlatformType                                                                                *string           `json:"platformType,omitempty"`
-	// Platform version.                                                                                          
-	//                                                                                                            
-	// Application version.                                                                                       
-	//                                                                                                            
-	// Package version.                                                                                           
-	//                                                                                                            
-	// Database version.                                                                                          
-	Version                                                                                     *string           `json:"version,omitempty"`
-	// Cloud account identifier.                                                                                  
-	AccountID                                                                                   *string           `json:"accountId,omitempty"`
-	// Cloud provider.                                                                                            
-	Provider                                                                                    *CloudProvider    `json:"provider,omitempty"`
-	// Cloud region, if applicable.                                                                               
-	//                                                                                                            
-	// Cloud region where the resource resides.                                                                   
-	Region                                                                                      *string           `json:"region,omitempty"`
-	// Amazon Resource Name (AWS only).                                                                           
-	Arn                                                                                         *string           `json:"arn,omitempty"`
-	// Provider-specific resource identifier.                                                                     
-	ResourceID                                                                                  *string           `json:"resourceId,omitempty"`
-	// Type of cloud resource. Example: 'ec2:instance', 's3:bucket'.                                              
-	ResourceType                                                                                *string           `json:"resourceType,omitempty"`
-	// Branch that was scanned.                                                                                   
-	Branch                                                                                      *string           `json:"branch,omitempty"`
-	// Commit SHA that was scanned.                                                                               
-	Commit                                                                                      *string           `json:"commit,omitempty"`
-	// Repository URL.                                                                                            
-	//                                                                                                            
-	// Application URL (for DAST tools).                                                                          
-	URL                                                                                         *string           `json:"url,omitempty"`
-	// Environment. Example: 'production', 'staging', 'development'.                                              
-	Environment                                                                                 *string           `json:"environment,omitempty"`
-	// Package checksum for verification.                                                                         
-	Checksum                                                                                    *string           `json:"checksum,omitempty"`
-	// Package manager. Example: 'npm', 'maven', 'pip', 'nuget'.                                                  
-	PackageManager                                                                              *string           `json:"packageManager,omitempty"`
-	// Package name.                                                                                              
-	PackageName                                                                                 *string           `json:"packageName,omitempty"`
-	// Network CIDR block.                                                                                        
-	CIDR                                                                                        *string           `json:"cidr,omitempty"`
-	// Network gateway address.                                                                                   
-	Gateway                                                                                     *string           `json:"gateway,omitempty"`
-	// Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'.                                        
-	Engine                                                                                      *string           `json:"engine,omitempty"`
-	// Database host.                                                                                             
-	Host                                                                                        *string           `json:"host,omitempty"`
-	// Database port.                                                                                             
-	Port                                                                                        *int64            `json:"port,omitempty"`
+	// Names of baselines that apply to this component.                                                          
+	BaselineRefs                                                                               []string          `json:"baselineRefs,omitempty"`
+	// Component-scoped Bills of Materials (SBOM, ai-model, dataset, or any reserved bomType),                   
+	// each carried by passthrough (ref/document) or normalized. Replaces the former                             
+	// sbom/sbomRef/sbomFormat trio; a component may carry several BOMs (e.g. an SBOM plus an                    
+	// ai-model BOM). See primitives/bom.schema.json.                                                            
+	Boms                                                                                       []HDFSyste        `json:"boms,omitempty"`
+	// Stable UUID (RFC 4122) for this component. Required in hdf-system documents, optional in                  
+	// hdf-results. Enables cross-document correlation, diffing, and data flow references.                       
+	ComponentID                                                                                *string           `json:"componentId,omitempty"`
+	// Description of this component's role or purpose.                                                          
+	Description                                                                                *string           `json:"description,omitempty"`
+	// Map of external identifier scheme to value. Well-known schemes: aws (instance ID), azure                  
+	// (resource ID), cmdb (asset ID), emass (system ID), cve (CVE ID). Custom schemes are                       
+	// allowed.                                                                                                  
+	ExternalIDS                                                                                map[string]string `json:"externalIds,omitempty"`
+	// System-specific overrides for baseline input values.                                                      
+	InputOverrides                                                                             []InputOverride   `json:"inputOverrides,omitempty"`
+	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                      
+	// environment, region, team. Values must be strings.                                                        
+	Labels                                                                                     map[string]string `json:"labels,omitempty"`
+	// Human-readable name for this component.                                                                   
+	Name                                                                                       string            `json:"name"`
+	// Team or individual responsible for this component. Enables per-component ownership when                   
+	// different teams manage different parts of a system.                                                       
+	Owner                                                                                      *Identity         `json:"owner,omitempty"`
+	// Label selector to match targets belonging to this component during migration. Targets                     
+	// with matching labels are automatically included.                                                          
+	TargetSelector                                                                             map[string]string `json:"targetSelector,omitempty"`
+	// Component type discriminator. Same values as Target types, plus aiModel (a thin AI-model                  
+	// component whose detail lives in an attached ai-model BOM).                                                
+	Type                                                                                       TargetType        `json:"type"`
+	// Fully qualified domain name.                                                                              
+	FQDN                                                                                       *string           `json:"fqdn,omitempty"`
+	// IP address of the host.                                                                                   
+	IPAddress                                                                                  *string           `json:"ipAddress,omitempty"`
+	// MAC address in colon-separated hexadecimal format.                                                        
+	MACAddress                                                                                 *string           `json:"macAddress,omitempty"`
+	// Operating system name.                                                                                    
+	OSName                                                                                     *string           `json:"osName,omitempty"`
+	// Operating system version.                                                                                 
+	OSVersion                                                                                  *string           `json:"osVersion,omitempty"`
+	// Image digest for immutable reference.                                                                     
+	Digest                                                                                     *string           `json:"digest,omitempty"`
+	// Container image ID.                                                                                       
+	ImageID                                                                                    *string           `json:"imageId,omitempty"`
+	// Container registry. Example: 'docker.io'.                                                                 
+	Registry                                                                                   *string           `json:"registry,omitempty"`
+	// Repository name. Example: 'library/nginx'.                                                                
+	Repository                                                                                 *string           `json:"repository,omitempty"`
+	// Image tag. Example: '1.25'.                                                                               
+	Tag                                                                                        *string           `json:"tag,omitempty"`
+	// Running container ID.                                                                                     
+	ContainerID                                                                                *string           `json:"containerId,omitempty"`
+	// Image the container was started from.                                                                     
+	Image                                                                                      *string           `json:"image,omitempty"`
+	// Container runtime. Example: 'docker', 'containerd', 'cri-o'.                                              
+	Runtime                                                                                    *string           `json:"runtime,omitempty"`
+	// Cluster name.                                                                                             
+	ClusterName                                                                                *string           `json:"clusterName,omitempty"`
+	// Namespace within the cluster, if applicable.                                                              
+	Namespace                                                                                  *string           `json:"namespace,omitempty"`
+	// Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'.                                 
+	PlatformType                                                                               *string           `json:"platformType,omitempty"`
+	// Platform version.                                                                                         
+	//                                                                                                           
+	// Application version.                                                                                      
+	//                                                                                                           
+	// Package version.                                                                                          
+	//                                                                                                           
+	// Database version.                                                                                         
+	//                                                                                                           
+	// Model version, revision, or checkpoint tag.                                                               
+	Version                                                                                    *string           `json:"version,omitempty"`
+	// Cloud account identifier.                                                                                 
+	AccountID                                                                                  *string           `json:"accountId,omitempty"`
+	// Cloud provider.                                                                                           
+	Provider                                                                                   *CloudProvider    `json:"provider,omitempty"`
+	// Cloud region, if applicable.                                                                              
+	//                                                                                                           
+	// Cloud region where the resource resides.                                                                  
+	Region                                                                                     *string           `json:"region,omitempty"`
+	// Amazon Resource Name (AWS only).                                                                          
+	Arn                                                                                        *string           `json:"arn,omitempty"`
+	// Provider-specific resource identifier.                                                                    
+	ResourceID                                                                                 *string           `json:"resourceId,omitempty"`
+	// Type of cloud resource. Example: 'ec2:instance', 's3:bucket'.                                             
+	ResourceType                                                                               *string           `json:"resourceType,omitempty"`
+	// Branch that was scanned.                                                                                  
+	Branch                                                                                     *string           `json:"branch,omitempty"`
+	// Commit SHA that was scanned.                                                                              
+	Commit                                                                                     *string           `json:"commit,omitempty"`
+	// Repository URL.                                                                                           
+	//                                                                                                           
+	// Application URL (for DAST tools).                                                                         
+	URL                                                                                        *string           `json:"url,omitempty"`
+	// Environment. Example: 'production', 'staging', 'development'.                                             
+	Environment                                                                                *string           `json:"environment,omitempty"`
+	// Package checksum for verification.                                                                        
+	Checksum                                                                                   *string           `json:"checksum,omitempty"`
+	// Package manager. Example: 'npm', 'maven', 'pip', 'nuget'.                                                 
+	PackageManager                                                                             *string           `json:"packageManager,omitempty"`
+	// Package name.                                                                                             
+	PackageName                                                                                *string           `json:"packageName,omitempty"`
+	// Network CIDR block.                                                                                       
+	CIDR                                                                                       *string           `json:"cidr,omitempty"`
+	// Network gateway address.                                                                                  
+	Gateway                                                                                    *string           `json:"gateway,omitempty"`
+	// Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'.                                       
+	Engine                                                                                     *string           `json:"engine,omitempty"`
+	// Database host.                                                                                            
+	Host                                                                                       *string           `json:"host,omitempty"`
+	// Database port.                                                                                            
+	Port                                                                                       *int64            `json:"port,omitempty"`
+	// Provider/registry identifier for the model. Examples: a Hugging Face repo id                              
+	// ('meta-llama/Llama-2-7b-hf') or a model purl. Correlates the component to its ai-model                    
+	// BOM(s) and to lineage references from other models.                                                       
+	ModelID                                                                                    *string           `json:"modelId,omitempty"`
+}
+
+type HDFSyste struct {
+	// The manifest kind. Determines which normalized type-extension (model/dataset/packages)                         
+	// may appear.                                                                                                    
+	BOMType                                                                                    BOMType                `json:"bomType"`
+	// Normalized dataset extension. Permitted only when bomType is dataset.                                          
+	Dataset                                                                                    *DatasetBOMExtension   `json:"dataset,omitempty"`
+	// Passthrough by embedding: the native manifest carried opaquely (e.g. a raw CycloneDX or                        
+	// SPDX object). HDF does not constrain its internal shape — full manifest validation is a                        
+	// tool-level concern.                                                                                            
+	Document                                                                                   map[string]interface{} `json:"document,omitempty"`
+	// Source manifest format the BOM was produced from or references. Examples: cyclonedx,                           
+	// cyclonedx-ml, spdx, spdx-ai, huggingface, croissant. Free-form so new formats need no                          
+	// schema change; the converter that emits the BOM owns the value.                                                
+	Format                                                                                     string                 `json:"format"`
+	// Integrity of the carried BOM artifact itself (the referenced/embedded document), NOT the                       
+	// identity of the BOM's subject. Subject identity is inherited from the host                                     
+	// component/system; per-node identity lives in the type-extension.                                               
+	Hashes                                                                                     []Checksum             `json:"hashes,omitempty"`
+	// Optional license of the BOM document as a whole (SPDX license expression). Nullable and                        
+	// often meaningless (CBOM algorithms, many HBOM parts have no license); per-node licenses                        
+	// live in the type-extension, not here.                                                                          
+	License                                                                                    *string                `json:"license,omitempty"`
+	// Normalized ai-model extension. Permitted only when bomType is ai-model.                                        
+	Model                                                                                      *AIModelBOMExtension   `json:"model,omitempty"`
+	// Normalized sbom extension: the flattened software package inventory. Permitted only when                       
+	// bomType is sbom.                                                                                               
+	Packages                                                                                   []SBOMPackage          `json:"packages,omitempty"`
+	// Passthrough by reference: URI (relative path, absolute URI, or fragment) to the native                         
+	// manifest document. Present for externally-hosted BOMs.                                                         
+	Ref                                                                                        *string                `json:"ref,omitempty"`
+	// Optional stable identifier for this BOM document (e.g. CycloneDX serialNumber, SPDX                            
+	// documentNamespace). Correlates the same BOM across evidence packages.                                          
+	UniqueID                                                                                   *string                `json:"uniqueId,omitempty"`
+}
+
+// Normalized dataset extension. Permitted only when bomType is dataset.
+//
+// Normalized dataset fields (SPDX 3.0 Dataset profile / MLCommons Croissant aligned). All
+// optional; open for partial-fidelity passthrough of unmapped native fields.
+type DatasetBOMExtension struct {
+	// Sensitivity/classification of the data. Examples: public, internal, confidential, pii,        
+	// phi.                                                                                          
+	DataClassification                                                                       *string `json:"dataClassification,omitempty"`
+	// Physical format of the dataset. Examples: parquet, csv, jsonl, tfrecord, webdataset.          
+	DatasetFormat                                                                            *string `json:"datasetFormat,omitempty"`
+	// Free-text statement of the dataset's intended use (CISA/G7 minimum element).                  
+	IntendedUse                                                                              *string `json:"intendedUse,omitempty"`
+	// Number of records/examples in the dataset.                                                    
+	RecordCount                                                                              *int64  `json:"recordCount,omitempty"`
+}
+
+// Normalized ai-model extension. Permitted only when bomType is ai-model.
+//
+// Normalized AI-model fields, aligned to the CISA/G7 'SBOM for AI' minimum elements. All
+// fields optional (standards-correct; only the EU AI Act makes a subset binding for
+// high-risk/GPAI). Left open (additionalProperties: true) so a converter can carry unmapped
+// native fields opaquely (partial-fidelity pattern). Subject name/version are inherited
+// from the host aiModel component, not repeated here.
+type AIModelBOMExtension struct {
+	// Lineage relationship to baseModelRef, adopting Hugging Face's base_model_relation                             
+	// vocabulary (the only typed lineage enum in the ecosystem).                                                    
+	AdaptationType                                                                              *ModelAdaptationType `json:"adaptationType,omitempty"`
+	// Reference to the base model this one was adapted from (e.g. a Hugging Face repo id or                         
+	// purl). Correlates the lineage edge; the base model itself may carry its own ai-model BOM.                     
+	BaseModelRef                                                                                *string              `json:"baseModelRef,omitempty"`
+	// References to the training/evaluation dataset BOMs (uniqueId or URI) this model was                           
+	// produced from.                                                                                                
+	DatasetRefs                                                                                 []string             `json:"datasetRefs,omitempty"`
+	// Free-text statement of intended use and out-of-scope uses (CISA/G7 minimum element).                          
+	IntendedUse                                                                                 *string              `json:"intendedUse,omitempty"`
+	// Model architecture family. Examples: transformer, cnn, diffusion, mixture-of-experts.                         
+	ModelArchitecture                                                                           *string              `json:"modelArchitecture,omitempty"`
+	// Total trainable parameter count. No native CycloneDX/SPDX field exists; first-class here                      
+	// because the EU AI Act keys GPAI obligations off model scale.                                                  
+	ParameterCount                                                                              *int64               `json:"parameterCount,omitempty"`
+	// On-disk weight serialization format. Security-critical yet under-modeled by BOM specs:                        
+	// pickle/pytorch permits arbitrary code execution on load; safetensors does not. Examples:                      
+	// safetensors, pytorch, gguf, onnx, tensorflow.                                                                 
+	SerializationFormat                                                                         *string              `json:"serializationFormat,omitempty"`
+}
+
+// A single normalized software package entry within an sbom BOM. Minimal identity + version
+// for querying/diffing; the full native record remains available via passthrough
+// (document/ref).
+type SBOMPackage struct {
+	// SPDX license identifiers/expressions for this package.                          
+	Licenses                                                                  []string `json:"licenses,omitempty"`
+	// Package name.                                                                   
+	Name                                                                      string   `json:"name"`
+	// Package URL (purl) — the preferred cross-BOM identity key when present.         
+	Purl                                                                      *string  `json:"purl,omitempty"`
+	// Package version.                                                                
+	Version                                                                   *string  `json:"version,omitempty"`
 }
 
 // An override of a baseline input value for a specific component. Enables system-specific
@@ -1415,21 +1518,28 @@ type MatchingConfig struct {
 	PrimaryStrategy                                                                              MatchStrategy   `json:"primaryStrategy"`
 }
 
-// Comparison of a single package between two SBOM versions, matched by purl.
+// Comparison of a single BOM node between two BOM versions, matched by purl (software) or
+// identifier (models, datasets, hardware, crypto).
 type PackageDiff struct {
-	// License identifiers for this package.                                                               
-	Licenses                                                                              []string         `json:"licenses,omitempty"`
-	// Human-readable package name.                                                                        
-	Name                                                                                  *string          `json:"name,omitempty"`
-	// Package version in the new SBOM.                                                                    
-	NewVersion                                                                            *string          `json:"newVersion,omitempty"`
-	// Package version in the old SBOM.                                                                    
-	OldVersion                                                                            *string          `json:"oldVersion,omitempty"`
-	// Package URL (purl) used as the identity key for matching across SBOMs.                              
-	Purl                                                                                  string           `json:"purl"`
-	// The state of this package: added (new in new SBOM), removed (absent from new SBOM),                 
-	// updated (version changed), unchanged.                                                               
-	State                                                                                 PackageDiffState `json:"state"`
+	// Generic identity key for matching a BOM node across versions when no purl applies — e.g.                 
+	// a Hugging Face model ref, dataset uniqueId, crypto algorithm OID, or hardware part                       
+	// number. At least one of purl or identifier is required.                                                  
+	Identifier                                                                                 *string          `json:"identifier,omitempty"`
+	// License identifiers for this package.                                                                    
+	Licenses                                                                                   []string         `json:"licenses,omitempty"`
+	// Human-readable node name.                                                                                
+	Name                                                                                       *string          `json:"name,omitempty"`
+	// Package version in the new SBOM.                                                                         
+	NewVersion                                                                                 *string          `json:"newVersion,omitempty"`
+	// Package version in the old SBOM.                                                                         
+	OldVersion                                                                                 *string          `json:"oldVersion,omitempty"`
+	// Package URL (purl) — the preferred identity key for matching software packages across                    
+	// BOMs. Optional: BOM nodes without a purl (AI models, datasets, hardware parts, crypto                    
+	// algorithms) key on identifier instead.                                                                   
+	Purl                                                                                       *string          `json:"purl,omitempty"`
+	// The state of this package: added (new in new SBOM), removed (absent from new SBOM),                      
+	// updated (version changed), unchanged.                                                                    
+	State                                                                                      PackageDiffState `json:"state"`
 }
 
 // A source document participating in the comparison.
@@ -1569,13 +1679,19 @@ type HDFSystem struct {
 	AuthorizationDate                                                                           *time.Time           `json:"authorizationDate,omitempty"`
 	// Current Authorization to Operate (ATO) status.                                                                
 	AuthorizationStatus                                                                         *AuthorizationStatus `json:"authorizationStatus,omitempty"`
+	// System-scoped Bills of Materials whose subject is the authorization boundary rather than                      
+	// a single component (e.g. a SaaSBOM of services, a KBOM of cluster inventory, an OBOM).                        
+	// Component-scoped BOMs (SBOM, ai-model) attach on the component instead. See                                   
+	// primitives/bom.schema.json.                                                                                   
+	Boms                                                                                        []HDFSyste           `json:"boms,omitempty"`
 	// Description of the system's authorization boundary. Example: network CIDR blocks, cloud                       
 	// VPC IDs, physical locations.                                                                                  
 	BoundaryDescription                                                                         *string              `json:"boundaryDescription,omitempty"`
 	// FIPS 199 security categorization (impact level).                                                              
 	CategorizationLevel                                                                         *CategorizationLevel `json:"categorizationLevel,omitempty"`
 	// System components within the authorization boundary. Uses the full polymorphic Component                      
-	// type with stable identity (componentId), external references, and SBOM support.                               
+	// type with stable identity (componentId), external references, and generalized BOM                             
+	// attachment (boms[]).                                                                                          
 	Components                                                                                  []Component          `json:"components"`
 	// Declares which controls are common, hybrid, or system-specific, and which component                           
 	// provides them. Maps to NIST SP 800-53 control designations and OSCAL                                          
@@ -1911,7 +2027,7 @@ type SBOMCoverage struct {
 	TotalComponents                                             *int64 `json:"totalComponents,omitempty"`
 }
 
-// A reference to an HDF document or SBOM included in the evidence package.
+// A reference to an HDF document or BOM/manifest included in the evidence package.
 type ContentReference struct {
 	// Cryptographic checksum for verifying the referenced document's integrity.                          
 	Checksum                                                                                  *Checksum   `json:"checksum,omitempty"`
@@ -2226,6 +2342,40 @@ const (
 	VerificationMethodEnumHybrid    VerificationMethodEnum = "hybrid"
 )
 
+// The manifest kind. Determines which normalized type-extension (model/dataset/packages)
+// may appear.
+//
+// Discriminator for the manifest kind. Reserved, CycloneDX-aligned set: sbom (software),
+// ai-model, dataset, hbom (hardware), cbom (cryptography), saasbom (services), obom
+// (operations), mbom (manufacturing), kbom (Kubernetes). Normalized now: sbom, ai-model,
+// dataset; reserved + passthrough-capable now, normalized in later releases: the rest.
+// Adding a value is a schema version bump (rapid-iteration phase). VEX/VDR/SecurityProfile
+// are vulnerability assertions, not BOMs, and are intentionally excluded.
+type BOMType string
+
+const (
+	AIModel BOMType = "ai-model"
+	Cbom    BOMType = "cbom"
+	Dataset BOMType = "dataset"
+	Hbom    BOMType = "hbom"
+	Kbom    BOMType = "kbom"
+	Mbom    BOMType = "mbom"
+	Obom    BOMType = "obom"
+	Saasbom BOMType = "saasbom"
+	Sbom    BOMType = "sbom"
+)
+
+// Lineage relationship to baseModelRef, adopting Hugging Face's base_model_relation
+// vocabulary (the only typed lineage enum in the ecosystem).
+type ModelAdaptationType string
+
+const (
+	Adapter   ModelAdaptationType = "adapter"
+	Finetune  ModelAdaptationType = "finetune"
+	Merge     ModelAdaptationType = "merge"
+	Quantized ModelAdaptationType = "quantized"
+)
+
 type CloudProvider string
 
 const (
@@ -2236,15 +2386,8 @@ const (
 	Oci                CloudProvider = "oci"
 )
 
-// Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present.
-type SBOMFormat string
-
-const (
-	Cyclonedx SBOMFormat = "cyclonedx"
-	Spdx      SBOMFormat = "spdx"
-)
-
-// Component type discriminator. Same values as Target types.
+// Component type discriminator. Same values as Target types, plus aiModel (a thin AI-model
+// component whose detail lives in an attached ai-model BOM).
 type TargetType string
 
 const (
@@ -2259,6 +2402,7 @@ const (
 	Host              TargetType = "host"
 	Network           TargetType = "network"
 	Repository        TargetType = "repository"
+	TargetTypeAIModel TargetType = "aiModel"
 )
 
 // The category of this annotation.
@@ -2481,17 +2625,20 @@ const (
 
 // The type of HDF document being referenced.
 //
-// The type of document referenced in the evidence package.
+// The type of document referenced in the evidence package. 'bom' covers any
+// Bill-of-Materials/manifest document (SBOM, AI model/dataset, and reserved future kinds) —
+// its specific kind is carried by the referenced document's bomType, not by a per-kind
+// Content_Type value.
 type ContentType string
 
 const (
+	BOM           ContentType = "bom"
 	HdfAmendments ContentType = "hdf-amendments"
 	HdfBaseline   ContentType = "hdf-baseline"
 	HdfComparison ContentType = "hdf-comparison"
 	HdfPlan       ContentType = "hdf-plan"
 	HdfResults    ContentType = "hdf-results"
 	HdfSystem     ContentType = "hdf-system"
-	Sbom          ContentType = "sbom"
 )
 
 type Ref struct {

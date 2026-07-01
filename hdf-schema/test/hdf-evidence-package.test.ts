@@ -63,7 +63,7 @@ describe('hdf-evidence-package.schema.json', () => {
         { type: 'hdf-results', uri: 'scan.json', checksum: { algorithm: 'sha256', value: 'ddd' }, description: 'March scan' },
         { type: 'hdf-amendments', uri: 'waivers.json', checksum: { algorithm: 'sha256', value: 'eee' } },
         { type: 'hdf-comparison', uri: 'diff.json', checksum: { algorithm: 'sha256', value: 'fff' } },
-        { type: 'sbom', uri: 'https://artifacts.example.com/sbom.cdx.json', description: 'CycloneDX SBOM' },
+        { type: 'bom', uri: 'https://artifacts.example.com/sbom.cdx.json', description: 'CycloneDX SBOM' },
       ],
       completenessCheck: {
         allBaselinesAssessed: true,
@@ -98,7 +98,7 @@ describe('hdf-evidence-package.schema.json', () => {
   // -- Content_Reference --
 
   it('should accept all valid content types', () => {
-    const types = ['hdf-system', 'hdf-baseline', 'hdf-plan', 'hdf-results', 'hdf-amendments', 'hdf-comparison', 'sbom'];
+    const types = ['hdf-system', 'hdf-baseline', 'hdf-plan', 'hdf-results', 'hdf-amendments', 'hdf-comparison', 'bom'];
     for (const type of types) {
       const doc = { name: 'Test', contents: [{ type, uri: 'file.json' }] };
       expect(validate(doc)).toBe(true);
@@ -107,6 +107,11 @@ describe('hdf-evidence-package.schema.json', () => {
 
   it('should reject invalid content type', () => {
     const doc = { name: 'Test', contents: [{ type: 'hdf-unknown', uri: 'file.json' }] };
+    expect(validate(doc)).toBe(false);
+  });
+
+  it('should reject the removed sbom content type (generalized to bom)', () => {
+    const doc = { name: 'Test', contents: [{ type: 'sbom', uri: 'file.json' }] };
     expect(validate(doc)).toBe(false);
   });
 
@@ -148,7 +153,7 @@ describe('hdf-evidence-package.schema.json', () => {
     const doc = {
       name: 'Test',
       contents: [{
-        type: 'sbom',
+        type: 'bom',
         uri: 'webtier.cdx.json',
         componentRef: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
       }],
