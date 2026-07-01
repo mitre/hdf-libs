@@ -31,6 +31,7 @@ import {
   epssSchema,
   kevSchema,
   affectedPackageSchema,
+  bomSchema,
 } from '@mitre/hdf-schema';
 
 /**
@@ -78,6 +79,7 @@ function createValidator(): Ajv {
   ajv.addSchema(epssSchema);
   ajv.addSchema(kevSchema);
   ajv.addSchema(affectedPackageSchema);
+  ajv.addSchema(bomSchema);          // referenced by Base_Component.boms[]
   ajv.addSchema(amendmentsSchema);   // before extensions (extensions $refs amendments Override_Type)
   ajv.addSchema(extensionsSchema);
   ajv.addSchema(systemSchema);
