@@ -858,9 +858,11 @@ type SupportedPlatform struct {
 // A physical or virtual server, workstation, or network device.
 //
 // Base properties shared by all component types. Extends the Target concept with stable
-// identity, external references, and generalized BOM attachment (boms[]).
+// identity, external references, generalized BOM attachment (boms[]), and unified artifact
+// integrity (integrity[]).
 //
-// A static container image (not running).
+// A static container image (not running). Image integrity — formerly the 'digest' field —
+// is expressed via the shared Base_Component.integrity array.
 //
 // A running container instance.
 //
@@ -874,7 +876,8 @@ type SupportedPlatform struct {
 //
 // A running application or API (for DAST tools).
 //
-// A software artifact or dependency (for SCA tools).
+// A software artifact or dependency (for SCA tools). Package integrity — formerly the
+// 'checksum' field — is expressed via the shared Base_Component.integrity array.
 //
 // A network segment or network device.
 //
@@ -906,6 +909,13 @@ type Component struct {
 	ExternalIDS                                                                                 map[string]string `json:"externalIds,omitempty"`
 	// System-specific overrides for baseline input values.                                                       
 	InputOverrides                                                                              []InputOverride   `json:"inputOverrides,omitempty"`
+	// Cryptographic integrity of this component's underlying artifact — model weights or                         
+	// shards, dataset archive, container image, or package bytes. An array supports                              
+	// multi-file/sharded artifacts. This is the single, generic home for artifact/subject                        
+	// integrity across all component types (it replaced the former per-type Container_Image                      
+	// digest and Artifact checksum fields). Distinct from BOM-document integrity (Bom.hashes[])                  
+	// and from the document tamper-evidence Integrity type.                                                      
+	Integrity                                                                                   []Checksum        `json:"integrity,omitempty"`
 	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                       
 	// environment, region, team. Values must be strings.                                                         
 	Labels                                                                                      map[string]string `json:"labels,omitempty"`
@@ -930,8 +940,6 @@ type Component struct {
 	OSName                                                                                      *string           `json:"osName,omitempty"`
 	// Operating system version.                                                                                  
 	OSVersion                                                                                   *string           `json:"osVersion,omitempty"`
-	// Image digest for immutable reference.                                                                      
-	Digest                                                                                      *string           `json:"digest,omitempty"`
 	// Container image ID.                                                                                        
 	ImageID                                                                                     *string           `json:"imageId,omitempty"`
 	// Container registry. Example: 'docker.io'.                                                                  
@@ -989,8 +997,6 @@ type Component struct {
 	URL                                                                                         *string           `json:"url,omitempty"`
 	// Environment. Example: 'production', 'staging', 'development'.                                              
 	Environment                                                                                 *string           `json:"environment,omitempty"`
-	// Package checksum for verification.                                                                         
-	Checksum                                                                                    *string           `json:"checksum,omitempty"`
 	// Package manager. Example: 'npm', 'maven', 'pip', 'nuget'.                                                  
 	PackageManager                                                                              *string           `json:"packageManager,omitempty"`
 	// Package name.                                                                                              
@@ -2102,10 +2108,12 @@ const (
 
 // The hash algorithm used for the checksum.
 //
-// Supported cryptographic hash algorithms for checksums and integrity verification.
+// Supported cryptographic hash algorithms for checksums and integrity verification. blake3
+// covers container-image and other artifact digests that use it.
 type HashAlgorithm string
 
 const (
+	Blake3 HashAlgorithm = "blake3"
 	Sha256 HashAlgorithm = "sha256"
 	Sha384 HashAlgorithm = "sha384"
 	Sha512 HashAlgorithm = "sha512"

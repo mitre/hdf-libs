@@ -979,9 +979,10 @@
           "enum": [
             "sha256",
             "sha384",
-            "sha512"
+            "sha512",
+            "blake3"
           ],
-          "description": "Supported cryptographic hash algorithms for checksums and integrity verification.",
+          "description": "Supported cryptographic hash algorithms for checksums and integrity verification. blake3 covers container-image and other artifact digests that use it.",
           "title": "Hash Algorithm"
         },
         "Requirement_Group": {
@@ -3142,6 +3143,13 @@
               },
               "description": "Component-scoped Bills of Materials (SBOM, ai-model, dataset, or any reserved bomType), each carried by passthrough (ref/document) or normalized. Replaces the former sbom/sbomRef/sbomFormat trio; a component may carry several BOMs (e.g. an SBOM plus an ai-model BOM). See primitives/bom.schema.json."
             },
+            "integrity": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Checksum"
+              },
+              "description": "Cryptographic integrity of this component's underlying artifact — model weights or shards, dataset archive, container image, or package bytes. An array supports multi-file/sharded artifacts. This is the single, generic home for artifact/subject integrity across all component types (it replaced the former per-type Container_Image digest and Artifact checksum fields). Distinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence Integrity type."
+            },
             "baselineRefs": {
               "type": "array",
               "items": {
@@ -3161,7 +3169,33 @@
               "description": "Label selector to match targets belonging to this component during migration. Targets with matching labels are automatically included."
             }
           },
-          "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, and generalized BOM attachment (boms[]).",
+          "examples": [
+            {
+              "type": "aiModel",
+              "name": "Llama-2-7b-chat (finetuned)",
+              "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+              "owner": {
+                "type": "email",
+                "identifier": "ml-platform@agency.gov"
+              },
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
+                }
+              ],
+              "boms": [
+                {
+                  "bomType": "ai-model",
+                  "format": "cyclonedx-ml",
+                  "model": {
+                    "adaptationType": "finetune"
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, generalized BOM attachment (boms[]), and unified artifact integrity (integrity[]).",
           "title": "Base Component"
         },
         "Component": {
@@ -3298,16 +3332,26 @@
                 "tag": {
                   "type": "string",
                   "description": "Image tag. Example: '1.25'."
-                },
-                "digest": {
-                  "type": "string",
-                  "pattern": "^(sha256:[a-f0-9]{64}|sha512:[a-f0-9]{128}|blake3:[a-f0-9]{64})$",
-                  "description": "Image digest for immutable reference."
                 }
               }
             }
           ],
-          "description": "A static container image (not running).",
+          "examples": [
+            {
+              "type": "containerImage",
+              "name": "nginx",
+              "registry": "docker.io",
+              "repository": "library/nginx",
+              "tag": "1.25-alpine",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d"
+                }
+              ]
+            }
+          ],
+          "description": "A static container image (not running). Image integrity — formerly the 'digest' field — is expressed via the shared Base_Component.integrity array.",
           "title": "Container Image Component"
         },
         "Container_Instance_Component": {
@@ -3530,15 +3574,26 @@
                 "version": {
                   "type": "string",
                   "description": "Package version."
-                },
-                "checksum": {
-                  "type": "string",
-                  "description": "Package checksum for verification."
                 }
               }
             }
           ],
-          "description": "A software artifact or dependency (for SCA tools).",
+          "examples": [
+            {
+              "type": "artifact",
+              "name": "express",
+              "packageManager": "npm",
+              "packageName": "express",
+              "version": "4.18.2",
+              "integrity": [
+                {
+                  "algorithm": "sha512",
+                  "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+                }
+              ]
+            }
+          ],
+          "description": "A software artifact or dependency (for SCA tools). Package integrity — formerly the 'checksum' field — is expressed via the shared Base_Component.integrity array.",
           "title": "Artifact Component"
         },
         "Network_Component": {
@@ -3630,6 +3685,12 @@
               "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
               "modelId": "acme/llama-2-7b-chat-support",
               "version": "1.2.0",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
+                }
+              ],
               "boms": [
                 {
                   "bomType": "ai-model",
@@ -3677,6 +3738,12 @@
               "componentId": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
               "datasetId": "acme/ultrachat-200k-filtered",
               "version": "2026-06-01",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+                }
+              ],
               "boms": [
                 {
                   "bomType": "dataset",

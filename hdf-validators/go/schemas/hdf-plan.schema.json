@@ -372,9 +372,10 @@
           "enum": [
             "sha256",
             "sha384",
-            "sha512"
+            "sha512",
+            "blake3"
           ],
-          "description": "Supported cryptographic hash algorithms for checksums and integrity verification.",
+          "description": "Supported cryptographic hash algorithms for checksums and integrity verification. blake3 covers container-image and other artifact digests that use it.",
           "title": "Hash Algorithm"
         },
         "Requirement_Group": {

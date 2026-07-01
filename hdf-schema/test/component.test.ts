@@ -341,6 +341,75 @@ describe('component.schema.json', () => {
     });
   });
 
+  // ── Artifact integrity (Base_Component.integrity) ──
+
+  describe('Artifact integrity (Base_Component.integrity)', () => {
+    const validate = ajv.compile({
+      ...schemaRef(componentSchema, 'Base_Component'),
+    });
+
+    it('should validate a component with an integrity checksum array', () => {
+      const valid = {
+        name: 'Llama-2-7b weights',
+        type: 'aiModel',
+        integrity: [
+          { algorithm: 'sha256', value: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' },
+        ],
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate multi-file (sharded) artifact integrity', () => {
+      const valid = {
+        name: 'sharded-model',
+        type: 'aiModel',
+        integrity: [
+          { algorithm: 'sha256', value: 'aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44' },
+          { algorithm: 'sha512', value: 'cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e' },
+        ],
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate dataset artifact integrity via the same shared field', () => {
+      const valid = {
+        name: 'training-corpus',
+        type: 'dataset',
+        integrity: [
+          { algorithm: 'sha512', value: 'cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e' },
+        ],
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should accept blake3 as a hash algorithm (absorbed container-image digests)', () => {
+      const valid = {
+        name: 'nginx',
+        type: 'containerImage',
+        integrity: [{ algorithm: 'blake3', value: 'a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d' }],
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should reject an integrity entry with an unknown hash algorithm', () => {
+      const invalid = {
+        name: 'M',
+        type: 'aiModel',
+        integrity: [{ algorithm: 'md5', value: 'd41d8cd98f00b204e9800998ecf8427e' }],
+      };
+      expect(validate(invalid)).toBe(false);
+    });
+
+    it('should reject an integrity entry missing the value', () => {
+      const invalid = {
+        name: 'M',
+        type: 'aiModel',
+        integrity: [{ algorithm: 'sha256' }],
+      };
+      expect(validate(invalid)).toBe(false);
+    });
+  });
+
   // ── Polymorphic Component variants ──
 
   describe('Component (oneOf union)', () => {
@@ -369,7 +438,7 @@ describe('component.schema.json', () => {
         registry: 'docker.io',
         repository: 'library/nginx',
         tag: '1.25-alpine',
-        digest: 'sha256:a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d',
+        integrity: [{ algorithm: 'sha256', value: 'a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d' }],
       };
       expect(validate(valid)).toBe(true);
     });
