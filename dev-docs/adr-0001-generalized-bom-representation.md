@@ -3,6 +3,7 @@
 **Date:** 2026-06-30
 **Status:** proposed
 **Deciders:** Will Dower
+**Revision:** 2026-06-30 — incorporated the cross-BOM-type survey: carriage/normalization framing, system-level BOM subject, `bomType` coverage tiers, and shared-base field semantics (see Decision §2, §3, §4, §6, §10 and Alternative F).
 
 ## Context
 
@@ -10,22 +11,23 @@ HDF must represent AI Bills of Materials (model and dataset inventory/provenance
 
 ## Decision
 
-**Represent all manifests — SBOM, AI-BOM, and future kinds — through one extensible shape attached to the HDF component primitive, discriminated by a `bomType` field; do not create a new document type per manifest kind.** A new manifest kind is added by (a) a `bomType`/`format` value and (b) a converter that normalizes the source format — mirroring the scanner→converter pattern.
+**Represent all manifests — SBOM, AI-BOM, and future kinds — through one extensible `Bom` shape attached to a *BOM subject* (a component or a system boundary), discriminated by a `bomType` field; do not create a new document type per manifest kind.** A new manifest kind is added by (a) a `bomType`/`format` value and (b) a converter that normalizes the source format — mirroring the scanner→converter pattern.
 
 Concretely:
 
 1. **AI-BOM is a peer of SBOM, not a new document type.** Extend the existing SBOM touchpoints (`Base_Component`, `hdf-system`, `hdf-results`, evidence-package content reference, `hdf-comparison`) to handle BOMs generically.
-2. **Generalize the component field:** replace `sbom`/`sbomRef`/`sbomFormat` on `Base_Component` with a multi-valued `boms[]`.
-3. **Two carriage shapes:** *passthrough* (reference/embed of the native manifest, opaque) and *normalized* (converted into HDF's queryable BOM shape). A converter turns the native manifest into the normalized shape.
+2. **Generalize as a shared `Bom` primitive** (`primitives/bom.schema.json`) with a multi-valued `boms[]` attachment used, unmodified, at **two subjects:** on `Base_Component` (replacing `sbom`/`sbomRef`/`sbomFormat`) and on `hdf-system` (a system-scoped `boms[]`). Component-scoped BOMs (SBOM, AI-model) attach at the component; system-scoped BOMs (SaaSBOM, KBOM, OBOM) attach at the system boundary.
+3. **Two co-equal shapes, available to *every* `bomType`:** *passthrough* (reference/embed of the native manifest, carried opaquely) and *normalized* (converted into HDF's queryable shape). Neither is second-class — passthrough is the universal escape hatch (always available, no normalization required); normalized is a target for every type, built incrementally. **A normalized type-extension may be relational** — a typed `nodes[]` + reference-based `edges[]` graph (exactly how CycloneDX already encodes SaaSBOM services/data-flows and CBOM `implements`/`uses` in JSON) — so no BOM type is inexpressible in HDF's own fields. We sequence *when* each type gets a normalized extension by effort; we never foreclose *whether* it can have one.
 4. **Three-tier field placement** (the core discipline). The placement test for any field is "how many `bomType`s use it?":
    - **Component root** (`Base_Component`): generic identity (`name`, `version`, `componentId`, `externalIds`, `owner`, `labels`) + the `boms[]` field. *No BOM-type-specific fields, ever.*
-   - **Shared BOM base** (every `bomType`): `bomType`, `format`, carriage (`ref?`/`document?`), `hashes[]`, `uniqueId`, `license`. *Only fields shared by ≥2 bomTypes.* Identity is **inherited** from the host component, not re-owned.
-   - **Type-specific extension** (per `bomType`): the manifest's distinctive content. A field used by exactly one bomType lives here.
+   - **Shared BOM base** (every `bomType`): *required* — `bomType`, `format`, carriage (`ref?`/`document?`); *optional, with defined semantics* — `hashes[]` (**integrity of the carried BOM artifact**, not subject identity — CBOM/HBOM subjects are keyed by OID / part number / fingerprint inside their extension), `uniqueId`, `license` (**optional/nullable** — meaningless for CBOM algorithms and often HBOM parts; per-node licenses live in the extension). *Only fields shared by ≥2 bomTypes.* Subject identity is **inherited** from the host component/system, not re-owned.
+   - **Type-specific extension** (per `bomType`): the manifest's distinctive content, which **may be a typed graph** (`nodes[]` + reference-based `edges[]`) for relational BOMs (CBOM, SaaSBOM). A field used by exactly one bomType lives here.
 5. **`aiModel` becomes a thin component type** (`type` enum + `Component` oneOf), adding only identity/correlation fields (parallel to `Host_Component`'s `hostname`/`ip`); all model detail lives in the BOM payload.
-6. **Model vs dataset are distinct `bomType`s on a shared base.** `bomType` is an open enum: `sbom | ai-model | dataset | …`.
+6. **`bomType` is an open, reserved enum.** Model vs dataset are distinct `bomType`s on the shared base. Reserve CycloneDX-aligned values now to avoid a breaking widening later: `sbom`, `ai-model`, `dataset`, `hbom`, `cbom`, `saasbom`, `obom`, `mbom`, `kbom` (extensible via pattern/registry). Coverage tiers: **normalize now** — `sbom`, `ai-model`, `dataset`; **reserve + passthrough now, normalize later** — `hbom`, `cbom`, `saasbom`, `obom`, `mbom`, `kbom`; **excluded (not BOMs)** — VEX, VDR, and SPDX's SecurityProfile (vulnerability *assertions*, already handled via converters/amendments; `format: spdx` must not imply a BOM when the payload is a SecurityProfile).
 7. **Field set aligned to the CISA/G7 "SBOM for AI" minimum elements** (the interoperability target). AI fields are optional (standards-correct; only the EU AI Act makes a subset binding for high-risk/GPAI). `adaptationType` adopts Hugging Face's `finetune | adapter | quantized | merge` (the only typed lineage enum in the ecosystem). `parameterCount` and `serializationFormat` are first-class **within the ai-model extension** (never at root). Structural disagreements normalize to the most expressive (superset) shape with a free-text fallback (bias → CycloneDX structured object + prose fallback; energy → CycloneDX per-activity array).
 8. **No backward compatibility** — clean replacement of the SBOM trio (rapid-iteration phase; community expects breaking schema changes).
 9. **Dual TypeScript + Go parity is an invariant** — every schema type, parser, and converter exists in both languages; no TS-only helpers.
+10. **System-scoped relational BOMs reference `hdf-system`, they do not duplicate it.** SaaSBOM's services + data-flows overlap `hdf-system`'s existing `components[]` + data-flow graph; a normalized SaaSBOM/KBOM aligns with or references those first-class entities rather than re-inventing a parallel graph inside a BOM payload. This — not expressibility — is the real constraint on relational BOMs.
 
 ## Alternatives Considered
 
@@ -58,6 +60,12 @@ Keep SBOM-only support; reference AI-BOMs as opaque external files with no norma
 - **Pros:** Zero schema work.
 - **Cons:** No queryable/assessable AI inventory; can't diff models, can't assess against AI baselines, can't compute coverage; fails the AI supply-chain evidence requirement that motivates this work.
 - **Why rejected:** The problem is real and load-bearing for the AI-evidence roadmap (epic `hdf-libs-kirq`).
+
+### Alternative F: Two-class model — some BOMs normalizable, relational ones carriage-only
+Make SBOM/AI-BOM first-class (normalized) but declare relational BOMs (SaaSBOM, CBOM) expressible only as opaque passthrough references.
+- **Pros:** Avoids the effort of modeling graphs in HDF's own fields.
+- **Cons:** Directed graphs *are* expressible as `nodes[]` + `edges[]` field sets — CycloneDX itself encodes SaaSBOM data-flows and CBOM `implements`/`uses` this way in JSON — so the restriction is artificial; it would permanently relegate crypto-agility (CBOM) and attack-surface (SaaSBOM) inventory to un-queryable blobs.
+- **Why rejected:** Every `bomType` is a normalization target (relational extensions are allowed); passthrough is a universal interim, not a second tier. We sequence normalization by effort, we do not foreclose it. The genuine constraint that remains is Decision §10 (don't duplicate `hdf-system`), which is about avoiding redundancy, not about expressibility.
 
 ## Consequences
 
@@ -96,12 +104,14 @@ Keep SBOM-only support; reference AI-BOMs as opaque external files with no norma
 ### Scope
 
 **IN scope:**
-- Generalized `boms[]` on `Base_Component` replacing the SBOM trio; shared BOM base + `ai-model`/`dataset`/`sbom` extensions; `aiModel` component type.
+- Shared `Bom` primitive + generalized `boms[]` on **both** `Base_Component` (replacing the SBOM trio) and `hdf-system`; shared BOM base + `ai-model`/`dataset`/`sbom` normalized extensions; `aiModel` component type.
+- Reserve the full `bomType` enum now (`sbom, ai-model, dataset, hbom, cbom, saasbom, obom, mbom, kbom`, extensible) — passthrough works immediately for the reserved-but-not-yet-normalized types.
 - Evidence-package `Content_Type` generalization; `hdf-comparison` diff generalization beyond purl-only.
 - Dual-language shared `bom/` parser module.
 - Update `cyclonedx-to-hdf`; add `cyclonedx-mlbom-to-hdf` and `spdx-ai-to-hdf` converters.
 
 **OUT of scope:**
+- **Normalized** extensions for `hbom`/`cbom`/`saasbom`/`obom`/`mbom`/`kbom` — reserved + passthrough-capable now; each normalized shape (with its converter) is a later PR, and SaaSBOM/CBOM must honor the Decision §10 anti-duplication guardrail.
 - Model/build signing & provenance (OpenSSF Model Signing, Sigstore, SLSA/in-toto) and OCI model packaging — future `bomType`s/converters at most.
 - The deferred siblings: `hdf-libs-9zig`, `hdf-libs-gccd`, `hdf-libs-vqic`, `hdf-libs-gxxb`, `hdf-libs-bsfr`.
 - Adversarial-evaluation baselines and enterprise portfolio aggregation.
@@ -110,12 +120,12 @@ Keep SBOM-only support; reference AI-BOMs as opaque external files with no norma
 
 #### Phase 1: Schema — generalized BOM + aiModel component (unblocked — start here)
 **Files:**
-- Create: `hdf-schema/src/schemas/primitives/bom.schema.json` (shared base + `ai-model`/`dataset`/`sbom` extensions, `bomType`/`format`/carriage discriminators)
-- Modify: `hdf-schema/src/schemas/primitives/component.schema.json` (replace `sbom`/`sbomRef`/`sbomFormat` with `boms[]`; add `aiModel` to the `type` enum + `AI_Model_Component` to the `Component` oneOf); `hdf-schema/src/schemas/hdf-evidence-package.schema.json` (generalize `Content_Type`); `hdf-schema/src/schemas/primitives/comparison.schema.json` (generalize `Package_Diff` identity)
+- Create: `hdf-schema/src/schemas/primitives/bom.schema.json` (shared `Bom` base + `ai-model`/`dataset`/`sbom` normalized extensions; reserved `bomType` enum; `format`/carriage discriminators; `hashes`=artifact-integrity and `license` optional/nullable semantics)
+- Modify: `hdf-schema/src/schemas/primitives/component.schema.json` (replace `sbom`/`sbomRef`/`sbomFormat` with `boms[]`; add `aiModel` to the `type` enum + `AI_Model_Component` to the `Component` oneOf); `hdf-schema/src/schemas/hdf-system.schema.json` (add system-scoped `boms[]`); `hdf-schema/src/schemas/hdf-evidence-package.schema.json` (generalize `Content_Type`); `hdf-schema/src/schemas/primitives/comparison.schema.json` (generalize `Package_Diff` identity)
 - Test: `hdf-schema/test/` (bom + component + evidence-package validation, incl. examples per the schema-examples convention)
 
 **Acceptance criteria:**
-- [ ] `boms[]` validates with `bomType` discriminator; `ai-model`/`dataset`/`sbom` extensions validate; passthrough (`ref`) and normalized (`document`) both validate
+- [ ] `boms[]` validates on **both** `Base_Component` and `hdf-system`; `bomType` accepts every reserved value; passthrough (`ref`/`document`) validates for **every** reserved type; `ai-model`/`dataset`/`sbom` normalized extensions validate
 - [ ] `aiModel` component validates via the oneOf; `sbom`/`sbomRef`/`sbomFormat` removed
 - [ ] AI-specific fields (`parameterCount`, `serializationFormat`, etc.) live only in the `ai-model` extension; `adaptationType` enum = `finetune|adapter|quantized|merge`
 - [ ] `pnpm build:schemas` regenerates bundled schemas + `hdf-validators/go/schemas/`; TS + Go types regenerate
