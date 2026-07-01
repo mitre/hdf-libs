@@ -5,15 +5,10 @@ on:
     tags:
       - 'v*'
 
-# NOTE: Per-job permissions below. No workflow-level permissions block
-# so each job gets only what it needs.
-
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-# NODE_VERSION pinned to the current LTS (22). Matches each published
-# package's `engines.node: ">=22.0.0"`.
 env:
   NODE_VERSION: '22'
   GO_VERSION: '1.26.4'
@@ -257,3 +252,14 @@ jobs:
           done
 
           git push origin --tags
+
+  deploy-site:
+    name: Deploy schema site
+    needs: create-release
+    # Stable releases only — never publish docs for a pre-release (-rc) tag.
+    if: ${{ !contains(github.ref_name, '-rc') }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy-schemas.yml
