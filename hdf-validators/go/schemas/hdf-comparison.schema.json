@@ -3790,6 +3790,7 @@
         },
         "Bom": {
           "type": "object",
+          "title": "Bill of Materials",
           "additionalProperties": false,
           "required": [
             "bomType",

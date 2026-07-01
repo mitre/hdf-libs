@@ -897,7 +897,7 @@ type Component struct {
 	// each carried by passthrough (ref/document) or normalized. Replaces the former                              
 	// sbom/sbomRef/sbomFormat trio; a component may carry several BOMs (e.g. an SBOM plus an                     
 	// ai-model BOM). See primitives/bom.schema.json.                                                             
-	Boms                                                                                        []HDFSyste        `json:"boms,omitempty"`
+	Boms                                                                                        []BillOfMaterials `json:"boms,omitempty"`
 	// Stable UUID (RFC 4122) for this component. Required in hdf-system documents, optional in                   
 	// hdf-results. Enables cross-document correlation, diffing, and data flow references.                        
 	ComponentID                                                                                 *string           `json:"componentId,omitempty"`
@@ -1021,7 +1021,7 @@ type Component struct {
 	DatasetID                                                                                   *string           `json:"datasetId,omitempty"`
 }
 
-type HDFSyste struct {
+type BillOfMaterials struct {
 	// The manifest kind. Determines which normalized type-extension (model/dataset/packages)                         
 	// may appear.                                                                                                    
 	BOMType                                                                                    BOMType                `json:"bomType"`
@@ -1714,7 +1714,7 @@ type HDFSystem struct {
 	// a single component (e.g. a SaaSBOM of services, a KBOM of cluster inventory, an OBOM).                        
 	// Component-scoped BOMs (SBOM, ai-model) attach on the component instead. See                                   
 	// primitives/bom.schema.json.                                                                                   
-	Boms                                                                                        []HDFSyste           `json:"boms,omitempty"`
+	Boms                                                                                        []BillOfMaterials    `json:"boms,omitempty"`
 	// Description of the system's authorization boundary. Example: network CIDR blocks, cloud                       
 	// VPC IDs, physical locations.                                                                                  
 	BoundaryDescription                                                                         *string              `json:"boundaryDescription,omitempty"`
