@@ -58,7 +58,9 @@
   },
   "devDependencies": {
     "@mitre/hdf-fixtures": "workspace:^",
-    "@mitre/hdf-validators": "workspace:^"
+    "@mitre/hdf-validators": "workspace:^",
+    "ajv": "^8.17.0",
+    "ajv-formats": "^3.0.0"
   },
   "engines": {
     "node": ">=22.0.0"

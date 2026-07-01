@@ -98,6 +98,12 @@ importers:
       '@mitre/hdf-validators':
         specifier: workspace:^
         version: link:../hdf-validators
+      ajv:
+        specifier: 8.18.0
+        version: 8.18.0
+      ajv-formats:
+        specifier: ^3.0.0
+        version: 3.0.1(ajv@8.18.0)
 
   hdf-diff:
     dependencies:
