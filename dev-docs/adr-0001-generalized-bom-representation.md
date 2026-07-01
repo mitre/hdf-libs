@@ -1,7 +1,7 @@
 # ADR-0001: Generalized BOM/Manifest Representation in HDF
 
 **Date:** 2026-06-30
-**Status:** proposed
+**Status:** accepted
 **Deciders:** Will Dower
 **Revision:** 2026-06-30 — incorporated the cross-BOM-type survey: carriage/normalization framing, system-level BOM subject, `bomType` coverage tiers, and shared-base field semantics (see Decision §2, §3, §4, §6, §10 and Alternative F).
 
