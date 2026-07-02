@@ -60,7 +60,7 @@ func newSystemUpdateComponentCmd() *cobra.Command {
 		Use:   "update-component",
 		Short: "Update a component's SBOM reference in a system document",
 		Long: `Update an existing component in an HDF system document with a new
-CycloneDX or SPDX SBOM reference. The component's sbomRef and metadata
+CycloneDX or SPDX SBOM reference. The component's boms[] entry and metadata
 are updated from the new SBOM.
 
 Examples:
@@ -126,22 +126,21 @@ func runSystemAddComponent(systemFile, fromFile, componentName, outputPath strin
 	if sbomDoc != nil {
 		compType = extractSBOMComponentType(sbomDoc, sbomFormat)
 	}
+	ref := filepath.ToSlash(fromFile) // schema requires uri-reference; Windows backslashes are invalid
 	comp := map[string]interface{}{
-		"name":    componentName,
-		"type":    compType,
-		"sbomRef": filepath.ToSlash(fromFile), // schema requires uri-reference; Windows backslashes are invalid
+		"name": componentName,
+		"type": compType,
 	}
-	if sbomFormat != "" {
-		comp["sbomFormat"] = sbomFormat
-	}
+	var embedDoc map[string]interface{}
 	if sbomDoc != nil {
 		if ver := extractSBOMComponentVersion(sbomDoc, sbomFormat); ver != "" {
 			comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
 		}
 		if embed {
-			comp["sbom"] = sbomDoc
+			embedDoc = sbomDoc
 		}
 	}
+	comp["boms"] = []map[string]interface{}{newSBOMBom(ensureSBOMFormat(sbomFormat, ref), ref, embedDoc)}
 
 	// Stamp componentId if requested
 	if generateComponentID {
@@ -185,18 +184,17 @@ func runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath st
 			continue
 		}
 		if comp["name"] == componentName {
-			comp["sbomRef"] = filepath.ToSlash(fromFile) // schema requires uri-reference
-			if sbomFormat != "" {
-				comp["sbomFormat"] = sbomFormat
-			}
+			ref := filepath.ToSlash(fromFile) // schema requires uri-reference
+			var embedDoc map[string]interface{}
 			if sbomDoc != nil {
 				if ver := extractSBOMComponentVersion(sbomDoc, sbomFormat); ver != "" {
 					comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
 				}
 				if embed {
-					comp["sbom"] = sbomDoc
+					embedDoc = sbomDoc
 				}
 			}
+			comp["boms"] = []map[string]interface{}{newSBOMBom(ensureSBOMFormat(sbomFormat, ref), ref, embedDoc)}
 			components[i] = comp
 			found = true
 			break

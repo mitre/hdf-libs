@@ -334,8 +334,12 @@ func TestSystemCreate_FromCycloneDXSBOM(t *testing.T) {
 	c0 := components[0].(map[string]interface{})
 	assert.Equal(t, "juice-shop", c0["name"])
 	assert.Equal(t, "application", c0["type"])
-	assert.Equal(t, "cyclonedx", c0["sbomFormat"])
-	assert.Contains(t, c0["sbomRef"], "juice-shop-sbom-minimal.json")
+	boms := c0["boms"].([]interface{})
+	require.Len(t, boms, 1)
+	bom0 := boms[0].(map[string]interface{})
+	assert.Equal(t, "sbom", bom0["bomType"])
+	assert.Equal(t, "cyclonedx", bom0["format"])
+	assert.Contains(t, bom0["ref"], "juice-shop-sbom-minimal.json")
 	assert.Contains(t, c0["description"].(string), "19.1.1") // version extracted
 }
 
@@ -397,8 +401,12 @@ func TestSystemCreate_FromURL_WithComponentName(t *testing.T) {
 	components := sys["components"].([]interface{})
 	c0 := components[0].(map[string]interface{})
 	assert.Equal(t, "WebTier", c0["name"])
-	assert.Equal(t, "https://artifacts.example.com/sbom/webtier.cdx.json", c0["sbomRef"])
-	assert.Equal(t, "cyclonedx", c0["sbomFormat"]) // guessed from .cdx.json
+	boms := c0["boms"].([]interface{})
+	require.Len(t, boms, 1)
+	bom0 := boms[0].(map[string]interface{})
+	assert.Equal(t, "sbom", bom0["bomType"])
+	assert.Equal(t, "https://artifacts.example.com/sbom/webtier.cdx.json", bom0["ref"])
+	assert.Equal(t, "cyclonedx", bom0["format"]) // guessed from .cdx.json
 }
 
 func TestSystemAddComponent(t *testing.T) {
@@ -426,7 +434,9 @@ func TestSystemAddComponent(t *testing.T) {
 	assert.Len(t, components, 3) // 2 from results + 1 from SBOM
 	last := components[2].(map[string]interface{})
 	assert.Equal(t, "WebGoat", last["name"])
-	assert.Equal(t, "cyclonedx", last["sbomFormat"])
+	boms := last["boms"].([]interface{})
+	require.Len(t, boms, 1)
+	assert.Equal(t, "cyclonedx", boms[0].(map[string]interface{})["format"])
 }
 
 func TestSystemAddComponent_RejectsDuplicate(t *testing.T) {
@@ -469,7 +479,9 @@ func TestSystemUpdateComponent(t *testing.T) {
 	components := sys["components"].([]interface{})
 	assert.Len(t, components, 1) // still one component
 	c0 := components[0].(map[string]interface{})
-	assert.Contains(t, c0["sbomRef"], "webgoat-sbom.json") // updated ref
+	boms := c0["boms"].([]interface{})
+	require.Len(t, boms, 1)
+	assert.Contains(t, boms[0].(map[string]interface{})["ref"], "webgoat-sbom.json") // updated ref
 }
 
 func TestSystemUpdateComponent_RejectsNonexistent(t *testing.T) {
@@ -608,13 +620,17 @@ func TestSystemCreate_FromSBOM_Embed(t *testing.T) {
 	components := sys["components"].([]interface{})
 	c0 := components[0].(map[string]interface{})
 
-	// sbom field should contain the full SBOM object
-	sbom, ok := c0["sbom"].(map[string]interface{})
-	require.True(t, ok, "expected sbom to be embedded object, got %T", c0["sbom"])
-	assert.Equal(t, "CycloneDX", sbom["bomFormat"])
+	boms := c0["boms"].([]interface{})
+	require.Len(t, boms, 1)
+	bom0 := boms[0].(map[string]interface{})
 
-	// sbomRef should still be present for traceability
-	assert.Contains(t, c0["sbomRef"], "juice-shop-sbom-minimal.json")
+	// document should contain the full SBOM object
+	doc, ok := bom0["document"].(map[string]interface{})
+	require.True(t, ok, "expected document to be embedded object, got %T", bom0["document"])
+	assert.Equal(t, "CycloneDX", doc["bomFormat"])
+
+	// ref should still be present for traceability
+	assert.Contains(t, bom0["ref"], "juice-shop-sbom-minimal.json")
 }
 
 func TestSystemCreate_FromSBOM_NoEmbed(t *testing.T) {
@@ -634,10 +650,14 @@ func TestSystemCreate_FromSBOM_NoEmbed(t *testing.T) {
 	components := sys["components"].([]interface{})
 	c0 := components[0].(map[string]interface{})
 
-	// Without --embed, sbom should NOT be present
-	assert.Nil(t, c0["sbom"], "sbom should not be embedded without --embed")
-	// sbomRef should be present
-	assert.Contains(t, c0["sbomRef"], "juice-shop-sbom-minimal.json")
+	boms := c0["boms"].([]interface{})
+	require.Len(t, boms, 1)
+	bom0 := boms[0].(map[string]interface{})
+
+	// Without --embed, document should NOT be present
+	assert.Nil(t, bom0["document"], "document should not be embedded without --embed")
+	// ref should be present
+	assert.Contains(t, bom0["ref"], "juice-shop-sbom-minimal.json")
 }
 
 func TestSystemAddComponent_Embed(t *testing.T) {
@@ -665,10 +685,12 @@ func TestSystemAddComponent_Embed(t *testing.T) {
 	last := components[len(components)-1].(map[string]interface{})
 	assert.Equal(t, "WebGoat", last["name"])
 
-	// sbom should be embedded
-	sbom, ok := last["sbom"].(map[string]interface{})
-	require.True(t, ok, "expected sbom to be embedded")
-	assert.Equal(t, "CycloneDX", sbom["bomFormat"])
+	// document should be embedded
+	boms := last["boms"].([]interface{})
+	require.Len(t, boms, 1)
+	doc, ok := boms[0].(map[string]interface{})["document"].(map[string]interface{})
+	require.True(t, ok, "expected document to be embedded")
+	assert.Equal(t, "CycloneDX", doc["bomFormat"])
 }
 
 func TestSystemUpdateComponent_Embed(t *testing.T) {
@@ -694,11 +716,14 @@ func TestSystemUpdateComponent_Embed(t *testing.T) {
 	components := sys["components"].([]interface{})
 	c0 := components[0].(map[string]interface{})
 
-	// sbom should be the webgoat SBOM (not juice-shop)
-	sbom, ok := c0["sbom"].(map[string]interface{})
-	require.True(t, ok, "expected sbom to be embedded after update")
-	assert.Contains(t, c0["sbomRef"], "webgoat-sbom.json")
-	assert.NotNil(t, sbom["bomFormat"])
+	// document should be the webgoat SBOM (not juice-shop)
+	boms := c0["boms"].([]interface{})
+	require.Len(t, boms, 1)
+	bom0 := boms[0].(map[string]interface{})
+	doc, ok := bom0["document"].(map[string]interface{})
+	require.True(t, ok, "expected document to be embedded after update")
+	assert.Contains(t, bom0["ref"], "webgoat-sbom.json")
+	assert.NotNil(t, doc["bomFormat"])
 }
 
 func TestSystemCreate_TypeMapping(t *testing.T) {

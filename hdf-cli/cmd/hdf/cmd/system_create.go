@@ -145,21 +145,48 @@ func runSystemCreateFromSBOMRef(sbomURI, systemName, componentName, outputPath s
 		systemName = componentName + "-system"
 	}
 
-	// Guess format from URL extension
-	sbomFormat := guessFormatFromURI(sbomURI)
+	// Guess format from URL extension; format is schema-required on the BOM entry.
+	sbomFormat := ensureSBOMFormat(guessFormatFromURI(sbomURI), sbomURI)
 
 	comp := map[string]interface{}{
-		"name":    componentName,
-		"type":    compTypeApplication,
-		"sbomRef": sbomURI,
-	}
-	if sbomFormat != "" {
-		comp["sbomFormat"] = sbomFormat
+		"name": componentName,
+		"type": compTypeApplication,
+		"boms": []map[string]interface{}{newSBOMBom(sbomFormat, sbomURI, nil)},
 	}
 
 	fmt.Fprintf(os.Stderr, "Created component %q from URI (type: %s)\n", componentName, compTypeApplication)
 	fmt.Fprintf(os.Stderr, "Note: component type defaulted to %q; edit the system document to correct if needed\n", compTypeApplication)
 	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath, systemCreateOpts{})
+}
+
+// newSBOMBom builds a passthrough SBOM entry for a component's boms[] array,
+// per the generalized Bom schema (ADR-0001). bomType and format are required;
+// ref carries the manifest by reference and document carries it embedded.
+func newSBOMBom(format, ref string, document map[string]interface{}) map[string]interface{} {
+	bom := map[string]interface{}{
+		"bomType": "sbom",
+		"format":  format,
+	}
+	if ref != "" {
+		bom["ref"] = ref
+	}
+	if document != nil {
+		bom["document"] = document
+	}
+	return bom
+}
+
+// ensureSBOMFormat guarantees a non-empty format (schema-required on the BOM
+// entry). When the format can't be guessed, it falls back to the ref's file
+// extension, and finally to cyclonedx as this tooling's predominant format.
+func ensureSBOMFormat(format, ref string) string {
+	if format != "" {
+		return format
+	}
+	if ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(ref)), "."); ext != "" {
+		return ext
+	}
+	return sbomFormatCycloneDX
 }
 
 // guessFormatFromURI attempts to determine SBOM format from the URI extension.
@@ -226,16 +253,16 @@ func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, c
 	// Detect component type from SBOM metadata
 	compType := extractSBOMComponentType(doc, sbomFormat)
 
-	comp := map[string]interface{}{
-		"name":       componentName,
-		"type":       compType,
-		"sbomRef":    filepath.ToSlash(filePath), // schema requires uri-reference; Windows backslashes are invalid
-		"sbomFormat": sbomFormat,
+	ref := filepath.ToSlash(filePath) // schema requires uri-reference; Windows backslashes are invalid
+	var embedDoc map[string]interface{}
+	if opts.embed {
+		embedDoc = doc
 	}
 
-	// Embed full SBOM data if --embed is set
-	if opts.embed {
-		comp["sbom"] = doc
+	comp := map[string]interface{}{
+		"name": componentName,
+		"type": compType,
+		"boms": []map[string]interface{}{newSBOMBom(sbomFormat, ref, embedDoc)},
 	}
 
 	// Extract version if available
@@ -412,15 +439,9 @@ func buildComponentFromTarget(target map[string]interface{}, baselineNames []str
 		comp["description"] = d
 	}
 
-	// Carry forward embedded SBOM
-	if sbom, ok := target["sbom"]; ok && sbom != nil {
-		comp["sbom"] = sbom
-	}
-	if sbomFmt, ok := target["sbomFormat"].(string); ok && sbomFmt != "" {
-		comp["sbomFormat"] = sbomFmt
-	}
-	if ref, ok := target["sbomRef"].(string); ok && ref != "" {
-		comp["sbomRef"] = ref
+	// Carry forward attached BOMs (SBOM, ai-model, dataset, ...)
+	if boms, ok := target["boms"]; ok && boms != nil {
+		comp["boms"] = boms
 	}
 
 	// Carry forward externalIds
