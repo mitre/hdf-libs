@@ -45,7 +45,7 @@ const minimalAmendments = `{
     "reason": "Risk accepted",
     "appliedBy": {"type": "email", "identifier": "admin@example.com"},
     "appliedAt": "2026-03-01T00:00:00Z",
-    "expiresAt": "2026-12-31T00:00:00Z"
+    "expiresAt": "2099-12-31T00:00:00Z"
   }]
 }`
 
@@ -59,7 +59,7 @@ const multiOverrideAmendments = `{
       "reason": "Risk accepted",
       "appliedBy": {"type": "email", "identifier": "admin@example.com"},
       "appliedAt": "2026-03-01T00:00:00Z",
-      "expiresAt": "2026-12-31T00:00:00Z"
+      "expiresAt": "2099-12-31T00:00:00Z"
     },
     {
       "type": "attestation",
@@ -68,7 +68,7 @@ const multiOverrideAmendments = `{
       "reason": "Manually verified",
       "appliedBy": {"type": "email", "identifier": "auditor@example.com"},
       "appliedAt": "2026-03-01T00:00:00Z",
-      "expiresAt": "2026-06-30T00:00:00Z"
+      "expiresAt": "2099-12-31T00:00:00Z"
     }
   ]
 }`
@@ -127,7 +127,7 @@ func TestMergeAmendments_RefusesDraft(t *testing.T) {
 			"reason": "",
 			"appliedBy": {"type": "", "identifier": ""},
 			"appliedAt": "2026-03-01T00:00:00Z",
-			"expiresAt": "2026-12-31T00:00:00Z"
+			"expiresAt": "2099-12-31T00:00:00Z"
 		}]
 	}`
 	_, err := MergeAmendments([]byte(minimalResults), []byte(draft))
@@ -168,7 +168,7 @@ func TestMergeAmendments(t *testing.T) {
 				"reason": "No match",
 				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
 				"appliedAt": "2026-03-01T00:00:00Z",
-				"expiresAt": "2026-12-31T00:00:00Z"
+				"expiresAt": "2099-12-31T00:00:00Z"
 			}]
 		}`
 		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
@@ -314,7 +314,7 @@ func TestMergeAmendments(t *testing.T) {
 				"reason": "Risk accepted",
 				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
 				"appliedAt": "2026-03-01T00:00:00Z",
-				"expiresAt": "2026-12-31T00:00:00Z"
+				"expiresAt": "2099-12-31T00:00:00Z"
 			}]
 		}`
 
@@ -352,7 +352,7 @@ func TestListOverrides(t *testing.T) {
 					"reason": "Risk accepted",
 					"appliedBy": {"type": "email", "identifier": "admin@example.com"},
 					"appliedAt": "2026-03-01T00:00:00Z",
-					"expiresAt": "2026-06-30T00:00:00Z"
+					"expiresAt": "2099-12-31T00:00:00Z"
 				}
 			]
 		}`
@@ -447,7 +447,7 @@ func TestMergeAmendments_ImpactOverride(t *testing.T) {
 				"reason": "Dead code path",
 				"appliedBy": {"type": "email", "identifier": "dev@example.com"},
 				"appliedAt": "2026-03-01T00:00:00Z",
-				"expiresAt": "2026-12-31T00:00:00Z"
+				"expiresAt": "2099-12-31T00:00:00Z"
 			}]
 		}`
 		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
@@ -491,7 +491,7 @@ func TestMergeAmendments_ImpactOverride(t *testing.T) {
 				"reason": "AO accepted risk with severity lowered",
 				"appliedBy": {"type": "email", "identifier": "ao@example.com"},
 				"appliedAt": "2026-03-01T00:00:00Z",
-				"expiresAt": "2026-12-31T00:00:00Z"
+				"expiresAt": "2099-12-31T00:00:00Z"
 			}]
 		}`
 		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
@@ -520,7 +520,7 @@ func TestMergeAmendments_ImpactOverride(t *testing.T) {
 				"reason": "Scanner was wrong",
 				"appliedBy": {"type": "email", "identifier": "dev@example.com"},
 				"appliedAt": "2026-03-01T00:00:00Z",
-				"expiresAt": "2026-12-31T00:00:00Z"
+				"expiresAt": "2099-12-31T00:00:00Z"
 			}]
 		}`
 		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
@@ -549,7 +549,7 @@ func TestListOverrides_WithImpact(t *testing.T) {
 			"reason": "Dead code path",
 			"appliedBy": {"type": "email", "identifier": "dev@example.com"},
 			"appliedAt": "2026-03-01T00:00:00Z",
-			"expiresAt": "2026-12-31T00:00:00Z"
+			"expiresAt": "2099-12-31T00:00:00Z"
 		}]
 	}`
 	_, _, overrides, err := ListOverrides([]byte(amendments))
@@ -582,7 +582,7 @@ func TestMergeAmendments_InvalidStatusValues(t *testing.T) {
 					"reason": "test",
 					"appliedBy": {"type": "email", "identifier": "admin@example.com"},
 					"appliedAt": "2026-03-01T00:00:00Z",
-					"expiresAt": "2026-12-31T00:00:00Z"
+					"expiresAt": "2099-12-31T00:00:00Z"
 				}]
 			}`, tc.statusJSON)
 			merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))

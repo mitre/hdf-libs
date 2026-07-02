@@ -48,7 +48,7 @@ const testAmendments = `{
     "reason": "Risk accepted per ATO",
     "appliedBy": {"type": "email", "identifier": "admin@example.com"},
     "appliedAt": "2026-03-01T00:00:00Z",
-    "expiresAt": "2026-06-30T00:00:00Z"
+    "expiresAt": "2099-12-31T00:00:00Z"
   }]
 }`
 
