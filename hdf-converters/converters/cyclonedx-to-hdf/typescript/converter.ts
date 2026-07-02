@@ -178,6 +178,16 @@ function flattenComponents(components: CycloneDXComponent[]): CycloneDXComponent
 }
 
 /**
+ * Reports whether any (possibly nested) component is a machine-learning-model,
+ * i.e. the CycloneDX document is an AI-BOM.
+ */
+function hasMLModelComponent(components: CycloneDXComponent[]): boolean {
+  return flattenComponents(components).some(
+    (comp) => comp.type === 'machine-learning-model'
+  );
+}
+
+/**
  * Converts CycloneDX SBOM/VEX JSON to HDF format.
  *
  * @param input - CycloneDX JSON string
@@ -211,10 +221,17 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
   }
 
   if (!bom.vulnerabilities || bom.vulnerabilities.length === 0) {
+    if (hasMLModelComponent(bom.components ?? [])) {
+      throw new Error(
+        'cyclonedx: this file is a CycloneDX AI-BOM (machine-learning-model inventory) with no vulnerabilities; ' +
+        'to import it into a system document, use:\n' +
+        '  hdf system create <file> --from cyclonedx-mlbom'
+      );
+    }
     throw new Error(
       'cyclonedx: this file is an SBOM inventory with no vulnerabilities; ' +
       'to import SBOM data into a system document, use:\n' +
-      '  hdf system create --from <sbom-file> --component-name <name>'
+      '  hdf system create <sbom-file> --component-name <name>'
     );
   }
 

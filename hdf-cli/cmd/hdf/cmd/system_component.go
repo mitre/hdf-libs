@@ -7,13 +7,14 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	bom "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
 	"github.com/spf13/cobra"
 )
 
 func newSystemAddComponentCmd() *cobra.Command {
 	var (
 		systemFile          string
-		fromFile            string
+		fromFormat          string
 		componentName       string
 		outputPath          string
 		embed               bool
@@ -21,28 +22,32 @@ func newSystemAddComponentCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "add-component",
+		Use:   "add-component <bom|url> --system <doc> [flags]",
 		Short: "Add a component to an existing system document from an SBOM",
 		Long: `Add a new component to an existing HDF system document by importing
-metadata from a CycloneDX or SPDX SBOM file.
+metadata from a CycloneDX or SPDX SBOM. The SBOM is a positional file path or
+URL. Omit --from to auto-detect; pass --from to assert a BOM format (detected,
+then required to match — never force-parsed).
+
+  --from values: cyclonedx-mlbom | spdx-ai | sbom
 
 Examples:
-  hdf system add-component --system system.json --from sbom.cdx.json --component-name AuthService
-  hdf system add-component --system system.json --from sbom.cdx.json --component-name AuthService --embed`,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return runSystemAddComponent(systemFile, fromFile, componentName, outputPath, embed, generateComponentID)
+  hdf system add-component sbom.cdx.json --system system.json --component-name AuthService
+  hdf system add-component sbom.cdx.json --system system.json --from sbom --component-name AuthService --embed`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			return runSystemAddComponent(systemFile, args[0], fromFormat, componentName, outputPath, embed, generateComponentID)
 		},
 	}
 
 	cmd.Flags().StringVar(&systemFile, "system", "", "Existing HDF system document (required)")
-	cmd.Flags().StringVar(&fromFile, "from", "", "CycloneDX or SPDX SBOM file (required)")
+	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the SBOM's format: cyclonedx-mlbom | spdx-ai | sbom (default: auto-detect)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name (default: from SBOM metadata)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: overwrite --system)")
 	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
 	cmd.Flags().BoolVar(&generateComponentID, "generate-component-id", false, "Auto-assign UUID componentId to the new component")
 
 	_ = cmd.MarkFlagRequired("system")
-	_ = cmd.MarkFlagRequired("from")
 
 	return cmd
 }
@@ -50,41 +55,45 @@ Examples:
 func newSystemUpdateComponentCmd() *cobra.Command {
 	var (
 		systemFile    string
-		fromFile      string
+		fromFormat    string
 		componentName string
 		outputPath    string
 		embed         bool
 	)
 
 	cmd := &cobra.Command{
-		Use:   "update-component",
+		Use:   "update-component <bom|url> --system <doc> --component-name <name> [flags]",
 		Short: "Update a component's SBOM reference in a system document",
 		Long: `Update an existing component in an HDF system document with a new
-CycloneDX or SPDX SBOM reference. The component's boms[] entry and metadata
-are updated from the new SBOM.
+CycloneDX or SPDX SBOM reference. The SBOM is a positional file path or URL.
+The component's boms[] entry and metadata are updated from the new SBOM. Omit
+--from to auto-detect; pass --from to assert a BOM format (detected, then
+required to match — never force-parsed).
+
+  --from values: cyclonedx-mlbom | spdx-ai | sbom
 
 Examples:
-  hdf system update-component --system system.json --component-name WebTier --from sbom-new.cdx.json
-  hdf system update-component --system system.json --component-name WebTier --from sbom-new.cdx.json --embed`,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath, embed)
+  hdf system update-component sbom-new.cdx.json --system system.json --component-name WebTier
+  hdf system update-component sbom-new.cdx.json --system system.json --component-name WebTier --from sbom --embed`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			return runSystemUpdateComponent(systemFile, args[0], fromFormat, componentName, outputPath, embed)
 		},
 	}
 
 	cmd.Flags().StringVar(&systemFile, "system", "", "Existing HDF system document (required)")
-	cmd.Flags().StringVar(&fromFile, "from", "", "CycloneDX or SPDX SBOM file (required)")
+	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the SBOM's format: cyclonedx-mlbom | spdx-ai | sbom (default: auto-detect)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name to update (required)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: overwrite --system)")
 	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
 
 	_ = cmd.MarkFlagRequired("system")
-	_ = cmd.MarkFlagRequired("from")
 	_ = cmd.MarkFlagRequired("component-name")
 
 	return cmd
 }
 
-func runSystemAddComponent(systemFile, fromFile, componentName, outputPath string, embed, generateComponentID bool) error {
+func runSystemAddComponent(systemFile, fromFile, fromFormat, componentName, outputPath string, embed, generateComponentID bool) error {
 	// Load existing system
 	sysData, err := os.ReadFile(systemFile) // #nosec G304
 	if err != nil {
@@ -98,6 +107,18 @@ func runSystemAddComponent(systemFile, fromFile, componentName, outputPath strin
 	// Load and parse SBOM (or handle URL)
 	sbomDoc, sbomFormat, err := loadSBOM(fromFile)
 	if err != nil {
+		return err
+	}
+
+	// When --from asserts a format, the detected format must match.
+	if sbomDoc != nil {
+		if err := assertBomFormat(fromFormat, sbomDoc); err != nil {
+			return err
+		}
+	} else if err := errFormatAssertionOnURL(fromFormat); err != nil {
+		return err
+	}
+	if err := rejectAIBOMComponentInput("add-component", sbomDoc); err != nil {
 		return err
 	}
 
@@ -158,7 +179,7 @@ func runSystemAddComponent(systemFile, fromFile, componentName, outputPath strin
 	return writeSystemJSON(sysDoc, outputPath, componentName, "added")
 }
 
-func runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath string, embed bool) error {
+func runSystemUpdateComponent(systemFile, fromFile, fromFormat, componentName, outputPath string, embed bool) error {
 	// Load existing system
 	sysData, err := os.ReadFile(systemFile) // #nosec G304
 	if err != nil {
@@ -172,6 +193,18 @@ func runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath st
 	// Load and parse SBOM (or handle URL)
 	sbomDoc, sbomFormat, err := loadSBOM(fromFile)
 	if err != nil {
+		return err
+	}
+
+	// When --from asserts a format, the detected format must match.
+	if sbomDoc != nil {
+		if err := assertBomFormat(fromFormat, sbomDoc); err != nil {
+			return err
+		}
+	} else if err := errFormatAssertionOnURL(fromFormat); err != nil {
+		return err
+	}
+	if err := rejectAIBOMComponentInput("update-component", sbomDoc); err != nil {
 		return err
 	}
 
@@ -246,15 +279,37 @@ func loadSBOM(fromRef string) (map[string]interface{}, string, error) {
 	return doc, format, nil
 }
 
-// detectSBOMFormat returns sbomFormatCycloneDX, sbomFormatSPDX, or "" for unrecognized input.
+// detectSBOMFormat returns the structurally-detected BOM format
+// (cyclonedx, spdx, cyclonedx-ml, spdx-3-ai) or "" for unrecognized input.
 func detectSBOMFormat(doc map[string]interface{}) string {
-	if bomFmt, ok := doc["bomFormat"].(string); ok && bomFmt == "CycloneDX" {
-		return sbomFormatCycloneDX
-	}
-	if _, ok := doc["spdxVersion"]; ok {
-		return sbomFormatSPDX
+	if detected := bom.DetectFormat(doc); detected != nil {
+		return detected.Format
 	}
 	return ""
+}
+
+// rejectAIBOMComponentInput refuses AI-BOM inputs on the component subcommands,
+// which currently model every BOM as an SBOM component. Ingesting an AI-BOM here
+// would mislabel it (bomType=sbom on a model/dataset), so we redirect to
+// `hdf system create` (which produces correctly-typed aiModel/dataset components)
+// until component ingestion is generalized to any BOM type (hdf-libs-opk1).
+func rejectAIBOMComponentInput(subcommand string, doc map[string]interface{}) error {
+	if doc == nil {
+		return nil
+	}
+	detected := bom.DetectFormat(doc)
+	if detected == nil {
+		return nil
+	}
+	switch detected.Format {
+	case bom.FormatCycloneDXML:
+		return fmt.Errorf("system %s does not yet support AI-BOM inputs (CycloneDX ML-BOM); "+
+			"use `hdf system create <file> --from cyclonedx-mlbom` to import the model (hdf-libs-opk1)", subcommand)
+	case bom.FormatSPDX3AI:
+		return fmt.Errorf("system %s does not yet support AI-BOM inputs (SPDX-3 AI/Dataset); "+
+			"use `hdf system create <file> --from spdx-ai` to import the models/datasets (hdf-libs-opk1)", subcommand)
+	}
+	return nil
 }
 
 func writeSystemJSON(sysDoc map[string]interface{}, outputPath, componentName, action string) error {

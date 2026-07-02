@@ -170,6 +170,17 @@ func formatCodeDesc(componentLookup map[string]CDXComponent, ref string) string 
 	return fmt.Sprintf("Component %s is vulnerable", name)
 }
 
+// hasMLModelComponent reports whether any (possibly nested) component is a
+// machine-learning-model, i.e. the CycloneDX document is an AI-BOM.
+func hasMLModelComponent(components []CDXComponent) bool {
+	for _, comp := range flattenComponents(components) {
+		if comp.Type == "machine-learning-model" {
+			return true
+		}
+	}
+	return false
+}
+
 // flattenComponents flattens nested CycloneDX components into a single slice.
 func flattenComponents(components []CDXComponent) []CDXComponent {
 	var result []CDXComponent
@@ -205,9 +216,14 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 
 	if len(bom.Vulnerabilities) == 0 {
+		if hasMLModelComponent(bom.Components) {
+			return nil, fmt.Errorf("cyclonedx: this file is a CycloneDX AI-BOM (machine-learning-model inventory) with no vulnerabilities; " +
+				"to import it into a system document, use:\n" +
+				"  hdf system create <file> --from cyclonedx-mlbom")
+		}
 		return nil, fmt.Errorf("cyclonedx: this file is an SBOM inventory with no vulnerabilities; " +
 			"to import SBOM data into a system document, use:\n" +
-			"  hdf system create --from <sbom-file> --component-name <name>")
+			"  hdf system create <sbom-file> --component-name <name>")
 	}
 
 	checksum := shared.InputChecksum(input)

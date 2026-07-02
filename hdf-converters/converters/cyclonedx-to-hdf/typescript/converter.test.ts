@@ -305,6 +305,29 @@ describe('cyclonedx to HDF converter', async () => {
         convertCyclonedxToHdf(loadFixture('spdx-to-cyclonedx.json'))
       ).rejects.toThrow('SBOM inventory with no vulnerabilities');
     });
+
+    it('should reject SBOM-only input with the positional system-create syntax', async () => {
+      await expect(
+        convertCyclonedxToHdf(loadFixture('spdx-to-cyclonedx.json'))
+      ).rejects.toThrow('hdf system create <sbom-file> --component-name <name>');
+    });
+
+    it('should reject a no-vuln AI-BOM with an AI-BOM-specific message', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.6',
+        components: [
+          {
+            type: 'machine-learning-model',
+            name: 'stable-diffusion',
+            'bom-ref': 'model-a',
+          },
+        ],
+      });
+      await expect(convertCyclonedxToHdf(input)).rejects.toThrow(
+        'hdf system create <file> --from cyclonedx-mlbom'
+      );
+    });
   });
 
   describe('VEX format', async () => {

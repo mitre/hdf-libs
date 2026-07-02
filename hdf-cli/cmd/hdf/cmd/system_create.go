@@ -15,7 +15,7 @@ import (
 
 func newSystemCreateCmd() *cobra.Command {
 	var (
-		fromFile            string
+		fromFormat          string
 		outputPath          string
 		systemName          string
 		componentName       string
@@ -27,21 +27,29 @@ func newSystemCreateCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create <bom|url> [flags]",
 		Short: "Bootstrap an HDF system document from a results file or SBOM",
 		Long: `Generate an HDF system document by extracting targets and baselines
 from an HDF results file, or by importing component metadata from a
-CycloneDX/SPDX SBOM.
+CycloneDX/SPDX SBOM, AI-BOM, or SPDX 3.0 AI/Dataset document. The input is a
+positional file path or URL. Omit --from to auto-detect the input format;
+pass --from to assert a specific BOM format (the input is detected, then the
+detected format must match — it is never force-parsed).
+
+  --from values: cyclonedx-mlbom | spdx-ai | sbom
 
 Examples:
-  hdf system create --from results.json
-  hdf system create --from results.json -o system.json
-  hdf system create --from results.json --name "Portal Prod" -o system.json
-  hdf system create --from sbom.cdx.json --component-name "WebTier" -o system.json
-  hdf system create --from results.json --owner team@agency.gov --description "Prod portal"`,
-		RunE: func(_ *cobra.Command, _ []string) error {
+  hdf system create results.json
+  hdf system create results.json -o system.json
+  hdf system create results.json --name "Portal Prod" -o system.json
+  hdf system create sbom.cdx.json --from sbom --component-name "WebTier" -o system.json
+  hdf system create model.cdx.json --from cyclonedx-mlbom -o system.json
+  hdf system create results.json --owner team@agency.gov --description "Prod portal"`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
 			opts := systemCreateOpts{
-				fromFile:            fromFile,
+				fromFile:            args[0],
+				fromFormat:          fromFormat,
 				systemName:          systemName,
 				componentName:       componentName,
 				outputPath:          outputPath,
@@ -55,7 +63,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVar(&fromFile, "from", "", "HDF results file or CycloneDX/SPDX SBOM (required)")
+	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the input's BOM format: cyclonedx-mlbom | spdx-ai | sbom (default: auto-detect)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
 	cmd.Flags().StringVar(&systemName, "name", "", "System name (default: derived from input)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name (for SBOM input)")
@@ -65,11 +73,59 @@ Examples:
 	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
 	cmd.Flags().BoolVar(&generateComponentID, "generate-component-id", false, "Auto-assign UUID componentId to each component")
 
-	if err := cmd.MarkFlagRequired("from"); err != nil {
-		panic(fmt.Sprintf("failed to mark flag required: %v", err))
-	}
-
 	return cmd
+}
+
+// bomFormatAliases lists the valid --from format-assertion aliases shared by the
+// `hdf system` command group.
+var bomFormatAliases = []string{"cyclonedx-mlbom", "cyclonedx-ml", "spdx-ai", "spdx-3-ai", "sbom"}
+
+// assertBomFormat verifies that doc's structurally-detected BOM format matches
+// the requested --from alias. An empty alias performs no assertion (auto-detect).
+// It never force-parses: on a mismatch, an unrecognized alias, or an
+// undetectable input it returns an error rather than coercing the input.
+func assertBomFormat(alias string, doc map[string]interface{}) error {
+	if alias == "" {
+		return nil
+	}
+	detected := bom.DetectFormat(doc)
+	detectedName := "unrecognized (not a BOM)"
+	if detected != nil {
+		detectedName = detected.Format
+	}
+	switch alias {
+	case "cyclonedx-mlbom", "cyclonedx-ml":
+		if detected == nil || detected.Format != bom.FormatCycloneDXML {
+			return bomFormatMismatch(alias, "a CycloneDX ML-BOM (a machine-learning-model component)", detectedName)
+		}
+	case "spdx-ai", "spdx-3-ai":
+		if detected == nil || detected.Format != bom.FormatSPDX3AI {
+			return bomFormatMismatch(alias, "an SPDX 3.0 AI/Dataset document", detectedName)
+		}
+	case "sbom":
+		if detected == nil || (detected.Format != bom.FormatCycloneDX && detected.Format != bom.FormatSPDX) {
+			return bomFormatMismatch(alias, "a plain CycloneDX or SPDX SBOM (not an AI-BOM)", detectedName)
+		}
+	default:
+		return fmt.Errorf("unknown --from format %q; valid formats: %s", alias, strings.Join(bomFormatAliases, ", "))
+	}
+	return nil
+}
+
+func bomFormatMismatch(alias, expected, detected string) error {
+	return fmt.Errorf("--from %s expects %s, but the input was detected as %q; "+
+		"pass the matching --from value or omit --from to auto-detect", alias, expected, detected)
+}
+
+// errFormatAssertionOnURL rejects `--from <format>` when the input is a URL: the
+// document is referenced, not fetched, so its format cannot be verified and a
+// blind assertion could mislabel a remote BOM. Returns nil when no --from is set.
+func errFormatAssertionOnURL(alias string) error {
+	if alias == "" {
+		return nil
+	}
+	return fmt.Errorf("cannot assert --from %s on a URL input: the document is referenced, "+
+		"not fetched, so its format cannot be verified; omit --from for URL references", alias)
 }
 
 // targetTypeToComponentType maps HDF Target.type to HDF Component.type. As of
@@ -94,6 +150,7 @@ func isURL(s string) bool {
 
 type systemCreateOpts struct {
 	fromFile            string
+	fromFormat          string
 	systemName          string
 	componentName       string
 	outputPath          string
@@ -107,6 +164,9 @@ type systemCreateOpts struct {
 func runSystemCreate(opts systemCreateOpts) error {
 	// If --from is a URL, we can't read the file — require metadata flags
 	if isURL(opts.fromFile) {
+		if err := errFormatAssertionOnURL(opts.fromFormat); err != nil {
+			return err
+		}
 		return runSystemCreateFromSBOMRef(opts.fromFile, opts.systemName, opts.componentName, opts.outputPath)
 	}
 
@@ -118,6 +178,11 @@ func runSystemCreate(opts systemCreateOpts) error {
 	var doc map[string]interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return fmt.Errorf("failed to parse input file: %w", err)
+	}
+
+	// When --from asserts a format, the detected format must match before routing.
+	if err := assertBomFormat(opts.fromFormat, doc); err != nil {
+		return err
 	}
 
 	// Detect input type: HDF Results vs CycloneDX SBOM / ML-BOM

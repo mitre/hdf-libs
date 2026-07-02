@@ -166,8 +166,8 @@ hdf diff /tmp/example-hdf-sys-v1.json /tmp/example-hdf-sys-v2.json --stat
 **Story**: A system owner bootstraps a system document from scan results, then updates it.
 
 ```bash
-# Create system from results
-hdf system create --from /tmp/example-hdf-results.json --name "Dropwizard Prod" \
+# Create system from results (input file is positional)
+hdf system create /tmp/example-hdf-results.json --name "Dropwizard Prod" \
   --owner "platform-team@agency.gov" --description "Production Dropwizard" \
   -o /tmp/example-hdf-system.json
 

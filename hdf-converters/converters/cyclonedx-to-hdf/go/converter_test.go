@@ -342,7 +342,23 @@ func TestConvertCycloneDX_NoVulnSBOM_Rejected(t *testing.T) {
 	_, err := ConvertCycloneDXToHDF(input, testVersion)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "SBOM inventory with no vulnerabilities")
-	assert.Contains(t, err.Error(), "hdf system create")
+	assert.Contains(t, err.Error(), "hdf system create <sbom-file> --component-name <name>")
+	// Plain-SBOM branch must not suggest the AI-BOM path.
+	assert.NotContains(t, err.Error(), "cyclonedx-mlbom")
+}
+
+func TestConvertCycloneDX_NoVulnAIBOM_Rejected(t *testing.T) {
+	input := []byte(`{
+		"bomFormat": "CycloneDX",
+		"specVersion": "1.6",
+		"components": [
+			{"type": "machine-learning-model", "name": "stable-diffusion", "bom-ref": "model-a"}
+		]
+	}`)
+	_, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "AI-BOM")
+	assert.Contains(t, err.Error(), "hdf system create <file> --from cyclonedx-mlbom")
 }
 
 // ---- VEX format ----

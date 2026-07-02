@@ -46,7 +46,7 @@ func TestSystemCreate_Basic(t *testing.T) {
 
 	outFile := filepath.Join(t.TempDir(), "system.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "-o", outFile})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -99,7 +99,7 @@ func TestSystemCreate_NameFlag(t *testing.T) {
 
 	outFile := filepath.Join(t.TempDir(), "system.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "--name", "My Custom System", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "--name", "My Custom System", "-o", outFile})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestSystemCreate_OwnerFlag(t *testing.T) { //nolint:dupl
 
 	outFile := filepath.Join(t.TempDir(), "system.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "--owner", "platform-team@agency.gov", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "--owner", "platform-team@agency.gov", "-o", outFile})
 
 	require.NoError(t, cmd.Execute())
 
@@ -140,7 +140,7 @@ func TestSystemCreate_OwnerPlainText(t *testing.T) { //nolint:dupl
 
 	outFile := filepath.Join(t.TempDir(), "system.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "--owner", "Platform Engineering Team", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "--owner", "Platform Engineering Team", "-o", outFile})
 
 	require.NoError(t, cmd.Execute())
 
@@ -162,7 +162,7 @@ func TestSystemCreate_SystemIdFlag(t *testing.T) { //nolint:dupl
 
 	outFile := filepath.Join(t.TempDir(), "system.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "--system-id", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "--system-id", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "-o", outFile})
 
 	require.NoError(t, cmd.Execute())
 
@@ -180,7 +180,7 @@ func TestSystemCreate_AutoGeneratesSystemId(t *testing.T) {
 
 	outFile := filepath.Join(t.TempDir(), "system.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "-o", outFile})
 
 	require.NoError(t, cmd.Execute())
 
@@ -201,7 +201,7 @@ func TestSystemCreate_DescriptionFlag(t *testing.T) { //nolint:dupl
 
 	outFile := filepath.Join(t.TempDir(), "system.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "--description", "Production web application system", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "--description", "Production web application system", "-o", outFile})
 
 	require.NoError(t, cmd.Execute())
 
@@ -218,25 +218,25 @@ func TestSystemCreate_Stdout(t *testing.T) {
 	require.NoError(t, os.WriteFile(resultsFile, []byte(minimalResultsJSON), 0o600))
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile})
 
 	// Should succeed (output to stdout)
 	err := cmd.Execute()
 	require.NoError(t, err)
 }
 
-func TestSystemCreate_MissingFromFlag(t *testing.T) {
+func TestSystemCreate_MissingPositional(t *testing.T) {
 	cmd := NewRootCmd()
 	cmd.SetArgs([]string{"system", "create"})
 
 	err := cmd.Execute()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "required")
+	assert.Contains(t, err.Error(), "arg")
 }
 
 func TestSystemCreate_MissingFile(t *testing.T) {
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", "/nonexistent/results.json"})
+	cmd.SetArgs([]string{"system", "create", "/nonexistent/results.json"})
 
 	err := cmd.Execute()
 	assert.Error(t, err)
@@ -247,7 +247,7 @@ func TestSystemCreate_InvalidJSON(t *testing.T) {
 	require.NoError(t, os.WriteFile(resultsFile, []byte("not json"), 0o600))
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile})
 
 	err := cmd.Execute()
 	assert.Error(t, err)
@@ -265,7 +265,7 @@ func TestSystemCreate_NoTargets(t *testing.T) {
 	require.NoError(t, os.WriteFile(resultsFile, []byte(noTargets), 0o600))
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile})
 
 	err := cmd.Execute()
 	assert.Error(t, err)
@@ -286,7 +286,7 @@ func TestSystemCreate_TargetLabelsAsSelector(t *testing.T) {
 
 	outFile := filepath.Join(t.TempDir(), "system.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "-o", outFile})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -317,7 +317,7 @@ func TestSystemCreate_FromCycloneDXSBOM(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", sbomFile, "-o", outFile})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -347,7 +347,7 @@ func TestSystemCreate_FromSBOM_RequiresComponentNameWhenNoMetadata(t *testing.T)
 	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/spdx-to-cyclonedx.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", sbomFile})
+	cmd.SetArgs([]string{"system", "create", sbomFile})
 
 	err := cmd.Execute()
 	require.Error(t, err)
@@ -359,7 +359,7 @@ func TestSystemCreate_FromSBOM_WithExplicitComponentName(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "--component-name", "MyLib", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", sbomFile, "--component-name", "MyLib", "-o", outFile})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -376,7 +376,7 @@ func TestSystemCreate_FromSBOM_WithExplicitComponentName(t *testing.T) {
 
 func TestSystemCreate_FromURL_RequiresComponentName(t *testing.T) {
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", "https://example.com/sbom.cdx.json"})
+	cmd.SetArgs([]string{"system", "create", "https://example.com/sbom.cdx.json"})
 
 	err := cmd.Execute()
 	require.Error(t, err)
@@ -388,7 +388,7 @@ func TestSystemCreate_FromURL_WithComponentName(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", "https://artifacts.example.com/sbom/webtier.cdx.json", "--component-name", "WebTier", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", "https://artifacts.example.com/sbom/webtier.cdx.json", "--component-name", "WebTier", "-o", outFile})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -416,7 +416,7 @@ func TestSystemCreate_FromAIModelBOM(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", bomFile, "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", bomFile, "-o", outFile})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -455,7 +455,7 @@ func TestSystemCreate_FromAIModelBOM_Sparse(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", bomFile, "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", bomFile, "-o", outFile})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -490,7 +490,7 @@ func TestSystemCreate_FromAIModelBOM_ComponentNameOverride(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", bomFile, "--component-name", "MyModel", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", bomFile, "--component-name", "MyModel", "-o", outFile})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -522,7 +522,7 @@ func TestSystemCreate_FromSPDX3AIBOM(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", bomFile, "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", bomFile, "-o", outFile})
 	require.NoError(t, cmd.Execute())
 
 	data, err := os.ReadFile(outFile)
@@ -559,7 +559,7 @@ func TestSystemCreate_FromSPDX3AIBOM_DatasetOnly(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", bomFile, "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", bomFile, "-o", outFile})
 	require.NoError(t, cmd.Execute())
 
 	data, err := os.ReadFile(outFile)
@@ -573,6 +573,84 @@ func TestSystemCreate_FromSPDX3AIBOM_DatasetOnly(t *testing.T) {
 	require.NoError(t, validateHDFOutput(data))
 }
 
+// ---- --from format-assertion tests (system create) ----
+
+func TestSystemCreate_FromFormat_MLBOMMatch(t *testing.T) {
+	bomFile := bomFixturePath(t, "cyclonedx-mlbom.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", bomFile, "--from", "cyclonedx-mlbom", "-o", outFile})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+	c0 := sys["components"].([]interface{})[0].(map[string]interface{})
+	assert.Equal(t, "aiModel", c0["type"])
+}
+
+func TestSystemCreate_FromFormat_MLBOMMismatch(t *testing.T) {
+	sbomFile := bomFixturePath(t, "cyclonedx-sbom.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", sbomFile, "--from", "cyclonedx-mlbom"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "detected as")
+	assert.Contains(t, err.Error(), "cyclonedx-mlbom")
+}
+
+func TestSystemCreate_FromFormat_SPDXAIMatch(t *testing.T) {
+	bomFile := bomFixturePath(t, "spdx-ai-model-1.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", bomFile, "--from", "spdx-ai", "-o", outFile})
+	require.NoError(t, cmd.Execute())
+}
+
+func TestSystemCreate_FromFormat_SBOMMatch(t *testing.T) {
+	sbomFile := bomFixturePath(t, "cyclonedx-sbom.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", sbomFile, "--from", "sbom", "-o", outFile})
+	require.NoError(t, cmd.Execute())
+}
+
+func TestSystemCreate_FromFormat_SBOMRejectsMLBOM(t *testing.T) {
+	bomFile := bomFixturePath(t, "cyclonedx-mlbom.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", bomFile, "--from", "sbom"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "detected as")
+}
+
+func TestSystemCreate_FromFormat_Unknown(t *testing.T) {
+	sbomFile := bomFixturePath(t, "cyclonedx-sbom.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", sbomFile, "--from", "bogus"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown --from format")
+	assert.Contains(t, err.Error(), "cyclonedx-mlbom")
+}
+
+// A URL input can't be fetched to verify its format, so --from must be rejected
+// rather than blindly asserted (which could mislabel a remote BOM).
+func TestSystemCreate_FromFormat_URLRejected(t *testing.T) {
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "https://artifacts.example.com/sbom/webtier.cdx.json", "--from", "cyclonedx-mlbom", "--component-name", "WebTier"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "URL")
+}
+
 func TestSystemAddComponent(t *testing.T) {
 	// Create initial system from results
 	resultsFile := filepath.Join(t.TempDir(), "results.json")
@@ -580,13 +658,13 @@ func TestSystemAddComponent(t *testing.T) {
 	sysFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", sysFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "-o", sysFile})
 	require.NoError(t, cmd.Execute())
 
 	// Add component from SBOM
 	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/webgoat-sbom.json")
 	cmd2 := NewRootCmd()
-	cmd2.SetArgs([]string{"system", "add-component", "--system", sysFile, "--from", sbomFile, "--component-name", "WebGoat"})
+	cmd2.SetArgs([]string{"system", "add-component", sbomFile, "--system", sysFile, "--component-name", "WebGoat"})
 	require.NoError(t, cmd2.Execute())
 
 	data, err := os.ReadFile(sysFile)
@@ -609,12 +687,12 @@ func TestSystemAddComponent_RejectsDuplicate(t *testing.T) {
 	sysFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", sysFile})
+	cmd.SetArgs([]string{"system", "create", sbomFile, "-o", sysFile})
 	require.NoError(t, cmd.Execute())
 
 	// Try adding same component name
 	cmd2 := NewRootCmd()
-	cmd2.SetArgs([]string{"system", "add-component", "--system", sysFile, "--from", sbomFile})
+	cmd2.SetArgs([]string{"system", "add-component", sbomFile, "--system", sysFile})
 	err := cmd2.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "already exists")
@@ -626,13 +704,13 @@ func TestSystemUpdateComponent(t *testing.T) {
 	sysFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", sysFile})
+	cmd.SetArgs([]string{"system", "create", sbomFile, "-o", sysFile})
 	require.NoError(t, cmd.Execute())
 
 	// Update with webgoat SBOM (different file, same component name)
 	webgoatFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/webgoat-sbom.json")
 	cmd2 := NewRootCmd()
-	cmd2.SetArgs([]string{"system", "update-component", "--system", sysFile, "--component-name", "juice-shop", "--from", webgoatFile})
+	cmd2.SetArgs([]string{"system", "update-component", webgoatFile, "--system", sysFile, "--component-name", "juice-shop"})
 	require.NoError(t, cmd2.Execute())
 
 	data, err := os.ReadFile(sysFile)
@@ -653,11 +731,11 @@ func TestSystemUpdateComponent_RejectsNonexistent(t *testing.T) {
 	sysFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", sysFile})
+	cmd.SetArgs([]string{"system", "create", sbomFile, "-o", sysFile})
 	require.NoError(t, cmd.Execute())
 
 	cmd2 := NewRootCmd()
-	cmd2.SetArgs([]string{"system", "update-component", "--system", sysFile, "--component-name", "DoesNotExist", "--from", sbomFile})
+	cmd2.SetArgs([]string{"system", "update-component", sbomFile, "--system", sysFile, "--component-name", "DoesNotExist"})
 	err := cmd2.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
@@ -671,7 +749,7 @@ func TestSystemCreate_GenerateComponentId(t *testing.T) {
 
 	outFile := filepath.Join(t.TempDir(), "system.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "--generate-component-id", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "--generate-component-id", "-o", outFile})
 	require.NoError(t, cmd.Execute())
 
 	data, err := os.ReadFile(outFile)
@@ -700,7 +778,7 @@ func TestSystemCreate_GenerateComponentId_SBOM(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "--generate-component-id", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", sbomFile, "--generate-component-id", "-o", outFile})
 	require.NoError(t, cmd.Execute())
 
 	data, err := os.ReadFile(outFile)
@@ -722,7 +800,7 @@ func TestSystemCreate_NoGenerateComponentId(t *testing.T) {
 
 	outFile := filepath.Join(t.TempDir(), "system.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "-o", outFile})
 	require.NoError(t, cmd.Execute())
 
 	data, err := os.ReadFile(outFile)
@@ -745,12 +823,12 @@ func TestSystemAddComponent_GenerateComponentId(t *testing.T) {
 	sysFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", sysFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "-o", sysFile})
 	require.NoError(t, cmd.Execute())
 
 	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/webgoat-sbom.json")
 	cmd2 := NewRootCmd()
-	cmd2.SetArgs([]string{"system", "add-component", "--system", sysFile, "--from", sbomFile, "--component-name", "WebGoat", "--generate-component-id"})
+	cmd2.SetArgs([]string{"system", "add-component", sbomFile, "--system", sysFile, "--component-name", "WebGoat", "--generate-component-id"})
 	require.NoError(t, cmd2.Execute())
 
 	data, err := os.ReadFile(sysFile)
@@ -772,7 +850,7 @@ func TestSystemCreate_FromSBOM_Embed(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "--embed", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", sbomFile, "--embed", "-o", outFile})
 	require.NoError(t, cmd.Execute())
 
 	data, err := os.ReadFile(outFile)
@@ -802,7 +880,7 @@ func TestSystemCreate_FromSBOM_NoEmbed(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", sbomFile, "-o", outFile})
 	require.NoError(t, cmd.Execute())
 
 	data, err := os.ReadFile(outFile)
@@ -831,13 +909,13 @@ func TestSystemAddComponent_Embed(t *testing.T) {
 	sysFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", sysFile})
+	cmd.SetArgs([]string{"system", "create", resultsFile, "-o", sysFile})
 	require.NoError(t, cmd.Execute())
 
 	// Add component with --embed
 	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/webgoat-sbom.json")
 	cmd2 := NewRootCmd()
-	cmd2.SetArgs([]string{"system", "add-component", "--system", sysFile, "--from", sbomFile, "--component-name", "WebGoat", "--embed"})
+	cmd2.SetArgs([]string{"system", "add-component", sbomFile, "--system", sysFile, "--component-name", "WebGoat", "--embed"})
 	require.NoError(t, cmd2.Execute())
 
 	data, err := os.ReadFile(sysFile)
@@ -863,13 +941,13 @@ func TestSystemUpdateComponent_Embed(t *testing.T) {
 	sysFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", sysFile})
+	cmd.SetArgs([]string{"system", "create", sbomFile, "-o", sysFile})
 	require.NoError(t, cmd.Execute())
 
 	// Update with --embed
 	webgoatFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/webgoat-sbom.json")
 	cmd2 := NewRootCmd()
-	cmd2.SetArgs([]string{"system", "update-component", "--system", sysFile, "--component-name", "juice-shop", "--from", webgoatFile, "--embed"})
+	cmd2.SetArgs([]string{"system", "update-component", webgoatFile, "--system", sysFile, "--component-name", "juice-shop", "--embed"})
 	require.NoError(t, cmd2.Execute())
 
 	data, err := os.ReadFile(sysFile)
@@ -924,7 +1002,7 @@ func TestSystemCreate_TypeMapping(t *testing.T) {
 
 			outFile := filepath.Join(t.TempDir(), "system.json")
 			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", outFile})
+			cmd.SetArgs([]string{"system", "create", resultsFile, "-o", outFile})
 
 			err := cmd.Execute()
 			require.NoError(t, err)
