@@ -242,6 +242,58 @@ func TestParseBom_MLBOM(t *testing.T) {
 	})
 }
 
+// TestParseBom_MLBOMVariants sweeps the real CycloneDX-ML fixture set (spec
+// versions 1.5/1.6/1.7, a considerations-only card, and a sparse trim). Every
+// variant must detect as cyclonedx-ml and normalize to ai-model without ever
+// fabricating parameterCount/serializationFormat/modelArchitecture.
+func TestParseBom_MLBOMVariants(t *testing.T) {
+	validator := bomValidator(t)
+	cases := []struct {
+		file string
+		// modelArchitecture is the expected value, or "" when the source has none.
+		modelArchitecture string
+		// emptyModel requires the normalized model extension to be exactly {}.
+		emptyModel bool
+	}{
+		{"cyclonedx-mlbom.json", "The architecture of the model.", false},
+		{"cyclonedx-mlbom-1.5.json", "The architecture of the model.", false},
+		{"cyclonedx-mlbom-1.7.json", "The architecture of the model.", false},
+		{"cyclonedx-mlbom-considerations-1.6.json", "", true},
+		{"cyclonedx-mlbom-sparse.json", "", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.file, func(t *testing.T) {
+			result, err := ParseBom(loadFixture(t, tc.file))
+			require.NoError(t, err)
+			n := result.Normalized
+
+			assert.Equal(t, FormatCycloneDXML, result.Format)
+			assert.Equal(t, BOMTypeAIModel, n.BOMType)
+			assert.Equal(t, FormatCycloneDXML, n.Format)
+			require.NotNil(t, n.Model)
+
+			assert.Nil(t, n.Model.ParameterCount)
+			assert.Nil(t, n.Model.SerializationFormat)
+
+			if tc.modelArchitecture != "" {
+				require.NotNil(t, n.Model.ModelArchitecture)
+				assert.Equal(t, tc.modelArchitecture, *n.Model.ModelArchitecture)
+			} else {
+				assert.Nil(t, n.Model.ModelArchitecture)
+			}
+
+			if tc.emptyModel {
+				assert.Equal(t, &AIModelBOMExtension{}, n.Model)
+			}
+
+			expectValidBom(t, validator, BuildBom(BuildBomParts{
+				BOMType: BOMTypeAIModel, Format: FormatCycloneDXML,
+				Model: n.Model, Document: n.Document, UniqueID: n.UniqueID,
+			}))
+		})
+	}
+}
+
 func TestBuildBom_ThreeTier(t *testing.T) {
 	validator := bomValidator(t)
 

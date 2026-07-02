@@ -25,6 +25,13 @@ func GetConvertersDir() string {
 	return filepath.Join(getSharedDir(), "..", "..", "converters")
 }
 
+// GetBOMFixturesDir returns the path to the shared/bom-fixtures/ directory
+// (real BOM documents consumed by the shared bom parser tests and by hdf-cli
+// system-create tests).
+func GetBOMFixturesDir() string {
+	return filepath.Join(getSharedDir(), "..", "bom-fixtures")
+}
+
 // GetOutputDir returns the path to test output directory.
 func GetOutputDir() string {
 	return filepath.Join(getSharedDir(), "..", "..", "test-output")

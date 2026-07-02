@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	bom "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
 	"github.com/spf13/cobra"
 )
 
@@ -119,8 +120,14 @@ func runSystemCreate(opts systemCreateOpts) error {
 		return fmt.Errorf("failed to parse input file: %w", err)
 	}
 
-	// Detect input type: HDF Results vs CycloneDX SBOM
+	// Detect input type: HDF Results vs CycloneDX SBOM / ML-BOM
 	if bomFormat, ok := doc["bomFormat"].(string); ok && bomFormat == "CycloneDX" {
+		// A CycloneDX doc with a machine-learning-model component is an AI-BOM
+		// (inventory, no findings) — route to the ai-model system-create path
+		// before the plain-SBOM route so the model extension is normalized.
+		if detected := bom.DetectFormat(doc); detected != nil && detected.Format == bom.FormatCycloneDXML {
+			return runSystemCreateFromAIModelBOM(data, doc, opts)
+		}
 		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, sbomFormatCycloneDX, opts)
 	}
 
@@ -272,6 +279,118 @@ func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, c
 
 	fmt.Fprintf(os.Stderr, "Imported %s SBOM as component %q (type: %s)\n", sbomFormat, componentName, compType)
 	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath, opts)
+}
+
+// runSystemCreateFromAIModelBOM builds a system document whose single component
+// is a thin aiModel component carrying the normalized ai-model BOM in boms[].
+// Unlike the SBOM path (which passes the manifest through by reference), this
+// uses the shared parser to lift the model extension (modelArchitecture etc.)
+// into a schema-valid, normalized ai-model BOM — never fabricating fields the
+// source omits.
+func runSystemCreateFromAIModelBOM(data []byte, doc map[string]interface{}, opts systemCreateOpts) error {
+	result, err := bom.ParseBom(data)
+	if err != nil {
+		return fmt.Errorf("failed to parse AI-model BOM: %w", err)
+	}
+
+	componentName := opts.componentName
+	if componentName == "" {
+		componentName = extractMLModelName(doc)
+	}
+	if componentName == "" {
+		return fmt.Errorf("cannot determine model name from AI-BOM; use --component-name to specify")
+	}
+
+	systemName := opts.systemName
+	if systemName == "" {
+		systemName = componentName + "-system"
+	}
+
+	bomMap, err := structToMap(result.Normalized)
+	if err != nil {
+		return fmt.Errorf("failed to serialize normalized AI-model BOM: %w", err)
+	}
+
+	comp := map[string]interface{}{
+		"type": compTypeAIModel,
+		"name": componentName,
+		"boms": []map[string]interface{}{bomMap},
+	}
+	if modelID := extractMLModelID(doc); modelID != "" {
+		comp["modelId"] = modelID
+	}
+	if ver := extractMLModelVersion(doc); ver != "" {
+		comp["version"] = ver
+	}
+
+	fmt.Fprintf(os.Stderr, "Imported CycloneDX ML-BOM as aiModel component %q\n", componentName)
+	return writeSystemDoc(systemName, []map[string]interface{}{comp}, opts.outputPath, opts)
+}
+
+// structToMap round-trips a value through JSON into a generic map so it can be
+// embedded in the system document's boms[] array.
+func structToMap(v interface{}) (map[string]interface{}, error) {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var out map[string]interface{}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// extractMLModelComponent returns the CycloneDX machine-learning-model component,
+// falling back to metadata.component when no dedicated model component is present.
+func extractMLModelComponent(doc map[string]interface{}) map[string]interface{} {
+	if comps, ok := doc["components"].([]interface{}); ok {
+		for _, c := range comps {
+			if cm, ok := c.(map[string]interface{}); ok && cm["type"] == "machine-learning-model" {
+				return cm
+			}
+		}
+	}
+	if meta, ok := doc["metadata"].(map[string]interface{}); ok {
+		if comp, ok := meta["component"].(map[string]interface{}); ok {
+			return comp
+		}
+	}
+	return nil
+}
+
+// extractMLModelName gets the model component's name.
+func extractMLModelName(doc map[string]interface{}) string {
+	if c := extractMLModelComponent(doc); c != nil {
+		if name, ok := c["name"].(string); ok {
+			return name
+		}
+	}
+	return ""
+}
+
+// extractMLModelID gets a provider/registry identifier for the model: the purl
+// when present, else the bom-ref.
+func extractMLModelID(doc map[string]interface{}) string {
+	if c := extractMLModelComponent(doc); c != nil {
+		if purl, ok := c["purl"].(string); ok && purl != "" {
+			return purl
+		}
+		if ref, ok := c["bom-ref"].(string); ok && ref != "" {
+			return ref
+		}
+	}
+	return ""
+}
+
+// extractMLModelVersion gets the model component's version.
+func extractMLModelVersion(doc map[string]interface{}) string {
+	if c := extractMLModelComponent(doc); c != nil {
+		if ver, ok := c["version"].(string); ok {
+			return ver
+		}
+	}
+	return ""
 }
 
 // extractSBOMComponentName gets the top-level component name from a CycloneDX or SPDX SBOM.

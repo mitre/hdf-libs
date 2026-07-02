@@ -409,6 +409,102 @@ func TestSystemCreate_FromURL_WithComponentName(t *testing.T) {
 	assert.Equal(t, "cyclonedx", bom0["format"]) // guessed from .cdx.json
 }
 
+// ---- AI-model BOM input tests ----
+
+func TestSystemCreate_FromAIModelBOM(t *testing.T) {
+	bomFile := bomFixturePath(t, "cyclonedx-mlbom.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", bomFile, "-o", outFile})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	components := sys["components"].([]interface{})
+	require.Len(t, components, 1)
+	c0 := components[0].(map[string]interface{})
+	assert.Equal(t, "aiModel", c0["type"])
+	assert.Equal(t, "stable-diffusion", c0["name"])
+	assert.Equal(t, "1.4", c0["version"])
+	assert.Equal(t, "component-a", c0["modelId"]) // bom-ref (no purl in fixture)
+
+	boms := c0["boms"].([]interface{})
+	require.Len(t, boms, 1)
+	bom0 := boms[0].(map[string]interface{})
+	assert.Equal(t, "ai-model", bom0["bomType"])
+	assert.Equal(t, "cyclonedx-ml", bom0["format"])
+
+	model := bom0["model"].(map[string]interface{})
+	assert.Equal(t, "The architecture of the model.", model["modelArchitecture"])
+	// Partial-fidelity: never fabricated.
+	_, hasParamCount := model["parameterCount"]
+	assert.False(t, hasParamCount)
+	_, hasSerFmt := model["serializationFormat"]
+	assert.False(t, hasSerFmt)
+}
+
+func TestSystemCreate_FromAIModelBOM_Sparse(t *testing.T) {
+	bomFile := bomFixturePath(t, "cyclonedx-mlbom-sparse.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", bomFile, "-o", outFile})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	c0 := sys["components"].([]interface{})[0].(map[string]interface{})
+	assert.Equal(t, "aiModel", c0["type"])
+	assert.Equal(t, "stable-diffusion", c0["name"])
+
+	bom0 := c0["boms"].([]interface{})[0].(map[string]interface{})
+	assert.Equal(t, "ai-model", bom0["bomType"])
+	assert.Equal(t, "cyclonedx-ml", bom0["format"])
+
+	// Partial-fidelity: the model extension is minimal/empty and NEVER carries
+	// fabricated fields.
+	if model, ok := bom0["model"].(map[string]interface{}); ok {
+		assert.Empty(t, model)
+		_, hasArch := model["modelArchitecture"]
+		assert.False(t, hasArch)
+		_, hasParamCount := model["parameterCount"]
+		assert.False(t, hasParamCount)
+	}
+}
+
+func TestSystemCreate_FromAIModelBOM_ComponentNameOverride(t *testing.T) {
+	bomFile := bomFixturePath(t, "cyclonedx-mlbom.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", bomFile, "--component-name", "MyModel", "-o", outFile})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+	c0 := sys["components"].([]interface{})[0].(map[string]interface{})
+	assert.Equal(t, "MyModel", c0["name"])
+	assert.Equal(t, "aiModel", c0["type"])
+}
+
 func TestSystemAddComponent(t *testing.T) {
 	// Create initial system from results
 	resultsFile := filepath.Join(t.TempDir(), "results.json")

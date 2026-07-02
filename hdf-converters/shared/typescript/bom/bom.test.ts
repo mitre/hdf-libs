@@ -217,6 +217,68 @@ describe('parseBom — CycloneDX ML-BOM', () => {
   });
 });
 
+// Parametrized robustness sweep over the real CycloneDX-ML fixture set (spec
+// versions 1.5/1.6/1.7, a considerations-only card, and a sparse trim). Every
+// variant must detect as cyclonedx-ml and normalize to ai-model without ever
+// fabricating parameterCount/serializationFormat/modelArchitecture.
+interface MLFixtureCase {
+  file: string;
+  /** Expected modelArchitecture, or undefined when the source provides none. */
+  modelArchitecture?: string;
+  /** True when the normalized model extension must be exactly {} (partial-fidelity). */
+  emptyModel: boolean;
+}
+
+const ML_FIXTURES: MLFixtureCase[] = [
+  { file: 'cyclonedx-mlbom.json', modelArchitecture: 'The architecture of the model.', emptyModel: false },
+  { file: 'cyclonedx-mlbom-1.5.json', modelArchitecture: 'The architecture of the model.', emptyModel: false },
+  { file: 'cyclonedx-mlbom-1.7.json', modelArchitecture: 'The architecture of the model.', emptyModel: false },
+  { file: 'cyclonedx-mlbom-considerations-1.6.json', emptyModel: true },
+  { file: 'cyclonedx-mlbom-sparse.json', emptyModel: true },
+];
+
+describe.each(ML_FIXTURES)('parseBom — CycloneDX-ML fixture $file', fx => {
+  const { format, normalized } = parseBom(loadFixture(fx.file));
+
+  it('detects cyclonedx-ml and normalizes to ai-model', () => {
+    expect(format).toBe('cyclonedx-ml');
+    expect(normalized.bomType).toBe(BOMType.AIModel);
+    expect(normalized.format).toBe('cyclonedx-ml');
+  });
+
+  it('never fabricates parameterCount, serializationFormat, or modelArchitecture', () => {
+    expect(normalized.model?.parameterCount).toBeUndefined();
+    expect(normalized.model?.serializationFormat).toBeUndefined();
+    if (fx.modelArchitecture === undefined) {
+      expect(normalized.model?.modelArchitecture).toBeUndefined();
+    }
+  });
+
+  it('pins modelArchitecture when the source provides one', () => {
+    if (fx.modelArchitecture !== undefined) {
+      expect(normalized.model?.modelArchitecture).toBe(fx.modelArchitecture);
+    }
+  });
+
+  it('carries a minimal/empty model extension for partial-fidelity sources', () => {
+    if (fx.emptyModel) {
+      expect(normalized.model).toEqual({});
+    }
+  });
+
+  it('produces schema-valid output', () => {
+    expectValidBom(
+      buildBom({
+        bomType: BOMType.AIModel,
+        format: 'cyclonedx-ml',
+        model: normalized.model,
+        document: normalized.document as Record<string, unknown> | undefined,
+        uniqueId: normalized.uniqueId,
+      }),
+    );
+  });
+});
+
 describe('buildBom three-tier discipline', () => {
   it('drops a model extension on an sbom BOM', () => {
     const bom = buildBom({

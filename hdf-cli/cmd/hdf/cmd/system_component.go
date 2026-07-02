@@ -218,6 +218,7 @@ const (
 	sbomFormatCycloneDX = "cyclonedx"
 	sbomFormatSPDX      = "spdx"
 	compTypeApplication = "application"
+	compTypeAIModel     = "aiModel"
 )
 
 // loadSBOM reads and parses an SBOM file, or returns nil doc with a guessed

@@ -24,6 +24,18 @@ func converterFixturePath(t *testing.T, converterDirName, name string) string {
 	return path
 }
 
+// bomFixturePath returns the absolute path to a file in the shared
+// bom-fixtures corpus (real CycloneDX/SPDX/ML BOM documents). The test is
+// skipped if the fixture file does not exist.
+func bomFixturePath(t *testing.T, name string) string {
+	t.Helper()
+	path := filepath.Clean(filepath.Join(shared.GetBOMFixturesDir(), name))
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		t.Skipf("Fixture not found: %s", path)
+	}
+	return path
+}
+
 // assertHDFOutput validates converter output against the HDF JSON Schema.
 // This ensures converters produce structurally valid HDF, not just JSON
 // containing the right field names.
