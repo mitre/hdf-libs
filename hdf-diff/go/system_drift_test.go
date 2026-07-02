@@ -439,6 +439,103 @@ func TestDiffSystems_ComponentIdTakesPrecedenceOverName(t *testing.T) {
 	}
 }
 
+// -- Component BOM drift tests ------------------------------------------------
+
+func TestDiffSystems_BomsFieldChange(t *testing.T) {
+	bomOld := map[string]any{"bomType": "sbom", "format": "cyclonedx", "ref": "https://artifacts.example.gov/webapp-1.0.cdx.json"}
+	bomNew := map[string]any{"bomType": "sbom", "format": "cyclonedx", "ref": "https://artifacts.example.gov/webapp-2.0.cdx.json"}
+	oldSys := map[string]any{
+		"name": "System",
+		"components": []any{
+			map[string]any{"componentId": "comp-1", "name": "WebApp", "type": "application", "boms": []any{bomOld}},
+		},
+	}
+	newSys := map[string]any{
+		"name": "System",
+		"components": []any{
+			map[string]any{"componentId": "comp-1", "name": "WebApp", "type": "application", "boms": []any{bomNew}},
+		},
+	}
+
+	result, err := DiffSystems(oldSys, newSys)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	comp := findComponentDiff(result.ComponentDiffs, "WebApp")
+	if comp == nil {
+		t.Fatal("WebApp not found")
+	}
+	if comp.State != StateUpdated {
+		t.Errorf("expected state %q, got %q", StateUpdated, comp.State)
+	}
+	var bomsChange *FieldChange
+	for i := range comp.FieldChanges {
+		if comp.FieldChanges[i].Path == "boms" {
+			bomsChange = &comp.FieldChanges[i]
+		}
+	}
+	if bomsChange == nil {
+		t.Fatal("expected a field change for 'boms'")
+	}
+	if bomsChange.Op != OpReplace {
+		t.Errorf("expected op %q, got %q", OpReplace, bomsChange.Op)
+	}
+}
+
+func TestDiffSystems_BomsUnchanged(t *testing.T) {
+	bom := map[string]any{"bomType": "sbom", "format": "cyclonedx", "ref": "https://artifacts.example.gov/webapp-1.0.cdx.json"}
+	sys := map[string]any{
+		"name": "System",
+		"components": []any{
+			map[string]any{"componentId": "comp-1", "name": "WebApp", "type": "application", "boms": []any{bom}},
+		},
+	}
+
+	result, err := DiffSystems(sys, sys)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	comp := findComponentDiff(result.ComponentDiffs, "WebApp")
+	if comp == nil {
+		t.Fatal("WebApp not found")
+	}
+	if comp.State != StateUnchanged {
+		t.Errorf("expected state %q, got %q", StateUnchanged, comp.State)
+	}
+}
+
+// Fields outside systemTrackedFields (e.g. the former SBOM ref field removed in
+// ADR-0001) must never surface as component drift.
+func TestDiffSystems_UntrackedFieldNoDrift(t *testing.T) {
+	oldSys := map[string]any{
+		"name": "System",
+		"components": []any{
+			map[string]any{"componentId": "comp-1", "name": "WebApp", "type": "application", "owner": "team-a"},
+		},
+	}
+	newSys := map[string]any{
+		"name": "System",
+		"components": []any{
+			map[string]any{"componentId": "comp-1", "name": "WebApp", "type": "application", "owner": "team-b"},
+		},
+	}
+
+	result, err := DiffSystems(oldSys, newSys)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	comp := findComponentDiff(result.ComponentDiffs, "WebApp")
+	if comp == nil {
+		t.Fatal("WebApp not found")
+	}
+	if comp.State != StateUnchanged {
+		t.Errorf("expected state %q, got %q", StateUnchanged, comp.State)
+	}
+	if len(comp.FieldChanges) != 0 {
+		t.Errorf("expected 0 field changes, got %d", len(comp.FieldChanges))
+	}
+}
+
 // -- Data flow diffing tests --------------------------------------------------
 
 func TestDiffSystems_DataFlowAdded(t *testing.T) {

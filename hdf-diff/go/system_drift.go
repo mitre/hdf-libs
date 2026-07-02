@@ -8,7 +8,7 @@ import (
 )
 
 // systemTrackedFields are the component-level fields tracked for field changes.
-var systemTrackedFields = []string{"type", "description", "baselineRefs", "inputOverrides", "sbomRef", "targetSelector"}
+var systemTrackedFields = []string{"type", "description", "baselineRefs", "inputOverrides", "boms", "targetSelector"}
 
 // systemTopLevelFields are the system-level fields tracked for field changes.
 var systemTopLevelFields = []string{"authorizationStatus", "categorizationLevel", "description"}

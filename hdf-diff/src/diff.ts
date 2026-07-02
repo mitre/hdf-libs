@@ -12,9 +12,7 @@ import { normalizeToV2 } from './normalize.js';
 import { matchRequirements } from './matching/index.js';
 import type { MatchOptions } from './matching/index.js';
 import { validateComparison } from './validate.js';
-import { diffSboms } from './sbom.js';
 import { parseCvssVector as parseCvssVectorUtil } from '@mitre/hdf-utilities';
-import type { PackageDiff } from './sbom.js';
 
 /**
  * Options for configuring the diff behavior.
@@ -1086,7 +1084,7 @@ const SYSTEM_TOP_LEVEL_FIELDS = ['authorizationStatus', 'categorizationLevel', '
 
 /** Fields tracked for component-level field changes. */
 const COMPONENT_TRACKED_FIELDS = [
-  'type', 'description', 'baselineRefs', 'inputOverrides', 'sbomRef', 'targetSelector',
+  'type', 'description', 'baselineRefs', 'inputOverrides', 'boms', 'targetSelector',
 ];
 
 /**
@@ -1176,12 +1174,6 @@ export function diffSystems(
   }
   if (Object.keys(extensions).length > 0) {
     comparison.extensions = extensions;
-  }
-
-  // Diff embedded SBOMs across matched components
-  const allPackageDiffs = diffEmbeddedSboms(pairs);
-  if (allPackageDiffs.length > 0) {
-    comparison.packageDiffs = allPackageDiffs;
   }
 
   if (options?.validateOutput) {
@@ -1313,30 +1305,6 @@ function diffDataFlows(
   }
 
   return changes;
-}
-
-/**
- * Diff embedded SBOMs across matched component pairs.
- */
-function diffEmbeddedSboms(pairs: ComponentPair[]): PackageDiff[] {
-  const allDiffs: PackageDiff[] = [];
-
-  for (const { oldComp, newComp } of pairs) {
-    if (!oldComp || !newComp) continue;
-    const oldSbom = oldComp['sbom'];
-    const newSbom = newComp['sbom'];
-    if (!oldSbom || !newSbom) continue;
-    if (typeof oldSbom !== 'object' || typeof newSbom !== 'object') continue;
-
-    try {
-      const result = diffSboms(JSON.stringify(oldSbom), JSON.stringify(newSbom));
-      allDiffs.push(...result.packageDiffs);
-    } catch {
-      // Skip SBOM diff if formats are incompatible
-    }
-  }
-
-  return allDiffs;
 }
 
 /**

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { diffSystems, diffHdf } from '../../src/diff.js';
 import type { HDFComparison, ComponentDiff } from '../../src/types.js';
-import type { PackageDiff } from '../../src/sbom.js';
 
 // -- Inline fixtures ----------------------------------------------------------
 
@@ -347,45 +346,58 @@ describe('system drift comparison mode', () => {
     });
   });
 
-  describe('embedded SBOM diffing', () => {
-    const cdxOld = {
-      bomFormat: 'CycloneDX', specVersion: '1.5',
-      components: [
-        { 'bom-ref': 'a', name: 'lodash', version: '4.17.20', purl: 'pkg:npm/lodash@4.17.20' },
-        { 'bom-ref': 'b', name: 'express', version: '4.18.0', purl: 'pkg:npm/express@4.18.0' },
-      ],
-    };
-    const cdxNew = {
-      bomFormat: 'CycloneDX', specVersion: '1.5',
-      components: [
-        { 'bom-ref': 'a', name: 'lodash', version: '4.17.21', purl: 'pkg:npm/lodash@4.17.21' },
-        { 'bom-ref': 'c', name: 'axios', version: '1.6.0', purl: 'pkg:npm/axios@1.6.0' },
-      ],
-    };
+  describe('component BOM drift (boms[])', () => {
+    const bomOld = { bomType: 'sbom', format: 'cyclonedx', ref: 'https://artifacts.example.gov/webapp-1.0.cdx.json' };
+    const bomNew = { bomType: 'sbom', format: 'cyclonedx', ref: 'https://artifacts.example.gov/webapp-2.0.cdx.json' };
 
-    it('should diff embedded SBOMs and produce packageDiffs', () => {
+    it('reports a change to a component boms[] as component drift', () => {
       const old = {
         name: 'System',
-        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', sbom: cdxOld, sbomFormat: 'cyclonedx' }],
+        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', boms: [bomOld] }],
       };
       const updated = {
         name: 'System',
-        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', sbom: cdxNew, sbomFormat: 'cyclonedx' }],
+        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', boms: [bomNew] }],
       };
       const diff = diffSystems(old, updated);
-      expect(diff.packageDiffs).toBeDefined();
-      expect(diff.packageDiffs!.length).toBeGreaterThan(0);
-      const lodash = diff.packageDiffs!.find((p: PackageDiff) => p.name === 'lodash');
-      expect(lodash?.state).toBe('updated');
-      const express = diff.packageDiffs!.find((p: PackageDiff) => p.name === 'express');
-      expect(express?.state).toBe('removed');
-      const axios = diff.packageDiffs!.find((p: PackageDiff) => p.name === 'axios');
-      expect(axios?.state).toBe('added');
+      const comp = diff.componentDiffs.find((c: ComponentDiff) => c.name === 'WebApp');
+      expect(comp?.state).toBe('updated');
+      const bomsChange = comp?.fieldChanges.find(fc => fc.path === 'boms');
+      expect(bomsChange).toBeDefined();
+      expect(bomsChange?.op).toBe('replace');
+      expect(bomsChange?.oldValue).toEqual([bomOld]);
+      expect(bomsChange?.newValue).toEqual([bomNew]);
     });
 
-    it('should not produce packageDiffs when no SBOMs exist', () => {
-      const diff = diffSystems(systemV1, systemV2);
-      expect(diff.packageDiffs).toBeUndefined();
+    it('does not report drift when boms[] is unchanged', () => {
+      const old = {
+        name: 'System',
+        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', boms: [bomOld] }],
+      };
+      const updated = {
+        name: 'System',
+        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', boms: [bomOld] }],
+      };
+      const diff = diffSystems(old, updated);
+      const comp = diff.componentDiffs.find((c: ComponentDiff) => c.name === 'WebApp');
+      expect(comp?.state).toBe('unchanged');
+    });
+
+    // Fields outside the tracked set (e.g. the former SBOM ref field removed in ADR-0001)
+    // must never surface as component drift.
+    it('does not report drift for a change to a field outside the tracked set', () => {
+      const old = {
+        name: 'System',
+        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', owner: 'team-a' }],
+      };
+      const updated = {
+        name: 'System',
+        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', owner: 'team-b' }],
+      };
+      const diff = diffSystems(old, updated);
+      const comp = diff.componentDiffs.find((c: ComponentDiff) => c.name === 'WebApp');
+      expect(comp?.state).toBe('unchanged');
+      expect(comp?.fieldChanges).toHaveLength(0);
     });
   });
 });
