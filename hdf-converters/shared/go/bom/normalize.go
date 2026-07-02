@@ -166,6 +166,14 @@ func ParseBom(input []byte) (*ParseResult, error) {
 		return &ParseResult{Format: detected.Format, Normalized: ParseCycloneDX(record)}, nil
 	case FormatSPDX:
 		return &ParseResult{Format: detected.Format, Normalized: ParseSPDX(record)}, nil
+	case FormatSPDX3AI:
+		// SPDX-3 is multi-subject; ParseBom's single-BOM contract returns the
+		// first subject's BOM. The full multi-subject consumer is ParseSPDX3.
+		result := ParseSPDX3(record)
+		if len(result.Subjects) == 0 {
+			return nil, fmt.Errorf("%s: SPDX-3 document carries no AI/dataset subjects", converterName)
+		}
+		return &ParseResult{Format: detected.Format, Normalized: result.Subjects[0].Bom}, nil
 	default:
 		return nil, fmt.Errorf("%s: unhandled format %q", converterName, detected.Format)
 	}

@@ -554,3 +554,276 @@ func TestRoundTripValidatorRejectsInvalid(t *testing.T) {
 		})
 	}
 }
+
+// --- SPDX 3.0 AI/Dataset (JSON-LD) ---
+
+func spdx3Subjects(t *testing.T, fixture string) []SPDX3Subject {
+	t.Helper()
+	obj := parseJSONObject(t, loadFixture(t, fixture))
+	return ParseSPDX3(obj).Subjects
+}
+
+func subjectsByKind(subjects []SPDX3Subject, kind string) []SPDX3Subject {
+	out := []SPDX3Subject{}
+	for _, s := range subjects {
+		if s.Kind == kind {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func modelByName(t *testing.T, subjects []SPDX3Subject, name string) SPDX3Subject {
+	t.Helper()
+	for _, s := range subjects {
+		if s.Kind == "aiModel" && s.Name == name {
+			return s
+		}
+	}
+	t.Fatalf("no aiModel subject named %q", name)
+	return SPDX3Subject{}
+}
+
+func TestDetectSPDX3(t *testing.T) {
+	model1 := parseJSONObject(t, loadFixture(t, "spdx-ai-model-1.json"))
+	assert.Equal(t, float64(1), DetectSPDX3(model1))
+	assert.Equal(t, float64(0), DetectSPDX(model1))
+	require.NotNil(t, DetectFormat(model1))
+	assert.Equal(t, FormatSPDX3AI, DetectFormat(model1).Format)
+
+	dataset1 := parseJSONObject(t, loadFixture(t, "spdx-ai-dataset-1.json"))
+	assert.Equal(t, float64(1), DetectSPDX3(dataset1))
+	assert.Equal(t, FormatSPDX3AI, DetectFormat(dataset1).Format)
+
+	// SPDX 2.3 must still classify as spdx (no conflict).
+	spdx23 := parseJSONObject(t, loadFixture(t, "spdx-sbom.json"))
+	assert.Equal(t, float64(0), DetectSPDX3(spdx23))
+	require.NotNil(t, DetectFormat(spdx23))
+	assert.Equal(t, FormatSPDX, DetectFormat(spdx23).Format)
+
+	// Graphs missing @context or an AI/dataset element score 0.
+	assert.Equal(t, float64(0), DetectSPDX3(map[string]any{"@context": "x", "@graph": []any{map[string]any{"type": "software_Package"}}}))
+	assert.Equal(t, float64(0), DetectSPDX3(map[string]any{"@graph": []any{map[string]any{"type": "ai_AIPackage"}}}))
+	assert.Equal(t, float64(0), DetectSPDX3(map[string]any{"@context": "x", "@graph": "nope"}))
+}
+
+func TestParseSPDX3_Model1(t *testing.T) {
+	v := bomValidator(t)
+	subjects := spdx3Subjects(t, "spdx-ai-model-1.json")
+	models := subjectsByKind(subjects, "aiModel")
+	datasets := subjectsByKind(subjects, "dataset")
+
+	require.Len(t, models, 2)
+	require.Len(t, datasets, 1)
+
+	for _, s := range subjects {
+		assert.Equal(t, FormatSPDX3AI, s.Bom.Format)
+		expectValidBom(t, v, &s.Bom.BillOfMaterials)
+	}
+
+	word := modelByName(t, subjects, "word-model")
+	model := word.Bom.Model
+	require.NotNil(t, model)
+
+	// TRAP: hyperparameters populated, parameterCount NEVER set.
+	assert.NotEmpty(t, model.Hyperparameters)
+	assert.Nil(t, model.ParameterCount)
+	assert.Contains(t, model.Hyperparameters, Hyperparameter{Name: strPtr("optimizer"), Value: strPtr("RMSprop")})
+
+	metricNames := []string{}
+	for _, m := range model.PerformanceMetrics {
+		metricNames = append(metricNames, *m.Name)
+	}
+	assert.Contains(t, metricNames, "charErrorRates")
+	assert.Contains(t, metricNames, "wordAccuracies")
+
+	require.NotNil(t, model.Task)
+	assert.Equal(t, "handwriting recognition", *model.Task)
+	require.NotNil(t, model.ModelArchitecture)
+	assert.Contains(t, *model.ModelArchitecture, "Deep Neural network")
+	require.NotNil(t, model.IntendedUse)
+	assert.Contains(t, *model.IntendedUse, "Offline Handwritten Text Recognition")
+	assert.Equal(t, []string{"IAMdataset"}, model.DatasetRefs)
+
+	// Raw element carried via document passthrough.
+	assert.Equal(t, "low", word.Bom.Document["ai_safetyRiskAssessment"])
+	assert.NotNil(t, word.Bom.Document["ai_hyperparameter"])
+
+	ds := datasets[0].Bom.Dataset
+	require.NotNil(t, ds)
+	require.NotNil(t, ds.Modality)
+	assert.Equal(t, []string{"image"}, ds.Modality.StringArray)
+	require.NotNil(t, ds.DataClassification)
+	assert.Equal(t, "clear", *ds.DataClassification)
+	require.NotNil(t, ds.IntendedUse)
+	assert.Contains(t, *ds.IntendedUse, "line level or word level")
+	require.NotNil(t, ds.Provenance)
+	assert.Contains(t, *ds.Provenance, "Lancaster")
+	// TRAP: recordCount NEVER set despite dataset_datasetSize present.
+	assert.Nil(t, ds.RecordCount)
+	assert.Equal(t, float64(4620000000), datasets[0].Bom.Document["dataset_datasetSize"])
+}
+
+func TestParseSPDX3_Model2(t *testing.T) {
+	subjects := spdx3Subjects(t, "spdx-ai-model-2.json")
+	models := subjectsByKind(subjects, "aiModel")
+	datasets := subjectsByKind(subjects, "dataset")
+
+	require.Len(t, models, 1)
+	require.Len(t, datasets, 1)
+
+	metricNames := []string{}
+	for _, m := range models[0].Bom.Model.PerformanceMetrics {
+		metricNames = append(metricNames, *m.Name)
+	}
+	assert.Subset(t, metricNames, []string{"precision", "recall", "f1"})
+
+	// trainedOn here is from a File, not the AIPackage -> no datasetRefs.
+	assert.Nil(t, models[0].Bom.Model.DatasetRefs)
+
+	ds := datasets[0].Bom.Dataset
+	require.NotNil(t, ds.Modality)
+	assert.Equal(t, []string{"text"}, ds.Modality.StringArray)
+	assert.Nil(t, ds.RecordCount)
+	assert.Equal(t, float64(117553), datasets[0].Bom.Document["dataset_datasetSize"])
+}
+
+func TestParseSPDX3_Dataset1(t *testing.T) {
+	subjects := spdx3Subjects(t, "spdx-ai-dataset-1.json")
+	require.Empty(t, subjectsByKind(subjects, "aiModel"))
+	require.Len(t, subjectsByKind(subjects, "dataset"), 1)
+
+	ds := subjects[0].Bom.Dataset
+	require.NotNil(t, ds.Modality)
+	assert.Equal(t, []string{"structured", "timestamp"}, ds.Modality.StringArray)
+	require.NotNil(t, ds.DataClassification)
+	assert.Equal(t, "clear", *ds.DataClassification)
+	require.NotNil(t, ds.Provenance)
+	assert.Contains(t, *ds.Provenance, "collected from various sources")
+	require.NotNil(t, ds.IntendedUse)
+	assert.Contains(t, *ds.IntendedUse, "greenhouse gas")
+	assert.Nil(t, ds.RecordCount)
+}
+
+func TestParseBom_SPDX3SingleSubjectFallback(t *testing.T) {
+	result, err := ParseBom(loadFixture(t, "spdx-ai-model-1.json"))
+	require.NoError(t, err)
+	assert.Equal(t, FormatSPDX3AI, result.Format)
+	assert.Equal(t, BOMTypeAIModel, result.Normalized.BOMType)
+	assert.Equal(t, FormatSPDX3AI, result.Normalized.Format)
+}
+
+// synthetic SPDX-3 edge-case inputs (branch coverage; not fixtures)
+func spdx3Synthetic(graph ...map[string]any) *SPDX3ParseResult {
+	els := make([]any, len(graph))
+	for i, g := range graph {
+		els[i] = g
+	}
+	return ParseSPDX3(map[string]any{
+		"@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+		"@graph":   els,
+	})
+}
+
+func TestParseSPDX3_FirstStringEdges(t *testing.T) {
+	nonStringFirst := spdx3Synthetic(map[string]any{
+		"type": "ai_AIPackage", "spdxId": "m1", "name": "m1",
+		"ai_domain": []any{map[string]any{"nested": true}, ""},
+	}).Subjects[0].Bom.Model
+	assert.Nil(t, nonStringFirst.Task)
+
+	emptyDomain := spdx3Synthetic(map[string]any{
+		"type": "ai_AIPackage", "spdxId": "m2", "name": "m2",
+		"ai_domain": []any{},
+	}).Subjects[0].Bom.Model
+	assert.Nil(t, emptyDomain.Task)
+}
+
+func TestParseSPDX3_JoinDistinctEdges(t *testing.T) {
+	nonArray := spdx3Synthetic(map[string]any{
+		"type": "ai_AIPackage", "spdxId": "m1", "name": "m1",
+		"ai_typeOfModel": "not-an-array",
+	}).Subjects[0].Bom.Model
+	assert.Nil(t, nonArray.ModelArchitecture)
+
+	noStrings := spdx3Synthetic(map[string]any{
+		"type": "ai_AIPackage", "spdxId": "m2", "name": "m2",
+		"ai_typeOfModel": []any{map[string]any{"x": 1}, nil},
+	}).Subjects[0].Bom.Model
+	assert.Nil(t, noStrings.ModelArchitecture)
+}
+
+func TestParseSPDX3_DictionaryEntriesEdges(t *testing.T) {
+	nonArray := spdx3Synthetic(map[string]any{
+		"type": "ai_AIPackage", "spdxId": "m1", "name": "m1",
+		"ai_hyperparameter": "nope",
+	}).Subjects[0].Bom.Model
+	assert.Empty(t, nonArray.Hyperparameters)
+
+	mixed := spdx3Synthetic(map[string]any{
+		"type": "ai_AIPackage", "spdxId": "m2", "name": "m2",
+		"ai_hyperparameter": []any{
+			"not-an-object",
+			map[string]any{"type": "DictionaryEntry", "value": "orphan"},              // no key -> skipped
+			map[string]any{"type": "DictionaryEntry", "key": "nullval", "value": nil}, // -> ""
+			map[string]any{"type": "DictionaryEntry", "key": "noval"},                 // absent value -> ""
+		},
+	}).Subjects[0].Bom.Model
+	require.Len(t, mixed.Hyperparameters, 2)
+	empty := ""
+	assert.Equal(t, Hyperparameter{Name: strPtr("nullval"), Value: &empty}, mixed.Hyperparameters[0])
+	assert.Equal(t, Hyperparameter{Name: strPtr("noval"), Value: &empty}, mixed.Hyperparameters[1])
+}
+
+func TestParseSPDX3_DatasetRefsForEdges(t *testing.T) {
+	subjects := spdx3Synthetic(
+		map[string]any{"type": "dataset_DatasetPackage", "spdxId": "ds-known", "name": "KnownDS"},
+		map[string]any{"type": "ai_AIPackage", "spdxId": "model-x", "name": "model-x"},
+		// wrong from -> ignored
+		map[string]any{"type": "Relationship", "relationshipType": "trainedOn", "from": "other-model", "to": []any{"ds-known"}},
+		// wrong relationshipType -> ignored
+		map[string]any{"type": "Relationship", "relationshipType": "contains", "from": "model-x", "to": []any{"ds-known"}},
+		// scalar `to`, resolvable name
+		map[string]any{"type": "Relationship", "relationshipType": "trainedOn", "from": "model-x", "to": "ds-known"},
+		// duplicate resolving to same name -> deduped
+		map[string]any{"type": "Relationship", "relationshipType": "testedOn", "from": "model-x", "to": []any{"ds-known"}},
+		// unresolvable id -> raw id kept
+		map[string]any{"type": "Relationship", "relationshipType": "testedOn", "from": "model-x", "to": []any{"ds-missing"}},
+	).Subjects
+	model := modelByName(t, subjects, "model-x").Bom.Model
+	assert.Equal(t, []string{"KnownDS", "ds-missing"}, model.DatasetRefs)
+}
+
+func TestParseSPDX3_EmptyExtensions(t *testing.T) {
+	// ai_AIPackage with no ai_* fields and no relationships -> empty model.
+	modelSubject := spdx3Synthetic(map[string]any{"type": "ai_AIPackage", "spdxId": "bare", "name": "bare"}).Subjects[0]
+	model := modelSubject.Bom.Model
+	require.NotNil(t, model)
+	assert.Equal(t, &AIModelBOMExtension{}, model)
+	assert.Equal(t, "bare", modelSubject.Bom.Document["spdxId"])
+
+	// dataset_DatasetPackage with non-array modality and no dataset_* fields -> empty dataset.
+	dataset := spdx3Synthetic(map[string]any{
+		"type": "dataset_DatasetPackage", "spdxId": "bare-ds", "name": "bare-ds",
+		"dataset_datasetType": "scalar",
+	}).Subjects[0].Bom.Dataset
+	require.NotNil(t, dataset)
+	assert.Equal(t, &DatasetBOMExtension{}, dataset)
+	assert.Nil(t, dataset.Modality)
+}
+
+func TestParseSPDX3_IgnoresOtherElementsAndUnmappedDatasets(t *testing.T) {
+	subjects := spdx3Synthetic(
+		map[string]any{"type": "software_Package", "spdxId": "sw", "name": "sw"}, // ignored
+		map[string]any{"type": "dataset_DatasetPackage", "name": "no-id"},        // no spdxId -> not in name map
+		map[string]any{"type": "dataset_DatasetPackage", "spdxId": "no-name"},    // no name -> not in name map
+		map[string]any{"type": "ai_AIPackage", "spdxId": "m", "name": "m"},
+		map[string]any{"type": "Relationship", "relationshipType": "trainedOn", "from": "m", "to": []any{"no-id", "no-name"}},
+	).Subjects
+
+	assert.Len(t, subjectsByKind(subjects, "dataset"), 2)
+	assert.Len(t, subjectsByKind(subjects, "aiModel"), 1)
+	// Neither id-less nor name-less dataset is resolvable -> refs fall back to raw ids.
+	model := modelByName(t, subjects, "m").Bom.Model
+	assert.Equal(t, []string{"no-id", "no-name"}, model.DatasetRefs)
+}

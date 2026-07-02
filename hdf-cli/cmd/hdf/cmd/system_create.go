@@ -136,8 +136,70 @@ func runSystemCreate(opts systemCreateOpts) error {
 		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, sbomFormatSPDX, opts)
 	}
 
+	// SPDX 3.0 AI/Dataset (JSON-LD) has no top-level spdxVersion, so it must be
+	// caught by structural detection. It is multi-subject inventory: one aiModel
+	// component per model, one dataset component per dataset.
+	if detected := bom.DetectFormat(doc); detected != nil && detected.Format == bom.FormatSPDX3AI {
+		return runSystemCreateFromSPDX3AIBOM(data, doc, opts)
+	}
+
 	// Default: treat as HDF Results
 	return runSystemCreateFromResults(doc, opts.systemName, opts.outputPath, opts)
+}
+
+// runSystemCreateFromSPDX3AIBOM builds a system document from an SPDX 3.0
+// AI/Dataset document, emitting one thin aiModel component per ai_AIPackage and
+// one thin dataset component per dataset_DatasetPackage, each carrying its
+// normalized spdx-3-ai BOM in boms[]. Partial-fidelity: the shared parser lifts
+// only clean fields and carries the raw element via passthrough — never
+// fabricating fields the source omits.
+func runSystemCreateFromSPDX3AIBOM(data []byte, doc map[string]interface{}, opts systemCreateOpts) error {
+	// ParseBom enforces the input-size security boundary (and format detection);
+	// the multi-subject walk then runs off the already-parsed doc.
+	if _, err := bom.ParseBom(data); err != nil {
+		return fmt.Errorf("failed to parse SPDX-3 AI/Dataset document: %w", err)
+	}
+
+	subjects := bom.ParseSPDX3(doc).Subjects
+	if len(subjects) == 0 {
+		return fmt.Errorf("SPDX-3 document carries no AI/dataset subjects")
+	}
+
+	components := make([]map[string]interface{}, 0, len(subjects))
+	models, datasets := 0, 0
+	for _, subject := range subjects {
+		bomMap, err := structToMap(subject.Bom)
+		if err != nil {
+			return fmt.Errorf("failed to serialize normalized SPDX-3 BOM: %w", err)
+		}
+		comp := map[string]interface{}{
+			"name": subject.Name,
+			"boms": []map[string]interface{}{bomMap},
+		}
+		switch subject.Kind {
+		case "aiModel":
+			comp["type"] = compTypeAIModel
+			if subject.ID != "" {
+				comp["modelId"] = subject.ID
+			}
+			models++
+		case "dataset":
+			comp["type"] = compTypeDataset
+			if subject.ID != "" {
+				comp["datasetId"] = subject.ID
+			}
+			datasets++
+		}
+		components = append(components, comp)
+	}
+
+	systemName := opts.systemName
+	if systemName == "" {
+		systemName = subjects[0].Name + "-system"
+	}
+
+	fmt.Fprintf(os.Stderr, "Imported SPDX-3 AI/Dataset document (%d aiModel, %d dataset components)\n", models, datasets)
+	return writeSystemDoc(systemName, components, opts.outputPath, opts)
 }
 
 // runSystemCreateFromSBOMRef creates a system document from a remote SBOM URI.

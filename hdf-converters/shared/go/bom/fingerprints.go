@@ -53,6 +53,32 @@ func DetectSPDX(input any) float64 {
 	return 0
 }
 
+// DetectSPDX3 reports confidence that input is an SPDX 3.0 AI/Dataset document
+// (JSON-LD): an `@context` plus an `@graph` array carrying at least one
+// ai_AIPackage or dataset_DatasetPackage element. Structurally disjoint from the
+// SPDX 2.3 detector (which keys on spdxVersion), so the two never conflict.
+// Returns 0 or 1.
+func DetectSPDX3(input any) float64 {
+	obj := asRecord(input)
+	if obj == nil {
+		return 0
+	}
+	if _, ok := obj["@context"]; !ok {
+		return 0
+	}
+	graph, ok := obj["@graph"].([]any)
+	if !ok {
+		return 0
+	}
+	for _, el := range graph {
+		t := asString(asRecord(el)["type"])
+		if t == "ai_AIPackage" || t == "dataset_DatasetPackage" {
+			return 1
+		}
+	}
+	return 0
+}
+
 // DetectFormat detects the BOM format of a parsed JSON value. ML wins over plain
 // CycloneDX by precedence; returns nil when no supported format matches.
 func DetectFormat(input any) *FormatDetection {
@@ -61,6 +87,9 @@ func DetectFormat(input any) *FormatDetection {
 	}
 	if cdx := DetectCycloneDX(input); cdx > 0 {
 		return &FormatDetection{Format: FormatCycloneDX, Confidence: cdx}
+	}
+	if spdx3 := DetectSPDX3(input); spdx3 > 0 {
+		return &FormatDetection{Format: FormatSPDX3AI, Confidence: spdx3}
 	}
 	if spdx := DetectSPDX(input); spdx > 0 {
 		return &FormatDetection{Format: FormatSPDX, Confidence: spdx}

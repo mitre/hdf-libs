@@ -14,6 +14,7 @@ import type {
   BillOfMaterials,
   Checksum,
   DatasetBOMExtension,
+  Hyperparameter,
   InputOutput,
   PerformanceMetric,
   SBOMPackage,
@@ -25,13 +26,14 @@ export type {
   BillOfMaterials,
   Checksum,
   DatasetBOMExtension,
+  Hyperparameter,
   InputOutput,
   PerformanceMetric,
   SBOMPackage,
 };
 
 /** Supported source BOM formats the parser can detect and normalize. */
-export type BomFormat = 'cyclonedx' | 'spdx' | 'cyclonedx-ml';
+export type BomFormat = 'cyclonedx' | 'spdx' | 'cyclonedx-ml' | 'spdx-3-ai';
 
 /**
  * A node in the reserved relational-BOM graph (CBOM cryptographic assets,

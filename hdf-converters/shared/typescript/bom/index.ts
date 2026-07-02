@@ -19,7 +19,13 @@ export {
   detectCycloneDX,
   detectCycloneDXML,
   detectSPDX,
+  detectSPDX3,
 } from './fingerprints.js';
 export { parseCycloneDX } from './cyclonedx.js';
 export { parseSPDX } from './spdx.js';
+export {
+  parseSPDX3,
+  type SPDX3ParseResult,
+  type SPDX3Subject,
+} from './spdx3.js';
 export { parseMLBOM } from './ml-bom.js';

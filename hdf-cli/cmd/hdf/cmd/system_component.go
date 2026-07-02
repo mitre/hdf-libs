@@ -219,6 +219,7 @@ const (
 	sbomFormatSPDX      = "spdx"
 	compTypeApplication = "application"
 	compTypeAIModel     = "aiModel"
+	compTypeDataset     = "dataset"
 )
 
 // loadSBOM reads and parses an SBOM file, or returns nil doc with a guessed

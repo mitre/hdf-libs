@@ -60,6 +60,24 @@ export function detectSPDX(input: unknown): number {
 }
 
 /**
+ * SPDX 3.0 AI/Dataset (JSON-LD): a document with an `@context` and an `@graph`
+ * array carrying at least one ai_AIPackage or dataset_DatasetPackage element.
+ * Structurally disjoint from the SPDX 2.3 detector (which keys on spdxVersion),
+ * so the two never conflict.
+ */
+export function detectSPDX3(input: unknown): number {
+  const obj = record(input);
+  if (!obj || obj['@context'] === undefined) return 0;
+  const graph = obj['@graph'];
+  if (!Array.isArray(graph)) return 0;
+  const hasAISubject = graph.some(el => {
+    const type = record(el)?.type;
+    return type === 'ai_AIPackage' || type === 'dataset_DatasetPackage';
+  });
+  return hasAISubject ? 1 : 0;
+}
+
+/**
  * Detect the BOM format of a parsed JSON object. ML wins over plain CycloneDX
  * by precedence; returns undefined when no supported format matches.
  */
@@ -68,6 +86,8 @@ export function detectFormat(input: unknown): FormatDetection | undefined {
   if (ml > 0) return { format: 'cyclonedx-ml', confidence: ml };
   const cdx = detectCycloneDX(input);
   if (cdx > 0) return { format: 'cyclonedx', confidence: cdx };
+  const spdx3 = detectSPDX3(input);
+  if (spdx3 > 0) return { format: 'spdx-3-ai', confidence: spdx3 };
   const spdx = detectSPDX(input);
   if (spdx > 0) return { format: 'spdx', confidence: spdx };
   return undefined;

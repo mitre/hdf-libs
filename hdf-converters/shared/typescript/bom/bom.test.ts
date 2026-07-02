@@ -11,11 +11,13 @@ import {
   detectCycloneDXML,
   detectFormat,
   detectSPDX,
+  detectSPDX3,
   enrichFromPurl,
   parseBom,
   parseCycloneDX,
   parseMLBOM,
   parseSPDX,
+  parseSPDX3,
   type BillOfMaterials,
   type SBOMPackage,
 } from './index.js';
@@ -474,5 +476,272 @@ describe('enrichFromPurl', () => {
     const pkg: SBOMPackage = { name: 'x' };
     enrichFromPurl(pkg);
     expect(pkg.version).toBeUndefined();
+  });
+});
+
+const SPDX3_MODEL1 = loadFixture('spdx-ai-model-1.json');
+const SPDX3_MODEL2 = loadFixture('spdx-ai-model-2.json');
+const SPDX3_DATASET1 = loadFixture('spdx-ai-dataset-1.json');
+
+function subjectsByKind(
+  subjects: ReturnType<typeof parseSPDX3>['subjects'],
+  kind: 'aiModel' | 'dataset',
+) {
+  return subjects.filter(s => s.kind === kind);
+}
+
+describe('detectSPDX3', () => {
+  it('detects an SPDX-3 AI document as spdx-3-ai, not spdx', () => {
+    const parsed = JSON.parse(SPDX3_MODEL1);
+    expect(detectSPDX3(parsed)).toBe(1);
+    expect(detectSPDX(parsed)).toBe(0);
+    expect(detectFormat(parsed)).toEqual({ format: 'spdx-3-ai', confidence: 1 });
+  });
+
+  it('detects a dataset-only SPDX-3 document', () => {
+    expect(detectSPDX3(JSON.parse(SPDX3_DATASET1))).toBe(1);
+    expect(detectFormat(JSON.parse(SPDX3_DATASET1))).toEqual({ format: 'spdx-3-ai', confidence: 1 });
+  });
+
+  it('still classifies an SPDX 2.3 SBOM as spdx (no conflict)', () => {
+    const parsed = JSON.parse(SPDX);
+    expect(detectSPDX3(parsed)).toBe(0);
+    expect(detectFormat(parsed)).toEqual({ format: 'spdx', confidence: 1 });
+  });
+
+  it('returns 0 for a graph without any AI/dataset element', () => {
+    expect(detectSPDX3({ '@context': 'x', '@graph': [{ type: 'software_Package' }] })).toBe(0);
+    expect(detectSPDX3({ '@graph': [{ type: 'ai_AIPackage' }] })).toBe(0); // no @context
+    expect(detectSPDX3({ '@context': 'x', '@graph': 'nope' })).toBe(0);
+  });
+});
+
+describe('parseSPDX3 — spdx-ai-model-1 (2 models + 1 dataset)', () => {
+  const { subjects } = parseSPDX3(JSON.parse(SPDX3_MODEL1));
+  const models = subjectsByKind(subjects, 'aiModel');
+  const datasets = subjectsByKind(subjects, 'dataset');
+
+  it('emits exactly 2 aiModel subjects and 1 dataset subject', () => {
+    expect(models).toHaveLength(2);
+    expect(datasets).toHaveLength(1);
+  });
+
+  it('every emitted BOM is spdx-3-ai and schema-valid', () => {
+    for (const s of subjects) {
+      expect(s.bom.format).toBe('spdx-3-ai');
+      expectValidBom(s.bom);
+    }
+  });
+
+  it('word-model: hyperparameters populated but parameterCount NEVER set (trap)', () => {
+    const wordModel = models.find(m => m.name === 'word-model')!;
+    expect(wordModel.bom.bomType).toBe(BOMType.AIModel);
+    const model = wordModel.bom.model!;
+    expect(model.hyperparameters?.length).toBeGreaterThan(0);
+    expect(model.hyperparameters).toContainEqual({ name: 'optimizer', value: 'RMSprop' });
+    expect(model.parameterCount).toBeUndefined();
+  });
+
+  it('word-model: performanceMetrics lifted from ai_metric', () => {
+    const wordModel = models.find(m => m.name === 'word-model')!;
+    const names = (wordModel.bom.model!.performanceMetrics ?? []).map(m => m.name);
+    expect(names).toContain('charErrorRates');
+    expect(names).toContain('wordAccuracies');
+  });
+
+  it('word-model: task from ai_domain[0], modelArchitecture from ai_typeOfModel', () => {
+    const wordModel = models.find(m => m.name === 'word-model')!;
+    const model = wordModel.bom.model!;
+    expect(model.task).toBe('handwriting recognition');
+    expect(model.modelArchitecture).toContain('Deep Neural network');
+    expect(model.intendedUse).toContain('Offline Handwritten Text Recognition');
+  });
+
+  it('word-model: datasetRefs resolved from trainedOn/testedOn relationship', () => {
+    const wordModel = models.find(m => m.name === 'word-model')!;
+    expect(wordModel.bom.model!.datasetRefs).toEqual(['IAMdataset']);
+  });
+
+  it('word-model: raw ai_AIPackage carried via document passthrough', () => {
+    const wordModel = models.find(m => m.name === 'word-model')!;
+    expect(wordModel.bom.document?.ai_safetyRiskAssessment).toBe('low');
+    expect(wordModel.bom.document?.ai_hyperparameter).toBeDefined();
+  });
+
+  it('IAMdataset: modality/dataClassification/intendedUse/provenance lifted; recordCount NEVER set (trap)', () => {
+    const dataset = datasets[0].bom.dataset!;
+    expect(dataset.modality).toEqual(['image']);
+    expect(dataset.dataClassification).toBe('clear');
+    expect(dataset.intendedUse).toContain('line level or word level');
+    expect(dataset.provenance).toContain('Lancaster');
+    expect(dataset.recordCount).toBeUndefined();
+    // dataset_datasetSize is present in the source but deliberately not mapped.
+    expect(datasets[0].bom.document?.dataset_datasetSize).toBe(4620000000);
+  });
+});
+
+describe('parseSPDX3 — spdx-ai-model-2 (1 model + 1 dataset)', () => {
+  const { subjects } = parseSPDX3(JSON.parse(SPDX3_MODEL2));
+  const models = subjectsByKind(subjects, 'aiModel');
+  const datasets = subjectsByKind(subjects, 'dataset');
+
+  it('emits exactly 1 aiModel subject and 1 dataset subject', () => {
+    expect(models).toHaveLength(1);
+    expect(datasets).toHaveLength(1);
+  });
+
+  it('model: performanceMetrics lifted (precision/recall/f1)', () => {
+    const names = (models[0].bom.model!.performanceMetrics ?? []).map(m => m.name);
+    expect(names).toEqual(expect.arrayContaining(['precision', 'recall', 'f1']));
+  });
+
+  it('model: no datasetRefs (trainedOn is from a File, not the AIPackage)', () => {
+    expect(models[0].bom.model!.datasetRefs).toBeUndefined();
+  });
+
+  it('dataset: modality is text; recordCount NEVER set despite dataset_datasetSize', () => {
+    const dataset = datasets[0].bom.dataset!;
+    expect(dataset.modality).toEqual(['text']);
+    expect(dataset.recordCount).toBeUndefined();
+    expect(datasets[0].bom.document?.dataset_datasetSize).toBe(117553);
+  });
+});
+
+describe('parseSPDX3 — spdx-ai-dataset-1 (0 models + 1 dataset)', () => {
+  const { subjects } = parseSPDX3(JSON.parse(SPDX3_DATASET1));
+
+  it('emits 0 aiModel subjects and exactly 1 dataset subject', () => {
+    expect(subjectsByKind(subjects, 'aiModel')).toHaveLength(0);
+    expect(subjectsByKind(subjects, 'dataset')).toHaveLength(1);
+  });
+
+  it('dataset: modality array, classification, provenance lifted; recordCount unset', () => {
+    const dataset = subjects[0].bom.dataset!;
+    expect(dataset.modality).toEqual(['structured', 'timestamp']);
+    expect(dataset.dataClassification).toBe('clear');
+    expect(dataset.provenance).toContain('collected from various sources');
+    expect(dataset.intendedUse).toContain('greenhouse gas');
+    expect(dataset.recordCount).toBeUndefined();
+  });
+});
+
+describe('parseBom — SPDX-3 single-subject fallback', () => {
+  it('returns the first subject BOM via the ParseResult contract', () => {
+    const { format, normalized } = parseBom(SPDX3_MODEL1);
+    expect(format).toBe('spdx-3-ai');
+    expect(normalized.bomType).toBe(BOMType.AIModel);
+    expect(normalized.format).toBe('spdx-3-ai');
+  });
+});
+
+describe('parseSPDX3 — synthetic edge cases (branch coverage)', () => {
+  function spdx3(graph: unknown[]): ReturnType<typeof parseSPDX3> {
+    return parseSPDX3({ '@context': 'https://spdx.org/rdf/3.0.1/spdx-context.jsonld', '@graph': graph });
+  }
+
+  it('firstString: non-string first item and no-string array leave task unset', () => {
+    const nonStringFirst = spdx3([
+      { type: 'ai_AIPackage', spdxId: 'm1', name: 'm1', ai_domain: [{ nested: true }, ''] },
+    ]).subjects[0].bom.model!;
+    expect(nonStringFirst.task).toBeUndefined();
+
+    const emptyDomain = spdx3([
+      { type: 'ai_AIPackage', spdxId: 'm2', name: 'm2', ai_domain: [] },
+    ]).subjects[0].bom.model!;
+    expect(emptyDomain.task).toBeUndefined();
+  });
+
+  it('joinDistinct: non-array and string-less array leave modelArchitecture unset', () => {
+    const nonArray = spdx3([
+      { type: 'ai_AIPackage', spdxId: 'm1', name: 'm1', ai_typeOfModel: 'not-an-array' },
+    ]).subjects[0].bom.model!;
+    expect(nonArray.modelArchitecture).toBeUndefined();
+
+    const noStrings = spdx3([
+      { type: 'ai_AIPackage', spdxId: 'm2', name: 'm2', ai_typeOfModel: [{ x: 1 }, null] },
+    ]).subjects[0].bom.model!;
+    expect(noStrings.modelArchitecture).toBeUndefined();
+  });
+
+  it('dictionaryEntries: non-array, non-object entry, missing key, null/absent value', () => {
+    const nonArray = spdx3([
+      { type: 'ai_AIPackage', spdxId: 'm1', name: 'm1', ai_hyperparameter: 'nope' },
+    ]).subjects[0].bom.model!;
+    expect(nonArray.hyperparameters).toBeUndefined();
+
+    const mixed = spdx3([
+      {
+        type: 'ai_AIPackage',
+        spdxId: 'm2',
+        name: 'm2',
+        ai_hyperparameter: [
+          'not-an-object',
+          { type: 'DictionaryEntry', value: 'orphan' }, // no key -> skipped
+          { type: 'DictionaryEntry', key: 'nullval', value: null }, // -> ''
+          { type: 'DictionaryEntry', key: 'noval' }, // absent value -> ''
+        ],
+      },
+    ]).subjects[0].bom.model!;
+    expect(mixed.hyperparameters).toEqual([
+      { name: 'nullval', value: '' },
+      { name: 'noval', value: '' },
+    ]);
+  });
+
+  it('datasetRefsFor: filters by from/type, handles scalar/array to, dedups, and falls back to raw id', () => {
+    const subjects = spdx3([
+      { type: 'dataset_DatasetPackage', spdxId: 'ds-known', name: 'KnownDS' },
+      {
+        type: 'ai_AIPackage',
+        spdxId: 'model-x',
+        name: 'model-x',
+      },
+      // wrong from -> ignored
+      { type: 'Relationship', relationshipType: 'trainedOn', from: 'other-model', to: ['ds-known'] },
+      // wrong relationshipType -> ignored
+      { type: 'Relationship', relationshipType: 'contains', from: 'model-x', to: ['ds-known'] },
+      // scalar `to`, resolvable name
+      { type: 'Relationship', relationshipType: 'trainedOn', from: 'model-x', to: 'ds-known' },
+      // duplicate (array) resolving to same name -> deduped
+      { type: 'Relationship', relationshipType: 'testedOn', from: 'model-x', to: ['ds-known'] },
+      // unresolvable id -> raw id kept
+      { type: 'Relationship', relationshipType: 'testedOn', from: 'model-x', to: ['ds-missing'] },
+    ]).subjects;
+    const model = subjects.find(s => s.kind === 'aiModel')!.bom.model!;
+    expect(model.datasetRefs).toEqual(['KnownDS', 'ds-missing']);
+  });
+
+  it('buildModelExtension: an ai_AIPackage with no ai_* fields yields an empty model extension', () => {
+    const { subjects } = spdx3([{ type: 'ai_AIPackage', spdxId: 'bare', name: 'bare' }]);
+    const model = subjects[0].bom.model!;
+    expect(model).toEqual({});
+    expect(subjects[0].bom.document?.spdxId).toBe('bare');
+  });
+
+  it('buildDatasetExtension: non-array modality and no dataset_* fields yield an empty dataset extension', () => {
+    const { subjects } = spdx3([
+      { type: 'dataset_DatasetPackage', spdxId: 'bare-ds', name: 'bare-ds', dataset_datasetType: 'scalar' },
+    ]);
+    const dataset = subjects[0].bom.dataset!;
+    expect(dataset).toEqual({});
+    expect(dataset.modality).toBeUndefined();
+  });
+
+  it('parseSPDX3: ignores non-AI/dataset elements and does not map id-less/name-less datasets', () => {
+    const { subjects } = spdx3([
+      { type: 'software_Package', spdxId: 'sw', name: 'sw' }, // ignored
+      { type: 'dataset_DatasetPackage', name: 'no-id' }, // no spdxId -> not in name map (still emitted)
+      { type: 'dataset_DatasetPackage', spdxId: 'no-name' }, // no name -> not in name map (still emitted)
+      { type: 'ai_AIPackage', spdxId: 'm', name: 'm' },
+      { type: 'Relationship', relationshipType: 'trainedOn', from: 'm', to: ['no-id', 'no-name'] },
+    ]);
+    // 2 dataset subjects + 1 model subject; software_Package ignored.
+    expect(subjects.filter(s => s.kind === 'dataset')).toHaveLength(2);
+    expect(subjects.filter(s => s.kind === 'aiModel')).toHaveLength(1);
+    // Neither id-less nor name-less dataset made it into the resolution map, so
+    // both refs fall back to their raw ids ('no-id' target had no spdxId -> its
+    // relationship id is used verbatim).
+    const model = subjects.find(s => s.kind === 'aiModel')!.bom.model!;
+    expect(model.datasetRefs).toEqual(['no-id', 'no-name']);
   });
 });

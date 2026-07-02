@@ -18,6 +18,7 @@ import {
 import { detectFormat } from './fingerprints.js';
 import { parseCycloneDX } from './cyclonedx.js';
 import { parseSPDX } from './spdx.js';
+import { parseSPDX3 } from './spdx3.js';
 import { parseMLBOM } from './ml-bom.js';
 
 export { detectFormat, type FormatDetection } from './fingerprints.js';
@@ -128,5 +129,14 @@ export function parseBom(input: string): ParseResult {
       return { format: detected.format, normalized: parseCycloneDX(record) };
     case 'spdx':
       return { format: detected.format, normalized: parseSPDX(record) };
+    case 'spdx-3-ai': {
+      // SPDX-3 is multi-subject; parseBom's single-BOM contract returns the
+      // first subject's BOM. The full multi-subject consumer is parseSPDX3.
+      const [first] = parseSPDX3(record).subjects;
+      if (!first) {
+        throw new Error('bom-parser: SPDX-3 document carries no AI/dataset subjects');
+      }
+      return { format: detected.format, normalized: first.bom };
+    }
   }
 }

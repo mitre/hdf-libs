@@ -28,6 +28,8 @@ type (
 	DatasetBOMExtension = hdf.DatasetBOMExtension
 	InputOutput         = hdf.InputOutput
 	PerformanceMetric   = hdf.PerformanceMetric
+	Hyperparameter      = hdf.Hyperparameter
+	Modality            = hdf.Modality
 	Checksum            = hdf.Checksum
 	BOMType             = hdf.BOMType
 )
@@ -44,6 +46,7 @@ const (
 	FormatCycloneDX   = "cyclonedx"
 	FormatSPDX        = "spdx"
 	FormatCycloneDXML = "cyclonedx-ml"
+	FormatSPDX3AI     = "spdx-3-ai"
 )
 
 // RelationalNode is a node in the reserved relational-BOM graph (CBOM

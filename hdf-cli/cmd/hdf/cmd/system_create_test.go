@@ -505,6 +505,74 @@ func TestSystemCreate_FromAIModelBOM_ComponentNameOverride(t *testing.T) {
 	assert.Equal(t, "aiModel", c0["type"])
 }
 
+// componentsByType groups a system document's components by their type value.
+func componentsByType(t *testing.T, sys map[string]interface{}) map[string][]map[string]interface{} {
+	t.Helper()
+	out := map[string][]map[string]interface{}{}
+	for _, c := range sys["components"].([]interface{}) {
+		comp := c.(map[string]interface{})
+		typ, _ := comp["type"].(string)
+		out[typ] = append(out[typ], comp)
+	}
+	return out
+}
+
+func TestSystemCreate_FromSPDX3AIBOM(t *testing.T) {
+	bomFile := bomFixturePath(t, "spdx-ai-model-1.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", bomFile, "-o", outFile})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	byType := componentsByType(t, sys)
+	require.Len(t, byType["aiModel"], 2)
+	require.Len(t, byType["dataset"], 1)
+
+	// Every emitted component carries exactly one spdx-3-ai BOM.
+	for _, comp := range sys["components"].([]interface{}) {
+		boms := comp.(map[string]interface{})["boms"].([]interface{})
+		require.Len(t, boms, 1)
+		assert.Equal(t, "spdx-3-ai", boms[0].(map[string]interface{})["format"])
+	}
+
+	model0 := byType["aiModel"][0]
+	assert.NotEmpty(t, model0["modelId"])
+	assert.Equal(t, "ai-model", model0["boms"].([]interface{})[0].(map[string]interface{})["bomType"])
+
+	ds0 := byType["dataset"][0]
+	assert.NotEmpty(t, ds0["datasetId"])
+	assert.Equal(t, "dataset", ds0["boms"].([]interface{})[0].(map[string]interface{})["bomType"])
+
+	// writeSystemDoc validates against the bundled schema before writing, so a
+	// successful write already proves schema-validity; assert it explicitly too.
+	require.NoError(t, validateHDFOutput(data))
+}
+
+func TestSystemCreate_FromSPDX3AIBOM_DatasetOnly(t *testing.T) {
+	bomFile := bomFixturePath(t, "spdx-ai-dataset-1.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", bomFile, "-o", outFile})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	byType := componentsByType(t, sys)
+	assert.Empty(t, byType["aiModel"])
+	require.Len(t, byType["dataset"], 1)
+	require.NoError(t, validateHDFOutput(data))
+}
+
 func TestSystemAddComponent(t *testing.T) {
 	// Create initial system from results
 	resultsFile := filepath.Join(t.TempDir(), "results.json")
