@@ -26,6 +26,8 @@ type (
 	SBOMPackage         = hdf.SBOMPackage
 	AIModelBOMExtension = hdf.AIModelBOMExtension
 	DatasetBOMExtension = hdf.DatasetBOMExtension
+	InputOutput         = hdf.InputOutput
+	PerformanceMetric   = hdf.PerformanceMetric
 	Checksum            = hdf.Checksum
 	BOMType             = hdf.BOMType
 )

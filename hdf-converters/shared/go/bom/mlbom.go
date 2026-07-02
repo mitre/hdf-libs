@@ -1,15 +1,20 @@
 // CycloneDX ML-BOM -> normalized HDF ai-model BillOfMaterials.
 //
 // PARTIAL-FIDELITY: only modelCard fields that map cleanly onto the normalized
-// AI_Model_Extension are lifted (modelArchitecture, datasetRefs, intendedUse).
-// parameterCount and serializationFormat have NO native CycloneDX ML source, so
-// they are left nil — never fabricated. The raw machine-learning-model component
-// is carried verbatim in the BOM document passthrough so nothing is lost,
-// satisfying the "drop-or-passthrough, never invent" rule.
+// AI_Model_Extension are lifted (modelArchitecture, datasetRefs, intendedUse,
+// learningApproach, task, performanceMetrics, inputOutput.dataTypes).
+// parameterCount, serializationFormat, hyperparameters, and the rest of
+// inputOutput have NO native CycloneDX ML source, so they are left nil — never
+// fabricated. The raw machine-learning-model component is carried verbatim in
+// the BOM document passthrough so nothing is lost, satisfying the
+// "drop-or-passthrough, never invent" rule.
 
 package bom
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 func findModelComponent(obj map[string]any) map[string]any {
 	components, _ := obj["components"].([]any)
@@ -69,6 +74,83 @@ func extractIntendedUse(considerations any) string {
 	return strings.Join(parts, "; ")
 }
 
+// stringifyMetricValue mirrors the TS String(value): a native string is carried
+// verbatim, any other scalar is rendered with the default format.
+func stringifyMetricValue(v any) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return fmt.Sprintf("%v", v)
+}
+
+// extractPerformanceMetrics lifts reported evaluation metrics from
+// modelCard.quantitativeAnalysis. Each native metric's `type` becomes the
+// normalized `name` and its `value` is carried as a string (metrics are
+// heterogeneous). An entry contributes only when it has a name or value; native
+// slice/confidenceInterval detail stays in the document passthrough.
+func extractPerformanceMetrics(quantitativeAnalysis any) []PerformanceMetric {
+	qa := asRecord(quantitativeAnalysis)
+	if qa == nil {
+		return nil
+	}
+	entries, ok := qa["performanceMetrics"].([]any)
+	if !ok {
+		return nil
+	}
+	out := []PerformanceMetric{}
+	for _, entry := range entries {
+		e := asRecord(entry)
+		if e == nil {
+			continue
+		}
+		name := asString(e["type"])
+		rawValue, hasValue := e["value"]
+		valueSet := hasValue && rawValue != nil
+		if name == "" && !valueSet {
+			continue
+		}
+		metric := PerformanceMetric{}
+		if name != "" {
+			metric.Name = strPtr(name)
+		}
+		if valueSet {
+			value := stringifyMetricValue(rawValue)
+			metric.Value = &value
+		}
+		out = append(out, metric)
+	}
+	return out
+}
+
+// extractIODataTypes collects the distinct `format` strings across
+// modelParameters.inputs[] and outputs[], preserving first-seen order.
+func extractIODataTypes(parameters map[string]any) []string {
+	out := []string{}
+	for _, key := range []string{"inputs", "outputs"} {
+		entries, ok := parameters[key].([]any)
+		if !ok {
+			continue
+		}
+		for _, entry := range entries {
+			format := asString(asRecord(entry)["format"])
+			if format == "" {
+				continue
+			}
+			seen := false
+			for _, existing := range out {
+				if existing == format {
+					seen = true
+					break
+				}
+			}
+			if !seen {
+				out = append(out, format)
+			}
+		}
+	}
+	return out
+}
+
 func buildModelExtension(modelComponent map[string]any) *AIModelBOMExtension {
 	model := &AIModelBOMExtension{}
 	modelCard := asRecord(modelComponent["modelCard"])
@@ -87,6 +169,19 @@ func buildModelExtension(modelComponent map[string]any) *AIModelBOMExtension {
 		if datasetRefs := extractDatasetRefs(parameters["datasets"]); len(datasetRefs) > 0 {
 			model.DatasetRefs = datasetRefs
 		}
+		if learningApproach := asString(asRecord(parameters["approach"])["type"]); learningApproach != "" {
+			model.LearningApproach = strPtr(learningApproach)
+		}
+		if task := asString(parameters["task"]); task != "" {
+			model.Task = strPtr(task)
+		}
+		if dataTypes := extractIODataTypes(parameters); len(dataTypes) > 0 {
+			model.InputOutput = &InputOutput{DataTypes: dataTypes}
+		}
+	}
+
+	if metrics := extractPerformanceMetrics(modelCard["quantitativeAnalysis"]); len(metrics) > 0 {
+		model.PerformanceMetrics = metrics
 	}
 
 	if intendedUse := extractIntendedUse(modelCard["considerations"]); intendedUse != "" {

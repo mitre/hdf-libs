@@ -195,6 +195,22 @@ describe('parseBom — CycloneDX ML-BOM', () => {
     expect(normalized.model?.serializationFormat).toBeUndefined();
   });
 
+  it('lifts learningApproach, task, performanceMetrics, and inputOutput.dataTypes from the model card', () => {
+    expect(normalized.model?.learningApproach).toBe('supervised');
+    expect(normalized.model?.task).toBe('task goes here');
+    expect(normalized.model?.performanceMetrics).toEqual([
+      { name: 'The type of performance metric', value: 'The value of the performance metric' },
+    ]);
+    expect(normalized.model?.inputOutput?.dataTypes).toEqual(['string', 'byte[]']);
+  });
+
+  it('never fabricates hyperparameters or the CycloneDX-less inputOutput fields', () => {
+    expect(normalized.model?.hyperparameters).toBeUndefined();
+    expect(normalized.model?.inputOutput?.modality).toBeUndefined();
+    expect(normalized.model?.inputOutput?.contextLength).toBeUndefined();
+    expect(normalized.model?.inputOutput?.tokenizer).toBeUndefined();
+  });
+
   it('carries the raw model component via document passthrough', () => {
     expect(normalized.document).toBeDefined();
     expect((normalized.document as Record<string, unknown>).type).toBe('machine-learning-model');
@@ -263,6 +279,15 @@ describe.each(ML_FIXTURES)('parseBom — CycloneDX-ML fixture $file', fx => {
   it('carries a minimal/empty model extension for partial-fidelity sources', () => {
     if (fx.emptyModel) {
       expect(normalized.model).toEqual({});
+    }
+  });
+
+  it('never fabricates the kirq.8 fields when the source lacks them', () => {
+    if (fx.emptyModel) {
+      expect(normalized.model?.learningApproach).toBeUndefined();
+      expect(normalized.model?.task).toBeUndefined();
+      expect(normalized.model?.performanceMetrics).toBeUndefined();
+      expect(normalized.model?.inputOutput).toBeUndefined();
     }
   });
 

@@ -2,17 +2,21 @@
  * CycloneDX ML-BOM -> normalized HDF ai-model BillOfMaterials.
  *
  * PARTIAL-FIDELITY: only modelCard fields that map cleanly onto the normalized
- * AI_Model_Extension are lifted (modelArchitecture, datasetRefs, intendedUse).
- * parameterCount and serializationFormat have NO native CycloneDX ML source, so
- * they are left undefined — never fabricated. The raw machine-learning-model
- * component is carried verbatim in the BOM `document` passthrough so nothing is
- * lost, satisfying the "drop-or-passthrough, never invent" rule.
+ * AI_Model_Extension are lifted (modelArchitecture, datasetRefs, intendedUse,
+ * learningApproach, task, performanceMetrics, inputOutput.dataTypes).
+ * parameterCount, serializationFormat, hyperparameters, and the rest of
+ * inputOutput have NO native CycloneDX ML source, so they are left undefined —
+ * never fabricated. The raw machine-learning-model component is carried verbatim
+ * in the BOM `document` passthrough so nothing is lost, satisfying the
+ * "drop-or-passthrough, never invent" rule.
  */
 
 import {
   BOMType,
   type AIModelBOMExtension,
+  type InputOutput,
   type NormalizedBom,
+  type PerformanceMetric,
 } from './model.js';
 import {
   asRecord,
@@ -59,6 +63,44 @@ function extractIntendedUse(considerations: unknown): string | undefined {
   return parts.length > 0 ? parts.join('; ') : undefined;
 }
 
+/**
+ * Reported evaluation metrics from modelCard.quantitativeAnalysis. Each native
+ * metric's `type` becomes the normalized `name` and its `value` is carried as a
+ * string (metrics are heterogeneous). An entry contributes only when it has a
+ * name or value; native slice/confidenceInterval are left in the `document`.
+ */
+function extractPerformanceMetrics(quantitativeAnalysis: unknown): PerformanceMetric[] {
+  const qa = asRecord(quantitativeAnalysis);
+  if (!qa || !Array.isArray(qa.performanceMetrics)) return [];
+  const out: PerformanceMetric[] = [];
+  for (const entry of qa.performanceMetrics) {
+    const e = asRecord(entry);
+    if (!e) continue;
+    const name = asString(e.type);
+    const value = e.value !== undefined && e.value !== null ? String(e.value) : undefined;
+    if (name === undefined && value === undefined) continue;
+    const metric: PerformanceMetric = {};
+    if (name !== undefined) metric.name = name;
+    if (value !== undefined) metric.value = value;
+    out.push(metric);
+  }
+  return out;
+}
+
+/** Distinct `format` strings across modelParameters.inputs[] and outputs[]. */
+function extractIODataTypes(parameters: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  for (const key of ['inputs', 'outputs']) {
+    const entries = parameters[key];
+    if (!Array.isArray(entries)) continue;
+    for (const entry of entries) {
+      const format = asString(asRecord(entry)?.format);
+      if (format && !out.includes(format)) out.push(format);
+    }
+  }
+  return out;
+}
+
 function buildModelExtension(modelComponent: Record<string, unknown>): AIModelBOMExtension {
   const model: AIModelBOMExtension = {};
   const modelCard = asRecord(modelComponent.modelCard);
@@ -71,7 +113,22 @@ function buildModelExtension(modelComponent: Record<string, unknown>): AIModelBO
     if (architecture) model.modelArchitecture = architecture;
     const datasetRefs = extractDatasetRefs(parameters.datasets);
     if (datasetRefs.length > 0) model.datasetRefs = datasetRefs;
+
+    const learningApproach = asString(asRecord(parameters.approach)?.type);
+    if (learningApproach) model.learningApproach = learningApproach;
+
+    const task = asString(parameters.task);
+    if (task) model.task = task;
+
+    const dataTypes = extractIODataTypes(parameters);
+    if (dataTypes.length > 0) {
+      const inputOutput: InputOutput = { dataTypes };
+      model.inputOutput = inputOutput;
+    }
   }
+
+  const performanceMetrics = extractPerformanceMetrics(modelCard.quantitativeAnalysis);
+  if (performanceMetrics.length > 0) model.performanceMetrics = performanceMetrics;
 
   const intendedUse = extractIntendedUse(modelCard.considerations);
   if (intendedUse) model.intendedUse = intendedUse;

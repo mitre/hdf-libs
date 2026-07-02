@@ -2413,7 +2413,35 @@
                 "parameterCount": 6738415616,
                 "serializationFormat": "safetensors",
                 "adaptationType": "finetune",
-                "baseModelRef": "meta-llama/Llama-2-7b-hf"
+                "baseModelRef": "meta-llama/Llama-2-7b-hf",
+                "learningApproach": "supervised",
+                "task": "text-generation",
+                "performanceMetrics": [
+                  {
+                    "name": "MMLU",
+                    "value": "0.457"
+                  }
+                ],
+                "hyperparameters": [
+                  {
+                    "name": "epochs",
+                    "value": "3"
+                  },
+                  {
+                    "name": "learning-rate",
+                    "value": "2e-5"
+                  }
+                ],
+                "inputOutput": {
+                  "dataTypes": [
+                    "string"
+                  ],
+                  "modality": [
+                    "text"
+                  ],
+                  "contextLength": 4096,
+                  "tokenizer": "llama-bpe"
+                }
               }
             },
             {
@@ -2425,6 +2453,9 @@
                 "datasetFormat": "parquet",
                 "dataClassification": "public",
                 "intendedUse": "instruction fine-tuning",
+                "modality": "text",
+                "provenance": "Filtered from the public UltraChat corpus; low-quality and duplicate turns removed.",
+                "statisticalProperties": "Mean 512 tokens/record; 61% single-turn, 39% multi-turn; English-dominant (~92%).",
                 "baseDatasetRefs": [
                   "HuggingFaceH4/ultrachat_200k"
                 ],
@@ -2477,6 +2508,79 @@
             "intendedUse": {
               "type": "string",
               "description": "Free-text statement of intended use and out-of-scope uses (CISA/G7 minimum element)."
+            },
+            "learningApproach": {
+              "type": "string",
+              "description": "Model's learning/training paradigm. Free-text because the value set varies across standards. Examples: supervised, self-supervised, semi-supervised, reinforcement. Cross-standard intersection: SPDX 3.0 ai_typeOfModel ∩ CycloneDX modelParameters.approach.type ∩ CISA/G7 learning type."
+            },
+            "task": {
+              "type": "string",
+              "description": "The ML task the model performs. Free-text. Examples: text-classification, sentiment-analysis, object-detection, translation. Sourced from CycloneDX modelParameters.task (SPDX 3.0 ai_domain is domain-level/adjacent, not the task); CISA/G7 intended-application."
+            },
+            "performanceMetrics": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Metric name. Examples: accuracy, f1, BLEU, latency."
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "Reported metric value, free-text because metrics are heterogeneous (percentages, scores, milliseconds)."
+                  }
+                }
+              },
+              "description": "Reported evaluation metrics as name/value pairs. Values are free-text because metrics are heterogeneous (accuracy, f1, BLEU, latency). The item stays open (additionalProperties: true) to carry native CycloneDX slice/confidenceInterval detail opaquely. Cross-standard intersection: SPDX 3.0 ai_metric ∩ CycloneDX quantitativeAnalysis.performanceMetrics ∩ CISA/G7 KPI cluster."
+            },
+            "hyperparameters": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Hyper-parameter name. Examples: epochs, learning-rate, batch-size."
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "Hyper-parameter value (free-text)."
+                  }
+                }
+              },
+              "description": "Training hyper-parameters as name/value pairs (epochs, learning-rate, batch-size). This is the set of training knobs, NOT the model's trainable parameterCount — the two are routinely conflated. CISA/G7 'Model properties: hyper-parameters'; SPDX 3.0 ai_hyperparameter."
+            },
+            "inputOutput": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Model input/output properties (CISA/G7 minimum element): I/O data types, modality, context/sequence length, and tokenizer. Sourced from CycloneDX modelParameters.inputs[].format / outputs[].format. All sub-fields optional.",
+              "properties": {
+                "dataTypes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Input/output data types. Examples: string, byte[], float32, image."
+                },
+                "modality": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Input/output modalities. Examples: text, image, audio."
+                },
+                "contextLength": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Maximum context/sequence length the model accepts, in tokens."
+                },
+                "tokenizer": {
+                  "type": "string",
+                  "description": "Tokenizer used for the model's input encoding. Examples: BPE, SentencePiece, tiktoken."
+                }
+              }
             }
           }
         },
@@ -2502,6 +2606,24 @@
             "intendedUse": {
               "type": "string",
               "description": "Free-text statement of the dataset's intended use (CISA/G7 minimum element)."
+            },
+            "modality": {
+              "type": [
+                "string",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "Content modality/kind of the data (CISA/G7 'Dataset content: modality'). Examples: text, image, tabular, timeseries, audio. DISTINCT from datasetFormat, which is the physical encoding (parquet/csv). Resolves SPDX 3.0 dataset_datasetType, which is content-kind, not physical format. String or array of strings."
+            },
+            "provenance": {
+              "type": "string",
+              "description": "Free-text description of the dataset's origin and collection process (CISA/G7 'Dataset provenance'; SPDX 3.0 dataset_dataCollectionProcess)."
+            },
+            "statisticalProperties": {
+              "type": "string",
+              "description": "Free-text summary of the dataset's statistical properties (CISA/G7 minimum element; open-ended by design). Intentionally free-text and will remain so permanently: recordCount is the one structured statistic, and restructuring this into an object later would break existing consumers, so it stays a string (additive-only)."
             },
             "baseDatasetRefs": {
               "type": "array",

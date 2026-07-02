@@ -14,6 +14,8 @@ import type {
   BillOfMaterials,
   Checksum,
   DatasetBOMExtension,
+  InputOutput,
+  PerformanceMetric,
   SBOMPackage,
 } from '@mitre/hdf-schema';
 
@@ -23,6 +25,8 @@ export type {
   BillOfMaterials,
   Checksum,
   DatasetBOMExtension,
+  InputOutput,
+  PerformanceMetric,
   SBOMPackage,
 };
 

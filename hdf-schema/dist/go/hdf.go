@@ -1080,8 +1080,21 @@ type DatasetBOMExtension struct {
 	Derivation                                                                                  *DatasetDerivationType `json:"derivation,omitempty"`
 	// Free-text statement of the dataset's intended use (CISA/G7 minimum element).                                    
 	IntendedUse                                                                                 *string                `json:"intendedUse,omitempty"`
+	// Content modality/kind of the data (CISA/G7 'Dataset content: modality'). Examples: text,                        
+	// image, tabular, timeseries, audio. DISTINCT from datasetFormat, which is the physical                           
+	// encoding (parquet/csv). Resolves SPDX 3.0 dataset_datasetType, which is content-kind, not                       
+	// physical format. String or array of strings.                                                                    
+	Modality                                                                                    *Modality              `json:"modality,omitempty"`
+	// Free-text description of the dataset's origin and collection process (CISA/G7 'Dataset                          
+	// provenance'; SPDX 3.0 dataset_dataCollectionProcess).                                                           
+	Provenance                                                                                  *string                `json:"provenance,omitempty"`
 	// Number of records/examples in the dataset.                                                                      
 	RecordCount                                                                                 *int64                 `json:"recordCount,omitempty"`
+	// Free-text summary of the dataset's statistical properties (CISA/G7 minimum element;                             
+	// open-ended by design). Intentionally free-text and will remain so permanently:                                  
+	// recordCount is the one structured statistic, and restructuring this into an object later                        
+	// would break existing consumers, so it stays a string (additive-only).                                           
+	StatisticalProperties                                                                       *string                `json:"statisticalProperties,omitempty"`
 }
 
 // Normalized ai-model extension. Permitted only when bomType is ai-model.
@@ -1103,17 +1116,71 @@ type AIModelBOMExtension struct {
 	// than duplicating dataset detail, per ADR §10), or a dataset BOM uniqueId/URI when no                          
 	// component exists.                                                                                             
 	DatasetRefs                                                                                 []string             `json:"datasetRefs,omitempty"`
+	// Training hyper-parameters as name/value pairs (epochs, learning-rate, batch-size). This                       
+	// is the set of training knobs, NOT the model's trainable parameterCount — the two are                          
+	// routinely conflated. CISA/G7 'Model properties: hyper-parameters'; SPDX 3.0                                   
+	// ai_hyperparameter.                                                                                            
+	Hyperparameters                                                                             []Hyperparameter     `json:"hyperparameters,omitempty"`
+	// Model input/output properties (CISA/G7 minimum element): I/O data types, modality,                            
+	// context/sequence length, and tokenizer. Sourced from CycloneDX                                                
+	// modelParameters.inputs[].format / outputs[].format. All sub-fields optional.                                  
+	InputOutput                                                                                 *InputOutput         `json:"inputOutput,omitempty"`
 	// Free-text statement of intended use and out-of-scope uses (CISA/G7 minimum element).                          
 	IntendedUse                                                                                 *string              `json:"intendedUse,omitempty"`
+	// Model's learning/training paradigm. Free-text because the value set varies across                             
+	// standards. Examples: supervised, self-supervised, semi-supervised, reinforcement.                             
+	// Cross-standard intersection: SPDX 3.0 ai_typeOfModel ∩ CycloneDX                                              
+	// modelParameters.approach.type ∩ CISA/G7 learning type.                                                        
+	LearningApproach                                                                            *string              `json:"learningApproach,omitempty"`
 	// Model architecture family. Examples: transformer, cnn, diffusion, mixture-of-experts.                         
 	ModelArchitecture                                                                           *string              `json:"modelArchitecture,omitempty"`
 	// Total trainable parameter count. No native CycloneDX/SPDX field exists; first-class here                      
 	// because the EU AI Act keys GPAI obligations off model scale.                                                  
 	ParameterCount                                                                              *int64               `json:"parameterCount,omitempty"`
+	// Reported evaluation metrics as name/value pairs. Values are free-text because metrics are                     
+	// heterogeneous (accuracy, f1, BLEU, latency). The item stays open (additionalProperties:                       
+	// true) to carry native CycloneDX slice/confidenceInterval detail opaquely. Cross-standard                      
+	// intersection: SPDX 3.0 ai_metric ∩ CycloneDX quantitativeAnalysis.performanceMetrics ∩                        
+	// CISA/G7 KPI cluster.                                                                                          
+	PerformanceMetrics                                                                          []PerformanceMetric  `json:"performanceMetrics,omitempty"`
 	// On-disk weight serialization format. Security-critical yet under-modeled by BOM specs:                        
 	// pickle/pytorch permits arbitrary code execution on load; safetensors does not. Examples:                      
 	// safetensors, pytorch, gguf, onnx, tensorflow.                                                                 
 	SerializationFormat                                                                         *string              `json:"serializationFormat,omitempty"`
+	// The ML task the model performs. Free-text. Examples: text-classification,                                     
+	// sentiment-analysis, object-detection, translation. Sourced from CycloneDX                                     
+	// modelParameters.task (SPDX 3.0 ai_domain is domain-level/adjacent, not the task); CISA/G7                     
+	// intended-application.                                                                                         
+	Task                                                                                        *string              `json:"task,omitempty"`
+}
+
+type Hyperparameter struct {
+	// Hyper-parameter name. Examples: epochs, learning-rate, batch-size.        
+	Name                                                                 *string `json:"name,omitempty"`
+	// Hyper-parameter value (free-text).                                        
+	Value                                                                *string `json:"value,omitempty"`
+}
+
+// Model input/output properties (CISA/G7 minimum element): I/O data types, modality,
+// context/sequence length, and tokenizer. Sourced from CycloneDX
+// modelParameters.inputs[].format / outputs[].format. All sub-fields optional.
+type InputOutput struct {
+	// Maximum context/sequence length the model accepts, in tokens.                                  
+	ContextLength                                                                            *int64   `json:"contextLength,omitempty"`
+	// Input/output data types. Examples: string, byte[], float32, image.                             
+	DataTypes                                                                                []string `json:"dataTypes,omitempty"`
+	// Input/output modalities. Examples: text, image, audio.                                         
+	Modality                                                                                 []string `json:"modality,omitempty"`
+	// Tokenizer used for the model's input encoding. Examples: BPE, SentencePiece, tiktoken.         
+	Tokenizer                                                                                *string  `json:"tokenizer,omitempty"`
+}
+
+type PerformanceMetric struct {
+	// Metric name. Examples: accuracy, f1, BLEU, latency.                                             
+	Name                                                                                       *string `json:"name,omitempty"`
+	// Reported metric value, free-text because metrics are heterogeneous (percentages, scores,        
+	// milliseconds).                                                                                  
+	Value                                                                                      *string `json:"value,omitempty"`
 }
 
 // A single normalized software package entry within an sbom BOM. Minimal identity + version
@@ -2705,6 +2772,30 @@ func (x *Ref) UnmarshalJSON(data []byte) error {
 
 func (x *Ref) MarshalJSON() ([]byte, error) {
 	return marshalUnion(nil, nil, nil, x.String, x.AnythingMapArray != nil, x.AnythingMapArray, false, nil, false, nil, false, nil, false)
+}
+
+// Content modality/kind of the data (CISA/G7 'Dataset content: modality'). Examples: text,
+// image, tabular, timeseries, audio. DISTINCT from datasetFormat, which is the physical
+// encoding (parquet/csv). Resolves SPDX 3.0 dataset_datasetType, which is content-kind, not
+// physical format. String or array of strings.
+type Modality struct {
+	String      *string
+	StringArray []string
+}
+
+func (x *Modality) UnmarshalJSON(data []byte) error {
+	x.StringArray = nil
+	object, err := unmarshalUnion(data, nil, nil, nil, &x.String, true, &x.StringArray, false, nil, false, nil, false, nil, false)
+	if err != nil {
+		return err
+	}
+	if object {
+	}
+	return nil
+}
+
+func (x *Modality) MarshalJSON() ([]byte, error) {
+	return marshalUnion(nil, nil, nil, x.String, x.StringArray != nil, x.StringArray, false, nil, false, nil, false, nil, false)
 }
 
 func unmarshalUnion(data []byte, pi **int64, pf **float64, pb **bool, ps **string, haveArray bool, pa interface{}, haveObject bool, pc interface{}, haveMap bool, pm interface{}, haveEnum bool, pe interface{}, nullable bool) (bool, error) {

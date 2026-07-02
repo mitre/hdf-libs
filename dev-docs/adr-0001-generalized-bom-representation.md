@@ -141,6 +141,34 @@ Two schema refinements land on the settled Phase 1 shape before the parser is bu
 
 Dependency chain: `kirq.6 → kirq.7 → kirq.2`.
 
+#### Phase 3 refinement: cross-standard AI/dataset field coverage (`kirq.8`) — added 2026-07-02
+Building the SPDX-3 AI/dataset path (`kirq.3.3`) surfaced that the normalized `ai-model`/`dataset` extensions were shaped almost entirely by CycloneDX-ML, so SPDX-3's richer AI/governance vocabulary had no first-class home. This refinement widens the two extensions **before** `kirq.3.3` builds, so the SPDX-3 normalizer targets the final shape.
+
+**Two layers, kept distinct.** *Carriage* is already a superset: both extensions are `additionalProperties: true` and every `Bom` carries its raw source element via `document`, so no source field is ever lost regardless of what is named. This refinement is only about the *contract* layer — which fields become named, validated, documented, queryable, and part of the generated TS/Go/Python types.
+
+**Inclusion rule (decided).** Promote a field to the contract iff it is either (a) cleanly present in **both** SPDX-3 **and** CycloneDX-ML (the intersection — high cross-standard confidence), **or** (b) a **CISA/G7 "SBOM for AI" minimum element** not already covered elsewhere in the HDF component/BOM model. CISA's set is authoritative and *bounded* (it is a curated minimum, not the mechanical union of every format's fields), which gives a principled, stable inclusion rule without the maintenance tail and institutionalized lossy mappings of a full union. Everything outside this rule stays passthrough.
+
+**CISA/G7 minimum-element coverage (Models + Dataset clusters).** Already covered: model/dataset name·identifier·version (component + `modelId`/`datasetId`), hash value+algorithm (`Base_Component.integrity`), architecture (`modelArchitecture`), parameter count (`parameterCount`), RLHF/fine-tuning (`adaptationType`), license (`Bom.license`), producer (`owner`), external references (`externalIds`), dataset intended-use·sensitivity·dependency (`intendedUse`/`dataClassification`/`baseDatasetRefs`), dataset format (`datasetFormat`). Deliberately **not** promoted (covered elsewhere or low query value; carried via passthrough if a converter has them): model timestamp (document/tool timestamp), parametric/non-parametric flag, model size in bytes (`parameterCount`+`serializationFormat` suffice).
+
+**Promoted fields (intersection + uncovered CISA gaps):**
+
+- `AI_Model_Extension` (+5, all optional):
+  - `learningApproach` — string, free-text (SPDX `ai_typeOfModel` ∩ CDX `modelParameters.approach.type` ∩ G7 "learning type").
+  - `task` — string, free-text (CDX `modelParameters.task`; SPDX `ai_domain` is domain-level/adjacent — noted; G7 intended-application).
+  - `performanceMetrics` — `array<{name, value}>`, free-text values (SPDX `ai_metric` ∩ CDX `quantitativeAnalysis.performanceMetrics` ∩ G7 KPI cluster).
+  - `hyperparameters` — `array<{name, value}>` (CISA "Model properties: hyper-parameters"; SPDX `ai_hyperparameter`). **Not** `parameterCount` — see traps.
+  - `inputOutput` — `object{ dataTypes?, modality?, contextLength?, tokenizer? }`, all optional (CISA "Model input-output properties"; CDX `inputs[].format`/`outputs[].format`).
+- `Dataset_Extension` (+3, all optional):
+  - `modality` — string|array (CISA "Dataset content: modality"; resolves SPDX `dataset_datasetType`, which is content-kind, **not** physical format — kept distinct from `datasetFormat`).
+  - `provenance` — string, free-text (CISA "Dataset provenance"; SPDX `dataset_dataCollectionProcess`).
+  - `statisticalProperties` — string, free-text (CISA "Dataset statistical properties"; `recordCount` remains the one structured stat).
+
+**Traps (carried from the field audit).** SPDX `ai_hyperparameter` is a *list of training hyper-parameters* (28 `{key,value}` entries in the real fixture), never the model's trainable-parameter count → maps to `hyperparameters`, never `parameterCount`. SPDX `dataset_datasetSize` has unlabeled, inconsistent units across real fixtures (`2689` rows-ish vs `117553` bytes-ish) → not promoted, not auto-mapped to `recordCount`. Array→scalar SPDX fields (`ai_typeOfModel`, `ai_domain`) must pick one value and carry the source via `document`, never silently truncate.
+
+**Symmetry requirement.** A promoted field is cross-standard by construction, so `kirq.3.2`'s CycloneDX-ML normalizer must populate the same new fields it can source (`learningApproach`, `task`, `performanceMetrics`, `inputOutput`) — not just the SPDX-3 path. Passthrough-only otherwise.
+
+Dependency: `kirq.8` blocks `kirq.3.3`.
+
 #### Phase 2: Shared dual-language BOM parser (blocked by Phase 1)
 **Files:**
 - Create: `hdf-converters/shared/typescript/bom/{model,cyclonedx,spdx,ml-bom,normalize,fingerprints}.ts` and Go peers `hdf-converters/shared/go/bom/*.go`
@@ -180,4 +208,5 @@ Dependency chain: `kirq.6 → kirq.7 → kirq.2`.
 - Tracking epic: `hdf-libs-kirq`; CVE-ecosystem sibling: `hdf-libs-5pg9`
 - **Format survey (2026-06-30):** CycloneDX ML-BOM 1.7 (ECMA-424); SPDX 3.0.1 AI + Dataset profiles (note: only SPDX 2.2.1 is ISO/IEC 5962); Hugging Face model cards (de-facto input); MLCommons Croissant 1.1 (datasets); Google Model Card Toolkit (archived 2024 — ancestral to CycloneDX); **CISA/G7 "SBOM for AI — Minimum Elements" (May–Jun 2026, the interoperability target)**; out-of-scope adjacents: OpenSSF Model Signing/Sigstore, OCI model packaging (ModelPack/KitOps/Ollama).
 - Survey findings shaping the field set: no native `parameterCount` in CDX/SPDX (EU AI Act binding for GPAI); energy modeling disagrees (CDX per-activity is the superset); bias structured in CDX, free-text elsewhere; HF owns typed lineage (`base_model_relation`); serialization format is security-critical yet under-modeled by the BOM specs.
+- **`kirq.8` field-coverage source:** CISA/G7, *Software Bill of Materials for AI — Minimum Elements*, https://www.cisa.gov/resources-tools/resources/software-bill-materials-ai-minimum-elements (Models + Dataset Properties clusters used as the baseline the promoted `ai-model`/`dataset` fields must cover).
 - **Supporting reading — AIBOM field maturity:** Allan Friedman & Nick Leiserson, "Driving AI Transparency: Supply- and Demand-Based Paths Toward AIBOM," Institute for Security and Technology, June 2026, https://securityandtechnology.org/virtual-library/policy-memo/driving-ai-transparency/. One of several ongoing public discussions of AIBOM minimum elements, consistent with our own reading that AIBOM remains early/in-flux and that identity, integrity, lineage, and provenance dominate proposed minimums. HDF does **not** adopt its recommendations verbatim — the normative field set stays anchored to CISA/G7 and CycloneDX/SPDX; the memo's provenance cluster (supplier/origin/creator/supporting-documentation, data origin/country/processing-history) is intentionally out of scope this pass.

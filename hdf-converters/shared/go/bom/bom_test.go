@@ -224,6 +224,28 @@ func TestParseBom_MLBOM(t *testing.T) {
 		assert.Nil(t, normalized.Model.SerializationFormat)
 	})
 
+	t.Run("lifts learningApproach, task, performanceMetrics, and inputOutput.dataTypes", func(t *testing.T) {
+		require.NotNil(t, normalized.Model.LearningApproach)
+		assert.Equal(t, "supervised", *normalized.Model.LearningApproach)
+		require.NotNil(t, normalized.Model.Task)
+		assert.Equal(t, "task goes here", *normalized.Model.Task)
+		require.Len(t, normalized.Model.PerformanceMetrics, 1)
+		require.NotNil(t, normalized.Model.PerformanceMetrics[0].Name)
+		assert.Equal(t, "The type of performance metric", *normalized.Model.PerformanceMetrics[0].Name)
+		require.NotNil(t, normalized.Model.PerformanceMetrics[0].Value)
+		assert.Equal(t, "The value of the performance metric", *normalized.Model.PerformanceMetrics[0].Value)
+		require.NotNil(t, normalized.Model.InputOutput)
+		assert.Equal(t, []string{"string", "byte[]"}, normalized.Model.InputOutput.DataTypes)
+	})
+
+	t.Run("never fabricates hyperparameters or the CycloneDX-less inputOutput fields", func(t *testing.T) {
+		assert.Nil(t, normalized.Model.Hyperparameters)
+		require.NotNil(t, normalized.Model.InputOutput)
+		assert.Nil(t, normalized.Model.InputOutput.Modality)
+		assert.Nil(t, normalized.Model.InputOutput.ContextLength)
+		assert.Nil(t, normalized.Model.InputOutput.Tokenizer)
+	})
+
 	t.Run("carries the raw model component via document passthrough", func(t *testing.T) {
 		require.NotNil(t, normalized.Document)
 		assert.Equal(t, "machine-learning-model", normalized.Document["type"])
@@ -284,6 +306,10 @@ func TestParseBom_MLBOMVariants(t *testing.T) {
 
 			if tc.emptyModel {
 				assert.Equal(t, &AIModelBOMExtension{}, n.Model)
+				assert.Nil(t, n.Model.LearningApproach)
+				assert.Nil(t, n.Model.Task)
+				assert.Nil(t, n.Model.PerformanceMetrics)
+				assert.Nil(t, n.Model.InputOutput)
 			}
 
 			expectValidBom(t, validator, BuildBom(BuildBomParts{
