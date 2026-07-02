@@ -439,6 +439,39 @@ func TestSeverityToImpact(t *testing.T) {
 	}
 }
 
+// ---- Component boms[] attachment (ADR-0001 Phase 3) ----
+
+func TestConvertCycloneDX_ComponentBoms(t *testing.T) {
+	// minimal-vulns.json has 2 components → boms[] carries normalized packages
+	// plus the raw document passthrough.
+	input := loadFixture(t, "input/minimal-vulns.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	boms := result.Components[0].Boms
+	require.Len(t, boms, 1)
+	assert.Equal(t, hdf.Sbom, boms[0].BOMType)
+	assert.Equal(t, "cyclonedx", boms[0].Format)
+	assert.NotEmpty(t, boms[0].Packages, "component input should yield normalized packages")
+	assert.NotNil(t, boms[0].Document, "raw manifest should be carried via document passthrough")
+}
+
+func TestConvertCycloneDX_ComponentBomsVulnOnly(t *testing.T) {
+	// vex.json has no components → boms[] carries the document only, no packages.
+	input := loadFixture(t, "input/vex.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	boms := result.Components[0].Boms
+	require.Len(t, boms, 1)
+	assert.Equal(t, hdf.Sbom, boms[0].BOMType)
+	assert.Equal(t, "cyclonedx", boms[0].Format)
+	assert.Empty(t, boms[0].Packages, "vuln-only input should carry no packages")
+	assert.NotNil(t, boms[0].Document, "raw manifest should be carried via document passthrough")
+}
+
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "cyclonedx-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertCycloneDXToHDF(input, "0.1.0")

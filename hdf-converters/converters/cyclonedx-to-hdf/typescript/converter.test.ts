@@ -350,6 +350,34 @@ describe('cyclonedx to HDF converter', async () => {
     });
   });
 
+  describe('component boms[] attachment', async () => {
+    it('should attach an sbom boms[] entry with normalized packages and document passthrough', async () => {
+      // minimal-vulns.json has 2 components
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
+      ) as HDFResults;
+      const boms = hdf.components?.[0]?.boms;
+      expect(boms).toHaveLength(1);
+      expect(boms![0]!.bomType).toBe('sbom');
+      expect(boms![0]!.format).toBe('cyclonedx');
+      expect(boms![0]!.packages?.length).toBeGreaterThan(0);
+      expect(boms![0]!.document).toBeDefined();
+    });
+
+    it('should carry document only (no packages) for vuln-only input', async () => {
+      // vex.json has no components
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('vex.json'))
+      ) as HDFResults;
+      const boms = hdf.components?.[0]?.boms;
+      expect(boms).toHaveLength(1);
+      expect(boms![0]!.bomType).toBe('sbom');
+      expect(boms![0]!.format).toBe('cyclonedx');
+      expect(boms![0]!.packages ?? []).toHaveLength(0);
+      expect(boms![0]!.document).toBeDefined();
+    });
+  });
+
   describe('full fixture smoke test', async () => {
     it('should convert dropwizard-vulns.json with 87 requirements', async () => {
       const hdf = JSON.parse(

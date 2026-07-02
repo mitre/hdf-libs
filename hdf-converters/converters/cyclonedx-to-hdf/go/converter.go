@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	bomshared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -349,12 +350,24 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		}
 	}
 
-	// Embed the raw CycloneDX SBOM into the component
-	var rawSbom interface{}
-	if err := json.Unmarshal(input, &rawSbom); err == nil {
-		sbomFmt := hdf.Cyclonedx
-		comp.Sbom = rawSbom
-		comp.SbomFormat = &sbomFmt
+	// Attach the CycloneDX BOM to the component as a generalized boms[] entry.
+	// The shared BOM parser yields the normalized package inventory; the raw
+	// manifest is also carried via document passthrough so no data is dropped.
+	// Vuln-only inputs (no components) have no packages and carry the document only.
+	if parsed, perr := bomshared.ParseBom(input); perr == nil && parsed.Normalized != nil {
+		parts := bomshared.BuildBomParts{
+			BOMType:  bomshared.BOMTypeSbom,
+			Format:   bomshared.FormatCycloneDX,
+			UniqueID: parsed.Normalized.UniqueID,
+		}
+		if len(parsed.Normalized.Packages) > 0 {
+			parts.Packages = parsed.Normalized.Packages
+		}
+		var doc map[string]interface{}
+		if err := json.Unmarshal(input, &doc); err == nil {
+			parts.Document = doc
+		}
+		comp.Boms = []hdf.BillOfMaterials{*bomshared.BuildBom(parts)}
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
