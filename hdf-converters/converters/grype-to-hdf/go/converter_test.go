@@ -105,17 +105,7 @@ func TestMatchesConvertedToRequirements(t *testing.T) {
 	}
 
 	// Check a Low severity match: ALAS-2024-2607 (ca-certificates)
-	var alas2607 *hdf.EvaluatedRequirement
-	for i := range requirements {
-		if requirements[i].ID == "Grype/ALAS-2024-2607" {
-			alas2607 = &requirements[i]
-			break
-		}
-	}
-
-	if alas2607 == nil {
-		t.Fatal("Expected requirement 'Grype/ALAS-2024-2607' not found")
-	}
+	alas2607 := shared.MustFindRequirement(t, requirements, "Grype/ALAS-2024-2607")
 
 	if alas2607.Impact != 0.3 { // Low severity
 		t.Errorf("Expected impact 0.3 for Low severity, got %f", alas2607.Impact)
@@ -130,17 +120,7 @@ func TestMatchesConvertedToRequirements(t *testing.T) {
 	}
 
 	// Check a High severity match: CVE-2024-7592 (python binary)
-	var cve7592 *hdf.EvaluatedRequirement
-	for i := range requirements {
-		if requirements[i].ID == "Grype/CVE-2024-7592" {
-			cve7592 = &requirements[i]
-			break
-		}
-	}
-
-	if cve7592 == nil {
-		t.Fatal("Expected requirement 'Grype/CVE-2024-7592' not found")
-	}
+	cve7592 := shared.MustFindRequirement(t, requirements, "Grype/CVE-2024-7592")
 
 	if cve7592.Impact != 0.7 { // High severity
 		t.Errorf("Expected impact 0.7 for High severity, got %f", cve7592.Impact)
@@ -172,17 +152,7 @@ func TestIgnoredMatches(t *testing.T) {
 	}
 
 	requirements := hdfResults.Baselines[0].Requirements
-	var ignored *hdf.EvaluatedRequirement
-	for i := range requirements {
-		if requirements[i].ID == "Grype-Ignored-Match/CVE-2024-0001" {
-			ignored = &requirements[i]
-			break
-		}
-	}
-
-	if ignored == nil {
-		t.Fatal("Expected ignored requirement 'Grype-Ignored-Match/CVE-2024-0001' not found")
-	}
+	ignored := shared.MustFindRequirement(t, requirements, "Grype-Ignored-Match/CVE-2024-0001")
 
 	if ignored.Results[0].Status != hdf.NotReviewed {
 		t.Errorf("Expected status 'notReviewed', got '%s'", ignored.Results[0].Status)

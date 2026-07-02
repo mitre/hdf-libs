@@ -4,18 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
-
-// Helper: find a requirement by ID
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
 
 // TestStructuredCvss verifies Grype's vulnerability.cvss[] array is mapped to
 // the schema-defined []Cvss field on EvaluatedRequirement, one entry per
@@ -28,10 +19,7 @@ func TestStructuredCvss_SingleEntry(t *testing.T) {
 		t.Fatalf("Conversion failed: %v", err)
 	}
 
-	req := findRequirement(result.Baselines[0].Requirements, "Grype/CVE-2024-7592")
-	if req == nil {
-		t.Fatal("Expected requirement Grype/CVE-2024-7592 not found")
-	}
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "Grype/CVE-2024-7592")
 
 	if len(req.Cvss) != 1 {
 		t.Fatalf("Expected 1 Cvss entry, got %d", len(req.Cvss))
@@ -66,10 +54,7 @@ func TestStructuredCvss_EmptyArrayProducesNoEntries(t *testing.T) {
 		t.Fatalf("Conversion failed: %v", err)
 	}
 
-	req := findRequirement(result.Baselines[0].Requirements, "Grype/ALAS-2024-2607")
-	if req == nil {
-		t.Fatal("Expected requirement Grype/ALAS-2024-2607 not found")
-	}
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "Grype/ALAS-2024-2607")
 
 	if len(req.Cvss) != 0 {
 		t.Errorf("Expected 0 Cvss entries (vulnerability.cvss is empty), got %d", len(req.Cvss))
@@ -85,10 +70,7 @@ func TestAffectedPackages_FromArtifact(t *testing.T) {
 		t.Fatalf("Conversion failed: %v", err)
 	}
 
-	req := findRequirement(result.Baselines[0].Requirements, "Grype/ALAS-2024-2607")
-	if req == nil {
-		t.Fatal("Expected requirement Grype/ALAS-2024-2607 not found")
-	}
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "Grype/ALAS-2024-2607")
 
 	if len(req.AffectedPackages) != 1 {
 		t.Fatalf("Expected 1 AffectedPackage, got %d", len(req.AffectedPackages))
@@ -124,10 +106,7 @@ func TestAffectedPackages_NoFixWhenStateUnknown(t *testing.T) {
 		t.Fatalf("Conversion failed: %v", err)
 	}
 
-	req := findRequirement(result.Baselines[0].Requirements, "Grype/CVE-2024-7592")
-	if req == nil {
-		t.Fatal("Expected requirement Grype/CVE-2024-7592 not found")
-	}
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "Grype/CVE-2024-7592")
 
 	if len(req.AffectedPackages) != 1 {
 		t.Fatalf("Expected 1 AffectedPackage, got %d", len(req.AffectedPackages))
@@ -259,10 +238,7 @@ func TestCweField_ParsedFromVulnerabilityCwe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
-	req := findRequirement(result.Baselines[0].Requirements, "Grype/CVE-2024-9999")
-	if req == nil {
-		t.Fatal("Expected requirement Grype/CVE-2024-9999 not found")
-	}
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "Grype/CVE-2024-9999")
 	if len(req.Cwe) != 2 {
 		t.Fatalf("Expected 2 valid CWE entries, got %d: %v", len(req.Cwe), req.Cwe)
 	}
@@ -294,10 +270,7 @@ func TestEpss_PopulatedWhenPresent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
-	req := findRequirement(result.Baselines[0].Requirements, "Grype/CVE-2024-1111")
-	if req == nil {
-		t.Fatal("Expected requirement Grype/CVE-2024-1111 not found")
-	}
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "Grype/CVE-2024-1111")
 	if req.Epss == nil {
 		t.Fatal("Expected Epss to be populated")
 	}
@@ -337,10 +310,7 @@ func TestKev_PopulatedWhenPresent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
-	req := findRequirement(result.Baselines[0].Requirements, "Grype/CVE-2024-2222")
-	if req == nil {
-		t.Fatal("Expected requirement Grype/CVE-2024-2222 not found")
-	}
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "Grype/CVE-2024-2222")
 	if req.Kev == nil {
 		t.Fatal("Expected Kev to be populated")
 	}
@@ -389,10 +359,7 @@ func TestAffectedPackages_NoCpesArray(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
-	req := findRequirement(result.Baselines[0].Requirements, "Grype/CVE-2024-3333")
-	if req == nil {
-		t.Fatal("requirement not found")
-	}
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "Grype/CVE-2024-3333")
 	if len(req.AffectedPackages) != 1 {
 		t.Fatalf("Expected 1 AffectedPackage, got %d", len(req.AffectedPackages))
 	}
