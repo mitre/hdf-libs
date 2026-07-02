@@ -630,7 +630,7 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.3.0",
       "title": "HDF Component Primitives",
-      "description": "First-class system component with identity, polymorphic type, SBOM embedding, and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and software inventory.",
+      "description": "First-class system component with identity, polymorphic type, generalized BOM attachment (boms[]), and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and manifest inventory (SBOM, AI model/dataset, and reserved future BOM kinds).",
       "$defs": {
         "Base_Component": {
           "type": "object",
@@ -654,9 +654,11 @@
                 "application",
                 "artifact",
                 "network",
-                "database"
+                "database",
+                "aiModel",
+                "dataset"
               ],
-              "description": "Component type discriminator. Same values as Target types."
+              "description": "Component type discriminator. Same values as Target types, plus aiModel and dataset (thin AI subject components whose detail lives in an attached ai-model / dataset BOM)."
             },
             "name": {
               "type": "string",
@@ -689,23 +691,19 @@
               },
               "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
             },
-            "sbom": {
-              "description": "Embedded CycloneDX or SPDX SBOM document representing this component's software inventory. The sbomFormat field determines which format constraints apply.",
-              "$comment": "Validated conditionally: CycloneDX requires bomFormat='CycloneDX' + specVersion; SPDX requires spdxVersion + SPDXID. Full SBOM schema validation is a tool-level concern."
+            "boms": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.3.0#/$defs/Bom"
+              },
+              "description": "Component-scoped Bills of Materials (SBOM, ai-model, dataset, or any reserved bomType), each carried by passthrough (ref/document) or normalized. Replaces the former sbom/sbomRef/sbomFormat trio; a component may carry several BOMs (e.g. an SBOM plus an ai-model BOM). See primitives/bom.schema.json."
             },
-            "sbomRef": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "URI reference to an external CycloneDX or SPDX SBOM document for this component. May be a relative path, absolute URI, or fragment identifier."
-            },
-            "sbomFormat": {
-              "type": "string",
-              "title": "SBOM Format",
-              "enum": [
-                "cyclonedx",
-                "spdx"
-              ],
-              "description": "Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present."
+            "integrity": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Checksum"
+              },
+              "description": "Cryptographic integrity of this component's underlying artifact — model weights or shards, dataset archive, container image, or package bytes. An array supports multi-file/sharded artifacts. This is the single, generic home for artifact/subject integrity across all component types (it replaced the former per-type Container_Image digest and Artifact checksum fields). Distinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence Integrity type."
             },
             "baselineRefs": {
               "type": "array",
@@ -726,106 +724,33 @@
               "description": "Label selector to match targets belonging to this component during migration. Targets with matching labels are automatically included."
             }
           },
-          "allOf": [
+          "examples": [
             {
-              "if": {
-                "allOf": [
-                  {
-                    "properties": {
-                      "sbomFormat": {
-                        "const": "cyclonedx"
-                      }
-                    },
-                    "required": [
-                      "sbomFormat"
-                    ]
-                  },
-                  {
-                    "properties": {
-                      "sbom": {
-                        "type": "object"
-                      }
-                    },
-                    "required": [
-                      "sbom"
-                    ]
-                  }
-                ]
+              "type": "aiModel",
+              "name": "Llama-2-7b-chat (finetuned)",
+              "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+              "owner": {
+                "type": "email",
+                "identifier": "ml-platform@agency.gov"
               },
-              "then": {
-                "properties": {
-                  "sbom": {
-                    "type": "object",
-                    "required": [
-                      "bomFormat",
-                      "specVersion"
-                    ],
-                    "properties": {
-                      "bomFormat": {
-                        "type": "string",
-                        "const": "CycloneDX",
-                        "description": "Must be 'CycloneDX' for CycloneDX SBOM documents."
-                      },
-                      "specVersion": {
-                        "type": "string",
-                        "description": "CycloneDX specification version (e.g., '1.4', '1.5', '1.6')."
-                      }
-                    },
-                    "additionalProperties": true
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
+                }
+              ],
+              "boms": [
+                {
+                  "bomType": "ai-model",
+                  "format": "cyclonedx-ml",
+                  "model": {
+                    "adaptationType": "finetune"
                   }
                 }
-              }
-            },
-            {
-              "if": {
-                "allOf": [
-                  {
-                    "properties": {
-                      "sbomFormat": {
-                        "const": "spdx"
-                      }
-                    },
-                    "required": [
-                      "sbomFormat"
-                    ]
-                  },
-                  {
-                    "properties": {
-                      "sbom": {
-                        "type": "object"
-                      }
-                    },
-                    "required": [
-                      "sbom"
-                    ]
-                  }
-                ]
-              },
-              "then": {
-                "properties": {
-                  "sbom": {
-                    "type": "object",
-                    "required": [
-                      "spdxVersion",
-                      "SPDXID"
-                    ],
-                    "properties": {
-                      "spdxVersion": {
-                        "type": "string",
-                        "description": "SPDX specification version (e.g., 'SPDX-2.3')."
-                      },
-                      "SPDXID": {
-                        "type": "string",
-                        "description": "SPDX document identifier (e.g., 'SPDXRef-DOCUMENT')."
-                      }
-                    },
-                    "additionalProperties": true
-                  }
-                }
-              }
+              ]
             }
           ],
-          "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, and SBOM embedding.",
+          "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, generalized BOM attachment (boms[]), and unified artifact integrity (integrity[]).",
           "title": "Base Component"
         },
         "Component": {
@@ -864,6 +789,12 @@
             },
             {
               "$ref": "#/$defs/Database_Component"
+            },
+            {
+              "$ref": "#/$defs/AI_Model_Component"
+            },
+            {
+              "$ref": "#/$defs/Dataset_Component"
             }
           ]
         },
@@ -956,16 +887,26 @@
                 "tag": {
                   "type": "string",
                   "description": "Image tag. Example: '1.25'."
-                },
-                "digest": {
-                  "type": "string",
-                  "pattern": "^(sha256:[a-f0-9]{64}|sha512:[a-f0-9]{128}|blake3:[a-f0-9]{64})$",
-                  "description": "Image digest for immutable reference."
                 }
               }
             }
           ],
-          "description": "A static container image (not running).",
+          "examples": [
+            {
+              "type": "containerImage",
+              "name": "nginx",
+              "registry": "docker.io",
+              "repository": "library/nginx",
+              "tag": "1.25-alpine",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d"
+                }
+              ]
+            }
+          ],
+          "description": "A static container image (not running). Image integrity — formerly the 'digest' field — is expressed via the shared Base_Component.integrity array.",
           "title": "Container Image Component"
         },
         "Container_Instance_Component": {
@@ -1188,15 +1129,26 @@
                 "version": {
                   "type": "string",
                   "description": "Package version."
-                },
-                "checksum": {
-                  "type": "string",
-                  "description": "Package checksum for verification."
                 }
               }
             }
           ],
-          "description": "A software artifact or dependency (for SCA tools).",
+          "examples": [
+            {
+              "type": "artifact",
+              "name": "express",
+              "packageManager": "npm",
+              "packageName": "express",
+              "version": "4.18.2",
+              "integrity": [
+                {
+                  "algorithm": "sha512",
+                  "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+                }
+              ]
+            }
+          ],
+          "description": "A software artifact or dependency (for SCA tools). Package integrity — formerly the 'checksum' field — is expressed via the shared Base_Component.integrity array.",
           "title": "Artifact Component"
         },
         "Network_Component": {
@@ -1258,6 +1210,114 @@
           ],
           "description": "A database instance.",
           "title": "Database Component"
+        },
+        "AI_Model_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "aiModel"
+                },
+                "modelId": {
+                  "type": "string",
+                  "description": "Provider/registry identifier for the model. Examples: a Hugging Face repo id ('meta-llama/Llama-2-7b-hf') or a model purl. Correlates the component to its ai-model BOM(s) and to lineage references from other models."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Model version, revision, or checkpoint tag."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "aiModel",
+              "name": "Llama-2-7b-chat (finetuned)",
+              "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+              "modelId": "acme/llama-2-7b-chat-support",
+              "version": "1.2.0",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
+                }
+              ],
+              "boms": [
+                {
+                  "bomType": "ai-model",
+                  "format": "cyclonedx-ml",
+                  "model": {
+                    "modelArchitecture": "transformer",
+                    "parameterCount": 6738415616,
+                    "serializationFormat": "safetensors",
+                    "adaptationType": "finetune",
+                    "baseModelRef": "meta-llama/Llama-2-7b-hf"
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "A thin AI-model component: identity and correlation only (parallel to Host_Component's fqdn/ip). All model detail — architecture, parameter count, serialization format, lineage — lives in an attached ai-model BOM (boms[]), never on the component itself.",
+          "title": "AI Model Component"
+        },
+        "Dataset_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "dataset"
+                },
+                "datasetId": {
+                  "type": "string",
+                  "description": "Provider/registry identifier for the dataset. Examples: a Hugging Face dataset repo id ('HuggingFaceH4/ultrachat_200k'), a DOI, or a dataset purl. Correlates the component to its dataset BOM(s) and to datasetRefs from ai-model components."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Dataset version, release identifier, or — for highly dynamic datasets — a timestamped release marker."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "dataset",
+              "name": "UltraChat-200k (filtered)",
+              "componentId": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+              "datasetId": "acme/ultrachat-200k-filtered",
+              "version": "2026-06-01",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+                }
+              ],
+              "boms": [
+                {
+                  "bomType": "dataset",
+                  "format": "croissant",
+                  "dataset": {
+                    "recordCount": 180000,
+                    "datasetFormat": "parquet",
+                    "dataClassification": "public",
+                    "baseDatasetRefs": [
+                      "HuggingFaceH4/ultrachat_200k"
+                    ],
+                    "derivation": "filtered"
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "A thin dataset component: identity and correlation only, symmetric with AI_Model_Component. All dataset detail — record count, format, classification, lineage — lives in an attached dataset BOM (boms[]), never on the component itself.",
+          "title": "Dataset Component"
         }
       }
     },
@@ -1272,9 +1332,10 @@
           "enum": [
             "sha256",
             "sha384",
-            "sha512"
+            "sha512",
+            "blake3"
           ],
-          "description": "Supported cryptographic hash algorithms for checksums and integrity verification.",
+          "description": "Supported cryptographic hash algorithms for checksums and integrity verification. blake3 covers container-image and other artifact digests that use it.",
           "title": "Hash Algorithm"
         },
         "Requirement_Group": {
@@ -2180,6 +2241,317 @@
           ],
           "description": "Cloud service provider identifier.",
           "title": "Cloud Provider"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.3.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.3.0",
+      "title": "HDF BOM Primitives",
+      "description": "Generalized Bill-of-Materials / manifest representation. One extensible Bom shape, discriminated by bomType, carries any manifest kind (SBOM, AI model/dataset, and reserved future kinds) either by passthrough (opaque ref/embed of the native document) or normalized (converted into HDF's queryable shape). Subject identity (name, version, componentId) is inherited from the host component or system — the BOM never re-owns it. See ADR-0001.",
+      "$defs": {
+        "Bom_Type": {
+          "type": "string",
+          "title": "BOM Type",
+          "enum": [
+            "sbom",
+            "ai-model",
+            "dataset",
+            "hbom",
+            "cbom",
+            "saasbom",
+            "obom",
+            "mbom",
+            "kbom"
+          ],
+          "description": "Discriminator for the manifest kind. Reserved, CycloneDX-aligned set: sbom (software), ai-model, dataset, hbom (hardware), cbom (cryptography), saasbom (services), obom (operations), mbom (manufacturing), kbom (Kubernetes). Normalized now: sbom, ai-model, dataset; reserved + passthrough-capable now, normalized in later releases: the rest. Adding a value is a schema version bump (rapid-iteration phase). VEX/VDR/SecurityProfile are vulnerability assertions, not BOMs, and are intentionally excluded."
+        },
+        "Bom": {
+          "type": "object",
+          "title": "Bill of Materials",
+          "additionalProperties": false,
+          "required": [
+            "bomType",
+            "format"
+          ],
+          "properties": {
+            "bomType": {
+              "$ref": "#/$defs/Bom_Type",
+              "description": "The manifest kind. Determines which normalized type-extension (model/dataset/packages) may appear."
+            },
+            "format": {
+              "type": "string",
+              "description": "Source manifest format the BOM was produced from or references. Examples: cyclonedx, cyclonedx-ml, spdx, spdx-ai, huggingface, croissant. Free-form so new formats need no schema change; the converter that emits the BOM owns the value."
+            },
+            "ref": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Passthrough by reference: URI (relative path, absolute URI, or fragment) to the native manifest document. Present for externally-hosted BOMs."
+            },
+            "document": {
+              "type": "object",
+              "description": "Passthrough by embedding: the native manifest carried opaquely (e.g. a raw CycloneDX or SPDX object). HDF does not constrain its internal shape — full manifest validation is a tool-level concern."
+            },
+            "hashes": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Checksum"
+              },
+              "description": "Integrity of the carried BOM *document* itself (the referenced/embedded manifest file), NOT the integrity of the BOM's subject artifact. Subject/artifact integrity (model weights, dataset archive) is a component-level concern, not carried here. Subject identity is inherited from the host component/system; per-node identity lives in the type-extension."
+            },
+            "uniqueId": {
+              "type": "string",
+              "description": "Optional stable identifier for this BOM document (e.g. CycloneDX serialNumber, SPDX documentNamespace). Correlates the same BOM across evidence packages."
+            },
+            "license": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional license of the BOM document as a whole (SPDX license expression). Nullable and often meaningless (CBOM algorithms, many HBOM parts have no license); per-node licenses live in the type-extension, not here."
+            },
+            "model": {
+              "$ref": "#/$defs/AI_Model_Extension",
+              "description": "Normalized ai-model extension. Permitted only when bomType is ai-model."
+            },
+            "dataset": {
+              "$ref": "#/$defs/Dataset_Extension",
+              "description": "Normalized dataset extension. Permitted only when bomType is dataset."
+            },
+            "packages": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SBOM_Package"
+              },
+              "description": "Normalized sbom extension: the flattened software package inventory. Permitted only when bomType is sbom."
+            }
+          },
+          "allOf": [
+            {
+              "$comment": "Three-tier discipline: the ai-model extension may appear only on an ai-model BOM.",
+              "if": {
+                "properties": {
+                  "bomType": {
+                    "const": "ai-model"
+                  }
+                },
+                "required": [
+                  "bomType"
+                ]
+              },
+              "else": {
+                "properties": {
+                  "model": false
+                }
+              }
+            },
+            {
+              "$comment": "The dataset extension may appear only on a dataset BOM.",
+              "if": {
+                "properties": {
+                  "bomType": {
+                    "const": "dataset"
+                  }
+                },
+                "required": [
+                  "bomType"
+                ]
+              },
+              "else": {
+                "properties": {
+                  "dataset": false
+                }
+              }
+            },
+            {
+              "$comment": "The normalized packages extension may appear only on an sbom BOM.",
+              "if": {
+                "properties": {
+                  "bomType": {
+                    "const": "sbom"
+                  }
+                },
+                "required": [
+                  "bomType"
+                ]
+              },
+              "else": {
+                "properties": {
+                  "packages": false
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "$comment": "Passthrough SBOM by external reference — the universal escape hatch, available to every bomType.",
+              "bomType": "sbom",
+              "format": "cyclonedx",
+              "ref": "https://artifacts.agency.gov/sbom/webtier.cdx.json",
+              "hashes": [
+                {
+                  "algorithm": "sha256",
+                  "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                }
+              ]
+            },
+            {
+              "$comment": "Passthrough for a reserved-but-not-yet-normalized type (cbom) — carried opaquely until a normalized extension ships.",
+              "bomType": "cbom",
+              "format": "cyclonedx",
+              "document": {
+                "bomFormat": "CycloneDX",
+                "specVersion": "1.6"
+              }
+            },
+            {
+              "$comment": "Normalized ai-model BOM: CISA/G7-aligned fields live in the model extension, never at the component root or shared base.",
+              "bomType": "ai-model",
+              "format": "cyclonedx-ml",
+              "model": {
+                "modelArchitecture": "transformer",
+                "parameterCount": 6738415616,
+                "serializationFormat": "safetensors",
+                "adaptationType": "finetune",
+                "baseModelRef": "meta-llama/Llama-2-7b-hf"
+              }
+            },
+            {
+              "$comment": "Normalized dataset BOM with lineage — a filtered derivative of a base dataset, referenced by an ai-model via datasetRefs.",
+              "bomType": "dataset",
+              "format": "croissant",
+              "dataset": {
+                "recordCount": 2500000,
+                "datasetFormat": "parquet",
+                "dataClassification": "public",
+                "intendedUse": "instruction fine-tuning",
+                "baseDatasetRefs": [
+                  "HuggingFaceH4/ultrachat_200k"
+                ],
+                "derivation": "filtered"
+              }
+            }
+          ]
+        },
+        "AI_Model_Extension": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Normalized AI-model fields, aligned to the CISA/G7 'SBOM for AI' minimum elements. All fields optional (standards-correct; only the EU AI Act makes a subset binding for high-risk/GPAI). Left open (additionalProperties: true) so a converter can carry unmapped native fields opaquely (partial-fidelity pattern). Subject name/version are inherited from the host aiModel component, not repeated here.",
+          "title": "AI Model BOM Extension",
+          "properties": {
+            "modelArchitecture": {
+              "type": "string",
+              "description": "Model architecture family. Examples: transformer, cnn, diffusion, mixture-of-experts."
+            },
+            "parameterCount": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Total trainable parameter count. No native CycloneDX/SPDX field exists; first-class here because the EU AI Act keys GPAI obligations off model scale."
+            },
+            "serializationFormat": {
+              "type": "string",
+              "description": "On-disk weight serialization format. Security-critical yet under-modeled by BOM specs: pickle/pytorch permits arbitrary code execution on load; safetensors does not. Examples: safetensors, pytorch, gguf, onnx, tensorflow."
+            },
+            "adaptationType": {
+              "type": "string",
+              "title": "Model Adaptation Type",
+              "enum": [
+                "finetune",
+                "adapter",
+                "quantized",
+                "merge"
+              ],
+              "description": "Lineage relationship to baseModelRef, adopting Hugging Face's base_model_relation vocabulary (the only typed lineage enum in the ecosystem)."
+            },
+            "baseModelRef": {
+              "type": "string",
+              "description": "Reference to the base model this one was adapted from (e.g. a Hugging Face repo id or purl). Correlates the lineage edge; the base model itself may carry its own ai-model BOM."
+            },
+            "datasetRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "References to the training/evaluation datasets this model was produced from — preferably a dataset component's componentId (correlating to a first-class dataset subject rather than duplicating dataset detail, per ADR §10), or a dataset BOM uniqueId/URI when no component exists."
+            },
+            "intendedUse": {
+              "type": "string",
+              "description": "Free-text statement of intended use and out-of-scope uses (CISA/G7 minimum element)."
+            }
+          }
+        },
+        "Dataset_Extension": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Normalized dataset fields (SPDX 3.0 Dataset profile / MLCommons Croissant aligned). All optional; open for partial-fidelity passthrough of unmapped native fields. Symmetric with AI_Model_Extension: carries the dataset's own lineage (baseDatasetRefs/derivation) just as the model extension carries baseModelRef/adaptationType.",
+          "title": "Dataset BOM Extension",
+          "properties": {
+            "recordCount": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of records/examples in the dataset."
+            },
+            "datasetFormat": {
+              "type": "string",
+              "description": "Physical format of the dataset. Examples: parquet, csv, jsonl, tfrecord, webdataset."
+            },
+            "dataClassification": {
+              "type": "string",
+              "description": "Sensitivity/classification of the data. Examples: public, internal, confidential, pii, phi."
+            },
+            "intendedUse": {
+              "type": "string",
+              "description": "Free-text statement of the dataset's intended use (CISA/G7 minimum element)."
+            },
+            "baseDatasetRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "References to the source dataset(s) this one was derived from — a dataset componentId, or a dataset BOM uniqueId/URI when no component exists. The lineage edge parallel to ai-model's baseModelRef; the base dataset may carry its own dataset BOM."
+            },
+            "derivation": {
+              "type": "string",
+              "title": "Dataset Derivation Type",
+              "enum": [
+                "filtered",
+                "augmented",
+                "merged",
+                "sampled"
+              ],
+              "description": "Relationship of this dataset to baseDatasetRefs, parallel to the model extension's adaptationType. Minimal + extensible: filtered (subset by rule), augmented (added/synthesized records), merged (union of sources), sampled (statistical draw)."
+            }
+          }
+        },
+        "SBOM_Package": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "A single normalized software package entry within an sbom BOM. Minimal identity + version for querying/diffing; the full native record remains available via passthrough (document/ref).",
+          "title": "SBOM Package",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Package name."
+            },
+            "version": {
+              "type": "string",
+              "description": "Package version."
+            },
+            "purl": {
+              "type": "string",
+              "description": "Package URL (purl) — the preferred cross-BOM identity key when present."
+            },
+            "licenses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "SPDX license identifiers/expressions for this package."
+            }
+          }
         }
       }
     },

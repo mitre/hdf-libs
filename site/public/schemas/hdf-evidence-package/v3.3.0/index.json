@@ -88,9 +88,9 @@
         "hdf-results",
         "hdf-amendments",
         "hdf-comparison",
-        "sbom"
+        "bom"
       ],
-      "description": "The type of document referenced in the evidence package.",
+      "description": "The type of document referenced in the evidence package. 'bom' covers any Bill-of-Materials/manifest document (SBOM, AI model/dataset, and reserved future kinds) — its specific kind is carried by the referenced document's bomType, not by a per-kind Content_Type value.",
       "title": "Content Type"
     },
     "Content_Reference": {
@@ -143,12 +143,12 @@
           "description": "March 2026 monthly scan results"
         },
         {
-          "type": "sbom",
+          "type": "bom",
           "uri": "https://artifacts.agency.gov/sbom/webtier.cdx.json",
-          "description": "WebTier CycloneDX SBOM"
+          "description": "WebTier CycloneDX SBOM (bomType=sbom)"
         }
       ],
-      "description": "A reference to an HDF document or SBOM included in the evidence package.",
+      "description": "A reference to an HDF document or BOM/manifest included in the evidence package.",
       "title": "Content Reference"
     },
     "SBOM_Coverage": {
@@ -216,9 +216,10 @@
           "enum": [
             "sha256",
             "sha384",
-            "sha512"
+            "sha512",
+            "blake3"
           ],
-          "description": "Supported cryptographic hash algorithms for checksums and integrity verification.",
+          "description": "Supported cryptographic hash algorithms for checksums and integrity verification. blake3 covers container-image and other artifact digests that use it.",
           "title": "Hash Algorithm"
         },
         "Requirement_Group": {
