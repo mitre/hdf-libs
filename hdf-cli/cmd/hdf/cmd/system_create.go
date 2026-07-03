@@ -193,12 +193,12 @@ func runSystemCreate(opts systemCreateOpts) error {
 		if detected := bom.DetectFormat(doc); detected != nil && detected.Format == bom.FormatCycloneDXML {
 			return runSystemCreateFromAIModelBOM(data, doc, opts)
 		}
-		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, sbomFormatCycloneDX, opts)
+		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, bomFormatCycloneDX, opts)
 	}
 
 	// Check for SPDX (has spdxVersion field)
 	if _, ok := doc["spdxVersion"]; ok {
-		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, sbomFormatSPDX, opts)
+		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, bomFormatSPDX, opts)
 	}
 
 	// SPDX 3.0 AI/Dataset (JSON-LD) has no top-level spdxVersion, so it must be
@@ -280,12 +280,12 @@ func runSystemCreateFromSBOMRef(sbomURI, systemName, componentName, outputPath s
 	}
 
 	// Guess format from URL extension; format is schema-required on the BOM entry.
-	sbomFormat := ensureSBOMFormat(guessFormatFromURI(sbomURI), sbomURI)
+	bomFormat := ensureBOMFormat(guessFormatFromURI(sbomURI))
 
 	comp := map[string]interface{}{
 		"name": componentName,
 		"type": compTypeApplication,
-		"boms": []map[string]interface{}{newSBOMBom(sbomFormat, sbomURI, nil)},
+		"boms": []map[string]interface{}{newSBOMBom(bomFormat, sbomURI, nil)},
 	}
 
 	fmt.Fprintf(os.Stderr, "Created component %q from URI (type: %s)\n", componentName, compTypeApplication)
@@ -310,27 +310,28 @@ func newSBOMBom(format, ref string, document map[string]interface{}) map[string]
 	return bom
 }
 
-// ensureSBOMFormat guarantees a non-empty format (schema-required on the BOM
+// ensureBOMFormat guarantees a non-empty format (schema-required on the BOM
 // entry). When the format can't be guessed, it falls back to the ref's file
 // extension, and finally to cyclonedx as this tooling's predominant format.
-func ensureSBOMFormat(format, ref string) string {
+// ensureBOMFormat guarantees a non-empty format (schema-required on the BOM
+// entry). When the format can't be identified, it falls back to the ecosystem's
+// predominant format rather than a file extension — a generic ".json" extension
+// is not a BOM format and would leak a bogus value into the emitted document.
+func ensureBOMFormat(format string) string {
 	if format != "" {
 		return format
 	}
-	if ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(ref)), "."); ext != "" {
-		return ext
-	}
-	return sbomFormatCycloneDX
+	return bomFormatCycloneDX
 }
 
 // guessFormatFromURI attempts to determine SBOM format from the URI extension.
 func guessFormatFromURI(uri string) string {
 	lower := strings.ToLower(uri)
 	if strings.Contains(lower, ".cdx.") || strings.Contains(lower, "cyclonedx") {
-		return sbomFormatCycloneDX
+		return bomFormatCycloneDX
 	}
 	if strings.Contains(lower, ".spdx.") || strings.Contains(lower, "spdx") {
-		return sbomFormatSPDX
+		return bomFormatSPDX
 	}
 	return ""
 }
@@ -371,10 +372,10 @@ func runSystemCreateFromResults(results map[string]interface{}, systemName, outp
 	return writeSystemDoc(systemName, components, outputPath, opts)
 }
 
-func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, componentName, outputPath, sbomFormat string, opts systemCreateOpts) error {
+func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, componentName, outputPath, bomFormat string, opts systemCreateOpts) error {
 	// Extract component metadata from SBOM
 	if componentName == "" {
-		componentName = extractSBOMComponentName(doc, sbomFormat)
+		componentName = extractSBOMComponentName(doc, bomFormat)
 	}
 	if componentName == "" {
 		return fmt.Errorf("cannot determine component name from SBOM; use --component-name to specify")
@@ -385,7 +386,7 @@ func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, c
 	}
 
 	// Detect component type from SBOM metadata
-	compType := extractSBOMComponentType(doc, sbomFormat)
+	compType := extractSBOMComponentType(doc, bomFormat)
 
 	ref := filepath.ToSlash(filePath) // schema requires uri-reference; Windows backslashes are invalid
 	var embedDoc map[string]interface{}
@@ -396,15 +397,15 @@ func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, c
 	comp := map[string]interface{}{
 		"name": componentName,
 		"type": compType,
-		"boms": []map[string]interface{}{newSBOMBom(sbomFormat, ref, embedDoc)},
+		"boms": []map[string]interface{}{newSBOMBom(bomFormat, ref, embedDoc)},
 	}
 
 	// Extract version if available
-	if ver := extractSBOMComponentVersion(doc, sbomFormat); ver != "" {
+	if ver := extractSBOMComponentVersion(doc, bomFormat); ver != "" {
 		comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
 	}
 
-	fmt.Fprintf(os.Stderr, "Imported %s SBOM as component %q (type: %s)\n", sbomFormat, componentName, compType)
+	fmt.Fprintf(os.Stderr, "Imported %s SBOM as component %q (type: %s)\n", bomFormat, componentName, compType)
 	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath, opts)
 }
 
@@ -523,7 +524,7 @@ func extractMLModelVersion(doc map[string]interface{}) string {
 // extractSBOMComponentName gets the top-level component name from a CycloneDX or SPDX SBOM.
 func extractSBOMComponentName(doc map[string]interface{}, format string) string {
 	switch format {
-	case sbomFormatCycloneDX:
+	case bomFormatCycloneDX:
 		if meta, ok := doc["metadata"].(map[string]interface{}); ok {
 			if comp, ok := meta["component"].(map[string]interface{}); ok {
 				if name, ok := comp["name"].(string); ok {
@@ -531,7 +532,7 @@ func extractSBOMComponentName(doc map[string]interface{}, format string) string 
 				}
 			}
 		}
-	case sbomFormatSPDX:
+	case bomFormatSPDX:
 		if name, ok := doc["name"].(string); ok {
 			return name
 		}
@@ -543,7 +544,7 @@ func extractSBOMComponentName(doc map[string]interface{}, format string) string 
 // (the closed 11-value enum). CycloneDX uses a different vocabulary than
 // HDF, so we map across.
 func extractSBOMComponentType(doc map[string]interface{}, format string) string {
-	if format == sbomFormatCycloneDX {
+	if format == bomFormatCycloneDX {
 		if meta, ok := doc["metadata"].(map[string]interface{}); ok {
 			if comp, ok := meta["component"].(map[string]interface{}); ok {
 				switch comp["type"] {
@@ -562,7 +563,7 @@ func extractSBOMComponentType(doc map[string]interface{}, format string) string 
 
 // extractSBOMComponentVersion gets the version from SBOM metadata.
 func extractSBOMComponentVersion(doc map[string]interface{}, format string) string {
-	if format == sbomFormatCycloneDX {
+	if format == bomFormatCycloneDX {
 		if meta, ok := doc["metadata"].(map[string]interface{}); ok {
 			if comp, ok := meta["component"].(map[string]interface{}); ok {
 				if ver, ok := comp["version"].(string); ok {

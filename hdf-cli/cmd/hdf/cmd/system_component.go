@@ -105,27 +105,27 @@ func runSystemAddComponent(systemFile, fromFile, fromFormat, componentName, outp
 	}
 
 	// Load and parse SBOM (or handle URL)
-	sbomDoc, sbomFormat, err := loadSBOM(fromFile)
+	bomDoc, bomFormat, err := loadBOM(fromFile)
 	if err != nil {
 		return err
 	}
 
 	// When --from asserts a format, the detected format must match.
-	if sbomDoc != nil {
-		if err := assertBomFormat(fromFormat, sbomDoc); err != nil {
+	if bomDoc != nil {
+		if err := assertBomFormat(fromFormat, bomDoc); err != nil {
 			return err
 		}
 	} else if err := errFormatAssertionOnURL(fromFormat); err != nil {
 		return err
 	}
-	if err := rejectAIBOMComponentInput("add-component", sbomDoc); err != nil {
+	if err := rejectAIBOMComponentInput("add-component", bomDoc); err != nil {
 		return err
 	}
 
 	// Extract component name
 	if componentName == "" {
-		if sbomDoc != nil {
-			componentName = extractSBOMComponentName(sbomDoc, sbomFormat)
+		if bomDoc != nil {
+			componentName = extractSBOMComponentName(bomDoc, bomFormat)
 		}
 	}
 	if componentName == "" {
@@ -144,8 +144,8 @@ func runSystemAddComponent(systemFile, fromFile, fromFormat, componentName, outp
 
 	// Build new component
 	compType := compTypeApplication
-	if sbomDoc != nil {
-		compType = extractSBOMComponentType(sbomDoc, sbomFormat)
+	if bomDoc != nil {
+		compType = extractSBOMComponentType(bomDoc, bomFormat)
 	}
 	ref := filepath.ToSlash(fromFile) // schema requires uri-reference; Windows backslashes are invalid
 	comp := map[string]interface{}{
@@ -153,15 +153,15 @@ func runSystemAddComponent(systemFile, fromFile, fromFormat, componentName, outp
 		"type": compType,
 	}
 	var embedDoc map[string]interface{}
-	if sbomDoc != nil {
-		if ver := extractSBOMComponentVersion(sbomDoc, sbomFormat); ver != "" {
+	if bomDoc != nil {
+		if ver := extractSBOMComponentVersion(bomDoc, bomFormat); ver != "" {
 			comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
 		}
 		if embed {
-			embedDoc = sbomDoc
+			embedDoc = bomDoc
 		}
 	}
-	comp["boms"] = []map[string]interface{}{newSBOMBom(ensureSBOMFormat(sbomFormat, ref), ref, embedDoc)}
+	comp["boms"] = []map[string]interface{}{newSBOMBom(ensureBOMFormat(bomFormat), ref, embedDoc)}
 
 	// Stamp componentId if requested
 	if generateComponentID {
@@ -191,20 +191,20 @@ func runSystemUpdateComponent(systemFile, fromFile, fromFormat, componentName, o
 	}
 
 	// Load and parse SBOM (or handle URL)
-	sbomDoc, sbomFormat, err := loadSBOM(fromFile)
+	bomDoc, bomFormat, err := loadBOM(fromFile)
 	if err != nil {
 		return err
 	}
 
 	// When --from asserts a format, the detected format must match.
-	if sbomDoc != nil {
-		if err := assertBomFormat(fromFormat, sbomDoc); err != nil {
+	if bomDoc != nil {
+		if err := assertBomFormat(fromFormat, bomDoc); err != nil {
 			return err
 		}
 	} else if err := errFormatAssertionOnURL(fromFormat); err != nil {
 		return err
 	}
-	if err := rejectAIBOMComponentInput("update-component", sbomDoc); err != nil {
+	if err := rejectAIBOMComponentInput("update-component", bomDoc); err != nil {
 		return err
 	}
 
@@ -219,15 +219,15 @@ func runSystemUpdateComponent(systemFile, fromFile, fromFormat, componentName, o
 		if comp["name"] == componentName {
 			ref := filepath.ToSlash(fromFile) // schema requires uri-reference
 			var embedDoc map[string]interface{}
-			if sbomDoc != nil {
-				if ver := extractSBOMComponentVersion(sbomDoc, sbomFormat); ver != "" {
+			if bomDoc != nil {
+				if ver := extractSBOMComponentVersion(bomDoc, bomFormat); ver != "" {
 					comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
 				}
 				if embed {
-					embedDoc = sbomDoc
+					embedDoc = bomDoc
 				}
 			}
-			comp["boms"] = []map[string]interface{}{newSBOMBom(ensureSBOMFormat(sbomFormat, ref), ref, embedDoc)}
+			comp["boms"] = []map[string]interface{}{newSBOMBom(ensureBOMFormat(bomFormat), ref, embedDoc)}
 			components[i] = comp
 			found = true
 			break
@@ -248,16 +248,16 @@ func runSystemUpdateComponent(systemFile, fromFile, fromFormat, componentName, o
 }
 
 const (
-	sbomFormatCycloneDX = "cyclonedx"
-	sbomFormatSPDX      = "spdx"
+	bomFormatCycloneDX  = "cyclonedx"
+	bomFormatSPDX       = "spdx"
 	compTypeApplication = "application"
 	compTypeAIModel     = "aiModel"
 	compTypeDataset     = "dataset"
 )
 
-// loadSBOM reads and parses an SBOM file, or returns nil doc with a guessed
+// loadBOM reads and parses an SBOM file, or returns nil doc with a guessed
 // format if the input is a URL. Returns (doc, format, error).
-func loadSBOM(fromRef string) (map[string]interface{}, string, error) {
+func loadBOM(fromRef string) (map[string]interface{}, string, error) {
 	if isURL(fromRef) {
 		return nil, guessFormatFromURI(fromRef), nil
 	}
@@ -271,7 +271,7 @@ func loadSBOM(fromRef string) (map[string]interface{}, string, error) {
 		return nil, "", fmt.Errorf("failed to parse SBOM file: %w", err)
 	}
 
-	format := detectSBOMFormat(doc)
+	format := detectBOMFormat(doc)
 	if format == "" {
 		return nil, "", fmt.Errorf("input is not a recognized CycloneDX or SPDX SBOM")
 	}
@@ -279,9 +279,9 @@ func loadSBOM(fromRef string) (map[string]interface{}, string, error) {
 	return doc, format, nil
 }
 
-// detectSBOMFormat returns the structurally-detected BOM format
+// detectBOMFormat returns the structurally-detected BOM format
 // (cyclonedx, spdx, cyclonedx-ml, spdx-3-ai) or "" for unrecognized input.
-func detectSBOMFormat(doc map[string]interface{}) string {
+func detectBOMFormat(doc map[string]interface{}) string {
 	if detected := bom.DetectFormat(doc); detected != nil {
 		return detected.Format
 	}
