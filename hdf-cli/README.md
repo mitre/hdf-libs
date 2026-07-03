@@ -10,11 +10,16 @@ HDF (Heimdall Data Format) is a standardized JSON format for security assessment
 - [Terminology](#terminology)
 - [Commands](#commands)
   - [validate](#validate) -- Validate an HDF file against the schema
-  - [info](#info) -- Display summary information
-  - [stats](#stats) -- Display assessment statistics
-  - [list](#list) -- List controls, profiles, or targets
-  - [query](#query) -- Search and filter controls
+  - [list](#list) -- Summarize a document, or list items with `--detail`
+  - [query](#query) -- Search and filter requirements
+  - [diff](#diff) -- Compare two HDF documents
   - [convert](#convert) -- Convert between formats
+  - [system](#system) -- View and manage HDF system documents
+  - [plan](#plan) -- View and manage HDF assessment plans
+  - [amend](#amend) -- Apply, list, and verify amendments (waivers/attestations)
+  - [evidence](#evidence) -- Build and inspect evidence packages
+  - [label](#label) -- Add, remove, or show labels on components
+  - [generate](#generate) -- Generate InSpec profiles, thresholds, and baseline upgrades
   - [fetch](#fetch) -- Fetch from live APIs
     - [fetch aws-config](#fetch-aws-config) -- AWS Config compliance data
     - [fetch gitlab](#fetch-gitlab) -- GitLab CI/CD security artifacts
@@ -101,54 +106,61 @@ EXAMPLES
   curl -s https://example.com/scan.json | hdf validate
 ```
 
-### info
+Example output:
 
-Display summary information about an HDF results file: generator tool/version, platform, profile names, target info, and assessment timestamp.
+```console
+$ hdf validate results.json
+✓ results.json is a valid HDF results file
 
-```
-USAGE
-  hdf info <file> [flags]
-
-EXAMPLES
-  hdf info results.json
-  hdf info results.json --json
-```
-
-### stats
-
-Display pass/fail/error/not-reviewed/not-applicable statistics from an HDF results file.
-
-```
-USAGE
-  hdf stats <file> [flags]
-
-EXAMPLES
-  hdf stats results.json
-  hdf stats results.json --json
+$ echo '{"not":"hdf"}' | hdf validate -
+✗ <stdin> — input not recognized as any HDF document type
+  Use --type to specify: results, baseline, comparison, system, plan, amendments, evidence-package
 ```
 
 ### list
 
-List controls, profiles, or targets from an HDF results file.
+Summarize any HDF document, or expand a section to item-level detail with `--detail`. The default summary reports document counts and, for results, the status breakdown — this replaces the former `info` and `stats` commands.
 
 ```
 USAGE
-  hdf list <what> <file> [flags]
+  hdf list <file> [file...] [--detail <section>] [flags]
 
-LIST TYPES
-  controls (aliases: control, c)
-  profiles (aliases: profile, p)
-  targets  (aliases: target, t)
+DETAIL SECTIONS (aliases)
+  requirements (r)   baselines (b)   components (t)   overrides
 
 FLAGS
-  -s, --status string    Filter by status: passed, failed, error, not_applicable, not_reviewed
-  -a, --all              Show all details
+  -s, --status string    Filter requirements by status: passed, failed, error, not_applicable, not_reviewed
 
 EXAMPLES
-  hdf list controls results.json
-  hdf list controls results.json --status failed
-  hdf list profiles results.json
-  hdf list targets results.json --json
+  hdf list results.json                              # summary (counts + status breakdown)
+  hdf list results.json --detail requirements        # list individual requirements
+  hdf list results.json --detail requirements -s failed
+  hdf list system.json --detail components           # list system components
+  hdf list amendments.json --detail overrides        # list waivers/attestations
+  hdf list results.json --json
+```
+
+Example output:
+
+```console
+$ hdf list results.json
+Baselines:    5
+Requirements: 1603
+Components:   0
+
+  ✓ passed          134
+  ✗ failed          273
+  ? not_reviewed    1196
+
+$ hdf list results.json --detail requirements -s failed
+Requirements: 273
+
+ID         Status  Title
+---------  ------  ------------------------------------------------------------
+SV-257777  failed  RHEL 9 must be a vendor-supported release.
+V-242387   failed  The Kubernetes Kubelet must have the read-only port flag ...
+V-242391   failed  The Kubernetes Kubelet must have anonymous authentication...
+V-242392   failed  The Kubernetes kubelet must enable explicit authorization.
 ```
 
 ### query
@@ -185,6 +197,62 @@ EXAMPLES
   hdf query results.json --limit 20 --status failed
 ```
 
+Example output:
+
+```console
+$ hdf query results.json --status failed --limit 5
+Found 5 matching requirement(s):
+
+ID         Status  Severity  Title
+---------  ------  --------  -------------------------------------------------------
+SV-257777  failed  INFO      RHEL 9 must be a vendor-supported release.
+V-242387   failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
+V-242391   failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
+V-242392   failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
+
+$ hdf query results.json --status failed --count
+273
+```
+
+### diff
+
+Compare two HDF documents and classify each requirement as fixed, regressed, unchanged, updated, new, or absent. Results documents are compared temporally; system documents by component drift. Document type is auto-detected.
+
+```
+USAGE
+  hdf diff <old-file> <new-file> [flags]
+
+FLAGS
+  -f, --format string      Output format: table, json, markdown (default "table")
+      --stat               Summary counts only (like git diff --stat)
+      --regressed          Show only regressions (also --fixed, --new, --absent)
+      --exit-code          POSIX diff exit codes: 0=identical, 1=differences, 2=error
+      --detailed-exitcode  Nuanced codes: 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift
+      --system string      System document for component-aware comparison
+      --sbom               Treat inputs as CycloneDX/SPDX SBOM documents
+
+EXAMPLES
+  hdf diff old-scan.json new-scan.json
+  hdf diff old-scan.json new-scan.json -f markdown
+  hdf diff old-scan.json new-scan.json --regressed
+  hdf diff old-scan.json new-scan.json --detailed-exitcode   # exit code encodes outcome
+  hdf diff --sbom old.cdx.json new.cdx.json
+```
+
+Example output:
+
+```console
+$ hdf diff old-scan.json new-scan.json
+HDF Comparison: old-scan.json → new-scan.json
+
+ID       Title                          Old Status  New Status  State
+-------  -----------------------------  ----------  ----------  ---------
+REQ-001  Test Requirement               passed      failed      regressed
+REQ-002  Audit logging must be enabled  -           passed      new
+
+Summary: 0 fixed, 1 regressed, 1 new, 0 absent, 0 unchanged, 0 updated (2 total)
+```
+
 ### convert
 
 Convert security assessment data between HDF and other formats. Supports auto-detection, explicit `--from`/`--to` flags, stdin, and stdout.
@@ -219,7 +287,228 @@ EXAMPLES
   cat scan.json | hdf convert --from sarif - -o output.json
 ```
 
+Example output:
+
+```console
+$ hdf convert compliance.nessus -o results.json
+Detected: Nessus 2 (confidence: 100%)
+
+$ hdf validate results.json
+✓ results.json is a valid HDF results file
+```
+
+On auto-detection the source format and a confidence score are reported; with an explicit `--from` the conversion runs silently and writes to `-o` (or stdout).
+
 See [Supported Conversions](#supported-conversions) for the full list.
+
+### system
+
+View and manage HDF **system** documents — a system's authorization boundary, components, baselines, and interconnections.
+
+```
+USAGE
+  hdf system <subcommand> <file> [flags]
+
+SUBCOMMANDS
+  create            Bootstrap a system document from a results file or SBOM
+  info              Summarize a system document
+  add-component     Add a component from an SBOM
+  update-component  Update a component's SBOM reference
+  set               Set/unset top-level fields
+
+EXAMPLES
+  hdf system create --from results.json --name "Portal Prod" -o portal.hdf-system.json
+  hdf system info portal.hdf-system.json
+  hdf system info portal.hdf-system.json --json
+```
+
+Example output:
+
+```console
+$ hdf system info portal-prod.hdf-system.json
+System: Portal Prod
+System ID: aaaaaaaa-1111-2222-3333-444444444444
+
+Components (2):
+  WebTier (application)
+    Baselines: RHEL9-STIG
+  DatabaseTier (application)
+    Baselines: PostgreSQL-STIG
+```
+
+### plan
+
+View and manage HDF **assessment plan** documents — which baselines run against which targets, with resolved inputs and scheduling.
+
+```
+USAGE
+  hdf plan <subcommand> <file> [flags]
+
+SUBCOMMANDS
+  create   Create an assessment plan
+  info     Summarize a plan document
+  set      Set/unset top-level fields
+
+EXAMPLES
+  hdf plan info quarterly-plan.hdf-plan.json
+  hdf plan info quarterly-plan.hdf-plan.json --json
+```
+
+Example output:
+
+```console
+$ hdf plan info quarterly-plan.hdf-plan.json
+Plan: portal-prod-assessment-plan
+ID: 4737569f-8bb5-49b1-8e3a-3586a88d092e
+Type: automated
+System: system.json
+
+Assessments (2):
+  1. Baseline: RHEL9-STIG
+  2. Baseline: PostgreSQL-STIG
+```
+
+### amend
+
+Apply, list, and verify HDF **amendments** — standalone waiver / attestation / POA&M documents that modify requirement compliance status in results.
+
+```
+USAGE
+  hdf amend <subcommand> [flags]
+
+SUBCOMMANDS
+  apply    Merge amendments into a results file (sets effectiveStatus)
+  create   Create waivers, attestations, and other amendments
+  draft    Scaffold an incomplete amendments draft from a results file
+  list     List amendments in an amendments file
+  verify   Verify amendment validity, expiration, and chain integrity
+  set      Set/unset top-level fields
+
+EXAMPLES
+  hdf amend apply --results results.json --amendments waivers.json -o merged.json
+  hdf amend list waivers.json
+  hdf amend verify waivers.json                     # expiration check
+  hdf amend verify waivers.json results.json         # full chain verification
+```
+
+Example output:
+
+```console
+$ hdf amend list waivers.json
+Amendments: Q1 Waivers
+System: portal-prod.hdf-system.json
+
+Amendments (1):
+Requirement  Type    Status  Impact  Expires     Reason
+-----------  ------  ------  ------  ----------  ---------------------
+AC-1         waiver  passed          2099-12-31  Risk accepted per ATO
+
+$ hdf amend verify waivers.json
+Total amendments: 1
+Valid:            1
+Expired:         0
+
+All amendments are valid.
+```
+
+### evidence
+
+Build and inspect HDF **evidence packages** — bundles of references to all HDF documents for audit, authorization, and compliance review.
+
+```
+USAGE
+  hdf evidence <subcommand> <file> [flags]
+
+SUBCOMMANDS
+  build    Bundle HDF documents into an evidence package
+  info     Summarize an evidence package (with per-document checksum status)
+  verify   Verify an evidence package against its assessment plan
+  export   Export package documents to another format
+  set      Set/unset top-level fields
+
+EXAMPLES
+  hdf evidence build --system system.json --results r1.json --results r2.json -o q1.hdf-evidence-package.json
+  hdf evidence info q1.hdf-evidence-package.json
+  hdf evidence verify q1.hdf-evidence-package.json
+```
+
+Example output:
+
+```console
+$ hdf evidence info q1-2026.hdf-evidence-package.json
+Evidence Package: Portal Prod Q1 Evidence
+System: system.json
+
+Contents (4):
+  hdf-system       system.json  ✓ checksum
+  hdf-plan         plan.json  ✓ checksum
+  hdf-results      rhel9-results.json  ✓ checksum
+  hdf-results      postgres-results.json  ✓ checksum
+```
+
+### label
+
+Add, remove, or show key=value labels on the components of an HDF document.
+
+```
+USAGE
+  hdf label <subcommand> <file> [flags]
+
+SUBCOMMANDS
+  show     Display labels on all components
+  set      Set labels on all components
+  remove   Remove labels from all components
+
+EXAMPLES
+  hdf label show results.json
+  hdf label set results.json system=Portal environment=production -o labeled.json
+  hdf label remove results.json system environment -o cleaned.json
+```
+
+Example output:
+
+```console
+$ hdf label set results.json system=Portal environment=production -o labeled.json
+Labels written to labeled.json
+
+$ hdf label show labeled.json
+Component: web01.example.com [host]
+  environment = production
+  system = Portal
+```
+
+### generate
+
+Generate security templates and skeletons from HDF baselines, results, or XCCDF benchmarks.
+
+```
+USAGE
+  hdf generate <subcommand> <file> [flags]
+
+SUBCOMMANDS
+  inspec-profile   Generate an InSpec profile from an HDF Baseline or XCCDF Benchmark
+  threshold        Generate a compliance threshold template from HDF results
+  upgrade          Upgrade a baseline with new upstream metadata, preserving customizations (alias: delta)
+
+EXAMPLES
+  hdf generate inspec-profile baseline.json my-profile/           # <input> <output-dir>
+  hdf generate inspec-profile U_RHEL_9_STIG_xccdf.xml rhel9-stig/  # XCCDF auto-detected
+  hdf generate threshold results.json -o threshold.yml
+  hdf generate upgrade profile/ new-stig-xccdf.xml               # <current> <upstream>
+```
+
+Example output:
+
+```console
+$ hdf generate threshold results.json
+compliance:
+    min: 100
+passed:
+    high:
+        min: 1
+    total:
+        min: 1
+```
 
 ### fetch
 

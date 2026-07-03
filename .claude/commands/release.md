@@ -46,6 +46,7 @@ These are the traps this skill exists to prevent. Real failure modes from the 3.
 5. **`go.work.sum` churn appears mid-release.** The Go toolchain speculatively adds checksum entries (`golang.org/x/sys`, AWS SDK, etc.) during builds. These are NOT part of the release — exclude them from the commit.
 6. **Historical CHANGELOG entries are NOT version-string substitutions.** Lines like `## [3.1.0]` or `Schema version bumped from v3.0.0 to v3.1.0` are factual history. Touching them rewrites the past.
 7. **Cross-library duplication slips in via agent-swarm work.** New code re-implements a function that already exists in a shared package instead of importing it (the architecture's single most common violation). Phase 1's DRY review exists to catch this before it ships.
+8. **READMEs drift silently from the CLI/API they document.** `hdf-cli/README.md` documented removed `info`/`stats` commands and the old `hdf list <what> <file>` syntax long after the CLI folded those into `hdf list <file> --detail`; `hdf-diff/README.md` documented a non-existent `--mode baseline` flag. This drift is **not diff-scoped** — it predates the release window and survives any review that only looks at `BASE..HEAD`. Phase 1's docs-accuracy dimension checks each README against the *actual* current command/flag surface, not just what changed.
 
 ## Execution
 
@@ -71,12 +72,13 @@ Before touching any version, run a multi-agent review of everything merged since
 - DRY/architecture additionally compares new code against the **whole shared surface**, not just the diff — a re-implementation is a finding even if the duplicated original is untouched.
 - Cross-PR: enumerate everything merged since `BASE` (`git log BASE..HEAD --oneline`, PR refs in subjects).
 
-**The five dimensions**
+**The six dimensions**
 1. **Security** — every converter calls `ValidateJSONSize`/`ValidateXMLInput` as its first op; entity-expansion guards on XML; `safePath()` on JSON-derived file paths; `LimitSliceWithWarning`/`limitArrayWithWarning` on unbounded input arrays; no secrets; `gosec`/`govulncheck` deltas vs. `BASE`; injection/traversal.
 2. **DRY / cross-library duplication (weighted heaviest).** For each new/changed function, ask: does an equivalent already exist in a shared package? Hotspots to check against: severity↔impact (`hdf-utilities/severity`), timestamp parse/normalize (`hdf-utilities`, `hdf-parsers.normalizeTimestamps`), CWE/CCI/NIST mapping (`hdf-mappings`), checksum/integrity + JSON-size/XML validation + HTML strip + CWE→NIST + control-type derivation (`hdf-converters/shared`), CVSS. Also flag a Go or TS converter that re-implements logic its language-peer or shared builder already owns (the legacyhdf/checklist class of divergence). Every hit = a finding citing the exact existing symbol to import.
 3. **TypeScript best practices** — no unjustified `any`/`as`; exhaustive switches; no floating promises; ESM import correctness; closed-shape outputs (no schema-invalid passthroughs); matches the eslint config's intent.
 4. **Go best practices** — error wrapping (`%w`), no swallowed errors, `omitempty` consistency, struct-tag correctness, context usage, no goroutine leaks; matches the 39-linter `golangci-lint` intent.
 5. **Cross-PR consistency & regression** — for the PRs merged since `BASE`: did any two touch the same area inconsistently? Are shared-code changes reflected in *all* consumers? Is Go↔TS parity preserved where both exist? Did any PR reintroduce something another removed, or silently regress a third? Does the CHANGELOG cover all of them?
+6. **Docs / README accuracy (full-surface, not diff-scoped).** For every package `README.md` (root, `hdf-cli`, `hdf-diff`, and each `@mitre/hdf-*` package), verify what it documents still matches reality: every documented command/subcommand and flag actually exists in the current CLI (`hdf <cmd> --help`) or public API; no *removed* command or renamed syntax is still shown; example invocations use real flags; and any embedded example output is faithful to a real run (statuses, counts, column headers, summary lines — not fabricated or stale). Because drift here predates the release window, this dimension inspects the **current** binary/API surface, not just `BASE..HEAD`. Every mismatch = a finding naming the README, the stale claim, and the correct current form.
 
 **Orchestration** — use the `Workflow` tool (this instruction is the multi-agent opt-in). Fan out one finder per dimension (shard dimension×package when the diff is large), adversarially verify each finding with an independent skeptic prompted to *refute* (drop unless it survives — this kills best-practice nitpicks and hallucinated issues), then synthesize a deduped report grouped by dimension and severity. Pass `BASE`, the changed-file list, and the PR list in via `args`. Skeleton:
 
@@ -101,6 +103,7 @@ const DIMENSIONS = [
   { key: 'ts',       prompt: `${ctx}\n\nReport TypeScript best-practice violations in the changed .ts files (unjustified any/as, non-exhaustive switch, floating promises, bad ESM imports, schema-invalid passthroughs).` },
   { key: 'go',       prompt: `${ctx}\n\nReport Go best-practice violations in the changed .go files (unwrapped/swallowed errors, omitempty drift, struct-tag errors, context misuse, goroutine leaks).` },
   { key: 'crosspr',  prompt: `${ctx}\n\nPRs merged since ${args.base}:\n${args.prs}\n\nReport cross-PR inconsistencies/regressions: same area touched inconsistently, shared-code change not reflected in all consumers, broken Go/TS parity, one PR reverting/regressing another, CHANGELOG gaps.` },
+  { key: 'docs',     prompt: `Ignore the diff scope for this one — audit the CURRENT state. For every package README.md (root, hdf-cli, hdf-diff, each @mitre/hdf-* package), verify documented commands/subcommands/flags still exist in the real CLI (build ./hdf and run 'hdf <cmd> --help') or public API, that no removed/renamed command or syntax is still shown, and that any embedded example output is faithful to a real run (status labels, counts, headers, summary lines). Report each mismatch with the README path, the stale claim, and the correct current form.` },
 ]
 
 phase('Review')
@@ -246,7 +249,7 @@ Per the close-on-release policy, GitHub issues are **not** closed when their fix
 
 ## Quick checklist (paste into the response after Phase 0)
 
-- [ ] Phase 1 swarm review run; critical/high findings resolved or waived; deferrals filed as beads
+- [ ] Phase 1 swarm review run (incl. docs/README-accuracy dimension); critical/high findings resolved or waived; deferrals filed as beads
 - [ ] 10 `package.json` files at NEW
 - [ ] 5 `go.mod` files: every `hdf-libs/<x>/v3 vNEW` (no stragglers)
 - [ ] *(minor/major)* 7 schema `$id` URLs at NEW

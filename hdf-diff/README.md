@@ -89,15 +89,31 @@ hdf diff old-results.json new-results.json
 hdf diff old-results.json new-results.json --format markdown
 hdf diff old-results.json new-results.json --json
 
-# System drift detection
+# System drift detection (auto-detected from document type)
 hdf diff old-system.json new-system.json
 
 # SBOM comparison
-hdf diff --sbom old-sbom.json new-sbom.json
+hdf diff --sbom old.cdx.json new.cdx.json
 
-# Baseline mode (golden baseline vs current scan)
-hdf diff --mode baseline golden.json current.json
+# Encode the security outcome in the exit code (10=fixes, 11=regressions, 12=mixed, 13=baseline change)
+hdf diff old-results.json new-results.json --detailed-exitcode
 ```
+
+Example output — a scan where one requirement regressed and one was added:
+
+```console
+$ hdf diff old-results.json new-results.json
+HDF Comparison: old-results.json → new-results.json
+
+ID       Title                          Old Status  New Status  State
+-------  -----------------------------  ----------  ----------  ---------
+REQ-001  Test Requirement               passed      failed      regressed
+REQ-002  Audit logging must be enabled  -           passed      new
+
+Summary: 0 fixed, 1 regressed, 1 new, 0 absent, 0 unchanged, 0 updated (2 total)
+```
+
+The same comparison with `--format markdown` renders a GitHub-friendly table; `--json` emits an HDF Comparison document (`formatVersion`, `summary`, `requirementDiffs[]`) suitable for CI gating.
 
 ## Go usage
 
