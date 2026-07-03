@@ -373,7 +373,7 @@ func TestBuildBom_ThreeTier(t *testing.T) {
 		bom := BuildBom(BuildBomParts{
 			BOMType:  BOMTypeSbom,
 			Format:   FormatSPDX,
-			Packages: []SBOMPackage{},
+			Packages: []SBOMPackage{{Name: "openssl", Version: strPtr("3.0.0")}},
 			Hashes: []Checksum{{
 				Algorithm: "sha256",
 				Value:     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

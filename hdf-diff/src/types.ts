@@ -246,9 +246,13 @@ export interface HDFComparison {
   baselineDiffs: BaselineDiff[];
   /** Per-requirement diffs, sorted by id */
   requirementDiffs: RequirementDiff[];
-  /** Per-component diffs (systemDrift mode only) */
+  /** Per-component diffs (systemDrift mode only). A component's BOM changes
+   * surface as a field change on its boms[]. */
   componentDiffs?: ComponentDiff[];
-  /** Per-package diffs from embedded SBOM comparison (systemDrift mode only) */
+  /** RESERVED — not emitted by the current systemDrift comparison (component
+   * BOM changes surface via componentDiffs boms[] field changes; standalone SBOM
+   * package diffing is a separate `hdf diff <sbom> <sbom>` output). Retained for
+   * a future normalized package-level diff. */
   packageDiffs?: import('./sbom.js').PackageDiff[];
   /** URI identifying the system being compared (systemDrift mode only) */
   systemRef?: string;

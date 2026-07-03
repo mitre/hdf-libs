@@ -64,14 +64,14 @@
       "items": {
         "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.3.0#/$defs/Component_Diff"
       },
-      "description": "Comparison of components between two system documents. Used in systemDrift mode."
+      "description": "Comparison of components between two system documents. Used in systemDrift mode. A component's BOM changes surface as a field change on its boms[] here."
     },
     "packageDiffs": {
       "type": "array",
       "items": {
         "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.3.0#/$defs/Package_Diff"
       },
-      "description": "Comparison of packages between two SBOMs. Used in systemDrift mode for SBOM comparison."
+      "description": "RESERVED — not emitted by the current systemDrift comparison. systemDrift now reports a component's BOM changes as a field change on its boms[] (see componentDiffs), and standalone SBOM package diffing is a separate `hdf diff <sbom> <sbom>` output shape. This field is retained for a future normalized package-level diff; consumers must not expect it from today's systemDrift output."
     },
     "systemRef": {
       "type": "string",

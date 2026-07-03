@@ -64,14 +64,14 @@
       "items": {
         "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.3.0#/$defs/Component_Diff"
       },
-      "description": "Comparison of components between two system documents. Used in systemDrift mode."
+      "description": "Comparison of components between two system documents. Used in systemDrift mode. A component's BOM changes surface as a field change on its boms[] here."
     },
     "packageDiffs": {
       "type": "array",
       "items": {
         "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.3.0#/$defs/Package_Diff"
       },
-      "description": "Comparison of packages between two SBOMs. Used in systemDrift mode for SBOM comparison."
+      "description": "RESERVED — not emitted by the current systemDrift comparison. systemDrift now reports a component's BOM changes as a field change on its boms[] (see componentDiffs), and standalone SBOM package diffing is a separate `hdf diff <sbom> <sbom>` output shape. This field is retained for a future normalized package-level diff; consumers must not expect it from today's systemDrift output."
     },
     "systemRef": {
       "type": "string",
@@ -3775,18 +3775,25 @@
         "Bom_Type": {
           "type": "string",
           "title": "BOM Type",
-          "enum": [
-            "sbom",
-            "ai-model",
-            "dataset",
-            "hbom",
-            "cbom",
-            "saasbom",
-            "obom",
-            "mbom",
-            "kbom"
+          "anyOf": [
+            {
+              "enum": [
+                "sbom",
+                "ai-model",
+                "dataset",
+                "hbom",
+                "cbom",
+                "saasbom",
+                "obom",
+                "mbom",
+                "kbom"
+              ]
+            },
+            {
+              "pattern": "^x-[a-z0-9]+(-[a-z0-9]+)*$"
+            }
           ],
-          "description": "Discriminator for the manifest kind. Reserved, CycloneDX-aligned set: sbom (software), ai-model, dataset, hbom (hardware), cbom (cryptography), saasbom (services), obom (operations), mbom (manufacturing), kbom (Kubernetes). Normalized now: sbom, ai-model, dataset; reserved + passthrough-capable now, normalized in later releases: the rest. Adding a value is a schema version bump (rapid-iteration phase). VEX/VDR/SecurityProfile are vulnerability assertions, not BOMs, and are intentionally excluded."
+          "description": "Discriminator for the manifest kind. Reserved, CycloneDX-aligned set: sbom (software), ai-model, dataset, hbom (hardware), cbom (cryptography), saasbom (services), obom (operations), mbom (manufacturing), kbom (Kubernetes). Normalized now: sbom, ai-model, dataset; reserved + passthrough-capable now, normalized in later releases: the rest. Custom or experimental kinds MUST use an 'x-' prefix (e.g. 'x-threat-model') so they cannot collide with a value later promoted into the reserved set; a non-'x-' value outside the reserved set is invalid. Adding a reserved value is a schema version bump. VEX/VDR/SecurityProfile are vulnerability assertions, not BOMs, and are intentionally excluded."
         },
         "Bom": {
           "type": "object",
@@ -3902,6 +3909,36 @@
                   "packages": false
                 }
               }
+            },
+            {
+              "$comment": "A BOM must carry content: at least one passthrough (ref/document) or normalized (packages/model/dataset) shape. A bare {bomType, format} is unusable and invalid.",
+              "anyOf": [
+                {
+                  "required": [
+                    "ref"
+                  ]
+                },
+                {
+                  "required": [
+                    "document"
+                  ]
+                },
+                {
+                  "required": [
+                    "packages"
+                  ]
+                },
+                {
+                  "required": [
+                    "model"
+                  ]
+                },
+                {
+                  "required": [
+                    "dataset"
+                  ]
+                }
+              ]
             }
           ],
           "examples": [

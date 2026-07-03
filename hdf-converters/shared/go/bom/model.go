@@ -31,14 +31,19 @@ type (
 	Hyperparameter      = hdf.Hyperparameter
 	Modality            = hdf.Modality
 	Checksum            = hdf.Checksum
-	BOMType             = hdf.BOMType
 )
 
-// BOM manifest kinds re-exported from the generated schema types.
+// BOMType is the manifest-kind discriminator. The schema allows custom
+// 'x-'-prefixed kinds beyond the reserved set, so the generated field is a
+// plain string; the reserved values below are the package's normalized
+// vocabulary.
+type BOMType = string
+
+// Reserved BOM manifest kinds this parser normalizes.
 const (
-	BOMTypeSbom    = hdf.Sbom
-	BOMTypeAIModel = hdf.AIModel
-	BOMTypeDataset = hdf.BOMTypeDataset
+	BOMTypeSbom    BOMType = "sbom"
+	BOMTypeAIModel BOMType = "ai-model"
+	BOMTypeDataset BOMType = "dataset"
 )
 
 // Supported source BOM formats the parser can detect and normalize.

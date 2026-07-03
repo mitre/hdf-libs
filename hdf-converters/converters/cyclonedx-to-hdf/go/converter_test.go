@@ -467,7 +467,7 @@ func TestConvertCycloneDX_ComponentBoms(t *testing.T) {
 	require.Len(t, result.Components, 1)
 	boms := result.Components[0].Boms
 	require.Len(t, boms, 1)
-	assert.Equal(t, hdf.Sbom, boms[0].BOMType)
+	assert.Equal(t, "sbom", boms[0].BOMType)
 	assert.Equal(t, "cyclonedx", boms[0].Format)
 	assert.NotEmpty(t, boms[0].Packages, "component input should yield normalized packages")
 	assert.NotNil(t, boms[0].Document, "raw manifest should be carried via document passthrough")
@@ -482,7 +482,7 @@ func TestConvertCycloneDX_ComponentBomsVulnOnly(t *testing.T) {
 	require.Len(t, result.Components, 1)
 	boms := result.Components[0].Boms
 	require.Len(t, boms, 1)
-	assert.Equal(t, hdf.Sbom, boms[0].BOMType)
+	assert.Equal(t, "sbom", boms[0].BOMType)
 	assert.Equal(t, "cyclonedx", boms[0].Format)
 	assert.Empty(t, boms[0].Packages, "vuln-only input should carry no packages")
 	assert.NotNil(t, boms[0].Document, "raw manifest should be carried via document passthrough")

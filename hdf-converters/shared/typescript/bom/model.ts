@@ -20,7 +20,21 @@ import type {
   SBOMPackage,
 } from '@mitre/hdf-schema';
 
-export { BOMType, DatasetDerivationType, ModelAdaptationType } from '@mitre/hdf-schema';
+export { DatasetDerivationType, ModelAdaptationType } from '@mitre/hdf-schema';
+
+/**
+ * BOM manifest-kind discriminator. The schema allows custom 'x-'-prefixed kinds
+ * beyond the reserved set, so the generated `bomType` field is a plain string;
+ * the reserved values below are the parser's normalized vocabulary. Mirrors the
+ * Go bom package.
+ */
+export const BOMType = {
+  Sbom: 'sbom',
+  AIModel: 'ai-model',
+  Dataset: 'dataset',
+} as const;
+export type BOMType = (typeof BOMType)[keyof typeof BOMType];
+
 export type {
   AIModelBOMExtension,
   BillOfMaterials,

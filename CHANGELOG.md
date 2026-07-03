@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Breaking Changes — Schema
+
+- **Generalized BOM representation: the component `sbom` / `sbomRef` / `sbomFormat` trio is replaced by a single `boms[]` array of `Bom` objects** (discriminated by `bomType`), on both `Base_Component` and `hdf-system`. Each `Bom` carries either a passthrough shape (`ref` or `document`) or a normalized extension (`packages` for `sbom`, `model` for `ai-model`, `dataset` for `dataset`) — a `Bom` must carry at least one of these (a bare `{bomType, format}` is invalid). New `aiModel` and `dataset` component types model AI subjects, and the `ai-model` / `dataset` extensions carry cross-standard governance fields (`learningApproach`, `task`, `performanceMetrics`, `hyperparameters`, `inputOutput`; `modality`, `provenance`, `statisticalProperties`). `bomType` now also accepts `x-`-prefixed custom kinds alongside the reserved CycloneDX-aligned set.
+
+  Migration — an external SBOM reference:
+
+  ```jsonc
+  // before
+  { "name": "WebTier", "type": "application",
+    "sbomRef": "https://artifacts.example.com/webtier.cdx.json", "sbomFormat": "cyclonedx" }
+
+  // after
+  { "name": "WebTier", "type": "application",
+    "boms": [ { "bomType": "sbom", "format": "cyclonedx",
+                "ref": "https://artifacts.example.com/webtier.cdx.json" } ] }
+  ```
+
+  An embedded SBOM moves from `"sbom": { … }` to `boms[].document`; the old `sbomFormat` value becomes `boms[].format`. (ADR-0001)
+
 ### Breaking Changes — CLI
 
 - **`hdf system` reconciled with `hdf convert`: the input BOM/results file is now a positional argument, and `--from` selects the source format instead of naming the file.** All three subcommands change shape: `hdf system create <bom|url> [--from <format>]`, `hdf system add-component <bom|url> --system <doc> [--from <format>]`, and `hdf system update-component <bom|url> --system <doc> --component-name <name> [--from <format>]`. Previously `--from <file>` supplied the input path; that spelling is removed. Omitting `--from` keeps today's auto-detection unchanged; passing `--from` asserts a BOM format — the input is detected and the detected format must match (`cyclonedx-mlbom`, `spdx-ai`, or `sbom`), and it is never force-parsed. On a mismatch or an unknown alias the command errors rather than guessing. Migration: move the file to the first positional and drop the `--from <file>` flag (e.g. `hdf system create results.json`); use `--from` only to assert a format (e.g. `hdf system create model.cdx.json --from cyclonedx-mlbom`). Relatedly, `cyclonedx-to-hdf` now emits an AI-BOM-specific message pointing at `hdf system create <file> --from cyclonedx-mlbom` when a no-vulnerability CycloneDX document carries a `machine-learning-model` component. `system add-component`/`update-component` accept SBOMs only for now — an AI-BOM input is rejected with a redirect to `hdf system create` rather than mislabeled; generalizing component ingestion to any BOM type is tracked separately (hdf-libs-opk1). (hdf-libs-cm7g)

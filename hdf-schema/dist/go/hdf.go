@@ -1024,7 +1024,7 @@ type Component struct {
 type BillOfMaterials struct {
 	// The manifest kind. Determines which normalized type-extension (model/dataset/packages)                         
 	// may appear.                                                                                                    
-	BOMType                                                                                    BOMType                `json:"bomType"`
+	BOMType                                                                                    string                 `json:"bomType"`
 	// Normalized dataset extension. Permitted only when bomType is dataset.                                          
 	Dataset                                                                                    *DatasetBOMExtension   `json:"dataset,omitempty"`
 	// Passthrough by embedding: the native manifest carried opaquely (e.g. a raw CycloneDX or                        
@@ -1444,39 +1444,44 @@ type BaselineRequirement struct {
 // Structured comparison between two or more HDF security assessment documents. Supports
 // temporal, baseline, fleet, and multi-source comparison modes.
 type HDFComparison struct {
-	// Map of annotation IDs to annotation objects, providing context or action items for                            
-	// requirement diffs.                                                                                            
-	Annotations                                                                               map[string]Annotation  `json:"annotations,omitempty"`
-	// Comparison of baselines between sources.                                                                      
-	BaselineDiffs                                                                             []BaselineDiff         `json:"baselineDiffs,omitempty"`
-	// The mode of comparison being performed.                                                                       
-	ComparisonMode                                                                            ComparisonMode         `json:"comparisonMode"`
-	// Comparison of components between two system documents. Used in systemDrift mode.                              
-	ComponentDiffs                                                                            []ComponentDiff        `json:"componentDiffs,omitempty"`
-	// External/metadata changes separate from status changes (Terraform pattern).                                   
-	Drift                                                                                     []RequirementDiff      `json:"drift,omitempty"`
-	// Reserved for tool-specific data not defined in the HDF standard.                                              
-	Extensions                                                                                map[string]interface{} `json:"extensions,omitempty"`
-	// Schema version for this comparison format.                                                                    
-	FormatVersion                                                                             FormatVersion          `json:"formatVersion"`
-	// Information about the tool that generated this comparison.                                                    
-	Generator                                                                                 *Generator             `json:"generator,omitempty"`
-	// Cryptographic integrity information for verifying this comparison document.                                   
-	Integrity                                                                                 *Integrity             `json:"integrity,omitempty"`
-	// Configuration for how requirements were matched across sources.                                               
-	Matching                                                                                  *MatchingConfig        `json:"matching,omitempty"`
-	// Comparison of packages between two SBOMs. Used in systemDrift mode for SBOM comparison.                       
-	PackageDiffs                                                                              []PackageDiff          `json:"packageDiffs,omitempty"`
-	// Detailed comparison of individual requirements between sources.                                               
-	RequirementDiffs                                                                          []RequirementDiff      `json:"requirementDiffs"`
-	// The source documents being compared. At least two sources are required.                                       
-	Sources                                                                                   []Source               `json:"sources"`
-	// Summary statistics for the overall comparison.                                                                
-	Summary                                                                                   ComparisonSummary      `json:"summary"`
-	// URI identifying the system being compared in systemDrift mode.                                                
-	SystemRef                                                                                 *string                `json:"systemRef,omitempty"`
-	// When this comparison was performed.                                                                           
-	Timestamp                                                                                 *time.Time             `json:"timestamp,omitempty"`
+	// Map of annotation IDs to annotation objects, providing context or action items for                              
+	// requirement diffs.                                                                                              
+	Annotations                                                                                 map[string]Annotation  `json:"annotations,omitempty"`
+	// Comparison of baselines between sources.                                                                        
+	BaselineDiffs                                                                               []BaselineDiff         `json:"baselineDiffs,omitempty"`
+	// The mode of comparison being performed.                                                                         
+	ComparisonMode                                                                              ComparisonMode         `json:"comparisonMode"`
+	// Comparison of components between two system documents. Used in systemDrift mode. A                              
+	// component's BOM changes surface as a field change on its boms[] here.                                           
+	ComponentDiffs                                                                              []ComponentDiff        `json:"componentDiffs,omitempty"`
+	// External/metadata changes separate from status changes (Terraform pattern).                                     
+	Drift                                                                                       []RequirementDiff      `json:"drift,omitempty"`
+	// Reserved for tool-specific data not defined in the HDF standard.                                                
+	Extensions                                                                                  map[string]interface{} `json:"extensions,omitempty"`
+	// Schema version for this comparison format.                                                                      
+	FormatVersion                                                                               FormatVersion          `json:"formatVersion"`
+	// Information about the tool that generated this comparison.                                                      
+	Generator                                                                                   *Generator             `json:"generator,omitempty"`
+	// Cryptographic integrity information for verifying this comparison document.                                     
+	Integrity                                                                                   *Integrity             `json:"integrity,omitempty"`
+	// Configuration for how requirements were matched across sources.                                                 
+	Matching                                                                                    *MatchingConfig        `json:"matching,omitempty"`
+	// RESERVED — not emitted by the current systemDrift comparison. systemDrift now reports a                         
+	// component's BOM changes as a field change on its boms[] (see componentDiffs), and                               
+	// standalone SBOM package diffing is a separate `hdf diff <sbom> <sbom>` output shape. This                       
+	// field is retained for a future normalized package-level diff; consumers must not expect                         
+	// it from today's systemDrift output.                                                                             
+	PackageDiffs                                                                                []PackageDiff          `json:"packageDiffs,omitempty"`
+	// Detailed comparison of individual requirements between sources.                                                 
+	RequirementDiffs                                                                            []RequirementDiff      `json:"requirementDiffs"`
+	// The source documents being compared. At least two sources are required.                                         
+	Sources                                                                                     []Source               `json:"sources"`
+	// Summary statistics for the overall comparison.                                                                  
+	Summary                                                                                     ComparisonSummary      `json:"summary"`
+	// URI identifying the system being compared in systemDrift mode.                                                  
+	SystemRef                                                                                   *string                `json:"systemRef,omitempty"`
+	// When this comparison was performed.                                                                             
+	Timestamp                                                                                   *time.Time             `json:"timestamp,omitempty"`
 }
 
 // An annotation attached to a comparison, providing context or action items.
@@ -2442,29 +2447,6 @@ const (
 	VerificationMethodEnumHybrid    VerificationMethodEnum = "hybrid"
 )
 
-// The manifest kind. Determines which normalized type-extension (model/dataset/packages)
-// may appear.
-//
-// Discriminator for the manifest kind. Reserved, CycloneDX-aligned set: sbom (software),
-// ai-model, dataset, hbom (hardware), cbom (cryptography), saasbom (services), obom
-// (operations), mbom (manufacturing), kbom (Kubernetes). Normalized now: sbom, ai-model,
-// dataset; reserved + passthrough-capable now, normalized in later releases: the rest.
-// Adding a value is a schema version bump (rapid-iteration phase). VEX/VDR/SecurityProfile
-// are vulnerability assertions, not BOMs, and are intentionally excluded.
-type BOMType string
-
-const (
-	AIModel        BOMType = "ai-model"
-	BOMTypeDataset BOMType = "dataset"
-	Cbom           BOMType = "cbom"
-	Hbom           BOMType = "hbom"
-	Kbom           BOMType = "kbom"
-	Mbom           BOMType = "mbom"
-	Obom           BOMType = "obom"
-	Saasbom        BOMType = "saasbom"
-	Sbom           BOMType = "sbom"
-)
-
 // Relationship of this dataset to baseDatasetRefs, parallel to the model extension's
 // adaptationType. Minimal + extensible: filtered (subset by rule), augmented
 // (added/synthesized records), merged (union of sources), sampled (statistical draw).
@@ -2503,6 +2485,7 @@ const (
 type TargetType string
 
 const (
+	AIModel           TargetType = "aiModel"
 	Application       TargetType = "application"
 	Artifact          TargetType = "artifact"
 	CloudAccount      TargetType = "cloudAccount"
@@ -2511,11 +2494,10 @@ const (
 	ContainerInstance TargetType = "containerInstance"
 	ContainerPlatform TargetType = "containerPlatform"
 	Database          TargetType = "database"
+	Dataset           TargetType = "dataset"
 	Host              TargetType = "host"
 	Network           TargetType = "network"
 	Repository        TargetType = "repository"
-	TargetTypeAIModel TargetType = "aiModel"
-	TargetTypeDataset TargetType = "dataset"
 )
 
 // The category of this annotation.
