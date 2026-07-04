@@ -1165,14 +1165,15 @@ type Hyperparameter struct {
 // context/sequence length, and tokenizer. Sourced from CycloneDX
 // modelParameters.inputs[].format / outputs[].format. All sub-fields optional.
 type InputOutput struct {
-	// Maximum context/sequence length the model accepts, in tokens.                                  
-	ContextLength                                                                            *int64   `json:"contextLength,omitempty"`
-	// Input/output data types. Examples: string, byte[], float32, image.                             
-	DataTypes                                                                                []string `json:"dataTypes,omitempty"`
-	// Input/output modalities. Examples: text, image, audio.                                         
-	Modality                                                                                 []string `json:"modality,omitempty"`
-	// Tokenizer used for the model's input encoding. Examples: BPE, SentencePiece, tiktoken.         
-	Tokenizer                                                                                *string  `json:"tokenizer,omitempty"`
+	// Maximum context/sequence length the model accepts, in tokens.                                   
+	ContextLength                                                                            *int64    `json:"contextLength,omitempty"`
+	// Input/output data types. Examples: string, byte[], float32, image.                              
+	DataTypes                                                                                []string  `json:"dataTypes,omitempty"`
+	// Input/output modalities. String or array of strings. Examples: text, image, audio.              
+	// Symmetric with Dataset_Extension.modality.                                                      
+	Modality                                                                                 *Modality `json:"modality,omitempty"`
+	// Tokenizer used for the model's input encoding. Examples: BPE, SentencePiece, tiktoken.          
+	Tokenizer                                                                                *string   `json:"tokenizer,omitempty"`
 }
 
 type PerformanceMetric struct {
@@ -2760,6 +2761,9 @@ func (x *Ref) MarshalJSON() ([]byte, error) {
 // image, tabular, timeseries, audio. DISTINCT from datasetFormat, which is the physical
 // encoding (parquet/csv). Resolves SPDX 3.0 dataset_datasetType, which is content-kind, not
 // physical format. String or array of strings.
+//
+// Input/output modalities. String or array of strings. Examples: text, image, audio.
+// Symmetric with Dataset_Extension.modality.
 type Modality struct {
 	String      *string
 	StringArray []string

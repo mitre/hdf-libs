@@ -2389,7 +2389,7 @@
               }
             },
             {
-              "$comment": "A BOM must carry content: at least one passthrough (ref/document) or normalized (packages/model/dataset) shape. A bare {bomType, format} is unusable and invalid.",
+              "$comment": "A BOM must carry at least one of ref/document/packages/model/dataset. This intentionally checks PRESENCE, not non-emptiness: under the partial-fidelity design a converter MAY emit an empty normalized extension (e.g. model:{}) alongside a raw `document` passthrough when a source has no cleanly-mappable fields, so this constraint deliberately does not require minProperties/minItems on the extension. A bare {bomType, format} carrying none of these keys is unusable and invalid.",
               "anyOf": [
                 {
                   "required": [
@@ -2602,11 +2602,14 @@
                   "description": "Input/output data types. Examples: string, byte[], float32, image."
                 },
                 "modality": {
-                  "type": "array",
+                  "type": [
+                    "string",
+                    "array"
+                  ],
                   "items": {
                     "type": "string"
                   },
-                  "description": "Input/output modalities. Examples: text, image, audio."
+                  "description": "Input/output modalities. String or array of strings. Examples: text, image, audio. Symmetric with Dataset_Extension.modality."
                 },
                 "contextLength": {
                   "type": "integer",

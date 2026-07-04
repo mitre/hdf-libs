@@ -161,6 +161,7 @@
         }
       },
       "description": "SBOM coverage statistics for the system.",
+      "$comment": "This metric intentionally measures SOFTWARE (SBOM) inventory coverage only. Coverage accounting for ai-model/dataset/other BOM kinds is deliberately out of scope for now; a future generalized bomCoverage metric may be added. This is a distinct software-inventory metric, not an oversight of the Content_Type 'sbom'->'bom' generalization — do not rename or generalize it.",
       "title": "SBOM Coverage"
     },
     "Completeness_Check": {
@@ -193,7 +194,8 @@
         },
         "sbomCoverage": {
           "$ref": "#/$defs/SBOM_Coverage",
-          "description": "SBOM coverage across system components."
+          "description": "SBOM coverage across system components.",
+          "$comment": "Intentionally software-inventory (SBOM) coverage only; ai-model/dataset/other BOM kinds are out of scope for this metric for now."
         }
       },
       "description": "Informational summary of assessment completeness. Not authoritative — tools should compute these from the referenced documents.",
