@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	bom "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
 	"github.com/spf13/cobra"
 )
@@ -34,7 +35,9 @@ from an HDF results file, or by importing component metadata from a
 CycloneDX/SPDX SBOM, AI-BOM, or SPDX 3.0 AI/Dataset document. The input is a
 positional file path or URL. Omit --from to auto-detect the input format;
 pass --from to assert a specific BOM format (the input is detected, then the
-detected format must match — it is never force-parsed).
+detected format must match — it is never force-parsed). This differs from
+` + "`hdf convert --from`" + `, which selects a parser: here --from only VERIFIES
+the auto-detected format.
 
   --from values: cyclonedx-mlbom | spdx-ai | sbom
 
@@ -63,7 +66,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the input's BOM format: cyclonedx-mlbom | spdx-ai | sbom (default: auto-detect)")
+	cmd.Flags().StringVar(&fromFormat, "from", "", "Verify the detected BOM format: cyclonedx-mlbom | spdx-ai | sbom (default: auto-detect; never force-parses)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
 	cmd.Flags().StringVar(&systemName, "name", "", "System name (default: derived from input)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name (for SBOM input)")
@@ -77,8 +80,9 @@ Examples:
 }
 
 // bomFormatAliases lists the valid --from format-assertion aliases shared by the
-// `hdf system` command group.
-var bomFormatAliases = []string{"cyclonedx-mlbom", "cyclonedx-ml", "spdx-ai", "spdx-3-ai", "sbom"}
+// `hdf system` command group. One canonical spelling per format; accepted ==
+// advertised.
+var bomFormatAliases = []string{"cyclonedx-mlbom", "spdx-ai", "sbom"}
 
 // assertBomFormat verifies that doc's structurally-detected BOM format matches
 // the requested --from alias. An empty alias performs no assertion (auto-detect).
@@ -88,17 +92,25 @@ func assertBomFormat(alias string, doc map[string]interface{}) error {
 	if alias == "" {
 		return nil
 	}
-	detected := bom.DetectFormat(doc)
+	return assertBomFormatDetected(alias, bom.DetectFormat(doc))
+}
+
+// assertBomFormatDetected is assertBomFormat against an already-detected format,
+// letting callers that have run bom.DetectFormat once avoid re-detecting.
+func assertBomFormatDetected(alias string, detected *bom.FormatDetection) error {
+	if alias == "" {
+		return nil
+	}
 	detectedName := "unrecognized (not a BOM)"
 	if detected != nil {
 		detectedName = detected.Format
 	}
 	switch alias {
-	case "cyclonedx-mlbom", "cyclonedx-ml":
+	case "cyclonedx-mlbom":
 		if detected == nil || detected.Format != bom.FormatCycloneDXML {
 			return bomFormatMismatch(alias, "a CycloneDX ML-BOM (a machine-learning-model component)", detectedName)
 		}
-	case "spdx-ai", "spdx-3-ai":
+	case "spdx-ai":
 		if detected == nil || detected.Format != bom.FormatSPDX3AI {
 			return bomFormatMismatch(alias, "an SPDX 3.0 AI/Dataset document", detectedName)
 		}
@@ -162,17 +174,25 @@ type systemCreateOpts struct {
 }
 
 func runSystemCreate(opts systemCreateOpts) error {
-	// If --from is a URL, we can't read the file — require metadata flags
+	// A URL input is referenced, not fetched: it can't be read to derive
+	// component metadata, verify a --from assertion, or embed its content.
 	if isURL(opts.fromFile) {
 		if err := errFormatAssertionOnURL(opts.fromFormat); err != nil {
 			return err
 		}
-		return runSystemCreateFromSBOMRef(opts.fromFile, opts.systemName, opts.componentName, opts.outputPath)
+		if opts.embed {
+			return fmt.Errorf("--embed cannot embed a URL input: the remote document is referenced, " +
+				"not fetched; drop --embed or pass a local file")
+		}
+		return runSystemCreateFromSBOMRef(opts, opts.fromFile)
 	}
 
 	data, err := os.ReadFile(opts.fromFile) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %w", err)
+	}
+	if err := shared.ValidateJSONSize(data, "system-create input", int(getMaxFileSize())); err != nil {
+		return err
 	}
 
 	var doc map[string]interface{}
@@ -180,32 +200,26 @@ func runSystemCreate(opts systemCreateOpts) error {
 		return fmt.Errorf("failed to parse input file: %w", err)
 	}
 
-	// When --from asserts a format, the detected format must match before routing.
-	if err := assertBomFormat(opts.fromFormat, doc); err != nil {
+	// Detect the BOM format once, then reuse it for the --from assertion and the
+	// routing switch below rather than re-probing the document. An ML-BOM wins
+	// over plain CycloneDX by detector precedence, so the AI-model path is reached
+	// before the plain-SBOM path and the model extension is normalized.
+	detected := bom.DetectFormat(doc)
+	if err := assertBomFormatDetected(opts.fromFormat, detected); err != nil {
 		return err
 	}
 
-	// Detect input type: HDF Results vs CycloneDX SBOM / ML-BOM
-	if bomFormat, ok := doc["bomFormat"].(string); ok && bomFormat == "CycloneDX" {
-		// A CycloneDX doc with a machine-learning-model component is an AI-BOM
-		// (inventory, no findings) — route to the ai-model system-create path
-		// before the plain-SBOM route so the model extension is normalized.
-		if detected := bom.DetectFormat(doc); detected != nil && detected.Format == bom.FormatCycloneDXML {
+	if detected != nil {
+		switch detected.Format {
+		case bom.FormatCycloneDXML:
 			return runSystemCreateFromAIModelBOM(data, doc, opts)
+		case bom.FormatCycloneDX:
+			return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, bomFormatCycloneDX, opts)
+		case bom.FormatSPDX:
+			return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, bomFormatSPDX, opts)
+		case bom.FormatSPDX3AI:
+			return runSystemCreateFromSPDX3AIBOM(data, doc, opts)
 		}
-		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, bomFormatCycloneDX, opts)
-	}
-
-	// Check for SPDX (has spdxVersion field)
-	if _, ok := doc["spdxVersion"]; ok {
-		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, bomFormatSPDX, opts)
-	}
-
-	// SPDX 3.0 AI/Dataset (JSON-LD) has no top-level spdxVersion, so it must be
-	// caught by structural detection. It is multi-subject inventory: one aiModel
-	// component per model, one dataset component per dataset.
-	if detected := bom.DetectFormat(doc); detected != nil && detected.Format == bom.FormatSPDX3AI {
-		return runSystemCreateFromSPDX3AIBOM(data, doc, opts)
 	}
 
 	// Default: treat as HDF Results
@@ -267,30 +281,40 @@ func runSystemCreateFromSPDX3AIBOM(data []byte, doc map[string]interface{}, opts
 	return writeSystemDoc(systemName, components, opts.outputPath, opts)
 }
 
-// runSystemCreateFromSBOMRef creates a system document from a remote SBOM URI.
-// Since we can't read the file, --component-name is required.
-func runSystemCreateFromSBOMRef(sbomURI, systemName, componentName, outputPath string) error {
-	if componentName == "" {
-		return fmt.Errorf("--component-name is required when --from is a URL\n" +
-			"(cannot read remote file to extract component metadata)")
+// runSystemCreateFromSBOMRef creates a system document from a remote SBOM URL.
+// The remote document is referenced, not fetched, so component metadata can't be
+// derived from it — --component-name must be supplied. All system-level opts
+// (--owner/--description/--system-id/--generate-component-id) still apply.
+func runSystemCreateFromSBOMRef(opts systemCreateOpts, sbomURI string) error {
+	if opts.componentName == "" {
+		return fmt.Errorf("--component-name is required when the input is a URL " +
+			"(the remote document can't be read to derive component metadata)")
 	}
 
+	systemName := opts.systemName
 	if systemName == "" {
-		systemName = componentName + "-system"
+		systemName = opts.componentName + "-system"
 	}
 
 	// Guess format from URL extension; format is schema-required on the BOM entry.
-	bomFormat := ensureBOMFormat(guessFormatFromURI(sbomURI))
+	// A hint-less URL can't be verified (the document is not fetched), so warn
+	// that the defaulted format is unverified.
+	guessed := guessFormatFromURI(sbomURI)
+	if guessed == "" {
+		fmt.Fprintf(os.Stderr, "Warning: could not infer BOM format from URL %q; defaulting to %q "+
+			"(unverified — the remote document is not fetched)\n", sbomURI, bomFormatCycloneDX)
+	}
+	bomFormat := ensureBOMFormat(guessed)
 
 	comp := map[string]interface{}{
-		"name": componentName,
+		"name": opts.componentName,
 		"type": compTypeApplication,
 		"boms": []map[string]interface{}{newSBOMBom(bomFormat, sbomURI, nil)},
 	}
 
-	fmt.Fprintf(os.Stderr, "Created component %q from URI (type: %s)\n", componentName, compTypeApplication)
+	fmt.Fprintf(os.Stderr, "Created component %q from URI (type: %s)\n", opts.componentName, compTypeApplication)
 	fmt.Fprintf(os.Stderr, "Note: component type defaulted to %q; edit the system document to correct if needed\n", compTypeApplication)
-	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath, systemCreateOpts{})
+	return writeSystemDoc(systemName, []map[string]interface{}{comp}, opts.outputPath, opts)
 }
 
 // newSBOMBom builds a passthrough SBOM entry for a component's boms[] array,
@@ -310,9 +334,6 @@ func newSBOMBom(format, ref string, document map[string]interface{}) map[string]
 	return bom
 }
 
-// ensureBOMFormat guarantees a non-empty format (schema-required on the BOM
-// entry). When the format can't be guessed, it falls back to the ref's file
-// extension, and finally to cyclonedx as this tooling's predominant format.
 // ensureBOMFormat guarantees a non-empty format (schema-required on the BOM
 // entry). When the format can't be identified, it falls back to the ecosystem's
 // predominant format rather than a file extension — a generic ".json" extension

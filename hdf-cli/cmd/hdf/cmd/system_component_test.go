@@ -137,6 +137,23 @@ func TestSystemAddComponent_FromFormat_URLRejected(t *testing.T) {
 	assert.Contains(t, err.Error(), "URL")
 }
 
+// loadBOM must reject oversized input via the size gate before json.Unmarshal.
+func TestSystemAddComponent_OversizedInputRejected(t *testing.T) {
+	sysFile := createBaseSystem(t)
+	big := make([]byte, 2*1024*1024)
+	for i := range big {
+		big[i] = 'a'
+	}
+	f := filepath.Join(t.TempDir(), "big.json")
+	require.NoError(t, os.WriteFile(f, big, 0o600))
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "add-component", f, "--system", sysFile, "--component-name", "X", "--max-size", "1"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "exceeds maximum allowed size")
+}
+
 // ---- update-component --from format-assertion tests ----
 
 func TestSystemUpdateComponent_MLBOMRejected(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	bom "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +30,7 @@ metadata from a CycloneDX or SPDX SBOM. The SBOM is a positional file path or
 URL. Omit --from to auto-detect; pass --from to assert a BOM format (detected,
 then required to match — never force-parsed).
 
-  --from values: cyclonedx-mlbom | spdx-ai | sbom
+  --from values: sbom (AI-BOMs are rejected here; import them with 'hdf system create')
 
 Examples:
   hdf system add-component sbom.cdx.json --system system.json --component-name AuthService
@@ -41,7 +42,7 @@ Examples:
 	}
 
 	cmd.Flags().StringVar(&systemFile, "system", "", "Existing HDF system document (required)")
-	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the SBOM's format: cyclonedx-mlbom | spdx-ai | sbom (default: auto-detect)")
+	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the SBOM's format: sbom (default: auto-detect)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name (default: from SBOM metadata)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: overwrite --system)")
 	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
@@ -70,7 +71,7 @@ The component's boms[] entry and metadata are updated from the new SBOM. Omit
 --from to auto-detect; pass --from to assert a BOM format (detected, then
 required to match — never force-parsed).
 
-  --from values: cyclonedx-mlbom | spdx-ai | sbom
+  --from values: sbom (AI-BOMs are rejected here; import them with 'hdf system create')
 
 Examples:
   hdf system update-component sbom-new.cdx.json --system system.json --component-name WebTier
@@ -82,7 +83,7 @@ Examples:
 	}
 
 	cmd.Flags().StringVar(&systemFile, "system", "", "Existing HDF system document (required)")
-	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the SBOM's format: cyclonedx-mlbom | spdx-ai | sbom (default: auto-detect)")
+	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the SBOM's format: sbom (default: auto-detect)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name to update (required)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: overwrite --system)")
 	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
@@ -266,6 +267,9 @@ func loadBOM(fromRef string) (map[string]interface{}, string, error) {
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to read SBOM file: %w", err)
 	}
+	if err := shared.ValidateJSONSize(data, "SBOM input", int(getMaxFileSize())); err != nil {
+		return nil, "", err
+	}
 	var doc map[string]interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return nil, "", fmt.Errorf("failed to parse SBOM file: %w", err)
@@ -293,6 +297,10 @@ func detectBOMFormat(doc map[string]interface{}) string {
 // would mislabel it (bomType=sbom on a model/dataset), so we redirect to
 // `hdf system create` (which produces correctly-typed aiModel/dataset components)
 // until component ingestion is generalized to any BOM type (hdf-libs-opk1).
+//
+// URL inputs arrive as a nil doc (the remote document is referenced, not fetched)
+// and therefore escape this guard: a remote AI-BOM cannot be detected here. Full
+// remote-AI-BOM handling is tracked in hdf-libs-opk1.
 func rejectAIBOMComponentInput(subcommand string, doc map[string]interface{}) error {
 	if doc == nil {
 		return nil
@@ -304,10 +312,10 @@ func rejectAIBOMComponentInput(subcommand string, doc map[string]interface{}) er
 	switch detected.Format {
 	case bom.FormatCycloneDXML:
 		return fmt.Errorf("system %s does not yet support AI-BOM inputs (CycloneDX ML-BOM); "+
-			"use `hdf system create <file> --from cyclonedx-mlbom` to import the model (hdf-libs-opk1)", subcommand)
+			"use `hdf system create <file> --from cyclonedx-mlbom` to import the model", subcommand)
 	case bom.FormatSPDX3AI:
 		return fmt.Errorf("system %s does not yet support AI-BOM inputs (SPDX-3 AI/Dataset); "+
-			"use `hdf system create <file> --from spdx-ai` to import the models/datasets (hdf-libs-opk1)", subcommand)
+			"use `hdf system create <file> --from spdx-ai` to import the models/datasets", subcommand)
 	}
 	return nil
 }

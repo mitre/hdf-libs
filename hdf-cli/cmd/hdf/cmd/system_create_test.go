@@ -409,6 +409,83 @@ func TestSystemCreate_FromURL_WithComponentName(t *testing.T) {
 	assert.Equal(t, "cyclonedx", bom0["format"]) // guessed from .cdx.json
 }
 
+// URL inputs route through runSystemCreateFromSBOMRef, which must still honor
+// the system-level flags (they were silently dropped before).
+func TestSystemCreate_FromURL_HonorsSystemFlags(t *testing.T) {
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "https://artifacts.example.com/sbom/webtier.cdx.json",
+		"--component-name", "WebTier",
+		"--owner", "team@agency.gov",
+		"--description", "Prod web tier",
+		"--system-id", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+		"--generate-component-id",
+		"-o", outFile})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", sys["systemId"])
+	assert.Equal(t, "Prod web tier", sys["description"])
+	owner, ok := sys["owner"].(map[string]interface{})
+	require.True(t, ok, "owner should be present")
+	assert.Equal(t, "team@agency.gov", owner["identifier"])
+
+	c0 := sys["components"].([]interface{})[0].(map[string]interface{})
+	id, ok := c0["componentId"].(string)
+	assert.True(t, ok, "component should have a generated componentId")
+	assert.Len(t, id, 36)
+}
+
+// --embed cannot embed content that is never fetched, so a URL + --embed errors.
+func TestSystemCreate_FromURL_EmbedRejected(t *testing.T) {
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "https://artifacts.example.com/sbom/webtier.cdx.json",
+		"--component-name", "WebTier", "--embed"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "embed")
+	assert.Contains(t, err.Error(), "URL")
+}
+
+// A URL with no format hint keeps a defaulted format (schema-required).
+func TestSystemCreate_FromURL_DefaultsFormatNoHint(t *testing.T) {
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "https://artifacts.example.com/sbom/blob", "--component-name", "Blob", "-o", outFile})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	c0 := sys["components"].([]interface{})[0].(map[string]interface{})
+	bom0 := c0["boms"].([]interface{})[0].(map[string]interface{})
+	assert.Equal(t, "cyclonedx", bom0["format"]) // defaulted when the URL gives no hint
+}
+
+// Oversized input must be rejected by the size gate before it is fully parsed.
+func TestSystemCreate_OversizedInputRejected(t *testing.T) {
+	big := make([]byte, 2*1024*1024)
+	for i := range big {
+		big[i] = 'a'
+	}
+	f := filepath.Join(t.TempDir(), "big.json")
+	require.NoError(t, os.WriteFile(f, big, 0o600))
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", f, "--max-size", "1"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "exceeds maximum allowed size")
+}
+
 // ---- AI-model BOM input tests ----
 
 func TestSystemCreate_FromAIModelBOM(t *testing.T) {
