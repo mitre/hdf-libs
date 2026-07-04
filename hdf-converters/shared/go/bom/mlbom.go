@@ -12,7 +12,6 @@
 package bom
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -74,15 +73,6 @@ func extractIntendedUse(considerations any) string {
 	return strings.Join(parts, "; ")
 }
 
-// stringifyMetricValue mirrors the TS String(value): a native string is carried
-// verbatim, any other scalar is rendered with the default format.
-func stringifyMetricValue(v any) string {
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return fmt.Sprintf("%v", v)
-}
-
 // extractPerformanceMetrics lifts reported evaluation metrics from
 // modelCard.quantitativeAnalysis. Each native metric's `type` becomes the
 // normalized `name` and its `value` is carried as a string (metrics are
@@ -114,7 +104,7 @@ func extractPerformanceMetrics(quantitativeAnalysis any) []PerformanceMetric {
 			metric.Name = strPtr(name)
 		}
 		if valueSet {
-			value := stringifyMetricValue(rawValue)
+			value := stringifyScalar(rawValue)
 			metric.Value = &value
 		}
 		out = append(out, metric)

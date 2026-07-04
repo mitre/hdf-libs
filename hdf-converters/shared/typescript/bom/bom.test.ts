@@ -745,3 +745,69 @@ describe('parseSPDX3 — synthetic edge cases (branch coverage)', () => {
     expect(model.datasetRefs).toEqual(['no-id', 'no-name']);
   });
 });
+
+// Numeric scalar values (JSON numbers) must stringify BYTE-IDENTICALLY across TS
+// and Go. The expected strings are pinned and shared by both languages'
+// numeric-parity tests; the exponent forms below (1e-7, 0.000001) are the ones
+// where a naive Go fmt.Sprintf("%v") diverges from JS String().
+const SCALAR_CASES: Array<[number | boolean, string]> = [
+  [1234567, '1234567'],
+  [0.4669, '0.4669'],
+  [1e-7, '1e-7'],
+  [1e-6, '0.000001'],
+  [true, 'true'],
+];
+
+describe('numeric scalar value parity (TS↔Go)', () => {
+  it('parseMLBOM: performanceMetrics values stringify to the pinned shared strings', () => {
+    const normalized = parseMLBOM({
+      serialNumber: 'urn:uuid:num',
+      components: [
+        {
+          type: 'machine-learning-model',
+          name: 'm',
+          modelCard: {
+            quantitativeAnalysis: {
+              performanceMetrics: SCALAR_CASES.map(([value], i) => ({
+                type: `m${i}`,
+                value,
+              })),
+            },
+          },
+        },
+      ],
+    });
+    const values = (normalized.model?.performanceMetrics ?? []).map(m => m.value);
+    expect(values).toEqual(SCALAR_CASES.map(([, expected]) => expected));
+  });
+
+  it('parseSPDX3: ai_metric / ai_hyperparameter values stringify to the pinned shared strings', () => {
+    const { subjects } = parseSPDX3({
+      '@context': 'https://spdx.org/rdf/3.0.1/spdx-context.jsonld',
+      '@graph': [
+        {
+          type: 'ai_AIPackage',
+          spdxId: 'm',
+          name: 'm',
+          ai_metric: SCALAR_CASES.map(([value], i) => ({
+            type: 'DictionaryEntry',
+            key: `metric${i}`,
+            value,
+          })),
+          ai_hyperparameter: SCALAR_CASES.map(([value], i) => ({
+            type: 'DictionaryEntry',
+            key: `hp${i}`,
+            value,
+          })),
+        },
+      ],
+    });
+    const model = subjects[0].bom.model!;
+    expect((model.performanceMetrics ?? []).map(m => m.value)).toEqual(
+      SCALAR_CASES.map(([, expected]) => expected),
+    );
+    expect((model.hyperparameters ?? []).map(h => h.value)).toEqual(
+      SCALAR_CASES.map(([, expected]) => expected),
+    );
+  });
+});

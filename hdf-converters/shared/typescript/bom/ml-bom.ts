@@ -22,6 +22,7 @@ import {
   asRecord,
   asString,
   buildBom,
+  stringifyScalar,
 } from './normalize.js';
 
 function findModelComponent(obj: Record<string, unknown>): Record<string, unknown> | undefined {
@@ -77,7 +78,7 @@ function extractPerformanceMetrics(quantitativeAnalysis: unknown): PerformanceMe
     const e = asRecord(entry);
     if (!e) continue;
     const name = asString(e.type);
-    const value = e.value !== undefined && e.value !== null ? String(e.value) : undefined;
+    const value = e.value !== undefined && e.value !== null ? stringifyScalar(e.value) : undefined;
     if (name === undefined && value === undefined) continue;
     const metric: PerformanceMetric = {};
     if (name !== undefined) metric.name = name;

@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -60,6 +62,89 @@ func asString(value any) string {
 		return s
 	}
 	return ""
+}
+
+// stringifyScalar renders a heterogeneous scalar BOM value (metric value,
+// SPDX DictionaryEntry value) to the SAME string the TS side produces via
+// String(value) — a hard TS↔Go parity requirement. Strings pass through;
+// JSON numbers (float64) are formatted to match JS Number#toString exactly
+// (see jsNumberToString); other scalars use Go's default %v, which already
+// agrees with JS String() for booleans (true/false).
+func stringifyScalar(v any) string {
+	switch x := v.(type) {
+	case string:
+		return x
+	case float64:
+		return jsNumberToString(x)
+	default:
+		return fmt.Sprintf("%v", x)
+	}
+}
+
+// jsNumberToString formats a float64 to the exact string JavaScript's
+// Number#toString (radix 10) / String(n) produces. Go's strconv formatters
+// diverge from JS in exponent thresholds and padding (e.g. 1e-6 -> "1e-06" not
+// "0.000001", 1e-7 -> "1e-07" not "1e-7", 1234567 -> "1.234567e+06" not
+// "1234567"), so this reimplements the ECMAScript Number::toString algorithm:
+// take the shortest round-tripping digit string and lay it out per the spec's
+// exponent rules. Verified byte-identical to Node's String() across integer,
+// decimal, small/large exponent, and denormal values.
+func jsNumberToString(f float64) string {
+	switch {
+	case math.IsNaN(f):
+		return "NaN"
+	case math.IsInf(f, 1):
+		return "Infinity"
+	case math.IsInf(f, -1):
+		return "-Infinity"
+	case f == 0:
+		return "0"
+	}
+	sign := ""
+	if f < 0 {
+		sign = "-"
+		f = -f
+	}
+	// Shortest scientific representation: "d.dddde±XX".
+	mantissa, expStr, _ := strings.Cut(strconv.FormatFloat(f, 'e', -1, 64), "e")
+	exp, _ := strconv.Atoi(expStr)
+	digits := strings.Replace(mantissa, ".", "", 1)
+	k := len(digits) // number of significant digits
+	n := exp + 1     // position of the decimal point (ECMAScript's n)
+
+	var b strings.Builder
+	b.WriteString(sign)
+	switch {
+	case k <= n && n <= 21:
+		b.WriteString(digits)
+		b.WriteString(strings.Repeat("0", n-k))
+	case 0 < n && n <= 21:
+		b.WriteString(digits[:n])
+		b.WriteByte('.')
+		b.WriteString(digits[n:])
+	case -6 < n && n <= 0:
+		b.WriteString("0.")
+		b.WriteString(strings.Repeat("0", -n))
+		b.WriteString(digits)
+	default:
+		if k == 1 {
+			b.WriteString(digits)
+		} else {
+			b.WriteByte(digits[0])
+			b.WriteByte('.')
+			b.WriteString(digits[1:])
+		}
+		b.WriteByte('e')
+		e := n - 1
+		if e >= 0 {
+			b.WriteByte('+')
+		} else {
+			b.WriteByte('-')
+			e = -e
+		}
+		b.WriteString(strconv.Itoa(e))
+	}
+	return b.String()
 }
 
 // cleanLicense returns an SPDX license string unless it is a NOASSERTION/NONE

@@ -827,3 +827,62 @@ func TestParseSPDX3_IgnoresOtherElementsAndUnmappedDatasets(t *testing.T) {
 	model := modelByName(t, subjects, "m").Bom.Model
 	assert.Equal(t, []string{"no-id", "no-name"}, model.DatasetRefs)
 }
+
+// scalarParityCases pins the numeric/boolean scalar values that MUST stringify
+// byte-identically in Go and TS. The expected strings match the TS
+// SCALAR_CASES exactly; the exponent forms (1e-7, 0.000001) are where a naive
+// fmt.Sprintf("%v") would diverge from JS String().
+var scalarParityCases = []struct {
+	value    any
+	expected string
+}{
+	{float64(1234567), "1234567"},
+	{float64(0.4669), "0.4669"},
+	{float64(1e-7), "1e-7"},
+	{float64(1e-6), "0.000001"},
+	{true, "true"},
+}
+
+func TestScalarValueParity_MLBOM(t *testing.T) {
+	metrics := make([]any, len(scalarParityCases))
+	for i, c := range scalarParityCases {
+		metrics[i] = map[string]any{"type": fmt.Sprintf("m%d", i), "value": c.value}
+	}
+	n := ParseMLBOM(map[string]any{
+		"serialNumber": "urn:uuid:num",
+		"components": []any{map[string]any{
+			"type": "machine-learning-model",
+			"name": "m",
+			"modelCard": map[string]any{
+				"quantitativeAnalysis": map[string]any{"performanceMetrics": metrics},
+			},
+		}},
+	})
+	require.Len(t, n.Model.PerformanceMetrics, len(scalarParityCases))
+	for i, c := range scalarParityCases {
+		require.NotNil(t, n.Model.PerformanceMetrics[i].Value)
+		assert.Equal(t, c.expected, *n.Model.PerformanceMetrics[i].Value)
+	}
+}
+
+func TestScalarValueParity_SPDX3(t *testing.T) {
+	metrics := make([]any, len(scalarParityCases))
+	hyperparams := make([]any, len(scalarParityCases))
+	for i, c := range scalarParityCases {
+		metrics[i] = map[string]any{"type": "DictionaryEntry", "key": fmt.Sprintf("metric%d", i), "value": c.value}
+		hyperparams[i] = map[string]any{"type": "DictionaryEntry", "key": fmt.Sprintf("hp%d", i), "value": c.value}
+	}
+	model := spdx3Synthetic(map[string]any{
+		"type": "ai_AIPackage", "spdxId": "m", "name": "m",
+		"ai_metric":         metrics,
+		"ai_hyperparameter": hyperparams,
+	}).Subjects[0].Bom.Model
+	require.Len(t, model.PerformanceMetrics, len(scalarParityCases))
+	require.Len(t, model.Hyperparameters, len(scalarParityCases))
+	for i, c := range scalarParityCases {
+		require.NotNil(t, model.PerformanceMetrics[i].Value)
+		assert.Equal(t, c.expected, *model.PerformanceMetrics[i].Value)
+		require.NotNil(t, model.Hyperparameters[i].Value)
+		assert.Equal(t, c.expected, *model.Hyperparameters[i].Value)
+	}
+}

@@ -17,7 +17,6 @@
 package bom
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -72,11 +71,7 @@ func dictionaryEntries(value any) [][2]string {
 		}
 		val := ""
 		if raw, has := e["value"]; has && raw != nil {
-			if s, isStr := raw.(string); isStr {
-				val = s
-			} else {
-				val = fmt.Sprintf("%v", raw)
-			}
+			val = stringifyScalar(raw)
 		}
 		out = append(out, [2]string{name, val})
 	}

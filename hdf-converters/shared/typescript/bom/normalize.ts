@@ -59,6 +59,17 @@ export function asString(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
+/**
+ * Render a heterogeneous scalar BOM value (metric value, SPDX DictionaryEntry
+ * value) to a string. This is the REFERENCE the Go side matches byte-for-byte
+ * (see stringifyScalar / jsNumberToString in normalize.go): JS String() gives
+ * numbers their shortest round-tripping form, and Go reimplements that exact
+ * formatting. Callers must guard null/undefined before calling.
+ */
+export function stringifyScalar(value: unknown): string {
+  return String(value);
+}
+
 /** Return an SPDX license string unless it is a NOASSERTION/NONE sentinel. */
 export function cleanLicense(value: unknown): string | undefined {
   const s = asString(value);
