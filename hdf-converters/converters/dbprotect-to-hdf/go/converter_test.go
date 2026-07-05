@@ -22,15 +22,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 // ---- Input validation ----
 
 func TestConverterContract(t *testing.T) {
@@ -139,13 +130,11 @@ func TestConvertDbprotect_CheckResults_GroupedResults(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check ID 2986 appears twice, should have 2 results
-	req := findRequirement(result.Baselines[0].Requirements, "2986")
-	require.NotNil(t, req, "Should find requirement 2986")
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
 	assert.Len(t, req.Results, 2)
 
 	// Check ID 2801 appears twice, should have 2 results
-	req2801 := findRequirement(result.Baselines[0].Requirements, "2801")
-	require.NotNil(t, req2801, "Should find requirement 2801")
+	req2801 := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2801")
 	assert.Len(t, req2801.Results, 2)
 }
 
@@ -154,8 +143,7 @@ func TestConvertDbprotect_CheckResults_RequirementTitle(t *testing.T) {
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2986")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "Schema ownership", *req.Title)
 }
@@ -165,8 +153,7 @@ func TestConvertDbprotect_CheckResults_RequirementDescription(t *testing.T) {
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2986")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
 	require.NotEmpty(t, req.Descriptions)
 	assert.Equal(t, "default", req.Descriptions[0].Label)
 	// Description from formatDesc: "Task : <task>; Check Category : <category>"
@@ -181,8 +168,7 @@ func TestConvertDbprotect_CheckResults_HighImpact(t *testing.T) {
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2903")
-	require.NotNil(t, req, "Should find requirement 2903 (High)")
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2903")
 	assert.Equal(t, 0.7, req.Impact)
 }
 
@@ -191,8 +177,7 @@ func TestConvertDbprotect_CheckResults_MediumImpact(t *testing.T) {
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2986")
-	require.NotNil(t, req, "Should find requirement 2986 (Medium)")
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
 	assert.Equal(t, 0.5, req.Impact)
 }
 
@@ -201,8 +186,7 @@ func TestConvertDbprotect_CheckResults_LowImpact(t *testing.T) {
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2841")
-	require.NotNil(t, req, "Should find requirement 2841 (Low)")
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2841")
 	assert.Equal(t, 0.3, req.Impact)
 }
 
@@ -211,8 +195,7 @@ func TestConvertDbprotect_CheckResults_InformationalImpact(t *testing.T) {
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2801")
-	require.NotNil(t, req, "Should find requirement 2801 (Informational)")
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2801")
 	assert.Equal(t, 0.0, req.Impact)
 }
 
@@ -224,8 +207,7 @@ func TestConvertDbprotect_CheckResults_FactStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check ID 2986 has "Fact" status -> Skipped/NotReviewed
-	req := findRequirement(result.Baselines[0].Requirements, "2986")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
 	require.NotEmpty(t, req.Results)
 	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
 }
@@ -236,8 +218,7 @@ func TestConvertDbprotect_CheckResults_FailedStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check ID 2841 has "Failed" status -> Failed
-	req := findRequirement(result.Baselines[0].Requirements, "2841")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2841")
 	require.NotEmpty(t, req.Results)
 	assert.Equal(t, hdf.Failed, req.Results[0].Status)
 }
@@ -248,8 +229,7 @@ func TestConvertDbprotect_CheckResults_FindingStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check ID 2801 has "Finding" status -> Failed
-	req := findRequirement(result.Baselines[0].Requirements, "2801")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2801")
 	require.NotEmpty(t, req.Results)
 	assert.Equal(t, hdf.Failed, req.Results[0].Status)
 }
@@ -260,8 +240,7 @@ func TestConvertDbprotect_CheckResults_NotAFindingStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check ID 2942 has "Not A Finding" status -> Passed
-	req := findRequirement(result.Baselines[0].Requirements, "2942")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2942")
 	require.NotEmpty(t, req.Results)
 	assert.Equal(t, hdf.Passed, req.Results[0].Status)
 }
@@ -272,8 +251,7 @@ func TestConvertDbprotect_CheckResults_SkippedStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check ID 2976 has "Skipped" status -> NotReviewed
-	req := findRequirement(result.Baselines[0].Requirements, "2976")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2976")
 	require.NotEmpty(t, req.Results)
 	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
 }
@@ -286,8 +264,7 @@ func TestConvertDbprotect_CheckResults_CodeDesc(t *testing.T) {
 	require.NoError(t, err)
 
 	// CodeDesc comes from the "Details" column
-	req := findRequirement(result.Baselines[0].Requirements, "2986")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
 	require.NotEmpty(t, req.Results)
 	assert.Contains(t, req.Results[0].CodeDesc, "Schema name=DatabaseMailUserRole")
 }
@@ -297,8 +274,7 @@ func TestConvertDbprotect_CheckResults_StartTime(t *testing.T) {
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2986")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
 	require.NotEmpty(t, req.Results)
 	assert.False(t, req.Results[0].StartTime.IsZero(), "StartTime should be set")
 }
@@ -310,8 +286,7 @@ func TestConvertDbprotect_CheckResults_NISTTags(t *testing.T) {
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2986")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
 	require.NotNil(t, req.Tags)
 	nist, ok := req.Tags["nist"]
 	require.True(t, ok, "Should have nist tag")

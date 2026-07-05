@@ -121,8 +121,7 @@ func TestRequirementTitle(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-failing.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "org.apache.maven.surefire.test.FailingTest.defaultTestValueIs_Value")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "org.apache.maven.surefire.test.FailingTest.defaultTestValueIs_Value")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "defaultTestValueIs_Value", *req.Title)
 }
@@ -151,8 +150,7 @@ func TestStatusMapping_Error(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-error.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "surefire.MyTest.test")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "surefire.MyTest.test")
 	assert.Equal(t, hdf.Error, req.Results[0].Status)
 }
 
@@ -172,8 +170,7 @@ func TestFailureMessage(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-failing.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "org.apache.maven.surefire.test.FailingTest.defaultTestValueIs_Value")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "org.apache.maven.surefire.test.FailingTest.defaultTestValueIs_Value")
 	require.NotNil(t, req.Results[0].Message)
 	assert.Contains(t, *req.Results[0].Message, "wrong")
 	assert.Contains(t, *req.Results[0].Message, "value")
@@ -183,8 +180,7 @@ func TestErrorMessage(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-error.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "surefire.MyTest.test")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "surefire.MyTest.test")
 	require.NotNil(t, req.Results[0].Message)
 	assert.Contains(t, *req.Results[0].Message, "RuntimeException")
 	assert.Contains(t, *req.Results[0].Message, "this is different message")
@@ -194,8 +190,7 @@ func TestCodeDesc(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-failing.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "org.apache.maven.surefire.test.FailingTest.defaultTestValueIs_Value")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "org.apache.maven.surefire.test.FailingTest.defaultTestValueIs_Value")
 	assert.Contains(t, req.Results[0].CodeDesc, "org.apache.maven.surefire.test.FailingTest")
 	assert.Contains(t, req.Results[0].CodeDesc, "defaultTestValueIs_Value")
 }
@@ -204,8 +199,7 @@ func TestRunTime(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-failing.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "org.apache.maven.surefire.test.FailingTest.defaultTestValueIs_Value")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "org.apache.maven.surefire.test.FailingTest.defaultTestValueIs_Value")
 	require.NotNil(t, req.Results[0].RunTime)
 	assert.InDelta(t, 0.013, *req.Results[0].RunTime, 0.001)
 }
@@ -214,8 +208,7 @@ func TestErrorStackTrace(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-error.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "surefire.MyTest.test")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "surefire.MyTest.test")
 	require.NotNil(t, req.Results[0].Message)
 	assert.Contains(t, *req.Results[0].Message, "IndexOutOfBoundsException")
 	assert.Contains(t, *req.Results[0].Message, "MyTest.rethrownDelegate")
@@ -245,8 +238,7 @@ func TestFlakyTestsPassedStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, result.Baselines[0].Requirements, 2)
-	req := findRequirement(result.Baselines[0].Requirements, "org.acme.FlakyTest.testFlaky")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "org.acme.FlakyTest.testFlaky")
 	assert.Equal(t, hdf.Passed, req.Results[0].Status)
 }
 
@@ -256,8 +248,7 @@ func TestDescription(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-error.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "surefire.MyTest.test")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "surefire.MyTest.test")
 
 	var defaultDesc *hdf.Description
 	for i := range req.Descriptions {
@@ -272,15 +263,6 @@ func TestDescription(t *testing.T) {
 }
 
 // --- Helper ---
-
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
 
 // --- Testsuites root with mixed statuses (schema-validated against Windyroad XSD) ---
 
@@ -305,8 +287,7 @@ func TestTestsuitesMixed_SkippedStatus(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "com.example.math.MathTest.testSquareRoot")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "com.example.math.MathTest.testSquareRoot")
 	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
 	require.NotNil(t, req.Results[0].Message)
 	assert.Contains(t, *req.Results[0].Message, "Requires math library upgrade")
@@ -316,8 +297,7 @@ func TestTestsuitesMixed_PassedStatus(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "com.example.math.MathTest.testAddition")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "com.example.math.MathTest.testAddition")
 	assert.Equal(t, hdf.Passed, req.Results[0].Status)
 }
 
@@ -325,8 +305,7 @@ func TestTestsuitesMixed_FailedStatus(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "com.example.math.MathTest.testDivisionByZero")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "com.example.math.MathTest.testDivisionByZero")
 	assert.Equal(t, hdf.Failed, req.Results[0].Status)
 	require.NotNil(t, req.Results[0].Message)
 	assert.Contains(t, *req.Results[0].Message, "Expected exception was not thrown")
@@ -336,8 +315,7 @@ func TestTestsuitesMixed_ErrorStatus(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "com.example.string.StringTest.testParseInt")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "com.example.string.StringTest.testParseInt")
 	assert.Equal(t, hdf.Error, req.Results[0].Status)
 	require.NotNil(t, req.Results[0].Message)
 	assert.Contains(t, *req.Results[0].Message, "NullPointerException")
@@ -348,8 +326,7 @@ func TestTestsuitesMixed_Timestamp(t *testing.T) {
 	require.NoError(t, err)
 
 	// First suite has timestamp="2024-11-15T10:30:00" — should be parsed into startTime
-	req := findRequirement(result.Baselines[0].Requirements, "com.example.math.MathTest.testAddition")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "com.example.math.MathTest.testAddition")
 	assert.False(t, req.Results[0].StartTime.IsZero(), "startTime should be set from suite timestamp")
 }
 

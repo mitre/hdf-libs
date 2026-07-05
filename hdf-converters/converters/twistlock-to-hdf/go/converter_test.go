@@ -22,15 +22,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func findDescription(descs []hdf.Description, label string) *hdf.Description {
 	for i := range descs {
 		if descs[i].Label == label {
@@ -173,18 +164,15 @@ func TestConvertTwistlock_SeverityMapping(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// critical → 0.9 (CVE-2021-44228)
-	critical := findRequirement(reqs, "CVE-2021-44228")
-	require.NotNil(t, critical, "expected critical vuln CVE-2021-44228")
+	critical := shared.MustFindRequirement(t, reqs, "CVE-2021-44228")
 	assert.InDelta(t, 0.9, critical.Impact, 0.001)
 
 	// high → 0.7 (CVE-2021-45105)
-	high := findRequirement(reqs, "CVE-2021-45105")
-	require.NotNil(t, high, "expected high vuln CVE-2021-45105")
+	high := shared.MustFindRequirement(t, reqs, "CVE-2021-45105")
 	assert.InDelta(t, 0.7, high.Impact, 0.001)
 
 	// medium → 0.5 (CVE-2021-44832)
-	medium := findRequirement(reqs, "CVE-2021-44832")
-	require.NotNil(t, medium, "expected medium vuln CVE-2021-44832")
+	medium := shared.MustFindRequirement(t, reqs, "CVE-2021-44832")
 	assert.InDelta(t, 0.5, medium.Impact, 0.001)
 }
 
@@ -221,8 +209,7 @@ func TestConvertTwistlock_DefaultNISTTags(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "CVE-2021-44228")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-44228")
 
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
@@ -237,8 +224,7 @@ func TestConvertTwistlock_CVEIDTag(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "CVE-2021-44228")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-44228")
 
 	cveid := hdfutil.SafeStringSlice(req.Tags["cveid"])
 	require.NotNil(t, cveid)
@@ -268,8 +254,7 @@ func TestConvertTwistlock_CodeDesc(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "CVE-2021-44228")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-44228")
 	require.NotEmpty(t, req.Results)
 
 	// code_desc includes package name and impacted versions
@@ -284,8 +269,7 @@ func TestConvertTwistlock_Description(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "CVE-2021-44228")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-44228")
 
 	desc := findDescription(req.Descriptions, "default")
 	require.NotNil(t, desc, "expected a 'default' description")
@@ -300,8 +284,7 @@ func TestConvertTwistlock_RequirementTitleAndID(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "CVE-2021-44228")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-44228")
 	assert.Equal(t, "CVE-2021-44228", req.ID)
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "CVE-2021-44228", *req.Title)
@@ -389,8 +372,7 @@ func TestConvertTwistlock_StartTime(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "CVE-2021-44228")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-44228")
 	require.NotEmpty(t, req.Results)
 
 	expected, err := time.Parse(time.RFC3339, "2021-12-10T10:15:00Z")
@@ -433,8 +415,7 @@ func TestConvertTwistlock_CvssPopulated_CodeRepo(t *testing.T) {
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "CVE-2021-44228")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2021-44228")
 	require.Len(t, req.Cvss, 1, "expected a single cvss entry")
 	cv := req.Cvss[0]
 	assert.Equal(t, hdf.The31, cv.Version)
@@ -509,8 +490,7 @@ func TestConvertTwistlock_CvssEmittedScoreOnlyWhenVectorAbsent(t *testing.T) {
 
 	// CVE-2022-1650 has a score but no vector → Cvss entry is emitted with
 	// baseScore + baseSeverity set, baseVector absent.
-	req := findRequirement(result.Baselines[0].Requirements, "CVE-2022-1650")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2022-1650")
 	require.Len(t, req.Cvss, 1)
 	require.NotNil(t, req.Cvss[0].BaseScore)
 	assert.InDelta(t, 8.1, *req.Cvss[0].BaseScore, 0.001)
@@ -525,8 +505,7 @@ func TestConvertTwistlock_AffectedPackagesMavenEcosystem(t *testing.T) {
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "CVE-2021-44228")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2021-44228")
 	require.Len(t, req.AffectedPackages, 1)
 	pkg := req.AffectedPackages[0]
 	require.NotNil(t, pkg.Name)
@@ -545,8 +524,7 @@ func TestConvertTwistlock_AffectedPackagesRpmEcosystem(t *testing.T) {
 	require.NoError(t, err)
 
 	// CVE-2021-43529 from sample-1 affects nss-util (os type → rpm via RHEL distro).
-	req := findRequirement(result.Baselines[0].Requirements, "CVE-2021-43529")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2021-43529")
 	require.Len(t, req.AffectedPackages, 1)
 	pkg := req.AffectedPackages[0]
 	require.NotNil(t, pkg.Name)
@@ -645,8 +623,7 @@ func TestConvertTwistlock_CweFromVuln(t *testing.T) {
 	}`)
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
-	req := findRequirement(result.Baselines[0].Requirements, "CVE-2099-0001")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2099-0001")
 	assert.Equal(t, []string{"CWE-79"}, req.Cwe)
 }
 
@@ -655,8 +632,7 @@ func TestConvertTwistlock_LegacyCvssBaseScoreTagRetained(t *testing.T) {
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "CVE-2021-44228")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2021-44228")
 	// Legacy tag retained for backward compatibility (removed in v3.4.0).
 	got, ok := req.Tags["cvss_base_score"]
 	require.True(t, ok, "expected legacy cvss_base_score tag to remain populated")

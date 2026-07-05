@@ -22,15 +22,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func findDescription(descs []hdf.Description, label string) *hdf.Description {
 	for i := range descs {
 		if descs[i].Label == label {
@@ -127,13 +118,11 @@ func TestConvertNeuVector_ImpactFromCVSSv3(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// CVE-2021-36159/apk-tools/2.10.5-r1 has score_v3=9.1 -> impact=0.91
-	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
-	require.NotNil(t, req, "expected vuln CVE-2021-36159/apk-tools/2.10.5-r1")
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
 	assert.InDelta(t, 0.91, req.Impact, 0.001)
 
 	// CVE-2021-36217/avahi/0.8-r0 has score_v3=6.2 -> impact=0.62
-	reqMedium := findRequirement(reqs, "CVE-2021-36217/avahi/0.8-r0")
-	require.NotNil(t, reqMedium, "expected vuln CVE-2021-36217/avahi/0.8-r0")
+	reqMedium := shared.MustFindRequirement(t, reqs, "CVE-2021-36217/avahi/0.8-r0")
 	assert.InDelta(t, 0.62, reqMedium.Impact, 0.001)
 }
 
@@ -192,8 +181,7 @@ func TestConvertNeuVector_CweExtraction(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// CVE-2020-25613/ruby:webrick/1.4.2 has CWE-444 in description
-	req := findRequirement(reqs, "CVE-2020-25613/ruby:webrick/1.4.2")
-	require.NotNil(t, req, "expected vuln CVE-2020-25613/ruby:webrick/1.4.2")
+	req := shared.MustFindRequirement(t, reqs, "CVE-2020-25613/ruby:webrick/1.4.2")
 
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
@@ -208,8 +196,7 @@ func TestConvertNeuVector_CweToNist(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// CVE-2018-25032/ruby:nokogiri/1.10.9 has CWE-787 in description
-	req := findRequirement(reqs, "CVE-2018-25032/ruby:nokogiri/1.10.9")
-	require.NotNil(t, req, "expected vuln CVE-2018-25032/ruby:nokogiri/1.10.9")
+	req := shared.MustFindRequirement(t, reqs, "CVE-2018-25032/ruby:nokogiri/1.10.9")
 
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
@@ -230,8 +217,7 @@ func TestConvertNeuVector_NistFallback(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// CVE-2021-36159/apk-tools/2.10.5-r1 has no CWE in description -> uses default remediation NIST
-	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
 
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist fallback should be present")
@@ -248,8 +234,7 @@ func TestConvertNeuVector_RequirementID(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// ID format: name/package_name/package_version
-	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
 	assert.Equal(t, "CVE-2021-36159/apk-tools/2.10.5-r1", req.ID)
 }
 
@@ -259,8 +244,7 @@ func TestConvertNeuVector_RequirementTitle(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
 	require.NotNil(t, req.Title)
 	// Title: "NeuVector found a vulnerability to <name> in <package_name>/<package_version>."
 	assert.Contains(t, *req.Title, "CVE-2021-36159")
@@ -276,8 +260,7 @@ func TestConvertNeuVector_Description(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
 
 	desc := findDescription(req.Descriptions, "default")
 	require.NotNil(t, desc, "expected a 'default' description")
@@ -308,8 +291,7 @@ func TestConvertNeuVector_ResultMessage_WithFixedVersion(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// CVE-2021-36159/apk-tools/2.10.5-r1 has fixed_version "2.10.7-r0"
-	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
 	require.NotEmpty(t, req.Results)
 
 	msg := req.Results[0].Message
@@ -326,8 +308,7 @@ func TestConvertNeuVector_ResultMessage_NoFixedVersion(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// CVE-2023-37920/ca-certificates/... has no fixed_version
-	req := findRequirement(reqs, "CVE-2023-37920/ca-certificates/2023.2.60_v7.0.306-80.0.el8_8")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2023-37920/ca-certificates/2023.2.60_v7.0.306-80.0.el8_8")
 	require.NotEmpty(t, req.Results)
 
 	msg := req.Results[0].Message
@@ -356,8 +337,7 @@ func TestConvertNeuVector_Tags(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
 
 	// nist should be present
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])

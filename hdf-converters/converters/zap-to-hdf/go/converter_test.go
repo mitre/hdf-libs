@@ -25,15 +25,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 // --- Validation tests ---
 
 func TestConverterContract(t *testing.T) {
@@ -194,8 +185,7 @@ func TestConvertZapToHDF_ImpactRiskCode1(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "10021")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
 	assert.Equal(t, 0.3, req.Impact)
 }
 
@@ -204,8 +194,7 @@ func TestConvertZapToHDF_ImpactRiskCode2(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "90022")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
 	assert.Equal(t, 0.5, req.Impact)
 }
 
@@ -224,12 +213,10 @@ func TestConvertZapToHDF_ResultCount(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req1 := findRequirement(result.Baselines[0].Requirements, "10021")
-	require.NotNil(t, req1)
+	req1 := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
 	assert.Len(t, req1.Results, 1)
 
-	req2 := findRequirement(result.Baselines[0].Requirements, "90022")
-	require.NotNil(t, req2)
+	req2 := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
 	assert.Len(t, req2.Results, 2)
 }
 
@@ -250,8 +237,7 @@ func TestConvertZapToHDF_CodeDesc(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "10021")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
 	assert.Equal(t, "URI: https://example.com/login | Method: GET | Param: X-Content-Type-Options", req.Results[0].CodeDesc)
 }
 
@@ -260,8 +246,7 @@ func TestConvertZapToHDF_AttackMessage(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "90022")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
 	require.NotNil(t, req.Results[1].Message)
 	assert.Equal(t, "' OR 1=1 --", *req.Results[1].Message)
 }
@@ -273,8 +258,7 @@ func TestConvertZapToHDF_NISTMappedCWE(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "10021")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
 
 	nistVal, ok := req.Tags["nist"]
 	require.True(t, ok, "nist tag missing")
@@ -288,8 +272,7 @@ func TestConvertZapToHDF_NISTFallbackEmptyCWE(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "90022")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
 
 	nistVal, ok := req.Tags["nist"]
 	require.True(t, ok, "nist tag missing")
@@ -307,8 +290,7 @@ func TestConvertZapToHDF_CCITags(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "10021")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
 
 	cciVal, ok := req.Tags["cci"]
 	require.True(t, ok, "cci tag missing")
@@ -324,8 +306,7 @@ func TestConvertZapToHDF_CWEIDTag(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "10021")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
 	assert.Equal(t, "16", req.Tags["cweid"])
 }
 
@@ -334,8 +315,7 @@ func TestConvertZapToHDF_WASCIDTag(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "10021")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
 	assert.Equal(t, "15", req.Tags["wascid"])
 }
 
@@ -344,8 +324,7 @@ func TestConvertZapToHDF_RiskDescTag(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "10021")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
 	assert.Equal(t, "Low (Medium)", req.Tags["riskdesc"])
 }
 
@@ -354,8 +333,7 @@ func TestConvertZapToHDF_ConfidenceTag(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "10021")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
 	assert.Equal(t, "2", req.Tags["confidence"])
 }
 
@@ -366,8 +344,7 @@ func TestConvertZapToHDF_DefaultDescription(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "10021")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
 	require.Len(t, req.Descriptions, 2)
 	assert.Equal(t, "default", req.Descriptions[0].Label)
 	assert.NotContains(t, req.Descriptions[0].Data, "<p>")
@@ -379,8 +356,7 @@ func TestConvertZapToHDF_CheckDescription(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "10021")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
 	require.Len(t, req.Descriptions, 2)
 	assert.Equal(t, "check", req.Descriptions[1].Label)
 	assert.Contains(t, req.Descriptions[1].Data, "Content-Type header")
@@ -485,8 +461,7 @@ func TestConvertZapToHDF_Webgoat_ImpactRisk0(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "90028")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90028")
 	assert.Equal(t, 0.3, req.Impact)
 }
 
@@ -495,8 +470,7 @@ func TestConvertZapToHDF_Webgoat_ImpactRisk3(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "42")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "42")
 	assert.Equal(t, 0.7, req.Impact)
 }
 

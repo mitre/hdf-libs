@@ -75,8 +75,7 @@ func TestConvertNessusToHDF_Compliance(t *testing.T) {
 	assert.Len(t, baseline.Requirements, 5, "Should have 5 compliance findings")
 
 	// Test FAILED compliance result (CAT II)
-	failedReq := findRequirementByID(baseline.Requirements, "V-71849")
-	require.NotNil(t, failedReq, "Should find V-71849")
+	failedReq := shared.MustFindRequirement(t, baseline.Requirements, "V-71849")
 	assert.Equal(t, "V-71849", failedReq.ID)
 	assert.Contains(t, *failedReq.Title, "RHEL-07-010010")
 	assert.Equal(t, 0.5, failedReq.Impact, "CAT II should map to 0.5")
@@ -85,25 +84,21 @@ func TestConvertNessusToHDF_Compliance(t *testing.T) {
 	assert.Equal(t, "RHEL-07-010010", failedReq.Tags["stig_id"])
 
 	// Test FAILED compliance result (CAT I - High)
-	highReq := findRequirementByID(baseline.Requirements, "V-71971")
-	require.NotNil(t, highReq, "Should find V-71971")
+	highReq := shared.MustFindRequirement(t, baseline.Requirements, "V-71971")
 	assert.Equal(t, 0.7, highReq.Impact, "CAT I should map to 0.7")
 	assert.Equal(t, hdf.Failed, highReq.Results[0].Status)
 
 	// Test PASSED compliance result (CAT III - Low)
-	passedReq := findRequirementByID(baseline.Requirements, "V-72083")
-	require.NotNil(t, passedReq, "Should find V-72083")
+	passedReq := shared.MustFindRequirement(t, baseline.Requirements, "V-72083")
 	assert.Equal(t, 0.3, passedReq.Impact, "CAT III should map to 0.3")
 	assert.Equal(t, hdf.Passed, passedReq.Results[0].Status)
 
 	// Test WARNING compliance result
-	warningReq := findRequirementByID(baseline.Requirements, "V-72095")
-	require.NotNil(t, warningReq, "Should find V-72095")
+	warningReq := shared.MustFindRequirement(t, baseline.Requirements, "V-72095")
 	assert.Equal(t, hdf.NotApplicable, warningReq.Results[0].Status, "WARNING should map to notApplicable")
 
 	// Test ERROR compliance result
-	errorReq := findRequirementByID(baseline.Requirements, "V-72229")
-	require.NotNil(t, errorReq, "Should find V-72229")
+	errorReq := shared.MustFindRequirement(t, baseline.Requirements, "V-72229")
 	assert.Equal(t, hdf.Error, errorReq.Results[0].Status)
 
 	// Write output for differential testing
@@ -354,16 +349,6 @@ func TestIsFQDN(t *testing.T) {
 	}
 }
 
-// Helper function to find a requirement by ID
-func findRequirementByID(requirements []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range requirements {
-		if requirements[i].ID == id {
-			return &requirements[i]
-		}
-	}
-	return nil
-}
-
 func TestConvertNessusToHDF_SeeAlsoMultiURLSplit(t *testing.T) {
 	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
 	inputData, err := os.ReadFile(inputPath)
@@ -375,10 +360,17 @@ func TestConvertNessusToHDF_SeeAlsoMultiURLSplit(t *testing.T) {
 	// Plugin 51192's see_also is:
 	//   "https://www.itu.int/rec/T-REC-X.509/en\nhttps://en.wikipedia.org/wiki/X.509"
 	// Each URL must become its own Reference entry with no embedded whitespace.
+	// 51192 lives in whichever baseline carries it, so search across all of them
+	// (a not-found-in-a-given-baseline is expected here, unlike MustFindRequirement).
 	var req *hdf.EvaluatedRequirement
 	for i := range result.Baselines {
-		if r := findRequirementByID(result.Baselines[i].Requirements, "51192"); r != nil {
-			req = r
+		for j := range result.Baselines[i].Requirements {
+			if result.Baselines[i].Requirements[j].ID == "51192" {
+				req = &result.Baselines[i].Requirements[j]
+				break
+			}
+		}
+		if req != nil {
 			break
 		}
 	}

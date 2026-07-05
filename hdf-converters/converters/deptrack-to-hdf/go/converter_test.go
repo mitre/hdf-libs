@@ -21,15 +21,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func findDescription(descs []hdf.Description, label string) *hdf.Description {
 	for i := range descs {
 		if descs[i].Label == label {
@@ -197,8 +188,7 @@ func TestConvertDeptrack_RequirementID(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46")
-	require.NotNil(t, req, "expected requirement with matrix ID")
+	shared.MustFindRequirement(t, reqs, "ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46")
 }
 
 // ---- Requirement title includes purl and vuln title ----
@@ -209,8 +199,7 @@ func TestConvertDeptrack_RequirementTitle(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46")
 	require.NotNil(t, req.Title)
 	assert.Contains(t, *req.Title, "pkg:npm/timespan@2.3.0")
 	assert.Contains(t, *req.Title, "Regular Expression Denial of Service")
@@ -224,8 +213,7 @@ func TestConvertDeptrack_Descriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46")
 
 	checkDesc := findDescription(req.Descriptions, "check")
 	require.NotNil(t, checkDesc, "expected a 'check' description")
@@ -315,8 +303,7 @@ func TestConvertDeptrack_ResultCodeDesc(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "ca4f2da9-0fad-4a13-92d7-f627f3168a56:979f87f5-eaf5-4095-9d38-cde17bf9228e:701a3953-666b-4b7a-96ca-e1e6a3e1def3")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "ca4f2da9-0fad-4a13-92d7-f627f3168a56:979f87f5-eaf5-4095-9d38-cde17bf9228e:701a3953-666b-4b7a-96ca-e1e6a3e1def3")
 	require.NotEmpty(t, req.Results)
 
 	assert.Contains(t, req.Results[0].CodeDesc, "Update to version 2.6.0 or later.")

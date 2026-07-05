@@ -20,15 +20,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 // ---- Input validation ----
 
 func TestConverterContract(t *testing.T) {
@@ -102,9 +93,9 @@ func TestConvert_Minimal_RequirementIDs(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	assert.NotNil(t, findRequirement(reqs, "dependency-expressjs/express"))
-	assert.NotNil(t, findRequirement(reqs, "dependency-jshttp/accepts"))
-	assert.NotNil(t, findRequirement(reqs, "dependency-lodash/lodash"))
+	shared.MustFindRequirement(t, reqs, "dependency-expressjs/express")
+	shared.MustFindRequirement(t, reqs, "dependency-jshttp/accepts")
+	shared.MustFindRequirement(t, reqs, "dependency-lodash/lodash")
 }
 
 func TestConvert_Minimal_RequirementTitle(t *testing.T) {
@@ -112,8 +103,7 @@ func TestConvert_Minimal_RequirementTitle(t *testing.T) {
 	result, err := ConvertIonChannelToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "dependency-expressjs/express")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-expressjs/express")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "Dependency express from expressjs @ 4.18.2 (Required ^4.18.0)", *req.Title)
 }
@@ -133,8 +123,7 @@ func TestConvert_Minimal_NISTTags(t *testing.T) {
 	result, err := ConvertIonChannelToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "dependency-expressjs/express")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-expressjs/express")
 	require.NotNil(t, req.Tags)
 
 	nist, ok := req.Tags["nist"]
@@ -150,8 +139,7 @@ func TestConvert_Minimal_CCITags(t *testing.T) {
 	result, err := ConvertIonChannelToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "dependency-expressjs/express")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-expressjs/express")
 	// Just verify tags exist — CCI may be empty for CM-8
 	require.NotNil(t, req.Tags)
 }
@@ -161,8 +149,7 @@ func TestConvert_Minimal_DependencyMetadataInTags(t *testing.T) {
 	result, err := ConvertIonChannelToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "dependency-expressjs/express")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-expressjs/express")
 
 	assert.Equal(t, "expressjs", req.Tags["org"])
 	assert.Equal(t, "express", req.Tags["name"])
@@ -176,8 +163,7 @@ func TestConvert_Minimal_SubDependencyTracking(t *testing.T) {
 	require.NoError(t, err)
 
 	// express should list "accepts" as a sub-dependency in tags
-	express := findRequirement(result.Baselines[0].Requirements, "dependency-expressjs/express")
-	require.NotNil(t, express)
+	express := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-expressjs/express")
 	subDeps, ok := express.Tags["dependencies"]
 	require.True(t, ok, "express should have dependencies in tags")
 	subArr, ok := subDeps.([]string)
@@ -191,8 +177,7 @@ func TestConvert_Minimal_ParentTracking(t *testing.T) {
 	require.NoError(t, err)
 
 	// accepts should have express as a parent
-	accepts := findRequirement(result.Baselines[0].Requirements, "dependency-jshttp/accepts")
-	require.NotNil(t, accepts)
+	accepts := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-jshttp/accepts")
 	parents, ok := accepts.Tags["parentDependencies"]
 	require.True(t, ok, "accepts should have parentDependencies in tags")
 	parentArr, ok := parents.([]string)
@@ -205,8 +190,7 @@ func TestConvert_Minimal_CodeContainsDependencyJSON(t *testing.T) {
 	result, err := ConvertIonChannelToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "dependency-lodash/lodash")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-lodash/lodash")
 	require.NotNil(t, req.Code)
 	assert.Contains(t, *req.Code, `"name": "lodash"`)
 	assert.Contains(t, *req.Code, `"version": "4.17.21"`)
@@ -240,8 +224,7 @@ func TestConvert_EdgeCases_PythonEditableInstall(t *testing.T) {
 	result, err := ConvertIonChannelToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "dependency-n/a/-e")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-n/a/-e")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "Python requirements file requirements.txt", *req.Title)
 }
@@ -252,8 +235,7 @@ func TestConvert_EdgeCases_NAFieldsOmitted(t *testing.T) {
 	require.NoError(t, err)
 
 	// "requests" has org="n/a" and requirement="n/a" — those should be omitted from title
-	req := findRequirement(result.Baselines[0].Requirements, "dependency-n/a/requests")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-n/a/requests")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "Dependency requests @ 2.31.0", *req.Title)
 }
@@ -264,8 +246,7 @@ func TestConvert_EdgeCases_NAVersionOmitted(t *testing.T) {
 	require.NoError(t, err)
 
 	// "internal-lib" has version="n/a" — should be omitted from title
-	req := findRequirement(result.Baselines[0].Requirements, "dependency-example-corp/internal-lib")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-example-corp/internal-lib")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "Dependency internal-lib from example-corp (Required >=0.5.0)", *req.Title)
 }

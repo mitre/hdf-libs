@@ -21,15 +21,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirementByID(requirements []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range requirements {
-		if requirements[i].ID == id {
-			return &requirements[i]
-		}
-	}
-	return nil
-}
-
 func TestConvertFortifyToHDF_ControlType(t *testing.T) {
 	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
 	result, err := ConvertFortifyToHDF(inputData, converterVersion)
@@ -129,8 +120,7 @@ func TestConvertFortifyToHDF_RequirementFields(t *testing.T) {
 	baseline := result.Baselines[0]
 
 	// Find the "Path Manipulation" requirement (classID 823FE039-...)
-	pathManip := findRequirementByID(baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
-	require.NotNil(t, pathManip, "Should find Path Manipulation requirement")
+	pathManip := shared.MustFindRequirement(t, baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
 
 	// ID is the classID
 	assert.Equal(t, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59", pathManip.ID)
@@ -173,8 +163,7 @@ func TestConvertFortifyToHDF_NISTTags(t *testing.T) {
 	baseline := result.Baselines[0]
 
 	// The Path Manipulation description has a NIST reference "SI-10" in its References
-	pathManip := findRequirementByID(baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
-	require.NotNil(t, pathManip)
+	pathManip := shared.MustFindRequirement(t, baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
 
 	tags := pathManip.Tags
 	require.NotNil(t, tags, "Tags should not be nil")

@@ -21,15 +21,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func findDescription(descs []hdf.Description, label string) *hdf.Description {
 	for i := range descs {
 		if descs[i].Label == label {
@@ -144,8 +135,7 @@ func TestConvertNetsparker_RequirementID(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
-	require.NotNil(t, req, "expected requirement with LookupId e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
+	shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
 }
 
 // ---- Requirement title ----
@@ -156,8 +146,7 @@ func TestConvertNetsparker_RequirementTitle(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "Weak Ciphers Enabled", *req.Title)
 }
@@ -172,13 +161,11 @@ func TestConvertNetsparker_Severity(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// Medium → 0.5
-	medium := findRequirement(reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
-	require.NotNil(t, medium)
+	medium := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
 	assert.InDelta(t, 0.5, medium.Impact, 0.001)
 
 	// Low → 0.3
-	low := findRequirement(reqs, "8d8e6052-221d-41c4-8f1e-af9704473901")
-	require.NotNil(t, low)
+	low := shared.MustFindRequirement(t, reqs, "8d8e6052-221d-41c4-8f1e-af9704473901")
 	assert.InDelta(t, 0.3, low.Impact, 0.001)
 }
 
@@ -217,8 +204,7 @@ func TestConvertNetsparker_DualNistMapping(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// First vuln: CWE-327 → SC-12/SC-13, OWASP A6 → CM-6
-	req := findRequirement(reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
 	assert.NotEmpty(t, nist)
@@ -235,8 +221,7 @@ func TestConvertNetsparker_Tags(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 
-	req := findRequirement(reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
 
 	// nist should be present
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
@@ -265,8 +250,7 @@ func TestConvertNetsparker_Descriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
 
 	// Should have at least a default description
 	desc := findDescription(req.Descriptions, "default")
@@ -308,8 +292,7 @@ func TestConvertNetsparker_CodeDesc(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
 	require.NotEmpty(t, req.Results)
 
 	codeDesc := req.Results[0].CodeDesc
@@ -325,8 +308,7 @@ func TestConvertNetsparker_Message(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
 	require.NotEmpty(t, req.Results)
 	require.NotNil(t, req.Results[0].Message)
 	assert.Contains(t, *req.Results[0].Message, "http-response")
@@ -340,8 +322,7 @@ func TestConvertNetsparker_StartTime(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
 	require.NotEmpty(t, req.Results)
 
 	// StartTime should be non-zero (parsed from target initiated)

@@ -22,15 +22,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func findBaseline(baselines []hdf.EvaluatedBaseline, titleSubstring string) *hdf.EvaluatedBaseline {
 	for i := range baselines {
 		if baselines[i].Title != nil && contains(*baselines[i].Title, titleSubstring) {
@@ -170,12 +161,10 @@ func TestConvertPrisma_RequirementIDs(t *testing.T) {
 	assert.Len(t, host1.Requirements, 3)
 
 	// Compliance finding (no CVE): ID = ComplianceID-Distro-Severity
-	req := findRequirement(host1.Requirements, "60522-redhat-RHEL7-high")
-	require.NotNil(t, req, "expected compliance requirement with ID 60522-redhat-RHEL7-high")
+	shared.MustFindRequirement(t, host1.Requirements, "60522-redhat-RHEL7-high")
 
 	// CVE finding: ID = ComplianceID-CVEID
-	req = findRequirement(host1.Requirements, "46-CVE-2021-44142")
-	require.NotNil(t, req, "expected CVE requirement with ID 46-CVE-2021-44142")
+	shared.MustFindRequirement(t, host1.Requirements, "46-CVE-2021-44142")
 }
 
 // ---- Severity → Impact mapping ----
@@ -210,18 +199,15 @@ func TestConvertPrisma_ImpactValues(t *testing.T) {
 	require.NotNil(t, host1)
 
 	// critical → 0.9
-	req := findRequirement(host1.Requirements, "46-CVE-2021-44142")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, host1.Requirements, "46-CVE-2021-44142")
 	assert.InDelta(t, 0.9, req.Impact, 0.001)
 
 	// low → 0.3
-	req = findRequirement(host1.Requirements, "46-CVE-2016-2226")
-	require.NotNil(t, req)
+	req = shared.MustFindRequirement(t, host1.Requirements, "46-CVE-2016-2226")
 	assert.InDelta(t, 0.3, req.Impact, 0.001)
 
 	// high → 0.7
-	req = findRequirement(host1.Requirements, "60522-redhat-RHEL7-high")
-	require.NotNil(t, req)
+	req = shared.MustFindRequirement(t, host1.Requirements, "60522-redhat-RHEL7-high")
 	assert.InDelta(t, 0.7, req.Impact, 0.001)
 }
 
@@ -236,16 +222,14 @@ func TestConvertPrisma_NistTags(t *testing.T) {
 	require.NotNil(t, host1)
 
 	// CVE finding should get remediation NIST tags (SI-2, RA-5)
-	req := findRequirement(host1.Requirements, "46-CVE-2021-44142")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, host1.Requirements, "46-CVE-2021-44142")
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist)
 	assert.Contains(t, nist, "SI-2")
 	assert.Contains(t, nist, "RA-5")
 
 	// Non-CVE compliance finding should get static analysis NIST tags (SA-11, RA-5)
-	req = findRequirement(host1.Requirements, "60522-redhat-RHEL7-high")
-	require.NotNil(t, req)
+	req = shared.MustFindRequirement(t, host1.Requirements, "60522-redhat-RHEL7-high")
 	nist = hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist)
 	assert.Contains(t, nist, "SA-11")
@@ -280,14 +264,12 @@ func TestConvertPrisma_CodeDesc(t *testing.T) {
 	require.NotNil(t, host1)
 
 	// image type with packages
-	req := findRequirement(host1.Requirements, "46-CVE-2021-44142")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, host1.Requirements, "46-CVE-2021-44142")
 	require.NotEmpty(t, req.Results)
 	assert.Contains(t, req.Results[0].CodeDesc, "samba-common")
 
 	// linux type
-	req = findRequirement(host1.Requirements, "60522-redhat-RHEL7-high")
-	require.NotNil(t, req)
+	req = shared.MustFindRequirement(t, host1.Requirements, "60522-redhat-RHEL7-high")
 	require.NotEmpty(t, req.Results)
 	assert.Contains(t, req.Results[0].CodeDesc, "Configuration check")
 }
@@ -302,8 +284,7 @@ func TestConvertPrisma_DefaultDescription(t *testing.T) {
 	host1 := findBaseline(result.Baselines, "host-1.example.com")
 	require.NotNil(t, host1)
 
-	req := findRequirement(host1.Requirements, "46-CVE-2021-44142")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, host1.Requirements, "46-CVE-2021-44142")
 	require.NotEmpty(t, req.Descriptions)
 	assert.Equal(t, "default", req.Descriptions[0].Label)
 	assert.Contains(t, req.Descriptions[0].Data, "Samba")
@@ -319,8 +300,7 @@ func TestConvertPrisma_CveTags(t *testing.T) {
 	host1 := findBaseline(result.Baselines, "host-1.example.com")
 	require.NotNil(t, host1)
 
-	req := findRequirement(host1.Requirements, "46-CVE-2021-44142")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, host1.Requirements, "46-CVE-2021-44142")
 	cve := hdfutil.SafeStringSlice(req.Tags["cve"])
 	require.NotNil(t, cve)
 	assert.Contains(t, cve, "CVE-2021-44142")
@@ -354,8 +334,7 @@ func TestConvertPrisma_MessageField(t *testing.T) {
 	require.NotNil(t, host1)
 
 	// Compliance finding with Cause should include it in message
-	req := findRequirement(host1.Requirements, "60522-redhat-RHEL7-high")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, host1.Requirements, "60522-redhat-RHEL7-high")
 	require.NotEmpty(t, req.Results)
 	msg := req.Results[0].Message
 	require.NotNil(t, msg)

@@ -23,15 +23,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func findDescription(descs []hdf.Description, label string) *hdf.Description {
 	for i := range descs {
 		if descs[i].Label == label {
@@ -169,8 +160,7 @@ func TestConvertScoutsuiteToHDF_ImpactDanger(t *testing.T) {
 	require.NoError(t, err)
 
 	// cloudtrail-not-configured has level "danger"
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-not-configured")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
 	assert.Equal(t, 0.7, req.Impact)
 }
 
@@ -180,8 +170,7 @@ func TestConvertScoutsuiteToHDF_ImpactWarning(t *testing.T) {
 	require.NoError(t, err)
 
 	// cloudtrail-duplicated-global-services-logging has level "warning"
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-duplicated-global-services-logging")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-duplicated-global-services-logging")
 	assert.Equal(t, 0.5, req.Impact)
 }
 
@@ -193,8 +182,7 @@ func TestConvertScoutsuiteToHDF_StatusFailed(t *testing.T) {
 	require.NoError(t, err)
 
 	// cloudtrail-not-configured: checked_items=16, flagged_items=16 -> failed
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-not-configured")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
 	require.Len(t, req.Results, 1)
 	assert.Equal(t, hdf.Failed, req.Results[0].Status)
 }
@@ -205,8 +193,7 @@ func TestConvertScoutsuiteToHDF_StatusNotReviewed(t *testing.T) {
 	require.NoError(t, err)
 
 	// cloudtrail-duplicated-global-services-logging: checked_items=0 -> notReviewed
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-duplicated-global-services-logging")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-duplicated-global-services-logging")
 	require.Len(t, req.Results, 1)
 	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
 }
@@ -226,8 +213,7 @@ func TestConvertScoutsuiteToHDF_NISTMapped(t *testing.T) {
 	require.NoError(t, err)
 
 	// cloudtrail-not-configured maps to AU-12
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-not-configured")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
 
 	nistVal, ok := req.Tags["nist"]
 	require.True(t, ok, "nist tag missing")
@@ -242,8 +228,7 @@ func TestConvertScoutsuiteToHDF_NISTMultiControl(t *testing.T) {
 	require.NoError(t, err)
 
 	// cloudtrail-no-cloudwatch-integration maps to AU-12|SI-4(2)
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-no-cloudwatch-integration")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-no-cloudwatch-integration")
 
 	nistVal, ok := req.Tags["nist"]
 	require.True(t, ok, "nist tag missing")
@@ -260,8 +245,7 @@ func TestConvertScoutsuiteToHDF_CCITags(t *testing.T) {
 	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-not-configured")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
 
 	cciVal, ok := req.Tags["cci"]
 	require.True(t, ok, "cci tag missing")
@@ -277,8 +261,7 @@ func TestConvertScoutsuiteToHDF_DefaultDescription(t *testing.T) {
 	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-not-configured")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
 
 	desc := findDescription(req.Descriptions, "default")
 	require.NotNil(t, desc, "default description missing")
@@ -291,8 +274,7 @@ func TestConvertScoutsuiteToHDF_FixDescription(t *testing.T) {
 	require.NoError(t, err)
 
 	// cloudtrail-no-cloudwatch-integration has remediation
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-no-cloudwatch-integration")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-no-cloudwatch-integration")
 
 	desc := findDescription(req.Descriptions, "fix")
 	require.NotNil(t, desc, "fix description missing")
@@ -306,8 +288,7 @@ func TestConvertScoutsuiteToHDF_RequirementTitle(t *testing.T) {
 	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-not-configured")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "CloudTrail Service Not Configured", *req.Title)
 }
@@ -319,8 +300,7 @@ func TestConvertScoutsuiteToHDF_CodeDescDescription(t *testing.T) {
 	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-not-configured")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
 	require.Len(t, req.Results, 1)
 	assert.Contains(t, req.Results[0].CodeDesc, "CloudTrail Service Not Configured")
 }
@@ -332,8 +312,7 @@ func TestConvertScoutsuiteToHDF_FailedMessage(t *testing.T) {
 	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-not-configured")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
 	require.Len(t, req.Results, 1)
 	assert.NotNil(t, req.Results[0].Message)
 	assert.Contains(t, *req.Results[0].Message, "16 flagged items")
@@ -346,8 +325,7 @@ func TestConvertScoutsuiteToHDF_NotReviewedMessage(t *testing.T) {
 	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "cloudtrail-duplicated-global-services-logging")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-duplicated-global-services-logging")
 	require.Len(t, req.Results, 1)
 	assert.NotNil(t, req.Results[0].Message)
 	assert.Contains(t, *req.Results[0].Message, "no items were checked")

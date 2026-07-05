@@ -21,15 +21,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func findDescription(descs []hdf.Description, label string) *hdf.Description {
 	for i := range descs {
 		if descs[i].Label == label {
@@ -133,23 +124,19 @@ func TestConvertSnyk_Severity(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// critical → 0.9 (npm:adm-zip:20180415)
-	critical := findRequirement(reqs, "npm:adm-zip:20180415")
-	require.NotNil(t, critical, "expected critical vuln npm:adm-zip:20180415")
+	critical := shared.MustFindRequirement(t, reqs, "npm:adm-zip:20180415")
 	assert.InDelta(t, 0.9, critical.Impact, 0.001)
 
 	// high → 0.7 (SNYK-JS-ADMZIP-1065796)
-	high := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
-	require.NotNil(t, high, "expected high vuln SNYK-JS-ADMZIP-1065796")
+	high := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
 	assert.InDelta(t, 0.7, high.Impact, 0.001)
 
 	// medium → 0.5 (SNYK-JS-HIGHLIGHTJS-1045326)
-	medium := findRequirement(reqs, "SNYK-JS-HIGHLIGHTJS-1045326")
-	require.NotNil(t, medium, "expected medium vuln SNYK-JS-HIGHLIGHTJS-1045326")
+	medium := shared.MustFindRequirement(t, reqs, "SNYK-JS-HIGHLIGHTJS-1045326")
 	assert.InDelta(t, 0.5, medium.Impact, 0.001)
 
 	// low → 0.3 (SNYK-JS-HBS-1566555)
-	low := findRequirement(reqs, "SNYK-JS-HBS-1566555")
-	require.NotNil(t, low, "expected low vuln SNYK-JS-HBS-1566555")
+	low := shared.MustFindRequirement(t, reqs, "SNYK-JS-HBS-1566555")
 	assert.InDelta(t, 0.3, low.Impact, 0.001)
 }
 
@@ -162,8 +149,7 @@ func TestConvertSnyk_CweToNist(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// CWE-22 (Directory Traversal) should have a NIST mapping
-	req := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
 
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
@@ -179,8 +165,7 @@ func TestConvertSnyk_Dedup(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// SNYK-JS-HANDLEBARS-534988 appears twice in the fixture → single requirement, 2 results
-	req := findRequirement(reqs, "SNYK-JS-HANDLEBARS-534988")
-	require.NotNil(t, req, "expected requirement SNYK-JS-HANDLEBARS-534988")
+	req := shared.MustFindRequirement(t, reqs, "SNYK-JS-HANDLEBARS-534988")
 	assert.Len(t, req.Results, 2, "should have 2 results for deduplicated vuln")
 }
 
@@ -192,8 +177,7 @@ func TestConvertSnyk_DependencyPath(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
 	require.NotEmpty(t, req.Results)
 
 	// "from" for this vuln: ["goof@1.0.1", "adm-zip@0.4.7"]
@@ -212,8 +196,7 @@ func TestConvertSnyk_Tags(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// npm:adm-zip:20180415 has CVE, CWE, and GHSA identifiers
-	req := findRequirement(reqs, "npm:adm-zip:20180415")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "npm:adm-zip:20180415")
 
 	// cweid
 	cweid, ok := req.Tags["cweid"].([]string)
@@ -264,8 +247,7 @@ func TestConvertSnyk_Description(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
 
 	desc := findDescription(req.Descriptions, "default")
 	require.NotNil(t, desc, "expected a 'default' description")
@@ -280,8 +262,7 @@ func TestConvertSnyk_RequirementTitleAndID(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
 	assert.Equal(t, "SNYK-JS-ADMZIP-1065796", req.ID)
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "Directory Traversal", *req.Title)

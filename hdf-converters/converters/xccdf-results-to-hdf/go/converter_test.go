@@ -88,13 +88,11 @@ func TestConvertXccdfResultsToHDF_MinimalStatusMapping(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// First rule-result is "fail"
-	failReq := findRequirementByIDRef(reqs, "xccdf_moc.elpmaxe.www_rule_1")
-	require.NotNil(t, failReq, "Should find rule_1")
+	failReq := shared.MustFindRequirement(t, reqs, "xccdf_moc.elpmaxe.www_rule_1")
 	assert.Equal(t, hdf.Failed, failReq.Results[0].Status)
 
 	// Second rule-result is "pass"
-	passReq := findRequirementByIDRef(reqs, "xccdf_moc.elpmaxe.www_rule_2")
-	require.NotNil(t, passReq, "Should find rule_2")
+	passReq := shared.MustFindRequirement(t, reqs, "xccdf_moc.elpmaxe.www_rule_2")
 	assert.Equal(t, hdf.Passed, passReq.Results[0].Status)
 }
 
@@ -242,18 +240,15 @@ func TestConvertXccdfResultsToHDF_StigSeverityToImpact(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// SV-204393: medium -> 0.5
-	medReq := findRequirementByID(reqs, "SV-204393")
-	require.NotNil(t, medReq, "Should find SV-204393")
+	medReq := shared.MustFindRequirement(t, reqs, "SV-204393")
 	assert.Equal(t, 0.5, medReq.Impact, "medium severity should map to 0.5")
 
 	// SV-204424: high -> 0.7
-	highReq := findRequirementByID(reqs, "SV-204424")
-	require.NotNil(t, highReq, "Should find SV-204424")
+	highReq := shared.MustFindRequirement(t, reqs, "SV-204424")
 	assert.Equal(t, 0.7, highReq.Impact, "high severity should map to 0.7")
 
 	// SV-204452: low -> 0.3
-	lowReq := findRequirementByID(reqs, "SV-204452")
-	require.NotNil(t, lowReq, "Should find SV-204452")
+	lowReq := shared.MustFindRequirement(t, reqs, "SV-204452")
 	assert.Equal(t, 0.3, lowReq.Impact, "low severity should map to 0.3")
 }
 
@@ -265,13 +260,11 @@ func TestConvertXccdfResultsToHDF_StigStatusMapping(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// SV-204393: fail
-	failReq := findRequirementByID(reqs, "SV-204393")
-	require.NotNil(t, failReq)
+	failReq := shared.MustFindRequirement(t, reqs, "SV-204393")
 	assert.Equal(t, hdf.Failed, failReq.Results[0].Status)
 
 	// SV-204405: pass
-	passReq := findRequirementByID(reqs, "SV-204405")
-	require.NotNil(t, passReq)
+	passReq := shared.MustFindRequirement(t, reqs, "SV-204405")
 	assert.Equal(t, hdf.Passed, passReq.Results[0].Status)
 }
 
@@ -281,8 +274,7 @@ func TestConvertXccdfResultsToHDF_StigCCIToNIST(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirementByID(reqs, "SV-204393")
-	require.NotNil(t, req, "Should find SV-204393")
+	req := shared.MustFindRequirement(t, reqs, "SV-204393")
 
 	// Should have cci tag
 	cciTag, ok := req.Tags["cci"]
@@ -340,8 +332,7 @@ func TestConvertXccdfResultsToHDF_StigDescriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirementByID(reqs, "SV-204393")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "SV-204393")
 
 	// Should have at least "default" and "fix" descriptions
 	require.GreaterOrEqual(t, len(req.Descriptions), 2)
@@ -371,8 +362,7 @@ func TestConvertXccdfResultsToHDF_StigRuleVersionAsID(t *testing.T) {
 		"SV-204452",
 	}
 	for _, expectedID := range expectedIDs {
-		req := findRequirementByID(reqs, expectedID)
-		assert.NotNil(t, req, "Should find requirement with ID %s", expectedID)
+		shared.MustFindRequirement(t, reqs, expectedID)
 	}
 }
 
@@ -977,26 +967,6 @@ func TestConvertXccdfBenchmarkToHDF_FullWin2022STIG(t *testing.T) {
 }
 
 // --- Helper functions ---
-
-func findRequirementByID(requirements []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range requirements {
-		if requirements[i].ID == id {
-			return &requirements[i]
-		}
-	}
-	return nil
-}
-
-// findRequirementByIDRef finds a requirement whose ID matches the given idref
-// (used for minimal.xml where Rule IDs become the requirement IDs).
-func findRequirementByIDRef(requirements []hdf.EvaluatedRequirement, idref string) *hdf.EvaluatedRequirement {
-	for i := range requirements {
-		if requirements[i].ID == idref {
-			return &requirements[i]
-		}
-	}
-	return nil
-}
 
 func findBaselineRequirement(requirements []hdf.BaselineRequirement, id string) *hdf.BaselineRequirement {
 	for i := range requirements {

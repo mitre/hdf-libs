@@ -109,22 +109,12 @@ func TestConvertNiktoToHDF_AllStatusFailed(t *testing.T) {
 	}
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func TestConvertNiktoToHDF_NISTMapped(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertNiktoToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "600050")
-	require.NotNil(t, req, "requirement 600050 not found")
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "600050")
 
 	nistVal, ok := req.Tags["nist"]
 	require.True(t, ok, "nist tag missing")
@@ -138,8 +128,7 @@ func TestConvertNiktoToHDF_NISTUnmapped(t *testing.T) {
 	result, err := ConvertNiktoToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "999957")
-	require.NotNil(t, req, "requirement 999957 not found")
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "999957")
 
 	nistVal, ok := req.Tags["nist"]
 	require.True(t, ok, "nist tag missing")
@@ -155,8 +144,7 @@ func TestConvertNiktoToHDF_CCITags(t *testing.T) {
 	result, err := ConvertNiktoToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "600050")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "600050")
 
 	cciVal, ok := req.Tags["cci"]
 	require.True(t, ok, "cci tag missing")
@@ -170,8 +158,7 @@ func TestConvertNiktoToHDF_OSVDBPresent(t *testing.T) {
 	result, err := ConvertNiktoToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "999971")
-	require.NotNil(t, req, "requirement 999971 not found")
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "999971")
 
 	osvdbVal, ok := req.Tags["osvdb"]
 	require.True(t, ok, "osvdb tag missing")
@@ -183,8 +170,7 @@ func TestConvertNiktoToHDF_OSVDBZeroOmitted(t *testing.T) {
 	result, err := ConvertNiktoToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "600050")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "600050")
 
 	_, ok := req.Tags["osvdb"]
 	assert.False(t, ok, "osvdb tag should be omitted when OSVDB is 0")
@@ -195,8 +181,7 @@ func TestConvertNiktoToHDF_CodeDesc(t *testing.T) {
 	result, err := ConvertNiktoToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "600050")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "600050")
 	assert.Equal(t, "URL: / Method: HEAD", req.Results[0].CodeDesc)
 }
 
@@ -205,8 +190,7 @@ func TestConvertNiktoToHDF_Description(t *testing.T) {
 	result, err := ConvertNiktoToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "999957")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "999957")
 
 	require.Len(t, req.Descriptions, 1)
 	assert.Equal(t, "default", req.Descriptions[0].Label)
@@ -248,8 +232,7 @@ func TestConvertNiktoToHDF_RequirementTitle(t *testing.T) {
 	result, err := ConvertNiktoToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "999986")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "999986")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "Retrieved access-control-allow-origin header: *", *req.Title)
 }

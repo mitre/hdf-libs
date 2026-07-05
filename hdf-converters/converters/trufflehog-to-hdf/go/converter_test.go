@@ -22,15 +22,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 // ---- Input validation ----
 
 func TestConverterContract(t *testing.T) {
@@ -177,12 +168,10 @@ func TestConvertTrufflehogToHDF_Grouping(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	aws := findRequirement(reqs, "AWS PLAIN")
-	require.NotNil(t, aws, "expected requirement 'AWS PLAIN'")
+	aws := shared.MustFindRequirement(t, reqs, "AWS PLAIN")
 	assert.Len(t, aws.Results, 2, "AWS PLAIN should have 2 results")
 
-	uri := findRequirement(reqs, "URI PLAIN")
-	require.NotNil(t, uri, "expected requirement 'URI PLAIN'")
+	uri := shared.MustFindRequirement(t, reqs, "URI PLAIN")
 	assert.Len(t, uri.Results, 1, "URI PLAIN should have 1 result")
 }
 
@@ -239,8 +228,7 @@ func TestConvertTrufflehogToHDF_NDJSONDescription(t *testing.T) {
 
 	// Postgres findings have DetectorDescription
 	reqs := result.Baselines[0].Requirements
-	postgres := findRequirement(reqs, "Postgres PLAIN")
-	require.NotNil(t, postgres)
+	postgres := shared.MustFindRequirement(t, reqs, "Postgres PLAIN")
 	require.NotEmpty(t, postgres.Descriptions)
 	assert.Equal(t, "default", postgres.Descriptions[0].Label)
 	assert.Contains(t, postgres.Descriptions[0].Data, "Postgres")

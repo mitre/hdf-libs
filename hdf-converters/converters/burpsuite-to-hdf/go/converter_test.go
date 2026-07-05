@@ -23,15 +23,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 // --- Validation tests ---
 
 func TestConverterContract(t *testing.T) {
@@ -170,8 +161,7 @@ func TestConvertBurpsuiteToHDF_ImpactInformation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Type 2098688 = "Cross-origin resource sharing" with severity "Information"
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 	assert.Equal(t, 0.3, req.Impact)
 }
 
@@ -181,8 +171,7 @@ func TestConvertBurpsuiteToHDF_ImpactMedium(t *testing.T) {
 	require.NoError(t, err)
 
 	// Type 16777472 = severity "Medium"
-	req := findRequirement(result.Baselines[0].Requirements, "16777472")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "16777472")
 	assert.Equal(t, 0.5, req.Impact)
 }
 
@@ -192,8 +181,7 @@ func TestConvertBurpsuiteToHDF_ImpactLow(t *testing.T) {
 	require.NoError(t, err)
 
 	// Type 16777984 = severity "Low"
-	req := findRequirement(result.Baselines[0].Requirements, "16777984")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "16777984")
 	assert.Equal(t, 0.3, req.Impact)
 }
 
@@ -218,8 +206,7 @@ func TestConvertBurpsuiteToHDF_GroupingByType(t *testing.T) {
 
 	// Type 2098688 (Cross-origin resource sharing) appears many times in the fixture
 	// Each appearance becomes a separate result within the same requirement
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 	assert.Greater(t, len(req.Results), 1, "Multiple issues with same type should produce multiple results")
 }
 
@@ -242,8 +229,7 @@ func TestConvertBurpsuiteToHDF_CodeDescContainsHost(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 	require.Greater(t, len(req.Results), 0)
 	assert.Contains(t, req.Results[0].CodeDesc, "Host:")
 	assert.Contains(t, req.Results[0].CodeDesc, "54.82.22.214")
@@ -255,8 +241,7 @@ func TestConvertBurpsuiteToHDF_CodeDescContainsLocation(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 	require.Greater(t, len(req.Results), 0)
 	assert.Contains(t, req.Results[0].CodeDesc, "Location:")
 }
@@ -269,8 +254,7 @@ func TestConvertBurpsuiteToHDF_NISTMappedCWE(t *testing.T) {
 	require.NoError(t, err)
 
 	// Type 2098688 has CWE-942 in vulnerabilityClassifications
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 
 	nistVal, ok := req.Tags["nist"]
 	require.True(t, ok, "nist tag missing")
@@ -296,8 +280,7 @@ func TestConvertBurpsuiteToHDF_NISTFallback(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "999999")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "999999")
 
 	nistVal, ok := req.Tags["nist"]
 	require.True(t, ok, "nist tag missing")
@@ -315,8 +298,7 @@ func TestConvertBurpsuiteToHDF_CCITags(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 
 	cciVal, ok := req.Tags["cci"]
 	require.True(t, ok, "cci tag missing")
@@ -332,8 +314,7 @@ func TestConvertBurpsuiteToHDF_CWEIDTag(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 
 	cweVal, ok := req.Tags["cweid"]
 	require.True(t, ok, "cweid tag missing")
@@ -347,8 +328,7 @@ func TestConvertBurpsuiteToHDF_CheckDescription(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 	require.Greater(t, len(req.Descriptions), 0)
 
 	// Find check description (issueBackground)
@@ -370,8 +350,7 @@ func TestConvertBurpsuiteToHDF_FixDescription(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 
 	var fixDesc *hdf.Description
 	for i := range req.Descriptions {
@@ -391,8 +370,7 @@ func TestConvertBurpsuiteToHDF_DefaultDescription(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 
 	var defaultDesc *hdf.Description
 	for i := range req.Descriptions {
@@ -411,8 +389,7 @@ func TestConvertBurpsuiteToHDF_RequirementTitle(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "Cross-origin resource sharing", *req.Title)
 }
@@ -469,8 +446,7 @@ func TestConvertBurpsuiteToHDF_ConfidenceTag(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "2098688")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
 	assert.Equal(t, "Certain", req.Tags["confidence"])
 }
 

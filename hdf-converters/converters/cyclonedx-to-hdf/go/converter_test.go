@@ -21,15 +21,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func findDescription(descs []hdf.Description, label string) *hdf.Description {
 	for i := range descs {
 		if descs[i].Label == label {
@@ -148,8 +139,7 @@ func TestConvertCycloneDX_ImpactFromCVSSScore(t *testing.T) {
 	result, err := ConvertCycloneDXToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "CVE-2020-25649")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
 	assert.InDelta(t, 0.82, req.Impact, 0.001)
 }
 
@@ -163,18 +153,15 @@ func TestConvertCycloneDX_Severity(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 
 	// low → 0.3
-	low := findRequirement(reqs, "GHSA-5mg8-w23w-74h3")
-	require.NotNil(t, low, "expected low vuln GHSA-5mg8-w23w-74h3")
+	low := shared.MustFindRequirement(t, reqs, "GHSA-5mg8-w23w-74h3")
 	assert.InDelta(t, 0.3, low.Impact, 0.001)
 
 	// medium → 0.5
-	medium := findRequirement(reqs, "GHSA-7g45-4rm6-3mm3")
-	require.NotNil(t, medium, "expected medium vuln GHSA-7g45-4rm6-3mm3")
+	medium := shared.MustFindRequirement(t, reqs, "GHSA-7g45-4rm6-3mm3")
 	assert.InDelta(t, 0.5, medium.Impact, 0.001)
 
 	// critical → 0.9
-	critical := findRequirement(reqs, "GHSA-5p34-5m6p-p58g")
-	require.NotNil(t, critical, "expected critical vuln GHSA-5p34-5m6p-p58g")
+	critical := shared.MustFindRequirement(t, reqs, "GHSA-5p34-5m6p-p58g")
 	assert.InDelta(t, 0.9, critical.Impact, 0.001)
 }
 
@@ -186,8 +173,7 @@ func TestConvertCycloneDX_CweToNist(t *testing.T) {
 	result, err := ConvertCycloneDXToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "CVE-2020-25649")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
 
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
@@ -223,8 +209,7 @@ func TestConvertCycloneDX_Tags(t *testing.T) {
 	result, err := ConvertCycloneDXToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "CVE-2020-25649")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
 
 	// nist
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
@@ -255,8 +240,7 @@ func TestConvertCycloneDX_CodeDesc(t *testing.T) {
 	require.NoError(t, err)
 
 	// GHSA-5mg8-w23w-74h3 affects guava (com.google.guava/guava@24.1.1-jre)
-	req := findRequirement(result.Baselines[0].Requirements, "GHSA-5mg8-w23w-74h3")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "GHSA-5mg8-w23w-74h3")
 	require.NotEmpty(t, req.Results)
 	assert.Contains(t, req.Results[0].CodeDesc, "com.google.guava/guava@24.1.1-jre")
 	assert.Contains(t, req.Results[0].CodeDesc, "is vulnerable")
@@ -390,8 +374,7 @@ func TestConvertCycloneDX_FixDescription(t *testing.T) {
 	result, err := ConvertCycloneDXToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "CVE-2020-25649")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
 
 	desc := findDescription(req.Descriptions, "fix")
 	require.NotNil(t, desc, "expected a 'fix' description")
@@ -403,8 +386,7 @@ func TestConvertCycloneDX_DefaultDescription(t *testing.T) {
 	result, err := ConvertCycloneDXToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	req := findRequirement(result.Baselines[0].Requirements, "CVE-2020-25649")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
 
 	desc := findDescription(req.Descriptions, "default")
 	require.NotNil(t, desc, "expected a 'default' description")

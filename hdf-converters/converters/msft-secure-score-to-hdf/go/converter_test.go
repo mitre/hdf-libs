@@ -21,15 +21,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func findDescription(descs []hdf.Description, label string) *hdf.Description {
 	for i := range descs {
 		if descs[i].Label == label {
@@ -146,8 +137,7 @@ func TestConvertMsftSecureScore_RequirementID(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// IDs should be "controlCategory:controlName" format
-	req := findRequirement(reqs, "Apps:McasFirewallLogUpload")
-	require.NotNil(t, req, "expected requirement Apps:McasFirewallLogUpload")
+	shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
 }
 
 // ---- Requirement title from profile ----
@@ -159,8 +149,7 @@ func TestConvertMsftSecureScore_RequirementTitleFromProfile(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// McasFirewallLogUpload has a matching profile with title
-	req := findRequirement(reqs, "Apps:McasFirewallLogUpload")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
 	require.NotNil(t, req.Title)
 	assert.Contains(t, *req.Title, "Deploy a log collector")
 }
@@ -172,8 +161,7 @@ func TestConvertMsftSecureScore_RequirementTitleFallback(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// spo_idle_session_timeout has no matching profile → fallback title
-	req := findRequirement(reqs, "Apps:spo_idle_session_timeout")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "Apps:spo_idle_session_timeout")
 	require.NotNil(t, req.Title)
 	assert.Contains(t, *req.Title, "spo_idle_session_timeout")
 }
@@ -187,13 +175,11 @@ func TestConvertMsftSecureScore_ImpactFromMaxScore(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// McasFirewallLogUpload has profile.maxScore=1 → impact = 1/10 = 0.1
-	req := findRequirement(reqs, "Apps:McasFirewallLogUpload")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
 	assert.InDelta(t, 0.1, req.Impact, 0.001)
 
 	// dlp_datalossprevention has profile.maxScore=5 → impact = 5/10 = 0.5
-	req2 := findRequirement(reqs, "Data:dlp_datalossprevention")
-	require.NotNil(t, req2)
+	req2 := shared.MustFindRequirement(t, reqs, "Data:dlp_datalossprevention")
 	assert.InDelta(t, 0.5, req2.Impact, 0.001)
 }
 
@@ -204,8 +190,7 @@ func TestConvertMsftSecureScore_ImpactFallback(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// spo_idle_session_timeout has no profile → default 0.5
-	req := findRequirement(reqs, "Apps:spo_idle_session_timeout")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "Apps:spo_idle_session_timeout")
 	assert.InDelta(t, 0.5, req.Impact, 0.001)
 }
 
@@ -218,8 +203,7 @@ func TestConvertMsftSecureScore_StatusPassed(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// dlp_datalossprevention has scoreInPercentage=100 → Passed
-	req := findRequirement(reqs, "Data:dlp_datalossprevention")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "Data:dlp_datalossprevention")
 	require.NotEmpty(t, req.Results)
 	assert.Equal(t, hdf.Passed, req.Results[0].Status)
 }
@@ -231,8 +215,7 @@ func TestConvertMsftSecureScore_StatusFailed(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	// McasFirewallLogUpload has scoreInPercentage=0, score=0, profile.maxScore=1 → Failed
-	req := findRequirement(reqs, "Apps:McasFirewallLogUpload")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
 	require.NotEmpty(t, req.Results)
 	assert.Equal(t, hdf.Failed, req.Results[0].Status)
 }
@@ -245,8 +228,7 @@ func TestConvertMsftSecureScore_CodeDesc(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "Apps:McasFirewallLogUpload")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
 	require.NotEmpty(t, req.Results)
 	assert.Contains(t, req.Results[0].CodeDesc, "Feature in place: false")
 }
@@ -259,8 +241,7 @@ func TestConvertMsftSecureScore_Description(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "Apps:McasFirewallLogUpload")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
 
 	desc := findDescription(req.Descriptions, "default")
 	require.NotNil(t, desc, "expected a 'default' description")
@@ -275,8 +256,7 @@ func TestConvertMsftSecureScore_FixDescription(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "Apps:McasFirewallLogUpload")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
 
 	fix := findDescription(req.Descriptions, "fix")
 	require.NotNil(t, fix, "expected a 'fix' description")
@@ -291,8 +271,7 @@ func TestConvertMsftSecureScore_NistTags(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "Apps:McasFirewallLogUpload")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
 
 	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
@@ -307,8 +286,7 @@ func TestConvertMsftSecureScore_StartTime(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirement(reqs, "Apps:McasFirewallLogUpload")
-	require.NotNil(t, req)
+	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
 	require.NotEmpty(t, req.Results)
 	assert.NotNil(t, req.Results[0].StartTime, "result should have start_time from createdDateTime")
 }
