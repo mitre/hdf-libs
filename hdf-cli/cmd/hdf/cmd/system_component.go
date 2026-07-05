@@ -276,9 +276,18 @@ func updateComponentTargeted(components []interface{}, data []byte, bomDoc map[s
 			continue
 		}
 		comp["boms"] = newComp["boms"]
-		for _, k := range []string{"type", "description", "version", "modelId", "datasetId"} {
-			if v, ok := newComp[k]; ok {
-				comp[k] = v
+		// A parsed BOM fully replaces the component's metadata: set the derived
+		// fields the refreshed component carries and DELETE any it does not, so
+		// updating e.g. an aiModel component with an SBOM leaves no stale
+		// modelId/version behind. A URL passthrough carries no derivable metadata,
+		// so the component's existing fields are kept untouched.
+		if bomDoc != nil {
+			for _, k := range []string{"type", "description", "version", "modelId", "datasetId"} {
+				if v, ok := newComp[k]; ok {
+					comp[k] = v
+				} else {
+					delete(comp, k)
+				}
 			}
 		}
 		return fmt.Sprintf("Component %q updated", componentName), nil
@@ -310,6 +319,12 @@ func updateComponentsReconcile(components []interface{}, data []byte, bomDoc map
 			continue
 		}
 		if ci, bi, ok := findComponentByBOMUniqueID(components, key); ok {
+			// Refresh is boms-entry-granular by design: swap only the matched
+			// entry, not the whole component. A component may carry several BOMs,
+			// and the normalized model/dataset refresh lives in this entry.
+			// Component-level derived fields are intentionally left alone — the
+			// join key (modelId/datasetId == uniqueId) is stable, and the
+			// multi-subject builder produces no version/description to refresh.
 			comp := components[ci].(map[string]interface{})
 			boms := comp["boms"].([]interface{})
 			boms[bi] = firstBOM(nc)

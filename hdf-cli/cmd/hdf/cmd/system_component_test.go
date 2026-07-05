@@ -362,6 +362,27 @@ func TestSystemUpdateComponent_FromFormat_MLBOMMismatch(t *testing.T) {
 	assert.Contains(t, err.Error(), "detected as")
 }
 
+// Targeted update fully replaces metadata: switching a component from an ML-BOM
+// (aiModel, carries modelId) to a plain SBOM must drop the now-stale derived keys.
+func TestSystemUpdateComponent_TargetedReplacesDerivedMetadata(t *testing.T) {
+	sysFile := createBaseSystem(t)
+
+	add := NewRootCmd()
+	add.SetArgs([]string{"system", "add-component", bomFixturePath(t, "cyclonedx-mlbom.json"), "--system", sysFile, "--from", "cyclonedx-mlbom", "--component-name", "TheModel"})
+	require.NoError(t, add.Execute())
+	require.Contains(t, findComponentByName(t, sysFile, "TheModel"), "modelId") // aiModel carries modelId
+
+	upd := NewRootCmd()
+	upd.SetArgs([]string{"system", "update-component", bomFixturePath(t, "cyclonedx-sbom.json"), "--system", sysFile, "--component-name", "TheModel", "--from", "cyclonedx"})
+	require.NoError(t, upd.Execute())
+
+	comp := findComponentByName(t, sysFile, "TheModel")
+	assert.NotContains(t, comp, "modelId", "stale modelId must be removed on SBOM refresh")
+	assert.NotContains(t, comp, "version", "stale version must be removed on SBOM refresh")
+	assert.Equal(t, "application", comp["type"])
+	assert.Equal(t, "sbom", firstBOMOf(t, comp)["bomType"])
+}
+
 // Targeted mode (--component-name) cannot take a multi-subject BOM — the user is
 // told to omit --component-name and reconcile instead.
 func TestSystemUpdateComponent_TargetedRejectsMultiSubject(t *testing.T) {
