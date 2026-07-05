@@ -688,20 +688,31 @@ func TestSystemCreate_FromFormat_SPDXAIMatch(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 }
 
-func TestSystemCreate_FromFormat_SBOMMatch(t *testing.T) {
+func TestSystemCreate_FromFormat_CycloneDXMatch(t *testing.T) {
 	sbomFile := bomFixturePath(t, "cyclonedx-sbom.json")
 	outFile := filepath.Join(t.TempDir(), "system.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", sbomFile, "--from", "sbom", "-o", outFile})
+	cmd.SetArgs([]string{"system", "create", sbomFile, "--from", "cyclonedx", "-o", outFile})
 	require.NoError(t, cmd.Execute())
 }
 
-func TestSystemCreate_FromFormat_SBOMRejectsMLBOM(t *testing.T) {
+func TestSystemCreate_FromFormat_CycloneDXRejectsMLBOM(t *testing.T) {
 	bomFile := bomFixturePath(t, "cyclonedx-mlbom.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "create", bomFile, "--from", "sbom"})
+	cmd.SetArgs([]string{"system", "create", bomFile, "--from", "cyclonedx"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "detected as")
+}
+
+// --from spdx on a CycloneDX SBOM is a format mismatch (specific-format assertion).
+func TestSystemCreate_FromFormat_SPDXMismatch(t *testing.T) {
+	sbomFile := bomFixturePath(t, "cyclonedx-sbom.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", sbomFile, "--from", "spdx"})
 	err := cmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "detected as")

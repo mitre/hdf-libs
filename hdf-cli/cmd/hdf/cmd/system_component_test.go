@@ -73,21 +73,21 @@ func TestSystemAddComponent_SPDXAIRejected(t *testing.T) {
 	assert.Contains(t, err.Error(), "system create")
 }
 
-func TestSystemAddComponent_FromFormat_SBOMMatch(t *testing.T) {
+func TestSystemAddComponent_FromFormat_CycloneDXMatch(t *testing.T) {
 	sysFile := createBaseSystem(t)
 	sbomFile := bomFixturePath(t, "cyclonedx-sbom.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "add-component", sbomFile, "--system", sysFile, "--from", "sbom", "--component-name", "SecondTier"})
+	cmd.SetArgs([]string{"system", "add-component", sbomFile, "--system", sysFile, "--from", "cyclonedx", "--component-name", "SecondTier"})
 	require.NoError(t, cmd.Execute())
 }
 
-func TestSystemAddComponent_FromFormat_SBOMRejectsMLBOM(t *testing.T) {
+func TestSystemAddComponent_FromFormat_CycloneDXRejectsMLBOM(t *testing.T) {
 	sysFile := createBaseSystem(t)
 	bomFile := bomFixturePath(t, "cyclonedx-mlbom.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "add-component", bomFile, "--system", sysFile, "--from", "sbom", "--component-name", "Model"})
+	cmd.SetArgs([]string{"system", "add-component", bomFile, "--system", sysFile, "--from", "cyclonedx", "--component-name", "Model"})
 	err := cmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "detected as")
@@ -200,21 +200,21 @@ func TestSystemUpdateComponent_SPDXAIRejected(t *testing.T) {
 	assert.Contains(t, err.Error(), "system create")
 }
 
-func TestSystemUpdateComponent_FromFormat_SBOMMatch(t *testing.T) {
+func TestSystemUpdateComponent_FromFormat_SPDXMatch(t *testing.T) {
 	sysFile := createBaseSystem(t)
 	sbomFile := bomFixturePath(t, "spdx-sbom.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "update-component", sbomFile, "--system", sysFile, "--component-name", "juice-shop", "--from", "sbom"})
+	cmd.SetArgs([]string{"system", "update-component", sbomFile, "--system", sysFile, "--component-name", "juice-shop", "--from", "spdx"})
 	require.NoError(t, cmd.Execute())
 }
 
-func TestSystemUpdateComponent_FromFormat_SBOMRejectsMLBOM(t *testing.T) {
+func TestSystemUpdateComponent_FromFormat_CycloneDXRejectsMLBOM(t *testing.T) {
 	sysFile := createBaseSystem(t)
 	bomFile := bomFixturePath(t, "cyclonedx-mlbom.json")
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"system", "update-component", bomFile, "--system", sysFile, "--component-name", "juice-shop", "--from", "sbom"})
+	cmd.SetArgs([]string{"system", "update-component", bomFile, "--system", sysFile, "--component-name", "juice-shop", "--from", "cyclonedx"})
 	err := cmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "detected as")

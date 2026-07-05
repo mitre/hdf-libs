@@ -39,13 +39,13 @@ detected format must match — it is never force-parsed). This differs from
 ` + "`hdf convert --from`" + `, which selects a parser: here --from only VERIFIES
 the auto-detected format.
 
-  --from values: cyclonedx-mlbom | spdx-ai | sbom
+  --from values: cyclonedx | spdx | cyclonedx-mlbom | spdx-ai
 
 Examples:
   hdf system create results.json
   hdf system create results.json -o system.json
   hdf system create results.json --name "Portal Prod" -o system.json
-  hdf system create sbom.cdx.json --from sbom --component-name "WebTier" -o system.json
+  hdf system create sbom.cdx.json --from cyclonedx --component-name "WebTier" -o system.json
   hdf system create model.cdx.json --from cyclonedx-mlbom -o system.json
   hdf system create results.json --owner team@agency.gov --description "Prod portal"`,
 		Args: cobra.ExactArgs(1),
@@ -66,7 +66,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVar(&fromFormat, "from", "", "Verify the detected BOM format: cyclonedx-mlbom | spdx-ai | sbom (default: auto-detect; never force-parses)")
+	cmd.Flags().StringVar(&fromFormat, "from", "", "Verify the detected BOM format: cyclonedx | spdx | cyclonedx-mlbom | spdx-ai (default: auto-detect; never force-parses)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
 	cmd.Flags().StringVar(&systemName, "name", "", "System name (default: derived from input)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name (for SBOM input)")
@@ -82,7 +82,7 @@ Examples:
 // bomFormatAliases lists the valid --from format-assertion aliases shared by the
 // `hdf system` command group. One canonical spelling per format; accepted ==
 // advertised.
-var bomFormatAliases = []string{"cyclonedx-mlbom", "spdx-ai", "sbom"}
+var bomFormatAliases = []string{"cyclonedx", "spdx", "cyclonedx-mlbom", "spdx-ai"}
 
 // assertBomFormat verifies that doc's structurally-detected BOM format matches
 // the requested --from alias. An empty alias performs no assertion (auto-detect).
@@ -106,6 +106,14 @@ func assertBomFormatDetected(alias string, detected *bom.FormatDetection) error 
 		detectedName = detected.Format
 	}
 	switch alias {
+	case "cyclonedx":
+		if detected == nil || detected.Format != bom.FormatCycloneDX {
+			return bomFormatMismatch(alias, "a plain CycloneDX SBOM", detectedName)
+		}
+	case "spdx":
+		if detected == nil || detected.Format != bom.FormatSPDX {
+			return bomFormatMismatch(alias, "a plain SPDX SBOM", detectedName)
+		}
 	case "cyclonedx-mlbom":
 		if detected == nil || detected.Format != bom.FormatCycloneDXML {
 			return bomFormatMismatch(alias, "a CycloneDX ML-BOM (a machine-learning-model component)", detectedName)
@@ -113,10 +121,6 @@ func assertBomFormatDetected(alias string, detected *bom.FormatDetection) error 
 	case "spdx-ai":
 		if detected == nil || detected.Format != bom.FormatSPDX3AI {
 			return bomFormatMismatch(alias, "an SPDX 3.0 AI/Dataset document", detectedName)
-		}
-	case "sbom":
-		if detected == nil || (detected.Format != bom.FormatCycloneDX && detected.Format != bom.FormatSPDX) {
-			return bomFormatMismatch(alias, "a plain CycloneDX or SPDX SBOM (not an AI-BOM)", detectedName)
 		}
 	default:
 		return fmt.Errorf("unknown --from format %q; valid formats: %s", alias, strings.Join(bomFormatAliases, ", "))

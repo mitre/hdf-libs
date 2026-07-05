@@ -30,11 +30,11 @@ metadata from a CycloneDX or SPDX SBOM. The SBOM is a positional file path or
 URL. Omit --from to auto-detect; pass --from to assert a BOM format (detected,
 then required to match — never force-parsed).
 
-  --from values: sbom (AI-BOMs are rejected here; import them with 'hdf system create')
+  --from values: cyclonedx | spdx (AI-BOMs are rejected here; import them with 'hdf system create')
 
 Examples:
   hdf system add-component sbom.cdx.json --system system.json --component-name AuthService
-  hdf system add-component sbom.cdx.json --system system.json --from sbom --component-name AuthService --embed`,
+  hdf system add-component sbom.cdx.json --system system.json --from cyclonedx --component-name AuthService --embed`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runSystemAddComponent(systemFile, args[0], fromFormat, componentName, outputPath, embed, generateComponentID)
@@ -42,7 +42,7 @@ Examples:
 	}
 
 	cmd.Flags().StringVar(&systemFile, "system", "", "Existing HDF system document (required)")
-	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the SBOM's format: sbom (default: auto-detect)")
+	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the SBOM's format: cyclonedx | spdx (default: auto-detect)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name (default: from SBOM metadata)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: overwrite --system)")
 	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
@@ -71,11 +71,11 @@ The component's boms[] entry and metadata are updated from the new SBOM. Omit
 --from to auto-detect; pass --from to assert a BOM format (detected, then
 required to match — never force-parsed).
 
-  --from values: sbom (AI-BOMs are rejected here; import them with 'hdf system create')
+  --from values: cyclonedx | spdx (AI-BOMs are rejected here; import them with 'hdf system create')
 
 Examples:
   hdf system update-component sbom-new.cdx.json --system system.json --component-name WebTier
-  hdf system update-component sbom-new.cdx.json --system system.json --component-name WebTier --from sbom --embed`,
+  hdf system update-component sbom-new.cdx.json --system system.json --component-name WebTier --from cyclonedx --embed`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runSystemUpdateComponent(systemFile, args[0], fromFormat, componentName, outputPath, embed)
@@ -83,7 +83,7 @@ Examples:
 	}
 
 	cmd.Flags().StringVar(&systemFile, "system", "", "Existing HDF system document (required)")
-	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the SBOM's format: sbom (default: auto-detect)")
+	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the SBOM's format: cyclonedx | spdx (default: auto-detect)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name to update (required)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: overwrite --system)")
 	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
