@@ -769,8 +769,9 @@ func TestSystemAddComponent(t *testing.T) {
 	assert.Equal(t, "cyclonedx", boms[0].(map[string]interface{})["format"])
 }
 
-func TestSystemAddComponent_RejectsDuplicate(t *testing.T) {
-	// Create system with a component
+func TestSystemAddComponent_DuplicateNameAllowed(t *testing.T) {
+	// A duplicate human-friendly name warns but is not rejected — names are
+	// labels, componentId is identity, and legitimate duplicates exist.
 	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/juice-shop-sbom-minimal.json")
 	sysFile := filepath.Join(t.TempDir(), "system.json")
 
@@ -778,12 +779,16 @@ func TestSystemAddComponent_RejectsDuplicate(t *testing.T) {
 	cmd.SetArgs([]string{"system", "create", sbomFile, "-o", sysFile})
 	require.NoError(t, cmd.Execute())
 
-	// Try adding same component name
+	// Adding the same-named component again succeeds (with a warning).
 	cmd2 := NewRootCmd()
 	cmd2.SetArgs([]string{"system", "add-component", sbomFile, "--system", sysFile})
-	err := cmd2.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "already exists")
+	require.NoError(t, cmd2.Execute())
+
+	data, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+	assert.Len(t, sys["components"].([]interface{}), 2)
 }
 
 func TestSystemUpdateComponent(t *testing.T) {

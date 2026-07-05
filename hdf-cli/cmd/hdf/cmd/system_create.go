@@ -237,50 +237,18 @@ func runSystemCreate(opts systemCreateOpts) error {
 // only clean fields and carries the raw element via passthrough — never
 // fabricating fields the source omits.
 func runSystemCreateFromSPDX3AIBOM(data []byte, doc map[string]interface{}, opts systemCreateOpts) error {
-	// ParseBom enforces the input-size security boundary (and format detection);
-	// the multi-subject walk then runs off the already-parsed doc.
-	if _, err := bom.ParseBom(data); err != nil {
-		return fmt.Errorf("failed to parse SPDX-3 AI/Dataset document: %w", err)
-	}
-
-	subjects := bom.ParseSPDX3(doc).Subjects
-	if len(subjects) == 0 {
-		return fmt.Errorf("SPDX-3 document carries no AI/dataset subjects")
-	}
-
-	components := make([]map[string]interface{}, 0, len(subjects))
-	models, datasets := 0, 0
-	for _, subject := range subjects {
-		bomMap, err := structToMap(subject.Bom)
-		if err != nil {
-			return fmt.Errorf("failed to serialize normalized SPDX-3 BOM: %w", err)
-		}
-		comp := map[string]interface{}{
-			"name": subject.Name,
-			"boms": []map[string]interface{}{bomMap},
-		}
-		switch subject.Kind {
-		case "aiModel":
-			comp["type"] = compTypeAIModel
-			if subject.ID != "" {
-				comp["modelId"] = subject.ID
-			}
-			models++
-		case "dataset":
-			comp["type"] = compTypeDataset
-			if subject.ID != "" {
-				comp["datasetId"] = subject.ID
-			}
-			datasets++
-		}
-		components = append(components, comp)
+	components, err := buildSPDX3Components(data, doc)
+	if err != nil {
+		return err
 	}
 
 	systemName := opts.systemName
 	if systemName == "" {
-		systemName = subjects[0].Name + "-system"
+		firstName, _ := components[0]["name"].(string)
+		systemName = firstName + "-system"
 	}
 
+	models, datasets := countComponentKinds(components)
 	fmt.Fprintf(os.Stderr, "Imported SPDX-3 AI/Dataset document (%d aiModel, %d dataset components)\n", models, datasets)
 	return writeSystemDoc(systemName, components, opts.outputPath, opts)
 }
@@ -398,39 +366,21 @@ func runSystemCreateFromResults(results map[string]interface{}, systemName, outp
 }
 
 func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, componentName, outputPath, bomFormat string, opts systemCreateOpts) error {
-	// Extract component metadata from SBOM
-	if componentName == "" {
-		componentName = extractSBOMComponentName(doc, bomFormat)
-	}
-	if componentName == "" {
-		return fmt.Errorf("cannot determine component name from SBOM; use --component-name to specify")
+	comp, err := buildSBOMComponent(doc, bomFormat, bomComponentBuildOpts{
+		fileRef:      filepath.ToSlash(filePath), // schema requires uri-reference; Windows backslashes are invalid
+		embed:        opts.embed,
+		nameOverride: componentName,
+	})
+	if err != nil {
+		return err
 	}
 
+	name, _ := comp["name"].(string)
 	if systemName == "" {
-		systemName = componentName + "-system"
+		systemName = name + "-system"
 	}
 
-	// Detect component type from SBOM metadata
-	compType := extractSBOMComponentType(doc, bomFormat)
-
-	ref := filepath.ToSlash(filePath) // schema requires uri-reference; Windows backslashes are invalid
-	var embedDoc map[string]interface{}
-	if opts.embed {
-		embedDoc = doc
-	}
-
-	comp := map[string]interface{}{
-		"name": componentName,
-		"type": compType,
-		"boms": []map[string]interface{}{newSBOMBom(bomFormat, ref, embedDoc)},
-	}
-
-	// Extract version if available
-	if ver := extractSBOMComponentVersion(doc, bomFormat); ver != "" {
-		comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
-	}
-
-	fmt.Fprintf(os.Stderr, "Imported %s SBOM as component %q (type: %s)\n", bomFormat, componentName, compType)
+	fmt.Fprintf(os.Stderr, "Imported %s SBOM as component %q (type: %s)\n", bomFormat, name, comp["type"])
 	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath, opts)
 }
 
@@ -441,42 +391,18 @@ func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, c
 // into a schema-valid, normalized ai-model BOM — never fabricating fields the
 // source omits.
 func runSystemCreateFromAIModelBOM(data []byte, doc map[string]interface{}, opts systemCreateOpts) error {
-	result, err := bom.ParseBom(data)
+	comp, err := buildAIModelComponent(data, doc, opts.componentName)
 	if err != nil {
-		return fmt.Errorf("failed to parse AI-model BOM: %w", err)
+		return err
 	}
 
-	componentName := opts.componentName
-	if componentName == "" {
-		componentName = extractMLModelName(doc)
-	}
-	if componentName == "" {
-		return fmt.Errorf("cannot determine model name from AI-BOM; use --component-name to specify")
-	}
-
+	name, _ := comp["name"].(string)
 	systemName := opts.systemName
 	if systemName == "" {
-		systemName = componentName + "-system"
+		systemName = name + "-system"
 	}
 
-	bomMap, err := structToMap(result.Normalized)
-	if err != nil {
-		return fmt.Errorf("failed to serialize normalized AI-model BOM: %w", err)
-	}
-
-	comp := map[string]interface{}{
-		"type": compTypeAIModel,
-		"name": componentName,
-		"boms": []map[string]interface{}{bomMap},
-	}
-	if modelID := extractMLModelID(doc); modelID != "" {
-		comp["modelId"] = modelID
-	}
-	if ver := extractMLModelVersion(doc); ver != "" {
-		comp["version"] = ver
-	}
-
-	fmt.Fprintf(os.Stderr, "Imported CycloneDX ML-BOM as aiModel component %q\n", componentName)
+	fmt.Fprintf(os.Stderr, "Imported CycloneDX ML-BOM as aiModel component %q\n", name)
 	return writeSystemDoc(systemName, []map[string]interface{}{comp}, opts.outputPath, opts)
 }
 
