@@ -23,7 +23,7 @@ func newSystemAddComponentCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "add-component <bom|url> --system <doc> [flags]",
+		Use:   "add-component <sbom|url> --system <doc> [flags]",
 		Short: "Add a component to an existing system document from an SBOM",
 		Long: `Add a new component to an existing HDF system document by importing
 metadata from a CycloneDX or SPDX SBOM. The SBOM is a positional file path or
@@ -63,7 +63,7 @@ func newSystemUpdateComponentCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "update-component <bom|url> --system <doc> --component-name <name> [flags]",
+		Use:   "update-component <sbom|url> --system <doc> --component-name <name> [flags]",
 		Short: "Update a component's SBOM reference in a system document",
 		Long: `Update an existing component in an HDF system document with a new
 CycloneDX or SPDX SBOM reference. The SBOM is a positional file path or URL.
@@ -94,6 +94,29 @@ Examples:
 	return cmd
 }
 
+// loadComponentBOM performs the shared load-and-validate sequence for the
+// component subcommands: load+detect the input BOM (or resolve a URL to a nil
+// doc), apply the --from format assertion (or URL guard), and reject AI-BOM
+// inputs. subcommand names the caller for the AI-BOM rejection message.
+func loadComponentBOM(subcommand, fromFile, fromFormat string) (map[string]interface{}, string, error) {
+	bomDoc, bomFormat, err := loadBOM(fromFile)
+	if err != nil {
+		return nil, "", err
+	}
+	// When --from asserts a format, the detected format must match.
+	if bomDoc != nil {
+		if err := assertBomFormat(fromFormat, bomDoc); err != nil {
+			return nil, "", err
+		}
+	} else if err := errFormatAssertionOnURL(fromFormat); err != nil {
+		return nil, "", err
+	}
+	if err := rejectAIBOMComponentInput(subcommand, bomDoc); err != nil {
+		return nil, "", err
+	}
+	return bomDoc, bomFormat, nil
+}
+
 func runSystemAddComponent(systemFile, fromFile, fromFormat, componentName, outputPath string, embed, generateComponentID bool) error {
 	// Load existing system
 	sysData, err := os.ReadFile(systemFile) // #nosec G304
@@ -105,21 +128,9 @@ func runSystemAddComponent(systemFile, fromFile, fromFormat, componentName, outp
 		return fmt.Errorf("system file %s: %w", systemFile, err)
 	}
 
-	// Load and parse SBOM (or handle URL)
-	bomDoc, bomFormat, err := loadBOM(fromFile)
+	// Load, validate, and AI-BOM-guard the input BOM (shared with update-component).
+	bomDoc, bomFormat, err := loadComponentBOM("add-component", fromFile, fromFormat)
 	if err != nil {
-		return err
-	}
-
-	// When --from asserts a format, the detected format must match.
-	if bomDoc != nil {
-		if err := assertBomFormat(fromFormat, bomDoc); err != nil {
-			return err
-		}
-	} else if err := errFormatAssertionOnURL(fromFormat); err != nil {
-		return err
-	}
-	if err := rejectAIBOMComponentInput("add-component", bomDoc); err != nil {
 		return err
 	}
 
@@ -191,21 +202,9 @@ func runSystemUpdateComponent(systemFile, fromFile, fromFormat, componentName, o
 		return fmt.Errorf("system file %s: %w", systemFile, err)
 	}
 
-	// Load and parse SBOM (or handle URL)
-	bomDoc, bomFormat, err := loadBOM(fromFile)
+	// Load, validate, and AI-BOM-guard the input BOM (shared with add-component).
+	bomDoc, bomFormat, err := loadComponentBOM("update-component", fromFile, fromFormat)
 	if err != nil {
-		return err
-	}
-
-	// When --from asserts a format, the detected format must match.
-	if bomDoc != nil {
-		if err := assertBomFormat(fromFormat, bomDoc); err != nil {
-			return err
-		}
-	} else if err := errFormatAssertionOnURL(fromFormat); err != nil {
-		return err
-	}
-	if err := rejectAIBOMComponentInput("update-component", bomDoc); err != nil {
 		return err
 	}
 
