@@ -616,8 +616,12 @@ type Identity struct {
 	// The identifier value. Example: 'user@example.com', 'jdoe', 'automated-scanner-01'.                    
 	Identifier                                                                                  string       `json:"identifier"`
 	// The type of identifier. Use 'email' for email addresses, 'username' for user accounts,                
-	// 'system' for automated systems, 'simple' for basic string identifiers without additional              
-	// classification, or 'other' for custom identity systems.                                               
+	// 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent'              
+	// for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can                
+	// apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and                   
+	// satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF,                     
+	// 'simple' for basic string identifiers without additional classification, or 'other' for               
+	// custom identity systems.                                                                              
 	Type                                                                                        IdentityType `json:"type"`
 }
 
@@ -2329,11 +2333,16 @@ const (
 )
 
 // The type of identifier. Use 'email' for email addresses, 'username' for user accounts,
-// 'system' for automated systems, 'simple' for basic string identifiers without additional
-// classification, or 'other' for custom identity systems.
+// 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent'
+// for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can
+// apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and
+// satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF,
+// 'simple' for basic string identifiers without additional classification, or 'other' for
+// custom identity systems.
 type IdentityType string
 
 const (
+	Agent              IdentityType = "agent"
 	Email              IdentityType = "email"
 	IdentityTypeOther  IdentityType = "other"
 	IdentityTypeSystem IdentityType = "system"

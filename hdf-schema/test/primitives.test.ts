@@ -84,6 +84,26 @@ describe('Primitive Schema Validation', () => {
       });
     });
 
+    describe('Identity', () => {
+      const validate = ajv.compile({
+        ...schemaRef(commonSchema, 'Identity'),
+      });
+
+      it('should accept the agent identity type (AI-agent provenance)', () => {
+        const valid = { type: 'agent', identifier: 'cve-enrichment-bot/v0.4.2' };
+        expect(validate(valid)).toBe(true);
+        expect(validate.errors).toBeNull();
+      });
+
+      it('should still accept the existing system type', () => {
+        expect(validate({ type: 'system', identifier: 'scanner-01' })).toBe(true);
+      });
+
+      it('should reject an unknown identity type (agent is the value, not ai-agent)', () => {
+        expect(validate({ type: 'ai-agent', identifier: 'x' })).toBe(false);
+      });
+    });
+
     describe('Requirement_Core', () => {
       const validate = ajv.compile({
         ...schemaRef(commonSchema, 'Requirement_Core'),

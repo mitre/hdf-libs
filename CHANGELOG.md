@@ -29,6 +29,10 @@ All notable changes to this project will be documented in this file.
 
 - **`hdf system add-component` / `update-component` now ingest any BOM type, including multi-subject AI-BOMs** (superseding cm7g's interim AI-BOM reject). A single-subject BOM adds one correctly-typed component; a multi-subject SPDX-3 AI/Dataset document fans out into one `aiModel`/`dataset` component per subject, each stamped with its source subject id as `boms[].uniqueId`. `add-component` gains `--component-name-prefix` (namespace a multi-subject input; `--component-name` stays for single-component inputs and errors on multi-subject); a duplicate human-friendly name now warns instead of being rejected (names are labels, `componentId` is identity). `update-component` gains two modes: targeted (`--component-name`, replaces one component from a single-subject BOM) and reconcile (no `--component-name`, matches each subject to an existing component by `boms[].uniqueId` and refreshes it in place — so a system built from an AI-BOM can be refreshed from a later revision of the same source); unmatched subjects are skipped unless `--add-new`, and existing components absent from the BOM are left untouched. The subject→component builder is shared with `hdf system create` (no forked logic). (hdf-libs-opk1)
 
+### Added — Schema
+
+- **`agent` identity type for AI-agent provenance.** The `Identity.type` enum gains `agent` (additive — no existing document is invalidated), for an AI/LLM agent acting with autonomy. It is deliberately distinct from `system` (deterministic non-interactive automation like CI jobs, cron, and scanners) so auditors can apply AI-specific scrutiny and tooling can enforce AI-source policies (e.g. mandatory human review for `agent`-signed riskAdjustments; disclosure under the EU AI Act / NIST AI RMF). This supersedes the interim `type: "system"` + `identifier: "ai-agent:…"` convention previously documented for AI-suggested CVSS enrichment. (hdf-libs-psuv)
+
 ## [3.3.2] - 2026-06-29
 
 Patch release: a legacy-HDF (InSpec v1) converter fidelity fix. No schema

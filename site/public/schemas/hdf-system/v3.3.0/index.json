@@ -426,10 +426,11 @@
                 "email",
                 "username",
                 "system",
+                "agent",
                 "simple",
                 "other"
               ],
-              "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for automated systems, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
+              "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent' for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
             },
             "description": {
               "type": "string",
@@ -450,6 +451,11 @@
               "type": "system",
               "identifier": "automated-scanner-01",
               "description": "Nightly compliance scan pipeline"
+            },
+            {
+              "type": "agent",
+              "identifier": "cve-enrichment-bot/v0.4.2",
+              "description": "OpenAI GPT-4 via internal CVE-enrichment tool; proposes environmental CVSS for human review"
             }
           ],
           "description": "Represents an identity that performed an action, such as capturing evidence or applying an override.",
