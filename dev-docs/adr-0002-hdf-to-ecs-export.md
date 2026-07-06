@@ -2,14 +2,15 @@
 
 - **Status:** Proposed (pending implementation-feedback review)
 - **Date:** 2026-07-05
+- **Deciders:** Will Dower
 - **Epic/cards:** `hdf-libs-wvc3` (HDF → SIEM exporters); this ADR is `wvc3.1`, implemented by `wvc3.2`.
-- **Supersedes / relates to:** complements the carriage/import direction (`hdf-libs-8j9o`, external log evidence *into* HDF by reference). This is the opposite direction: HDF findings *out* to a SIEM.
+- **Relates to:** complements the carriage/import direction (`hdf-libs-8j9o`, external log evidence *into* HDF by reference) — this is the opposite direction, HDF findings *out* to a SIEM. See also **[ADR-0003](adr-0003-hdf-conmon-streaming.md)** — HDF CONMON streaming (deferred): this exporter's field projection is the deliberate first building block for any future streaming/delta-event work.
 
 ## Context
 
-A consumer wants HDF assessment results queryable **alongside other security telemetry** in an Elastic data lake. `hdf convert --from hdf --to ecs` should fan one HDF Results document into a stream of Elastic Common Schema (ECS) events.
+A consumer wants HDF assessment results queryable **alongside other security telemetry** in an Elastic data lake. `hdf convert --from hdf --to ecs` should fan one HDF Results document into a stream of Elastic Common Schema (ECS) events. The central problem is that HDF and ECS have fundamentally different shapes and ECS has no native concept of a compliance verdict, so the mapping is a genuine design decision rather than a mechanical field rename.
 
-The forces:
+The forces at play:
 
 - **ECS is flat, wide, dot-notation**, optimized for indexing/searching in Elasticsearch. **HDF is a nested assessment document** (baselines → requirements → results; arrays of objects like `cvss[]`, `statusOverrides[]`, `descriptions[]`). Elasticsearch flattens arrays-of-objects lossily unless you declare expensive `nested` mappings, so HDF's nested structure does not "just work" as queryable data.
 - **ECS has no native compliance pass/fail field.** `event.outcome` (`success|failure|unknown`) means "did the *producer/scan* run," not "did the *control* pass." Representing HDF's assessment verdict is the central design decision.
@@ -58,19 +59,109 @@ Status roll-up: `effectiveStatus ?? worstOf(results[].status)`.
 | `threat.{framework,tactic.*,technique.*}` | ATT&CK from `tags.mitre_attack`/`tags.attack` (best-effort) |
 | `hdf.*` | **lossless:** `status`, `effective_status`, `effective_impact`, `impact`, `severity`, `disposition`, `overridden`, `baseline`, `control_id`, `nist`, `cci`, `cwe`, full `tags`, `cvss[]`, `epss`, `kev`, `affected_packages[]`, `descriptions[]`, `results[]`, `status_overrides[]`, `poams[]`, `code`, `refs[]`, `generator`, `tool`, `exporter_version` |
 
-## Alternatives considered
+## Alternatives Considered
 
-- **Pure HDF-in-ECS-envelope** (drop the whole requirement under `hdf` inside a minimal envelope, no ECS-native fields). *Rejected:* Elasticsearch stores but cannot meaningfully query the nested arrays; findings would not light up ECS-aware views/detection rules/`related.*` pivots — defeating the reason to export to ECS at all (if only the JSON were wanted, one would store the HDF file directly). It is fully lossless but not *useful* in a SIEM.
-- **Curated ECS only (lossy)** (map to flat ECS/`hdf.*` scalars, discard the original). *Rejected:* loses override history and full CVSS/result detail; the consumer requires lossless.
-- **`result.evaluation` as the primary verdict** (Elastic CSPM convention). *Rejected here:* not core ECS (an Elastic-Security *integration* field); a data-lake-first target does not need the CSPM UI. Reconsider as a derived add-on if a CSPM-UI consumer appears.
-- **`_bulk`-framed output with hardcoded index** *Rejected:* couples the exporter to Elasticsearch index naming; plain NDJSON is consumable by any ingest path (Filebeat/Logstash/`_bulk` helpers). Defer `--bulk` to a flag.
-- **Splunk / Schema One now.** Deferred: Splunk is `wvc3.3`; the Schema One *profile* (`wvc3.4`) is blocked on its CAC/CUI-gated spec. Schema One is ECS-based, so it will be a profile delta on this exporter once the spec is in hand.
+### Alternative A: Pure HDF-in-ECS-envelope
+Drop the whole requirement under `hdf` inside a minimal ECS envelope, with no ECS-native projected fields.
+- **Pros:** Fully lossless; trivial to implement; nothing to map.
+- **Cons:** Elasticsearch stores but cannot meaningfully query the nested arrays; findings would not light up ECS-aware views, detection rules, or `related.*` pivots.
+- **Why rejected:** It defeats the reason to export to ECS at all — if only the JSON were wanted, one would store the HDF file directly. Lossless but not *useful* in a SIEM.
+
+### Alternative B: Curated ECS only (lossy)
+Map to flat ECS and `hdf.*` scalars and discard the original nested detail.
+- **Pros:** Compact events; clean, fully-typed mappings.
+- **Cons:** Loses override history and full CVSS/result detail.
+- **Why rejected:** The consumer requires lossless; governance queries depend on the override and POA&M history that this would drop.
+
+### Alternative C: `result.evaluation` as the primary verdict (Elastic CSPM convention)
+Use Elastic Security's CSPM finding field as the compliance pass/fail.
+- **Pros:** Lights up Elastic Security's CSPM UI out of the box.
+- **Cons:** `result.evaluation` is an Elastic-Security *integration* field, not part of core `elastic/ecs`.
+- **Why rejected here:** The target is a data lake, not the CSPM UI. Reconsider as a *derived add-on* if a CSPM-UI consumer appears — the hybrid shape already carries everything needed to synthesize it later.
+
+### Alternative D: `_bulk`-framed output with hardcoded index
+Emit Elasticsearch `_bulk` action/metadata lines interleaved with documents, with an index name baked in.
+- **Pros:** Directly `curl`-able into the `_bulk` API with no wrapper.
+- **Cons:** Couples the exporter to Elasticsearch index naming and to one ingest path.
+- **Why rejected:** Plain NDJSON is consumable by *any* ingest path (Filebeat/Logstash/`_bulk` helpers). Defer `--bulk` framing to an optional flag rather than hardcoding it.
+
+### Alternative E: Splunk / Schema One now
+Build the Splunk (CIM/HEC) and/or Schema One targets in this cycle instead of ECS-first.
+- **Pros:** Serves other stakeholders sooner.
+- **Cons:** Splunk is a separate mapping (`wvc3.3`); the Schema One *profile* (`wvc3.4`) is blocked on a CAC/CUI-gated spec we do not hold.
+- **Why rejected (sequenced later):** Schema One is ECS-based, so it becomes a profile delta on this exporter once its spec is in hand; ECS-first is the correct foundation.
+
+### Alternative F: Make HDF a streaming/CONMON event format now
+Emit per-result events over a message bus instead of a batch export.
+- **Pros:** Directly targets fleet-scale continuous monitoring.
+- **Cons:** Requires an owned event producer that does not exist yet and a schema design pass; different product line.
+- **Why rejected (deferred, not declined):** This exporter's field projection is its prerequisite. Full reasoning in **[ADR-0003](adr-0003-hdf-conmon-streaming.md)**.
+
+### Alternative G: Do Nothing
+Leave HDF results outside the SIEM; consumers store raw HDF files.
+- **Pros:** No new converter to maintain.
+- **Cons:** HDF findings stay unqueryable next to other telemetry; the stakeholder need goes unmet.
+- **Why rejected:** The queryability-alongside-telemetry need is real and is exactly what an ECS projection delivers.
 
 ## Consequences
 
-- **Easier:** HDF findings become first-class, queryable ECS events in a data lake — filterable by `event.outcome`, `rule.ruleset`, `vulnerability.severity`, and (for governance) `hdf.disposition`/`hdf.effective_status` — sitting alongside other telemetry. Lossless round-trip is preserved via the `hdf` block. Uniform event shape regardless of source tool.
-- **Harder / caveats:** The custom `hdf.*` namespace is best served by a consumer-side index mapping / component template (to be documented) for optimal types; without it, ES applies dynamic mapping. One event per requirement means multi-result requirements roll up their status (the full `results[]` is still preserved in `hdf`). The mapping must be maintained at **TS↔Go parity**. `event.outcome=unknown` covers three distinct statuses (`notApplicable/notReviewed/error`); consumers needing to distinguish them query `hdf.status`.
-- **Open follow-ons:** `wvc3.3` (Splunk HEC/CIM export), `wvc3.4` (Schema One profile — needs the gated spec), and a possible `--bulk` framing flag.
+**What becomes easier:**
+- HDF findings become first-class, queryable ECS events in a data lake — filterable by `event.outcome`, `rule.ruleset`, `vulnerability.severity`, and (for governance) `hdf.disposition` / `hdf.effective_status` — sitting alongside other telemetry.
+- Lossless round-trip is preserved via the `hdf` block, and the event shape is uniform regardless of source tool.
+- The field projection is reusable as the substrate for later SIEM targets (Splunk, Schema One) and for the deferred streaming work (ADR-0003).
+
+**What becomes harder:**
+- The custom `hdf.*` namespace is best served by a consumer-side index mapping / component template (to be documented) for optimal types; without it, ES applies dynamic mapping.
+- One event per requirement means multi-result requirements roll up their status (the full `results[]` is still preserved in `hdf`).
+- The mapping must be maintained at **TS↔Go parity** — two implementations that must produce byte-identical output.
+
+**Risks:**
+- *`event.outcome=unknown` collapses three distinct statuses* (`notApplicable/notReviewed/error`). *Mitigation:* the lossless five-value status is always in `hdf.status`; consumers needing to distinguish them query that field.
+- *ECS 9.4.0 drift* — a future ECS version changes a fieldset. *Mitigation:* `ecs.version` is pinned and asserted in fixtures, so a bump is a deliberate, tested change.
+- *Dynamic mapping bloat* on `hdf.*` in an unconfigured index. *Mitigation:* document the recommended component template alongside the exporter.
+
+## Implementation Plan
+
+### Scope
+
+**IN scope:**
+- New converter `hdf-converters/converters/hdf-to-ecs/{go,typescript,fixtures}` — `ConvertHDFToECS(input, version) → NDJSON` (Go) and `convertHdfToEcs(input, version?) → NDJSON` (TS), at output parity.
+- CLI wiring: `hdf-cli/cmd/hdf/cmd/converter_hdf_to_ecs.go` registering `RegisterConverter("hdf", "ecs", …)`, exposing `hdf convert --from hdf --to ecs`.
+- Real fixtures covering a compliance doc (pass/fail/NA), a CVE doc (cvss/cwe/affectedPackages), and an override doc (`statusOverrides[]`/`effectiveStatus`); assertion-based tests in both languages.
+- README + CHANGELOG updates.
+
+**OUT of scope:**
+- `_bulk` action-line framing / index naming (possible future `--bulk` flag).
+- Splunk export (`wvc3.3`) and the Schema One profile (`wvc3.4`, blocked on the gated spec).
+- Any streaming/delta-event work (ADR-0003).
+- An ECS → HDF path (one-way by design).
+
+### Phases
+
+#### Phase 1: `hdf-to-ecs` exporter (`wvc3.2`) — unblocked once this ADR is accepted
+**Files:**
+- Create: `hdf-converters/converters/hdf-to-ecs/go/converter.go`, `.../typescript/converter.ts`, `.../typescript/index.ts`, `fixtures/input/*.json`, `fixtures/expected/*.ndjson`.
+- Create: `hdf-cli/cmd/hdf/cmd/converter_hdf_to_ecs.go` (+ `_test.go`).
+- Modify: `hdf-converters` TS barrel export; `hdf-cli/README.md` and `hdf-converters/README.md` conversion tables; `CHANGELOG.md`.
+- Test: `.../go/converter_test.go`, `.../typescript/converter.test.ts`.
+
+**Acceptance criteria:**
+- [ ] Valid one-object-per-line NDJSON, LF-delimited, trailing newline; `ecs.version` = `"9.4.0"`.
+- [ ] `event.outcome` mapping correct for each of the five statuses; lossless five-value in `hdf.status`.
+- [ ] `vulnerability.*` populated for the CVE fixture, absent for pure-compliance.
+- [ ] Override fixture yields `hdf.disposition` + `hdf.effective_status` + full `hdf.status_overrides`.
+- [ ] TS and Go emit byte-identical output; empty/invalid input errors cleanly.
+- [ ] All work via TDD; no regressions.
+
+**Verification:** `cd hdf-converters && pnpm test:ts && go test ./...` && `cd hdf-cli && go test ./cmd/hdf/cmd/ && golangci-lint run` && root `pnpm lint`.
+
+#### Phase 2: Follow-ons (separate cards, later)
+Splunk (`wvc3.3`), Schema One profile (`wvc3.4`, blocked on spec), optional `--bulk` flag. Not part of this ADR's delivery.
+
+### Verification Strategy
+- **End-to-end:** build the CLI, run `hdf convert --from hdf --to ecs <real-results>.json -o out.ndjson`, confirm each line is standalone JSON (`while read l; do echo "$l" | jq -e . >/dev/null; done`), and spot-check `event.outcome`, `rule.*`, `vulnerability.*`, and a lossless `hdf` block including overrides. Confirm `hdf convert --help` lists `hdf → ecs`.
+- **ECS conformance:** field names/values checked against the pinned ECS 9.4.0 reference in tests (no runtime Elasticsearch dependency).
+- **Edge cases:** empty baselines, multi-result requirements (status roll-up), missing/unparseable source timestamps (fallback), and multi-component documents.
 
 ## Notes
 
