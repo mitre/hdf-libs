@@ -535,9 +535,9 @@ Impact is a float 0.0 to 1.0. Conventional mapping to severity:
 
 ### Identity
 ```json
-{ "type": "simple", "identifier": "john.doe@example.com" }
+{ "type": "email", "identifier": "compliance@agency.gov" }
 ```
-Types: `simple`, `oidc`, `x509`, `saml`, `ssh`, `pgp`.
+Types: `email`, `username`, `system`, `agent`, `simple`, `other`. Use `email` for email addresses, `username` for user accounts, `system` for deterministic non-interactive automation (CI jobs, cron, scanners), `agent` for an AI/LLM agent acting with autonomy (kept distinct from `system` so AI-generated provenance can be audited separately), `simple` for a basic string identifier, or `other` for a custom identity system.
 
 ### Description
 ```json
