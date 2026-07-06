@@ -137,7 +137,7 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 // value wins; otherwise a local-file URI is hashed; a URL is left unhashed.
 func resolveEvidenceChecksum(opts addEvidenceOpts) (string, error) {
 	if opts.checksum != "" {
-		return opts.checksum, nil
+		return normalizeSHA256Hex(opts.checksum)
 	}
 	// A local-path URI is hashed only when the file is actually present at attach
 	// time; a URL, a directory, or a path with no local copy is left unhashed
@@ -151,6 +151,20 @@ func resolveEvidenceChecksum(opts addEvidenceOpts) (string, error) {
 	}
 	fmt.Fprintf(os.Stderr, "Note: no local file to hash at %q; checksum omitted (pass --checksum to record one).\n", opts.uri)
 	return "", nil
+}
+
+// normalizeSHA256Hex validates that a user-supplied checksum is a 32-byte
+// SHA-256 digest and returns it lowercased, so we never stamp algorithm:sha256
+// on a value that isn't actually one.
+func normalizeSHA256Hex(s string) (string, error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return "", fmt.Errorf("--checksum must be a hex-encoded SHA-256 digest: %w", err)
+	}
+	if len(b) != sha256.Size {
+		return "", fmt.Errorf("--checksum must be a 32-byte (64 hex-character) SHA-256 digest, got %d bytes", len(b))
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // fileChecksumHex streams the file through SHA-256 so a large corpus is not

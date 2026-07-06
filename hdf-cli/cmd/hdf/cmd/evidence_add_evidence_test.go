@@ -76,6 +76,28 @@ func TestEvidenceAddEvidence_SuppliedChecksum(t *testing.T) {
 	assert.Equal(t, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", checksum["value"])
 }
 
+func TestEvidenceAddEvidence_RejectsInvalidChecksum(t *testing.T) {
+	for _, bad := range []string{"abc", "nothex-nothex-nothex", "e3b0c44298fc1c14"} { // non-hex or wrong length
+		pkg := writeTestEvidence(t)
+		_, _, err := executeCommand("evidence", "add-evidence", pkg,
+			"--uri", "s3://lake/q1/", "--format", "ocsf", "--checksum", bad)
+		require.Error(t, err, "checksum %q should be rejected", bad)
+		assert.Contains(t, err.Error(), "SHA-256")
+	}
+}
+
+func TestEvidenceAddEvidence_NormalizesChecksumCase(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	upper := "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+	_, _, err := executeCommand("evidence", "add-evidence", pkg,
+		"--uri", "s3://lake/q1/", "--format", "ocsf", "--checksum", upper)
+	require.NoError(t, err)
+
+	entry := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
+	checksum := entry["checksum"].(map[string]interface{})
+	assert.Equal(t, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", checksum["value"])
+}
+
 func TestEvidenceAddEvidence_ReservedFormats(t *testing.T) {
 	for _, format := range []string{"ecs", "ocsf", "cyclonedx", "spdx", "raw-log"} {
 		pkg := writeTestEvidence(t)

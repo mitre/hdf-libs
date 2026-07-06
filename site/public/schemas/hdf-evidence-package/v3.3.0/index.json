@@ -197,7 +197,8 @@
         },
         "checksum": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Checksum",
-          "description": "Cryptographic checksum of the referenced artifact for integrity verification. Strongly recommended — a point-in-time evidence reference without an integrity hash is weakly auditable."
+          "description": "Cryptographic checksum of the referenced artifact for integrity verification.",
+          "$comment": "Strongly recommended for external evidence — a point-in-time reference without an integrity hash is weakly auditable. Kept out of `description` so this usage-specific note does not aggregate into the shared Checksum type's generated Go doc comment (quicktype concatenates $ref-sibling descriptions onto the referenced type)."
         },
         "mediaType": {
           "type": "string",

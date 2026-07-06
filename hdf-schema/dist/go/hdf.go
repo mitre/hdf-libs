@@ -327,9 +327,7 @@ type Integrity struct {
 //
 // Cryptographic checksum for verifying the referenced document's integrity.
 //
-// Cryptographic checksum of the referenced artifact for integrity verification. Strongly
-// recommended — a point-in-time evidence reference without an integrity hash is weakly
-// auditable.
+// Cryptographic checksum of the referenced artifact for integrity verification.
 type Checksum struct {
 	// The hash algorithm used for the checksum.              
 	Algorithm                                   HashAlgorithm `json:"algorithm"`
@@ -2164,9 +2162,7 @@ type ContentReference struct {
 // never embedded (corpora can be huge) or transcoded (that would be lossy) — it stays
 // canonical in its native format and HDF acts as the structured index.
 type ExternalEvidenceReference struct {
-	// Cryptographic checksum of the referenced artifact for integrity verification. Strongly            
-	// recommended — a point-in-time evidence reference without an integrity hash is weakly              
-	// auditable.                                                                                        
+	// Cryptographic checksum of the referenced artifact for integrity verification.                     
 	Checksum                                                                                   *Checksum `json:"checksum,omitempty"`
 	// Optional human-readable description of this evidence entry.                                       
 	Description                                                                                *string   `json:"description,omitempty"`
