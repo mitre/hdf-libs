@@ -26,6 +26,7 @@ Examples:
 	cmd.AddCommand(newEvidenceVerifyCmd())
 	cmd.AddCommand(newEvidenceExportCmd())
 	cmd.AddCommand(newEvidenceSetCmd())
+	cmd.AddCommand(newEvidenceAddEvidenceCmd())
 
 	return cmd
 }
@@ -89,6 +90,26 @@ func outputEvidenceInfoHuman(doc map[string]interface{}) error {
 			}
 
 			fmt.Printf("  %-16s %s%s\n", sanitizeOutput(docType), sanitizeOutput(uri), checksumStr)
+		}
+	}
+
+	// External evidence (native log/telemetry corpora carried by reference)
+	if ext, ok := doc["externalEvidence"].([]interface{}); ok && len(ext) > 0 {
+		fmt.Printf("\nExternal Evidence (%d):\n", len(ext))
+		for _, eRaw := range ext {
+			entry, ok := eRaw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			format, _ := entry["format"].(string)
+			uri, _ := entry["uri"].(string)
+
+			checksumStr := ""
+			if _, hasChecksum := entry["checksum"]; hasChecksum {
+				checksumStr = "  ✓ checksum"
+			}
+
+			fmt.Printf("  %-16s %s%s\n", sanitizeOutput(format), sanitizeOutput(uri), checksumStr)
 		}
 	}
 
