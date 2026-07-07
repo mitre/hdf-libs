@@ -62,6 +62,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Target Format | Function |
 |---|---|
 | CSV | `convertHdfToCsv` |
+| ECS (Elastic Common Schema 9.4.0 NDJSON) | `convertHdfToEcs` |
 | XML | `convertHdfToXml` |
 | XCCDF | `convertHdfToXccdf` |
 | CKL (DISA STIG Viewer checklist) | `convertHdfToCkl` |
