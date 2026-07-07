@@ -1,6 +1,6 @@
 # ADR-0002: HDF → ECS export (`hdf-to-ecs`)
 
-- **Status:** Proposed (pending implementation-feedback review)
+- **Status:** Accepted (colleague-reviewed 2026-07-06, no changes requested)
 - **Date:** 2026-07-05
 - **Deciders:** Will Dower
 - **Epic/cards:** `hdf-libs-wvc3` (HDF → SIEM exporters); this ADR is `wvc3.1`, implemented by `wvc3.2`.
