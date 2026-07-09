@@ -156,15 +156,19 @@ function complianceStatusID(rawStatus: string): number {
   }
 }
 
+// Builds a human-readable governance note from the disposition (override type)
+// and the governing override's required free-text `reason`.
+// (Status_Override.justification is an optional structured controlled-vocabulary
+// object, not the human rationale — reason is the field to surface.)
 function overrideComment(req: Obj): string {
   const disposition = getStr(req, 'disposition');
   const overrides = asArr(req.statusOverrides) ?? [];
   if (disposition === '' && overrides.length === 0) return '';
-  let justification = '';
-  if (overrides.length > 0) justification = getStr(asMap(overrides[0]), 'justification');
-  if (disposition !== '' && justification !== '') return `${disposition}: ${justification}`;
+  let reason = '';
+  if (overrides.length > 0) reason = getStr(asMap(overrides[0]), 'reason');
+  if (disposition !== '' && reason !== '') return `${disposition}: ${reason}`;
   if (disposition !== '') return disposition;
-  return justification;
+  return reason;
 }
 
 function buildMetadata(tool: Obj | undefined, generator: Obj | undefined): Obj {

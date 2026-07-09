@@ -88,7 +88,8 @@ func TestConvert_RawPrimaryOverride(t *testing.T) {
 	assert.Equal(t, float64(3), sub(t, o, "compliance")["status_id"], "raw verdict stays Fail even when waived")
 	assert.Equal(t, "failed", sub(t, o, "compliance")["status"], "exact HDF status preserved verbatim")
 	assert.Equal(t, float64(3), o["status_id"], "override -> lifecycle status_id Suppressed")
-	assert.Equal(t, "waiver", o["comment"], "governing override surfaced in comment")
+	assert.Equal(t, "waiver: Risk accepted per ISSM approval — compensating control in place", o["comment"],
+		"comment = disposition + the required free-text reason")
 	// lossless: full requirement (incl. the override chain) in unmapped
 	assert.NotNil(t, sub(t, o, "unmapped")["hdf_requirement"])
 }
@@ -205,11 +206,11 @@ func TestOverrideComment(t *testing.T) {
 	assert.Equal(t, "", overrideComment(map[string]interface{}{}))
 	assert.Equal(t, "waiver: ok", overrideComment(map[string]interface{}{
 		"disposition":     "waiver",
-		"statusOverrides": []interface{}{map[string]interface{}{"justification": "ok"}},
+		"statusOverrides": []interface{}{map[string]interface{}{"reason": "ok"}},
 	}))
 	assert.Equal(t, "waiver", overrideComment(map[string]interface{}{"disposition": "waiver"}))
-	assert.Equal(t, "j", overrideComment(map[string]interface{}{
-		"statusOverrides": []interface{}{map[string]interface{}{"justification": "j"}},
+	assert.Equal(t, "r", overrideComment(map[string]interface{}{
+		"statusOverrides": []interface{}{map[string]interface{}{"reason": "r"}},
 	}))
 }
 

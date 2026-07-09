@@ -58,7 +58,7 @@ describe('hdf-to-ocsf converter', () => {
     expect(obj(o.compliance).status_id).toBe(3); // Fail — raw verdict preserved
     expect(obj(o.compliance).status).toBe('failed');
     expect(o.status_id).toBe(3); // Suppressed — the override
-    expect(o.comment).toBe('waiver');
+    expect(o.comment).toBe('waiver: Risk accepted per ISSM approval — compensating control in place');
     expect(obj(obj(o.unmapped).hdf_requirement)).toBeDefined();
   });
 
@@ -112,9 +112,9 @@ describe('hdf-to-ocsf converter', () => {
 
   it('builds the override comment from disposition and/or justification', () => {
     const comment = (r: Record<string, unknown>) => lines(convertHdfToOcsf(doc({ id: 'X', impact: 0.5, results: [baseResult], ...r }), VERSION))[0].comment;
-    expect(comment({ disposition: 'waiver', statusOverrides: [{ justification: 'accepted' }] })).toBe('waiver: accepted');
+    expect(comment({ disposition: 'waiver', statusOverrides: [{ reason: 'accepted' }] })).toBe('waiver: accepted');
     expect(comment({ disposition: 'falsePositive' })).toBe('falsePositive');
-    expect(comment({ statusOverrides: [{ justification: 'j only' }] })).toBe('j only');
+    expect(comment({ statusOverrides: [{ reason: 'r only' }] })).toBe('r only');
     expect(comment({})).toBeUndefined(); // no override -> no comment
   });
 

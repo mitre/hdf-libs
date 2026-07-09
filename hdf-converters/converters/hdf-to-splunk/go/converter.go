@@ -3,9 +3,12 @@
 //
 // One HEC event is emitted per Evaluated_Requirement, in the hybrid shape from
 // ADR-0004: flat CIM-named scalars (signature/signature_id/cve/cvss/severity/
-// dest/vendor_product/category) promoted to the top of the event payload and
-// mirrored into the HEC indexed `fields`, plus a lossless hdf.* block. Failed
-// and CVE findings are the events the companion TA (Splunk_TA_hdf) tags into
+// dest/vendor_product/category) are promoted to the top of the event payload,
+// the hot query scalars among them (signature/signature_id/dest/severity/cve/
+// cvss + hdf_status) are additionally mirrored into the HEC indexed `fields` so
+// they survive Splunk's ~5000-char extraction cutoff, and a lossless hdf.* block
+// preserves the full requirement. Failed and CVE findings are the events the
+// companion TA (Splunk_TA_hdf) tags into
 // the Vulnerabilities data model; every result also carries hdf_status so the
 // full pass/fail posture survives (CIM has no verdict field). Output is plain
 // NDJSON (one HEC object per line, LF-delimited, trailing newline).

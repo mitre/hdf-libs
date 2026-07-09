@@ -19,9 +19,11 @@ import {
  * Information Model (CIM). See ADR-0004.
  *
  * One HEC event per Evaluated_Requirement, hybrid shape: flat CIM-named scalars
- * (signature/signature_id/cve/cvss/severity/dest/vendor_product/category)
- * promoted to the top of the event payload and mirrored into the HEC indexed
- * `fields`, plus a lossless hdf.* block. Every result carries hdf_status so the
+ * (signature/signature_id/cve/cvss/severity/dest/vendor_product/category) are
+ * promoted to the top of the event payload; the hot query scalars among them
+ * (signature/signature_id/dest/severity/cve/cvss + hdf_status) are additionally
+ * mirrored into the HEC indexed `fields` (surviving Splunk's ~5000-char cutoff),
+ * plus a lossless hdf.* block. Every result carries hdf_status so the
  * full pass/fail posture survives (CIM has no verdict field); the companion TA
  * (Splunk_TA_hdf) tags failed/CVE findings into the Vulnerabilities data model.
  *

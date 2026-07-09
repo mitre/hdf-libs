@@ -188,25 +188,29 @@ func overrideStatusID(st exportmap.Status) int {
 	return statusNew
 }
 
+// overrideComment builds a human-readable governance note from the disposition
+// (override type) and the governing override's required free-text `reason`.
+// (Status_Override.justification is an optional structured controlled-vocabulary
+// object, not the human rationale — reason is the field to surface.)
 func overrideComment(req map[string]interface{}) string {
 	disposition := exportmap.GetStr(req, "disposition")
 	overrides, _ := exportmap.AsSlice(req["statusOverrides"])
 	if disposition == "" && len(overrides) == 0 {
 		return ""
 	}
-	justification := ""
+	reason := ""
 	if len(overrides) > 0 {
 		if first, ok := exportmap.AsMap(overrides[0]); ok {
-			justification = exportmap.GetStr(first, "justification")
+			reason = exportmap.GetStr(first, "reason")
 		}
 	}
 	switch {
-	case disposition != "" && justification != "":
-		return disposition + ": " + justification
+	case disposition != "" && reason != "":
+		return disposition + ": " + reason
 	case disposition != "":
 		return disposition
 	default:
-		return justification
+		return reason
 	}
 }
 
