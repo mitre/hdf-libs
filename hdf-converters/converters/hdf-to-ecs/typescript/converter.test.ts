@@ -174,6 +174,35 @@ describe('hdf-to-ecs converter', () => {
     expect(obj(o.hdf).status).toBe('notReviewed');
   });
 
+  it('maps all five Result_Status values to event.outcome (lossless in hdf.status)', () => {
+    const cases: Record<string, string> = {
+      passed: 'success',
+      failed: 'failure',
+      notApplicable: 'unknown',
+      notReviewed: 'unknown',
+      error: 'unknown',
+    };
+    for (const [status, outcome] of Object.entries(cases)) {
+      const doc = JSON.stringify({
+        baselines: [
+          {
+            name: 'b',
+            requirements: [
+              {
+                id: 'X',
+                tags: {},
+                results: [{ status, codeDesc: 'c', startTime: '2024-01-01T00:00:00Z' }],
+              },
+            ],
+          },
+        ],
+      });
+      const o = lines(convertHdfToEcs(doc, VERSION))[0];
+      expect(obj(o.event).outcome).toBe(outcome);
+      expect(obj(o.hdf).status).toBe(status); // lossless five-value status
+    }
+  });
+
   it('falls back vulnerability.id to the requirement id when cvss has no source', () => {
     const doc = JSON.stringify({
       baselines: [
