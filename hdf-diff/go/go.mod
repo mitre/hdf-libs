@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-libs/hdf-diff/go/v3
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.3.2
