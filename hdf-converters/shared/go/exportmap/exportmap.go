@@ -175,6 +175,69 @@ func EventID(component map[string]interface{}, baselineName, controlID string) s
 	return strings.Join([]string{comp, baselineName, controlID}, "|")
 }
 
+// --- lossless hdf.* block ---
+
+// BuildHDFBlock builds the lossless hdf.* namespace shared by the export
+// converters: promoted snake_case scalars plus the full requirement sub-objects
+// preserved verbatim. status is the lossless results roll-up (StatusOf().Raw).
+func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridden bool, generator, tool map[string]interface{}, converterVersion string) map[string]interface{} {
+	hdf := map[string]interface{}{
+		"status":           status,
+		"overridden":       overridden,
+		"exporter_version": converterVersion,
+	}
+	SetIf(hdf, "control_id", GetStr(req, "id"))
+	SetIf(hdf, "baseline", GetStr(baseline, "name"))
+	if v, ok := req["effectiveStatus"]; ok {
+		hdf["effective_status"] = v
+	}
+	if v, ok := req["effectiveImpact"]; ok {
+		hdf["effective_impact"] = v
+	}
+	if v, ok := req["impact"]; ok {
+		hdf["impact"] = v
+	}
+	if v, ok := req["severity"]; ok {
+		hdf["severity"] = v
+	}
+	if v, ok := req["disposition"]; ok {
+		hdf["disposition"] = v
+	}
+	tags, _ := AsMap(req["tags"])
+	if nist := tags["nist"]; nist != nil {
+		hdf["nist"] = nist
+	}
+	if cci := tags["cci"]; cci != nil {
+		hdf["cci"] = cci
+	}
+	passthrough := map[string]string{
+		"tags":             "tags",
+		"cvss":             "cvss",
+		"cwe":              "cwe",
+		"epss":             "epss",
+		"kev":              "kev",
+		"affectedPackages": "affected_packages",
+		"descriptions":     "descriptions",
+		"results":          "results",
+		"statusOverrides":  "status_overrides",
+		"poams":            "poams",
+		"code":             "code",
+		"refs":             "refs",
+	}
+	for src, dst := range passthrough {
+		if v, ok := req[src]; ok {
+			hdf[dst] = v
+		}
+	}
+	if generator != nil {
+		hdf["generator"] = generator
+	}
+	if tool != nil {
+		hdf["tool"] = tool
+	}
+	return hdf
+}
+
 // --- canonical line encoding ---
 
 // EncodeLine returns v as compact JSON with HTML escaping disabled and a

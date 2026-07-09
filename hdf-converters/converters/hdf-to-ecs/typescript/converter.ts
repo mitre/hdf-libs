@@ -13,6 +13,7 @@ import {
   defaultDescription,
   firstRefURL,
   eventID,
+  buildHDFBlock,
   canonicalize,
   stringifyLine,
 } from '../../../shared/typescript/exportmap.js';
@@ -124,6 +125,7 @@ function buildEvent(
 
   return obj;
 }
+// (buildHDFBlock now lives in exportmap and is shared with hdf-to-splunk.)
 
 function buildObserver(tool: Obj | undefined, generator: Obj | undefined): Obj | undefined {
   let name = getStr(tool, 'name');
@@ -208,53 +210,6 @@ function buildThreat(req: Obj): Obj | undefined {
   }
   if (techniques.length === 0) return undefined;
   return { framework: 'MITRE ATT&CK', technique: techniques };
-}
-
-function buildHDFBlock(
-  req: Obj,
-  baseline: Obj,
-  rawStatus: string,
-  overridden: boolean,
-  generator: Obj | undefined,
-  tool: Obj | undefined,
-  converterVersion: string,
-): Obj {
-  const hdf: Obj = {
-    status: rawStatus,
-    overridden,
-    exporter_version: converterVersion,
-  };
-  setIf(hdf, 'control_id', getStr(req, 'id'));
-  setIf(hdf, 'baseline', getStr(baseline, 'name'));
-  if ('effectiveStatus' in req) hdf.effective_status = req.effectiveStatus;
-  if ('effectiveImpact' in req) hdf.effective_impact = req.effectiveImpact;
-  if ('impact' in req) hdf.impact = req.impact;
-  if ('severity' in req) hdf.severity = req.severity;
-  if ('disposition' in req) hdf.disposition = req.disposition;
-  const tags = asMap(req.tags);
-  if (tags?.nist !== undefined) hdf.nist = tags.nist;
-  if (tags?.cci !== undefined) hdf.cci = tags.cci;
-
-  const passthrough: Record<string, string> = {
-    tags: 'tags',
-    cvss: 'cvss',
-    cwe: 'cwe',
-    epss: 'epss',
-    kev: 'kev',
-    affectedPackages: 'affected_packages',
-    descriptions: 'descriptions',
-    results: 'results',
-    statusOverrides: 'status_overrides',
-    poams: 'poams',
-    code: 'code',
-    refs: 'refs',
-  };
-  for (const [src, dst] of Object.entries(passthrough)) {
-    if (src in req) hdf[dst] = req[src];
-  }
-  if (generator) hdf.generator = generator;
-  if (tool) hdf.tool = tool;
-  return hdf;
 }
 
 function statusToOutcome(status: string): string {

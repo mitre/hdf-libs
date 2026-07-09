@@ -723,6 +723,7 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 |--------|-------------|-------------|
 | `hdf` | `csv` | Export requirements to CSV spreadsheet |
 | `hdf` | `ecs` | Export findings as Elastic Common Schema (ECS 9.4.0) NDJSON events |
+| `hdf` | `splunk` | Export findings as Splunk HEC (CIM Vulnerabilities) NDJSON events |
 | `hdf` | `xml` | Export requirements to XML |
 | `hdf` | `xccdf` | Export to XCCDF results XML |
 | `hdf` | `ckl` | Export to DISA STIG Viewer checklist (`.ckl` XML) |

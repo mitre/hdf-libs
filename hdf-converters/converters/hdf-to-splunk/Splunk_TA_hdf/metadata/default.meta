@@ -1,0 +1,3 @@
+## Make the sourcetype, eventtype, and tags globally visible.
+[]
+export = system

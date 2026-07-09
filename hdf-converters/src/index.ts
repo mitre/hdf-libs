@@ -67,6 +67,9 @@ export { convertHdfToCsv } from '../converters/hdf-to-csv/typescript/index.js';
 // HDF to ECS converter
 export { convertHdfToEcs } from '../converters/hdf-to-ecs/typescript/index.js';
 
+// HDF to Splunk (CIM/HEC) converter
+export { convertHdfToSplunk } from '../converters/hdf-to-splunk/typescript/index.js';
+
 // Splunk to HDF converter
 export { convertSplunkToHdf } from '../converters/splunk-to-hdf/typescript/index.js';
 

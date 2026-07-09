@@ -129,7 +129,7 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 		obj["threat"] = threat
 	}
 	// hdf.* lossless block
-	obj["hdf"] = buildHDFBlock(req, baseline, st.Raw, st.Overridden, generator, tool, converterVersion)
+	obj["hdf"] = exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, generator, tool, converterVersion)
 
 	return obj
 }
@@ -268,67 +268,6 @@ func buildThreat(req map[string]interface{}) map[string]interface{} {
 		"framework": "MITRE ATT&CK",
 		"technique": techniques,
 	}
-}
-
-// buildHDFBlock is the lossless hdf.* namespace: promoted scalars (snake_case)
-// plus the full requirement sub-objects preserved verbatim.
-func buildHDFBlock(req, baseline map[string]interface{}, status string, overridden bool, generator, tool map[string]interface{}, converterVersion string) map[string]interface{} {
-	hdf := map[string]interface{}{
-		"status":           status,
-		"overridden":       overridden,
-		"exporter_version": converterVersion,
-	}
-	exportmap.SetIf(hdf, "control_id", exportmap.GetStr(req, "id"))
-	exportmap.SetIf(hdf, "baseline", exportmap.GetStr(baseline, "name"))
-	if v, ok := req["effectiveStatus"]; ok {
-		hdf["effective_status"] = v
-	}
-	if v, ok := req["effectiveImpact"]; ok {
-		hdf["effective_impact"] = v
-	}
-	if v, ok := req["impact"]; ok {
-		hdf["impact"] = v
-	}
-	if v, ok := req["severity"]; ok {
-		hdf["severity"] = v
-	}
-	if v, ok := req["disposition"]; ok {
-		hdf["disposition"] = v
-	}
-	tags, _ := exportmap.AsMap(req["tags"])
-	if nist := tags["nist"]; nist != nil {
-		hdf["nist"] = nist
-	}
-	if cci := tags["cci"]; cci != nil {
-		hdf["cci"] = cci
-	}
-	// lossless passthrough sub-objects
-	passthrough := map[string]string{
-		"tags":             "tags",
-		"cvss":             "cvss",
-		"cwe":              "cwe",
-		"epss":             "epss",
-		"kev":              "kev",
-		"affectedPackages": "affected_packages",
-		"descriptions":     "descriptions",
-		"results":          "results",
-		"statusOverrides":  "status_overrides",
-		"poams":            "poams",
-		"code":             "code",
-		"refs":             "refs",
-	}
-	for src, dst := range passthrough {
-		if v, ok := req[src]; ok {
-			hdf[dst] = v
-		}
-	}
-	if generator != nil {
-		hdf["generator"] = generator
-	}
-	if tool != nil {
-		hdf["tool"] = tool
-	}
-	return hdf
 }
 
 // statusToOutcome maps an HDF Result_Status to an ECS event.outcome.
