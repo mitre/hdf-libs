@@ -166,3 +166,94 @@ Splunk (`wvc3.3`), Schema One profile (`wvc3.4`, blocked on spec), optional `--b
 ## Notes
 
 - ADR location: this project keeps ADRs in `dev-docs/` as historical artifacts (not on the published site). The `wvc3.1` card text says "under `site/docs/architecture`" — superseded by that project convention.
+- **Amended 2026-07-09** with the *Addendum: HDF → OCSF export* below (`wvc3.5`). Rather than mint a separate ADR per SIEM target, additional export targets that reuse this ADR's architecture (fan-out, shared `exportmap` core, NDJSON, TS↔Go byte-identical parity) are recorded as dated addenda here. (Splunk CIM export is the exception — its own ADR-0004 predates this convention.)
+
+---
+
+## Addendum: HDF → OCSF export (`hdf-to-ocsf`, `wvc3.5`) — 2026-07-09
+
+### Context
+
+The third SIEM-export target. Prompted by the finding that "Schema One" is a DoD program label with no field spec (see `wvc3.4` closure + bd memory `schema-one-is-a-program-not-a-schema`) — its only concrete, implementable meaning for security telemetry is **OCSF** (Open Cybersecurity Schema Framework), a real, versioned, field-defined standard. OCSF is also a materially *cleaner* fit than Splunk CIM (ADR-0004): where CIM has **no** compliance data model (forcing failed controls into Vulnerabilities), OCSF has native **Compliance Finding** *and* **Vulnerability Finding** classes under its Findings category, plus a schema-sanctioned lossless-carry container (`unmapped`). This exporter reuses this ADR's architecture wholesale (per-requirement fan-out, the shared `exportmap` core, NDJSON, TS↔Go byte-identical parity) — only the target field shaping is OCSF-specific.
+
+Research pinned **OCSF v1.8.0** (2026-03-18, `github.com/ocsf/ocsf-schema`), verified against `schema.ocsf.io/1.8.0` and the raw dictionary.
+
+### Decision
+
+`hdf-to-ocsf` emits **plain NDJSON — one OCSF Finding object per `Evaluated_Requirement`**, each self-describing via its `class_uid`. Unlike ECS/Splunk (one hybrid event shape), OCSF is a *native* target: each requirement maps to a real OCSF finding class rather than a projection + lossless block.
+
+1. **Two classes, discriminated by CVE data.** A requirement carrying `cvss[]` → **Vulnerability Finding** (`class_uid 2002`); otherwise → **Compliance Finding** (`class_uid 2003`). Both are `category_uid 2` (Findings). `activity_id = 1` (Create); `type_uid = class_uid*100 + activity_id` (→ `200201` / `200301`).
+
+2. **Raw-primary verdict + lifecycle override axis (base fields only — no profile).** OCSF gives two orthogonal, first-class enum axes, and we use both with the *raw* result kept authoritative:
+   - The **compliance verdict** rides on `compliance.status_id` (`1 Pass / 2 Warning / 3 Fail`), always reflecting the **raw** HDF result. A failed control **stays `Fail` even when waived** — the verdict is never rewritten to `Pass`, so no consumer can mistake a waiver for a genuine pass by reading the verdict field.
+   - **Overrides** ride on the base finding `status_id` (lifecycle enum `1 New / 2 In Progress / 3 Suppressed / 4 Resolved / …`). This is the "is it still my problem?" axis. See the **Override representation** subsection for the exact encoding, the consumer query it enables, and OCSF's genuine limitations here.
+
+   *Rejected: effective-primary* (`compliance.status_id = effectiveStatus`) — it masks a waived failure as `Pass` and forces a naive verdict-only consumer to over-count compliance. *Rejected: the `incident` profile's `verdict_id`* — it is the only first-class field for an override *reason*, but the profile's own definition is "attributes that add **incident handling semantics** to a Finding," so applying it to a routine compliance/evidence result mislabels it as an incident. Base fields only.
+
+3. **HDF status → `compliance.status_id` mapping** (using only the confirmed enum `1 Pass / 2 Warning / 3 Fail`): `passed → 1 Pass`; `failed → 3 Fail`; `error` / `notApplicable` / `notReviewed → 2 Warning` (OCSF `2 Warning` = "did not yield a [pass/fail] result"). The **exact** HDF status is always carried verbatim in `compliance.status` (string) and in `unmapped`, so `error` vs `notApplicable` vs `notReviewed` are fully distinguishable — nothing is lost by collapsing them onto `Warning`. A Compliance Finding is emitted for **every** requirement (pass, fail, or in-between), so full posture survives natively — no custom sidecar needed (contrast CIM, ADR-0004). Note this keeps the actionable-failures query clean: only real failures are `status_id = 3`, so `notApplicable`/`notReviewed`/`error` never pollute a `compliance.status_id = 3` filter.
+
+4. **Control/framework ids via `compliance.checks[]`.** Each HDF control mapping becomes a `check` object: `check.uid` = the control id (STIG `V-230234`, NIST `AC-17(2)`, `CCI-000068`) and `check.standards[]` = the framework(s). Only the **primary** (STIG-rule) check carries a `check.status_id` — HDF has a single per-requirement verdict, not a per-framework-id one, so the NIST/CCI framework checks carry the id + standards without a separate (fabricated) status. `compliance.control` (single string) carries the primary rule id and `compliance.standards[]` the framework list. This `checks[]` pattern is OCSF's intended mechanism for one finding to carry many framework control ids — a direct fit for HDF's `tags.nist`/`tags.cci`/STIG id arrays.
+
+5. **`severity_id` from HDF impact** (OCSF enum `0 Unknown, 1 Informational, 2 Low, 3 Medium, 4 High, 5 Critical, 6 Fatal, 99 Other`): `≥0.9 → 5 Critical`, `≥0.7 → 4 High`, `≥0.4 → 3 Medium`, `≥0.1 → 2 Low`, else `1 Informational`; no impact → normalize a source severity string, else `0 Unknown`.
+
+6. **Vulnerability Finding payload.** `vulnerabilities[]` → one `vulnerability` with `cve.uid` (the CVE id from `cvss[].source`), `cve.cvss[]` mapping each HDF `cvss[]` entry 1:1 (`base_score` **Float**, `version` **required**, `vector_string`, `severity`), and `cve.related_cwes` (note `cve.cwe` is deprecated ≥v1.4.0). The `vulnerability` "exactly one of cve/cwe/advisory" constraint is satisfied by populating `cve`.
+
+7. **Host and tool.** The target component → the top-level `device` object: `device.name`, `device.hostname` (HDF fqdn — OCSF v1.8.0 `device` has no `fqdn` field), `device.ip`, `device.uid` (componentId), and `device.os.{name, type_id, version}` (`os.type_id` classified from the OS string: Windows→100, Linux→200, macOS→300, else 0). `device.type_id` defaults to `0 Unknown`. The scanning tool → `metadata.product.{name, version, vendor_name}`; `metadata.version = "1.8.0"` (the OCSF schema version, **not** the tool version).
+
+8. **Lossless carry via `unmapped`.** The full original HDF requirement is preserved under **`unmapped.hdf_requirement`** — `unmapped` is OCSF's schema-sanctioned, always-valid, *queryable* object for source data with no standard home. This replaces the ECS/Splunk `hdf.*` block with an OCSF-native mechanism; no extension/registry needed. (A first-class `hdf`-prefixed OCSF *extension* was considered and rejected as overkill — see below.)
+
+9. **`time` = epoch milliseconds** (OCSF convention) from `results[0].startTime` via the canonical `parseTimestamp` (Go `.UnixMilli()` / TS `.getTime()`) — **note:** OCSF uses millis, unlike Splunk HEC's epoch *seconds* (ADR-0004). Integer millis keep Go/TS byte-identical.
+
+10. **Plain NDJSON, one finding per line.** Each object self-identifies via `class_uid`, so mixing `2002`/`2003` lines is valid and consumer-disambiguable. The OCSF *bundle frame* (`{events:[…], count, …}`) and Amazon-Security-Lake Parquet (one class per object) are ingest concerns left to the consumer; a `--bundle` flag is a possible future add (mirrors ECS's deferred `--bulk`).
+
+### Override representation
+
+The exporter encodes HDF's override state onto the base finding `status_id` so a consumer can filter adjudicated vs. actionable findings **on normalized enums only — never on free text**. The contract (an invariant this exporter guarantees):
+
+| HDF override state | `status_id` |
+|---|---|
+| no override | `1 New` |
+| any active override (waiver / false-positive / risk-adjustment) | `3 Suppressed` |
+
+(HDF overrides are always *acceptances* of a result — a genuinely *remediated* control simply passes on the next scan, showing up as a raw `passed` with no override — so this exporter does not emit `4 Resolved`; that lifecycle value is left for a downstream OCSF workflow to set.)
+
+Combined with the raw-primary `compliance.status_id`, this yields the **canonical consumer query for "open, actionable, not-waived compliance failures":**
+
+```
+class_uid = 2003 AND compliance.status_id = 3 (Fail) AND status_id IN (1 New, 2 In Progress)
+```
+
+Waived / false-positive / resolved failures fall out on the `status_id` enum; genuine open fails pass through. "Show me the waived failures" is `compliance.status_id = 3 AND status_id = 3`. For Vulnerability Findings (no `compliance.status_id` — the finding's existence is the problem) it reduces to `class_uid = 2002 AND status_id IN (1, 2)`. Mental model: `status_id` = *is it still my problem?*; `compliance.status_id` = *did it pass or fail?* — independent axes.
+
+**Two honest limitations (documented, not worked around):**
+
+1. **OCSF has no native compliance-waiver / risk-acceptance concept.** `status_id = 3 Suppressed` is defined as *"reviewed, determined to be benign or a false positive"* — a good fit for `falsePositive` but only an approximate one for a *waiver* or *risk-adjustment* (those are accepted risks, not "benign"). It is nonetheless the closest lifecycle state for "adjudicated, removed from the actionable set," and it makes the query above work. The **exact** override type, its justification, expiry, author, and the full multi-entry `statusOverrides[]` chain are preserved in `unmapped.hdf_requirement` (lossless) and the governing reason is additionally surfaced in `comment` (human-readable). No first-class OCSF field carries the override *type* without misusing the incident profile — so it deliberately lives in `comment` + `unmapped`, never gated behind free-text for the core actionable-vs-adjudicated filter.
+2. **`status_id` is nominally consumer-set.** OCSF documents `status_id` as *"set by the consumer"* (the downstream triage field). This exporter pre-populates it from HDF's authoritative adjudication (HDF already carries the waivers), handing the consumer a correct initial triage state rather than making them re-derive it; a downstream workflow may still overwrite it. This producer-side pre-population is part of the documented mapping contract.
+
+### Event mapping (per requirement)
+
+| OCSF field | Source (HDF) | Class |
+|---|---|---|
+| `class_uid` / `category_uid` / `type_uid` / `activity_id` | constants (2002/2003, 2, computed, 1) | both |
+| `time` | `results[0].startTime` → epoch **millis** (`parseTimestamp`) | both |
+| `severity_id` | map(`impact`) → OCSF 0–6 | both |
+| `metadata.product.{name,version,vendor_name}` / `metadata.version` | `tool`/`generator`; `"1.8.0"` | both |
+| `finding_info.{uid,title,desc}` | requirement id / title / default description | both |
+| `device.{name,hostname,ip,uid,os.*}` | target `component` (name/fqdn/ip/componentId/osName/osVersion) | both |
+| `unmapped.hdf_requirement` | **the full original requirement (lossless)** | both |
+| `status_id` (lifecycle) | overrides → `3 Suppressed` / `4 Resolved`; else `1 New` | both |
+| `compliance.status_id` + `compliance.status` | map(status) → 1/2/3/99/0 + verbatim HDF status | Compliance (2003) |
+| `compliance.control` / `compliance.standards[]` / `compliance.checks[]` | STIG id / frameworks / per-control `{uid,standards,status_id}` from tags | Compliance (2003) |
+| `vulnerabilities[].cve.{uid,cvss[],related_cwes,references}` | `cvss[].source` + `cvss[]` 1:1 + `cwe` + refs | Vulnerability (2002) |
+
+### Alternatives (OCSF-specific)
+
+- **Reuse the ECS/Splunk `hdf.*` block for losslessness.** *Rejected:* OCSF provides `unmapped` — a schema-native, validation-safe container for exactly this. Using a bespoke `hdf.*` key would be non-idiomatic and risk validation friction.
+- **`raw_data` (stringified requirement).** *Rejected:* it is a String — consumers must re-parse it and it isn't queryable; `unmapped` (object) is superior.
+- **A first-class OCSF `hdf` extension/profile.** *Rejected (for now):* the "legitimate named attribute" route requires registering an extension UID and shipping an extension schema. Overkill for an exporter; `unmapped` is the standards-blessed pragmatic choice. Revisit only if a consumer must schema-validate the HDF payload's internal structure.
+- **Force failed controls into Vulnerability Finding (the CIM approach).** *Rejected:* unnecessary in OCSF — Compliance Finding is a real class. Only genuine CVE findings become Vulnerability Findings.
+- **Bundle-frame-only output.** *Rejected as default:* NDJSON is consistent with our other exporters and lake-friendly; the bundle frame is a future `--bundle` flag.
+
+### Scope / plan (this is `wvc3.5`)
+
+Same shape as the ECS/Splunk exporter cards: new `hdf-converters/converters/hdf-to-ocsf/{go,typescript,fixtures}` (`ConvertHDFToOCSF(input,version) → NDJSON`), reusing `exportmap`; CLI `converter_hdf_to_ocsf.go` registering `RegisterConverter("hdf","ocsf",…)`; real fixtures (the shared compliance/cve/override inputs); dual TS+Go byte-identical golden tests; README + CHANGELOG. Severity/OS-type/status helpers are OCSF-specific and unit-tested. **Open gap to keep documented:** the `notApplicable`/`notReviewed` → `compliance.status_id` convention (Unknown/Other + verbatim string) — surfaced here, not silently chosen.

@@ -1,0 +1,253 @@
+package hdftoocsf
+
+import (
+	"bytes"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+const converterVersion = "0.1.0"
+
+func fixture(t *testing.T, kind, name string) []byte {
+	t.Helper()
+	p := filepath.Join(shared.GetConvertersDir(), "hdf-to-ocsf", "fixtures", kind, name)
+	data, err := os.ReadFile(p)
+	require.NoError(t, err, "read fixture %s", p)
+	return data
+}
+
+func parseLines(t *testing.T, out []byte) []map[string]interface{} {
+	t.Helper()
+	require.True(t, len(out) > 0, "output is empty")
+	require.Equal(t, byte('\n'), out[len(out)-1], "output must end with a trailing newline")
+	var objs []map[string]interface{}
+	for _, line := range bytes.Split(bytes.TrimRight(out, "\n"), []byte("\n")) {
+		var m map[string]interface{}
+		require.NoError(t, json.Unmarshal(line, &m), "each line must be standalone JSON: %s", line)
+		objs = append(objs, m)
+	}
+	return objs
+}
+
+func sub(t *testing.T, m map[string]interface{}, key string) map[string]interface{} {
+	t.Helper()
+	v, ok := m[key].(map[string]interface{})
+	require.True(t, ok, "expected object at key %q", key)
+	return v
+}
+
+func TestConvert_EmptyAndInvalid(t *testing.T) {
+	_, err := ConvertHDFToOCSF([]byte(""), converterVersion)
+	assert.Error(t, err)
+	_, err = ConvertHDFToOCSF([]byte("not json"), converterVersion)
+	assert.Error(t, err)
+	_, err = ConvertHDFToOCSF([]byte(`{"foo":1}`), converterVersion)
+	assert.Error(t, err, "missing baselines must error")
+}
+
+func TestConvert_ClassRouting(t *testing.T) {
+	// compliance fixture -> Compliance Finding (2003)
+	out, err := ConvertHDFToOCSF(fixture(t, "input", "compliance.json"), converterVersion)
+	require.NoError(t, err)
+	for _, o := range parseLines(t, out) {
+		assert.Equal(t, float64(2003), o["class_uid"])
+		assert.Equal(t, float64(2), o["category_uid"])
+		assert.Equal(t, float64(200301), o["type_uid"])
+		assert.NotNil(t, o["compliance"], "compliance finding carries a compliance object")
+		_, hasVuln := o["vulnerabilities"]
+		assert.False(t, hasVuln)
+	}
+	// cve fixture -> Vulnerability Finding (2002)
+	out, err = ConvertHDFToOCSF(fixture(t, "input", "cve.json"), converterVersion)
+	require.NoError(t, err)
+	for _, o := range parseLines(t, out) {
+		assert.Equal(t, float64(2002), o["class_uid"])
+		assert.Equal(t, float64(200201), o["type_uid"])
+		assert.NotNil(t, o["vulnerabilities"])
+		_, hasComp := o["compliance"]
+		assert.False(t, hasComp)
+	}
+}
+
+// TestConvert_RawPrimaryOverride is the crux: a waived failure keeps
+// compliance.status_id = Fail (never masked as Pass) and marks the override on
+// the lifecycle status_id = Suppressed.
+func TestConvert_RawPrimaryOverride(t *testing.T) {
+	out, err := ConvertHDFToOCSF(fixture(t, "input", "override.json"), converterVersion)
+	require.NoError(t, err)
+	objs := parseLines(t, out)
+	require.Len(t, objs, 1)
+	o := objs[0]
+
+	assert.Equal(t, float64(3), sub(t, o, "compliance")["status_id"], "raw verdict stays Fail even when waived")
+	assert.Equal(t, "failed", sub(t, o, "compliance")["status"], "exact HDF status preserved verbatim")
+	assert.Equal(t, float64(3), o["status_id"], "override -> lifecycle status_id Suppressed")
+	assert.Equal(t, "waiver", o["comment"], "governing override surfaced in comment")
+	// lossless: full requirement (incl. the override chain) in unmapped
+	assert.NotNil(t, sub(t, o, "unmapped")["hdf_requirement"])
+}
+
+// TestConsumerQuery_ActionableFailures encodes the ADR addendum's canonical
+// query: a real open fail is compliance.status_id=3 AND status_id IN (1,2);
+// a waived fail (status_id=3) must be excluded.
+func TestConsumerQuery_ActionableFailures(t *testing.T) {
+	actionable := func(o map[string]interface{}) bool {
+		comp, _ := o["compliance"].(map[string]interface{})
+		if comp == nil {
+			return false
+		}
+		return comp["status_id"] == float64(3) && (o["status_id"] == float64(1) || o["status_id"] == float64(2))
+	}
+	// compliance fixture: SV-204393 failed (open), SV-204405 passed, SV-204424 failed (open)
+	out, _ := ConvertHDFToOCSF(fixture(t, "input", "compliance.json"), converterVersion)
+	open := 0
+	for _, o := range parseLines(t, out) {
+		if actionable(o) {
+			open++
+		}
+	}
+	assert.Equal(t, 2, open, "two open failures, no waivers in this fixture")
+
+	// override fixture: the single failure is waived -> NOT actionable
+	out, _ = ConvertHDFToOCSF(fixture(t, "input", "override.json"), converterVersion)
+	for _, o := range parseLines(t, out) {
+		assert.False(t, actionable(o), "a waived failure must not be actionable")
+	}
+}
+
+func TestConvert_ComplianceChecks(t *testing.T) {
+	out, err := ConvertHDFToOCSF(fixture(t, "input", "compliance.json"), converterVersion)
+	require.NoError(t, err)
+	o := parseLines(t, out)[0]
+	comp := sub(t, o, "compliance")
+	checks, ok := comp["checks"].([]interface{})
+	require.True(t, ok, "compliance.checks[] present")
+	require.NotEmpty(t, checks)
+	first := checks[0].(map[string]interface{})
+	assert.Equal(t, comp["control"], first["uid"], "first check uid is the control id")
+	assert.Contains(t, comp["standards"], "NIST SP 800-53")
+}
+
+func TestConvert_CVE(t *testing.T) {
+	out, err := ConvertHDFToOCSF(fixture(t, "input", "cve.json"), converterVersion)
+	require.NoError(t, err)
+	for _, o := range parseLines(t, out) {
+		vulns := o["vulnerabilities"].([]interface{})
+		require.Len(t, vulns, 1)
+		cve := vulns[0].(map[string]interface{})["cve"].(map[string]interface{})
+		assert.Contains(t, cve["uid"], "CVE-")
+		cvss := cve["cvss"].([]interface{})
+		require.NotEmpty(t, cvss)
+		first := cvss[0].(map[string]interface{})
+		_, ok := first["base_score"].(float64)
+		assert.True(t, ok, "cvss.base_score is a number")
+		assert.NotEmpty(t, first["version"], "cvss.version is required")
+	}
+}
+
+func TestConvert_GoldenParity(t *testing.T) {
+	for _, name := range []string{"compliance", "cve", "override"} {
+		out, err := ConvertHDFToOCSF(fixture(t, "input", name+".json"), converterVersion)
+		require.NoError(t, err)
+		want := fixture(t, "expected", name+".ndjson")
+		assert.Equal(t, string(want), string(out), "golden mismatch for %s", name)
+	}
+}
+
+func TestSeverityID(t *testing.T) {
+	mk := func(impact float64) map[string]interface{} { return map[string]interface{}{"impact": impact} }
+	assert.Equal(t, 5, severityID(mk(1.0)))
+	assert.Equal(t, 5, severityID(mk(0.9)))
+	assert.Equal(t, 4, severityID(mk(0.7)))
+	assert.Equal(t, 3, severityID(mk(0.5)))
+	assert.Equal(t, 2, severityID(mk(0.1)))
+	assert.Equal(t, 1, severityID(mk(0.0)))
+	assert.Equal(t, 4, severityID(map[string]interface{}{"severity": "high"}))
+	assert.Equal(t, 0, severityID(map[string]interface{}{}))
+}
+
+func TestComplianceStatusID(t *testing.T) {
+	assert.Equal(t, 1, complianceStatusID("passed"))
+	assert.Equal(t, 3, complianceStatusID("failed"))
+	assert.Equal(t, 2, complianceStatusID("error"))
+	assert.Equal(t, 2, complianceStatusID("notApplicable"))
+	assert.Equal(t, 2, complianceStatusID("notReviewed"))
+}
+
+func TestOSTypeID(t *testing.T) {
+	assert.Equal(t, 100, osTypeID("Windows Server 2019"))
+	assert.Equal(t, 200, osTypeID("Red Hat Enterprise Linux 8"))
+	assert.Equal(t, 200, osTypeID("Ubuntu 22.04"))
+	assert.Equal(t, 300, osTypeID("macOS 14 Sonoma"))
+	assert.Equal(t, 300, osTypeID("Darwin Kernel"))
+	assert.Equal(t, 0, osTypeID("SomeAppliance"))
+}
+
+func TestSeverityIDFromString(t *testing.T) {
+	assert.Equal(t, 5, severityIDFromString("critical"))
+	assert.Equal(t, 4, severityIDFromString("High"))
+	assert.Equal(t, 3, severityIDFromString("medium"))
+	assert.Equal(t, 2, severityIDFromString("low"))
+	assert.Equal(t, 1, severityIDFromString("informational"))
+	assert.Equal(t, 1, severityIDFromString("info"))
+	assert.Equal(t, 1, severityIDFromString("none"))
+	assert.Equal(t, 0, severityIDFromString(""))
+	assert.Equal(t, 0, severityIDFromString("weird"))
+}
+
+func TestOverrideComment(t *testing.T) {
+	assert.Equal(t, "", overrideComment(map[string]interface{}{}))
+	assert.Equal(t, "waiver: ok", overrideComment(map[string]interface{}{
+		"disposition":     "waiver",
+		"statusOverrides": []interface{}{map[string]interface{}{"justification": "ok"}},
+	}))
+	assert.Equal(t, "waiver", overrideComment(map[string]interface{}{"disposition": "waiver"}))
+	assert.Equal(t, "j", overrideComment(map[string]interface{}{
+		"statusOverrides": []interface{}{map[string]interface{}{"justification": "j"}},
+	}))
+}
+
+func TestEpochMillis(t *testing.T) {
+	_, ok := epochMillis("")
+	assert.False(t, ok)
+	ms, ok := epochMillis("2024-01-01T00:00:00Z")
+	require.True(t, ok)
+	assert.Equal(t, int64(1704067200000), ms)
+}
+
+// TestConvert_EdgeBranches exercises the vuln/device/metadata edge paths the
+// three fixtures don't reach, via minimal synthesized inputs.
+func TestConvert_EdgeBranches(t *testing.T) {
+	// non-CVE cvss source -> cve.uid falls back to req id; cwe -> related_cwes; refs -> references
+	doc := `{"baselines":[{"name":"b","requirements":[{"id":"GHSA-x","impact":0.5,"cvss":[{"baseScore":7.5,"version":"3.1","source":"GHSA-x-y"}],"cwe":["CWE-79"],"refs":[{"url":"https://a"}],"results":[{"status":"failed","codeDesc":"c","startTime":"2024-01-01T00:00:00Z"}]}]}]}`
+	out, err := ConvertHDFToOCSF([]byte(doc), converterVersion)
+	require.NoError(t, err)
+	vuln := parseLines(t, out)[0]["vulnerabilities"].([]interface{})[0].(map[string]interface{})
+	cve := vuln["cve"].(map[string]interface{})
+	assert.Equal(t, "GHSA-x", cve["uid"], "non-CVE source falls back to requirement id")
+	assert.NotNil(t, cve["related_cwes"])
+	assert.NotNil(t, vuln["references"])
+
+	// component with no identifying attribute -> no device
+	doc2 := `{"components":[{"description":"x"}],"baselines":[{"name":"b","requirements":[{"id":"X","impact":0.5,"results":[{"status":"failed","codeDesc":"c","startTime":"2024-01-01T00:00:00Z"}]}]}]}`
+	out, err = ConvertHDFToOCSF([]byte(doc2), converterVersion)
+	require.NoError(t, err)
+	_, hasDevice := parseLines(t, out)[0]["device"]
+	assert.False(t, hasDevice)
+
+	// generator fallback + Warning status + omitted time
+	doc3 := `{"generator":{"name":"grype-to-hdf","version":"1.0"},"baselines":[{"name":"b","requirements":[{"id":"X","impact":0.5,"results":[{"status":"notReviewed","codeDesc":"c"}]}]}]}`
+	out, err = ConvertHDFToOCSF([]byte(doc3), converterVersion)
+	require.NoError(t, err)
+	o := parseLines(t, out)[0]
+	assert.Equal(t, float64(2), sub(t, o, "compliance")["status_id"], "notReviewed -> Warning")
+	assert.Equal(t, "grype-to-hdf", sub(t, sub(t, o, "metadata"), "product")["name"], "generator fallback")
+	_, hasTime := o["time"]
+	assert.False(t, hasTime, "unparseable/absent time omitted")
+}

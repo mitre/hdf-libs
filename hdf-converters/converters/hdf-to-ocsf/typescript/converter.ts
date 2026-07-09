@@ -1,0 +1,289 @@
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import {
+  type Obj,
+  asMap,
+  asArr,
+  getStr,
+  setIf,
+  statusOf,
+  stringSlice,
+  firstComponent,
+  firstResultStartTime,
+  defaultDescription,
+  firstRefURL,
+  canonicalize,
+  stringifyLine,
+} from '../../../shared/typescript/exportmap.js';
+
+/**
+ * HDF Results -> OCSF (Open Cybersecurity Schema Framework) Finding NDJSON.
+ * See the ADR-0002 addendum (HDF -> OCSF, wvc3.5). Pinned to OCSF v1.8.0.
+ *
+ * One Finding per requirement: a CVE finding -> Vulnerability Finding
+ * (class_uid 2002), any other -> Compliance Finding (class_uid 2003), both in
+ * the Findings category (2). Status model is raw-primary: compliance.status_id
+ * carries the RAW verdict (a failed control stays Fail even when waived);
+ * overrides ride the base finding status_id (New vs Suppressed); the exact
+ * override chain is preserved in unmapped.hdf_requirement (+ a comment).
+ *
+ * Shares the generic access / status roll-up / field extraction / canonical
+ * line serialization with the other exporters via exportmap; output is held
+ * byte-identical with the Go implementation.
+ */
+
+const OCSF_VERSION = '1.8.0';
+const CATEGORY_FINDINGS = 2;
+const CLASS_COMPLIANCE = 2003;
+const CLASS_VULNERABILITY = 2002;
+const ACTIVITY_CREATE = 1;
+const STATUS_NEW = 1;
+const STATUS_SUPPRESSED = 3;
+
+export function convertHdfToOcsf(input: string, _converterVersion = '0.1.0'): string {
+  validateInputSize(input, 'hdf-to-ocsf');
+  const doc = parseJSON<Obj>(input);
+
+  const baselines = asArr(doc.baselines);
+  if (!baselines) {
+    throw new Error('hdf-to-ocsf: invalid HDF structure: missing baselines field');
+  }
+
+  const docTimestamp = getStr(doc, 'timestamp');
+  const tool = asMap(doc.tool);
+  const generator = asMap(doc.generator);
+  const component = firstComponent(doc);
+
+  const lines: string[] = [];
+  for (const bRaw of baselines) {
+    const baseline = asMap(bRaw);
+    if (!baseline) continue;
+    const reqs = asArr(baseline.requirements) ?? [];
+    for (const rRaw of reqs) {
+      const req = asMap(rRaw);
+      if (!req) continue;
+      const finding = buildFinding(req, baseline, docTimestamp, tool, generator, component);
+      lines.push(stringifyLine(canonicalize(finding)));
+    }
+  }
+  return lines.length === 0 ? '' : lines.join('\n') + '\n';
+}
+
+function buildFinding(
+  req: Obj,
+  baseline: Obj,
+  docTimestamp: string,
+  tool: Obj | undefined,
+  generator: Obj | undefined,
+  component: Obj | undefined,
+): Obj {
+  const st = statusOf(req);
+  const cvssList = asArr(req.cvss);
+  const hasCVSS = cvssList !== undefined && cvssList.length > 0;
+  const title = getStr(req, 'title');
+  const controlID = getStr(req, 'id');
+
+  const cls = hasCVSS ? CLASS_VULNERABILITY : CLASS_COMPLIANCE;
+
+  const findingInfo: Obj = { uid: controlID };
+  setIf(findingInfo, 'title', title);
+  setIf(findingInfo, 'desc', defaultDescription(req));
+
+  const finding: Obj = {
+    category_uid: CATEGORY_FINDINGS,
+    class_uid: cls,
+    type_uid: cls * 100 + ACTIVITY_CREATE,
+    activity_id: ACTIVITY_CREATE,
+    severity_id: severityID(req),
+    status_id: st.overridden ? STATUS_SUPPRESSED : STATUS_NEW,
+    metadata: buildMetadata(tool, generator),
+    finding_info: findingInfo,
+    unmapped: { hdf_requirement: req },
+  };
+  const ms = epochMillis(firstResultStartTime(req, docTimestamp));
+  if (ms !== undefined) finding.time = ms;
+  setIf(finding, 'comment', overrideComment(req));
+  const device = buildDevice(component);
+  if (device) finding.device = device;
+
+  if (hasCVSS) {
+    finding.vulnerabilities = buildVulnerabilities(cvssList!, req);
+  } else {
+    finding.compliance = buildCompliance(req, baseline, title, st.raw);
+  }
+  return finding;
+}
+
+function severityID(req: Obj): number {
+  if (typeof req.impact === 'number') {
+    const impact = req.impact;
+    if (impact >= 0.9) return 5;
+    if (impact >= 0.7) return 4;
+    if (impact >= 0.4) return 3;
+    if (impact >= 0.1) return 2;
+    return 1;
+  }
+  return severityIDFromString(getStr(req, 'severity'));
+}
+
+function severityIDFromString(s: string): number {
+  switch (s.toLowerCase()) {
+    case 'critical':
+      return 5;
+    case 'high':
+      return 4;
+    case 'medium':
+      return 3;
+    case 'low':
+      return 2;
+    case 'informational':
+    case 'info':
+    case 'none':
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function complianceStatusID(rawStatus: string): number {
+  switch (rawStatus) {
+    case 'passed':
+      return 1;
+    case 'failed':
+      return 3;
+    default: // error, notApplicable, notReviewed
+      return 2;
+  }
+}
+
+function overrideComment(req: Obj): string {
+  const disposition = getStr(req, 'disposition');
+  const overrides = asArr(req.statusOverrides) ?? [];
+  if (disposition === '' && overrides.length === 0) return '';
+  let justification = '';
+  if (overrides.length > 0) justification = getStr(asMap(overrides[0]), 'justification');
+  if (disposition !== '' && justification !== '') return `${disposition}: ${justification}`;
+  if (disposition !== '') return disposition;
+  return justification;
+}
+
+function buildMetadata(tool: Obj | undefined, generator: Obj | undefined): Obj {
+  const metadata: Obj = { version: OCSF_VERSION };
+  let name = getStr(tool, 'name');
+  let version = getStr(tool, 'version');
+  if (name === '' && generator) {
+    name = getStr(generator, 'name');
+    version = getStr(generator, 'version');
+  }
+  if (name !== '') {
+    const product: Obj = { name };
+    setIf(product, 'version', version);
+    setIf(product, 'vendor_name', getStr(tool, 'format'));
+    metadata.product = product;
+  }
+  return metadata;
+}
+
+function buildDevice(component: Obj | undefined): Obj | undefined {
+  if (!component) return undefined;
+  const device: Obj = { type_id: 0 };
+  setIf(device, 'name', getStr(component, 'name'));
+  setIf(device, 'hostname', getStr(component, 'fqdn'));
+  setIf(device, 'ip', getStr(component, 'ipAddress'));
+  setIf(device, 'uid', getStr(component, 'componentId'));
+  const osName = getStr(component, 'osName');
+  if (osName !== '') {
+    const os: Obj = { name: osName, type_id: osTypeID(osName) };
+    setIf(os, 'version', getStr(component, 'osVersion'));
+    device.os = os;
+  }
+  // device requires at least one identifying attribute (beyond type_id)
+  return Object.keys(device).length === 1 ? undefined : device;
+}
+
+const OS_LINUX = ['linux', 'rhel', 'red hat', 'ubuntu', 'centos', 'debian', 'fedora', 'suse'];
+const OS_MAC = ['mac', 'darwin', 'os x'];
+
+function osTypeID(osName: string): number {
+  const n = osName.toLowerCase();
+  if (n.includes('windows')) return 100;
+  if (OS_LINUX.some((k) => n.includes(k))) return 200;
+  if (OS_MAC.some((k) => n.includes(k))) return 300;
+  return 0;
+}
+
+function buildCompliance(req: Obj, baseline: Obj, title: string, rawStatus: string): Obj {
+  const statusID = complianceStatusID(rawStatus);
+  const compliance: Obj = { status_id: statusID, status: rawStatus };
+  const controlID = getStr(req, 'id');
+  setIf(compliance, 'control', controlID);
+
+  const baselineName = getStr(baseline, 'name');
+  const tags = asMap(req.tags);
+  const nist = stringSlice(tags?.nist);
+  const cci = stringSlice(tags?.cci);
+
+  const standards: unknown[] = [];
+  if (baselineName !== '') standards.push(baselineName);
+  if (nist.length > 0) standards.push('NIST SP 800-53');
+  if (cci.length > 0) standards.push('CCI');
+  if (standards.length > 0) compliance.standards = standards;
+
+  const checks: unknown[] = [];
+  if (controlID !== '') {
+    const check: Obj = { uid: controlID, status_id: statusID };
+    setIf(check, 'name', title);
+    if (baselineName !== '') check.standards = [baselineName];
+    checks.push(check);
+  }
+  for (const id of nist) checks.push({ uid: id, standards: ['NIST SP 800-53'] });
+  for (const id of cci) checks.push({ uid: id, standards: ['CCI'] });
+  if (checks.length > 0) compliance.checks = checks;
+  return compliance;
+}
+
+function buildVulnerabilities(cvssList: unknown[], req: Obj): unknown[] {
+  const cve: Obj = {};
+  cve.uid = firstCVE(cvssList) || getStr(req, 'id');
+
+  const cvssArr: unknown[] = [];
+  for (const c of cvssList) {
+    const m = asMap(c);
+    if (!m) continue;
+    const entry: Obj = {};
+    if (typeof m.baseScore === 'number') entry.base_score = m.baseScore;
+    setIf(entry, 'version', getStr(m, 'version'));
+    setIf(entry, 'vector_string', getStr(m, 'baseVector'));
+    setIf(entry, 'severity', getStr(m, 'baseSeverity'));
+    cvssArr.push(entry);
+  }
+  if (cvssArr.length > 0) cve.cvss = cvssArr;
+  const cwes = stringSlice(req.cwe);
+  if (cwes.length > 0) cve.related_cwes = cwes.map((id) => ({ uid: id }));
+
+  const vuln: Obj = { cve };
+  setIf(vuln, 'title', getStr(req, 'title'));
+  setIf(vuln, 'desc', defaultDescription(req));
+  const ref = firstRefURL(req);
+  if (ref !== '') vuln.references = [ref];
+  return [vuln];
+}
+
+function firstCVE(cvssList: unknown[]): string {
+  for (const c of cvssList) {
+    const src = getStr(asMap(c), 'source');
+    if (src.toUpperCase().startsWith('CVE-')) return src;
+  }
+  return '';
+}
+
+/**
+ * Parse an HDF RFC3339 timestamp into integer epoch milliseconds (OCSF's `time`
+ * convention) via the canonical parser, returning undefined when
+ * empty/unparseable. Integer millis keep Go and TypeScript byte-identical.
+ */
+function epochMillis(s: string): number | undefined {
+  const d = parseTimestamp(s);
+  if (d === null) return undefined;
+  return d.getTime();
+}
