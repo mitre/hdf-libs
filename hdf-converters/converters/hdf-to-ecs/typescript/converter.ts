@@ -1,5 +1,21 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import {
+  type Obj,
+  asMap,
+  asArr,
+  getStr,
+  setIf,
+  statusOf,
+  stringSlice,
+  firstComponent,
+  firstResultStartTime,
+  defaultDescription,
+  firstRefURL,
+  eventID,
+  canonicalize,
+  stringifyLine,
+} from '../../../shared/typescript/exportmap.js';
 
 /**
  * HDF Results -> Elastic Common Schema (ECS) NDJSON exporter.
@@ -9,28 +25,14 @@ import { validateInputSize } from '../../../shared/typescript/converterutil.js';
  * promoted flat. Output is plain NDJSON (LF-delimited, trailing newline), ECS
  * 9.4.0.
  *
- * To stay byte-identical with the Go implementation, this operates on
- * generically-parsed JSON and emits alphabetically key-sorted, HTML-unescaped
- * compact JSON; timestamps pass through as raw source strings.
+ * Generic JSON access, the status roll-up, requirement/document field
+ * extraction, and the canonical line serialization are shared with the other
+ * export converters via ../../../shared/typescript/exportmap.js; only
+ * ECS-specific event shaping lives here. Output is held byte-identical with the
+ * Go implementation via key-sorted, HTML-unescaped compact JSON.
  */
 
 const ECS_VERSION = '9.4.0';
-
-type Obj = Record<string, unknown>;
-
-function asMap(v: unknown): Obj | undefined {
-  return v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Obj) : undefined;
-}
-function asArr(v: unknown): unknown[] | undefined {
-  return Array.isArray(v) ? v : undefined;
-}
-function getStr(m: Obj | undefined, key: string): string {
-  const v = m?.[key];
-  return typeof v === 'string' ? v : '';
-}
-function setIf(m: Obj, key: string, val: string): void {
-  if (val !== '') m[key] = val;
-}
 
 export function convertHdfToEcs(input: string, converterVersion = '0.1.0'): string {
   validateInputSize(input, 'hdf-to-ecs');
@@ -70,17 +72,13 @@ function buildEvent(
   component: Obj | undefined,
   converterVersion: string,
 ): Obj {
-  const rawStatus = worstOfResults(req);
-  const effStatus = getStr(req, 'effectiveStatus');
-  const rollup = effStatus !== '' ? effStatus : rawStatus;
-  const outcome = statusToOutcome(rollup);
+  const st = statusOf(req);
+  const outcome = statusToOutcome(st.rollup);
   const controlID = getStr(req, 'id');
   const baselineName = getStr(baseline, 'name');
   const title = getStr(req, 'title');
 
   const cvssList = asArr(req.cvss);
-  const overrides = asArr(req.statusOverrides);
-  const overridden = (overrides !== undefined && overrides.length > 0) || 'effectiveStatus' in req;
   const hasCVSS = cvssList !== undefined && cvssList.length > 0;
 
   const categories: unknown[] = ['configuration'];
@@ -100,7 +98,7 @@ function buildEvent(
     '@timestamp': firstResultStartTime(req, docTimestamp),
     ecs: { version: ECS_VERSION },
     event,
-    message: (title + ' — ' + rollup).trim(),
+    message: (title + ' — ' + st.rollup).trim(),
   };
 
   const observer = buildObserver(tool, generator);
@@ -122,7 +120,7 @@ function buildEvent(
   const threat = buildThreat(req);
   if (threat) obj.threat = threat;
 
-  obj.hdf = buildHDFBlock(req, baseline, rawStatus, overridden, generator, tool, converterVersion);
+  obj.hdf = buildHDFBlock(req, baseline, st.raw, st.overridden, generator, tool, converterVersion);
 
   return obj;
 }
@@ -259,20 +257,6 @@ function buildHDFBlock(
   return hdf;
 }
 
-function worstOfResults(req: Obj): string {
-  const results = asArr(req.results) ?? [];
-  const precedence = ['failed', 'error', 'passed', 'notReviewed', 'notApplicable'];
-  const present = new Set<string>();
-  for (const rRaw of results) {
-    const r = asMap(rRaw);
-    if (r) present.add(getStr(r, 'status'));
-  }
-  for (const s of precedence) {
-    if (present.has(s)) return s;
-  }
-  return 'notReviewed';
-}
-
 function statusToOutcome(status: string): string {
   switch (status) {
     case 'passed':
@@ -282,77 +266,4 @@ function statusToOutcome(status: string): string {
     default:
       return 'unknown';
   }
-}
-
-function eventID(component: Obj | undefined, baselineName: string, controlID: string): string {
-  let comp = '';
-  if (component) {
-    comp = getStr(component, 'componentId') || getStr(component, 'name');
-  }
-  return [comp, baselineName, controlID].join('|');
-}
-
-function firstComponent(doc: Obj): Obj | undefined {
-  const comps = asArr(doc.components);
-  if (!comps || comps.length === 0) return undefined;
-  return asMap(comps[0]);
-}
-
-function firstResultStartTime(req: Obj, fallback: string): string {
-  const results = asArr(req.results) ?? [];
-  if (results.length > 0) {
-    const r = asMap(results[0]);
-    const st = getStr(r, 'startTime');
-    if (st !== '') return st;
-  }
-  return fallback;
-}
-
-function defaultDescription(req: Obj): string {
-  const descs = asArr(req.descriptions) ?? [];
-  for (const dRaw of descs) {
-    const d = asMap(dRaw);
-    if (d && getStr(d, 'label') === 'default') return getStr(d, 'data');
-  }
-  return '';
-}
-
-function firstRefURL(req: Obj): string {
-  const refs = asArr(req.refs) ?? [];
-  for (const rRaw of refs) {
-    const r = asMap(rRaw);
-    const url = getStr(r, 'url');
-    if (url !== '') return url;
-  }
-  return '';
-}
-
-function stringSlice(v: unknown): string[] {
-  if (typeof v === 'string') return [v];
-  if (Array.isArray(v)) return v.filter((e): e is string => typeof e === 'string');
-  return [];
-}
-
-// stringifyLine emits compact JSON matching Go's encoder byte-for-byte. Go's
-// encoding/json escapes U+2028/U+2029 (JSONP safety) while JSON.stringify emits
-// them raw, so we escape them here to preserve parity. (Object keys are ASCII
-// or schema-defined tag keys, all within the BMP, where JS's UTF-16 sort order
-// agrees with Go's byte-wise sort — astral-plane keys are not a concern.)
-function stringifyLine(v: unknown): string {
-  return JSON.stringify(v).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-}
-
-// canonicalize recursively sorts object keys (matching Go's map-key ordering)
-// so the emitted JSON is byte-identical to the Go encoder.
-function canonicalize(v: unknown): unknown {
-  if (Array.isArray(v)) return v.map(canonicalize);
-  const m = asMap(v);
-  if (m) {
-    const out: Obj = {};
-    for (const k of Object.keys(m).sort()) {
-      out[k] = canonicalize(m[k]);
-    }
-    return out;
-  }
-  return v;
 }

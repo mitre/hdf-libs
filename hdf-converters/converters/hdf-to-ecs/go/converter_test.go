@@ -58,21 +58,6 @@ func TestStatusToOutcome_Exhaustive(t *testing.T) {
 	}
 }
 
-func TestWorstOfResults(t *testing.T) {
-	mk := func(statuses ...string) map[string]interface{} {
-		var results []interface{}
-		for _, s := range statuses {
-			results = append(results, map[string]interface{}{"status": s})
-		}
-		return map[string]interface{}{"results": results}
-	}
-	assert.Equal(t, "failed", worstOfResults(mk("passed", "failed")))
-	assert.Equal(t, "passed", worstOfResults(mk("passed", "passed")))
-	assert.Equal(t, "error", worstOfResults(mk("error", "passed")))
-	assert.Equal(t, "notApplicable", worstOfResults(mk("notApplicable")))
-	assert.Equal(t, "notReviewed", worstOfResults(mk()))
-}
-
 func TestConvertHDFToECS_EmptyAndInvalid(t *testing.T) {
 	_, err := ConvertHDFToECS([]byte(""), converterVersion)
 	assert.Error(t, err)

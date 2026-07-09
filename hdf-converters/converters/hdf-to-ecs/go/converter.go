@@ -6,8 +6,11 @@
 // promoted flat. Output is plain NDJSON (one object per line, LF-delimited,
 // trailing newline), ECS 9.4.0.
 //
-// To guarantee byte-identical output with the TypeScript implementation, the
-// converter operates on generically-parsed JSON and emits alphabetically
+// Generic JSON access, the status roll-up, requirement/document field
+// extraction, and the canonical line encoder are shared with the other export
+// converters via the exportmap package; only ECS-specific event shaping lives
+// here. To guarantee byte-identical output with the TypeScript implementation,
+// the converter operates on generically-parsed JSON and emits alphabetically
 // key-sorted, HTML-unescaped compact JSON; timestamps pass through as raw
 // source strings.
 package hdftoecs
@@ -19,6 +22,7 @@ import (
 	"strings"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 )
 
 const ecsVersion = "9.4.0"
@@ -36,35 +40,34 @@ func ConvertHDFToECS(input []byte, converterVersion string) ([]byte, error) {
 	if err := json.Unmarshal(input, &doc); err != nil {
 		return nil, fmt.Errorf("hdf-to-ecs: invalid HDF JSON: %w", err)
 	}
-	baselines, ok := asSlice(doc["baselines"])
+	baselines, ok := exportmap.AsSlice(doc["baselines"])
 	if !ok {
 		return nil, fmt.Errorf("hdf-to-ecs: invalid HDF structure: missing baselines field")
 	}
 
-	docTimestamp := getStr(doc, "timestamp")
-	tool, _ := asMap(doc["tool"])
-	generator, _ := asMap(doc["generator"])
-	component := firstComponent(doc)
+	docTimestamp := exportmap.GetStr(doc, "timestamp")
+	tool, _ := exportmap.AsMap(doc["tool"])
+	generator, _ := exportmap.AsMap(doc["generator"])
+	component := exportmap.FirstComponent(doc)
 
 	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	enc.SetEscapeHTML(false)
-
 	for _, bRaw := range baselines {
-		baseline, ok := asMap(bRaw)
+		baseline, ok := exportmap.AsMap(bRaw)
 		if !ok {
 			continue
 		}
-		reqs, _ := asSlice(baseline["requirements"])
+		reqs, _ := exportmap.AsSlice(baseline["requirements"])
 		for _, rRaw := range reqs {
-			req, ok := asMap(rRaw)
+			req, ok := exportmap.AsMap(rRaw)
 			if !ok {
 				continue
 			}
 			event := buildEvent(req, baseline, docTimestamp, tool, generator, component, converterVersion)
-			if err := enc.Encode(event); err != nil {
+			line, err := exportmap.EncodeLine(event)
+			if err != nil {
 				return nil, fmt.Errorf("hdf-to-ecs: encode: %w", err)
 			}
+			buf.Write(line)
 		}
 	}
 
@@ -73,25 +76,18 @@ func ConvertHDFToECS(input []byte, converterVersion string) ([]byte, error) {
 
 // buildEvent maps one Evaluated_Requirement to a single ECS event object.
 func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool, generator, component map[string]interface{}, converterVersion string) map[string]interface{} {
-	rawStatus := worstOfResults(req)            // lossless status from results[]
-	effStatus := getStr(req, "effectiveStatus") // set only when overridden
-	rollup := effStatus
-	if rollup == "" {
-		rollup = rawStatus
-	}
-	outcome := statusToOutcome(rollup)
-	controlID := getStr(req, "id")
-	baselineName := getStr(baseline, "name")
-	title := getStr(req, "title")
+	st := exportmap.StatusOf(req)
+	outcome := statusToOutcome(st.Rollup)
+	controlID := exportmap.GetStr(req, "id")
+	baselineName := exportmap.GetStr(baseline, "name")
+	title := exportmap.GetStr(req, "title")
 
-	cvssList, hasCVSS := asSlice(req["cvss"])
-	overrides, _ := asSlice(req["statusOverrides"])
-	_, hasEffective := req["effectiveStatus"]
-	overridden := len(overrides) > 0 || hasEffective
+	cvssList, hasCVSS := exportmap.AsSlice(req["cvss"])
+	hasCVSS = hasCVSS && len(cvssList) > 0
 
 	// event.*
 	categories := []interface{}{"configuration"}
-	if hasCVSS && len(cvssList) > 0 {
+	if hasCVSS {
 		categories = append(categories, "vulnerability")
 	}
 	event := map[string]interface{}{
@@ -99,16 +95,16 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 		"category": categories,
 		"type":     []interface{}{"info"},
 		"outcome":  outcome,
-		"id":       eventID(component, baselineName, controlID),
+		"id":       exportmap.EventID(component, baselineName, controlID),
 		"dataset":  "hdf.findings",
 		"module":   "hdf",
 	}
 
 	obj := map[string]interface{}{
-		"@timestamp": firstResultStartTime(req, docTimestamp),
+		"@timestamp": exportmap.FirstResultStartTime(req, docTimestamp),
 		"ecs":        map[string]interface{}{"version": ecsVersion},
 		"event":      event,
-		"message":    strings.TrimSpace(title + " — " + rollup),
+		"message":    strings.TrimSpace(title + " — " + st.Rollup),
 	}
 
 	// observer.* (tool, fallback generator)
@@ -125,7 +121,7 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 	// rule.*
 	obj["rule"] = buildRule(req, baseline, controlID, title)
 	// vulnerability.* (only when CVE data present)
-	if hasCVSS && len(cvssList) > 0 {
+	if hasCVSS {
 		obj["vulnerability"] = buildVulnerability(cvssList, req, tool)
 	}
 	// threat.* (ATT&CK from tags, best-effort)
@@ -133,17 +129,17 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 		obj["threat"] = threat
 	}
 	// hdf.* lossless block
-	obj["hdf"] = buildHDFBlock(req, baseline, rawStatus, overridden, generator, tool, converterVersion)
+	obj["hdf"] = buildHDFBlock(req, baseline, st.Raw, st.Overridden, generator, tool, converterVersion)
 
 	return obj
 }
 
 func buildObserver(tool, generator map[string]interface{}) map[string]interface{} {
-	name := getStr(tool, "name")
-	version := getStr(tool, "version")
+	name := exportmap.GetStr(tool, "name")
+	version := exportmap.GetStr(tool, "version")
 	if name == "" && generator != nil {
-		name = getStr(generator, "name")
-		version = getStr(generator, "version")
+		name = exportmap.GetStr(generator, "name")
+		version = exportmap.GetStr(generator, "version")
 	}
 	if name == "" {
 		return nil
@@ -152,7 +148,7 @@ func buildObserver(tool, generator map[string]interface{}) map[string]interface{
 	if version != "" {
 		observer["version"] = version
 	}
-	if product := getStr(tool, "format"); product != "" {
+	if product := exportmap.GetStr(tool, "format"); product != "" {
 		observer["product"] = product
 	}
 	return observer
@@ -163,29 +159,19 @@ func buildHost(component map[string]interface{}) map[string]interface{} {
 		return nil
 	}
 	host := map[string]interface{}{}
-	name := getStr(component, "fqdn")
+	name := exportmap.GetStr(component, "fqdn")
 	if name == "" {
-		name = getStr(component, "name")
+		name = exportmap.GetStr(component, "name")
 	}
 	if name != "" {
 		host["name"] = name
 	}
-	if id := getStr(component, "componentId"); id != "" {
-		host["id"] = id
-	}
-	if ip := getStr(component, "ipAddress"); ip != "" {
-		host["ip"] = ip
-	}
-	if mac := getStr(component, "macAddress"); mac != "" {
-		host["mac"] = mac
-	}
+	exportmap.SetIf(host, "id", exportmap.GetStr(component, "componentId"))
+	exportmap.SetIf(host, "ip", exportmap.GetStr(component, "ipAddress"))
+	exportmap.SetIf(host, "mac", exportmap.GetStr(component, "macAddress"))
 	os := map[string]interface{}{}
-	if osName := getStr(component, "osName"); osName != "" {
-		os["name"] = osName
-	}
-	if osVersion := getStr(component, "osVersion"); osVersion != "" {
-		os["version"] = osVersion
-	}
+	exportmap.SetIf(os, "name", exportmap.GetStr(component, "osName"))
+	exportmap.SetIf(os, "version", exportmap.GetStr(component, "osVersion"))
 	if len(os) > 0 {
 		host["os"] = os
 	}
@@ -197,14 +183,14 @@ func buildHost(component map[string]interface{}) map[string]interface{} {
 
 func buildRelated(component map[string]interface{}) map[string]interface{} {
 	related := map[string]interface{}{}
-	name := getStr(component, "fqdn")
+	name := exportmap.GetStr(component, "fqdn")
 	if name == "" {
-		name = getStr(component, "name")
+		name = exportmap.GetStr(component, "name")
 	}
 	if name != "" {
 		related["hosts"] = []interface{}{name}
 	}
-	if ip := getStr(component, "ipAddress"); ip != "" {
+	if ip := exportmap.GetStr(component, "ipAddress"); ip != "" {
 		related["ip"] = []interface{}{ip}
 	}
 	if len(related) == 0 {
@@ -218,31 +204,23 @@ func buildRule(req, baseline map[string]interface{}, controlID, title string) ma
 	if title != "" {
 		rule["name"] = title
 	}
-	if desc := defaultDescription(req); desc != "" {
-		rule["description"] = desc
-	}
-	if name := getStr(baseline, "name"); name != "" {
-		rule["ruleset"] = name
-	}
-	if version := getStr(baseline, "version"); version != "" {
-		rule["version"] = version
-	}
-	if ref := firstRefURL(req); ref != "" {
-		rule["reference"] = ref
-	}
+	exportmap.SetIf(rule, "description", exportmap.DefaultDescription(req))
+	exportmap.SetIf(rule, "ruleset", exportmap.GetStr(baseline, "name"))
+	exportmap.SetIf(rule, "version", exportmap.GetStr(baseline, "version"))
+	exportmap.SetIf(rule, "reference", exportmap.FirstRefURL(req))
 	return rule
 }
 
 func buildVulnerability(cvssList []interface{}, req, tool map[string]interface{}) map[string]interface{} {
-	first, _ := asMap(cvssList[0])
+	first, _ := exportmap.AsMap(cvssList[0])
 	vuln := map[string]interface{}{}
-	source := getStr(first, "source")
+	source := exportmap.GetStr(first, "source")
 	if source != "" {
 		vuln["id"] = source
 		if strings.HasPrefix(strings.ToUpper(source), "CVE-") {
 			vuln["enumeration"] = "CVE"
 		}
-	} else if id := getStr(req, "id"); id != "" {
+	} else if id := exportmap.GetStr(req, "id"); id != "" {
 		vuln["id"] = id
 	}
 	vuln["classification"] = "CVSS"
@@ -250,37 +228,35 @@ func buildVulnerability(cvssList []interface{}, req, tool map[string]interface{}
 	if base, ok := first["baseScore"]; ok {
 		score["base"] = base
 	}
-	if version := getStr(first, "version"); version != "" {
+	if version := exportmap.GetStr(first, "version"); version != "" {
 		score["version"] = version
 	}
 	if len(score) > 0 {
 		vuln["score"] = score
 	}
-	severity := getStr(first, "baseSeverity")
+	severity := exportmap.GetStr(first, "baseSeverity")
 	if severity == "" {
-		severity = getStr(req, "severity")
+		severity = exportmap.GetStr(req, "severity")
 	}
 	if severity != "" {
 		vuln["severity"] = severity
 	}
-	if vendor := getStr(tool, "name"); vendor != "" {
+	if vendor := exportmap.GetStr(tool, "name"); vendor != "" {
 		vuln["scanner"] = map[string]interface{}{"vendor": vendor}
 	}
-	if desc := defaultDescription(req); desc != "" {
-		vuln["description"] = desc
-	}
+	exportmap.SetIf(vuln, "description", exportmap.DefaultDescription(req))
 	return vuln
 }
 
 // buildThreat projects ATT&CK technique ids from tags to core threat.*.
 func buildThreat(req map[string]interface{}) map[string]interface{} {
-	tags, ok := asMap(req["tags"])
+	tags, ok := exportmap.AsMap(req["tags"])
 	if !ok {
 		return nil
 	}
 	var techniques []interface{}
 	for _, key := range []string{"mitre_attack", "attack", "mitre_techniques"} {
-		vals := stringSlice(tags[key])
+		vals := exportmap.StringSlice(tags[key])
 		for _, id := range vals {
 			techniques = append(techniques, map[string]interface{}{"id": id})
 		}
@@ -302,8 +278,8 @@ func buildHDFBlock(req, baseline map[string]interface{}, status string, overridd
 		"overridden":       overridden,
 		"exporter_version": converterVersion,
 	}
-	setIf(hdf, "control_id", getStr(req, "id"))
-	setIf(hdf, "baseline", getStr(baseline, "name"))
+	exportmap.SetIf(hdf, "control_id", exportmap.GetStr(req, "id"))
+	exportmap.SetIf(hdf, "baseline", exportmap.GetStr(baseline, "name"))
 	if v, ok := req["effectiveStatus"]; ok {
 		hdf["effective_status"] = v
 	}
@@ -319,7 +295,7 @@ func buildHDFBlock(req, baseline map[string]interface{}, status string, overridd
 	if v, ok := req["disposition"]; ok {
 		hdf["disposition"] = v
 	}
-	tags, _ := asMap(req["tags"])
+	tags, _ := exportmap.AsMap(req["tags"])
 	if nist := tags["nist"]; nist != nil {
 		hdf["nist"] = nist
 	}
@@ -355,26 +331,6 @@ func buildHDFBlock(req, baseline map[string]interface{}, status string, overridd
 	return hdf
 }
 
-// worstOfResults returns the most-significant status across the requirement's
-// results[] (lossless — does not consult effectiveStatus).
-func worstOfResults(req map[string]interface{}) string {
-	results, _ := asSlice(req["results"])
-	// precedence worst→best: failed, error, passed, notReviewed, notApplicable
-	precedence := []string{"failed", "error", "passed", "notReviewed", "notApplicable"}
-	present := map[string]bool{}
-	for _, rRaw := range results {
-		if r, ok := asMap(rRaw); ok {
-			present[getStr(r, "status")] = true
-		}
-	}
-	for _, s := range precedence {
-		if present[s] {
-			return s
-		}
-	}
-	return "notReviewed"
-}
-
 // statusToOutcome maps an HDF Result_Status to an ECS event.outcome.
 func statusToOutcome(status string) string {
 	switch status {
@@ -385,102 +341,4 @@ func statusToOutcome(status string) string {
 	default: // notApplicable, notReviewed, error
 		return "unknown"
 	}
-}
-
-func eventID(component map[string]interface{}, baselineName, controlID string) string {
-	comp := ""
-	if component != nil {
-		comp = getStr(component, "componentId")
-		if comp == "" {
-			comp = getStr(component, "name")
-		}
-	}
-	return strings.Join([]string{comp, baselineName, controlID}, "|")
-}
-
-func firstComponent(doc map[string]interface{}) map[string]interface{} {
-	comps, ok := asSlice(doc["components"])
-	if !ok || len(comps) == 0 {
-		return nil
-	}
-	c, _ := asMap(comps[0])
-	return c
-}
-
-func firstResultStartTime(req map[string]interface{}, fallback string) string {
-	results, _ := asSlice(req["results"])
-	if len(results) > 0 {
-		if r, ok := asMap(results[0]); ok {
-			if st := getStr(r, "startTime"); st != "" {
-				return st
-			}
-		}
-	}
-	return fallback
-}
-
-func defaultDescription(req map[string]interface{}) string {
-	descs, _ := asSlice(req["descriptions"])
-	for _, dRaw := range descs {
-		if d, ok := asMap(dRaw); ok && getStr(d, "label") == "default" {
-			return getStr(d, "data")
-		}
-	}
-	return ""
-}
-
-func firstRefURL(req map[string]interface{}) string {
-	refs, _ := asSlice(req["refs"])
-	for _, rRaw := range refs {
-		if r, ok := asMap(rRaw); ok {
-			if url := getStr(r, "url"); url != "" {
-				return url
-			}
-		}
-	}
-	return ""
-}
-
-// --- generic-access helpers ---
-
-func asMap(v interface{}) (map[string]interface{}, bool) {
-	m, ok := v.(map[string]interface{})
-	return m, ok
-}
-
-func asSlice(v interface{}) ([]interface{}, bool) {
-	s, ok := v.([]interface{})
-	return s, ok
-}
-
-func getStr(m map[string]interface{}, key string) string {
-	if m == nil {
-		return ""
-	}
-	if s, ok := m[key].(string); ok {
-		return s
-	}
-	return ""
-}
-
-func setIf(m map[string]interface{}, key, val string) {
-	if val != "" {
-		m[key] = val
-	}
-}
-
-func stringSlice(v interface{}) []string {
-	switch t := v.(type) {
-	case string:
-		return []string{t}
-	case []interface{}:
-		var out []string
-		for _, e := range t {
-			if s, ok := e.(string); ok {
-				out = append(out, s)
-			}
-		}
-		return out
-	}
-	return nil
 }
