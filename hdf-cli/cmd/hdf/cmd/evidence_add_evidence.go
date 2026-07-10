@@ -11,30 +11,71 @@ import (
 	"regexp"
 	"strings"
 
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
 
-// evidenceFormatReserved and evidenceCustomFormatRE mirror the open vocabulary of
-// hdf-evidence-package.schema.json #/$defs/External_Evidence_Format: a reserved
-// standards enum plus an x-<custom> pattern. Kept in sync with the schema so an
-// invalid --format fails fast at the command boundary with a clear message,
-// rather than only at post-serialize schema validation.
-var (
-	evidenceFormatReserved = []string{"ecs", "ocsf", "cyclonedx", "spdx", "raw-log"}
-	evidenceCustomFormatRE = regexp.MustCompile(`^x-[a-z0-9]+(-[a-z0-9]+)*$`)
-)
+// externalEvidenceFormatConstraints derives the allowed --format vocabulary from
+// the single source of truth — hdf-evidence-package.schema.json
+// #/$defs/External_Evidence_Format (an `anyOf` of a reserved enum plus an
+// x-<custom> pattern) — so the command-boundary check can never drift from the
+// schema. Reads the embedded schema (or the --schema-dir override).
+func externalEvidenceFormatConstraints() ([]string, *regexp.Regexp, error) {
+	raw, err := validators.SchemaBytes(validators.TypeEvidencePackage)
+	if err != nil {
+		return nil, nil, fmt.Errorf("load evidence-package schema: %w", err)
+	}
+	var schema struct {
+		Defs struct {
+			Format struct {
+				AnyOf []struct {
+					Enum    []string `json:"enum"`
+					Pattern string   `json:"pattern"`
+				} `json:"anyOf"`
+			} `json:"External_Evidence_Format"`
+		} `json:"$defs"`
+	}
+	if err := json.Unmarshal(raw, &schema); err != nil {
+		return nil, nil, fmt.Errorf("parse evidence-package schema: %w", err)
+	}
+	var reserved []string
+	var pattern *regexp.Regexp
+	for _, alt := range schema.Defs.Format.AnyOf {
+		if len(alt.Enum) > 0 {
+			reserved = alt.Enum
+		}
+		if alt.Pattern != "" {
+			re, cerr := regexp.Compile(alt.Pattern)
+			if cerr != nil {
+				return nil, nil, fmt.Errorf("compile External_Evidence_Format pattern %q: %w", alt.Pattern, cerr)
+			}
+			pattern = re
+		}
+	}
+	if len(reserved) == 0 && pattern == nil {
+		return nil, nil, fmt.Errorf("evidence-package schema: External_Evidence_Format has no enum or pattern")
+	}
+	return reserved, pattern, nil
+}
 
+// validateEvidenceFormat rejects a --format value at the command boundary (with a
+// clear message) unless it matches the schema's reserved enum or x-<custom>
+// pattern, rather than deferring to post-serialize schema validation.
 func validateEvidenceFormat(format string) error {
-	for _, r := range evidenceFormatReserved {
+	reserved, pattern, err := externalEvidenceFormatConstraints()
+	if err != nil {
+		return err
+	}
+	for _, r := range reserved {
 		if format == r {
 			return nil
 		}
 	}
-	if evidenceCustomFormatRE.MatchString(format) {
+	if pattern != nil && pattern.MatchString(format) {
 		return nil
 	}
 	return fmt.Errorf("--format %q is not valid: use a reserved value (%s) or an x-<custom> value (e.g. x-splunk-export)",
-		format, strings.Join(evidenceFormatReserved, ", "))
+		format, strings.Join(reserved, ", "))
 }
 
 type addEvidenceOpts struct {

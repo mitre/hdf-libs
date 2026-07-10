@@ -201,3 +201,14 @@ func TestEvidenceInfo_ShowsExternalEvidence(t *testing.T) {
 	assert.Contains(t, stdout, "ecs")
 	assert.Contains(t, stdout, "q1.ndjson")
 }
+
+func TestExternalEvidenceFormatConstraints_DerivedFromSchema(t *testing.T) {
+	// Proves the boundary validation reads the schema's External_Evidence_Format
+	// (single source of truth), not a hardcoded Go copy — so it cannot drift.
+	reserved, pattern, err := externalEvidenceFormatConstraints()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"ecs", "ocsf", "cyclonedx", "spdx", "raw-log"}, reserved)
+	require.NotNil(t, pattern)
+	assert.True(t, pattern.MatchString("x-splunk-export"))
+	assert.False(t, pattern.MatchString("X-Splunk"))
+}
