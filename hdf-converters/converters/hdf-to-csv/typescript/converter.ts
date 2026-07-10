@@ -15,6 +15,11 @@ interface CsvRow {
   'Requirement ID': string;
   'Requirement Title': string;
   'Description': string;
+  'Check': string;
+  'Fix': string;
+  'Rationale': string;
+  'Code': string;
+  'References': string;
   'Severity': string;
   'Impact': number;
   'Status': string;
@@ -80,6 +85,13 @@ function createRow(
   const defaultDesc = requirement.descriptions.find((d: Description) => d.label === 'default');
   const description = defaultDesc?.data || '';
 
+  // Other conventional description labels (check/fix/rationale) — empty when absent
+  const check = descriptionByLabel(requirement, 'check');
+  const fix = descriptionByLabel(requirement, 'fix');
+  const rationale = descriptionByLabel(requirement, 'rationale');
+  const code = requirement.code ?? '';
+  const references = flattenRefs(requirement.refs);
+
   // Get severity from tags or derive from impact
   const severity = getSeverity(requirement);
 
@@ -101,6 +113,11 @@ function createRow(
     'Requirement ID': requirement.id,
     'Requirement Title': requirement.title || '',
     'Description': description,
+    'Check': check,
+    'Fix': fix,
+    'Rationale': rationale,
+    'Code': code,
+    'References': references,
     'Severity': severity,
     'Impact': requirement.impact,
     'Status': String(status),
@@ -154,4 +171,41 @@ function extractArrayFromTags(
   }
 
   return '';
+}
+
+/**
+ * Get the data of the first description matching a label. Empty when absent.
+ */
+function descriptionByLabel(
+  requirement: EvaluatedRequirement,
+  label: string
+): string {
+  const match = requirement.descriptions.find((d: Description) => d.label === label);
+  return match?.data || '';
+}
+
+/**
+ * Flatten a requirement's refs to one string: each Reference rendered as its
+ * url/uri (or a string `ref`); array-form refs are skipped. Joined with '; ' to
+ * match the NIST/CCI column convention.
+ */
+function flattenRefs(refs: EvaluatedRequirement['refs']): string {
+  if (!Array.isArray(refs)) {
+    return '';
+  }
+  const out: string[] = [];
+  for (const r of refs) {
+    if (!r || typeof r !== 'object') {
+      continue;
+    }
+    const o = r as Record<string, unknown>;
+    if (typeof o.url === 'string') {
+      out.push(o.url);
+    } else if (typeof o.uri === 'string') {
+      out.push(o.uri);
+    } else if (typeof o.ref === 'string') {
+      out.push(o.ref);
+    }
+  }
+  return out.join('; ');
 }

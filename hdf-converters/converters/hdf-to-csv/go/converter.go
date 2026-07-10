@@ -65,6 +65,11 @@ func buildCSVRows(hdfData *hdf.HDFResults) [][]string {
 		"Requirement ID",
 		"Requirement Title",
 		"Description",
+		"Check",
+		"Fix",
+		"Rationale",
+		"Code",
+		"References",
 		"Severity",
 		"Impact",
 		"Status",
@@ -119,6 +124,16 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 			break
 		}
 	}
+
+	// Other conventional description labels (check/fix/rationale) — empty when absent
+	check := descriptionByLabel(requirement, "check")
+	fix := descriptionByLabel(requirement, "fix")
+	rationale := descriptionByLabel(requirement, "rationale")
+	code := ""
+	if requirement.Code != nil {
+		code = *requirement.Code
+	}
+	references := flattenRefs(requirement.Refs)
 
 	// Get severity
 	severity := getSeverity(requirement)
@@ -175,6 +190,11 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 		sanitizeCSV(requirement.ID),
 		sanitizeCSV(reqTitle),
 		sanitizeCSV(description),
+		sanitizeCSV(check),
+		sanitizeCSV(fix),
+		sanitizeCSV(rationale),
+		sanitizeCSV(code),
+		sanitizeCSV(references),
 		sanitizeCSV(severity),
 		fmt.Sprintf("%.1f", requirement.Impact),
 		sanitizeCSV(status),
@@ -185,6 +205,34 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 		sanitizeCSV(applicability),
 		sanitizeCSV(message),
 	}
+}
+
+// descriptionByLabel returns the data of the first description matching a label, or "".
+func descriptionByLabel(requirement *hdf.EvaluatedRequirement, label string) string {
+	for _, desc := range requirement.Descriptions {
+		if desc.Label == label {
+			return desc.Data
+		}
+	}
+	return ""
+}
+
+// flattenRefs renders a requirement's refs to one string: each Reference as its
+// url/uri (or a string ref); array-form refs are skipped. Joined with "; " to
+// match the NIST/CCI column convention.
+func flattenRefs(refs []hdf.Reference) string {
+	var out []string
+	for _, r := range refs {
+		switch {
+		case r.URL != nil:
+			out = append(out, *r.URL)
+		case r.URI != nil:
+			out = append(out, *r.URI)
+		case r.Ref != nil && r.Ref.String != nil:
+			out = append(out, *r.Ref.String)
+		}
+	}
+	return strings.Join(out, "; ")
 }
 
 // getSeverity gets severity from requirement

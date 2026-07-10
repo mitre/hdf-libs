@@ -21,6 +21,18 @@
             {
               "label": "default",
               "data": "The system must require passwords to contain at least 12 characters with uppercase, lowercase, numbers, and special characters."
+            },
+            {
+              "label": "check",
+              "data": "Verify the 'minlen' setting in /etc/security/pwquality.conf is 12 or greater. Run: grep minlen /etc/security/pwquality.conf. If the value is less than 12 or is commented out, this is a finding."
+            },
+            {
+              "label": "fix",
+              "data": "Configure the system to require a minimum password length of 12 characters. Add or edit the following line in /etc/security/pwquality.conf: minlen = 12"
+            },
+            {
+              "label": "rationale",
+              "data": "Longer passwords increase the time and computational resources required to compromise the password via brute force."
             }
           ],
           "impact": 0.7,
@@ -29,6 +41,11 @@
             "nist": ["IA-5 (1)"],
             "severity": "high"
           },
+          "code": "control 'SV-123456' do\n  impact 0.7\n  describe file('/etc/security/pwquality.conf') do\n    its('content') { should match /^minlen\\s*=\\s*(1[2-9]|[2-9][0-9])/ }\n  end\nend",
+          "refs": [
+            { "url": "https://public.cyber.mil/stigs/" },
+            { "uri": "https://www.first.org/cvss/" }
+          ],
           "sourceLocation": {
             "ref": "SV-123456",
             "line": 1

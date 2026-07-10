@@ -38,19 +38,39 @@ func TestConvertHDFToCSV_Minimal(t *testing.T) {
 	assert.Contains(t, header, "Requirement ID")
 	assert.Contains(t, header, "Status")
 
-	// Verify first data row
-	row1 := records[1]
-	assert.Equal(t, "Example STIG Baseline", row1[0]) // Baseline ID
-	assert.Equal(t, "SV-123456", row1[5])             // Requirement ID
-	assert.Equal(t, "passed", row1[10])               // Status
-	assert.Contains(t, row1[11], "IA-5 (1)")          // NIST Controls
-	assert.Contains(t, row1[12], "CCI-000192")        // CCI Controls
+	// Column order: 0 Baseline ID .. 7 Description, 8 Check, 9 Fix, 10 Rationale,
+	// 11 Code, 12 References, 13 Severity, 14 Impact, 15 Status, 16 NIST, 17 CCI,
+	// 18 Control Type, 19 Verification Method, 20 Applicability, 21 Result Message.
+	assert.Equal(t, "Description", header[7])
+	assert.Equal(t, "Check", header[8])
+	assert.Equal(t, "Fix", header[9])
+	assert.Equal(t, "Rationale", header[10])
+	assert.Equal(t, "Code", header[11])
+	assert.Equal(t, "References", header[12])
 
-	// Verify second data row
+	// Verify first data row — populated check/fix/rationale/code/refs
+	row1 := records[1]
+	assert.Equal(t, "Example STIG Baseline", row1[0])                                         // Baseline ID
+	assert.Equal(t, "SV-123456", row1[5])                                                     // Requirement ID
+	assert.Contains(t, row1[8], "minlen")                                                     // Check
+	assert.Contains(t, row1[9], "minimum password length")                                    // Fix
+	assert.Contains(t, row1[10], "Longer passwords")                                          // Rationale
+	assert.Contains(t, row1[11], "control 'SV-123456'")                                       // Code
+	assert.Equal(t, "https://public.cyber.mil/stigs/; https://www.first.org/cvss/", row1[12]) // References
+	assert.Equal(t, "passed", row1[15])                                                       // Status
+	assert.Contains(t, row1[16], "IA-5 (1)")                                                  // NIST Controls
+	assert.Contains(t, row1[17], "CCI-000192")                                                // CCI Controls
+
+	// Verify second data row — new columns empty (exercises the absent path)
 	row2 := records[2]
 	assert.Equal(t, "SV-123457", row2[5])                        // Requirement ID
-	assert.Equal(t, "failed", row2[10])                          // Status
-	assert.Equal(t, "Audit logging is not configured", row2[16]) // Result Message (after Control Type / Verification Method / Applicability)
+	assert.Equal(t, "", row2[8])                                 // Check
+	assert.Equal(t, "", row2[9])                                 // Fix
+	assert.Equal(t, "", row2[10])                                // Rationale
+	assert.Equal(t, "", row2[11])                                // Code
+	assert.Equal(t, "", row2[12])                                // References
+	assert.Equal(t, "failed", row2[15])                          // Status
+	assert.Equal(t, "Audit logging is not configured", row2[21]) // Result Message
 }
 
 func TestConvertHDFToCSV_EmptyBaselines(t *testing.T) {
