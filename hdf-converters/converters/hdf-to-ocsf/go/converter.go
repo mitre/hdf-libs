@@ -355,7 +355,7 @@ func buildVulnerabilities(cvssList []interface{}, req map[string]interface{}) []
 		}
 		entry := map[string]interface{}{}
 		if bs, ok := m["baseScore"].(float64); ok {
-			entry["base_score"] = bs
+			entry["base_score"] = exportmap.FloatToken(bs) // OCSF cvss.base_score is float_t
 		}
 		exportmap.SetIf(entry, "version", exportmap.GetStr(m, "version"))
 		exportmap.SetIf(entry, "vector_string", exportmap.GetStr(m, "baseVector"))

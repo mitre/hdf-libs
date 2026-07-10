@@ -1,11 +1,24 @@
 package exportmap
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestFloatToken(t *testing.T) {
+	assert.Equal(t, json.Number("0.0"), FloatToken(0))
+	assert.Equal(t, json.Number("7.5"), FloatToken(7.5))
+	assert.Equal(t, json.Number("8.0"), FloatToken(8))
+	assert.Equal(t, json.Number("10.0"), FloatToken(10))
+	assert.Equal(t, json.Number("9.8"), FloatToken(9.8))
+	// renders as a bare decimal token (not a quoted string, not an integer)
+	line, err := EncodeLine(map[string]interface{}{"base_score": FloatToken(10)})
+	require.NoError(t, err)
+	assert.Equal(t, "{\"base_score\":10.0}\n", string(line))
+}
 
 func mkResults(statuses ...string) map[string]interface{} {
 	var results []interface{}

@@ -19,6 +19,7 @@ import {
   firstCVE,
   epochSeconds,
   epochMillis,
+  floatNumber,
 } from './exportmap.js';
 
 function mkResults(...statuses: string[]): Record<string, unknown> {
@@ -203,5 +204,18 @@ describe('exportmap non-BMP key parity + JSONP escaping (Go byte-for-byte)', () 
   it('escapes U+2028/U+2029 in values identically to Go', () => {
     const obj = { k: 'line sep end' };
     expect(stringifyLine(canonicalize(obj))).toBe('{"k":"line\\u2028sep\\u2029end"}');
+  });
+});
+
+describe('exportmap RawNumber float tokens (OCSF float_t)', () => {
+  it('floatNumber renders a bare decimal token, byte-identical to Go json.Number', () => {
+    expect(stringifyLine({ base_score: floatNumber(0) })).toBe('{"base_score":0.0}');
+    expect(stringifyLine({ base_score: floatNumber(7.5) })).toBe('{"base_score":7.5}');
+    expect(stringifyLine({ base_score: floatNumber(8) })).toBe('{"base_score":8.0}');
+    expect(stringifyLine({ base_score: floatNumber(10) })).toBe('{"base_score":10.0}');
+    // canonicalize preserves the wrapper (does not treat it as an object to sort)
+    expect(stringifyLine(canonicalize({ base_score: floatNumber(8) }))).toBe('{"base_score":8.0}');
+    // a normal string containing digits is untouched (marker cannot collide)
+    expect(stringifyLine({ desc: 'score 10 ok' })).toBe('{"desc":"score 10 ok"}');
   });
 });

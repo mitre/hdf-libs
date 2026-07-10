@@ -321,3 +321,14 @@ func TestConvert_WarningStatuses(t *testing.T) {
 		assert.Equal(t, float64(1), o["status_id"], "warnings are not suppressed")
 	}
 }
+
+func TestConvert_FloatBaseScore(t *testing.T) {
+	// A whole-number CVSS base score must serialize as OCSF float_t: 10.0, not 10.
+	doc := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"CVE-x","impact":0.7,` +
+		`"cvss":[{"baseScore":10,"version":"3.1","source":"CVE-x"}],` +
+		`"results":[{"status":"failed","codeDesc":"c","startTime":"2024-01-01T00:00:00Z"}]}]}]}`)
+	out, err := ConvertHDFToOCSF(doc, converterVersion)
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `"base_score":10.0`, "whole-number base_score renders with a decimal")
+	assert.NotContains(t, string(out), `"base_score":10,`, "must not emit an integer-shaped base_score")
+}

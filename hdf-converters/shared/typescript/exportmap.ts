@@ -192,6 +192,33 @@ export function buildHDFBlock(
 // --- canonical line serialization ---
 
 /**
+ * A numeric value that must serialize with an explicit decimal point, so a
+ * whole-number renders as `10.0` rather than the integer `10`. Some consumers
+ * type-check strictly (OCSF's `float_t` rejects an integer-shaped token).
+ * JSON.stringify cannot emit `10.0` for a JS number, so the value is carried in
+ * this wrapper (passed through canonicalize untouched) and rendered as a bare
+ * numeric token by stringifyLine. Go's counterpart is encoding/json's json.Number.
+ */
+export class RawNumber {
+  constructor(readonly token: string) {}
+}
+
+/** Wrap a number as a RawNumber whose token always bears a decimal point. */
+export function floatNumber(f: number): RawNumber {
+  let s = String(f);
+  if (!/[.eE]/.test(s)) s += '.0';
+  return new RawNumber(s);
+}
+
+// SOH (U+0001) delimits a raw numeric token inside stringifyLine's intermediate
+// JSON. SOH is a control character that does not occur in HDF text, so in
+// practice it never collides. The only theoretical collision is a string whose
+// ENTIRE value is exactly SOH + <bare number> + SOH — unreachable from real HDF,
+// which carries no raw control characters.
+const RAWNUM_MARK = String.fromCharCode(1);
+const RAWNUM_RE = /"\\u0001(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\\u0001"/g;
+
+/**
  * Compare two strings by Unicode code point. This matches Go's `encoding/json`
  * key ordering, which is a bytewise comparison of the UTF-8 encoding \u2014 and UTF-8
  * byte order is identical to code-point order. JS's default Array.sort() instead
@@ -218,6 +245,7 @@ function byCodePoint(a: string, b: string): number {
  * point) so the emitted JSON is byte-identical to Go's encoder.
  */
 export function canonicalize(v: unknown): unknown {
+  if (v instanceof RawNumber) return v; // preserve the wrapper; not an object to sort
   if (Array.isArray(v)) return v.map(canonicalize);
   const m = asMap(v);
   if (m) {
@@ -229,13 +257,17 @@ export function canonicalize(v: unknown): unknown {
 }
 
 /**
- * Emit compact JSON matching Go's encoder byte-for-byte. Go's encoding/json
- * escapes U+2028/U+2029 (JSONP safety) while JSON.stringify emits them raw, so
- * we escape them here. Key ordering is handled upstream by canonicalize (code
- * point order), so object keys need no BMP-only assumption.
+ * Emit compact JSON matching Go's encoder byte-for-byte. A RawNumber is rendered
+ * as a bare numeric token (Go's json.Number) via an SOH-delimited placeholder
+ * that is stripped back to the token afterward. Go's encoding/json escapes
+ * U+2028/U+2029 (JSONP safety) while JSON.stringify emits them raw, so we escape
+ * them here. Key ordering is handled upstream by canonicalize (code point order).
  */
 export function stringifyLine(v: unknown): string {
-  return JSON.stringify(v).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  return JSON.stringify(v, (_key, val) => (val instanceof RawNumber ? RAWNUM_MARK + val.token + RAWNUM_MARK : val))
+    .replace(RAWNUM_RE, '$1')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }
 
 // --- shared export driver ---

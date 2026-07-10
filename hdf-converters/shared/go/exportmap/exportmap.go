@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -272,6 +273,20 @@ func EncodeLine(v interface{}) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// FloatToken renders a float as a JSON number that always bears a decimal point,
+// so a whole-number value serializes as `10.0` rather than the integer `10`.
+// Some consumers type-check strictly (OCSF's `float_t` rejects an integer-shaped
+// token); json.Number marshals verbatim, keeping this byte-identical with the
+// TypeScript RawNumber. Domain is low-precision decimals (e.g. CVSS scores),
+// where Go's shortest-decimal format and JS's String() agree.
+func FloatToken(f float64) json.Number {
+	s := strconv.FormatFloat(f, 'f', -1, 64)
+	if !strings.ContainsAny(s, ".eE") {
+		s += ".0"
+	}
+	return json.Number(s)
 }
 
 // --- shared export driver ---

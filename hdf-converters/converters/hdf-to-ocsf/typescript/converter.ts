@@ -12,6 +12,7 @@ import {
   runExport,
   firstCVE,
   epochMillis,
+  floatNumber,
 } from '../../../shared/typescript/exportmap.js';
 
 /**
@@ -278,7 +279,7 @@ function buildVulnerabilities(cvssList: unknown[], req: Obj): unknown[] {
     const m = asMap(c);
     if (!m) continue;
     const entry: Obj = {};
-    if (typeof m.baseScore === 'number') entry.base_score = m.baseScore;
+    if (typeof m.baseScore === 'number') entry.base_score = floatNumber(m.baseScore); // OCSF cvss.base_score is float_t
     setIf(entry, 'version', getStr(m, 'version'));
     setIf(entry, 'vector_string', getStr(m, 'baseVector'));
     setIf(entry, 'severity', getStr(m, 'baseSeverity'));

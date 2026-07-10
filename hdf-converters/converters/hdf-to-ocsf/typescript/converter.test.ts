@@ -101,6 +101,15 @@ describe('hdf-to-ocsf converter', () => {
     expect(obj(comp.compliance).checks).toBeDefined();
   });
 
+  it('renders a whole-number CVSS base_score as OCSF float_t (10.0, not 10)', () => {
+    const out = convertHdfToOcsf(
+      doc({ id: 'CVE-x', impact: 0.7, cvss: [{ baseScore: 10, version: '3.1', source: 'CVE-x' }], results: [baseResult] }),
+      VERSION,
+    );
+    expect(out).toContain('"base_score":10.0');
+    expect(out).not.toContain('"base_score":10,');
+  });
+
   it('carries CVE + numeric cvss + related_cwes', () => {
     for (const o of lines(convertHdfToOcsf(input('cve.json'), VERSION))) {
       const cve = obj(obj((o.vulnerabilities as unknown[])[0]).cve);
