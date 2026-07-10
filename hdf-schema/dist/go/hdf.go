@@ -2162,40 +2162,45 @@ type ContentReference struct {
 // never embedded (corpora can be huge) or transcoded (that would be lossy) — it stays
 // canonical in its native format and HDF acts as the structured index.
 type ExternalEvidenceReference struct {
-	// Cryptographic checksum of the referenced artifact for integrity verification.                     
-	Checksum                                                                                   *Checksum `json:"checksum,omitempty"`
-	// Optional human-readable description of this evidence entry.                                       
-	Description                                                                                *string   `json:"description,omitempty"`
-	// The native format discriminator of the referenced artifact.                                       
-	Format                                                                                     string    `json:"format"`
-	// Optional producer-declared version of the format (e.g. ECS '9.4.0', OCSF '1.8.0').                
-	// Free-text and untrusted — HDF does not validate it against a registry.                            
-	FormatVersion                                                                              *string   `json:"formatVersion,omitempty"`
-	// Optional IANA media type describing the on-disk serialization, orthogonal to 'format'             
-	// (the semantic standard). Examples: application/x-ndjson, application/json,                        
-	// application/vnd.apache.parquet, text/csv.                                                         
-	MediaType                                                                                  *string   `json:"mediaType,omitempty"`
-	// Optional descriptive metadata about the referenced corpus. Does not affect integrity.             
-	Metadata                                                                                   *Metadata `json:"metadata,omitempty"`
-	// URI to the external native-format evidence artifact (log/telemetry corpus, etc.). Can be          
-	// a relative path or absolute URL. The data stays canonical in its native format — HDF              
-	// references it, never parses or transcodes it.                                                     
-	URI                                                                                        string    `json:"uri"`
+	// Cryptographic checksum of the referenced artifact for integrity verification.                                     
+	Checksum                                                                                   *Checksum                 `json:"checksum,omitempty"`
+	// Optional human-readable description of this evidence entry.                                                       
+	Description                                                                                *string                   `json:"description,omitempty"`
+	// The native format discriminator of the referenced artifact.                                                       
+	Format                                                                                     string                    `json:"format"`
+	// Optional producer-declared version of the format (e.g. ECS '9.4.0', OCSF '1.8.0').                                
+	// Free-text and untrusted — HDF does not validate it against a registry.                                            
+	FormatVersion                                                                              *string                   `json:"formatVersion,omitempty"`
+	// Optional IANA media type describing the on-disk serialization, orthogonal to 'format'                             
+	// (the semantic standard). Examples: application/x-ndjson, application/json,                                        
+	// application/vnd.apache.parquet, text/csv.                                                                         
+	MediaType                                                                                  *string                   `json:"mediaType,omitempty"`
+	// Optional descriptive metadata about the referenced corpus. Does not affect integrity.                             
+	Metadata                                                                                   *ExternalEvidenceMetadata `json:"metadata,omitempty"`
+	// URI to the external native-format evidence artifact (log/telemetry corpus, etc.). Can be                          
+	// a relative path or absolute URL. The data stays canonical in its native format — HDF                              
+	// references it, never parses or transcodes it.                                                                     
+	URI                                                                                        string                    `json:"uri"`
 }
 
 // Optional descriptive metadata about the referenced corpus. Does not affect integrity.
-type Metadata struct {
-	// The tool/pipeline that collected or produced the corpus. Example: 'aws-security-lake',           
-	// 'elastic-agent'.                                                                                 
-	Collector                                                                                *string    `json:"collector,omitempty"`
-	// Approximate number of records/events in the referenced corpus.                                   
-	RecordCount                                                                              *int64     `json:"recordCount,omitempty"`
-	// The time window the referenced evidence covers.                                                  
-	TimeRange                                                                                *TimeRange `json:"timeRange,omitempty"`
+//
+// Descriptive metadata about a referenced external evidence corpus. Does not affect
+// integrity.
+type ExternalEvidenceMetadata struct {
+	// The tool/pipeline that collected or produced the corpus. Example: 'aws-security-lake',                           
+	// 'elastic-agent'.                                                                                                 
+	Collector                                                                                *string                    `json:"collector,omitempty"`
+	// Approximate number of records/events in the referenced corpus.                                                   
+	RecordCount                                                                              *int64                     `json:"recordCount,omitempty"`
+	// The time window the referenced evidence covers.                                                                  
+	TimeRange                                                                                *ExternalEvidenceTimeRange `json:"timeRange,omitempty"`
 }
 
 // The time window the referenced evidence covers.
-type TimeRange struct {
+//
+// The time window a referenced external evidence corpus covers.
+type ExternalEvidenceTimeRange struct {
 	// End of the time window the corpus covers (ISO 8601).             
 	End                                                      *time.Time `json:"end,omitempty"`
 	// Start of the time window the corpus covers (ISO 8601).           
