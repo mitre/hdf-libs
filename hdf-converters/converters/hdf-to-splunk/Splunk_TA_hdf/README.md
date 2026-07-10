@@ -16,7 +16,8 @@ CIM/ES integration, not optional.
 - `props.conf` — configures `sourcetype=hdf:results` (JSON KV extraction; no
   field aliasing needed because the exporter already emits CIM field names).
 - `eventtypes.conf` — `hdf_finding` matches failed/errored controls and any CVE
-  finding.
+  finding, excluding `suppressed=true` (waived/false-positive/attested findings
+  adjudicated out of the actionable set).
 - `tags.conf` — applies `vulnerability` + `report` to `hdf_finding`, the tags
   the Vulnerabilities data model constrains on.
 
@@ -52,6 +53,9 @@ tagged (they are posture, not findings); query them directly by `sourcetype`.
 
 - `cvss` is a single number (the max base score); the full `cvss[]` and all
   other HDF detail ride losslessly in the nested `hdf.*` object.
-- `hdf_status` is the effective (post-override) verdict, so a waived control
-  (`hdf_status=passed`) is correctly excluded from the Vulnerabilities model
-  while its raw `failed` status remains in `hdf.status`.
+- `hdf_status` is the **raw** verdict — a waived control stays `hdf_status=failed`,
+  never rewritten to `passed`. Acceptance rides the separate `suppressed` boolean:
+  the `hdf_finding` eventtype excludes `suppressed=true`, so a waived/false-positive/
+  attested control drops out of the Vulnerabilities model while a risk-adjusted
+  still-failing control (`suppressed=false`) stays in. The canonical
+  "still actionable" query is `hdf_status=failed suppressed=false`.
