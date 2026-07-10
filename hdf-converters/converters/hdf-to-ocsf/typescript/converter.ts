@@ -1,5 +1,3 @@
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 import {
   type Obj,
   asMap,
@@ -8,12 +6,12 @@ import {
   setIf,
   statusOf,
   stringSlice,
-  firstComponent,
   firstResultStartTime,
   defaultDescription,
   firstRefURL,
-  canonicalize,
-  stringifyLine,
+  runExport,
+  firstCVE,
+  epochMillis,
 } from '../../../shared/typescript/exportmap.js';
 
 /**
@@ -45,32 +43,9 @@ const STATUS_NEW = 1;
 const STATUS_SUPPRESSED = 3;
 
 export function convertHdfToOcsf(input: string, converterVersion = '0.1.0'): string {
-  validateInputSize(input, 'hdf-to-ocsf');
-  const doc = parseJSON<Obj>(input);
-
-  const baselines = asArr(doc.baselines);
-  if (!baselines) {
-    throw new Error('hdf-to-ocsf: invalid HDF structure: missing baselines field');
-  }
-
-  const docTimestamp = getStr(doc, 'timestamp');
-  const tool = asMap(doc.tool);
-  const generator = asMap(doc.generator);
-  const component = firstComponent(doc);
-
-  const lines: string[] = [];
-  for (const bRaw of baselines) {
-    const baseline = asMap(bRaw);
-    if (!baseline) continue;
-    const reqs = asArr(baseline.requirements) ?? [];
-    for (const rRaw of reqs) {
-      const req = asMap(rRaw);
-      if (!req) continue;
-      const finding = buildFinding(req, baseline, docTimestamp, tool, generator, component, converterVersion);
-      lines.push(stringifyLine(canonicalize(finding)));
-    }
-  }
-  return lines.length === 0 ? '' : lines.join('\n') + '\n';
+  return runExport(input, 'hdf-to-ocsf', (req, baseline, docTimestamp, tool, generator, component) =>
+    buildFinding(req, baseline, docTimestamp, tool, generator, component, converterVersion),
+  );
 }
 
 function buildFinding(
@@ -300,21 +275,3 @@ function buildVulnerabilities(cvssList: unknown[], req: Obj): unknown[] {
   return [vuln];
 }
 
-function firstCVE(cvssList: unknown[]): string {
-  for (const c of cvssList) {
-    const src = getStr(asMap(c), 'source');
-    if (src.toUpperCase().startsWith('CVE-')) return src;
-  }
-  return '';
-}
-
-/**
- * Parse an HDF RFC3339 timestamp into integer epoch milliseconds (OCSF's `time`
- * convention) via the canonical parser, returning undefined when
- * empty/unparseable. Integer millis keep Go and TypeScript byte-identical.
- */
-function epochMillis(s: string): number | undefined {
-  const d = parseTimestamp(s);
-  if (d === null) return undefined;
-  return d.getTime();
-}

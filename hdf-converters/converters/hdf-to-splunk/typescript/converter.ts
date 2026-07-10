@@ -1,5 +1,3 @@
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 import {
   type Obj,
   asMap,
@@ -7,11 +5,11 @@ import {
   getStr,
   setIf,
   statusOf,
-  firstComponent,
   firstResultStartTime,
   buildHDFBlock,
-  canonicalize,
-  stringifyLine,
+  runExport,
+  firstCVE,
+  epochSeconds,
 } from '../../../shared/typescript/exportmap.js';
 
 /**
@@ -41,32 +39,9 @@ const SOURCETYPE = 'hdf:results';
 const SOURCE = 'hdf-exporter';
 
 export function convertHdfToSplunk(input: string, converterVersion = '0.1.0'): string {
-  validateInputSize(input, 'hdf-to-splunk');
-  const doc = parseJSON<Obj>(input);
-
-  const baselines = asArr(doc.baselines);
-  if (!baselines) {
-    throw new Error('hdf-to-splunk: invalid HDF structure: missing baselines field');
-  }
-
-  const docTimestamp = getStr(doc, 'timestamp');
-  const tool = asMap(doc.tool);
-  const generator = asMap(doc.generator);
-  const component = firstComponent(doc);
-
-  const lines: string[] = [];
-  for (const bRaw of baselines) {
-    const baseline = asMap(bRaw);
-    if (!baseline) continue;
-    const reqs = asArr(baseline.requirements) ?? [];
-    for (const rRaw of reqs) {
-      const req = asMap(rRaw);
-      if (!req) continue;
-      const hec = buildHECEvent(req, baseline, docTimestamp, tool, generator, component, converterVersion);
-      lines.push(stringifyLine(canonicalize(hec)));
-    }
-  }
-  return lines.length === 0 ? '' : lines.join('\n') + '\n';
+  return runExport(input, 'hdf-to-splunk', (req, baseline, docTimestamp, tool, generator, component) =>
+    buildHECEvent(req, baseline, docTimestamp, tool, generator, component, converterVersion),
+  );
 }
 
 function buildHECEvent(
@@ -86,7 +61,7 @@ function buildHECEvent(
   const dest = destHost(component);
   const sev = severity(req);
   const [cvss, hasCVSS] = maxCVSS(req);
-  const cve = firstCVE(req);
+  const cve = firstCVE(asArr(req.cvss) ?? []);
   const category = firstCWE(req);
   const vendorProduct = getStr(tool, 'name');
 
@@ -167,15 +142,6 @@ function maxCVSS(req: Obj): [number, boolean] {
   return [max, found];
 }
 
-function firstCVE(req: Obj): string {
-  const list = asArr(req.cvss) ?? [];
-  for (const c of list) {
-    const src = getStr(asMap(c), 'source');
-    if (src.toUpperCase().startsWith('CVE-')) return src;
-  }
-  return '';
-}
-
 function firstCWE(req: Obj): string {
   const list = asArr(req.cwe) ?? [];
   for (const c of list) {
@@ -184,13 +150,3 @@ function firstCWE(req: Obj): string {
   return '';
 }
 
-/**
- * Parse an HDF RFC3339 timestamp into integer epoch seconds via the canonical
- * parser, returning undefined when empty/unparseable (HEC then stamps
- * receive-time). Integer seconds keep Go and TypeScript byte-identical.
- */
-function epochSeconds(s: string): number | undefined {
-  const d = parseTimestamp(s);
-  if (d === null) return undefined;
-  return Math.floor(d.getTime() / 1000);
-}

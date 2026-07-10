@@ -10,6 +10,9 @@
  * (ECS field names, CIM field names, envelopes) stays in each converter.
  */
 
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { validateInputSize } from './converterutil.js';
+
 export type Obj = Record<string, unknown>;
 
 // --- generic JSON access ---
@@ -211,4 +214,90 @@ export function canonicalize(v: unknown): unknown {
  */
 export function stringifyLine(v: unknown): string {
   return JSON.stringify(v).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+}
+
+// --- shared export driver ---
+
+/**
+ * Maps one requirement (with its baseline and doc-level context) to one output
+ * object. Doc-level context is supplied by the driver; per-exporter constants
+ * (e.g. the converter version) are captured by the closure the exporter passes
+ * in — keeping the driver target-agnostic.
+ */
+export type EventBuilder = (
+  req: Obj,
+  baseline: Obj,
+  docTimestamp: string,
+  tool: Obj | undefined,
+  generator: Obj | undefined,
+  component: Obj | undefined,
+) => Obj;
+
+/**
+ * Shared entry-point driver for the HDF→SIEM exporters: runs the identical
+ * prologue (validate, parse, baselines extraction, doc-level context), fans out
+ * one output object per requirement via `build`, and joins the canonical NDJSON
+ * lines (byte-identical with the Go `Export` driver). `converterName` prefixes
+ * the missing-baselines error and drives validateInputSize.
+ */
+export function runExport(input: string, converterName: string, build: EventBuilder): string {
+  validateInputSize(input, converterName);
+  const doc = parseJSON<Obj>(input);
+
+  const baselines = asArr(doc.baselines);
+  if (!baselines) {
+    throw new Error(`${converterName}: invalid HDF structure: missing baselines field`);
+  }
+
+  const docTimestamp = getStr(doc, 'timestamp');
+  const tool = asMap(doc.tool);
+  const generator = asMap(doc.generator);
+  const component = firstComponent(doc);
+
+  const lines: string[] = [];
+  for (const bRaw of baselines) {
+    const baseline = asMap(bRaw);
+    if (!baseline) continue;
+    const reqs = asArr(baseline.requirements) ?? [];
+    for (const rRaw of reqs) {
+      const req = asMap(rRaw);
+      if (!req) continue;
+      lines.push(stringifyLine(canonicalize(build(req, baseline, docTimestamp, tool, generator, component))));
+    }
+  }
+  return lines.length === 0 ? '' : lines.join('\n') + '\n';
+}
+
+/**
+ * The first cvss[].source that looks like a CVE id (case-insensitive "CVE-"
+ * prefix), or ''. Shared by the exporters that key vulnerability identity off
+ * the CVE (splunk, ocsf).
+ */
+export function firstCVE(cvssList: unknown[]): string {
+  for (const c of cvssList) {
+    const src = getStr(asMap(c), 'source');
+    if (src.toUpperCase().startsWith('CVE-')) return src;
+  }
+  return '';
+}
+
+/**
+ * Parse an HDF RFC3339 timestamp into integer epoch seconds (Splunk HEC `time`)
+ * via the canonical parser, returning undefined when empty/unparseable. Integer
+ * epoch keeps Go and TypeScript byte-identical.
+ */
+export function epochSeconds(s: string): number | undefined {
+  const d = parseTimestamp(s);
+  if (d === null) return undefined;
+  return Math.floor(d.getTime() / 1000);
+}
+
+/**
+ * Parse an HDF RFC3339 timestamp into integer epoch milliseconds (OCSF `time`)
+ * via the canonical parser, returning undefined when empty/unparseable.
+ */
+export function epochMillis(s: string): number | undefined {
+  const d = parseTimestamp(s);
+  if (d === null) return undefined;
+  return d.getTime();
 }

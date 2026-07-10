@@ -25,13 +25,7 @@
 package hdftosplunk
 
 import (
-	"encoding/json"
-	"fmt"
-	"strings"
-
-	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 const (
@@ -41,48 +35,10 @@ const (
 
 // ConvertHDFToSplunk converts an HDF Results document to Splunk HEC NDJSON.
 func ConvertHDFToSplunk(input []byte, converterVersion string) ([]byte, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("hdf-to-splunk: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "hdf-to-splunk", 0); err != nil {
-		return nil, fmt.Errorf("hdf-to-splunk: %w", err)
-	}
-
-	var doc map[string]interface{}
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("hdf-to-splunk: invalid HDF JSON: %w", err)
-	}
-	baselines, ok := exportmap.AsSlice(doc["baselines"])
-	if !ok {
-		return nil, fmt.Errorf("hdf-to-splunk: invalid HDF structure: missing baselines field")
-	}
-
-	docTimestamp := exportmap.GetStr(doc, "timestamp")
-	tool, _ := exportmap.AsMap(doc["tool"])
-	generator, _ := exportmap.AsMap(doc["generator"])
-	component := exportmap.FirstComponent(doc)
-
-	var out []byte
-	for _, bRaw := range baselines {
-		baseline, ok := exportmap.AsMap(bRaw)
-		if !ok {
-			continue
-		}
-		reqs, _ := exportmap.AsSlice(baseline["requirements"])
-		for _, rRaw := range reqs {
-			req, ok := exportmap.AsMap(rRaw)
-			if !ok {
-				continue
-			}
-			hecEvent := buildHECEvent(req, baseline, docTimestamp, tool, generator, component, converterVersion)
-			line, err := exportmap.EncodeLine(hecEvent)
-			if err != nil {
-				return nil, fmt.Errorf("hdf-to-splunk: encode: %w", err)
-			}
-			out = append(out, line...)
-		}
-	}
-	return out, nil
+	return exportmap.Export(input, "hdf-to-splunk",
+		func(req, baseline map[string]interface{}, docTimestamp string, tool, generator, component map[string]interface{}) map[string]interface{} {
+			return buildHECEvent(req, baseline, docTimestamp, tool, generator, component, converterVersion)
+		})
 }
 
 // buildHECEvent maps one Evaluated_Requirement to a single HEC event envelope.
@@ -99,7 +55,8 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 	dest := destHost(component)
 	severity := severity(req)
 	cvss, hasCVSS := maxCVSS(req)
-	cve := firstCVE(req)
+	cvssListForCVE, _ := exportmap.AsSlice(req["cvss"])
+	cve := exportmap.FirstCVE(cvssListForCVE)
 	category := firstCWE(req)
 	vendorProduct := exportmap.GetStr(tool, "name")
 
@@ -139,8 +96,8 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 		"event":      event,
 		"fields":     fields,
 	}
-	if t := epochSeconds(exportmap.FirstResultStartTime(req, docTimestamp)); t != nil {
-		hec["time"] = *t
+	if sec, ok := exportmap.EpochSeconds(exportmap.FirstResultStartTime(req, docTimestamp)); ok {
+		hec["time"] = sec
 	}
 	exportmap.SetIf(hec, "host", dest)
 	return hec
@@ -212,19 +169,6 @@ func maxCVSS(req map[string]interface{}) (float64, bool) {
 	return maxScore, found
 }
 
-// firstCVE returns the first CVE-shaped cvss[].source, or "".
-func firstCVE(req map[string]interface{}) string {
-	list, _ := exportmap.AsSlice(req["cvss"])
-	for _, c := range list {
-		if m, ok := exportmap.AsMap(c); ok {
-			if src := exportmap.GetStr(m, "source"); strings.HasPrefix(strings.ToUpper(src), "CVE-") {
-				return src
-			}
-		}
-	}
-	return ""
-}
-
 // firstCWE returns the first cwe[] id (the finding classification), or "".
 func firstCWE(req map[string]interface{}) string {
 	list, _ := exportmap.AsSlice(req["cwe"])
@@ -234,16 +178,4 @@ func firstCWE(req map[string]interface{}) string {
 		}
 	}
 	return ""
-}
-
-// epochSeconds parses an HDF RFC3339 timestamp into integer epoch seconds via
-// the canonical parser, returning nil when empty/unparseable (HEC then stamps
-// receive-time). Integer seconds keep Go and TypeScript byte-identical.
-func epochSeconds(s string) *int64 {
-	t := hdfutil.ParseTimestamp(s)
-	if t.IsZero() {
-		return nil
-	}
-	sec := t.Unix()
-	return &sec
 }

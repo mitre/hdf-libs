@@ -21,12 +21,8 @@
 package hdftoecs
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"strings"
 
-	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 )
 
@@ -34,49 +30,10 @@ const ecsVersion = "9.4.0"
 
 // ConvertHDFToECS converts an HDF Results document to ECS NDJSON.
 func ConvertHDFToECS(input []byte, converterVersion string) ([]byte, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("hdf-to-ecs: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "hdf-to-ecs", 0); err != nil {
-		return nil, fmt.Errorf("hdf-to-ecs: %w", err)
-	}
-
-	var doc map[string]interface{}
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("hdf-to-ecs: invalid HDF JSON: %w", err)
-	}
-	baselines, ok := exportmap.AsSlice(doc["baselines"])
-	if !ok {
-		return nil, fmt.Errorf("hdf-to-ecs: invalid HDF structure: missing baselines field")
-	}
-
-	docTimestamp := exportmap.GetStr(doc, "timestamp")
-	tool, _ := exportmap.AsMap(doc["tool"])
-	generator, _ := exportmap.AsMap(doc["generator"])
-	component := exportmap.FirstComponent(doc)
-
-	var buf bytes.Buffer
-	for _, bRaw := range baselines {
-		baseline, ok := exportmap.AsMap(bRaw)
-		if !ok {
-			continue
-		}
-		reqs, _ := exportmap.AsSlice(baseline["requirements"])
-		for _, rRaw := range reqs {
-			req, ok := exportmap.AsMap(rRaw)
-			if !ok {
-				continue
-			}
-			event := buildEvent(req, baseline, docTimestamp, tool, generator, component, converterVersion)
-			line, err := exportmap.EncodeLine(event)
-			if err != nil {
-				return nil, fmt.Errorf("hdf-to-ecs: encode: %w", err)
-			}
-			buf.Write(line)
-		}
-	}
-
-	return buf.Bytes(), nil
+	return exportmap.Export(input, "hdf-to-ecs",
+		func(req, baseline map[string]interface{}, docTimestamp string, tool, generator, component map[string]interface{}) map[string]interface{} {
+			return buildEvent(req, baseline, docTimestamp, tool, generator, component, converterVersion)
+		})
 }
 
 // buildEvent maps one Evaluated_Requirement to a single ECS event object.

@@ -233,14 +233,6 @@ func TestOverrideComment(t *testing.T) {
 	}))
 }
 
-func TestEpochMillis(t *testing.T) {
-	_, ok := epochMillis("")
-	assert.False(t, ok)
-	ms, ok := epochMillis("2024-01-01T00:00:00Z")
-	require.True(t, ok)
-	assert.Equal(t, int64(1704067200000), ms)
-}
-
 // TestConvert_EdgeBranches exercises the vuln/device/metadata edge paths the
 // three fixtures don't reach, via minimal synthesized inputs.
 func TestConvert_EdgeBranches(t *testing.T) {

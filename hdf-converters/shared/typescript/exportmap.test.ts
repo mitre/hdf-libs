@@ -15,6 +15,10 @@ import {
   eventID,
   canonicalize,
   stringifyLine,
+  runExport,
+  firstCVE,
+  epochSeconds,
+  epochMillis,
 } from './exportmap.js';
 
 function mkResults(...statuses: string[]): Record<string, unknown> {
@@ -124,5 +128,63 @@ describe('exportmap canonical serialization', () => {
   it('canonicalize sorts keys deeply and stringifyLine leaves & unescaped', () => {
     const out = stringifyLine(canonicalize({ b: 1, a: { d: 2, c: 'x&y' } }));
     expect(out).toBe('{"a":{"c":"x&y","d":2},"b":1}');
+  });
+});
+
+describe('exportmap shared driver + helpers', () => {
+  it('runExport fans out one canonical line per requirement, in order', () => {
+    const input = JSON.stringify({
+      timestamp: '2024-01-01T00:00:00Z',
+      baselines: [
+        { name: 'b1', requirements: [{ id: 'A' }, { id: 'B' }] },
+        { name: 'b2', requirements: [{ id: 'C' }] },
+      ],
+    });
+    const out = runExport(input, 'test-exporter', (req, baseline, docTimestamp) => ({
+      id: getStr(req, 'id'),
+      baseline: getStr(baseline, 'name'),
+      ts: docTimestamp,
+    }));
+    expect(out).toBe(
+      '{"baseline":"b1","id":"A","ts":"2024-01-01T00:00:00Z"}\n' +
+        '{"baseline":"b1","id":"B","ts":"2024-01-01T00:00:00Z"}\n' +
+        '{"baseline":"b2","id":"C","ts":"2024-01-01T00:00:00Z"}\n',
+    );
+  });
+
+  it('runExport threads doc-level context to the builder', () => {
+    let seen = false;
+    runExport(
+      JSON.stringify({ tool: { name: 't' }, components: [{ name: 'h' }], baselines: [{ requirements: [{ id: 'X' }] }] }),
+      'x',
+      (_req, _baseline, _ts, tool, _generator, component) => {
+        expect(getStr(tool, 'name')).toBe('t');
+        expect(getStr(component, 'name')).toBe('h');
+        seen = true;
+        return {};
+      },
+    );
+    expect(seen).toBe(true);
+  });
+
+  it('runExport throws on invalid/structureless input and returns "" for empty baselines', () => {
+    const noop = () => ({});
+    expect(() => runExport('', 'x', noop)).toThrow();
+    expect(() => runExport('not json', 'x', noop)).toThrow();
+    expect(() => runExport('{"foo":1}', 'x', noop)).toThrow(/missing baselines/);
+    expect(runExport('{"baselines":[]}', 'x', noop)).toBe('');
+  });
+
+  it('firstCVE finds the first CVE-prefixed source (case-insensitive)', () => {
+    expect(firstCVE([{ source: 'GHSA-xxxx' }, { source: 'cve-2024-1234' }])).toBe('cve-2024-1234');
+    expect(firstCVE([{ source: 'NOTCVE' }])).toBe('');
+    expect(firstCVE([])).toBe('');
+  });
+
+  it('epoch helpers scale the canonical parse, undefined when unparseable', () => {
+    expect(epochSeconds('2024-01-01T00:00:00Z')).toBe(1704067200);
+    expect(epochSeconds('')).toBeUndefined();
+    expect(epochMillis('2024-01-01T00:00:00Z')).toBe(1704067200000);
+    expect(epochMillis('')).toBeUndefined();
   });
 });

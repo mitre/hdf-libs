@@ -14,7 +14,11 @@ package exportmap
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strings"
+
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // --- generic JSON access ---
@@ -268,4 +272,99 @@ func EncodeLine(v interface{}) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// --- shared export driver ---
+
+// EventBuilder maps one requirement (with its baseline and doc-level context) to
+// one output object. The doc-level context (docTimestamp/tool/generator/
+// component) is supplied by the driver; per-exporter constants (e.g. the
+// converter version) are captured by the closure the exporter passes in. This
+// keeps the driver target-agnostic — a new exporter only writes a builder.
+type EventBuilder func(req, baseline map[string]interface{}, docTimestamp string, tool, generator, component map[string]interface{}) map[string]interface{}
+
+// Export is the shared entry-point driver for the HDF→SIEM exporters. It runs
+// the identical prologue every exporter needs — empty guard, JSON-size
+// validation, parse, baselines extraction, doc-level context — then fans out one
+// output object per requirement via build and concatenates the canonical NDJSON
+// lines (byte-identical with the TypeScript side via EncodeLine). converterName
+// prefixes every error and drives ValidateJSONSize's limit lookup.
+func Export(input []byte, converterName string, build EventBuilder) ([]byte, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("%s: empty input", converterName)
+	}
+	if err := shared.ValidateJSONSize(input, converterName, 0); err != nil {
+		return nil, fmt.Errorf("%s: %w", converterName, err)
+	}
+	var doc map[string]interface{}
+	if err := json.Unmarshal(input, &doc); err != nil {
+		return nil, fmt.Errorf("%s: invalid HDF JSON: %w", converterName, err)
+	}
+	baselines, ok := AsSlice(doc["baselines"])
+	if !ok {
+		return nil, fmt.Errorf("%s: invalid HDF structure: missing baselines field", converterName)
+	}
+
+	docTimestamp := GetStr(doc, "timestamp")
+	tool, _ := AsMap(doc["tool"])
+	generator, _ := AsMap(doc["generator"])
+	component := FirstComponent(doc)
+
+	var buf bytes.Buffer
+	for _, bRaw := range baselines {
+		baseline, ok := AsMap(bRaw)
+		if !ok {
+			continue
+		}
+		reqs, _ := AsSlice(baseline["requirements"])
+		for _, rRaw := range reqs {
+			req, ok := AsMap(rRaw)
+			if !ok {
+				continue
+			}
+			line, err := EncodeLine(build(req, baseline, docTimestamp, tool, generator, component))
+			if err != nil {
+				return nil, fmt.Errorf("%s: encode: %w", converterName, err)
+			}
+			buf.Write(line)
+		}
+	}
+	return buf.Bytes(), nil
+}
+
+// FirstCVE returns the first cvss[].source that looks like a CVE id
+// (case-insensitive "CVE-" prefix), or "". Shared by the exporters that key a
+// vulnerability identity off the CVE (splunk, ocsf).
+func FirstCVE(cvssList []interface{}) string {
+	for _, c := range cvssList {
+		if m, ok := AsMap(c); ok {
+			src := GetStr(m, "source")
+			if len(src) >= 4 && strings.EqualFold(src[:4], "CVE-") {
+				return src
+			}
+		}
+	}
+	return ""
+}
+
+// EpochSeconds parses an HDF RFC3339 timestamp into integer epoch seconds via
+// the canonical parser, returning (0,false) when empty/unparseable. Splunk HEC
+// stamps `time` in epoch seconds.
+func EpochSeconds(s string) (int64, bool) {
+	t := hdfutil.ParseTimestamp(s)
+	if t.IsZero() {
+		return 0, false
+	}
+	return t.Unix(), true
+}
+
+// EpochMillis parses an HDF RFC3339 timestamp into integer epoch milliseconds
+// via the canonical parser, returning (0,false) when empty/unparseable. OCSF's
+// `time` is epoch millis. Integer epoch keeps Go and TypeScript byte-identical.
+func EpochMillis(s string) (int64, bool) {
+	t := hdfutil.ParseTimestamp(s)
+	if t.IsZero() {
+		return 0, false
+	}
+	return t.UnixMilli(), true
 }

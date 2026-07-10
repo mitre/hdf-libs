@@ -22,13 +22,9 @@
 package hdftoocsf
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
 
-	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 const (
@@ -43,48 +39,10 @@ const (
 
 // ConvertHDFToOCSF converts an HDF Results document to OCSF Finding NDJSON.
 func ConvertHDFToOCSF(input []byte, converterVersion string) ([]byte, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("hdf-to-ocsf: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "hdf-to-ocsf", 0); err != nil {
-		return nil, fmt.Errorf("hdf-to-ocsf: %w", err)
-	}
-
-	var doc map[string]interface{}
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("hdf-to-ocsf: invalid HDF JSON: %w", err)
-	}
-	baselines, ok := exportmap.AsSlice(doc["baselines"])
-	if !ok {
-		return nil, fmt.Errorf("hdf-to-ocsf: invalid HDF structure: missing baselines field")
-	}
-
-	docTimestamp := exportmap.GetStr(doc, "timestamp")
-	tool, _ := exportmap.AsMap(doc["tool"])
-	generator, _ := exportmap.AsMap(doc["generator"])
-	component := exportmap.FirstComponent(doc)
-
-	var out []byte
-	for _, bRaw := range baselines {
-		baseline, ok := exportmap.AsMap(bRaw)
-		if !ok {
-			continue
-		}
-		reqs, _ := exportmap.AsSlice(baseline["requirements"])
-		for _, rRaw := range reqs {
-			req, ok := exportmap.AsMap(rRaw)
-			if !ok {
-				continue
-			}
-			finding := buildFinding(req, baseline, docTimestamp, tool, generator, component, converterVersion)
-			line, err := exportmap.EncodeLine(finding)
-			if err != nil {
-				return nil, fmt.Errorf("hdf-to-ocsf: encode: %w", err)
-			}
-			out = append(out, line...)
-		}
-	}
-	return out, nil
+	return exportmap.Export(input, "hdf-to-ocsf",
+		func(req, baseline map[string]interface{}, docTimestamp string, tool, generator, component map[string]interface{}) map[string]interface{} {
+			return buildFinding(req, baseline, docTimestamp, tool, generator, component, converterVersion)
+		})
 }
 
 // buildFinding maps one Evaluated_Requirement to a single OCSF Finding object.
@@ -118,7 +76,7 @@ func buildFinding(req, baseline map[string]interface{}, docTimestamp string, too
 	// time is OCSF-required: fall back to 0 (epoch sentinel) when the source
 	// carries no parseable timestamp, so the record stays schema-valid. Valid
 	// HDF always has a result startTime, so this only affects malformed input.
-	ms, _ := epochMillis(exportmap.FirstResultStartTime(req, docTimestamp))
+	ms, _ := exportmap.EpochMillis(exportmap.FirstResultStartTime(req, docTimestamp))
 	finding["time"] = ms
 	exportmap.SetIf(finding, "comment", overrideComment(req))
 	if device := buildDevice(component); device != nil {
@@ -360,7 +318,7 @@ func buildCompliance(req, baseline map[string]interface{}, title, rawStatus stri
 
 func buildVulnerabilities(cvssList []interface{}, req map[string]interface{}) []interface{} {
 	cve := map[string]interface{}{}
-	uid := firstCVE(cvssList)
+	uid := exportmap.FirstCVE(cvssList)
 	if uid == "" {
 		uid = exportmap.GetStr(req, "id")
 	}
@@ -399,27 +357,4 @@ func buildVulnerabilities(cvssList []interface{}, req map[string]interface{}) []
 		vuln["references"] = []interface{}{ref}
 	}
 	return []interface{}{vuln}
-}
-
-// firstCVE returns the first CVE-shaped cvss[].source, or "".
-func firstCVE(cvssList []interface{}) string {
-	for _, c := range cvssList {
-		if m, ok := exportmap.AsMap(c); ok {
-			if src := exportmap.GetStr(m, "source"); strings.HasPrefix(strings.ToUpper(src), "CVE-") {
-				return src
-			}
-		}
-	}
-	return ""
-}
-
-// epochMillis parses an HDF RFC3339 timestamp into integer epoch milliseconds
-// (OCSF's `time` convention) via the canonical parser, returning (0,false) when
-// empty/unparseable. Integer millis keep Go and TypeScript byte-identical.
-func epochMillis(s string) (int64, bool) {
-	t := hdfutil.ParseTimestamp(s)
-	if t.IsZero() {
-		return 0, false
-	}
-	return t.UnixMilli(), true
 }

@@ -135,3 +135,72 @@ func TestEncodeLine(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "{\"a\":\"x&y\",\"b\":1}\n", string(line))
 }
+
+func TestExport_Driver(t *testing.T) {
+	// two baselines × requirements fan out to one line per requirement, in order,
+	// each a canonical (key-sorted, newline-terminated) EncodeLine.
+	input := []byte(`{"timestamp":"2024-01-01T00:00:00Z","baselines":[` +
+		`{"name":"b1","requirements":[{"id":"A"},{"id":"B"}]},` +
+		`{"name":"b2","requirements":[{"id":"C"}]}]}`)
+	out, err := Export(input, "test-exporter",
+		func(req, baseline map[string]interface{}, docTimestamp string, tool, generator, component map[string]interface{}) map[string]interface{} {
+			return map[string]interface{}{"id": GetStr(req, "id"), "baseline": GetStr(baseline, "name"), "ts": docTimestamp}
+		})
+	require.NoError(t, err)
+	assert.Equal(t,
+		"{\"baseline\":\"b1\",\"id\":\"A\",\"ts\":\"2024-01-01T00:00:00Z\"}\n"+
+			"{\"baseline\":\"b1\",\"id\":\"B\",\"ts\":\"2024-01-01T00:00:00Z\"}\n"+
+			"{\"baseline\":\"b2\",\"id\":\"C\",\"ts\":\"2024-01-01T00:00:00Z\"}\n",
+		string(out))
+
+	// doc-level context is threaded to the builder
+	ctxSeen := false
+	_, err = Export([]byte(`{"tool":{"name":"t"},"components":[{"name":"h"}],"baselines":[{"requirements":[{"id":"X"}]}]}`), "x",
+		func(_, _ map[string]interface{}, _ string, tool, _, component map[string]interface{}) map[string]interface{} {
+			assert.Equal(t, "t", GetStr(tool, "name"))
+			assert.Equal(t, "h", GetStr(component, "name"))
+			ctxSeen = true
+			return map[string]interface{}{}
+		})
+	require.NoError(t, err)
+	assert.True(t, ctxSeen)
+
+	noop := func(_, _ map[string]interface{}, _ string, _, _, _ map[string]interface{}) map[string]interface{} {
+		return nil
+	}
+	_, err = Export([]byte(""), "x", noop)
+	assert.Error(t, err, "empty input")
+	_, err = Export([]byte("not json"), "x", noop)
+	assert.Error(t, err, "invalid JSON")
+	_, err = Export([]byte(`{"foo":1}`), "x", noop)
+	assert.Error(t, err, "missing baselines")
+	// empty baselines -> empty output, no error
+	out, err = Export([]byte(`{"baselines":[]}`), "x", noop)
+	require.NoError(t, err)
+	assert.Empty(t, out)
+}
+
+func TestFirstCVE(t *testing.T) {
+	list := []interface{}{
+		map[string]interface{}{"source": "GHSA-xxxx"},
+		map[string]interface{}{"source": "cve-2024-1234"}, // case-insensitive prefix
+	}
+	assert.Equal(t, "cve-2024-1234", FirstCVE(list))
+	assert.Equal(t, "", FirstCVE([]interface{}{map[string]interface{}{"source": "NOTCVE"}}))
+	assert.Equal(t, "", FirstCVE([]interface{}{map[string]interface{}{"source": "CVE"}})) // too short
+	assert.Equal(t, "", FirstCVE(nil))
+}
+
+func TestEpochHelpers(t *testing.T) {
+	sec, ok := EpochSeconds("2024-01-01T00:00:00Z")
+	require.True(t, ok)
+	assert.Equal(t, int64(1704067200), sec)
+	_, ok = EpochSeconds("")
+	assert.False(t, ok)
+
+	ms, ok := EpochMillis("2024-01-01T00:00:00Z")
+	require.True(t, ok)
+	assert.Equal(t, int64(1704067200000), ms)
+	_, ok = EpochMillis("")
+	assert.False(t, ok)
+}

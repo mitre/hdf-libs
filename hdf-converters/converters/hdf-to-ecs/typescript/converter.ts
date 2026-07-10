@@ -1,5 +1,3 @@
-import { parseJSON } from '@mitre/hdf-utilities';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 import {
   type Obj,
   asMap,
@@ -8,14 +6,12 @@ import {
   setIf,
   statusOf,
   stringSlice,
-  firstComponent,
   firstResultStartTime,
   defaultDescription,
   firstRefURL,
   eventID,
   buildHDFBlock,
-  canonicalize,
-  stringifyLine,
+  runExport,
 } from '../../../shared/typescript/exportmap.js';
 
 /**
@@ -41,32 +37,9 @@ import {
 const ECS_VERSION = '9.4.0';
 
 export function convertHdfToEcs(input: string, converterVersion = '0.1.0'): string {
-  validateInputSize(input, 'hdf-to-ecs');
-  const doc = parseJSON<Obj>(input);
-
-  const baselines = asArr(doc.baselines);
-  if (!baselines) {
-    throw new Error('hdf-to-ecs: invalid HDF structure: missing baselines field');
-  }
-
-  const docTimestamp = getStr(doc, 'timestamp');
-  const tool = asMap(doc.tool);
-  const generator = asMap(doc.generator);
-  const component = firstComponent(doc);
-
-  const lines: string[] = [];
-  for (const bRaw of baselines) {
-    const baseline = asMap(bRaw);
-    if (!baseline) continue;
-    const reqs = asArr(baseline.requirements) ?? [];
-    for (const rRaw of reqs) {
-      const req = asMap(rRaw);
-      if (!req) continue;
-      const event = buildEvent(req, baseline, docTimestamp, tool, generator, component, converterVersion);
-      lines.push(stringifyLine(canonicalize(event)));
-    }
-  }
-  return lines.length === 0 ? '' : lines.join('\n') + '\n';
+  return runExport(input, 'hdf-to-ecs', (req, baseline, docTimestamp, tool, generator, component) =>
+    buildEvent(req, baseline, docTimestamp, tool, generator, component, converterVersion),
+  );
 }
 
 function buildEvent(
