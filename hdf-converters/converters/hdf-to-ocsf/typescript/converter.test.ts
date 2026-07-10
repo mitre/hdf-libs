@@ -118,10 +118,13 @@ describe('hdf-to-ocsf converter', () => {
     expect(comment({})).toBeUndefined(); // no override -> no comment
   });
 
-  it('omits time when the source timestamp is missing/unparseable', () => {
+  it('always emits OCSF-required time and metadata.product (with fallbacks)', () => {
+    // no parseable timestamp -> time = 0 sentinel (still present); no tool/generator -> product = exporter identity
     const o = lines(convertHdfToOcsf(doc({ id: 'X', impact: 0.5, results: [{ status: 'failed', codeDesc: 'c' }] }), VERSION))[0];
-    expect(o.time).toBeUndefined();
-    // and present + integer epoch millis when parseable
+    expect(o.time).toBe(0);
+    expect(obj(obj(o.metadata).product).name).toBe('hdf-to-ocsf');
+    expect(obj(obj(o.metadata).product).version).toBe(VERSION);
+    // parseable timestamp -> integer epoch millis
     const withTime = lines(convertHdfToOcsf(doc({ id: 'X', impact: 0.5, results: [baseResult] }), VERSION))[0];
     expect(withTime.time).toBe(1704067200000);
   });

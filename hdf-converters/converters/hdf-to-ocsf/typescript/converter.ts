@@ -40,7 +40,7 @@ const ACTIVITY_CREATE = 1;
 const STATUS_NEW = 1;
 const STATUS_SUPPRESSED = 3;
 
-export function convertHdfToOcsf(input: string, _converterVersion = '0.1.0'): string {
+export function convertHdfToOcsf(input: string, converterVersion = '0.1.0'): string {
   validateInputSize(input, 'hdf-to-ocsf');
   const doc = parseJSON<Obj>(input);
 
@@ -62,7 +62,7 @@ export function convertHdfToOcsf(input: string, _converterVersion = '0.1.0'): st
     for (const rRaw of reqs) {
       const req = asMap(rRaw);
       if (!req) continue;
-      const finding = buildFinding(req, baseline, docTimestamp, tool, generator, component);
+      const finding = buildFinding(req, baseline, docTimestamp, tool, generator, component, converterVersion);
       lines.push(stringifyLine(canonicalize(finding)));
     }
   }
@@ -76,6 +76,7 @@ function buildFinding(
   tool: Obj | undefined,
   generator: Obj | undefined,
   component: Obj | undefined,
+  converterVersion: string,
 ): Obj {
   const st = statusOf(req);
   const cvssList = asArr(req.cvss);
@@ -96,12 +97,13 @@ function buildFinding(
     activity_id: ACTIVITY_CREATE,
     severity_id: severityID(req),
     status_id: st.overridden ? STATUS_SUPPRESSED : STATUS_NEW,
-    metadata: buildMetadata(tool, generator),
+    metadata: buildMetadata(tool, generator, converterVersion),
     finding_info: findingInfo,
     unmapped: { hdf_requirement: req },
   };
-  const ms = epochMillis(firstResultStartTime(req, docTimestamp));
-  if (ms !== undefined) finding.time = ms;
+  // time is OCSF-required: fall back to 0 (epoch sentinel) when the source
+  // carries no parseable timestamp, so the record stays schema-valid.
+  finding.time = epochMillis(firstResultStartTime(req, docTimestamp)) ?? 0;
   setIf(finding, 'comment', overrideComment(req));
   const device = buildDevice(component);
   if (device) finding.device = device;
@@ -171,20 +173,26 @@ function overrideComment(req: Obj): string {
   return reason;
 }
 
-function buildMetadata(tool: Obj | undefined, generator: Obj | undefined): Obj {
+// metadata.product is OCSF-required: identify the source scanning tool when
+// present, else fall back to this exporter's own identity (never omitted).
+function buildMetadata(tool: Obj | undefined, generator: Obj | undefined, converterVersion: string): Obj {
   const metadata: Obj = { version: OCSF_VERSION };
   let name = getStr(tool, 'name');
   let version = getStr(tool, 'version');
+  let vendor = getStr(tool, 'format');
   if (name === '' && generator) {
     name = getStr(generator, 'name');
     version = getStr(generator, 'version');
   }
-  if (name !== '') {
-    const product: Obj = { name };
-    setIf(product, 'version', version);
-    setIf(product, 'vendor_name', getStr(tool, 'format'));
-    metadata.product = product;
+  if (name === '') {
+    name = 'hdf-to-ocsf';
+    version = converterVersion;
+    vendor = '';
   }
+  const product: Obj = { name };
+  setIf(product, 'version', version);
+  setIf(product, 'vendor_name', vendor);
+  metadata.product = product;
   return metadata;
 }
 

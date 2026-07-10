@@ -73,7 +73,7 @@ func ConvertHDFToOCSF(input []byte, converterVersion string) ([]byte, error) {
 			if !ok {
 				continue
 			}
-			finding := buildFinding(req, baseline, docTimestamp, tool, generator, component)
+			finding := buildFinding(req, baseline, docTimestamp, tool, generator, component, converterVersion)
 			line, err := exportmap.EncodeLine(finding)
 			if err != nil {
 				return nil, fmt.Errorf("hdf-to-ocsf: encode: %w", err)
@@ -85,7 +85,7 @@ func ConvertHDFToOCSF(input []byte, converterVersion string) ([]byte, error) {
 }
 
 // buildFinding maps one Evaluated_Requirement to a single OCSF Finding object.
-func buildFinding(req, baseline map[string]interface{}, docTimestamp string, tool, generator, component map[string]interface{}) map[string]interface{} {
+func buildFinding(req, baseline map[string]interface{}, docTimestamp string, tool, generator, component map[string]interface{}, converterVersion string) map[string]interface{} {
 	st := exportmap.StatusOf(req)
 	cvssList, hasCVSS := exportmap.AsSlice(req["cvss"])
 	hasCVSS = hasCVSS && len(cvssList) > 0
@@ -108,13 +108,15 @@ func buildFinding(req, baseline map[string]interface{}, docTimestamp string, too
 		"activity_id":  activityCreate,
 		"severity_id":  severityID(req),
 		"status_id":    overrideStatusID(st),
-		"metadata":     buildMetadata(tool, generator),
+		"metadata":     buildMetadata(tool, generator, converterVersion),
 		"finding_info": findingInfo,
 		"unmapped":     map[string]interface{}{"hdf_requirement": req},
 	}
-	if ms, ok := epochMillis(exportmap.FirstResultStartTime(req, docTimestamp)); ok {
-		finding["time"] = ms
-	}
+	// time is OCSF-required: fall back to 0 (epoch sentinel) when the source
+	// carries no parseable timestamp, so the record stays schema-valid. Valid
+	// HDF always has a result startTime, so this only affects malformed input.
+	ms, _ := epochMillis(exportmap.FirstResultStartTime(req, docTimestamp))
+	finding["time"] = ms
 	exportmap.SetIf(finding, "comment", overrideComment(req))
 	if device := buildDevice(component); device != nil {
 		finding["device"] = device
@@ -214,20 +216,27 @@ func overrideComment(req map[string]interface{}) string {
 	}
 }
 
-func buildMetadata(tool, generator map[string]interface{}) map[string]interface{} {
+// buildMetadata builds the OCSF-required metadata object. metadata.product is
+// also required, so it identifies the source scanning tool when present and
+// falls back to this exporter's own identity otherwise (never omitted).
+func buildMetadata(tool, generator map[string]interface{}, converterVersion string) map[string]interface{} {
 	metadata := map[string]interface{}{"version": ocsfVersion}
 	name := exportmap.GetStr(tool, "name")
 	version := exportmap.GetStr(tool, "version")
+	vendor := exportmap.GetStr(tool, "format")
 	if name == "" && generator != nil {
 		name = exportmap.GetStr(generator, "name")
 		version = exportmap.GetStr(generator, "version")
 	}
-	if name != "" {
-		product := map[string]interface{}{"name": name}
-		exportmap.SetIf(product, "version", version)
-		exportmap.SetIf(product, "vendor_name", exportmap.GetStr(tool, "format"))
-		metadata["product"] = product
+	if name == "" {
+		name = "hdf-to-ocsf"
+		version = converterVersion
+		vendor = ""
 	}
+	product := map[string]interface{}{"name": name}
+	exportmap.SetIf(product, "version", version)
+	exportmap.SetIf(product, "vendor_name", vendor)
+	metadata["product"] = product
 	return metadata
 }
 

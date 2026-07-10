@@ -242,13 +242,27 @@ func TestConvert_EdgeBranches(t *testing.T) {
 	_, hasDevice := parseLines(t, out)[0]["device"]
 	assert.False(t, hasDevice)
 
-	// generator fallback + Warning status + omitted time
+	// generator fallback + Warning status + sentinel time (OCSF-required, so present)
 	doc3 := `{"generator":{"name":"grype-to-hdf","version":"1.0"},"baselines":[{"name":"b","requirements":[{"id":"X","impact":0.5,"results":[{"status":"notReviewed","codeDesc":"c"}]}]}]}`
 	out, err = ConvertHDFToOCSF([]byte(doc3), converterVersion)
 	require.NoError(t, err)
 	o := parseLines(t, out)[0]
 	assert.Equal(t, float64(2), sub(t, o, "compliance")["status_id"], "notReviewed -> Warning")
 	assert.Equal(t, "grype-to-hdf", sub(t, sub(t, o, "metadata"), "product")["name"], "generator fallback")
+	assert.Equal(t, float64(0), o["time"], "no parseable timestamp -> 0 sentinel (time is OCSF-required)")
+}
+
+// TestRequiredFieldsAlwaysPresent guards the OCSF-required attributes that were
+// previously omittable: metadata.product (falls back to the exporter identity)
+// and time (falls back to 0) even when the HDF has no tool/generator/timestamp.
+func TestRequiredFieldsAlwaysPresent(t *testing.T) {
+	doc := `{"baselines":[{"name":"b","requirements":[{"id":"X","impact":0.5,"results":[{"status":"failed","codeDesc":"c"}]}]}]}`
+	out, err := ConvertHDFToOCSF([]byte(doc), converterVersion)
+	require.NoError(t, err)
+	o := parseLines(t, out)[0]
+	product := sub(t, sub(t, o, "metadata"), "product")
+	assert.Equal(t, "hdf-to-ocsf", product["name"], "metadata.product falls back to exporter identity")
+	assert.Equal(t, converterVersion, product["version"])
 	_, hasTime := o["time"]
-	assert.False(t, hasTime, "unparseable/absent time omitted")
+	assert.True(t, hasTime, "time (OCSF-required) always present")
 }
