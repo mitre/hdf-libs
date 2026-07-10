@@ -54,11 +54,27 @@ export function worstOfResults(req: Obj): string {
   return 'notReviewed';
 }
 
+/**
+ * Whether an HDF Result_Status is a failing verdict. Only 'failed' fails;
+ * 'error' is indeterminate (not a compliance failure) and every other value is
+ * non-failing. Single shared definition of "failing" for the suppression axis
+ * and the per-exporter outcome maps.
+ */
+export function isFailing(status: string): boolean {
+  return status === 'failed';
+}
+
 export interface Status {
-  raw: string; // worstOf(results[].status)
+  raw: string; // worstOf(results[].status) — the RAW verdict
   effective: string; // effectiveStatus, '' when absent
   rollup: string; // effective when set, else raw
   overridden: boolean; // statusOverrides present or effectiveStatus set
+  // Acceptance axis, orthogonal to the raw verdict: raw is failing but an
+  // override drove the effective status non-failing (waiver / falsePositive /
+  // attestation). A riskAdjustment / operationalRequirement / poam that leaves
+  // effectiveStatus failing is NOT suppressed — it stays actionable, only its
+  // impact is re-scored. Keyed on effective STATUS, not "any override present".
+  suppressed: boolean;
 }
 
 /** Resolve the status context for a requirement. */
@@ -66,11 +82,13 @@ export function statusOf(req: Obj): Status {
   const raw = worstOfResults(req);
   const effective = getStr(req, 'effectiveStatus');
   const overrides = asArr(req.statusOverrides);
+  const rollup = effective !== '' ? effective : raw;
   return {
     raw,
     effective,
-    rollup: effective !== '' ? effective : raw,
+    rollup,
     overridden: (overrides !== undefined && overrides.length > 0) || 'effectiveStatus' in req,
+    suppressed: isFailing(raw) && !isFailing(rollup),
   };
 }
 
@@ -121,18 +139,20 @@ export function eventID(component: Obj | undefined, baselineName: string, contro
 /**
  * Build the lossless hdf.* namespace shared by the export converters: promoted
  * snake_case scalars plus the full requirement sub-objects preserved verbatim.
- * `status` is the lossless results roll-up (statusOf().raw).
+ * `status` is the lossless results roll-up (statusOf().raw); `suppressed` is the
+ * acceptance axis (statusOf().suppressed).
  */
 export function buildHDFBlock(
   req: Obj,
   baseline: Obj,
   status: string,
   overridden: boolean,
+  suppressed: boolean,
   generator: Obj | undefined,
   tool: Obj | undefined,
   converterVersion: string,
 ): Obj {
-  const hdf: Obj = { status, overridden, exporter_version: converterVersion };
+  const hdf: Obj = { status, overridden, suppressed, exporter_version: converterVersion };
   setIf(hdf, 'control_id', getStr(req, 'id'));
   setIf(hdf, 'baseline', getStr(baseline, 'name'));
   if ('effectiveStatus' in req) hdf.effective_status = req.effectiveStatus;

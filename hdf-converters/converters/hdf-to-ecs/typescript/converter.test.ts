@@ -72,13 +72,14 @@ describe('hdf-to-ecs converter', () => {
     }
   });
 
-  it('follows effectiveStatus and preserves lossless override history', () => {
+  it('is raw-primary: waived failure keeps outcome=failure + hdf.suppressed, lossless history', () => {
     const out = lines(convertHdfToEcs(input('override.json'), VERSION));
     expect(out).toHaveLength(1);
     const o = out[0];
-    expect(obj(o.event).outcome).toBe('success');
+    expect(obj(o.event).outcome).toBe('failure'); // raw verdict, not the waiver
     const hdf = obj(o.hdf);
     expect(hdf.status).toBe('failed');
+    expect(hdf.suppressed).toBe(true); // acceptance axis
     expect(hdf.effective_status).toBe('passed');
     expect(hdf.disposition).toBe('waiver');
     expect(hdf.overridden).toBe(true);
@@ -88,6 +89,14 @@ describe('hdf-to-ecs converter', () => {
     expect(obj(o.host).name).toBe('rhel9-server-01');
     expect(obj(o.host).id).toBe('8f3b2c1a-0000-4a00-8000-000000000001');
     expect(o.observer).toBeUndefined();
+  });
+
+  it('risk-adjusted failure stays outcome=failure + not suppressed (still actionable)', () => {
+    const o = lines(convertHdfToEcs(input('riskadjust.json'), VERSION))[0];
+    expect(obj(o.event).outcome).toBe('failure');
+    const hdf = obj(o.hdf);
+    expect(hdf.suppressed).toBe(false); // risk adjustment does NOT suppress
+    expect(hdf.disposition).toBe('riskAdjustment');
   });
 
   // U+2028/U+2029 in string data must be escaped identically to Go's encoder.

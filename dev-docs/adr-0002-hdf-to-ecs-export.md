@@ -29,9 +29,9 @@ Prior verified ECS research (epic `wvc3` design notes + a fresh sourced pass) es
    - **ECS-native fields** (`event.*`, `rule.*`, `vulnerability.*`, `threat.*`, `observer.*`, `host.*`, `related.*`) — the queryable projection that lets HDF findings sit alongside other security telemetry and light up ECS-aware views/detection rules.
    - **An `hdf.*` block** — the full requirement (status, overrides, cvss, results, descriptions, tags, poams) preserved losslessly, rooted in `hdf` so the shape is **identical regardless of the original source tool**.
 
-2. **Pass/fail = core-ECS purist (data-lake-first).** `event.outcome` is derived from the (effective) status: `passed→success`, `failed→failure`, everything else `→unknown`. The lossless five-value status lives in `hdf.status`. We do **not** emit `result.evaluation` — it is not core ECS, and the data-lake target does not depend on Elastic Security's CSPM UI. (It can be added later as a derived field if a CSPM-UI consumer materializes.)
+2. **Pass/fail = raw-primary, core-ECS purist (data-lake-first).** `event.outcome` is derived from the **raw** verdict (`worstOf(results[].status)`): `passed→success`, `failed→failure`, everything else `→unknown`. A waived/risk-accepted failure is **still `failure`** — the verdict field is never rewritten by an acceptance decision, so no consumer can mistake an accepted risk for a genuine pass. The lossless five-value raw status lives in `hdf.status`. We do **not** emit `result.evaluation` — it is not core ECS, and the data-lake target does not depend on Elastic Security's CSPM UI. (It can be added later as a derived field if a CSPM-UI consumer materializes.) See **Reconciliation: the raw-primary two-axis model** for the standards grounding and cross-exporter contract.
 
-3. **Overrides are promoted and preserved.** When an override is present, `event.outcome` follows `effectiveStatus`; `hdf.effective_status`, `hdf.disposition`, and `hdf.overridden` are flat/queryable; the full `statusOverrides[]` and `poams[]` history rides in the `hdf` block.
+3. **Acceptance is a separate axis, promoted and preserved.** `hdf.suppressed` (boolean) is the acceptance axis, orthogonal to `event.outcome`: `true` exactly when the raw result is failing **and** an override drove the effective status non-failing (waiver / falsePositive / attestation). A `riskAdjustment` / `operationalRequirement` / `poam` that leaves the effective status failing is **not** suppressed — it stays actionable, only its impact is re-scored. `hdf.effective_status`, `hdf.effective_impact`, `hdf.disposition`, and `hdf.overridden` are flat/queryable; the full `statusOverrides[]` and `poams[]` history rides in the `hdf` block. The canonical "still actionable" consumer query is **`event.outcome:"failure" AND hdf.suppressed:false`**.
 
 4. **Plain NDJSON, ECS 9.4.0.** One event per line, LF-delimited, no pretty-print, trailing newline; `ecs.version` pinned to `"9.4.0"`. `_bulk` action/metadata framing (and index naming) is an *ingest* concern left to the consumer — not hardcoded here (a future `--bulk` flag could add it).
 
@@ -39,7 +39,7 @@ Prior verified ECS research (epic `wvc3` design notes + a fresh sourced pass) es
 
 ### Event mapping (per requirement)
 
-Status roll-up: `effectiveStatus ?? worstOf(results[].status)`.
+Status roll-up: raw = `worstOf(results[].status)`; effective = `effectiveStatus ?? raw`; `suppressed = isFailing(raw) AND NOT isFailing(effective)` (only `failed` is failing; `error` is indeterminate).
 
 | ECS field | Source (HDF) |
 |---|---|
@@ -48,7 +48,7 @@ Status roll-up: `effectiveStatus ?? worstOf(results[].status)`.
 | `event.kind` | `"state"` |
 | `event.category` | `["configuration"]` (+ `"vulnerability"` when CVE data present) |
 | `event.type` | `["info"]` |
-| `event.outcome` | map(status): passed→success, failed→failure, else→unknown |
+| `event.outcome` | map(**raw** status): passed→success, failed→failure, else→unknown (a waived failure is still `failure`) |
 | `event.id` | deterministic: component + baseline + requirement id |
 | `event.dataset` / `event.module` | `"hdf.findings"` / `"hdf"` |
 | `message` | requirement title + status |
@@ -57,7 +57,37 @@ Status roll-up: `effectiveStatus ?? worstOf(results[].status)`.
 | `rule.{id,name,description,ruleset,version,reference}` | requirement id/title/default-description, baseline name/version, `refs[0].url` |
 | `vulnerability.{id,enumeration,classification,score.base,score.version,severity,scanner.vendor,description}` | `cvss[]`/`cwe[]`/`affectedPackages[]` (present only for CVE findings) |
 | `threat.{framework,tactic.*,technique.*}` | ATT&CK from `tags.mitre_attack`/`tags.attack` (best-effort) |
-| `hdf.*` | **lossless:** `status`, `effective_status`, `effective_impact`, `impact`, `severity`, `disposition`, `overridden`, `baseline`, `control_id`, `nist`, `cci`, `cwe`, full `tags`, `cvss[]`, `epss`, `kev`, `affected_packages[]`, `descriptions[]`, `results[]`, `status_overrides[]`, `poams[]`, `code`, `refs[]`, `generator`, `tool`, `exporter_version` |
+| `hdf.*` | **lossless:** `status` (raw), `suppressed`, `effective_status`, `effective_impact`, `impact`, `severity`, `disposition`, `overridden`, `baseline`, `control_id`, `nist`, `cci`, `cwe`, full `tags`, `cvss[]`, `epss`, `kev`, `affected_packages[]`, `descriptions[]`, `results[]`, `status_overrides[]`, `poams[]`, `code`, `refs[]`, `generator`, `tool`, `exporter_version` |
+
+## Reconciliation: the raw-primary two-axis model (shared by all three exporters)
+
+All three SIEM exporters — `hdf-to-ecs`, `hdf-to-splunk` (ADR-0004), and `hdf-to-ocsf` (addendum below) — implement **one** status model. This was made uniform after a pre-merge review found ECS/Splunk on effective-primary and OCSF on raw-primary; two research passes (internal HDF precedent + external standards) resolved decisively on **raw-primary**, and all three were aligned to it. It is an error for the exporters to diverge here.
+
+**The two axes (orthogonal):**
+
+1. **Verdict (raw)** — did the control pass or fail *as tested*? Always the raw `worstOf(results[].status)`. An acceptance decision (waiver, risk acceptance) **never** rewrites it. A waived failure is still a failure.
+2. **Acceptance (`suppressed`)** — has a governance decision removed this raw failure from the actionable set? `suppressed = isFailing(raw) AND NOT isFailing(effective)`. True only for **waiver / falsePositive / attestation** (which drive the effective status non-failing). A **riskAdjustment / operationalRequirement / poam** leaves the effective status failing → **not** suppressed → still actionable, only its impact is re-scored.
+
+**Why raw-primary (standards grounding):**
+
+- **NIST SP 800-53A / RMF (SP 800-37):** control assessment (Satisfied / Other-Than-Satisfied) and risk response (accept / mitigate / transfer) are *separate steps*. Accepting a risk does not make the control Satisfied. Effective-primary collapses these two steps into one and loses the assessment result.
+- **FedRAMP deviation requests:** a Risk Adjustment or Operational Requirement leaves the finding **Open** in the POA&M; only the risk rating or remediation obligation changes. False Positive is the one that closes it.
+- **OSCAL Assessment Results:** `finding.target.status` (the objective result) and `finding.associated-risk[].facet` (the risk response) are distinct axes that persist independently — findings are not deleted by risk acceptance.
+- **VEX:** `not_affected` records the product as *present but the vuln not exploitable* — the component still ships the affected package; the finding is contextualized, not erased.
+- **OCSF / AWS Security Hub / Rapid7 / Sysdig:** all model *Suppressed ≠ Resolved* — suppression is an acknowledgement axis separate from the finding's own pass/fail/open state.
+
+Effective-primary (rewriting the verdict to the post-acceptance status) is an **audit-integrity anti-pattern**: a reader of the verdict field cannot distinguish "genuinely passed" from "failed but accepted," and actionable-failure counts silently drop when risks are accepted.
+
+**How each exporter carries the two axes (same model, native field per platform):**
+
+| Axis | ECS | Splunk (CIM/HEC) | OCSF |
+|---|---|---|---|
+| **Verdict (raw)** | `event.outcome` (success/failure/unknown) | `hdf_status` (raw 5-value) | `compliance.status_id` (1/2/3) |
+| **Acceptance** | `hdf.suppressed` (bool) | `suppressed` (bool, event + indexed fields) | base `status_id` (1 New vs 3 Suppressed) |
+| **"Still actionable" query** | `event.outcome:"failure" AND hdf.suppressed:false` | `hdf_status=failed suppressed=false` | `compliance.status_id=3 AND status_id=1` |
+| **Full lossless override chain** | `hdf.status_overrides[]` | `hdf.status_overrides[]` | `unmapped.hdf_requirement` |
+
+The Splunk companion TA excludes `suppressed=true` from the CIM Vulnerabilities data model, so a waived control drops out while a risk-adjusted still-failing control stays in — the data-model equivalent of the query above.
 
 ## Alternatives Considered
 
@@ -106,7 +136,7 @@ Leave HDF results outside the SIEM; consumers store raw HDF files.
 ## Consequences
 
 **What becomes easier:**
-- HDF findings become first-class, queryable ECS events in a data lake — filterable by `event.outcome`, `rule.ruleset`, `vulnerability.severity`, and (for governance) `hdf.disposition` / `hdf.effective_status` — sitting alongside other telemetry.
+- HDF findings become first-class, queryable ECS events in a data lake — filterable by `event.outcome`, `hdf.suppressed`, `rule.ruleset`, `vulnerability.severity`, and (for governance) `hdf.disposition` / `hdf.effective_status` — sitting alongside other telemetry. The actionable-failures view is `event.outcome:"failure" AND hdf.suppressed:false`.
 - Lossless round-trip is preserved via the `hdf` block, and the event shape is uniform regardless of source tool.
 - The field projection is reusable as the substrate for later SIEM targets (Splunk, Schema One) and for the deferred streaming work (ADR-0003).
 
@@ -147,9 +177,9 @@ Leave HDF results outside the SIEM; consumers store raw HDF files.
 
 **Acceptance criteria:**
 - [ ] Valid one-object-per-line NDJSON, LF-delimited, trailing newline; `ecs.version` = `"9.4.0"`.
-- [ ] `event.outcome` mapping correct for each of the five statuses; lossless five-value in `hdf.status`.
+- [ ] `event.outcome` maps the **raw** status for each of the five values; lossless five-value in `hdf.status`; `hdf.suppressed` is the acceptance axis.
 - [ ] `vulnerability.*` populated for the CVE fixture, absent for pure-compliance.
-- [ ] Override fixture yields `hdf.disposition` + `hdf.effective_status` + full `hdf.status_overrides`.
+- [ ] Waiver fixture → `event.outcome:"failure"` + `hdf.suppressed:true` + `hdf.disposition` + `hdf.effective_status` + full `hdf.status_overrides`; riskAdjustment fixture → `event.outcome:"failure"` + `hdf.suppressed:false` (still actionable).
 - [ ] TS and Go emit byte-identical output; empty/invalid input errors cleanly.
 - [ ] All work via TDD; no regressions.
 
@@ -190,7 +220,7 @@ Research pinned **OCSF v1.8.0** (2026-03-18, `github.com/ocsf/ocsf-schema`), ver
 
    *Rejected: effective-primary* (`compliance.status_id = effectiveStatus`) — it masks a waived failure as `Pass` and forces a naive verdict-only consumer to over-count compliance. *Rejected: the `incident` profile's `verdict_id`* — it is the only first-class field for an override *reason*, but the profile's own definition is "attributes that add **incident handling semantics** to a Finding," so applying it to a routine compliance/evidence result mislabels it as an incident. Base fields only.
 
-3. **HDF status → `compliance.status_id` mapping** (using only the confirmed enum `1 Pass / 2 Warning / 3 Fail`): `passed → 1 Pass`; `failed → 3 Fail`; `error` / `notApplicable` / `notReviewed → 2 Warning` (OCSF `2 Warning` = "did not yield a [pass/fail] result"). The **exact** HDF status is always carried verbatim in `compliance.status` (string) and in `unmapped`, so `error` vs `notApplicable` vs `notReviewed` are fully distinguishable — nothing is lost by collapsing them onto `Warning`. A Compliance Finding is emitted for **every** requirement (pass, fail, or in-between), so full posture survives natively — no custom sidecar needed (contrast CIM, ADR-0004). Note this keeps the actionable-failures query clean: only real failures are `status_id = 3`, so `notApplicable`/`notReviewed`/`error` never pollute a `compliance.status_id = 3` filter.
+3. **HDF status → `compliance.status_id` mapping** (using only the confirmed enum `1 Pass / 2 Warning / 3 Fail`): `passed → 1 Pass`; `failed → 3 Fail`; `error` / `notApplicable` / `notReviewed → 2 Warning` (OCSF `2 Warning` = "did not yield a [pass/fail] result"). The sibling string `compliance.status` carries the **OCSF caption** of that enum (`Pass` / `Warning` / `Fail`) — OCSF's convention is that an enum's sibling string is the caption of the enum value, and emitting a non-caption string triggers a validator `attribute_enum_sibling_incorrect` warning on every event. The **exact** HDF status (which distinguishes `error` vs `notApplicable` vs `notReviewed`, all → `Warning`) is preserved verbatim in `unmapped.hdf_requirement.results[].status` / `.effectiveStatus`, so nothing is lost by collapsing them onto `Warning`. A Compliance Finding is emitted for **every** requirement (pass, fail, or in-between), so full posture survives natively — no custom sidecar needed (contrast CIM, ADR-0004). Note this keeps the actionable-failures query clean: only real failures are `status_id = 3`, so `notApplicable`/`notReviewed`/`error` never pollute a `compliance.status_id = 3` filter.
 
 4. **Control/framework ids via `compliance.checks[]`.** Each HDF control mapping becomes a `check` object: `check.uid` = the control id (STIG `V-230234`, NIST `AC-17(2)`, `CCI-000068`) and `check.standards[]` = the framework(s). Only the **primary** (STIG-rule) check carries a `check.status_id` — HDF has a single per-requirement verdict, not a per-framework-id one, so the NIST/CCI framework checks carry the id + standards without a separate (fabricated) status. `compliance.control` (single string) carries the primary rule id and `compliance.standards[]` the framework list. This `checks[]` pattern is OCSF's intended mechanism for one finding to carry many framework control ids — a direct fit for HDF's `tags.nist`/`tags.cci`/STIG id arrays.
 
@@ -208,26 +238,27 @@ Research pinned **OCSF v1.8.0** (2026-03-18, `github.com/ocsf/ocsf-schema`), ver
 
 ### Override representation
 
-The exporter encodes HDF's override state onto the base finding `status_id` so a consumer can filter adjudicated vs. actionable findings **on normalized enums only — never on free text**. The contract (an invariant this exporter guarantees):
+The exporter encodes HDF's **acceptance axis** onto the base finding `status_id` so a consumer can filter adjudicated vs. actionable findings **on normalized enums only — never on free text**. The axis is keyed on whether the override drove the *effective status* non-failing — **not** on the mere presence of an override. This is the crux: a `riskAdjustment` / `operationalRequirement` / `poam` is an *open* accepted risk that leaves the finding failing, so it must stay actionable. The contract (an invariant this exporter guarantees):
 
-| HDF override state | `status_id` |
-|---|---|
-| no override | `1 New` |
-| any active override (waiver / false-positive / risk-adjustment) | `3 Suppressed` |
+| HDF override state | effective status | `status_id` |
+|---|---|---|
+| no override | (raw) | `1 New` |
+| waiver / falsePositive / attestation (raw-failing driven non-failing) | non-failing | `3 Suppressed` |
+| riskAdjustment / operationalRequirement / poam (still failing) | failing | `1 New` |
 
-(HDF overrides are always *acceptances* of a result — a genuinely *remediated* control simply passes on the next scan, showing up as a raw `passed` with no override — so this exporter does not emit `4 Resolved`; that lifecycle value is left for a downstream OCSF workflow to set.)
+Formally: `status_id = 3 Suppressed` iff `suppressed` (raw failing ∧ effective non-failing), else `1 New`. This is the same `Suppressed` axis the ECS/Splunk exporters use (see **Reconciliation**). (HDF overrides that leave a result failing are *open* accepted risks; a genuinely *remediated* control simply passes on the next scan as a raw `passed` with no override — so this exporter does not emit `4 Resolved`; that lifecycle value is left for a downstream OCSF workflow to set.)
 
-Combined with the raw-primary `compliance.status_id`, this yields the **canonical consumer query for "open, actionable, not-waived compliance failures":**
+Combined with the raw-primary `compliance.status_id`, this yields the **canonical consumer query for "open, actionable, not-accepted-as-closed compliance failures":**
 
 ```
-class_uid = 2003 AND compliance.status_id = 3 (Fail) AND status_id IN (1 New, 2 In Progress)
+class_uid = 2003 AND compliance.status_id = 3 (Fail) AND status_id = 1 (New)
 ```
 
-Waived / false-positive / resolved failures fall out on the `status_id` enum; genuine open fails pass through. "Show me the waived failures" is `compliance.status_id = 3 AND status_id = 3`. For Vulnerability Findings (no `compliance.status_id` — the finding's existence is the problem) it reduces to `class_uid = 2002 AND status_id IN (1, 2)`. Mental model: `status_id` = *is it still my problem?*; `compliance.status_id` = *did it pass or fail?* — independent axes.
+A waived / false-positive / attested failure falls out on `status_id = 3 Suppressed`; a genuine open fail **and a risk-adjusted still-open fail** both pass through as `status_id = 1`. "Show me the accepted-as-closed failures" is `compliance.status_id = 3 AND status_id = 3`. For Vulnerability Findings (no `compliance.status_id` — the finding's existence is the problem) it reduces to `class_uid = 2002 AND status_id = 1`. Mental model: `status_id` = *has it been accepted out of my actionable set?*; `compliance.status_id` = *did it pass or fail?* — independent axes.
 
 **Two honest limitations (documented, not worked around):**
 
-1. **OCSF has no native compliance-waiver / risk-acceptance concept.** `status_id = 3 Suppressed` is defined as *"reviewed, determined to be benign or a false positive"* — a good fit for `falsePositive` but only an approximate one for a *waiver* or *risk-adjustment* (those are accepted risks, not "benign"). It is nonetheless the closest lifecycle state for "adjudicated, removed from the actionable set," and it makes the query above work. The **exact** override type, its justification, expiry, author, and the full multi-entry `statusOverrides[]` chain are preserved in `unmapped.hdf_requirement` (lossless) and the governing reason is additionally surfaced in `comment` (human-readable). No first-class OCSF field carries the override *type* without misusing the incident profile — so it deliberately lives in `comment` + `unmapped`, never gated behind free-text for the core actionable-vs-adjudicated filter.
+1. **OCSF has no native compliance-waiver / risk-acceptance concept.** `status_id = 3 Suppressed` is defined as *"reviewed, determined to be benign or a false positive"* — a good fit for `falsePositive` and an acceptable one for a *waiver* / *attestation* (adjudicated out of the actionable set). It deliberately does **not** cover `riskAdjustment` / `operationalRequirement`: those leave the finding failing and *actionable*, so they stay `1 New` (only the impact/severity is re-scored), never Suppressed. `3 Suppressed` is the closest lifecycle state for "adjudicated, removed from the actionable set," and it makes the query above work. The **exact** override type, its justification, expiry, author, and the full multi-entry `statusOverrides[]` chain are preserved in `unmapped.hdf_requirement` (lossless) and the governing reason is additionally surfaced in `comment` (human-readable). No first-class OCSF field carries the override *type* without misusing the incident profile — so it deliberately lives in `comment` + `unmapped`, never gated behind free-text for the core actionable-vs-adjudicated filter.
 2. **`status_id` is nominally consumer-set.** OCSF documents `status_id` as *"set by the consumer"* (the downstream triage field). This exporter pre-populates it from HDF's authoritative adjudication (HDF already carries the waivers), handing the consumer a correct initial triage state rather than making them re-derive it; a downstream workflow may still overwrite it. This producer-side pre-population is part of the documented mapping contract.
 
 ### Event mapping (per requirement)
@@ -241,8 +272,8 @@ Waived / false-positive / resolved failures fall out on the `status_id` enum; ge
 | `finding_info.{uid,title,desc}` | requirement id / title / default description | both |
 | `device.{name,hostname,ip,uid,os.*}` | target `component` (name/fqdn/ip/componentId/osName/osVersion) | both |
 | `unmapped.hdf_requirement` | **the full original requirement (lossless)** | both |
-| `status_id` (lifecycle) | overrides → `3 Suppressed` / `4 Resolved`; else `1 New` | both |
-| `compliance.status_id` + `compliance.status` | map(status) → 1/2/3/99/0 + verbatim HDF status | Compliance (2003) |
+| `status_id` (lifecycle) | `suppressed` (raw-failing driven non-failing) → `3 Suppressed`; else `1 New` | both |
+| `compliance.status_id` + `compliance.status` | map(**raw** status) → 1/2/3 + OCSF caption (`Pass`/`Warning`/`Fail`) | Compliance (2003) |
 | `compliance.control` / `compliance.standards[]` / `compliance.checks[]` | STIG id / frameworks / per-control `{uid,standards,status_id}` from tags | Compliance (2003) |
 | `vulnerabilities[].cve.{uid,cvss[],related_cwes,references}` | `cvss[].source` + `cvss[]` 1:1 + `cwe` + refs | Vulnerability (2002) |
 

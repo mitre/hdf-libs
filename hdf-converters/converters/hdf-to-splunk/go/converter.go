@@ -5,13 +5,18 @@
 // ADR-0004: flat CIM-named scalars (signature/signature_id/cve/cvss/severity/
 // dest/vendor_product/category) are promoted to the top of the event payload,
 // the hot query scalars among them (signature/signature_id/dest/severity/cve/
-// cvss + hdf_status) are additionally mirrored into the HEC indexed `fields` so
-// they survive Splunk's ~5000-char extraction cutoff, and a lossless hdf.* block
-// preserves the full requirement. Failed and CVE findings are the events the
-// companion TA (Splunk_TA_hdf) tags into
-// the Vulnerabilities data model; every result also carries hdf_status so the
-// full pass/fail posture survives (CIM has no verdict field). Output is plain
-// NDJSON (one HEC object per line, LF-delimited, trailing newline).
+// cvss + hdf_status + suppressed) are additionally mirrored into the HEC indexed
+// `fields` so they survive Splunk's ~5000-char extraction cutoff, and a lossless
+// hdf.* block preserves the full requirement. Output is plain NDJSON (one HEC
+// object per line, LF-delimited, trailing newline).
+//
+// Status is raw-primary: hdf_status carries the RAW verdict (a waived failure is
+// still failed), and suppressed is the separate acceptance axis (raw-failing but
+// accepted via waiver/falsePositive/attestation). The companion TA
+// (Splunk_TA_hdf) tags failed/error/CVE findings into the CIM Vulnerabilities
+// data model but excludes suppressed=true, so a waived control drops out while a
+// risk-adjusted still-failing control stays in. The canonical "still actionable"
+// query is hdf_status=failed suppressed=false.
 //
 // Generic JSON access, the status roll-up, field extraction, the lossless hdf.*
 // block, and the canonical byte-identical line encoder are shared with the
@@ -100,8 +105,9 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 
 	event := map[string]interface{}{
 		"signature":  signature,
-		"hdf_status": st.Rollup,
-		"hdf":        exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, generator, tool, converterVersion),
+		"hdf_status": st.Raw,
+		"suppressed": st.Suppressed,
+		"hdf":        exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion),
 	}
 	exportmap.SetIf(event, "signature_id", controlID)
 	exportmap.SetIf(event, "dest", dest)
@@ -116,7 +122,8 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 	// indexed fields: flat copy of the hot CIM scalars (beats the 5000-char cutoff)
 	fields := map[string]interface{}{
 		"signature":  signature,
-		"hdf_status": st.Rollup,
+		"hdf_status": st.Raw,
+		"suppressed": st.Suppressed,
 	}
 	exportmap.SetIf(fields, "signature_id", controlID)
 	exportmap.SetIf(fields, "dest", dest)

@@ -7,11 +7,14 @@
 //
 // Status model (raw-primary): compliance.status_id carries the RAW verdict
 // (Pass/Warning/Fail) — a failed control stays Fail even when waived, so a
-// consumer never mistakes a waiver for a pass. HDF overrides ride the base
-// finding status_id (New vs Suppressed), the "is it still my problem?" axis;
-// the exact override type/justification/chain is preserved losslessly in
-// unmapped.hdf_requirement (+ a human comment). See the ADR addendum's
-// "Override representation" for the canonical consumer query.
+// consumer never mistakes a waiver for a pass. The acceptance axis rides the
+// base finding status_id: a raw-failing finding that an override drove
+// non-failing (waiver/falsePositive/attestation) → 3 Suppressed, everything
+// else → 1 New. A riskAdjustment / operationalRequirement / poam that leaves the
+// finding failing stays New — still actionable, only re-scored. The exact
+// override type/justification/chain is preserved losslessly in
+// unmapped.hdf_requirement (+ a human comment). The canonical "still actionable"
+// query is compliance.status_id = 3 (Fail) AND status_id = 1 (New).
 //
 // Generic JSON access, the status roll-up, field extraction, and the canonical
 // byte-identical line encoder are shared with the other exporters via exportmap;
@@ -169,7 +172,7 @@ func severityIDFromString(s string) int {
 
 // complianceStatusID maps a raw HDF status to the OCSF compliance.status_id
 // enum (1 Pass, 2 Warning, 3 Fail). error/notApplicable/notReviewed → Warning;
-// the exact HDF status is preserved verbatim in compliance.status + unmapped.
+// the exact HDF status is preserved verbatim in unmapped.hdf_requirement.
 func complianceStatusID(rawStatus string) int {
 	switch rawStatus {
 	case "passed":
@@ -181,10 +184,29 @@ func complianceStatusID(rawStatus string) int {
 	}
 }
 
-// overrideStatusID encodes HDF override state onto the base finding status_id:
-// any active override → 3 Suppressed (adjudicated), else 1 New (actionable).
+// complianceStatusCaption returns the OCSF caption for a compliance.status_id,
+// carried in the sibling compliance.status string. OCSF convention is that the
+// enum sibling string is the caption of the enum value; the HDF-native status
+// (which distinguishes notApplicable/notReviewed/error, all → Warning) is
+// preserved losslessly in unmapped.hdf_requirement.
+func complianceStatusCaption(statusID int) string {
+	switch statusID {
+	case 1:
+		return "Pass"
+	case 3:
+		return "Fail"
+	default:
+		return "Warning"
+	}
+}
+
+// overrideStatusID encodes the acceptance axis onto the base finding status_id:
+// a raw-failing finding that an override drove non-failing (waiver/falsePositive/
+// attestation) → 3 Suppressed; everything else → 1 New (actionable). A
+// riskAdjustment / operationalRequirement / poam that leaves the finding failing
+// stays New — it is still the operator's problem, only its impact is re-scored.
 func overrideStatusID(st exportmap.Status) int {
-	if st.Overridden {
+	if st.Suppressed {
 		return statusSuppressed
 	}
 	return statusNew
@@ -290,7 +312,7 @@ func buildCompliance(req, baseline map[string]interface{}, title, rawStatus stri
 	statusID := complianceStatusID(rawStatus)
 	compliance := map[string]interface{}{
 		"status_id": statusID,
-		"status":    rawStatus, // verbatim HDF status
+		"status":    complianceStatusCaption(statusID), // OCSF caption of status_id
 	}
 	controlID := exportmap.GetStr(req, "id")
 	exportmap.SetIf(compliance, "control", controlID)

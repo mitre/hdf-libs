@@ -24,14 +24,15 @@ func TestWorstOfResults(t *testing.T) {
 }
 
 func TestStatusOf(t *testing.T) {
-	// no override: rollup == raw, not overridden
+	// no override: rollup == raw, not overridden, not suppressed
 	st := StatusOf(mkResults("failed"))
 	assert.Equal(t, "failed", st.Raw)
 	assert.Equal(t, "failed", st.Rollup)
 	assert.Equal(t, "", st.Effective)
 	assert.False(t, st.Overridden)
+	assert.False(t, st.Suppressed)
 
-	// effectiveStatus present: rollup follows it, overridden true
+	// effectiveStatus present: rollup follows it, overridden true, suppressed true
 	req := mkResults("failed")
 	req["effectiveStatus"] = "passed"
 	st = StatusOf(req)
@@ -39,13 +40,51 @@ func TestStatusOf(t *testing.T) {
 	assert.Equal(t, "passed", st.Effective)
 	assert.Equal(t, "passed", st.Rollup)
 	assert.True(t, st.Overridden)
+	assert.True(t, st.Suppressed, "raw-failing driven non-failing → suppressed")
 
-	// statusOverrides present without effectiveStatus: overridden true, rollup == raw
+	// statusOverrides present without effectiveStatus: overridden true, rollup ==
+	// raw, NOT suppressed (can't suppress without a non-failing effective status)
 	req2 := mkResults("failed")
 	req2["statusOverrides"] = []interface{}{map[string]interface{}{"type": "waiver"}}
 	st = StatusOf(req2)
 	assert.True(t, st.Overridden)
 	assert.Equal(t, "failed", st.Rollup)
+	assert.False(t, st.Suppressed)
+}
+
+// TestStatusOf_SuppressedMatrix pins the acceptance axis across dispositions:
+// suppressing overrides (waiver/falsePositive/attestation drive effectiveStatus
+// non-failing) → Suppressed; risk-response overrides that keep the finding
+// failing (riskAdjustment/operationalRequirement/poam) → NOT suppressed.
+func TestStatusOf_SuppressedMatrix(t *testing.T) {
+	suppressing := []string{"passed", "notApplicable"} // effective verdicts a waiver/FP yields
+	for _, eff := range suppressing {
+		req := mkResults("failed")
+		req["effectiveStatus"] = eff
+		assert.True(t, StatusOf(req).Suppressed, "raw failed + effective %s → suppressed", eff)
+	}
+
+	// riskAdjustment / operationalRequirement / poam: effectiveStatus stays failed
+	req := mkResults("failed")
+	req["effectiveStatus"] = "failed"
+	req["statusOverrides"] = []interface{}{map[string]interface{}{"type": "riskAdjustment", "impact": map[string]interface{}{"value": 0.2}}}
+	st := StatusOf(req)
+	assert.True(t, st.Overridden)
+	assert.False(t, st.Suppressed, "risk-adjusted failure stays actionable")
+
+	// a passing finding is never suppressed regardless of overrides
+	pass := mkResults("passed")
+	pass["effectiveStatus"] = "passed"
+	assert.False(t, StatusOf(pass).Suppressed)
+
+	// an errored finding driven to passed is not suppressed (error isn't failing)
+	erf := mkResults("error")
+	erf["effectiveStatus"] = "passed"
+	assert.False(t, StatusOf(erf).Suppressed)
+
+	assert.True(t, IsFailing("failed"))
+	assert.False(t, IsFailing("error"))
+	assert.False(t, IsFailing("passed"))
 }
 
 func TestGenericAccess(t *testing.T) {

@@ -63,19 +63,30 @@ describe('hdf-to-splunk converter', () => {
     }
   });
 
-  it('promotes overrides and emits integer epoch time', () => {
+  it('is raw-primary: waiver keeps hdf_status=failed + suppressed, emits integer epoch time', () => {
     const out = lines(convertHdfToSplunk(input('override.json'), VERSION));
     expect(out).toHaveLength(1);
     const o = out[0];
     expect(o.time).toBe(1704067200); // 2024-01-01T00:00:00Z, integer epoch seconds
     expect(o.host).toBe('rhel9-server-01');
     const event = obj(o.event);
-    expect(event.hdf_status).toBe('passed'); // effective rollup drives hdf_status
+    expect(event.hdf_status).toBe('failed'); // raw verdict drives hdf_status
+    expect(event.suppressed).toBe(true); // acceptance axis promoted
+    expect(obj(o.fields).suppressed).toBe(true); // mirrored into indexed fields
     const hdf = obj(event.hdf);
     expect(hdf.status).toBe('failed'); // lossless raw preserved
+    expect(hdf.suppressed).toBe(true);
     expect(hdf.effective_status).toBe('passed');
     expect(hdf.disposition).toBe('waiver');
     expect(hdf.overridden).toBe(true);
+  });
+
+  it('risk-adjusted failure stays hdf_status=failed + not suppressed (still actionable)', () => {
+    const o = lines(convertHdfToSplunk(input('riskadjust.json'), VERSION))[0];
+    const event = obj(o.event);
+    expect(event.hdf_status).toBe('failed');
+    expect(event.suppressed).toBe(false); // risk adjustment does NOT suppress
+    expect(obj(o.fields).suppressed).toBe(false);
   });
 
   it('sets category from the first cwe id', () => {

@@ -131,20 +131,42 @@ func TestConvert_OverridePromotedAndTimeEpoch(t *testing.T) {
 	assert.Equal(t, "rhel9-server-01", o["host"])
 
 	e := sub(t, o, "event")
-	// waiver: hdf_status follows the effective status; raw stays lossless in hdf.*
-	assert.Equal(t, "passed", e["hdf_status"], "effective rollup drives hdf_status")
+	// raw-primary: hdf_status carries the RAW verdict (waived fail stays failed);
+	// suppressed is the acceptance axis, promoted to both event and indexed fields
+	assert.Equal(t, "failed", e["hdf_status"], "raw verdict drives hdf_status")
+	assert.Equal(t, true, e["suppressed"], "waiver → suppressed")
+	assert.Equal(t, true, sub(t, o, "fields")["suppressed"], "suppressed mirrored into indexed fields")
 	hdf := sub(t, e, "hdf")
 	assert.Equal(t, "failed", hdf["status"], "lossless raw status preserved")
+	assert.Equal(t, true, hdf["suppressed"], "lossless suppressed axis in hdf.*")
 	assert.Equal(t, "passed", hdf["effective_status"])
 	assert.Equal(t, "waiver", hdf["disposition"])
 	assert.Equal(t, true, hdf["overridden"])
 }
 
+// TestConvert_RiskAdjustStaysActionable pins the disposition-branch: a risk-
+// adjusted failure is NOT suppressed, so it remains in the Vulnerabilities model.
+func TestConvert_RiskAdjustStaysActionable(t *testing.T) {
+	out, err := ConvertHDFToSplunk(fixture(t, "input", "riskadjust.json"), converterVersion)
+	require.NoError(t, err)
+	objs := parseLines(t, out)
+	require.Len(t, objs, 1)
+	e := sub(t, objs[0], "event")
+	assert.Equal(t, "failed", e["hdf_status"], "risk-adjusted failure stays failed")
+	assert.Equal(t, false, e["suppressed"], "risk adjustment does NOT suppress")
+	assert.Equal(t, false, sub(t, objs[0], "fields")["suppressed"])
+}
+
 func TestConvert_GoldenParity(t *testing.T) {
 	// The expected .ndjson files are the shared TS<->Go golden contract.
-	for _, name := range []string{"compliance", "cve", "override"} {
+	for _, name := range []string{"compliance", "cve", "override", "riskadjust"} {
 		out, err := ConvertHDFToSplunk(fixture(t, "input", name+".json"), converterVersion)
 		require.NoError(t, err)
+		if os.Getenv("UPDATE_GOLDEN") == "1" {
+			goldenPath := filepath.Join(shared.GetConvertersDir(), "hdf-to-splunk", "fixtures", "expected", name+".ndjson")
+			require.NoError(t, os.WriteFile(goldenPath, out, 0o644))
+			continue
+		}
 		want := fixture(t, "expected", name+".ndjson")
 		assert.Equal(t, string(want), string(out), "golden mismatch for %s", name)
 	}
@@ -176,7 +198,7 @@ func TestTAContract(t *testing.T) {
 	require.NoError(t, err)
 	for _, o := range parseLines(t, out) {
 		e := sub(t, o, "event")
-		for _, f := range []string{"signature", "signature_id", "severity", "dest", "cve", "cvss", "vendor_product", "hdf_status"} {
+		for _, f := range []string{"signature", "signature_id", "severity", "dest", "cve", "cvss", "vendor_product", "hdf_status", "suppressed"} {
 			_, ok := e[f]
 			assert.True(t, ok, "CVE event must carry TA/CIM field %q", f)
 		}
@@ -186,11 +208,19 @@ func TestTAContract(t *testing.T) {
 	require.NoError(t, err)
 	for _, o := range parseLines(t, out) {
 		e := sub(t, o, "event")
-		for _, f := range []string{"signature", "signature_id", "severity", "dest", "hdf_status"} {
+		for _, f := range []string{"signature", "signature_id", "severity", "dest", "hdf_status", "suppressed"} {
 			_, ok := e[f]
 			assert.True(t, ok, "compliance event must carry TA/CIM field %q", f)
 		}
 	}
+
+	// The TA's finding eventtype must exclude suppressed=true so a waived/FP
+	// control drops out of the CIM Vulnerabilities model. Pin the static clause
+	// so a config edit can't silently re-admit accepted risk.
+	confPath := filepath.Join(shared.GetConvertersDir(), "hdf-to-splunk", "Splunk_TA_hdf", "default", "eventtypes.conf")
+	conf, err := os.ReadFile(confPath)
+	require.NoError(t, err, "read eventtypes.conf")
+	assert.Contains(t, string(conf), "NOT suppressed=true", "TA eventtype must exclude suppressed=true")
 }
 
 func TestConvert_CategoryFromCWE(t *testing.T) {

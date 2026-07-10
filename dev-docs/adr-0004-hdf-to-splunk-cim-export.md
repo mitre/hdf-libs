@@ -28,13 +28,15 @@ The central tension: "full CIM mapping" (which the consumer wants, over plain HE
 1. **HEC-envelope NDJSON, one event per requirement.** Each output line is one HEC event object: `{ time, host, source, sourcetype, event, fields }`. `time` is epoch seconds converted from the requirement's `startTime` (RFC3339) via the repo's `parseTimestamp` helper (falling back to the document `timestamp`, then omitted so HEC stamps receive-time); `sourcetype` is the stable, namespaced `"hdf:results"` (the single contract the TA hangs off); `source` is `"hdf-exporter"`; `host` is the target component name/fqdn. Concatenated/NDJSON batch form (one object per line, LF-delimited, trailing newline).
 
 2. **Hybrid event shape — flat CIM projection + lossless `hdf.*` block.** The `event` payload carries:
-   - **Promoted flat CIM scalars** at top level: `signature` (requirement title, or rule id), `signature_id` (control id — SV-/CCI/rule id), `cvss` (single number = **max base score** across `cvss[]`; omitted/0 for pure-compliance), `severity` (mapped CIM enum), `dest` (target host), `dvc` (scanner host when known), `vendor_product` (tool name), `category` (CWE name / control family), and `hdf_status` (our lossless five-value verdict — CIM has no field for it).
-   - The **hot CIM scalars mirrored into the HEC `fields`** key (index-time), so the CIM-critical values are indexed and immune to the ~5,000-char extraction cutoff.
-   - A nested lossless **`hdf` block** (full requirement: `status`, `effective_status`, `disposition`, `overridden`, `cvss[]`, `results[]`, `descriptions[]`, `status_overrides[]`, `poams[]`, `tags`, `nist`, `cci`, `refs[]`, `code`, `generator`, `tool`, `exporter_version`) for drill-down. We do **not** ask CIM to normalize the nested arrays — they are drill-down only.
+   - **Promoted flat CIM scalars** at top level: `signature` (requirement title, or rule id), `signature_id` (control id — SV-/CCI/rule id), `cvss` (single number = **max base score** across `cvss[]`; omitted/0 for pure-compliance), `severity` (mapped CIM enum), `dest` (target host), `dvc` (scanner host when known), `vendor_product` (tool name), `category` (CWE name / control family), `hdf_status` (the **raw** five-value verdict — CIM has no field for it), and `suppressed` (the boolean acceptance axis — see below).
+   - The **hot CIM scalars mirrored into the HEC `fields`** key (index-time) — including `hdf_status` and `suppressed` — so the CIM-critical values are indexed and immune to the ~5,000-char extraction cutoff.
+   - A nested lossless **`hdf` block** (full requirement: `status`, `suppressed`, `effective_status`, `disposition`, `overridden`, `cvss[]`, `results[]`, `descriptions[]`, `status_overrides[]`, `poams[]`, `tags`, `nist`, `cci`, `refs[]`, `code`, `generator`, `tool`, `exporter_version`) for drill-down. We do **not** ask CIM to normalize the nested arrays — they are drill-down only.
 
-3. **Vulnerabilities is the CIM home; passes stay for posture.** Failed compliance controls **and** CVE findings are the events the TA tags into the Vulnerabilities model (`tag=vulnerability tag=report`). Passed / notApplicable / notReviewed controls emit to the *same* `hdf:results` sourcetype (carrying `hdf_status`) so posture reporting is complete, but are **not** vuln-tagged (they are not findings). The exporter emits uniformly; the **TA** performs the failed-vs-passed discrimination (its eventtype keys on `hdf_status`/CVE presence), keeping that policy in Splunk config, not baked into the exporter.
+   **Raw-primary status (shared model).** `hdf_status` carries the **raw** verdict (a waived failure is still `failed`); `suppressed` is the separate acceptance axis — `true` iff the raw result is failing and an override drove the effective status non-failing (waiver / falsePositive / attestation). A `riskAdjustment` / `operationalRequirement` / `poam` that leaves the effective status failing is **not** suppressed and stays actionable. This is the same two-axis model the ECS and OCSF exporters use — see ADR-0002 **"Reconciliation: the raw-primary two-axis model"** for the standards grounding. Canonical "still actionable" query: `hdf_status=failed suppressed=false`.
 
-4. **Ship a minimal companion TA (`Splunk_TA_hdf`).** In-repo, a small Splunk add-on: `props.conf` (sourcetype recognition, JSON `KV_MODE`), `eventtypes.conf` (`[hdf_finding] search = sourcetype=hdf:results (hdf_status=failed OR hdf_status=error OR cve=*)`), and `tags.conf` (`[eventtype=hdf_finding] vulnerability=enabled report=enabled`). This is the piece that makes the output genuinely CIM-live; without it the JSON is CIM-shaped but populates no data model.
+3. **Vulnerabilities is the CIM home; passes stay for posture.** Failed compliance controls **and** CVE findings are the events the TA tags into the Vulnerabilities model (`tag=vulnerability tag=report`) — **except those with `suppressed=true`** (waived/false-positive/attested), which are adjudicated out of the actionable set. Passed / notApplicable / notReviewed controls emit to the *same* `hdf:results` sourcetype (carrying `hdf_status`) so posture reporting is complete, but are **not** vuln-tagged (they are not findings). The exporter emits uniformly; the **TA** performs the discrimination (its eventtype keys on `hdf_status`/CVE presence and excludes `suppressed=true`), keeping that policy in Splunk config, not baked into the exporter. A risk-adjusted still-failing control (`suppressed=false`) correctly stays in the model.
+
+4. **Ship a minimal companion TA (`Splunk_TA_hdf`).** In-repo, a small Splunk add-on: `props.conf` (sourcetype recognition, JSON `KV_MODE`), `eventtypes.conf` (`[hdf_finding] search = sourcetype=hdf:results (hdf_status=failed OR hdf_status=error OR cve=*) NOT suppressed=true`), and `tags.conf` (`[eventtype=hdf_finding] vulnerability=enabled report=enabled`). This is the piece that makes the output genuinely CIM-live; without it the JSON is CIM-shaped but populates no data model.
 
    *Two refinements landed during implementation:* (a) the finding discriminator keys on **`cve=*`** rather than `cvss>0` — a `baseScore:0` CVE (e.g. `CVE-1999-0632`) is still a CVE finding and must tag into Vulnerabilities, which `cvss>0` would wrongly exclude; (b) **no `FIELDALIAS`/`EVAL` or `TIME_*` is needed** in `props.conf` because the exporter already emits CIM-native field names and the HEC envelope `time` supplies the timestamp — so the TA is pure sourcetype-config + tagging.
 
@@ -44,7 +46,7 @@ The central tension: "full CIM mapping" (which the consumer wants, over plain HE
 
 ### Event mapping (per requirement)
 
-Status roll-up: `effectiveStatus ?? worstOf(results[].status)` over the five-value enum. `hdf_status` carries the lossless roll-up.
+Status roll-up: raw = `worstOf(results[].status)` over the five-value enum; `hdf_status` carries the **raw** verdict. `suppressed = isFailing(raw) AND NOT isFailing(effectiveStatus ?? raw)`.
 
 | HEC / CIM field | Source (HDF) |
 |---|---|
@@ -52,7 +54,7 @@ Status roll-up: `effectiveStatus ?? worstOf(results[].status)` over the five-val
 | `host` (envelope) | target `component` fqdn ?? name |
 | `source` (envelope) | `"hdf-exporter"` (constant) |
 | `sourcetype` (envelope) | `"hdf:results"` (constant) |
-| `fields` (envelope, indexed) | flat copy of `signature`, `signature_id`, `severity`, `cvss`, `dest`, `dvc`, `hdf_status` |
+| `fields` (envelope, indexed) | flat copy of `signature`, `signature_id`, `severity`, `cvss`, `dest`, `dvc`, `hdf_status`, `suppressed` |
 | `event.signature` | requirement `title` (fallback `id`) |
 | `event.signature_id` | requirement `id` (SV-/CCI/rule id) |
 | `event.cve` | CVE id from `cvss[].source` when CVE-shaped |
@@ -62,8 +64,9 @@ Status roll-up: `effectiveStatus ?? worstOf(results[].status)` over the five-val
 | `event.dvc` | scanner host, when known |
 | `event.vendor_product` | `tool.name` |
 | `event.category` | `cwe` name / control family |
-| `event.hdf_status` | lossless five-value roll-up |
-| `event.hdf.*` | **lossless:** status, effective_status, disposition, overridden, impact, severity, baseline, control_id, nist, cci, cwe, full tags, cvss[], epss, kev, affected_packages[], descriptions[], results[], status_overrides[], poams[], code, refs[], generator, tool, exporter_version |
+| `event.hdf_status` | **raw** five-value verdict |
+| `event.suppressed` | acceptance axis (bool) — raw-failing driven non-failing |
+| `event.hdf.*` | **lossless:** status (raw), suppressed, effective_status, disposition, overridden, impact, severity, baseline, control_id, nist, cci, cwe, full tags, cvss[], epss, kev, affected_packages[], descriptions[], results[], status_overrides[], poams[], code, refs[], generator, tool, exporter_version |
 
 ## Alternatives Considered
 
@@ -165,8 +168,8 @@ Per our convention, this ADR is written **first and reviewed before any code** (
 - [ ] HEC-envelope NDJSON, one event/requirement, LF-delimited, trailing newline; `sourcetype=hdf:results`; `time` epoch (via `parseTimestamp`, fallback documented).
 - [ ] Flat CIM scalars promoted + mirrored into indexed `fields`; lossless `hdf.*` block present.
 - [ ] `cvss` = max base score (number); `severity` maps to the CIM enum for all impact bands; full `cvss[]` retained in `hdf.*`.
-- [ ] `hdf_status` carries all five statuses losslessly; CVE fixture emits `cve` + `cvss`, compliance fixture omits `cvss`.
-- [ ] Override fixture: `hdf_status=failed` while roll-up reflects `effectiveStatus`; disposition/overridden preserved.
+- [ ] `hdf_status` carries all five **raw** statuses losslessly; CVE fixture emits `cve` + `cvss`, compliance fixture omits `cvss`.
+- [ ] Waiver fixture: `hdf_status=failed` + `suppressed=true` (event + indexed fields); riskAdjustment fixture: `hdf_status=failed` + `suppressed=false`; disposition/overridden preserved in both.
 - [ ] TS and Go byte-identical; empty/invalid input errors cleanly.
 
 **Verification:** `cd hdf-converters && pnpm test:ts && go test ./converters/hdf-to-splunk/...`.
@@ -176,7 +179,7 @@ Per our convention, this ADR is written **first and reviewed before any code** (
 - Create: `hdf-converters/converters/hdf-to-splunk/Splunk_TA_hdf/{default/props.conf,default/eventtypes.conf,default/tags.conf,metadata/default.meta,README}`.
 
 **Acceptance criteria:**
-- [ ] `eventtypes.conf` keys on `sourcetype=hdf:results`; `tags.conf` applies `vulnerability`+`report` to the finding eventtype; `props.conf` aliases scalars to CIM names + sets time.
+- [ ] `eventtypes.conf` keys on `sourcetype=hdf:results` and **excludes `suppressed=true`** (`… NOT suppressed=true`); `tags.conf` applies `vulnerability`+`report` to the finding eventtype; `props.conf` aliases scalars to CIM names + sets time.
 - [ ] Documented verify step (`| tstats count from datamodel=Vulnerabilities …`) and install instructions.
 - [ ] `.conf` stanzas validated (btool/manual) and covered by a fixture-level assertion that the exporter's field names match the TA's aliases.
 
@@ -197,7 +200,7 @@ Per our convention, this ADR is written **first and reviewed before any code** (
 - **End-to-end:** build the CLI, convert real fixtures, confirm each line is a standalone HEC object (`jq -e .event`), spot-check promoted CIM scalars, indexed `fields`, epoch `time`, and a lossless `hdf` block including overrides.
 - **CIM conformance (offline):** assert field names/enum values against the pinned CIM Vulnerabilities reference in tests (no live Splunk needed); assert the exporter's emitted scalar names are exactly the set the TA aliases.
 - **TA smoke (documented, manual):** install `Splunk_TA_hdf`, HEC-post a fixture, confirm `tstats … datamodel=Vulnerabilities` returns the failed/CVE events and not the passed ones.
-- **Edge cases:** pure-compliance (no `cvss`), multi-CVSS (max selection), override (effectiveStatus roll-up), missing/unparseable timestamp (HEC `time` omitted), multi-component docs.
+- **Edge cases:** pure-compliance (no `cvss`), multi-CVSS (max selection), waiver (raw-failing → `suppressed=true`), riskAdjustment (raw-failing → `suppressed=false`), missing/unparseable timestamp (HEC `time` omitted), multi-component docs.
 
 ## Notes
 

@@ -7,6 +7,7 @@ import {
   stringSlice,
   worstOfResults,
   statusOf,
+  isFailing,
   firstComponent,
   firstResultStartTime,
   defaultDescription,
@@ -29,19 +30,42 @@ describe('exportmap status roll-up', () => {
     expect(worstOfResults(mkResults())).toBe('notReviewed');
   });
 
-  it('statusOf resolves rollup + overridden', () => {
+  it('statusOf resolves rollup + overridden + suppressed', () => {
     let st = statusOf(mkResults('failed'));
-    expect(st).toEqual({ raw: 'failed', effective: '', rollup: 'failed', overridden: false });
+    expect(st).toEqual({ raw: 'failed', effective: '', rollup: 'failed', overridden: false, suppressed: false });
 
     st = statusOf({ ...mkResults('failed'), effectiveStatus: 'passed' });
     expect(st.raw).toBe('failed'); // lossless roll-up preserved
     expect(st.effective).toBe('passed');
     expect(st.rollup).toBe('passed');
     expect(st.overridden).toBe(true);
+    expect(st.suppressed).toBe(true); // raw-failing driven non-failing
 
+    // override present but no effective status: not suppressed (conservative)
     st = statusOf({ ...mkResults('failed'), statusOverrides: [{ type: 'waiver' }] });
     expect(st.overridden).toBe(true);
     expect(st.rollup).toBe('failed');
+    expect(st.suppressed).toBe(false);
+  });
+
+  it('suppressed axis: waiver/FP suppress, riskAdjustment stays actionable', () => {
+    for (const eff of ['passed', 'notApplicable']) {
+      expect(statusOf({ ...mkResults('failed'), effectiveStatus: eff }).suppressed).toBe(true);
+    }
+    // riskAdjustment: effectiveStatus stays failed → still actionable
+    const ra = statusOf({
+      ...mkResults('failed'),
+      effectiveStatus: 'failed',
+      statusOverrides: [{ type: 'riskAdjustment', impact: { value: 0.2 } }],
+    });
+    expect(ra.overridden).toBe(true);
+    expect(ra.suppressed).toBe(false);
+    // passing / errored findings are never suppressed
+    expect(statusOf({ ...mkResults('passed'), effectiveStatus: 'passed' }).suppressed).toBe(false);
+    expect(statusOf({ ...mkResults('error'), effectiveStatus: 'passed' }).suppressed).toBe(false);
+    expect(isFailing('failed')).toBe(true);
+    expect(isFailing('error')).toBe(false);
+    expect(isFailing('passed')).toBe(false);
   });
 });
 

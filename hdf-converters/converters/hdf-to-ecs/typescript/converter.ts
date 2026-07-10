@@ -26,6 +26,11 @@ import {
  * promoted flat. Output is plain NDJSON (LF-delimited, trailing newline), ECS
  * 9.4.0.
  *
+ * Status is raw-primary: event.outcome carries the RAW verdict (a waived failure
+ * is still failure), and hdf.suppressed is the separate acceptance axis. The
+ * canonical "still actionable" query is
+ * event.outcome:"failure" AND hdf.suppressed:false.
+ *
  * Generic JSON access, the status roll-up, requirement/document field
  * extraction, and the canonical line serialization are shared with the other
  * export converters via ../../../shared/typescript/exportmap.js; only
@@ -74,7 +79,7 @@ function buildEvent(
   converterVersion: string,
 ): Obj {
   const st = statusOf(req);
-  const outcome = statusToOutcome(st.rollup);
+  const outcome = statusToOutcome(st.raw);
   const controlID = getStr(req, 'id');
   const baselineName = getStr(baseline, 'name');
   const title = getStr(req, 'title');
@@ -99,7 +104,7 @@ function buildEvent(
     '@timestamp': firstResultStartTime(req, docTimestamp),
     ecs: { version: ECS_VERSION },
     event,
-    message: (title + ' — ' + st.rollup).trim(),
+    message: (title + ' — ' + st.raw).trim(),
   };
 
   const observer = buildObserver(tool, generator);
@@ -121,7 +126,7 @@ function buildEvent(
   const threat = buildThreat(req);
   if (threat) obj.threat = threat;
 
-  obj.hdf = buildHDFBlock(req, baseline, st.raw, st.overridden, generator, tool, converterVersion);
+  obj.hdf = buildHDFBlock(req, baseline, st.raw, st.overridden, st.suppressed, generator, tool, converterVersion);
 
   return obj;
 }

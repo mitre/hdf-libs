@@ -134,12 +134,14 @@ func TestConvertHDFToECS_Override(t *testing.T) {
 	require.Len(t, objs, 1)
 	o := objs[0]
 
-	// result status is failed, but a waiver makes effectiveStatus passed:
-	// event.outcome follows the effective status.
-	assert.Equal(t, "success", sub(t, o, "event")["outcome"])
+	// raw-primary: the result is failed and a waiver makes effectiveStatus passed,
+	// but event.outcome follows the RAW verdict (a waived failure is still failure);
+	// hdf.suppressed carries the acceptance axis.
+	assert.Equal(t, "failure", sub(t, o, "event")["outcome"], "raw verdict drives event.outcome")
 
 	hdf := sub(t, o, "hdf")
 	assert.Equal(t, "failed", hdf["status"], "hdf.status is the lossless raw status")
+	assert.Equal(t, true, hdf["suppressed"], "waiver → hdf.suppressed true")
 	assert.Equal(t, "passed", hdf["effective_status"], "hdf.effective_status is the override outcome")
 	assert.Equal(t, "waiver", hdf["disposition"], "hdf.disposition promoted flat")
 	assert.Equal(t, true, hdf["overridden"])
@@ -156,6 +158,21 @@ func TestConvertHDFToECS_Override(t *testing.T) {
 	// no tool/generator on this fixture -> observer omitted (graceful degradation)
 	_, hasObserver := o["observer"]
 	assert.False(t, hasObserver, "observer omitted when no tool/generator")
+}
+
+// TestConvertHDFToECS_RiskAdjustStaysActionable pins the disposition-branch: a
+// risk-adjusted failure keeps event.outcome=failure AND hdf.suppressed=false —
+// still actionable, only its impact was re-scored.
+func TestConvertHDFToECS_RiskAdjustStaysActionable(t *testing.T) {
+	out, err := ConvertHDFToECS(fixture(t, "input", "riskadjust.json"), converterVersion)
+	require.NoError(t, err)
+	objs := parseLines(t, out)
+	require.Len(t, objs, 1)
+	o := objs[0]
+	assert.Equal(t, "failure", sub(t, o, "event")["outcome"], "risk-adjusted failure is still failure")
+	hdf := sub(t, o, "hdf")
+	assert.Equal(t, false, hdf["suppressed"], "risk adjustment does NOT suppress")
+	assert.Equal(t, "riskAdjustment", hdf["disposition"])
 }
 
 func TestConvertHDFToECS_ThreatFromAttackTags(t *testing.T) {
@@ -234,7 +251,7 @@ func TestConvertHDFToECS_GracefulDegradation(t *testing.T) {
 // TestGoldenParity asserts byte-for-byte output against frozen golden files.
 // The TypeScript test asserts against the SAME files, guaranteeing TS↔Go parity.
 func TestGoldenParity(t *testing.T) {
-	for _, name := range []string{"compliance", "cve", "override"} {
+	for _, name := range []string{"compliance", "cve", "override", "riskadjust"} {
 		out, err := ConvertHDFToECS(fixture(t, "input", name+".json"), converterVersion)
 		require.NoError(t, err)
 		goldenPath := filepath.Join(shared.GetConvertersDir(), "hdf-to-ecs", "fixtures", "expected", name+".ndjson")

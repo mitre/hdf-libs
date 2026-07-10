@@ -86,12 +86,26 @@ func TestConvert_RawPrimaryOverride(t *testing.T) {
 	o := objs[0]
 
 	assert.Equal(t, float64(3), sub(t, o, "compliance")["status_id"], "raw verdict stays Fail even when waived")
-	assert.Equal(t, "failed", sub(t, o, "compliance")["status"], "exact HDF status preserved verbatim")
-	assert.Equal(t, float64(3), o["status_id"], "override -> lifecycle status_id Suppressed")
+	assert.Equal(t, "Fail", sub(t, o, "compliance")["status"], "compliance.status = OCSF caption of status_id")
+	assert.Equal(t, float64(3), o["status_id"], "waiver (raw-failing → non-failing) -> lifecycle status_id Suppressed")
 	assert.Equal(t, "waiver: Risk accepted per ISSM approval — compensating control in place", o["comment"],
 		"comment = disposition + the required free-text reason")
 	// lossless: full requirement (incl. the override chain) in unmapped
 	assert.NotNil(t, sub(t, o, "unmapped")["hdf_requirement"])
+}
+
+// TestConvert_RiskAdjustStaysNew pins the disposition-branch: a risk-adjusted
+// failure keeps compliance.status_id = Fail AND lifecycle status_id = New — it
+// is still actionable, not suppressed (only its impact was re-scored).
+func TestConvert_RiskAdjustStaysNew(t *testing.T) {
+	out, err := ConvertHDFToOCSF(fixture(t, "input", "riskadjust.json"), converterVersion)
+	require.NoError(t, err)
+	objs := parseLines(t, out)
+	require.Len(t, objs, 1)
+	o := objs[0]
+	assert.Equal(t, float64(3), sub(t, o, "compliance")["status_id"], "raw verdict Fail")
+	assert.Equal(t, "Fail", sub(t, o, "compliance")["status"])
+	assert.Equal(t, float64(1), o["status_id"], "risk adjustment stays New (actionable), NOT Suppressed")
 }
 
 // TestConsumerQuery_ActionableFailures encodes the ADR addendum's canonical
@@ -153,9 +167,14 @@ func TestConvert_CVE(t *testing.T) {
 }
 
 func TestConvert_GoldenParity(t *testing.T) {
-	for _, name := range []string{"compliance", "cve", "override"} {
+	for _, name := range []string{"compliance", "cve", "override", "riskadjust"} {
 		out, err := ConvertHDFToOCSF(fixture(t, "input", name+".json"), converterVersion)
 		require.NoError(t, err)
+		if os.Getenv("UPDATE_GOLDEN") == "1" {
+			goldenPath := filepath.Join(shared.GetConvertersDir(), "hdf-to-ocsf", "fixtures", "expected", name+".ndjson")
+			require.NoError(t, os.WriteFile(goldenPath, out, 0o644))
+			continue
+		}
 		want := fixture(t, "expected", name+".ndjson")
 		assert.Equal(t, string(want), string(out), "golden mismatch for %s", name)
 	}

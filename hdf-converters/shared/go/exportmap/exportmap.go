@@ -88,12 +88,25 @@ func WorstOfResults(req map[string]interface{}) string {
 	return "notReviewed"
 }
 
+// IsFailing reports whether an HDF Result_Status is a failing verdict. Only
+// "failed" fails; "error" is indeterminate (not a compliance failure) and every
+// other value is non-failing. This is the single definition of "failing" shared
+// by the suppression axis and the per-exporter outcome maps.
+func IsFailing(status string) bool { return status == "failed" }
+
 // Status carries the resolved status context for one requirement.
 type Status struct {
-	Raw        string // worstOf(results[].status)
+	Raw        string // worstOf(results[].status) — the RAW verdict
 	Effective  string // effectiveStatus, "" when absent
 	Rollup     string // Effective when set, else Raw
 	Overridden bool   // statusOverrides present or effectiveStatus set
+	// Suppressed is the acceptance axis, orthogonal to the raw verdict: the raw
+	// result is failing but an override drove the effective status non-failing
+	// (waiver / falsePositive / attestation). A riskAdjustment / operational-
+	// requirement / poam that leaves effectiveStatus failing is NOT suppressed —
+	// it stays actionable, only its impact is re-scored. This is why suppression
+	// is keyed on the effective STATUS, not on "any override present".
+	Suppressed bool
 }
 
 // StatusOf resolves the status context for a requirement.
@@ -111,6 +124,7 @@ func StatusOf(req map[string]interface{}) Status {
 		Effective:  eff,
 		Rollup:     rollup,
 		Overridden: len(overrides) > 0 || hasEff,
+		Suppressed: IsFailing(raw) && !IsFailing(rollup),
 	}
 }
 
@@ -179,11 +193,13 @@ func EventID(component map[string]interface{}, baselineName, controlID string) s
 
 // BuildHDFBlock builds the lossless hdf.* namespace shared by the export
 // converters: promoted snake_case scalars plus the full requirement sub-objects
-// preserved verbatim. status is the lossless results roll-up (StatusOf().Raw).
-func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridden bool, generator, tool map[string]interface{}, converterVersion string) map[string]interface{} {
+// preserved verbatim. status is the lossless results roll-up (StatusOf().Raw);
+// suppressed is the acceptance axis (StatusOf().Suppressed).
+func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridden, suppressed bool, generator, tool map[string]interface{}, converterVersion string) map[string]interface{} {
 	hdf := map[string]interface{}{
 		"status":           status,
 		"overridden":       overridden,
+		"suppressed":       suppressed,
 		"exporter_version": converterVersion,
 	}
 	SetIf(hdf, "control_id", GetStr(req, "id"))

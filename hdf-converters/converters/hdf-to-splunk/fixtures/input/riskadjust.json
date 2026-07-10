@@ -1,0 +1,93 @@
+{
+  "baselines": [
+    {
+      "name": "rhel9-stig-baseline",
+      "title": "RHEL 9 STIG Baseline",
+      "version": "1.0.0",
+      "inputs": [],
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "abc123"
+      },
+      "depends": [],
+      "groups": [
+        {
+          "id": "controls/stig.rb",
+          "title": "STIG Controls",
+          "requirements": [
+            "SV-230500"
+          ]
+        }
+      ],
+      "supports": [],
+      "requirements": [
+        {
+          "id": "SV-230500",
+          "title": "RHEL 9 must audit all uses of the setuid syscall",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "The operating system must generate audit records for all uses of the setuid system call."
+            }
+          ],
+          "impact": 0.5,
+          "refs": [],
+          "tags": {
+            "cci": [
+              "CCI-000172"
+            ],
+            "nist": [
+              "AU-12"
+            ],
+            "severity": "medium"
+          },
+          "sourceLocation": {
+            "ref": "controls/stig.rb",
+            "line": 2
+          },
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "auditctl rules should include a setuid watch",
+              "startTime": "2024-01-01T00:00:00Z",
+              "runTime": 0.1,
+              "message": "expected setuid audit rule to be present"
+            }
+          ],
+          "statusOverrides": [
+            {
+              "type": "riskAdjustment",
+              "impact": {
+                "value": 0.2
+              },
+              "reason": "Host is a single-user isolated build agent with no interactive accounts; residual risk accepted at reduced impact per ISSO review.",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "isso@example.com"
+              },
+              "appliedAt": "2024-01-15T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
+            }
+          ],
+          "disposition": "riskAdjustment",
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.2
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "duration": 0.1
+  },
+  "timestamp": "2024-01-15T00:00:00Z",
+  "components": [
+    {
+      "type": "host",
+      "name": "rhel9-server-01",
+      "componentId": "8f3b2c1a-0000-4a00-8000-000000000001",
+      "ipAddress": "10.0.0.50",
+      "osName": "Red Hat Enterprise Linux 9",
+      "osVersion": "9.3"
+    }
+  ]
+}

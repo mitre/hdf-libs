@@ -56,10 +56,17 @@ describe('hdf-to-ocsf converter', () => {
   it('is raw-primary: a waived failure stays Fail + Suppressed, never masked', () => {
     const o = lines(convertHdfToOcsf(input('override.json'), VERSION))[0];
     expect(obj(o.compliance).status_id).toBe(3); // Fail — raw verdict preserved
-    expect(obj(o.compliance).status).toBe('failed');
-    expect(o.status_id).toBe(3); // Suppressed — the override
+    expect(obj(o.compliance).status).toBe('Fail'); // OCSF caption of status_id
+    expect(o.status_id).toBe(3); // Suppressed — the waiver drove raw-fail to non-failing
     expect(o.comment).toBe('waiver: Risk accepted per ISSM approval — compensating control in place');
     expect(obj(obj(o.unmapped).hdf_requirement)).toBeDefined();
+  });
+
+  it('risk-adjusted failure stays Fail + New (actionable, not suppressed)', () => {
+    const o = lines(convertHdfToOcsf(input('riskadjust.json'), VERSION))[0];
+    expect(obj(o.compliance).status_id).toBe(3); // raw verdict Fail
+    expect(obj(o.compliance).status).toBe('Fail');
+    expect(o.status_id).toBe(1); // New — risk adjustment does NOT suppress
   });
 
   it('supports the canonical actionable-failures query on enums only', () => {
@@ -136,11 +143,13 @@ describe('hdf-to-ocsf converter', () => {
     expect(sev('low')).toBe(2);
     expect(sev('informational')).toBe(1);
 
-    // error/notApplicable/notReviewed -> compliance.status_id 2 (Warning)
+    // error/notApplicable/notReviewed -> compliance.status_id 2 (Warning); the
+    // sibling string is the OCSF caption "Warning" (HDF granularity in unmapped)
     for (const status of ['error', 'notApplicable', 'notReviewed']) {
       const o = lines(convertHdfToOcsf(doc({ id: 'X', impact: 0.5, results: [{ status, codeDesc: 'c', startTime: '2024-01-01T00:00:00Z' }] }), VERSION))[0];
       expect(obj(o.compliance).status_id).toBe(2);
-      expect(obj(o.compliance).status).toBe(status); // verbatim
+      expect(obj(o.compliance).status).toBe('Warning');
+      expect(obj(obj(o.unmapped).hdf_requirement)).toBeDefined(); // exact HDF status preserved here
     }
 
     // no tool, but a generator -> metadata.product from generator

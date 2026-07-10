@@ -23,9 +23,13 @@ import {
  * One Finding per requirement: a CVE finding -> Vulnerability Finding
  * (class_uid 2002), any other -> Compliance Finding (class_uid 2003), both in
  * the Findings category (2). Status model is raw-primary: compliance.status_id
- * carries the RAW verdict (a failed control stays Fail even when waived);
- * overrides ride the base finding status_id (New vs Suppressed); the exact
- * override chain is preserved in unmapped.hdf_requirement (+ a comment).
+ * carries the RAW verdict (a failed control stays Fail even when waived). The
+ * acceptance axis rides the base finding status_id: a raw-failing finding that
+ * an override drove non-failing (waiver/falsePositive/attestation) -> 3
+ * Suppressed, everything else -> 1 New; a riskAdjustment/operationalRequirement/
+ * poam that leaves the finding failing stays New (actionable, only re-scored).
+ * The exact override chain is preserved in unmapped.hdf_requirement (+ comment).
+ * Canonical "still actionable" query: compliance.status_id=3 AND status_id=1.
  *
  * Shares the generic access / status roll-up / field extraction / canonical
  * line serialization with the other exporters via exportmap; output is held
@@ -96,7 +100,7 @@ function buildFinding(
     type_uid: cls * 100 + ACTIVITY_CREATE,
     activity_id: ACTIVITY_CREATE,
     severity_id: severityID(req),
-    status_id: st.overridden ? STATUS_SUPPRESSED : STATUS_NEW,
+    status_id: st.suppressed ? STATUS_SUPPRESSED : STATUS_NEW,
     metadata: buildMetadata(tool, generator, converterVersion),
     finding_info: findingInfo,
     unmapped: { hdf_requirement: req },
@@ -155,6 +159,21 @@ function complianceStatusID(rawStatus: string): number {
       return 3;
     default: // error, notApplicable, notReviewed
       return 2;
+  }
+}
+
+// OCSF caption for a compliance.status_id, carried in the sibling
+// compliance.status string (OCSF convention: the enum sibling string is the
+// caption of the enum value). HDF-native status — which distinguishes
+// notApplicable/notReviewed/error, all -> Warning — stays in unmapped.
+function complianceStatusCaption(statusID: number): string {
+  switch (statusID) {
+    case 1:
+      return 'Pass';
+    case 3:
+      return 'Fail';
+    default:
+      return 'Warning';
   }
 }
 
@@ -226,7 +245,7 @@ function osTypeID(osName: string): number {
 
 function buildCompliance(req: Obj, baseline: Obj, title: string, rawStatus: string): Obj {
   const statusID = complianceStatusID(rawStatus);
-  const compliance: Obj = { status_id: statusID, status: rawStatus };
+  const compliance: Obj = { status_id: statusID, status: complianceStatusCaption(statusID) };
   const controlID = getStr(req, 'id');
   setIf(compliance, 'control', controlID);
 

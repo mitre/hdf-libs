@@ -6,6 +6,11 @@
 // promoted flat. Output is plain NDJSON (one object per line, LF-delimited,
 // trailing newline), ECS 9.4.0.
 //
+// Status is raw-primary: event.outcome carries the RAW verdict (a waived failure
+// is still failure), and hdf.suppressed is the separate acceptance axis. The
+// canonical "still actionable" consumer query is
+// event.outcome:"failure" AND hdf.suppressed:false.
+//
 // Generic JSON access, the status roll-up, requirement/document field
 // extraction, and the canonical line encoder are shared with the other export
 // converters via the exportmap package; only ECS-specific event shaping lives
@@ -77,7 +82,7 @@ func ConvertHDFToECS(input []byte, converterVersion string) ([]byte, error) {
 // buildEvent maps one Evaluated_Requirement to a single ECS event object.
 func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool, generator, component map[string]interface{}, converterVersion string) map[string]interface{} {
 	st := exportmap.StatusOf(req)
-	outcome := statusToOutcome(st.Rollup)
+	outcome := statusToOutcome(st.Raw)
 	controlID := exportmap.GetStr(req, "id")
 	baselineName := exportmap.GetStr(baseline, "name")
 	title := exportmap.GetStr(req, "title")
@@ -104,7 +109,7 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 		"@timestamp": exportmap.FirstResultStartTime(req, docTimestamp),
 		"ecs":        map[string]interface{}{"version": ecsVersion},
 		"event":      event,
-		"message":    strings.TrimSpace(title + " — " + st.Rollup),
+		"message":    strings.TrimSpace(title + " — " + st.Raw),
 	}
 
 	// observer.* (tool, fallback generator)
@@ -129,7 +134,7 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 		obj["threat"] = threat
 	}
 	// hdf.* lossless block
-	obj["hdf"] = exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, generator, tool, converterVersion)
+	obj["hdf"] = exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion)
 
 	return obj
 }

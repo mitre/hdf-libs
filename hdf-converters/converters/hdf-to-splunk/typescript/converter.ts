@@ -21,11 +21,16 @@ import {
  * One HEC event per Evaluated_Requirement, hybrid shape: flat CIM-named scalars
  * (signature/signature_id/cve/cvss/severity/dest/vendor_product/category) are
  * promoted to the top of the event payload; the hot query scalars among them
- * (signature/signature_id/dest/severity/cve/cvss + hdf_status) are additionally
- * mirrored into the HEC indexed `fields` (surviving Splunk's ~5000-char cutoff),
- * plus a lossless hdf.* block. Every result carries hdf_status so the
- * full pass/fail posture survives (CIM has no verdict field); the companion TA
- * (Splunk_TA_hdf) tags failed/CVE findings into the Vulnerabilities data model.
+ * (signature/signature_id/dest/severity/cve/cvss + hdf_status + suppressed) are
+ * additionally mirrored into the HEC indexed `fields` (surviving Splunk's
+ * ~5000-char cutoff), plus a lossless hdf.* block.
+ *
+ * Status is raw-primary: hdf_status carries the RAW verdict (a waived failure is
+ * still failed) and suppressed is the separate acceptance axis. The companion TA
+ * (Splunk_TA_hdf) tags failed/error/CVE findings into the CIM Vulnerabilities
+ * data model but excludes suppressed=true, so a waived control drops out while a
+ * risk-adjusted still-failing control stays in. Canonical "still actionable"
+ * query: hdf_status=failed suppressed=false.
  *
  * Generic access, the status roll-up, field extraction, the lossless hdf.*
  * block, and the canonical line serialization are shared with the other
@@ -87,8 +92,9 @@ function buildHECEvent(
 
   const event: Obj = {
     signature,
-    hdf_status: st.rollup,
-    hdf: buildHDFBlock(req, baseline, st.raw, st.overridden, generator, tool, converterVersion),
+    hdf_status: st.raw,
+    suppressed: st.suppressed,
+    hdf: buildHDFBlock(req, baseline, st.raw, st.overridden, st.suppressed, generator, tool, converterVersion),
   };
   setIf(event, 'signature_id', controlID);
   setIf(event, 'dest', dest);
@@ -98,7 +104,7 @@ function buildHECEvent(
   setIf(event, 'vendor_product', vendorProduct);
   if (hasCVSS) event.cvss = cvss;
 
-  const fields: Obj = { signature, hdf_status: st.rollup };
+  const fields: Obj = { signature, hdf_status: st.raw, suppressed: st.suppressed };
   setIf(fields, 'signature_id', controlID);
   setIf(fields, 'dest', dest);
   setIf(fields, 'severity', sev);
