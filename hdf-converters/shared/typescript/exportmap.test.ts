@@ -188,3 +188,20 @@ describe('exportmap shared driver + helpers', () => {
     expect(epochMillis('')).toBeUndefined();
   });
 });
+
+describe('exportmap non-BMP key parity + JSONP escaping (Go byte-for-byte)', () => {
+  // Go's encoding/json sorts object keys bytewise (UTF-8), which equals
+  // code-point order. A supplementary-plane key (U+1F600) has a UTF-16 lead
+  // surrogate (0xD83D) that sorts BEFORE a BMP key in [0xE000,0xFFFF] under
+  // JS's default .sort(), but AFTER it under UTF-8/code-point order. canonicalize
+  // must match Go: expected order is a < U+E000 < U+1F600.
+  it('sorts non-BMP keys in Go/UTF-8 (code-point) order, not UTF-16', () => {
+    const obj = { a: 1, '': 2, '\u{1F600}': 3 };
+    expect(stringifyLine(canonicalize(obj))).toBe('{"a":1,"":2,"\u{1F600}":3}');
+  });
+
+  it('escapes U+2028/U+2029 in values identically to Go', () => {
+    const obj = { k: 'line sep end' };
+    expect(stringifyLine(canonicalize(obj))).toBe('{"k":"line\\u2028sep\\u2029end"}');
+  });
+});

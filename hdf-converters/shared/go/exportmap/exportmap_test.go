@@ -204,3 +204,77 @@ func TestEpochHelpers(t *testing.T) {
 	_, ok = EpochMillis("")
 	assert.False(t, ok)
 }
+
+func TestEncodeLine_NonBMPKeyOrder(t *testing.T) {
+	// Keys sort bytewise (UTF-8 == code-point): a < U+E000 < U+1F600. The TS
+	// canonicalize must reproduce this exact order (see exportmap.test.ts) — a
+	// supplementary-plane key is where JS's default UTF-16 sort diverges.
+	line, err := EncodeLine(map[string]interface{}{"a": 1, "": 2, "\U0001F600": 3})
+	require.NoError(t, err)
+	assert.Equal(t, "{\"a\":1,\"\":2,\"\U0001F600\":3}\n", string(line))
+}
+
+func TestEncodeLine_JSONPEscaping(t *testing.T) {
+	// Go escapes U+2028/U+2029 in string values (JSONP safety); TS stringifyLine
+	// mirrors this so the two stay byte-identical.
+	line, err := EncodeLine(map[string]interface{}{"k": "line sep end"})
+	require.NoError(t, err)
+	assert.Equal(t, "{\"k\":\"line\\u2028sep\\u2029end\"}\n", string(line))
+}
+
+func TestBuildHDFBlock(t *testing.T) {
+	req := map[string]interface{}{
+		"id":               "V-1",
+		"effectiveStatus":  "passed",
+		"effectiveImpact":  0.3,
+		"impact":           0.7,
+		"severity":         "high",
+		"disposition":      "waiver",
+		"tags":             map[string]interface{}{"nist": []interface{}{"AC-6"}, "cci": []interface{}{"CCI-1"}},
+		"cvss":             []interface{}{map[string]interface{}{"baseScore": 7.5}},
+		"cwe":              []interface{}{"CWE-79"},
+		"epss":             0.1,
+		"kev":              true,
+		"affectedPackages": []interface{}{"pkg"},
+		"descriptions":     []interface{}{map[string]interface{}{"label": "default", "data": "d"}},
+		"results":          []interface{}{map[string]interface{}{"status": "failed"}},
+		"statusOverrides":  []interface{}{map[string]interface{}{"type": "waiver"}},
+		"poams":            []interface{}{map[string]interface{}{"id": "P-1"}},
+		"code":             "control code",
+		"refs":             []interface{}{map[string]interface{}{"url": "https://x"}},
+	}
+	baseline := map[string]interface{}{"name": "b1"}
+	gen := map[string]interface{}{"name": "g"}
+	tool := map[string]interface{}{"name": "t"}
+	hdf := BuildHDFBlock(req, baseline, "failed", true, true, gen, tool, "0.1.0")
+
+	assert.Equal(t, "failed", hdf["status"])
+	assert.Equal(t, true, hdf["overridden"])
+	assert.Equal(t, true, hdf["suppressed"])
+	assert.Equal(t, "0.1.0", hdf["exporter_version"])
+	assert.Equal(t, "V-1", hdf["control_id"])
+	assert.Equal(t, "b1", hdf["baseline"])
+	assert.Equal(t, "passed", hdf["effective_status"])
+	assert.Equal(t, 0.3, hdf["effective_impact"])
+	assert.Equal(t, 0.7, hdf["impact"])
+	assert.Equal(t, "high", hdf["severity"])
+	assert.Equal(t, "waiver", hdf["disposition"])
+	assert.Equal(t, []interface{}{"AC-6"}, hdf["nist"])
+	assert.Equal(t, []interface{}{"CCI-1"}, hdf["cci"])
+	for _, k := range []string{"tags", "cvss", "cwe", "epss", "kev", "affected_packages", "descriptions", "results", "status_overrides", "poams", "refs"} {
+		assert.Contains(t, hdf, k, "passthrough key %q present", k)
+	}
+	assert.Equal(t, "control code", hdf["code"])
+	assert.Equal(t, gen, hdf["generator"])
+	assert.Equal(t, tool, hdf["tool"])
+
+	// minimal req: optionals + generator/tool absent, empty id skipped by SetIf
+	minimal := BuildHDFBlock(map[string]interface{}{}, map[string]interface{}{}, "passed", false, false, nil, nil, "0.1.0")
+	assert.Equal(t, "passed", minimal["status"])
+	assert.Equal(t, false, minimal["suppressed"])
+	assert.NotContains(t, minimal, "effective_status")
+	assert.NotContains(t, minimal, "generator")
+	assert.NotContains(t, minimal, "tool")
+	assert.NotContains(t, minimal, "control_id")
+	assert.NotContains(t, minimal, "nist")
+}
