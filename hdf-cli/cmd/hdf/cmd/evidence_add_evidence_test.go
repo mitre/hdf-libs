@@ -121,6 +121,19 @@ func TestEvidenceAddEvidence_RejectsInvalidFormat(t *testing.T) {
 		_, _, err := executeCommand("evidence", "add-evidence", pkg,
 			"--uri", "https://x/y", "--format", format)
 		require.Error(t, err, "format %q should be rejected", format)
+		// rejected at the command boundary with a clear message, not only by
+		// post-serialize schema validation
+		assert.Contains(t, err.Error(), "is not valid", "format %q rejected at boundary", format)
+	}
+}
+
+func TestValidateEvidenceFormat(t *testing.T) {
+	for _, ok := range []string{"ecs", "ocsf", "cyclonedx", "spdx", "raw-log", "x-splunk-export", "x-foo", "x-a1-b2"} {
+		assert.NoError(t, validateEvidenceFormat(ok), "%q should be valid", ok)
+	}
+	// uppercase, bare x-, trailing/leading hyphen, non-x custom, empty
+	for _, bad := range []string{"X-Splunk", "x-", "x-Foo", "x-foo-", "-x-foo", "splunk-cim", "schema-one", "ECS", ""} {
+		assert.Error(t, validateEvidenceFormat(bad), "%q should be rejected", bad)
 	}
 }
 

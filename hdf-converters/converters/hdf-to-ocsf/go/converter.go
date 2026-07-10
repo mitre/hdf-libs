@@ -61,6 +61,15 @@ func buildFinding(req, baseline map[string]interface{}, docTimestamp string, too
 	findingInfo := map[string]interface{}{"uid": controlID}
 	exportmap.SetIf(findingInfo, "title", title)
 	exportmap.SetIf(findingInfo, "desc", exportmap.DefaultDescription(req))
+	// A Vulnerability Finding (class 2002) has no compliance.checks[] field, so a
+	// CVE that also carries NIST/CCI framework tags would otherwise lose that
+	// mapping to unmapped only. Surface it on finding_info.tags (OCSF's queryable
+	// key/value tag surface). Compliance Findings keep the native compliance.checks[].
+	if hasCVSS {
+		if tags := frameworkTags(req); len(tags) > 0 {
+			findingInfo["tags"] = tags
+		}
+	}
 
 	finding := map[string]interface{}{
 		"category_uid": categoryFindings,
@@ -264,6 +273,20 @@ func containsAny(s string, subs ...string) bool {
 		}
 	}
 	return false
+}
+
+// frameworkTags builds OCSF finding_info.tags (a key_value_object list) from the
+// requirement's NIST/CCI mappings, e.g. {name:"nist", values:["SI-2","RA-5"]}.
+// Only non-empty mappings are emitted.
+func frameworkTags(req map[string]interface{}) []interface{} {
+	tags, _ := exportmap.AsMap(req["tags"])
+	var out []interface{}
+	for _, key := range []string{"nist", "cci"} {
+		if v := tags[key]; len(exportmap.StringSlice(v)) > 0 {
+			out = append(out, map[string]interface{}{"name": key, "values": v})
+		}
+	}
+	return out
 }
 
 func buildCompliance(req, baseline map[string]interface{}, title, rawStatus string) map[string]interface{} {

@@ -68,6 +68,14 @@ function buildFinding(
   const findingInfo: Obj = { uid: controlID };
   setIf(findingInfo, 'title', title);
   setIf(findingInfo, 'desc', defaultDescription(req));
+  // A Vulnerability Finding (class 2002) has no compliance.checks[] field, so a
+  // CVE that also carries NIST/CCI framework tags would otherwise lose that
+  // mapping to unmapped only. Surface it on finding_info.tags (OCSF's queryable
+  // key/value tag surface). Compliance Findings keep the native compliance.checks[].
+  if (hasCVSS) {
+    const tags = frameworkTags(req);
+    if (tags.length > 0) findingInfo.tags = tags;
+  }
 
   const finding: Obj = {
     category_uid: CATEGORY_FINDINGS,
@@ -216,6 +224,19 @@ function osTypeID(osName: string): number {
   if (OS_LINUX.some((k) => n.includes(k))) return 200;
   if (OS_MAC.some((k) => n.includes(k))) return 300;
   return 0;
+}
+
+// frameworkTags builds OCSF finding_info.tags (a key_value_object list) from the
+// requirement's NIST/CCI mappings, e.g. {name:'nist', values:['SI-2','RA-5']}.
+// Only non-empty mappings are emitted.
+function frameworkTags(req: Obj): Obj[] {
+  const tags = asMap(req.tags);
+  const out: Obj[] = [];
+  for (const key of ['nist', 'cci']) {
+    const v = tags?.[key];
+    if (stringSlice(v).length > 0) out.push({ name: key, values: v });
+  }
+  return out;
 }
 
 function buildCompliance(req: Obj, baseline: Obj, title: string, rawStatus: string): Obj {

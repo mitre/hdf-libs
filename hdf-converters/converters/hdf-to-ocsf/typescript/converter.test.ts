@@ -80,6 +80,27 @@ describe('hdf-to-ocsf converter', () => {
     expect(ov.every((o) => !actionable(o))).toBe(true); // waived fail excluded
   });
 
+  it('carries framework tags on a vuln finding (finding_info.tags), not on compliance findings', () => {
+    // CVE + NIST/CCI -> Vulnerability Finding (no compliance.checks[]); framework
+    // mapping rides on finding_info.tags so it stays queryable, not buried in unmapped.
+    const cve = lines(
+      convertHdfToOcsf(
+        doc({ id: 'CVE-2024-1', impact: 0.7, cvss: [{ baseScore: 7.5, source: 'CVE-2024-1' }], tags: { nist: ['SI-2', 'RA-5'], cci: ['CCI-000366'] }, results: [baseResult] }),
+        VERSION,
+      ),
+    )[0];
+    expect(cve.class_uid).toBe(2002);
+    const tags = obj(cve.finding_info).tags as Record<string, unknown>[];
+    expect(tags).toHaveLength(2);
+    expect(tags[0]).toEqual({ name: 'nist', values: ['SI-2', 'RA-5'] });
+    expect(tags[1]).toEqual({ name: 'cci', values: ['CCI-000366'] });
+
+    // compliance finding: frameworks via compliance.checks[], no finding_info.tags
+    const comp = lines(convertHdfToOcsf(doc({ id: 'V-1', impact: 0.5, tags: { nist: ['AC-6'] }, results: [baseResult] }), VERSION))[0];
+    expect(obj(comp.finding_info).tags).toBeUndefined();
+    expect(obj(comp.compliance).checks).toBeDefined();
+  });
+
   it('carries CVE + numeric cvss + related_cwes', () => {
     for (const o of lines(convertHdfToOcsf(input('cve.json'), VERSION))) {
       const cve = obj(obj((o.vulnerabilities as unknown[])[0]).cve);
@@ -204,8 +225,19 @@ describe('hdf-to-ocsf converter', () => {
     expect(obj(obj(o.metadata).product).vendor_name).toBe('nessus');
   });
 
+  it('maps notApplicable / notReviewed / error all to compliance.status_id 2 (Warning)', () => {
+    const out = lines(convertHdfToOcsf(input('warnings.json'), VERSION));
+    expect(out).toHaveLength(3);
+    for (const o of out) {
+      expect(o.class_uid).toBe(2003);
+      expect(obj(o.compliance).status_id).toBe(2);
+      expect(obj(o.compliance).status).toBe('Warning');
+      expect(o.status_id).toBe(1); // not suppressed — still New
+    }
+  });
+
   it('is byte-identical to the Go golden output (TS<->Go parity)', () => {
-    for (const name of ['compliance', 'cve', 'override']) {
+    for (const name of ['compliance', 'cve', 'override', 'riskadjust', 'warnings']) {
       expect(convertHdfToOcsf(input(`${name}.json`), VERSION)).toBe(golden(`${name}.ndjson`));
     }
   });

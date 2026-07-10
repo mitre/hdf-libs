@@ -8,9 +8,34 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
+
+// evidenceFormatReserved and evidenceCustomFormatRE mirror the open vocabulary of
+// hdf-evidence-package.schema.json #/$defs/External_Evidence_Format: a reserved
+// standards enum plus an x-<custom> pattern. Kept in sync with the schema so an
+// invalid --format fails fast at the command boundary with a clear message,
+// rather than only at post-serialize schema validation.
+var (
+	evidenceFormatReserved = []string{"ecs", "ocsf", "cyclonedx", "spdx", "raw-log"}
+	evidenceCustomFormatRE = regexp.MustCompile(`^x-[a-z0-9]+(-[a-z0-9]+)*$`)
+)
+
+func validateEvidenceFormat(format string) error {
+	for _, r := range evidenceFormatReserved {
+		if format == r {
+			return nil
+		}
+	}
+	if evidenceCustomFormatRE.MatchString(format) {
+		return nil
+	}
+	return fmt.Errorf("--format %q is not valid: use a reserved value (%s) or an x-<custom> value (e.g. x-splunk-export)",
+		format, strings.Join(evidenceFormatReserved, ", "))
+}
 
 type addEvidenceOpts struct {
 	uri           string
@@ -74,6 +99,9 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	}
 	if opts.format == "" {
 		return fmt.Errorf("--format is required")
+	}
+	if err := validateEvidenceFormat(opts.format); err != nil {
+		return err
 	}
 
 	data, err := os.ReadFile(file) // #nosec G304 -- CLI reads user-provided file path

@@ -138,13 +138,12 @@ func severity(req map[string]interface{}) string {
 	return normalizeSeverity(exportmap.GetStr(req, "severity"))
 }
 
-// normalizeSeverity coerces an arbitrary severity string onto the CIM enum.
+// normalizeSeverity coerces an arbitrary severity string onto the CIM enum;
+// anything outside the CIM set (including empty) falls back to informational.
 func normalizeSeverity(s string) string {
 	switch s {
 	case "critical", "high", "medium", "low", "informational":
 		return s
-	case "none", "info", "informational ", "unknown", "":
-		return "informational"
 	default:
 		return "informational"
 	}

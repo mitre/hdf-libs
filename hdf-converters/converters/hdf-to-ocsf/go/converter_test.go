@@ -167,7 +167,7 @@ func TestConvert_CVE(t *testing.T) {
 }
 
 func TestConvert_GoldenParity(t *testing.T) {
-	for _, name := range []string{"compliance", "cve", "override", "riskadjust"} {
+	for _, name := range []string{"compliance", "cve", "override", "riskadjust", "warnings"} {
 		out, err := ConvertHDFToOCSF(fixture(t, "input", name+".json"), converterVersion)
 		require.NoError(t, err)
 		if os.Getenv("UPDATE_GOLDEN") == "1" {
@@ -276,4 +276,48 @@ func TestRequiredFieldsAlwaysPresent(t *testing.T) {
 	assert.Equal(t, converterVersion, product["version"])
 	_, hasTime := o["time"]
 	assert.True(t, hasTime, "time (OCSF-required) always present")
+}
+
+func TestConvert_VulnFindingFrameworkTags(t *testing.T) {
+	// A CVE finding that also carries NIST/CCI tags routes to a Vulnerability
+	// Finding (which has no compliance.checks[]); the framework mapping rides on
+	// finding_info.tags so it stays queryable rather than buried in unmapped.
+	cveDoc := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"CVE-2024-1","impact":0.7,` +
+		`"cvss":[{"baseScore":7.5,"source":"CVE-2024-1"}],"tags":{"nist":["SI-2","RA-5"],"cci":["CCI-000366"]},` +
+		`"results":[{"status":"failed","codeDesc":"c","startTime":"2024-01-01T00:00:00Z"}]}]}]}`)
+	out, err := ConvertHDFToOCSF(cveDoc, converterVersion)
+	require.NoError(t, err)
+	o := parseLines(t, out)[0]
+	assert.Equal(t, float64(classVulnerability), o["class_uid"])
+	tags, ok := sub(t, o, "finding_info")["tags"].([]interface{})
+	require.True(t, ok, "vuln finding carries finding_info.tags")
+	require.Len(t, tags, 2)
+	nist := tags[0].(map[string]interface{})
+	assert.Equal(t, "nist", nist["name"])
+	assert.Equal(t, []interface{}{"SI-2", "RA-5"}, nist["values"])
+
+	// A compliance finding maps frameworks via compliance.checks[], NOT finding_info.tags.
+	compDoc := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"V-1","impact":0.5,"tags":{"nist":["AC-6"]},` +
+		`"results":[{"status":"failed","codeDesc":"c","startTime":"2024-01-01T00:00:00Z"}]}]}]}`)
+	out, err = ConvertHDFToOCSF(compDoc, converterVersion)
+	require.NoError(t, err)
+	c := parseLines(t, out)[0]
+	_, hasTags := sub(t, c, "finding_info")["tags"]
+	assert.False(t, hasTags, "compliance finding uses compliance.checks[], not finding_info.tags")
+	assert.NotNil(t, sub(t, c, "compliance")["checks"])
+}
+
+func TestConvert_WarningStatuses(t *testing.T) {
+	// notApplicable / notReviewed / error all roll up to compliance.status_id 2
+	// (Warning), status caption "Warning", and stay New (not suppressed).
+	out, err := ConvertHDFToOCSF(fixture(t, "input", "warnings.json"), converterVersion)
+	require.NoError(t, err)
+	objs := parseLines(t, out)
+	require.Len(t, objs, 3)
+	for _, o := range objs {
+		assert.Equal(t, float64(2003), o["class_uid"])
+		assert.Equal(t, float64(2), sub(t, o, "compliance")["status_id"])
+		assert.Equal(t, "Warning", sub(t, o, "compliance")["status"])
+		assert.Equal(t, float64(1), o["status_id"], "warnings are not suppressed")
+	}
 }
