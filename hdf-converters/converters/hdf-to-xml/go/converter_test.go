@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -11,6 +12,29 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var (
+	reXMLHeader = regexp.MustCompile(`<\?xml[^>]*\?>`)
+	reInterTag  = regexp.MustCompile(`>\s+<`)
+)
+
+// normalizeXMLForParity canonicalizes XML so the Go and TS serializers compare
+// equal against a shared golden: drop the XML header, collapse inter-tag
+// whitespace, and decode the entities the two serializers escape differently
+// (Go emits numeric refs like &#39;/&#xA;; TS emits &apos;/literal). Mirrors
+// normalizeXml in the TS test.
+func normalizeXMLForParity(s string) string {
+	s = reXMLHeader.ReplaceAllString(s, "")
+	s = reInterTag.ReplaceAllString(s, "><")
+	s = strings.NewReplacer(
+		"&#39;", "'", "&apos;", "'",
+		"&#34;", "\"", "&quot;", "\"",
+		"&#xA;", "\n", "&#xa;", "\n",
+		"&#xD;", "\r", "&#xd;", "\r",
+		"&#x9;", "\t",
+	).Replace(s)
+	return strings.TrimSpace(s)
+}
 
 func TestConvertHDFToXML(t *testing.T) {
 	t.Run("should convert minimal HDF to XML", func(t *testing.T) {
@@ -39,6 +63,25 @@ func TestConvertHDFToXML(t *testing.T) {
 		}
 
 		assert.Equal(t, normalizeWhitespace(string(expected)), normalizeWhitespace(resultStr))
+	})
+
+	t.Run("should losslessly serialize all Requirement_Core / baseline / component fields", func(t *testing.T) {
+		input, err := os.ReadFile(filepath.Join("..", "fixtures", "input", "full.json"))
+		require.NoError(t, err)
+		expected, err := os.ReadFile(filepath.Join("..", "fixtures", "expected", "full.xml"))
+		require.NoError(t, err)
+
+		result, err := ConvertHDFToXML(input)
+		require.NoError(t, err)
+
+		// Golden compare under the shared normalization — this is the TS/Go
+		// parity assertion (both languages normalize the same golden identically).
+		assert.Equal(t, normalizeXMLForParity(string(expected)), normalizeXMLForParity(string(result)))
+
+		// Spot-check the fields that were previously dropped.
+		for _, el := range []string{"<code>", "<sourceLocation>", "<controlType>", "<verificationMethod>", "<applicability>", "<refs>", "<summary>", "<resultsChecksum>", "<originalChecksum>", "<componentId>", "<gtitle>", "<generator>"} {
+			assert.Contains(t, string(result), el, "missing element %s", el)
+		}
 	})
 
 	t.Run("should handle empty baselines array", func(t *testing.T) {

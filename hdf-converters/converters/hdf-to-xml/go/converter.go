@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"sort"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -50,6 +51,13 @@ type XMLHDFResults struct {
 	Targets    *XMLTargets    `xml:"components,omitempty"`
 	Statistics *XMLStatistics `xml:"statistics,omitempty"`
 	Timestamp  string         `xml:"timestamp,omitempty"`
+	Generator  *XMLGenerator  `xml:"generator,omitempty"`
+}
+
+// XMLGenerator mirrors the HDF generator
+type XMLGenerator struct {
+	Name    string `xml:"name"`
+	Version string `xml:"version,omitempty"`
 }
 
 // XMLBaselines wraps baseline array
@@ -59,11 +67,21 @@ type XMLBaselines struct {
 
 // XMLBaseline represents a baseline in XML
 type XMLBaseline struct {
-	Name         string           `xml:"name"`
-	Version      *string          `xml:"version,omitempty"`
-	Title        *string          `xml:"title,omitempty"`
-	Integrity    XMLIntegrity     `xml:"integrity"`
-	Requirements *XMLRequirements `xml:"requirements,omitempty"`
+	Name             string           `xml:"name"`
+	Version          *string          `xml:"version,omitempty"`
+	Title            *string          `xml:"title,omitempty"`
+	Summary          *string          `xml:"summary,omitempty"`
+	Status           *string          `xml:"status,omitempty"`
+	ResultsChecksum  *XMLChecksum     `xml:"resultsChecksum,omitempty"`
+	OriginalChecksum *XMLChecksum     `xml:"originalChecksum,omitempty"`
+	Integrity        XMLIntegrity     `xml:"integrity"`
+	Requirements     *XMLRequirements `xml:"requirements,omitempty"`
+}
+
+// XMLChecksum mirrors an HDF Checksum ({algorithm, value})
+type XMLChecksum struct {
+	Algorithm string `xml:"algorithm"`
+	Value     string `xml:"value"`
 }
 
 // XMLIntegrity represents an integrity block
@@ -79,12 +97,36 @@ type XMLRequirements struct {
 
 // XMLRequirement represents a requirement in XML
 type XMLRequirement struct {
-	ID           string           `xml:"id"`
-	Title        *string          `xml:"title,omitempty"`
-	Descriptions *XMLDescriptions `xml:"descriptions,omitempty"`
-	Impact       float64          `xml:"impact"`
-	Tags         *XMLTags         `xml:"tags,omitempty"`
-	Results      *XMLResults      `xml:"results,omitempty"`
+	ID                 string             `xml:"id"`
+	Title              *string            `xml:"title,omitempty"`
+	Descriptions       *XMLDescriptions   `xml:"descriptions,omitempty"`
+	Code               *string            `xml:"code,omitempty"`
+	SourceLocation     *XMLSourceLocation `xml:"sourceLocation,omitempty"`
+	ControlType        *string            `xml:"controlType,omitempty"`
+	VerificationMethod *string            `xml:"verificationMethod,omitempty"`
+	Applicability      *string            `xml:"applicability,omitempty"`
+	Refs               *XMLRefs           `xml:"refs,omitempty"`
+	Impact             float64            `xml:"impact"`
+	Tags               *xmlTags           `xml:"tags,omitempty"`
+	Results            *XMLResults        `xml:"results,omitempty"`
+}
+
+// XMLSourceLocation mirrors HDF sourceLocation
+type XMLSourceLocation struct {
+	Ref  *string  `xml:"ref,omitempty"`
+	Line *float64 `xml:"line,omitempty"`
+}
+
+// XMLRefs wraps the refs array
+type XMLRefs struct {
+	Ref []XMLRef `xml:"ref"`
+}
+
+// XMLRef is one polymorphic Reference ({url} | {uri} | {ref: string})
+type XMLRef struct {
+	URL *string `xml:"url,omitempty"`
+	URI *string `xml:"uri,omitempty"`
+	Ref *string `xml:"ref,omitempty"`
 }
 
 // XMLDescriptions wraps description array
@@ -98,11 +140,40 @@ type XMLDescription struct {
 	Data  string `xml:"data"`
 }
 
-// XMLTags represents requirement tags with array support
-type XMLTags struct {
-	NIST  []string               `xml:"nist,omitempty"`
-	CCI   []string               `xml:"cci,omitempty"`
-	Other map[string]interface{} `xml:",omitempty"`
+// xmlTags serializes an HDF tag map as <key>value</key> elements, sorted by key.
+// Sorting makes output deterministic and matches the TS converter (Go's source
+// tag map is unordered, so without sorting the two languages would diverge).
+// A custom marshaler is required because encoding/xml cannot marshal a map's
+// dynamic keys as element names.
+type xmlTags map[string]interface{}
+
+func (t xmlTags) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	if len(t) == 0 {
+		return nil
+	}
+	if err := e.EncodeToken(start); err != nil {
+		return err
+	}
+	keys := make([]string, 0, len(t))
+	for k := range t {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		el := xml.StartElement{Name: xml.Name{Local: k}}
+		if arr, ok := t[k].([]interface{}); ok {
+			for _, item := range arr {
+				if err := e.EncodeElement(fmt.Sprint(item), el); err != nil {
+					return err
+				}
+			}
+			continue
+		}
+		if err := e.EncodeElement(fmt.Sprint(t[k]), el); err != nil {
+			return err
+		}
+	}
+	return e.EncodeToken(start.End())
 }
 
 // XMLResults wraps result array
@@ -126,10 +197,11 @@ type XMLTargets struct {
 
 // XMLTarget represents a target
 type XMLTarget struct {
-	Name      string  `xml:"name"`
-	Type      string  `xml:"type"`
-	FQDN      *string `xml:"fqdn,omitempty"`
-	IPAddress *string `xml:"ipAddress,omitempty"`
+	ComponentID *string `xml:"componentId,omitempty"`
+	Name        string  `xml:"name"`
+	Type        string  `xml:"type"`
+	FQDN        *string `xml:"fqdn,omitempty"`
+	IPAddress   *string `xml:"ipAddress,omitempty"`
 }
 
 // XMLStatistics represents statistics
@@ -149,6 +221,20 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 				Name:    baseline.Name,
 				Version: baseline.Version,
 				Title:   baseline.Title,
+				Summary: baseline.Summary,
+				Status:  baseline.Status,
+			}
+			if baseline.ResultsChecksum != nil {
+				xmlBaseline.ResultsChecksum = &XMLChecksum{
+					Algorithm: string(baseline.ResultsChecksum.Algorithm),
+					Value:     baseline.ResultsChecksum.Value,
+				}
+			}
+			if baseline.OriginalChecksum != nil {
+				xmlBaseline.OriginalChecksum = &XMLChecksum{
+					Algorithm: string(baseline.OriginalChecksum.Algorithm),
+					Value:     baseline.OriginalChecksum.Value,
+				}
 			}
 			if baseline.Integrity != nil {
 				if baseline.Integrity.Algorithm != nil {
@@ -179,10 +265,11 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 		}
 		for i, target := range hdf.Components {
 			result.Targets.Target[i] = XMLTarget{
-				Name:      target.Name,
-				Type:      string(target.Type),
-				FQDN:      target.FQDN,
-				IPAddress: target.IPAddress,
+				ComponentID: target.ComponentID,
+				Name:        target.Name,
+				Type:        string(target.Type),
+				FQDN:        target.FQDN,
+				IPAddress:   target.IPAddress,
 			}
 		}
 	}
@@ -197,6 +284,14 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 	// Add timestamp
 	if hdf.Timestamp != nil {
 		result.Timestamp = hdf.Timestamp.Format("2006-01-02T15:04:05Z07:00")
+	}
+
+	// Add generator
+	if hdf.Generator != nil {
+		result.Generator = &XMLGenerator{
+			Name:    hdf.Generator.Name,
+			Version: hdf.Generator.Version,
+		}
 	}
 
 	return result
@@ -223,25 +318,53 @@ func transformRequirement(req hdf.EvaluatedRequirement) XMLRequirement {
 		}
 	}
 
-	// Transform tags - extract NIST and CCI as arrays
+	// code
+	xmlReq.Code = req.Code
+
+	// sourceLocation
+	if req.SourceLocation != nil {
+		xmlReq.SourceLocation = &XMLSourceLocation{
+			Ref:  req.SourceLocation.Ref,
+			Line: req.SourceLocation.Line,
+		}
+	}
+
+	// v3.2 classification fields (enum -> *string)
+	if req.ControlType != nil {
+		s := string(*req.ControlType)
+		xmlReq.ControlType = &s
+	}
+	if req.VerificationMethod != nil {
+		s := string(*req.VerificationMethod)
+		xmlReq.VerificationMethod = &s
+	}
+	if req.Applicability != nil {
+		s := string(*req.Applicability)
+		xmlReq.Applicability = &s
+	}
+
+	// refs (polymorphic Reference: url | uri | string ref; array-form ref skipped)
+	if len(req.Refs) > 0 {
+		refs := &XMLRefs{Ref: make([]XMLRef, 0, len(req.Refs))}
+		for _, r := range req.Refs {
+			switch {
+			case r.URL != nil:
+				refs.Ref = append(refs.Ref, XMLRef{URL: r.URL})
+			case r.URI != nil:
+				refs.Ref = append(refs.Ref, XMLRef{URI: r.URI})
+			case r.Ref != nil && r.Ref.String != nil:
+				refs.Ref = append(refs.Ref, XMLRef{Ref: r.Ref.String})
+			}
+		}
+		if len(refs.Ref) > 0 {
+			xmlReq.Refs = refs
+		}
+	}
+
+	// tags — generic, sorted-key serialization (see xmlTags)
 	if len(req.Tags) > 0 {
-		xmlReq.Tags = &XMLTags{}
-
-		// Extract NIST controls
-		if nist, ok := req.Tags["nist"].([]interface{}); ok && len(nist) > 0 {
-			xmlReq.Tags.NIST = make([]string, len(nist))
-			for i, v := range nist {
-				xmlReq.Tags.NIST[i] = fmt.Sprint(v)
-			}
-		}
-
-		// Extract CCI controls
-		if cci, ok := req.Tags["cci"].([]interface{}); ok && len(cci) > 0 {
-			xmlReq.Tags.CCI = make([]string, len(cci))
-			for i, v := range cci {
-				xmlReq.Tags.CCI[i] = fmt.Sprint(v)
-			}
-		}
+		t := xmlTags(req.Tags)
+		xmlReq.Tags = &t
 	}
 
 	// Transform results

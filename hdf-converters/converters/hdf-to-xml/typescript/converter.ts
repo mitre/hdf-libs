@@ -35,6 +35,21 @@ function wrap(value: string | number | boolean): { '#text': string | number | bo
 }
 
 /**
+ * Transform a polymorphic Reference ({url} | {uri} | {ref: string}) into an
+ * XML-friendly object. Array-form `ref` values are skipped.
+ */
+function transformReference(r: unknown): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (r && typeof r === 'object') {
+    const o = r as { url?: unknown; uri?: unknown; ref?: unknown };
+    if (typeof o.url === 'string') out.url = wrap(o.url);
+    else if (typeof o.uri === 'string') out.uri = wrap(o.uri);
+    else if (typeof o.ref === 'string') out.ref = wrap(o.ref);
+  }
+  return out;
+}
+
+/**
  * Transform HDF object to XML-compatible structure
  * Converts arrays to repeated singular elements
  */
@@ -48,6 +63,20 @@ function transformHdfToXmlObject(hdf: HDFResults): Record<string, unknown> {
         name: wrap(baseline.name),
         ...(baseline.version && { version: wrap(baseline.version) }),
         ...(baseline.title && { title: wrap(baseline.title) }),
+        ...(baseline.summary && { summary: wrap(baseline.summary) }),
+        ...(baseline.status && { status: wrap(baseline.status) }),
+        ...(baseline.resultsChecksum && {
+          resultsChecksum: {
+            algorithm: wrap(baseline.resultsChecksum.algorithm),
+            value: wrap(baseline.resultsChecksum.value)
+          }
+        }),
+        ...(baseline.originalChecksum && {
+          originalChecksum: {
+            algorithm: wrap(baseline.originalChecksum.algorithm),
+            value: wrap(baseline.originalChecksum.value)
+          }
+        }),
         ...(baseline.integrity && {
           integrity: {
             ...(baseline.integrity.algorithm && { algorithm: wrap(baseline.integrity.algorithm) }),
@@ -72,10 +101,13 @@ function transformHdfToXmlObject(hdf: HDFResults): Record<string, unknown> {
   if (hdf.components && hdf.components.length > 0) {
     result.components = {
       target: hdf.components.map((target: Component) => ({
+        ...(target.componentId && { componentId: wrap(target.componentId) }),
         name: wrap(target.name),
         type: wrap(target.type),
         ...(target.fqdn && { fqdn: wrap(target.fqdn) }),
         ...(target.ipAddress && { ipAddress: wrap(target.ipAddress) }),
+        // NOTE: Go's generated hdf.Component type lacks Hostname, so Go cannot
+        // emit this — a pre-existing generated-type gap tracked in hdf-libs-pfse.10.
         ...(target.hostname && { hostname: wrap(target.hostname) })
       }))
     };
@@ -97,7 +129,10 @@ function transformHdfToXmlObject(hdf: HDFResults): Record<string, unknown> {
     result.timestamp = wrap(typeof hdf.timestamp === 'string' ? hdf.timestamp : hdf.timestamp.toISOString());
   }
   if (hdf.generator) {
-    result.generator = hdf.generator;
+    result.generator = {
+      name: wrap(hdf.generator.name),
+      ...(hdf.generator.version && { version: wrap(hdf.generator.version) })
+    };
   }
 
   return result;
@@ -118,13 +153,28 @@ function transformRequirement(req: EvaluatedRequirement): Record<string, unknown
         }))
       }
     }),
+    ...(req.code && { code: wrap(req.code) }),
+    ...(req.sourceLocation && {
+      sourceLocation: {
+        ...(req.sourceLocation.ref !== undefined && { ref: wrap(req.sourceLocation.ref) }),
+        ...(req.sourceLocation.line !== undefined && { line: wrap(req.sourceLocation.line) })
+      }
+    }),
+    ...(req.controlType && { controlType: wrap(req.controlType) }),
+    ...(req.verificationMethod && { verificationMethod: wrap(req.verificationMethod) }),
+    ...(req.applicability && { applicability: wrap(req.applicability) }),
+    ...(req.refs && req.refs.length > 0 && {
+      refs: { ref: req.refs.map(transformReference) }
+    }),
     impact: wrap(req.impact)
   };
 
-  // Transform tags (handle arrays within tags object)
+  // Transform tags (handle arrays within tags object). Keys are sorted so the
+  // element order is deterministic and matches the Go converter (whose source
+  // tag map is unordered) — guarantees TS/Go output parity.
   if (req.tags && Object.keys(req.tags).length > 0) {
     const transformedTags: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(req.tags)) {
+    for (const [key, value] of Object.entries(req.tags).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
       if (Array.isArray(value) && value.length > 0) {
         // Repeat the tag name for each array element (wrapped)
         transformedTags[key] = value.map((v: string | number | boolean) => wrap(v));

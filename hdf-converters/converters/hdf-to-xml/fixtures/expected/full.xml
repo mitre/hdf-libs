@@ -1,0 +1,122 @@
+<HdfResults>
+  <baselines>
+    <baseline>
+      <name>Coverage Baseline</name>
+      <version>1.0.0</version>
+      <title>Full Field Coverage</title>
+      <summary>Exercises every XML-serializable HDF field</summary>
+      <status>failed</status>
+      <resultsChecksum>
+        <algorithm>sha256</algorithm>
+        <value>1111111111111111111111111111111111111111111111111111111111111111</value>
+      </resultsChecksum>
+      <originalChecksum>
+        <algorithm>sha256</algorithm>
+        <value>2222222222222222222222222222222222222222222222222222222222222222</value>
+      </originalChecksum>
+      <integrity>
+        <algorithm>sha256</algorithm>
+        <checksum>abc123</checksum>
+      </integrity>
+      <requirements>
+        <requirement>
+          <id>SV-100001</id>
+          <title>Full field requirement</title>
+          <descriptions>
+            <description>
+              <label>default</label>
+              <data>Default description.</data>
+            </description>
+            <description>
+              <label>check</label>
+              <data>Check text.</data>
+            </description>
+            <description>
+              <label>fix</label>
+              <data>Fix text.</data>
+            </description>
+            <description>
+              <label>rationale</label>
+              <data>Rationale text.</data>
+            </description>
+          </descriptions>
+          <code>control &apos;SV-100001&apos; do
+  impact 0.7
+end</code>
+          <sourceLocation>
+            <ref>controls/SV-100001.rb</ref>
+            <line>12</line>
+          </sourceLocation>
+          <controlType>technical</controlType>
+          <verificationMethod>automated</verificationMethod>
+          <applicability>required</applicability>
+          <refs>
+            <ref>
+              <url>https://example.gov/a</url>
+            </ref>
+            <ref>
+              <uri>https://example.gov/b</uri>
+            </ref>
+            <ref>
+              <ref>Handbook Section 3</ref>
+            </ref>
+          </refs>
+          <impact>0.7</impact>
+          <tags>
+            <cci>CCI-000012</cci>
+            <gtitle>SRG-OS-000480-GPOS-00227</gtitle>
+            <nist>AC-2</nist>
+            <nist>AC-3</nist>
+            <severity>high</severity>
+          </tags>
+          <results>
+            <result>
+              <status>failed</status>
+              <codeDesc>check failed</codeDesc>
+              <startTime>2026-01-15T10:00:00Z</startTime>
+              <message>expected X to eq Y</message>
+            </result>
+          </results>
+        </requirement>
+        <requirement>
+          <id>SV-100002</id>
+          <title>Minimal requirement</title>
+          <descriptions>
+            <description>
+              <label>default</label>
+              <data>Only default description.</data>
+            </description>
+          </descriptions>
+          <impact>0.3</impact>
+          <tags>
+            <nist>AU-12</nist>
+          </tags>
+          <results>
+            <result>
+              <status>passed</status>
+              <codeDesc>ok</codeDesc>
+              <startTime>2026-01-15T10:00:00Z</startTime>
+            </result>
+          </results>
+        </requirement>
+      </requirements>
+    </baseline>
+  </baselines>
+  <components>
+    <target>
+      <componentId>11111111-1111-1111-1111-111111111111</componentId>
+      <name>web01.example.gov</name>
+      <type>host</type>
+      <fqdn>web01.example.gov</fqdn>
+      <ipAddress>10.0.0.1</ipAddress>
+    </target>
+  </components>
+  <statistics>
+    <duration>1.5</duration>
+  </statistics>
+  <timestamp>2026-01-15T10:00:00Z</timestamp>
+  <generator>
+    <name>hdf-xml-coverage</name>
+    <version>1.0.0</version>
+  </generator>
+</HdfResults>

@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-01-15T10:00:00Z",
+  "generator": { "name": "hdf-xml-coverage", "version": "1.0.0" },
+  "baselines": [
+    {
+      "name": "Coverage Baseline",
+      "version": "1.0.0",
+      "title": "Full Field Coverage",
+      "summary": "Exercises every XML-serializable HDF field",
+      "status": "failed",
+      "resultsChecksum": { "algorithm": "sha256", "value": "1111111111111111111111111111111111111111111111111111111111111111" },
+      "originalChecksum": { "algorithm": "sha256", "value": "2222222222222222222222222222222222222222222222222222222222222222" },
+      "maintainer": "MITRE",
+      "supports": [],
+      "inputs": [],
+      "groups": [],
+      "integrity": { "algorithm": "sha256", "checksum": "abc123" },
+      "requirements": [
+        {
+          "id": "SV-100001",
+          "title": "Full field requirement",
+          "descriptions": [
+            { "label": "default", "data": "Default description." },
+            { "label": "check", "data": "Check text." },
+            { "label": "fix", "data": "Fix text." },
+            { "label": "rationale", "data": "Rationale text." }
+          ],
+          "impact": 0.7,
+          "refs": [
+            { "url": "https://example.gov/a" },
+            { "uri": "https://example.gov/b" },
+            { "ref": "Handbook Section 3" }
+          ],
+          "tags": {
+            "nist": ["AC-2", "AC-3"],
+            "cci": ["CCI-000012"],
+            "severity": "high",
+            "gtitle": "SRG-OS-000480-GPOS-00227"
+          },
+          "code": "control 'SV-100001' do\n  impact 0.7\nend",
+          "sourceLocation": { "ref": "controls/SV-100001.rb", "line": 12 },
+          "controlType": "technical",
+          "verificationMethod": "automated",
+          "applicability": "required",
+          "results": [
+            { "status": "failed", "codeDesc": "check failed", "startTime": "2026-01-15T10:00:00Z", "message": "expected X to eq Y" }
+          ]
+        },
+        {
+          "id": "SV-100002",
+          "title": "Minimal requirement",
+          "descriptions": [ { "label": "default", "data": "Only default description." } ],
+          "impact": 0.3,
+          "tags": { "nist": ["AU-12"] },
+          "results": [ { "status": "passed", "codeDesc": "ok", "startTime": "2026-01-15T10:00:00Z" } ]
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "componentId": "11111111-1111-1111-1111-111111111111",
+      "type": "host",
+      "name": "web01.example.gov",
+      "fqdn": "web01.example.gov",
+      "ipAddress": "10.0.0.1"
+    }
+  ],
+  "statistics": { "duration": 1.5 }
+}
