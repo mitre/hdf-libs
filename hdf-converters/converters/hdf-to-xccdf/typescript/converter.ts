@@ -140,29 +140,65 @@ function buildRuleObj(req: EvaluatedRequirement): Record<string, unknown> {
     rule.description = wrap(description);
   }
 
+  // References: url/uri -> <reference href>, plain string -> <reference>text
+  if (Array.isArray(req.refs) && req.refs.length > 0) {
+    const refs = req.refs
+      .map((r): Record<string, unknown> | undefined => {
+        const o = r as { url?: unknown; uri?: unknown; ref?: unknown };
+        if (typeof o.url === 'string') return { [`${ATTR}href`]: o.url };
+        if (typeof o.uri === 'string') return { [`${ATTR}href`]: o.uri };
+        if (typeof o.ref === 'string') return { '#text': o.ref };
+        return undefined;
+      })
+      .filter((x): x is Record<string, unknown> => x !== undefined);
+    if (refs.length > 0) {
+      rule.reference = refs;
+    }
+  }
+
+  const rationale = findDescription(req.descriptions, 'rationale');
+  if (rationale) {
+    rule.rationale = wrap(rationale);
+  }
+
   const fixtext = findDescription(req.descriptions, 'fix');
   if (fixtext) {
     rule.fixtext = wrap(fixtext);
   }
 
-  // CCI idents
+  // Idents: CCI and NIST 800-53 controls
+  const idents: Record<string, unknown>[] = [];
   if (req.tags && Array.isArray(req.tags['cci'])) {
-    const ccis = req.tags['cci'] as string[];
-    if (ccis.length > 0) {
-      rule.ident = ccis.map((cci) => ({
-        [`${ATTR}system`]: 'http://cyber.mil/cci',
-        '#text': cci,
-      }));
+    for (const cci of req.tags['cci'] as string[]) {
+      idents.push({ [`${ATTR}system`]: 'http://cyber.mil/cci', '#text': cci });
     }
   }
+  if (req.tags && Array.isArray(req.tags['nist'])) {
+    for (const n of req.tags['nist'] as string[]) {
+      idents.push({ [`${ATTR}system`]: 'https://csrc.nist.gov/projects/risk-management/sp800-53-controls', '#text': n });
+    }
+  }
+  if (idents.length > 0) {
+    rule.ident = idents;
+  }
 
-  // Check content
+  // Checks: the check-description (OVAL) and the InSpec source code, each its own <check>.
+  const checks: Record<string, unknown>[] = [];
   const checkContent = findDescription(req.descriptions, 'check');
   if (checkContent) {
-    rule.check = {
+    checks.push({
       [`${ATTR}system`]: 'http://oval.mitre.org/XMLSchema/oval-definitions-5',
       'check-content': wrap(checkContent),
-    };
+    });
+  }
+  if (req.code) {
+    checks.push({
+      [`${ATTR}system`]: 'http://inspec.io/',
+      'check-content': wrap(req.code),
+    });
+  }
+  if (checks.length > 0) {
+    rule.check = checks;
   }
 
   return rule;

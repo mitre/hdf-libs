@@ -21,6 +21,26 @@ func loadFixture(t *testing.T, name string) []byte {
 
 // --- Minimal round-trip tests ---
 
+func TestConvertHDFToXCCDF_FieldCoverage(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{
+		"id":"SV-1","impact":0.7,"title":"req",
+		"tags":{"nist":["AC-2"],"cci":["CCI-000012"]},
+		"descriptions":[{"label":"default","data":"d"},{"label":"check","data":"check text"},{"label":"rationale","data":"rationale text"}],
+		"code":"control 'SV-1' do end",
+		"refs":[{"url":"https://example.gov/a"},{"ref":"Handbook 3"}],
+		"results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]
+	}]}]}`)
+	output, err := ConvertHDFToXCCDF(input, "test")
+	require.NoError(t, err)
+	result := string(output)
+	assert.Contains(t, result, "<rationale>rationale text</rationale>")
+	assert.Contains(t, result, `href="https://example.gov/a"`)
+	assert.Contains(t, result, "Handbook 3")
+	assert.Contains(t, result, "csrc.nist.gov") // NIST ident system
+	assert.Contains(t, result, ">AC-2<")
+	assert.Contains(t, result, "http://inspec.io/") // code emitted as its own <check>
+}
+
 func TestConvertHDFToXCCDF_Minimal(t *testing.T) {
 	input := loadFixture(t, "minimal.json")
 

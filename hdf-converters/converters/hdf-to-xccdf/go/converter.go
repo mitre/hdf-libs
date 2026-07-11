@@ -65,15 +65,24 @@ type XCCDFProfile struct {
 
 // XCCDFRule represents an XCCDF Rule element.
 type XCCDFRule struct {
-	XMLName     xml.Name     `xml:"Rule"`
-	ID          string       `xml:"id,attr"`
-	Severity    string       `xml:"severity,attr"`
-	Selected    string       `xml:"selected,attr"`
-	Title       string       `xml:"title"`
-	Description string       `xml:"description,omitempty"`
-	Fixtext     string       `xml:"fixtext,omitempty"`
-	Idents      []XCCDFIdent `xml:"ident,omitempty"`
-	Check       *XCCDFCheck  `xml:"check,omitempty"`
+	XMLName     xml.Name         `xml:"Rule"`
+	ID          string           `xml:"id,attr"`
+	Severity    string           `xml:"severity,attr"`
+	Selected    string           `xml:"selected,attr"`
+	Title       string           `xml:"title"`
+	Description string           `xml:"description,omitempty"`
+	References  []XCCDFReference `xml:"reference,omitempty"`
+	Rationale   string           `xml:"rationale,omitempty"`
+	Fixtext     string           `xml:"fixtext,omitempty"`
+	Idents      []XCCDFIdent     `xml:"ident,omitempty"`
+	Checks      []XCCDFCheck     `xml:"check,omitempty"`
+}
+
+// XCCDFReference represents an XCCDF reference element (href attr or text).
+type XCCDFReference struct {
+	XMLName xml.Name `xml:"reference"`
+	Href    string   `xml:"href,attr,omitempty"`
+	Value   string   `xml:",chardata"`
 }
 
 // XCCDFIdent represents an XCCDF ident element (e.g. CCI).
@@ -225,25 +234,44 @@ func buildRule(req hdf.EvaluatedRequirement) XCCDFRule {
 	// Map descriptions
 	rule.Description = findDescription(req.Descriptions, "default")
 	rule.Fixtext = findDescription(req.Descriptions, "fix")
+	rule.Rationale = findDescription(req.Descriptions, "rationale")
 
-	// Map check content
-	checkContent := findDescription(req.Descriptions, "check")
-	if checkContent != "" {
-		rule.Check = &XCCDFCheck{
-			System:       "http://oval.mitre.org/XMLSchema/oval-definitions-5",
-			CheckContent: checkContent,
+	// References: url/uri -> href attr; plain string ref -> text
+	for _, r := range req.Refs {
+		switch {
+		case r.URL != nil:
+			rule.References = append(rule.References, XCCDFReference{Href: *r.URL})
+		case r.URI != nil:
+			rule.References = append(rule.References, XCCDFReference{Href: *r.URI})
+		case r.Ref != nil && r.Ref.String != nil:
+			rule.References = append(rule.References, XCCDFReference{Value: *r.Ref.String})
 		}
 	}
 
-	// Map CCI idents from tags
+	// Checks: the check-description (OVAL) and the InSpec source code, each its own <check>.
+	if checkContent := findDescription(req.Descriptions, "check"); checkContent != "" {
+		rule.Checks = append(rule.Checks, XCCDFCheck{
+			System:       "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+			CheckContent: checkContent,
+		})
+	}
+	if req.Code != nil {
+		rule.Checks = append(rule.Checks, XCCDFCheck{
+			System:       "http://inspec.io/",
+			CheckContent: *req.Code,
+		})
+	}
+
+	// Idents: CCI and NIST 800-53 controls
 	if req.Tags != nil {
 		if cciRaw, ok := req.Tags["cci"]; ok {
-			ccis := hdfutil.SafeStringSlice(cciRaw)
-			for _, cci := range ccis {
-				rule.Idents = append(rule.Idents, XCCDFIdent{
-					System: "http://cyber.mil/cci",
-					Value:  cci,
-				})
+			for _, cci := range hdfutil.SafeStringSlice(cciRaw) {
+				rule.Idents = append(rule.Idents, XCCDFIdent{System: "http://cyber.mil/cci", Value: cci})
+			}
+		}
+		if nistRaw, ok := req.Tags["nist"]; ok {
+			for _, n := range hdfutil.SafeStringSlice(nistRaw) {
+				rule.Idents = append(rule.Idents, XCCDFIdent{System: "https://csrc.nist.gov/projects/risk-management/sp800-53-controls", Value: n})
 			}
 		}
 	}

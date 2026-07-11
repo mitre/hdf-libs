@@ -39,6 +39,30 @@ describe('hdf-to-xccdf Converter', () => {
   });
 
   describe('STIG RHEL7', () => {
+    it('should map rationale, refs, nist idents, and code', () => {
+      const input = JSON.stringify({
+        baselines: [{ name: 'b', requirements: [{
+          id: 'SV-1', impact: 0.7, title: 'req',
+          tags: { nist: ['AC-2'], cci: ['CCI-000012'] },
+          descriptions: [
+            { label: 'default', data: 'd' },
+            { label: 'check', data: 'check text' },
+            { label: 'rationale', data: 'rationale text' },
+          ],
+          code: "control 'SV-1' do end",
+          refs: [{ url: 'https://example.gov/a' }, { ref: 'Handbook 3' }],
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }] }],
+      });
+      const result = convertHdfToXccdf(input);
+      expect(result).toContain('<rationale>rationale text</rationale>');
+      expect(result).toContain('href="https://example.gov/a"');
+      expect(result).toContain('Handbook 3');
+      expect(result).toContain('csrc.nist.gov'); // NIST ident system
+      expect(result).toContain('>AC-2<');
+      expect(result).toContain('http://inspec.io/'); // code emitted as its own <check>
+    });
+
     it('should preserve CCI idents', () => {
       const input = loadFixture('stig-rhel7.json');
       const result = convertHdfToXccdf(input);
