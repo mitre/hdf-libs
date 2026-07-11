@@ -6,6 +6,7 @@ package hdftooscalpoam
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	oscal "github.com/mitre/hdf-libs/hdf-converters/v3/converters/oscal-to-hdf/go"
@@ -127,22 +128,36 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride) (oscal.POAMItem, []osc
 	// Convert requirement ID from NIST notation to OSCAL control ID
 	controlID := oscal.NistTagToControlID(override.RequirementID)
 
-	// Build risk props with impacted-control-id
+	// Build risk props: impacted control, plus override type (disposition) and impact override.
 	riskProps := []oscal.Property{
 		{
 			Name:  "impacted-control-id",
 			Value: controlID,
 		},
 	}
+	if override.Type != "" {
+		riskProps = append(riskProps, oscal.Property{Name: "override-type", Value: string(override.Type)})
+	}
+	if override.Impact != nil {
+		riskProps = append(riskProps, oscal.Property{Name: "impact-override", Value: strconv.FormatFloat(override.Impact.Value, 'f', -1, 64)})
+	}
 
-	// Build remediations from milestones
+	// Build remediations from milestones, carrying the deadline and status.
 	var remediations []oscal.Remediation
 	for _, ms := range override.Milestones {
+		var msProps []oscal.Property
+		if !ms.EstimatedCompletion.IsZero() {
+			msProps = append(msProps, oscal.Property{Name: "estimated-completion", Value: ms.EstimatedCompletion.UTC().Format(time.RFC3339)})
+		}
+		if ms.Status != "" {
+			msProps = append(msProps, oscal.Property{Name: "milestone-status", Value: string(ms.Status)})
+		}
 		rem := oscal.Remediation{
 			UUID:        oscal.GenerateUUID(),
 			Lifecycle:   "planned",
 			Title:       ms.Description,
 			Description: ms.Description,
+			Props:       msProps,
 		}
 		remediations = append(remediations, rem)
 	}

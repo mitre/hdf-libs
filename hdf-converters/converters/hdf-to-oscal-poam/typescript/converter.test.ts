@@ -163,13 +163,38 @@ describe('convertHdfToOscalPoam', () => {
     expect(poam['poam-items'][0].title).toBe('AC-1');
     expect(poam['poam-items'][1].title).toBe('SI-7 (1)');
 
-    // Verify risk props contain impacted-control-id in OSCAL format
-    expect(poam.risks[0].props).toHaveLength(1);
+    // Verify risk props contain impacted-control-id in OSCAL format (first prop)
     expect(poam.risks[0].props[0].name).toBe('impacted-control-id');
     expect(poam.risks[0].props[0].value).toBe('ac-1');
 
-    expect(poam.risks[1].props).toHaveLength(1);
+    expect(poam.risks[1].props[0].name).toBe('impacted-control-id');
     expect(poam.risks[1].props[0].value).toBe('si-7.1');
+  });
+
+  it('should carry milestone deadline/status and override type/impact', async () => {
+    const amendments = {
+      overrides: [{
+        type: 'riskAdjustment',
+        requirementId: 'AC-1',
+        status: 'failed',
+        reason: 'residual risk accepted',
+        impact: { value: 0.3 },
+        appliedBy: { type: 'simple', identifier: 'admin' },
+        appliedAt: '2026-01-01T00:00:00Z',
+        milestones: [{ description: 'apply patch', estimatedCompletion: '2099-06-30T00:00:00Z', status: 'pending' }],
+      }],
+    };
+    const doc = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)));
+    const risk = doc['plan-of-action-and-milestones'].risks[0];
+    const riskProp = (n: string): string | undefined =>
+      risk.props.find((p: { name: string; value: string }) => p.name === n)?.value;
+    expect(riskProp('override-type')).toBe('riskAdjustment');
+    expect(riskProp('impact-override')).toBe('0.3');
+    const rem = risk.remediations[0];
+    const remProp = (n: string): string | undefined =>
+      rem.props.find((p: { name: string; value: string }) => p.name === n)?.value;
+    expect(remProp('estimated-completion')).toContain('2099-06-30');
+    expect(remProp('milestone-status')).toBe('pending');
   });
 
   it('should convert milestones to remediations', async () => {

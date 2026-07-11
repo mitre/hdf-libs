@@ -129,23 +129,41 @@ function overrideToPOAMItem(override: StandaloneOverride): { item: POAMItem; ite
   // Convert requirement ID from NIST notation to OSCAL control ID
   const controlID = nistTagToControlId(override.requirementId);
 
-  // Build risk props with impacted-control-id
+  // Build risk props: impacted control, plus the override type (disposition)
+  // and any impact override.
   const riskProps: Property[] = [
     {
       name: 'impacted-control-id',
       value: controlID,
     },
   ];
+  if (override.type) {
+    riskProps.push({ name: 'override-type', value: String(override.type) });
+  }
+  if (override.impact && typeof override.impact.value === 'number') {
+    riskProps.push({ name: 'impact-override', value: String(override.impact.value) });
+  }
 
-  // Build remediations from milestones
+  // Build remediations from milestones, carrying the deadline and status.
   const remediations: RiskResponse[] = [];
   if (override.milestones) {
     for (const ms of override.milestones) {
+      const msProps: Property[] = [];
+      if (ms.estimatedCompletion) {
+        const d = typeof ms.estimatedCompletion === 'string' ? new Date(ms.estimatedCompletion) : ms.estimatedCompletion;
+        if (!isNaN(d.getTime())) {
+          msProps.push({ name: 'estimated-completion', value: d.toISOString() });
+        }
+      }
+      if (ms.status) {
+        msProps.push({ name: 'milestone-status', value: String(ms.status) });
+      }
       remediations.push({
         uuid: crypto.randomUUID(),
         lifecycle: 'planned',
         title: ms.description,
         description: ms.description,
+        props: msProps.length > 0 ? msProps : undefined,
       });
     }
   }

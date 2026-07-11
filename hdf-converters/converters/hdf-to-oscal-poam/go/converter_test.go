@@ -224,12 +224,13 @@ func TestConvertHDFToOSCALPOAM_MultipleOverrides(t *testing.T) {
 	assert.Equal(t, "AC-1", poam.POAMItems[0].Title)
 	assert.Equal(t, "SI-7 (1)", poam.POAMItems[1].Title)
 
-	// Verify risk props contain impacted-control-id in OSCAL format
-	require.Len(t, poam.Risks[0].Props, 1)
+	// Verify risk props contain impacted-control-id in OSCAL format (first prop)
+	require.NotEmpty(t, poam.Risks[0].Props)
 	assert.Equal(t, "impacted-control-id", poam.Risks[0].Props[0].Name)
 	assert.Equal(t, "ac-1", poam.Risks[0].Props[0].Value)
 
-	require.Len(t, poam.Risks[1].Props, 1)
+	require.NotEmpty(t, poam.Risks[1].Props)
+	assert.Equal(t, "impacted-control-id", poam.Risks[1].Props[0].Name)
 	assert.Equal(t, "si-7.1", poam.Risks[1].Props[0].Value)
 }
 
@@ -281,6 +282,48 @@ func TestConvertHDFToOSCALPOAM_Milestones(t *testing.T) {
 	assert.Equal(t, "planned", risk.Remediations[0].Lifecycle)
 	assert.Equal(t, "Deploy MFA solution", risk.Remediations[0].Title)
 	assert.Equal(t, "Verify MFA deployment", risk.Remediations[1].Title)
+}
+
+func TestConvertHDFToOSCALPOAM_FieldCoverage(t *testing.T) {
+	amendments := hdf.HDFAmendments{
+		Overrides: []hdf.StandaloneOverride{{
+			Type:          hdf.RiskAdjustment,
+			RequirementID: "AC-1",
+			Reason:        "residual risk accepted",
+			Status:        resultStatusPtr(hdf.Failed),
+			Impact:        &hdf.ImpactOverride{Value: 0.3},
+			AppliedBy:     hdf.Identity{Type: hdf.Simple, Identifier: "admin"},
+			AppliedAt:     time.Now(),
+			Milestones: []hdf.Milestone{{
+				Description:         "apply patch",
+				EstimatedCompletion: time.Date(2099, 6, 30, 0, 0, 0, 0, time.UTC),
+				Status:              hdf.Pending,
+			}},
+		}},
+	}
+	input, err := json.Marshal(amendments)
+	require.NoError(t, err)
+	output, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+	require.NoError(t, err)
+
+	var doc oscal.OscalDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	risk := doc.PlanOfActionAndMilestones.Risks[0]
+
+	prop := func(props []oscal.Property, name string) string {
+		for _, p := range props {
+			if p.Name == name {
+				return p.Value
+			}
+		}
+		return ""
+	}
+	assert.Equal(t, "riskAdjustment", prop(risk.Props, "override-type"))
+	assert.Equal(t, "0.3", prop(risk.Props, "impact-override"))
+	require.NotEmpty(t, risk.Remediations)
+	rem := risk.Remediations[0]
+	assert.Contains(t, prop(rem.Props, "estimated-completion"), "2099-06-30")
+	assert.Equal(t, "pending", prop(rem.Props, "milestone-status"))
 }
 
 func TestConvertHDFToOSCALPOAM_AppliedByInMetadata(t *testing.T) {
