@@ -604,6 +604,7 @@ type Finding struct {
 	Title               string        `json:"title"`
 	Description         string        `json:"description,omitempty"`
 	Props               []Property    `json:"props,omitempty"`
+	Links               []Link        `json:"links,omitempty"`
 	Target              FindingTarget `json:"target"`
 	RelatedObservations []RelatedRef  `json:"related-observations,omitempty"`
 	RelatedRisks        []RelatedRef  `json:"related-risks,omitempty"`

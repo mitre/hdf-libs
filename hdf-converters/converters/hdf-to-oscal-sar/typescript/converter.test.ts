@@ -46,6 +46,39 @@ describe('convertHdfToOscalSar', () => {
     await expect(convertHdfToOscalSar('{}')).rejects.toThrow('missing baselines');
   });
 
+  it('should map code, check/fix/rationale, cci, classification, and refs onto the finding', async () => {
+    const input = JSON.stringify({
+      baselines: [{
+        name: 'b', requirements: [{
+          id: 'SV-1', impact: 0.7, title: 'req',
+          tags: { nist: ['AC-2'], cci: ['CCI-000012'] },
+          descriptions: [
+            { label: 'default', data: 'default desc' },
+            { label: 'check', data: 'check text' },
+            { label: 'fix', data: 'fix text' },
+            { label: 'rationale', data: 'rationale text' },
+          ],
+          code: "control 'SV-1' do end",
+          controlType: 'technical', verificationMethod: 'automated', applicability: 'required',
+          refs: [{ url: 'https://example.gov/a' }, { uri: 'https://example.gov/b' }, { ref: 'Handbook 3' }],
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }],
+      }],
+    });
+    const finding = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0].findings[0];
+    const propVal = (name: string) => finding.props.find((p: { name: string; value: string }) => p.name === name)?.value;
+    expect(propVal('cci')).toBe('CCI-000012');
+    expect(propVal('code')).toContain("control 'SV-1'");
+    expect(propVal('check')).toBe('check text');
+    expect(propVal('fix')).toBe('fix text');
+    expect(propVal('rationale')).toBe('rationale text');
+    expect(propVal('control-type')).toBe('technical');
+    expect(propVal('verification-method')).toBe('automated');
+    expect(propVal('applicability')).toBe('required');
+    expect(propVal('reference')).toBe('Handbook 3');
+    expect(finding.links.map((l: { href: string }) => l.href)).toEqual(['https://example.gov/a', 'https://example.gov/b']);
+  });
+
   it('should convert minimal passed HDF to valid OSCAL SAR', async () => {
     const input = minimalHDFResults('passed');
     const output = await convertHdfToOscalSar(input);

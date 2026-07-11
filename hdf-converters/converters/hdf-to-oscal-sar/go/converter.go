@@ -131,6 +131,16 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string) oscal.R
 
 // requirementToFindingSet converts an EvaluatedRequirement into a Finding,
 // optional Observation, and optional Risk.
+// descriptionByLabel returns the data of the first description matching a label, or "".
+func descriptionByLabel(descriptions []hdf.Description, label string) string {
+	for _, d := range descriptions {
+		if d.Label == label {
+			return d.Data
+		}
+	}
+	return ""
+}
+
 func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (oscal.Finding, *oscal.Observation, *oscal.Risk) {
 	controlID := oscal.NistTagToControlID(req.ID)
 
@@ -140,20 +150,50 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 	// Build finding description from requirement descriptions
 	findingDesc := extractDefaultDescription(req.Descriptions)
 
-	// Build props from NIST tags
+	// Build props from control mappings (nist/cci), code, non-default
+	// descriptions (check/fix/rationale), and v3.2 classification fields.
 	var props []oscal.Property
-	if req.Tags != nil {
-		if nistRaw, ok := req.Tags["nist"]; ok {
-			if nistArr, ok := nistRaw.([]interface{}); ok {
-				for _, v := range nistArr {
+	pushTagValues := func(key string) {
+		if raw, ok := req.Tags[key]; ok {
+			if arr, ok := raw.([]interface{}); ok {
+				for _, v := range arr {
 					if s, ok := v.(string); ok {
-						props = append(props, oscal.Property{
-							Name:  "nist",
-							Value: s,
-						})
+						props = append(props, oscal.Property{Name: key, Value: s})
 					}
 				}
 			}
+		}
+	}
+	pushTagValues("nist")
+	pushTagValues("cci")
+	if req.Code != nil {
+		props = append(props, oscal.Property{Name: "code", Value: *req.Code})
+	}
+	for _, label := range []string{"check", "fix", "rationale"} {
+		if d := descriptionByLabel(req.Descriptions, label); d != "" {
+			props = append(props, oscal.Property{Name: label, Value: d})
+		}
+	}
+	if req.ControlType != nil {
+		props = append(props, oscal.Property{Name: "control-type", Value: string(*req.ControlType)})
+	}
+	if req.VerificationMethod != nil {
+		props = append(props, oscal.Property{Name: "verification-method", Value: string(*req.VerificationMethod)})
+	}
+	if req.Applicability != nil {
+		props = append(props, oscal.Property{Name: "applicability", Value: string(*req.Applicability)})
+	}
+
+	// refs: url/uri -> OSCAL links; a plain string ref -> prop (not a valid href).
+	var links []oscal.Link
+	for _, r := range req.Refs {
+		switch {
+		case r.URL != nil:
+			links = append(links, oscal.Link{Href: *r.URL, Rel: "reference"})
+		case r.URI != nil:
+			links = append(links, oscal.Link{Href: *r.URI, Rel: "reference"})
+		case r.Ref != nil && r.Ref.String != nil:
+			props = append(props, oscal.Property{Name: "reference", Value: *r.Ref.String})
 		}
 	}
 
@@ -167,6 +207,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 		Title:       title,
 		Description: findingDesc,
 		Props:       props,
+		Links:       links,
 		Target: oscal.FindingTarget{
 			Type:     "objective-id",
 			TargetID: controlID,

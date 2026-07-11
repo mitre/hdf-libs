@@ -101,6 +101,56 @@ func TestConvertHDFToOSCALSAR_MinimalPassed(t *testing.T) {
 	assert.Equal(t, "closed", result.Risks[0].Status)
 }
 
+func TestConvertHDFToOSCALSAR_FieldCoverage(t *testing.T) {
+	input := []byte(`{
+		"baselines": [{
+			"name": "b",
+			"requirements": [{
+				"id": "SV-1", "impact": 0.7, "title": "req",
+				"tags": { "nist": ["AC-2"], "cci": ["CCI-000012"] },
+				"descriptions": [
+					{ "label": "default", "data": "default desc" },
+					{ "label": "check", "data": "check text" },
+					{ "label": "fix", "data": "fix text" },
+					{ "label": "rationale", "data": "rationale text" }
+				],
+				"code": "control 'SV-1' do end",
+				"controlType": "technical", "verificationMethod": "automated", "applicability": "required",
+				"refs": [{ "url": "https://example.gov/a" }, { "uri": "https://example.gov/b" }, { "ref": "Handbook 3" }],
+				"results": [{ "status": "failed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }]
+			}]
+		}]
+	}`)
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	finding := doc.AssessmentResults.Results[0].Findings[0]
+
+	propVal := func(name string) string {
+		for _, p := range finding.Props {
+			if p.Name == name {
+				return p.Value
+			}
+		}
+		return ""
+	}
+	assert.Equal(t, "CCI-000012", propVal("cci"))
+	assert.Contains(t, propVal("code"), "control 'SV-1'")
+	assert.Equal(t, "check text", propVal("check"))
+	assert.Equal(t, "fix text", propVal("fix"))
+	assert.Equal(t, "rationale text", propVal("rationale"))
+	assert.Equal(t, "technical", propVal("control-type"))
+	assert.Equal(t, "automated", propVal("verification-method"))
+	assert.Equal(t, "required", propVal("applicability"))
+	assert.Equal(t, "Handbook 3", propVal("reference"))
+	var hrefs []string
+	for _, l := range finding.Links {
+		hrefs = append(hrefs, l.Href)
+	}
+	assert.Equal(t, []string{"https://example.gov/a", "https://example.gov/b"}, hrefs)
+}
+
 func TestConvertHDFToOSCALSAR_MinimalFailed(t *testing.T) {
 	input := minimalHDFResults(hdf.Failed)
 	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")

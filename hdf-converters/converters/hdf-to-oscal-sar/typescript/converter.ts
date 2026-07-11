@@ -19,6 +19,7 @@ import type {
   Observation,
   IdentifiedRisk,
   Property,
+  Link,
 } from '../../oscal-to-hdf/typescript/types.js';
 import {
   nistTagToControlId,
@@ -152,16 +153,34 @@ function requirementToFindingSet(
   const { state, reason } = aggregateStatus(req.results);
   const findingDesc = extractDefaultDescription(req.descriptions);
 
-  // Build props from NIST tags
+  // Build props from control mappings (nist/cci), source code, non-default
+  // descriptions (check/fix/rationale), and v3.2 classification fields.
   const props: Property[] = [];
-  if (req.tags) {
-    const nistRaw = req.tags['nist'];
-    if (Array.isArray(nistRaw)) {
-      for (const v of nistRaw) {
-        if (typeof v === 'string') {
-          props.push({ name: 'nist', value: v });
-        }
-      }
+  const pushTagValues = (key: string): void => {
+    const raw = req.tags?.[key];
+    if (Array.isArray(raw)) {
+      for (const v of raw) if (typeof v === 'string') props.push({ name: key, value: v });
+    }
+  };
+  pushTagValues('nist');
+  pushTagValues('cci');
+  if (req.code) props.push({ name: 'code', value: req.code });
+  for (const label of ['check', 'fix', 'rationale']) {
+    const d = req.descriptions.find((x) => x.label === label);
+    if (d) props.push({ name: label, value: d.data });
+  }
+  if (req.controlType) props.push({ name: 'control-type', value: req.controlType });
+  if (req.verificationMethod) props.push({ name: 'verification-method', value: req.verificationMethod });
+  if (req.applicability) props.push({ name: 'applicability', value: req.applicability });
+
+  // refs: url/uri become OSCAL links; a plain string ref becomes a prop (not a valid href).
+  const links: Link[] = [];
+  if (Array.isArray(req.refs)) {
+    for (const r of req.refs) {
+      const o = r as { url?: unknown; uri?: unknown; ref?: unknown };
+      if (typeof o.url === 'string') links.push({ href: o.url, rel: 'reference' });
+      else if (typeof o.uri === 'string') links.push({ href: o.uri, rel: 'reference' });
+      else if (typeof o.ref === 'string') props.push({ name: 'reference', value: o.ref });
     }
   }
 
@@ -186,6 +205,7 @@ function requirementToFindingSet(
     title,
     description: findingDesc || '',
     props: props.length > 0 ? props : undefined,
+    links: links.length > 0 ? links : undefined,
     target,
   } as Finding;
 
