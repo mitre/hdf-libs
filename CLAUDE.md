@@ -244,3 +244,13 @@ If bd errors with "Database out of sync", run `bd dolt pull` first.
 
 **Git policy:** the user owns every commit and push in this repo. The bd-tool's default session-completion workflow (which prescribes a mandatory `git push`) does not apply here — the "Git Policy" section above is the authoritative rule. `bd dolt push` / `bd dolt pull` (issue-tracker sync) is a separate concept; follow the dolt-sync rule above for those.
 <!-- END BEADS INTEGRATION -->
+
+### Card hygiene: no machine-local details
+
+Beads cards are shared across clones and exported to `.beads/issues.jsonl`. Keep them portable and free of any contributor's local environment:
+
+- **No absolute/home filepaths.** Reference files by repo-relative path (`hdf-converters/converters/.../converter.go:277`), never `/Users/<name>/...` or `~/...`.
+- **No local infrastructure names or stack descriptions.** Don't name a contributor's VMs, containers, container engine, cluster/namespace, ports, or hostnames. Describe the *capability* generically instead (e.g. "a SonarQube instance in MQR mode", not how or where it happens to run locally).
+- **No secrets or tokens**, even read-scoped ones.
+
+When a card needs a live service to reproduce or validate against, describe the service and its required mode/version generically and leave the "how I run it locally" out entirely.
