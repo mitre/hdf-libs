@@ -412,6 +412,39 @@ func TestRoundTripPreservesHostnameAndFQDN(t *testing.T) {
 	assert.Equal(t, "web01.prod.example.com", got.HostFQDN)
 }
 
+// Backward-compat: HDF produced before the hostname field existed stored the
+// short HOST_NAME in Component.Name (even alongside fqdn). Export must recover
+// it from Name, yet still not promote a Name that merely mirrors fqdn/ip.
+func TestFromHDFLegacyNameFallback(t *testing.T) {
+	build := func(c hdf.Component) Asset {
+		results := hdf.HDFResults{
+			Components: []hdf.Component{c},
+			Baselines: []hdf.EvaluatedBaseline{{
+				Name:         "b",
+				Requirements: []hdf.EvaluatedRequirement{{ID: "V-1", Results: []hdf.RequirementResult{{Status: hdf.Passed}}}},
+			}},
+		}
+		b, err := json.Marshal(results)
+		require.NoError(t, err)
+		out, err := HDFToChecklist(b)
+		require.NoError(t, err)
+		return out.Asset
+	}
+
+	// Legacy HDF: real short name in Name, fqdn also present, no hostname field.
+	got := build(hdf.Component{Type: hdf.Host, Name: "web01", FQDN: ptr("web01.prod.example.com")})
+	assert.Equal(t, "web01", got.HostName, "legacy short name must survive")
+	assert.Equal(t, "web01.prod.example.com", got.HostFQDN)
+
+	// Legacy HDF where Name mirrors the fqdn fallback -> must not fabricate HOST_NAME.
+	got = build(hdf.Component{Type: hdf.Host, Name: "web01.prod.example.com", FQDN: ptr("web01.prod.example.com")})
+	assert.Empty(t, got.HostName)
+
+	// Legacy HDF where Name mirrors the ip fallback -> must not fabricate HOST_NAME.
+	got = build(hdf.Component{Type: hdf.Host, Name: "10.0.1.5", IPAddress: ptr("10.0.1.5")})
+	assert.Empty(t, got.HostName)
+}
+
 func TestResolveSeverityFromImpact(t *testing.T) {
 	mk := func(impact float64) *hdf.EvaluatedRequirement {
 		return &hdf.EvaluatedRequirement{Impact: impact, Tags: map[string]interface{}{}}

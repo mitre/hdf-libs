@@ -35,12 +35,13 @@ function buildAsset(hdf: HDFResults, ext: Record<string, unknown>): Asset {
   const asset: Asset = {};
   const comp = hdf.components?.[0];
   if (comp) {
-    // Prefer the dedicated hostname; fall back to Name only for HDF produced
-    // before hostname existed. Never promote the Name fqdn/ip fallback into
-    // HOST_NAME — that would fabricate a short name the source never had.
+    // Prefer the dedicated hostname. For HDF produced before hostname existed,
+    // fall back to Name — but only when Name holds a real short name, not when
+    // it merely mirrors the fqdn/ip fallback the old converter stored there
+    // (which would fabricate a HOST_NAME the source never had).
     if (comp.hostname) {
       asset.hostName = comp.hostname;
-    } else if (!comp.fqdn && !comp.ipAddress) {
+    } else if (comp.name && comp.name !== comp.fqdn && comp.name !== comp.ipAddress) {
       asset.hostName = comp.name;
     }
     asset.hostIP = comp.ipAddress;
