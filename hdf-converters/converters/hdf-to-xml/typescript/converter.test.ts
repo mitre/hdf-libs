@@ -186,7 +186,9 @@ describe('hdf-to-xml Converter', () => {
       expect(result).toContain('MinBaseline');
       expect(result).toContain('fqdn');
       expect(result).toContain('ipAddress');
-      expect(result).toContain('hostname');
+      // hostname is not an HDF Component schema field (only Runner has it); the
+      // undeclared property must NOT be passed through — matches Go (hdf-libs-pfse.10).
+      expect(result).not.toContain('<hostname>');
       expect(result).toContain('message');
       expect(result).toContain('runTime');
       expect(result).toContain('timestamp');

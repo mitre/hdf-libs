@@ -105,10 +105,7 @@ function transformHdfToXmlObject(hdf: HDFResults): Record<string, unknown> {
         name: wrap(target.name),
         type: wrap(target.type),
         ...(target.fqdn && { fqdn: wrap(target.fqdn) }),
-        ...(target.ipAddress && { ipAddress: wrap(target.ipAddress) }),
-        // NOTE: Go's generated hdf.Component type lacks Hostname, so Go cannot
-        // emit this — a pre-existing generated-type gap tracked in hdf-libs-pfse.10.
-        ...(target.hostname && { hostname: wrap(target.hostname) })
+        ...(target.ipAddress && { ipAddress: wrap(target.ipAddress) })
       }))
     };
   }
