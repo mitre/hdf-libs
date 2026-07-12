@@ -1,0 +1,638 @@
+{
+  "total": 5,
+  "p": 1,
+  "ps": 100,
+  "paging": {
+    "pageIndex": 1,
+    "pageSize": 100,
+    "total": 5
+  },
+  "issues": [
+    {
+      "key": "ccbe4e6b-6f16-479c-bff3-558519b26bac",
+      "rule": "typescript:S7773",
+      "severity": "MINOR",
+      "component": "hdf-libs:hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts",
+      "project": "hdf-libs",
+      "line": 126,
+      "hash": "3cc1e566340dce2c3201707354e59667",
+      "textRange": {
+        "startLine": 126,
+        "endLine": 126,
+        "startOffset": 9,
+        "endOffset": 14
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Prefer `Number.isNaN` over `isNaN`.",
+      "effort": "2min",
+      "debt": "2min",
+      "author": "dev@example.com",
+      "tags": [
+        "convention",
+        "es2015"
+      ],
+      "creationDate": "2026-06-29T02:52:37+0000",
+      "updateDate": "2026-07-12T22:55:46+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": true,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "CONVENTIONAL",
+      "cleanCodeAttributeCategory": "CONSISTENT",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "LOW"
+        },
+        {
+          "softwareQuality": "RELIABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    },
+    {
+      "key": "517032fa-f3cd-4d43-b864-6489e2eeea33",
+      "rule": "typescript:S7772",
+      "severity": "MINOR",
+      "component": "hdf-libs:hdf-schema/src/create-index.ts",
+      "project": "hdf-libs",
+      "line": 11,
+      "hash": "d786fa4fcbfd06b2238db3731c475be0",
+      "textRange": {
+        "startLine": 11,
+        "endLine": 11,
+        "startOffset": 91,
+        "endOffset": 95
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Prefer `node:fs` over `fs`.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "dev@example.com",
+      "tags": [
+        "convention",
+        "import",
+        "nodejs"
+      ],
+      "creationDate": "2026-04-18T23:19:56+0000",
+      "updateDate": "2026-07-12T22:55:46+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": true,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "CONVENTIONAL",
+      "cleanCodeAttributeCategory": "CONSISTENT",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    },
+    {
+      "key": "2aecaa7d-8ec5-4ba9-a18a-1f9115932100",
+      "rule": "javascript:S7772",
+      "severity": "MINOR",
+      "component": "hdf-libs:site/generate-schema-docs.mjs",
+      "project": "hdf-libs",
+      "line": 21,
+      "hash": "b561a6854011601a6d403f2bb81dcae8",
+      "textRange": {
+        "startLine": 21,
+        "endLine": 21,
+        "startOffset": 15,
+        "endOffset": 19
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Prefer `node:fs` over `fs`.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "dev@example.com",
+      "tags": [
+        "convention",
+        "import",
+        "nodejs"
+      ],
+      "creationDate": "2026-04-03T21:54:44+0000",
+      "updateDate": "2026-07-12T22:55:46+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": true,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "CONVENTIONAL",
+      "cleanCodeAttributeCategory": "CONSISTENT",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    },
+    {
+      "key": "f0f1bd58-ebab-47ef-8a2b-9a6ca502adb3",
+      "rule": "typescript:S7776",
+      "severity": "MINOR",
+      "component": "hdf-libs:hdf-converters/converters/prisma-to-hdf/typescript/converter.ts",
+      "project": "hdf-libs",
+      "line": 304,
+      "hash": "be32ab6176374f244c3146202eb5ae9f",
+      "textRange": {
+        "startLine": 304,
+        "endLine": 304,
+        "startOffset": 8,
+        "endOffset": 15
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "`headers` should be a `Set`, and use `headers.has()` to check existence or non-existence.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "dev@example.com",
+      "tags": [
+        "performance",
+        "optimization"
+      ],
+      "creationDate": "2026-06-05T17:38:54+0000",
+      "updateDate": "2026-07-12T22:55:46+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "EFFICIENT",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    },
+    {
+      "key": "4c5042bf-bcf8-445d-baea-31c90d9a8c2f",
+      "rule": "go:S3776",
+      "severity": "CRITICAL",
+      "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+      "project": "hdf-libs",
+      "line": 53,
+      "hash": "e97b9998e97293d2d44f2f1d5fb412fc",
+      "textRange": {
+        "startLine": 53,
+        "endLine": 53,
+        "startOffset": 5,
+        "endOffset": 28
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 55,
+                "endLine": 55,
+                "startOffset": 1,
+                "endOffset": 3
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 60,
+                "endLine": 60,
+                "startOffset": 1,
+                "endOffset": 3
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 61,
+                "endLine": 61,
+                "startOffset": 2,
+                "endOffset": 4
+              },
+              "msg": "+2 (incl 1 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 67,
+                "endLine": 67,
+                "startOffset": 1,
+                "endOffset": 3
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 72,
+                "endLine": 72,
+                "startOffset": 1,
+                "endOffset": 3
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 77,
+                "endLine": 77,
+                "startOffset": 1,
+                "endOffset": 3
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 77,
+                "endLine": 77,
+                "startOffset": 56,
+                "endOffset": 58
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 79,
+                "endLine": 79,
+                "startOffset": 2,
+                "endOffset": 5
+              },
+              "msg": "+2 (incl 1 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 81,
+                "endLine": 81,
+                "startOffset": 3,
+                "endOffset": 5
+              },
+              "msg": "+3 (incl 2 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 88,
+                "endLine": 88,
+                "startOffset": 3,
+                "endOffset": 5
+              },
+              "msg": "+3 (incl 2 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 97,
+                "endLine": 97,
+                "startOffset": 1,
+                "endOffset": 3
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 97,
+                "endLine": 97,
+                "startOffset": 59,
+                "endOffset": 61
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 99,
+                "endLine": 99,
+                "startOffset": 2,
+                "endOffset": 5
+              },
+              "msg": "+2 (incl 1 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 101,
+                "endLine": 101,
+                "startOffset": 3,
+                "endOffset": 5
+              },
+              "msg": "+3 (incl 2 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 108,
+                "endLine": 108,
+                "startOffset": 3,
+                "endOffset": 5
+              },
+              "msg": "+3 (incl 2 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 117,
+                "endLine": 117,
+                "startOffset": 1,
+                "endOffset": 3
+              },
+              "msg": "+1",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 120,
+                "endLine": 120,
+                "startOffset": 2,
+                "endOffset": 4
+              },
+              "msg": "+2 (incl 1 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 123,
+                "endLine": 123,
+                "startOffset": 2,
+                "endOffset": 4
+              },
+              "msg": "+2 (incl 1 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 126,
+                "endLine": 126,
+                "startOffset": 2,
+                "endOffset": 4
+              },
+              "msg": "+2 (incl 1 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 129,
+                "endLine": 129,
+                "startOffset": 2,
+                "endOffset": 4
+              },
+              "msg": "+2 (incl 1 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+              "textRange": {
+                "startLine": 132,
+                "endLine": 132,
+                "startOffset": 2,
+                "endOffset": 4
+              },
+              "msg": "+2 (incl 1 for nesting)",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Refactor this method to reduce its Cognitive Complexity from 37 to the 15 allowed.",
+      "effort": "27min",
+      "debt": "27min",
+      "author": "dev@example.com",
+      "tags": [
+        "brain-overload"
+      ],
+      "creationDate": "2026-07-11T00:41:28+0000",
+      "updateDate": "2026-07-12T22:55:46+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "FOCUSED",
+      "cleanCodeAttributeCategory": "ADAPTABLE",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "HIGH"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    }
+  ],
+  "components": [
+    {
+      "key": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "evidence.go",
+      "longName": "hdf-cli/cmd/hdf/cmd/evidence.go",
+      "path": "hdf-cli/cmd/hdf/cmd/evidence.go"
+    },
+    {
+      "key": "hdf-libs:hdf-converters/converters/prisma-to-hdf/typescript/converter.ts",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "converter.ts",
+      "longName": "hdf-converters/converters/prisma-to-hdf/typescript/converter.ts",
+      "path": "hdf-converters/converters/prisma-to-hdf/typescript/converter.ts"
+    },
+    {
+      "key": "hdf-libs:site/generate-schema-docs.mjs",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "generate-schema-docs.mjs",
+      "longName": "site/generate-schema-docs.mjs",
+      "path": "site/generate-schema-docs.mjs"
+    },
+    {
+      "key": "hdf-libs:hdf-schema/src/create-index.ts",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "create-index.ts",
+      "longName": "hdf-schema/src/create-index.ts",
+      "path": "hdf-schema/src/create-index.ts"
+    },
+    {
+      "key": "hdf-libs:hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "converter.ts",
+      "longName": "hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts",
+      "path": "hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts"
+    }
+  ],
+  "rules": [
+    {
+      "key": "typescript:S7776",
+      "name": "Arrays used only for existence checks should be Sets",
+      "lang": "ts",
+      "status": "READY",
+      "langName": "TypeScript"
+    },
+    {
+      "key": "typescript:S7772",
+      "name": "Node.js built-in modules should be imported using the \"node:\" protocol",
+      "lang": "ts",
+      "status": "READY",
+      "langName": "TypeScript"
+    },
+    {
+      "key": "javascript:S7772",
+      "name": "Node.js built-in modules should be imported using the \"node:\" protocol",
+      "lang": "js",
+      "status": "READY",
+      "langName": "JavaScript"
+    },
+    {
+      "key": "typescript:S7773",
+      "name": "Number static methods and properties should be preferred over global equivalents",
+      "lang": "ts",
+      "status": "READY",
+      "langName": "TypeScript"
+    },
+    {
+      "key": "go:S3776",
+      "name": "Cognitive Complexity of functions should not be too high",
+      "lang": "go",
+      "status": "READY",
+      "langName": "Go"
+    }
+  ],
+  "serverVersion": "26.1.0.118079"
+}

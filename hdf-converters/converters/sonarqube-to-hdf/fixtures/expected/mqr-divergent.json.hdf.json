@@ -1,0 +1,263 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Cognitive Complexity of functions should not be too high",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "hdf-cli/cmd/hdf/cmd/evidence.go LINE : 53",
+              "message": "Refactor this method to reduce its Cognitive Complexity from 37 to the 15 allowed.",
+              "startTime": "2026-07-11T00:41:28Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 53,
+            "ref": "hdf-cli/cmd/hdf/cmd/evidence.go"
+          },
+          "id": "go:S3776",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "FOCUSED",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "HIGH"
+              }
+            ],
+            "legacySeverity": "critical",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "high",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Cognitive Complexity of functions should not be too high",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Node.js built-in modules should be imported using the \"node:\" protocol",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "site/generate-schema-docs.mjs LINE : 21",
+              "message": "Prefer `node:fs` over `fs`.",
+              "startTime": "2026-04-03T21:54:44Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 21,
+            "ref": "site/generate-schema-docs.mjs"
+          },
+          "id": "javascript:S7772",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "CONVENTIONAL",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "legacySeverity": "minor",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Node.js built-in modules should be imported using the \"node:\" protocol",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Node.js built-in modules should be imported using the \"node:\" protocol",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "hdf-schema/src/create-index.ts LINE : 11",
+              "message": "Prefer `node:fs` over `fs`.",
+              "startTime": "2026-04-18T23:19:56Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 11,
+            "ref": "hdf-schema/src/create-index.ts"
+          },
+          "id": "typescript:S7772",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "CONVENTIONAL",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "legacySeverity": "minor",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Node.js built-in modules should be imported using the \"node:\" protocol",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Number static methods and properties should be preferred over global equivalents",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts LINE : 126",
+              "message": "Prefer `Number.isNaN` over `isNaN`.",
+              "startTime": "2026-06-29T02:52:37Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 126,
+            "ref": "hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts"
+          },
+          "id": "typescript:S7773",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "CONVENTIONAL",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "LOW"
+              },
+              {
+                "softwareQuality": "RELIABILITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "legacySeverity": "minor",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Number static methods and properties should be preferred over global equivalents",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Arrays used only for existence checks should be Sets",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "hdf-converters/converters/prisma-to-hdf/typescript/converter.ts LINE : 304",
+              "message": "`headers` should be a `Set`, and use `headers.has()` to check existence or non-existence.",
+              "startTime": "2026-06-05T17:38:54Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 304,
+            "ref": "hdf-converters/converters/prisma-to-hdf/typescript/converter.ts"
+          },
+          "id": "typescript:S7776",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "EFFICIENT",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "legacySeverity": "minor",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Arrays used only for existence checks should be Sets",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "1a927fca797eea1222b65b25591b5baeb5a0d6150c6acd64a5fd97d83fe57f38"
+      },
+      "name": "hdf-libs",
+      "title": "SonarQube Analysis for hdf-libs"
+    }
+  ],
+  "components": [
+    {
+      "name": "hdf-libs",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "sonarqube-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-07-12T23:26:44.790622Z",
+  "tool": {
+    "name": "SonarQube",
+    "version": "26.1.0.118079"
+  }
+}

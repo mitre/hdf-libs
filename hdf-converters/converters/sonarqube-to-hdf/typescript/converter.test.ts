@@ -552,6 +552,32 @@ describe('MQR (Multi-Quality-Rule / Clean Code) severity', async () => {
     expect(byId.get('java:S1144')!.tags.severity).toBe('major');
     expect(byId.get('java:S2259')!.tags.severity).toBe('blocker');
   });
+
+  it('takes the MQR severity when the axes rank-diverge (real scan output)', async () => {
+    const input = readFileSync(join(__dirname, '../fixtures/input/mqr-divergent.json'), 'utf-8');
+    const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+    const byId = new Map(
+      hdf.baselines[0]!.requirements.map(r => [r.id, r as unknown as {
+        impact: number; tags: Record<string, unknown>;
+      }])
+    );
+
+    // Legacy MINOR (0.3) but MQR MEDIUM (0.5) — the legacy axis under-rates these.
+    for (const rule of ['typescript:S7772', 'javascript:S7772', 'typescript:S7776']) {
+      expect(byId.get(rule)!.tags.severity, rule).toBe('medium');
+      expect(byId.get(rule)!.tags.legacySeverity, rule).toBe('minor');
+      expect(byId.get(rule)!.impact, rule).toBe(0.5);
+    }
+
+    // S7773 is rated on two qualities (MAINTAINABILITY=LOW, RELIABILITY=MEDIUM);
+    // the worst governs, so taking impacts[0] would under-rate it.
+    expect(byId.get('typescript:S7773')!.tags.severity).toBe('medium');
+    expect(byId.get('typescript:S7773')!.impact).toBe(0.5);
+
+    expect(byId.get('go:S3776')!.tags.severity).toBe('high');
+    expect(byId.get('go:S3776')!.tags.legacySeverity).toBe('critical');
+    expect(byId.get('go:S3776')!.impact).toBe(0.7);
+  });
 });
 
 describe('selectSeverity', () => {

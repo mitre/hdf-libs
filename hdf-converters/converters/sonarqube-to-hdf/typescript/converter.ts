@@ -163,6 +163,13 @@ const SEVERITY_SOURCE_MQR = 'mqr';
 const SEVERITY_SOURCE_LEGACY = 'legacy';
 
 /**
+ * Order by code unit, matching Go's sort.Strings (byte order). Not
+ * localeCompare: locale-aware collation would order keys differently than the Go
+ * converter and break output parity between the two implementations.
+ */
+const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
  * Pick the authoritative severity axis for an issue. In MQR mode SonarQube
  * deprecates the top-level severity and the UI reports impacts[], so impacts[]
  * wins whenever present; pre-MQR servers fall back to the legacy field. An issue
@@ -254,7 +261,7 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
   }
 
   // Convert each project to a baseline, project-key sorted to match the Go converter.
-  const projectKeys = Array.from(issuesByProject.keys()).sort();
+  const projectKeys = Array.from(issuesByProject.keys()).sort(byCodeUnit);
   const baselines: EvaluatedBaseline[] = [];
   for (const projectKey of projectKeys) {
     const baseline = convertProjectToBaseline(
@@ -327,7 +334,7 @@ function convertProjectToBaseline(
 
   // Convert each rule to a requirement, rule-key sorted to match the Go converter.
   const requirements: EvaluatedRequirement[] = [];
-  for (const ruleKey of Array.from(issuesByRule.keys()).sort()) {
+  for (const ruleKey of Array.from(issuesByRule.keys()).sort(byCodeUnit)) {
     const requirement = convertRuleToRequirement(
       ruleKey,
       issuesByRule.get(ruleKey)!,

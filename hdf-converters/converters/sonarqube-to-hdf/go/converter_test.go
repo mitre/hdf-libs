@@ -791,6 +791,50 @@ func TestConvertSonarqubeToHDF_LegacyFallbackWhenNoImpacts(t *testing.T) {
 	assert.Equal(t, "blocker", severityByRule["java:S2259"])
 }
 
+// Real SonarQube output whose rules rank-diverge across the two axes: every rule
+// here is legacy MINOR, yet MQR rates several of them MEDIUM. Reading the legacy
+// axis under-rates them, and no global relabelling could recover the MQR value.
+func TestConvertSonarqubeToHDF_MQRDivergentAxes(t *testing.T) {
+	fixturePath := filepath.Join(shared.GetConvertersDir(), "sonarqube-to-hdf", "fixtures", "input", "mqr-divergent.json")
+	data, err := os.ReadFile(fixturePath)
+	require.NoError(t, err)
+
+	result, err := ConvertSonarqubeToHDF(data, testConverterVersion)
+	require.NoError(t, err)
+
+	type got struct {
+		severity string
+		legacy   string
+		impact   float64
+	}
+	byRule := make(map[string]got)
+	for _, req := range result.Baselines[0].Requirements {
+		byRule[req.ID] = got{
+			severity: req.Tags["severity"].(string),
+			legacy:   req.Tags["legacySeverity"].(string),
+			impact:   req.Impact,
+		}
+	}
+
+	// Legacy MINOR (0.3) but MQR MEDIUM (0.5) — the old converter under-rated these.
+	for _, rule := range []string{"typescript:S7772", "javascript:S7772", "typescript:S7776"} {
+		assert.Equal(t, "medium", byRule[rule].severity, "%s should take the MQR severity", rule)
+		assert.Equal(t, "minor", byRule[rule].legacy, "%s legacy axis should still be MINOR", rule)
+		assert.Equal(t, 0.5, byRule[rule].impact, "%s impact should follow MQR MEDIUM", rule)
+	}
+
+	// S7773 is rated on two qualities (MAINTAINABILITY=LOW, RELIABILITY=MEDIUM).
+	// The worst rating governs, so naively taking impacts[0] would under-rate it.
+	assert.Equal(t, "medium", byRule["typescript:S7773"].severity,
+		"multi-impact issue should take the highest severity, not the first")
+	assert.Equal(t, 0.5, byRule["typescript:S7773"].impact)
+
+	// A rule where the axes happen to agree still resolves via the MQR axis.
+	assert.Equal(t, "high", byRule["go:S3776"].severity)
+	assert.Equal(t, "critical", byRule["go:S3776"].legacy)
+	assert.Equal(t, 0.7, byRule["go:S3776"].impact)
+}
+
 // The legacy→MQR relationship is per-rule, not a constant offset: a rule can be
 // legacy MAJOR yet MQR LOW (over-rated) or legacy MAJOR yet MQR HIGH (under-rated).
 func TestSelectSeverity_DivergentAxes(t *testing.T) {
