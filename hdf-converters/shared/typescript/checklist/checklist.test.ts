@@ -73,6 +73,8 @@ const SAMPLE_CKLB = JSON.stringify({
           rule_title: 'Firefox must be supported.',
           severity: 'high',
           discussion: 'Discussion.',
+          check_content: 'Check it.',
+          fix_text: 'Fix it.',
           ccis: ['CCI-002605'],
           status: 'open',
           finding_details: 'Out of date.',
@@ -168,11 +170,23 @@ describe('checklist shared model', () => {
     expect(n.severity).toBe(o.severity);
     expect(n.ccis).toEqual(o.ccis);
     expect(n.status).toBe(o.status);
+    // Text fields must survive the HDF round-trip (regression guard).
+    expect(n.vulnDiscuss).toBe(o.vulnDiscuss);
+    expect(n.checkContent).toBe(o.checkContent);
+    expect(n.fixText).toBe(o.fixText);
+    // finding_details survives but may merge with comments through HDF's single
+    // message slot (see hdf-libs-pfse.12), so assert containment.
+    expect(n.findingDetails).toContain(o.findingDetails);
 
     const xml = serializeCkl(rt);
     const reparsed = parseCkl(xml);
-    expect(reparsed.stigs[0].vulns[0].vulnNum).toBe(o.vulnNum);
-    expect(reparsed.stigs[0].vulns[0].status).toBe(o.status);
+    const rv = reparsed.stigs[0].vulns[0];
+    expect(rv.vulnNum).toBe(o.vulnNum);
+    expect(rv.status).toBe(o.status);
+    expect(rv.vulnDiscuss).toBe(o.vulnDiscuss);
+    expect(rv.checkContent).toBe(o.checkContent);
+    expect(rv.fixText).toBe(o.fixText);
+    expect(rv.findingDetails).toContain(o.findingDetails);
     // Fields must serialize as child ELEMENTS, not VULN/ASSET attributes —
     // STIG Viewer rejects the attribute form. (Regression guard: with the
     // hdf-utilities default empty attribute prefix, fast-xml-parser would emit
@@ -191,8 +205,15 @@ describe('checklist shared model', () => {
     expect(out).toContain('"status": "open"');
     expect(out).toContain('"ccis"');
     const reparsed = parseCklb(out);
-    expect(reparsed.stigs[0].vulns[0].vulnNum).toBe('V-251545');
-    expect(reparsed.stigs[0].vulns[0].ccis).toEqual(['CCI-002605']);
+    const o = cl.stigs[0].vulns[0];
+    const rv = reparsed.stigs[0].vulns[0];
+    expect(rv.vulnNum).toBe('V-251545');
+    expect(rv.ccis).toEqual(['CCI-002605']);
+    // Text fields must survive the HDF round-trip (regression guard).
+    expect(rv.vulnDiscuss).toBe(o.vulnDiscuss);
+    expect(rv.checkContent).toBe(o.checkContent);
+    expect(rv.fixText).toBe(o.fixText);
+    expect(rv.findingDetails).toContain(o.findingDetails);
   });
 
   it('synthesizes a valid checklist from arbitrary HDF (nist->cci, defaults)', () => {
