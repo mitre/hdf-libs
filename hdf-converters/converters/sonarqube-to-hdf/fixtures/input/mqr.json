@@ -1,0 +1,436 @@
+{
+  "total": 7,
+  "p": 1,
+  "ps": 100,
+  "paging": {
+    "pageIndex": 1,
+    "pageSize": 100,
+    "total": 7
+  },
+  "issues": [
+    {
+      "key": "02e8e9bf-5d42-4729-a087-8b7e56e0e908",
+      "rule": "java:S1186",
+      "severity": "CRITICAL",
+      "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+      "project": "test-10k",
+      "line": 19,
+      "hash": "4fa436e830f0433a248778dafd40f373",
+      "textRange": {
+        "startLine": 19,
+        "endLine": 19,
+        "startOffset": 16,
+        "endOffset": 28
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "dev@example.com",
+      "tags": [
+        "suspicious"
+      ],
+      "creationDate": "2026-03-24T02:51:47+0000",
+      "updateDate": "2026-03-24T03:20:30+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": true,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "COMPLETE",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "HIGH"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    },
+    {
+      "key": "5b8a4766-c499-4ebd-8986-d87b88a99c52",
+      "rule": "java:S1192",
+      "severity": "CRITICAL",
+      "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+      "project": "test-10k",
+      "line": 48,
+      "hash": "0dca4630d3be43338e40c70956675adf",
+      "textRange": {
+        "startLine": 48,
+        "endLine": 48,
+        "startOffset": 22,
+        "endOffset": 47
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+              "textRange": {
+                "startLine": 48,
+                "endLine": 48,
+                "startOffset": 22,
+                "endOffset": 47
+              },
+              "msg": "Duplication",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+              "textRange": {
+                "startLine": 49,
+                "endLine": 49,
+                "startOffset": 22,
+                "endOffset": 47
+              },
+              "msg": "Duplication",
+              "msgFormattings": []
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+              "textRange": {
+                "startLine": 50,
+                "endLine": 50,
+                "startOffset": 22,
+                "endOffset": 47
+              },
+              "msg": "Duplication",
+              "msgFormattings": []
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Define a constant instead of duplicating this literal \"DUPLICATED_LITERAL_0001\" 3 times.",
+      "effort": "8min",
+      "debt": "8min",
+      "author": "dev@example.com",
+      "tags": [
+        "design"
+      ],
+      "creationDate": "2026-03-24T02:51:47+0000",
+      "updateDate": "2026-03-24T03:20:30+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "DISTINCT",
+      "cleanCodeAttributeCategory": "ADAPTABLE",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "HIGH"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    },
+    {
+      "key": "e175c416-e49f-4f16-a57e-ab63f7856304",
+      "rule": "java:S1068",
+      "severity": "MAJOR",
+      "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+      "project": "test-10k",
+      "line": 12,
+      "hash": "ad23d172eb328d262df04adb05c155ab",
+      "textRange": {
+        "startLine": 12,
+        "endLine": 12,
+        "startOffset": 19,
+        "endOffset": 31
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Remove this unused \"unusedField1\" private field.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "dev@example.com",
+      "tags": [
+        "unused"
+      ],
+      "creationDate": "2026-03-24T02:51:47+0000",
+      "updateDate": "2026-03-24T03:20:30+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": true,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    },
+    {
+      "key": "3ee5cd76-fbde-401f-9d6b-f0d1344f545f",
+      "rule": "java:S1144",
+      "severity": "MAJOR",
+      "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+      "project": "test-10k",
+      "line": 26,
+      "hash": "d54cc4f05dbbd9f11a485b48bb3f772c",
+      "textRange": {
+        "startLine": 26,
+        "endLine": 26,
+        "startOffset": 17,
+        "endOffset": 28
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Remove this unused private \"neverCalled\" method.",
+      "effort": "2min",
+      "debt": "2min",
+      "author": "dev@example.com",
+      "tags": [
+        "unused"
+      ],
+      "creationDate": "2026-03-24T02:51:47+0000",
+      "updateDate": "2026-03-24T03:20:30+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": true,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    },
+    {
+      "key": "9bac4aae-5084-4378-b80e-91cfc226a07b",
+      "rule": "java:S1128",
+      "severity": "MINOR",
+      "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+      "project": "test-10k",
+      "line": 3,
+      "hash": "e580c21cdd981d70d43f38f6abc1bbd5",
+      "textRange": {
+        "startLine": 3,
+        "endLine": 3,
+        "startOffset": 7,
+        "endOffset": 26
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Remove this unused import 'java.util.ArrayList'.",
+      "effort": "1min",
+      "debt": "1min",
+      "author": "dev@example.com",
+      "tags": [
+        "unused"
+      ],
+      "creationDate": "2026-03-24T02:51:47+0000",
+      "updateDate": "2026-03-24T03:20:30+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": true,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "LOW"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    },
+    {
+      "key": "1373b5d1-f21e-49f1-9806-58a643aa00de",
+      "rule": "java:S1481",
+      "severity": "MINOR",
+      "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+      "project": "test-10k",
+      "line": 32,
+      "hash": "d054db804e7c778a5b8de6bd4f569e80",
+      "textRange": {
+        "startLine": 32,
+        "endLine": 32,
+        "startOffset": 15,
+        "endOffset": 22
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Remove this unused \"unused1\" local variable.",
+      "effort": "5min",
+      "debt": "5min",
+      "author": "dev@example.com",
+      "tags": [
+        "unused",
+        "java22"
+      ],
+      "creationDate": "2026-03-24T02:51:47+0000",
+      "updateDate": "2026-03-24T03:20:30+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": true,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "LOW"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    },
+    {
+      "key": "75ba1f2f-3e1b-463f-b33e-b84cb3b1523b",
+      "rule": "java:S1135",
+      "severity": "INFO",
+      "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+      "project": "test-10k",
+      "line": 52,
+      "hash": "f4e856a5606241410674ba53032d190d",
+      "textRange": {
+        "startLine": 52,
+        "endLine": 52,
+        "startOffset": 0,
+        "endOffset": 34
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Complete the task associated to this TODO comment.",
+      "effort": "0min",
+      "debt": "0min",
+      "author": "dev@example.com",
+      "tags": [
+        "cwe"
+      ],
+      "creationDate": "2026-03-24T02:51:47+0000",
+      "updateDate": "2026-03-24T03:20:30+0000",
+      "type": "CODE_SMELL",
+      "scope": "MAIN",
+      "quickFixAvailable": false,
+      "messageFormattings": [],
+      "codeVariants": [],
+      "cleanCodeAttribute": "COMPLETE",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "INFO"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "prioritizedRule": false,
+      "fromSonarQubeUpdate": false,
+      "internalTags": [],
+      "linkedTicketStatus": "NOT_LINKED"
+    }
+  ],
+  "components": [
+    {
+      "key": "test-10k:src/main/java/com/example/generated/Module0001.java",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "Module0001.java",
+      "longName": "src/main/java/com/example/generated/Module0001.java",
+      "path": "src/main/java/com/example/generated/Module0001.java"
+    },
+    {
+      "key": "test-10k",
+      "enabled": true,
+      "qualifier": "TRK",
+      "name": "test-10k",
+      "longName": "test-10k"
+    }
+  ],
+  "rules": [
+    {
+      "key": "java:S1128",
+      "name": "Unnecessary imports should be removed",
+      "lang": "java",
+      "status": "READY",
+      "langName": "Java"
+    },
+    {
+      "key": "java:S1144",
+      "name": "Unused \"private\" methods should be removed",
+      "lang": "java",
+      "status": "READY",
+      "langName": "Java"
+    },
+    {
+      "key": "java:S1481",
+      "name": "Unused local variables should be removed",
+      "lang": "java",
+      "status": "READY",
+      "langName": "Java"
+    },
+    {
+      "key": "java:S1192",
+      "name": "String literals should not be duplicated",
+      "lang": "java",
+      "status": "READY",
+      "langName": "Java"
+    },
+    {
+      "key": "java:S1186",
+      "name": "Methods should not be empty",
+      "lang": "java",
+      "status": "READY",
+      "langName": "Java"
+    },
+    {
+      "key": "java:S1068",
+      "name": "Unused \"private\" fields should be removed",
+      "lang": "java",
+      "status": "READY",
+      "langName": "Java"
+    },
+    {
+      "key": "java:S1135",
+      "name": "Track uses of \"TODO\" tags",
+      "lang": "java",
+      "status": "READY",
+      "langName": "Java"
+    }
+  ],
+  "serverVersion": "26.1.0.118079"
+}

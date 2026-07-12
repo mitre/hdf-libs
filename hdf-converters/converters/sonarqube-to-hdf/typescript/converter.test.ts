@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { convertSonarqubeToHdf } from './converter.js';
+import { convertSonarqubeToHdf, selectSeverity } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
@@ -419,8 +419,8 @@ describe('SonarQube to HDF Converter', async () => {
         rules: [{ key: 'r1', name: 'Rule 1', htmlDesc: '<p>HTML description CWE-79</p>' }],
       });
       const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
-      // INFO maps to 0.0 in SEVERITY_IMPACT_MAPPING, but `0.0 || 0.5` = 0.5 (JS falsy)
-      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+      // INFO is 0.0, not the 0.5 default — nullish coalescing, since 0.0 is falsy.
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
     });
 
     it('should handle rule with name fallback (no desc at all)', async () => {
@@ -489,5 +489,104 @@ describe('SonarQube to HDF Converter', async () => {
       const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
       expect(hdf.baselines).toHaveLength(1);
     });
+  });
+});
+
+describe('MQR (Multi-Quality-Rule / Clean Code) severity', async () => {
+  const mqrInput = () =>
+    readFileSync(join(__dirname, '../fixtures/input/mqr.json'), 'utf-8');
+  const legacyInput = () =>
+    readFileSync(join(__dirname, '../fixtures/input/minimal.json'), 'utf-8');
+
+  const tagsById = async (input: string) => {
+    const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+    const out = new Map<string, { tags: Record<string, unknown>; impact: number }>();
+    for (const req of hdf.baselines[0]!.requirements) {
+      out.set(req.id, {
+        tags: req.tags as Record<string, unknown>,
+        impact: req.impact as number,
+      });
+    }
+    return out;
+  };
+
+  it('drives severity and impact from impacts[], not the legacy severity', async () => {
+    const byId = await tagsById(mqrInput());
+
+    // java:S1186 is legacy CRITICAL but MQR HIGH; java:S1068 is legacy MAJOR but MQR MEDIUM.
+    expect(byId.get('java:S1186')!.tags.severity).toBe('high');
+    expect(byId.get('java:S1068')!.tags.severity).toBe('medium');
+    expect(byId.get('java:S1128')!.tags.severity).toBe('low');
+    expect(byId.get('java:S1135')!.tags.severity).toBe('info');
+
+    expect(byId.get('java:S1186')!.impact).toBe(0.7);
+    expect(byId.get('java:S1068')!.impact).toBe(0.5);
+    expect(byId.get('java:S1128')!.impact).toBe(0.3);
+    expect(byId.get('java:S1135')!.impact).toBe(0.0);
+
+    for (const [id, { tags }] of byId) {
+      expect(['critical', 'major', 'minor'], `${id} emitted a legacy-axis severity`)
+        .not.toContain(tags.severity);
+    }
+  });
+
+  it('preserves both axes so consumers can select', async () => {
+    const byId = await tagsById(mqrInput());
+    const { tags } = byId.get('java:S1186')!;
+
+    expect(tags.severitySource).toBe('mqr');
+    expect(tags.legacySeverity).toBe('critical');
+    expect(tags.severity).toBe('high');
+    expect(tags.impacts).toEqual([
+      { softwareQuality: 'MAINTAINABILITY', severity: 'HIGH' },
+    ]);
+  });
+
+  it('falls back to the legacy axis on pre-MQR servers (no impacts[])', async () => {
+    const byId = await tagsById(legacyInput());
+
+    for (const [, { tags }] of byId) {
+      expect(tags.severitySource).toBe('legacy');
+      expect(tags.impacts).toBeUndefined();
+    }
+    expect(byId.get('java:S1144')!.tags.severity).toBe('major');
+    expect(byId.get('java:S2259')!.tags.severity).toBe('blocker');
+  });
+});
+
+describe('selectSeverity', () => {
+  // The legacy→MQR relationship is per-rule, not a constant offset: a rule can be
+  // legacy MAJOR yet MQR LOW (over-rated) or legacy MAJOR yet MQR HIGH (under-rated).
+  it.each([
+    ['legacy MAJOR but MQR LOW (previously over-rated)',
+      { severity: 'MAJOR' as const, impacts: [{ softwareQuality: 'MAINTAINABILITY' as const, severity: 'LOW' as const }] },
+      'LOW', 'mqr', 0.3],
+    ['legacy MAJOR but MQR HIGH (previously under-rated)',
+      { severity: 'MAJOR' as const, impacts: [{ softwareQuality: 'SECURITY' as const, severity: 'HIGH' as const }] },
+      'HIGH', 'mqr', 0.7],
+    ['legacy CRITICAL but MQR MEDIUM',
+      { severity: 'CRITICAL' as const, impacts: [{ softwareQuality: 'MAINTAINABILITY' as const, severity: 'MEDIUM' as const }] },
+      'MEDIUM', 'mqr', 0.5],
+    ['MQR BLOCKER',
+      { severity: 'MAJOR' as const, impacts: [{ softwareQuality: 'SECURITY' as const, severity: 'BLOCKER' as const }] },
+      'BLOCKER', 'mqr', 1.0],
+    ['multiple impacts take the highest severity',
+      { severity: 'MINOR' as const, impacts: [
+        { softwareQuality: 'MAINTAINABILITY' as const, severity: 'LOW' as const },
+        { softwareQuality: 'SECURITY' as const, severity: 'HIGH' as const },
+        { softwareQuality: 'RELIABILITY' as const, severity: 'MEDIUM' as const },
+      ] },
+      'HIGH', 'mqr', 0.7],
+    ['no impacts falls back to legacy',
+      { severity: 'CRITICAL' as const },
+      'CRITICAL', 'legacy', 0.7],
+    ['empty impacts array falls back to legacy',
+      { severity: 'BLOCKER' as const, impacts: [] },
+      'BLOCKER', 'legacy', 1.0],
+  ])('%s', (_name, issue, wantSeverity, wantSource, wantImpact) => {
+    const got = selectSeverity(issue as Parameters<typeof selectSeverity>[0]);
+    expect(got.severity).toBe(wantSeverity);
+    expect(got.source).toBe(wantSource);
+    expect(got.impact).toBe(wantImpact);
   });
 });

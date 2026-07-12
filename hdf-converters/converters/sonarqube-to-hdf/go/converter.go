@@ -34,24 +34,37 @@ type Paging struct {
 }
 
 type Issue struct {
-	Key          string     `json:"key"`
-	Rule         string     `json:"rule"`
-	Severity     string     `json:"severity"`
-	Component    string     `json:"component"`
-	Project      string     `json:"project"`
-	Line         *int       `json:"line,omitempty"`
-	Hash         string     `json:"hash,omitempty"`
-	TextRange    *TextRange `json:"textRange,omitempty"`
-	Flows        []Flow     `json:"flows,omitempty"`
-	Status       string     `json:"status"`
-	Message      string     `json:"message"`
-	Effort       string     `json:"effort,omitempty"`
-	Debt         string     `json:"debt,omitempty"`
-	Author       string     `json:"author,omitempty"`
-	Tags         []string   `json:"tags,omitempty"`
-	CreationDate string     `json:"creationDate"`
-	UpdateDate   string     `json:"updateDate"`
-	Type         string     `json:"type"`
+	Key       string     `json:"key"`
+	Rule      string     `json:"rule"`
+	Severity  string     `json:"severity"`
+	Component string     `json:"component"`
+	Project   string     `json:"project"`
+	Line      *int       `json:"line,omitempty"`
+	Hash      string     `json:"hash,omitempty"`
+	TextRange *TextRange `json:"textRange,omitempty"`
+	Flows     []Flow     `json:"flows,omitempty"`
+	Status    string     `json:"status"`
+	Message   string     `json:"message"`
+	Effort    string     `json:"effort,omitempty"`
+	Debt      string     `json:"debt,omitempty"`
+	Author    string     `json:"author,omitempty"`
+	Tags      []string   `json:"tags,omitempty"`
+	// Impacts carries the Multi-Quality-Rule (Clean Code) software-quality
+	// severities. Present only when the server is in MQR mode, where SonarQube
+	// treats these — not the deprecated top-level Severity — as authoritative.
+	Impacts                    []Impact `json:"impacts,omitempty"`
+	CleanCodeAttribute         string   `json:"cleanCodeAttribute,omitempty"`
+	CleanCodeAttributeCategory string   `json:"cleanCodeAttributeCategory,omitempty"`
+	CreationDate               string   `json:"creationDate"`
+	UpdateDate                 string   `json:"updateDate"`
+	Type                       string   `json:"type"`
+}
+
+// Impact is one MQR software-quality severity: SonarQube rates an issue
+// independently per quality (SECURITY, RELIABILITY, MAINTAINABILITY).
+type Impact struct {
+	SoftwareQuality string `json:"softwareQuality"`
+	Severity        string `json:"severity"`
 }
 
 type TextRange struct {
@@ -104,8 +117,8 @@ type DescriptionSection struct {
 	Content string `json:"content"`
 }
 
-// sonarqubeAliases maps SonarQube-specific severity labels to HDF impact scores.
-// Canonical reference: heimdall2 sonarqube-mapper.ts IMPACT_MAPPING.
+// sonarqubeAliases maps SonarQube's deprecated legacy severity labels to HDF
+// impact scores. Canonical reference: heimdall2 sonarqube-mapper.ts IMPACT_MAPPING.
 // Keys must be lowercase for use with SeverityToImpactWithAliases.
 // Note: SonarQube "CRITICAL" maps to 0.7, not the standard 1.0.
 var sonarqubeAliases = map[string]float64{
@@ -113,6 +126,63 @@ var sonarqubeAliases = map[string]float64{
 	"critical": 0.7,
 	"major":    0.5,
 	"minor":    0.3,
+}
+
+// mqrAliases covers the one MQR severity the standard map lacks; HIGH/MEDIUM/
+// LOW/INFO already resolve to 0.7/0.5/0.3/0.0 via SeverityToImpactWithAliases.
+var mqrAliases = map[string]float64{
+	"blocker": 1.0,
+}
+
+// mqrSeverityRank orders MQR software-quality severities weakest to strongest.
+var mqrSeverityRank = map[string]int{
+	"info":    0,
+	"low":     1,
+	"medium":  2,
+	"high":    3,
+	"blocker": 4,
+}
+
+// Which severity axis drove a requirement's severity/impact. Emitted as the
+// severitySource tag so downstream gates can pin the meaning of severity.
+const (
+	severitySourceMQR    = "mqr"
+	severitySourceLegacy = "legacy"
+)
+
+// maxImpact returns the highest-severity impact. An issue is rated per software
+// quality, so the worst rating governs — matching how the SonarQube UI buckets it.
+func maxImpact(impacts []Impact) (Impact, bool) {
+	var best Impact
+	found := false
+	for _, imp := range impacts {
+		if !found || mqrSeverityRank[strings.ToLower(imp.Severity)] > mqrSeverityRank[strings.ToLower(best.Severity)] {
+			best = imp
+			found = true
+		}
+	}
+	return best, found
+}
+
+// selectSeverity picks the authoritative severity axis for an issue. In MQR mode
+// SonarQube deprecates the top-level severity and the UI reports impacts[], so
+// impacts[] wins whenever present; pre-MQR servers fall back to the legacy field.
+// The legacy→MQR relationship is per-rule, not a constant offset, so the legacy
+// value can never be relabelled into the MQR axis after the fact.
+func selectSeverity(issue Issue) (severity, source string) {
+	if imp, ok := maxImpact(issue.Impacts); ok {
+		return imp.Severity, severitySourceMQR
+	}
+	return issue.Severity, severitySourceLegacy
+}
+
+// severityToImpactScore converts a severity to an HDF impact using the scale that
+// belongs to its axis — the two axes share labels (BLOCKER) but not meaning.
+func severityToImpactScore(severity, source string) float64 {
+	if source == severitySourceMQR {
+		return hdfutil.SeverityToImpactWithAliases(severity, mqrAliases, 0.5)
+	}
+	return hdfutil.SeverityToImpactWithAliases(severity, sonarqubeAliases, 0.5)
 }
 
 // defaultNistTag is the fallback NIST control for SonarQube findings without
@@ -165,16 +235,19 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		issuesByProject[projectKey] = append(issuesByProject[projectKey], issue)
 	}
 
+	// Sorted project keys keep baselines and targets in a stable order across runs.
+	projectKeys := make([]string, 0, len(issuesByProject))
+	for projectKey := range issuesByProject {
+		projectKeys = append(projectKeys, projectKey)
+	}
+	sort.Strings(projectKeys)
+
 	// Convert each project to a baseline
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(issuesByProject))
-	for projectKey, issues := range issuesByProject {
-		baseline := convertProjectToBaseline(projectKey, issues, componentMap, ruleMap, resultsChecksum)
-		baselines = append(baselines, baseline)
-	}
-
-	// Build targets from project keys
 	targets := make([]hdf.Component, 0, len(issuesByProject))
-	for projectKey := range issuesByProject {
+	for _, projectKey := range projectKeys {
+		baseline := convertProjectToBaseline(projectKey, issuesByProject[projectKey], componentMap, ruleMap, resultsChecksum)
+		baselines = append(baselines, baseline)
 		targets = append(targets, hdf.Component{
 			Name: projectKey,
 			Type: hdf.Application,
@@ -242,10 +315,17 @@ func convertProjectToBaseline(
 		issuesByRule[ruleKey] = append(issuesByRule[ruleKey], issue)
 	}
 
-	// Convert each rule to a requirement
+	// Convert each rule to a requirement. Iterate rule keys in sorted order —
+	// ranging a map directly would emit requirements in a random order each run.
+	ruleKeys := make([]string, 0, len(issuesByRule))
+	for ruleKey := range issuesByRule {
+		ruleKeys = append(ruleKeys, ruleKey)
+	}
+	sort.Strings(ruleKeys)
+
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(issuesByRule))
-	for ruleKey, ruleIssues := range issuesByRule {
-		requirement := convertRuleToRequirement(ruleKey, ruleIssues, componentMap, ruleMap)
+	for _, ruleKey := range ruleKeys {
+		requirement := convertRuleToRequirement(ruleKey, issuesByRule[ruleKey], componentMap, ruleMap)
 		requirements = append(requirements, requirement)
 	}
 
@@ -272,9 +352,10 @@ func convertRuleToRequirement(
 	}
 	description := extractDescription(&rule, hasRule)
 
-	// Get impact from first issue
+	// Severity is a property of the rule, so the first issue speaks for the group.
 	firstIssue := issues[0]
-	impact := hdfutil.SeverityToImpactWithAliases(firstIssue.Severity, sonarqubeAliases, 0.5)
+	severity, severitySource := selectSeverity(firstIssue)
+	impact := severityToImpactScore(severity, severitySource)
 
 	// Extract tags and mappings
 	cweIds, owaspTags, allTags := extractTags(&rule, hasRule, issues)
@@ -307,12 +388,22 @@ func convertRuleToRequirement(
 
 	// Build tags
 	tags := make(map[string]interface{})
-	tags["severity"] = strings.ToLower(firstIssue.Severity)
+	tags["severity"] = strings.ToLower(severity)
+	tags["severitySource"] = severitySource
 	tags["type"] = strings.ToLower(firstIssue.Type)
 	tags["cwe"] = cweIds
 	tags["owasp"] = owaspTags
 	tags["nist"] = nistControls
 	tags["cci"] = cciControls
+	// Keep both axes available in MQR mode so consumers can select. In legacy
+	// mode tags.severity already is the legacy axis, so repeating it adds nothing.
+	if severitySource == severitySourceMQR {
+		tags["legacySeverity"] = strings.ToLower(firstIssue.Severity)
+		tags["impacts"] = firstIssue.Impacts
+		if firstIssue.CleanCodeAttribute != "" {
+			tags["cleanCodeAttribute"] = firstIssue.CleanCodeAttribute
+		}
+	}
 	for k, v := range allTags {
 		tags[k] = v
 	}

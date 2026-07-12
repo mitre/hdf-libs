@@ -13,7 +13,7 @@
             {
               "codeDesc": "src/main/java/com/example/Example.java LINE : 42",
               "message": "Remove this unused private method.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-01-15T10:30:00Z",
               "status": "failed"
             }
           ],
@@ -22,18 +22,23 @@
             "ref": "src/main/java/com/example/Example.java"
           },
           "id": "java:S1144",
-          "impact": 0.7,
+          "impact": 0.5,
           "tags": {
-            "cci": [],
+            "cci": [
+              "CCI-003173"
+            ],
             "cwe": [],
             "nist": [
               "SA-11"
             ],
             "owasp": [],
             "severity": "major",
+            "severitySource": "legacy",
             "type": "code_smell"
           },
-          "title": "Unused private method should be removed"
+          "controlType": "management",
+          "title": "Unused private method should be removed",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -46,7 +51,7 @@
             {
               "codeDesc": "src/main/java/com/example/Security.java LINE : 128",
               "message": "A NullPointerException could be thrown; \"user\" is nullable here.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-01-20T14:22:00Z",
               "status": "failed"
             }
           ],
@@ -57,18 +62,23 @@
           "id": "java:S2259",
           "impact": 1,
           "tags": {
-            "cci": [],
+            "cci": [
+              "CCI-001310"
+            ],
             "cwe": [
               "CWE-476"
             ],
             "nist": [
-              "SI-11"
+              "SI-10"
             ],
             "owasp": [],
             "severity": "blocker",
+            "severitySource": "legacy",
             "type": "bug"
           },
-          "title": "Null pointers should not be dereferenced"
+          "controlType": "technical",
+          "title": "Null pointers should not be dereferenced",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -79,9 +89,18 @@
       "title": "SonarQube Analysis for com.example:myproject"
     }
   ],
+  "components": [
+    {
+      "name": "com.example:myproject",
+      "type": "application"
+    }
+  ],
   "generator": {
     "name": "sonarqube-to-hdf",
-    "version": "1.0.0"
+    "version": "0.1.0"
   },
-  "timestamp": "2026-02-09T23:35:35.83480603-05:00"
+  "timestamp": "2026-07-12T22:07:20.226821Z",
+  "tool": {
+    "name": "SonarQube"
+  }
 }

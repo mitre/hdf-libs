@@ -704,3 +704,150 @@ func TestConvertSonarqubeToHDF_VerificationMethod(t *testing.T) {
 			"requirement %q expected verificationMethod=automated", req.ID)
 	}
 }
+
+// ---- MQR (Multi-Quality-Rule / Clean Code) severity tests ----
+
+func loadMQRFixture(t *testing.T) []byte {
+	t.Helper()
+	fixturePath := filepath.Join(shared.GetConvertersDir(), "sonarqube-to-hdf", "fixtures", "input", "mqr.json")
+	data, err := os.ReadFile(fixturePath)
+	require.NoError(t, err, "Failed to read mqr.json fixture")
+	return data
+}
+
+// In MQR mode the software-quality severity is authoritative — the legacy
+// severity must not leak into tags.severity or the impact score.
+func TestConvertSonarqubeToHDF_MQRSeverityDrivesSeverityTag(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMQRFixture(t), testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	severityByRule := make(map[string]string)
+	impactByRule := make(map[string]float64)
+	for _, req := range result.Baselines[0].Requirements {
+		severityByRule[req.ID] = req.Tags["severity"].(string)
+		impactByRule[req.ID] = req.Impact
+	}
+
+	// java:S1186 is legacy CRITICAL but MQR HIGH; java:S1068 is legacy MAJOR but MQR MEDIUM.
+	assert.Equal(t, "high", severityByRule["java:S1186"], "MQR HIGH must win over legacy CRITICAL")
+	assert.Equal(t, "medium", severityByRule["java:S1068"], "MQR MEDIUM must win over legacy MAJOR")
+	assert.Equal(t, "low", severityByRule["java:S1128"], "MQR LOW must win over legacy MINOR")
+	assert.Equal(t, "info", severityByRule["java:S1135"])
+
+	assert.Equal(t, 0.7, impactByRule["java:S1186"], "MQR HIGH → 0.7")
+	assert.Equal(t, 0.5, impactByRule["java:S1068"], "MQR MEDIUM → 0.5")
+	assert.Equal(t, 0.3, impactByRule["java:S1128"], "MQR LOW → 0.3")
+	assert.Equal(t, 0.0, impactByRule["java:S1135"], "MQR INFO → 0.0")
+
+	for id, sev := range severityByRule {
+		assert.NotContains(t, []string{"critical", "major", "minor"}, sev,
+			"requirement %q emitted a legacy-axis severity %q in MQR mode", id, sev)
+	}
+}
+
+// Both axes are preserved so consumers can select, and severitySource states
+// which axis drove severity/impact.
+func TestConvertSonarqubeToHDF_MQRPreservesBothAxes(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMQRFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	var req *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "java:S1186" {
+			req = &result.Baselines[0].Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, req, "java:S1186 requirement not found")
+
+	assert.Equal(t, "mqr", req.Tags["severitySource"])
+	assert.Equal(t, "critical", req.Tags["legacySeverity"], "legacy axis must remain available")
+	assert.Equal(t, "high", req.Tags["severity"])
+
+	impacts, ok := req.Tags["impacts"].([]Impact)
+	require.True(t, ok, "impacts tag should preserve the per-quality MQR array")
+	require.NotEmpty(t, impacts)
+	assert.Equal(t, "MAINTAINABILITY", impacts[0].SoftwareQuality)
+	assert.Equal(t, "HIGH", impacts[0].Severity)
+}
+
+// Pre-MQR servers emit no impacts[]; the legacy axis must still drive severity.
+func TestConvertSonarqubeToHDF_LegacyFallbackWhenNoImpacts(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		assert.Equal(t, "legacy", req.Tags["severitySource"],
+			"requirement %q should report the legacy axis when impacts[] is absent", req.ID)
+		assert.NotContains(t, req.Tags, "impacts", "no impacts tag without MQR data")
+	}
+
+	severityByRule := make(map[string]string)
+	for _, req := range result.Baselines[0].Requirements {
+		severityByRule[req.ID] = req.Tags["severity"].(string)
+	}
+	assert.Equal(t, "major", severityByRule["java:S1144"])
+	assert.Equal(t, "blocker", severityByRule["java:S2259"])
+}
+
+// The legacy→MQR relationship is per-rule, not a constant offset: a rule can be
+// legacy MAJOR yet MQR LOW (over-rated) or legacy MAJOR yet MQR HIGH (under-rated).
+func TestSelectSeverity_DivergentAxes(t *testing.T) {
+	tests := []struct {
+		name         string
+		issue        Issue
+		wantSeverity string
+		wantSource   string
+		wantImpact   float64
+	}{
+		{
+			name:         "legacy MAJOR but MQR LOW (HDF previously over-rated)",
+			issue:        Issue{Severity: "MAJOR", Impacts: []Impact{{SoftwareQuality: "MAINTAINABILITY", Severity: "LOW"}}},
+			wantSeverity: "LOW", wantSource: severitySourceMQR, wantImpact: 0.3,
+		},
+		{
+			name:         "legacy MAJOR but MQR HIGH (HDF previously under-rated)",
+			issue:        Issue{Severity: "MAJOR", Impacts: []Impact{{SoftwareQuality: "SECURITY", Severity: "HIGH"}}},
+			wantSeverity: "HIGH", wantSource: severitySourceMQR, wantImpact: 0.7,
+		},
+		{
+			name:         "legacy CRITICAL but MQR MEDIUM",
+			issue:        Issue{Severity: "CRITICAL", Impacts: []Impact{{SoftwareQuality: "MAINTAINABILITY", Severity: "MEDIUM"}}},
+			wantSeverity: "MEDIUM", wantSource: severitySourceMQR, wantImpact: 0.5,
+		},
+		{
+			name:         "MQR BLOCKER",
+			issue:        Issue{Severity: "MAJOR", Impacts: []Impact{{SoftwareQuality: "SECURITY", Severity: "BLOCKER"}}},
+			wantSeverity: "BLOCKER", wantSource: severitySourceMQR, wantImpact: 1.0,
+		},
+		{
+			name: "multiple impacts take the highest severity",
+			issue: Issue{Severity: "MINOR", Impacts: []Impact{
+				{SoftwareQuality: "MAINTAINABILITY", Severity: "LOW"},
+				{SoftwareQuality: "SECURITY", Severity: "HIGH"},
+				{SoftwareQuality: "RELIABILITY", Severity: "MEDIUM"},
+			}},
+			wantSeverity: "HIGH", wantSource: severitySourceMQR, wantImpact: 0.7,
+		},
+		{
+			name:         "no impacts falls back to legacy",
+			issue:        Issue{Severity: "CRITICAL"},
+			wantSeverity: "CRITICAL", wantSource: severitySourceLegacy, wantImpact: 0.7,
+		},
+		{
+			name:         "empty impacts array falls back to legacy",
+			issue:        Issue{Severity: "BLOCKER", Impacts: []Impact{}},
+			wantSeverity: "BLOCKER", wantSource: severitySourceLegacy, wantImpact: 1.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			severity, source := selectSeverity(tt.issue)
+			assert.Equal(t, tt.wantSeverity, severity)
+			assert.Equal(t, tt.wantSource, source)
+			assert.Equal(t, tt.wantImpact, severityToImpactScore(severity, source))
+		})
+	}
+}

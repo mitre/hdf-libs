@@ -36,6 +36,18 @@ interface SonarQubeIssuesResponse {
   rules?: SonarQubeRule[];
 }
 
+type MqrSeverity = 'BLOCKER' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+
+/**
+ * One MQR software-quality severity. SonarQube rates an issue independently per
+ * quality, and in MQR mode treats these — not the deprecated top-level
+ * `severity` — as authoritative.
+ */
+interface SonarQubeImpact {
+  softwareQuality: 'SECURITY' | 'RELIABILITY' | 'MAINTAINABILITY';
+  severity: MqrSeverity;
+}
+
 interface SonarQubeIssue {
   key: string;
   rule: string;
@@ -57,6 +69,9 @@ interface SonarQubeIssue {
   debt?: string;
   author?: string;
   tags?: string[];
+  impacts?: SonarQubeImpact[];
+  cleanCodeAttribute?: string;
+  cleanCodeAttributeCategory?: string;
   creationDate: string;
   updateDate: string;
   type: 'CODE_SMELL' | 'BUG' | 'VULNERABILITY' | 'SECURITY_HOTSPOT';
@@ -111,7 +126,7 @@ interface SonarQubeRule {
 }
 
 /**
- * Severity to impact mapping.
+ * Deprecated legacy severity to impact mapping.
  * Canonical reference: heimdall2 sonarqube-mapper.ts IMPACT_MAPPING.
  */
 const SEVERITY_IMPACT_MAPPING: Record<string, number> = {
@@ -121,6 +136,62 @@ const SEVERITY_IMPACT_MAPPING: Record<string, number> = {
   MINOR: 0.3,
   INFO: 0.0,
 };
+
+/** MQR software-quality severity to impact mapping. */
+const MQR_IMPACT_MAPPING: Record<MqrSeverity, number> = {
+  BLOCKER: 1.0,
+  HIGH: 0.7,
+  MEDIUM: 0.5,
+  LOW: 0.3,
+  INFO: 0.0,
+};
+
+/** MQR severities ordered weakest to strongest. */
+const MQR_SEVERITY_RANK: Record<MqrSeverity, number> = {
+  INFO: 0,
+  LOW: 1,
+  MEDIUM: 2,
+  HIGH: 3,
+  BLOCKER: 4,
+};
+
+/**
+ * Which severity axis drove a requirement's severity/impact. Emitted as the
+ * severitySource tag so downstream gates can pin the meaning of severity.
+ */
+const SEVERITY_SOURCE_MQR = 'mqr';
+const SEVERITY_SOURCE_LEGACY = 'legacy';
+
+/**
+ * Pick the authoritative severity axis for an issue. In MQR mode SonarQube
+ * deprecates the top-level severity and the UI reports impacts[], so impacts[]
+ * wins whenever present; pre-MQR servers fall back to the legacy field. An issue
+ * is rated per software quality, so the worst rating governs — matching how the
+ * SonarQube UI buckets it. The legacy→MQR relationship is per-rule, not a
+ * constant offset, so the legacy value can never be relabelled after the fact.
+ */
+export function selectSeverity(issue: Pick<SonarQubeIssue, 'severity' | 'impacts'>): {
+  severity: string;
+  source: string;
+  impact: number;
+} {
+  const impacts = issue.impacts ?? [];
+  if (impacts.length > 0) {
+    const worst = impacts.reduce((a, b) =>
+      MQR_SEVERITY_RANK[b.severity] > MQR_SEVERITY_RANK[a.severity] ? b : a
+    );
+    return {
+      severity: worst.severity,
+      source: SEVERITY_SOURCE_MQR,
+      impact: MQR_IMPACT_MAPPING[worst.severity] ?? 0.5,
+    };
+  }
+  return {
+    severity: issue.severity,
+    source: SEVERITY_SOURCE_LEGACY,
+    impact: SEVERITY_IMPACT_MAPPING[issue.severity] ?? 0.5,
+  };
+}
 
 /**
  * Default NIST tag for SonarQube findings without CWE mappings.
@@ -182,12 +253,13 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
     issuesByProject.get(projectKey)!.push(issue);
   }
 
-  // Convert each project to a baseline
+  // Convert each project to a baseline, project-key sorted to match the Go converter.
+  const projectKeys = Array.from(issuesByProject.keys()).sort();
   const baselines: EvaluatedBaseline[] = [];
-  for (const [projectKey, issues] of issuesByProject) {
+  for (const projectKey of projectKeys) {
     const baseline = convertProjectToBaseline(
       projectKey,
-      issues,
+      issuesByProject.get(projectKey)!,
       componentMap,
       ruleMap,
       resultsChecksum
@@ -196,7 +268,7 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
   }
 
   // Build components from project keys
-  let components = Array.from(issuesByProject.keys()).map(projectKey => ({
+  let components = projectKeys.map(projectKey => ({
     type: TargetType.Application,
     name: projectKey,
   }));
@@ -253,12 +325,12 @@ function convertProjectToBaseline(
     issuesByRule.get(ruleKey)!.push(issue);
   }
 
-  // Convert each rule to a requirement
+  // Convert each rule to a requirement, rule-key sorted to match the Go converter.
   const requirements: EvaluatedRequirement[] = [];
-  for (const [ruleKey, ruleIssues] of issuesByRule) {
+  for (const ruleKey of Array.from(issuesByRule.keys()).sort()) {
     const requirement = convertRuleToRequirement(
       ruleKey,
-      ruleIssues,
+      issuesByRule.get(ruleKey)!,
       componentMap,
       ruleMap
     );
@@ -283,9 +355,9 @@ function convertRuleToRequirement(
   const title = rule?.name || ruleKey;
   const description = extractDescription(rule);
 
-  // Get impact from first issue (all issues of same rule have same severity)
+  // Severity is a property of the rule, so the first issue speaks for the group.
   const firstIssue = issues[0]!;
-  const impact = SEVERITY_IMPACT_MAPPING[firstIssue.severity] || 0.5;
+  const { severity, source: severitySource, impact } = selectSeverity(firstIssue);
 
   // Extract tags and mappings
   const { cweIds, owaspTags, allTags } = extractTags(rule, issues);
@@ -308,12 +380,24 @@ function convertRuleToRequirement(
     tags: Record<string, unknown>;
   } = {
     tags: {
-      severity: firstIssue.severity.toLowerCase(),
+      severity: severity.toLowerCase(),
+      severitySource,
       type: firstIssue.type.toLowerCase(),
       cwe: cweIds,
       owasp: owaspTags,
       nist: nistControls,
       cci: cciControls,
+      // Keep both axes available in MQR mode so consumers can select. In legacy
+      // mode tags.severity already is the legacy axis, so repeating it adds nothing.
+      ...(severitySource === SEVERITY_SOURCE_MQR
+        ? {
+            legacySeverity: firstIssue.severity.toLowerCase(),
+            impacts: firstIssue.impacts,
+            ...(firstIssue.cleanCodeAttribute
+              ? { cleanCodeAttribute: firstIssue.cleanCodeAttribute }
+              : {}),
+          }
+        : {}),
       ...allTags,
     },
   };

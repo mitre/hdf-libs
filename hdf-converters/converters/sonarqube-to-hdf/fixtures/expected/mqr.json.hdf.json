@@ -1,0 +1,351 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Unused \"private\" fields should be removed",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "src/main/java/com/example/generated/Module0001.java LINE : 12",
+              "message": "Remove this unused \"unusedField1\" private field.",
+              "startTime": "2026-03-24T02:51:47Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 12,
+            "ref": "src/main/java/com/example/generated/Module0001.java"
+          },
+          "id": "java:S1068",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "CLEAR",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "legacySeverity": "major",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Unused \"private\" fields should be removed",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Unnecessary imports should be removed",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "src/main/java/com/example/generated/Module0001.java LINE : 3",
+              "message": "Remove this unused import 'java.util.ArrayList'.",
+              "startTime": "2026-03-24T02:51:47Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 3,
+            "ref": "src/main/java/com/example/generated/Module0001.java"
+          },
+          "id": "java:S1128",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "CLEAR",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "LOW"
+              }
+            ],
+            "legacySeverity": "minor",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "low",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Unnecessary imports should be removed",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Track uses of \"TODO\" tags",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "src/main/java/com/example/generated/Module0001.java LINE : 52",
+              "message": "Complete the task associated to this TODO comment.",
+              "startTime": "2026-03-24T02:51:47Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 52,
+            "ref": "src/main/java/com/example/generated/Module0001.java"
+          },
+          "id": "java:S1135",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "COMPLETE",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "INFO"
+              }
+            ],
+            "legacySeverity": "info",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "info",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Track uses of \"TODO\" tags",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Unused \"private\" methods should be removed",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "src/main/java/com/example/generated/Module0001.java LINE : 26",
+              "message": "Remove this unused private \"neverCalled\" method.",
+              "startTime": "2026-03-24T02:51:47Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 26,
+            "ref": "src/main/java/com/example/generated/Module0001.java"
+          },
+          "id": "java:S1144",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "CLEAR",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "legacySeverity": "major",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Unused \"private\" methods should be removed",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Methods should not be empty",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "src/main/java/com/example/generated/Module0001.java LINE : 19",
+              "message": "Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.",
+              "startTime": "2026-03-24T02:51:47Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 19,
+            "ref": "src/main/java/com/example/generated/Module0001.java"
+          },
+          "id": "java:S1186",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "COMPLETE",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "HIGH"
+              }
+            ],
+            "legacySeverity": "critical",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "high",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Methods should not be empty",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "String literals should not be duplicated",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "src/main/java/com/example/generated/Module0001.java LINE : 48",
+              "message": "Define a constant instead of duplicating this literal \"DUPLICATED_LITERAL_0001\" 3 times.",
+              "startTime": "2026-03-24T02:51:47Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 48,
+            "ref": "src/main/java/com/example/generated/Module0001.java"
+          },
+          "id": "java:S1192",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "DISTINCT",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "HIGH"
+              }
+            ],
+            "legacySeverity": "critical",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "high",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "String literals should not be duplicated",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Unused local variables should be removed",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "src/main/java/com/example/generated/Module0001.java LINE : 32",
+              "message": "Remove this unused \"unused1\" local variable.",
+              "startTime": "2026-03-24T02:51:47Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 32,
+            "ref": "src/main/java/com/example/generated/Module0001.java"
+          },
+          "id": "java:S1481",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "CLEAR",
+            "cwe": [],
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "LOW"
+              }
+            ],
+            "legacySeverity": "minor",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "low",
+            "severitySource": "mqr",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Unused local variables should be removed",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "7fdd822c942c184e75f0190482c1215e32c92feb4a81659aad3cdec561a85dd0"
+      },
+      "name": "test-10k",
+      "title": "SonarQube Analysis for test-10k"
+    }
+  ],
+  "components": [
+    {
+      "name": "test-10k",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "sonarqube-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-07-12T22:07:20.227615Z",
+  "tool": {
+    "name": "SonarQube",
+    "version": "26.1.0.118079"
+  }
+}
