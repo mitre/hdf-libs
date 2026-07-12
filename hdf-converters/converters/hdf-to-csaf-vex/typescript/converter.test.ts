@@ -283,3 +283,52 @@ describe('helpers', () => {
     expect(stripProductsLine('only prose')).toBe('only prose');
   });
 });
+
+describe('convertHdfToCsafVex — cvss scores', () => {
+  it('emits a consumer-supplied cvss block as a CSAF score', () => {
+    const amendments = {
+      overrides: [{
+        type: 'falsePositive',
+        requirementId: 'CVE-2021-44228',
+        status: 'notApplicable',
+        reason: 'not reachable',
+        componentRef: 'pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1',
+        appliedBy: { type: 'simple', identifier: 'a' },
+        appliedAt: '2026-01-01T00:00:00Z',
+        cvss: {
+          version: '3.1',
+          baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+          baseScore: 10,
+          baseSeverity: 'critical',
+        },
+      }],
+    };
+    const out = JSON.parse(convertHdfToCsafVex(JSON.stringify(amendments), TEST_VERSION));
+    const vuln = out.vulnerabilities.find((x: { cve: string }) => x.cve === 'CVE-2021-44228');
+    expect(vuln.scores[0].cvss_v3.baseScore).toBe(10);
+    expect(vuln.scores[0].cvss_v3.vectorString).toContain('CVSS:3.1');
+    expect(vuln.scores[0].cvss_v3.version).toBe('3.1');
+    expect(vuln.scores[0].products.length).toBeGreaterThan(0);
+  });
+
+  const cvssOverride = (cvss: Record<string, unknown>): string =>
+    JSON.stringify({
+      overrides: [{
+        type: 'falsePositive', requirementId: 'CVE-2000-0001', status: 'notApplicable', reason: 'r',
+        componentRef: 'pkg:x', appliedBy: { type: 'simple', identifier: 'a' }, appliedAt: '2026-01-01T00:00:00Z', cvss,
+      }],
+    });
+
+  it('keys the score by CVSS version (v4, v2)', () => {
+    const v4 = JSON.parse(convertHdfToCsafVex(cvssOverride({ version: '4.0', baseScore: 9.3, baseVector: 'CVSS:4.0/AV:N' }), TEST_VERSION));
+    expect(v4.vulnerabilities[0].scores[0].cvss_v4.version).toBe('4.0');
+    const v2 = JSON.parse(convertHdfToCsafVex(cvssOverride({ version: '2.0', baseScore: 7.5, baseVector: 'AV:N/AC:L/Au:N/C:P/I:P/A:P' }), TEST_VERSION));
+    expect(v2.vulnerabilities[0].scores[0].cvss_v2.version).toBe('2.0');
+  });
+
+  it('emits no score when the cvss block has neither vector nor baseScore', () => {
+    const out = JSON.parse(convertHdfToCsafVex(cvssOverride({ version: '3.1' }), TEST_VERSION));
+    const vuln = out.vulnerabilities.find((x: { cve: string }) => x.cve === 'CVE-2000-0001');
+    expect(vuln?.scores).toBeUndefined();
+  });
+});

@@ -98,6 +98,53 @@ type FullProductName struct {
 	ProductID string `json:"product_id"`
 }
 
+// Score is a CSAF vulnerability score entry (one CVSS block + affected products).
+type Score struct {
+	Products []string  `json:"products"`
+	CvssV2   *CvssData `json:"cvss_v2,omitempty"`
+	CvssV3   *CvssData `json:"cvss_v3,omitempty"`
+	CvssV4   *CvssData `json:"cvss_v4,omitempty"`
+}
+
+// CvssData is the CSAF representation of a CVSS block.
+type CvssData struct {
+	Version      string   `json:"version"`
+	VectorString string   `json:"vectorString,omitempty"`
+	BaseScore    *float64 `json:"baseScore,omitempty"`
+	BaseSeverity string   `json:"baseSeverity,omitempty"`
+}
+
+// buildCsafScore maps an HDF Cvss block to a CSAF score entry (cvss_v2/v3/v4 by version).
+func buildCsafScore(cvss *hdf.Cvss, products []string) *Score {
+	if cvss == nil {
+		return nil
+	}
+	ver := string(cvss.Version)
+	data := &CvssData{Version: ver}
+	if cvss.BaseVector != nil {
+		data.VectorString = *cvss.BaseVector
+	}
+	if cvss.BaseScore != nil {
+		data.BaseScore = cvss.BaseScore
+	}
+	if cvss.BaseSeverity != nil {
+		data.BaseSeverity = string(*cvss.BaseSeverity)
+	}
+	if data.VectorString == "" && data.BaseScore == nil {
+		return nil
+	}
+	score := &Score{Products: products}
+	switch {
+	case strings.HasPrefix(ver, "4"):
+		score.CvssV4 = data
+	case strings.HasPrefix(ver, "2"):
+		score.CvssV2 = data
+	default:
+		score.CvssV3 = data
+	}
+	return score
+}
+
 type Vulnerability struct {
 	CVE           string         `json:"cve"`
 	Notes         []Note         `json:"notes,omitempty"`
@@ -106,6 +153,7 @@ type Vulnerability struct {
 	Threats       []Threat       `json:"threats,omitempty"`
 	Remediations  []Remediation  `json:"remediations,omitempty"`
 	References    []Reference    `json:"references,omitempty"`
+	Scores        []Score        `json:"scores,omitempty"`
 }
 
 type ProductStatus struct {
@@ -294,6 +342,12 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 	for i := range group.overrides {
 		o := &group.overrides[i]
 		pids := productIDsFor(o)
+
+		// Emit consumer-supplied CVSS enrichment as a CSAF score entry.
+		if s := buildCsafScore(o.Cvss, pids); s != nil {
+			v.Scores = append(v.Scores, *s)
+			emittedAny = true
+		}
 
 		canonical, ok := vex.ExportStatusFor(o, allMilestonesCompleted(o), false)
 		if !ok {

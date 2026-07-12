@@ -395,3 +395,51 @@ describe('helpers', () => {
     ).toBe(false);
   });
 });
+
+describe('convertHdfToCyclonedxVex — cvss ratings', () => {
+  it('emits a consumer-supplied cvss block as a CycloneDX rating', () => {
+    const amendments = { overrides: [{
+      type: 'falsePositive', requirementId: 'CVE-2021-44228', status: 'notApplicable', reason: 'nr',
+      componentRef: 'pkg:maven/log4j@2.14.1',
+      appliedBy: { type: 'simple', identifier: 'a' }, appliedAt: '2026-01-01T00:00:00Z',
+      cvss: { version: '3.1', baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H', baseScore: 10, baseSeverity: 'critical' },
+    }] };
+    const out = JSON.parse(convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION));
+    const vuln = out.vulnerabilities.find((x: { id: string }) => x.id === 'CVE-2021-44228');
+    expect(vuln.ratings[0].score).toBe(10);
+    expect(vuln.ratings[0].method).toBe('CVSSv31');
+    expect(vuln.ratings[0].vector).toContain('CVSS:3.1');
+    expect(vuln.ratings[0].severity).toBe('critical');
+  });
+
+  const ratingMethod = (version: string): string | undefined => {
+    const input = JSON.stringify({
+      overrides: [{
+        type: 'falsePositive', requirementId: 'CVE-2000-0001', status: 'notApplicable', reason: 'r',
+        componentRef: 'pkg:x', appliedBy: { type: 'simple', identifier: 'a' }, appliedAt: '2026-01-01T00:00:00Z',
+        cvss: { version, baseScore: 5 },
+      }],
+    });
+    const out = JSON.parse(convertHdfToCyclonedxVex(input, TEST_VERSION));
+    return out.vulnerabilities[0].ratings[0].method;
+  };
+
+  it('maps the rating method by CVSS version', () => {
+    expect(ratingMethod('4.0')).toBe('CVSSv4');
+    expect(ratingMethod('3.0')).toBe('CVSSv3');
+    expect(ratingMethod('2.0')).toBe('CVSSv2');
+    expect(ratingMethod('9.9')).toBe('other');
+  });
+
+  it('emits no rating when the cvss block has neither vector nor baseScore', () => {
+    const input = JSON.stringify({
+      overrides: [{
+        type: 'falsePositive', requirementId: 'CVE-2000-0002', status: 'notApplicable', reason: 'r',
+        componentRef: 'pkg:x', appliedBy: { type: 'simple', identifier: 'a' }, appliedAt: '2026-01-01T00:00:00Z',
+        cvss: { version: '3.1' },
+      }],
+    });
+    const out = JSON.parse(convertHdfToCyclonedxVex(input, TEST_VERSION));
+    expect(out.vulnerabilities[0].ratings).toBeUndefined();
+  });
+});

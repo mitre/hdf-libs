@@ -70,10 +70,52 @@ type Component struct {
 	Cpe     string `json:"cpe,omitempty"`
 }
 
+// Rating is a CycloneDX vulnerability rating (a CVSS score).
+type Rating struct {
+	Score    *float64 `json:"score,omitempty"`
+	Severity string   `json:"severity,omitempty"`
+	Method   string   `json:"method,omitempty"`
+	Vector   string   `json:"vector,omitempty"`
+}
+
+// buildCdxRating maps an HDF Cvss block to a CycloneDX rating.
+func buildCdxRating(cvss *hdf.Cvss) *Rating {
+	if cvss == nil {
+		return nil
+	}
+	rating := &Rating{}
+	if cvss.BaseScore != nil {
+		rating.Score = cvss.BaseScore
+	}
+	if cvss.BaseSeverity != nil {
+		rating.Severity = string(*cvss.BaseSeverity)
+	}
+	if cvss.BaseVector != nil {
+		rating.Vector = *cvss.BaseVector
+	}
+	switch string(cvss.Version) {
+	case "4.0":
+		rating.Method = "CVSSv4"
+	case "3.1":
+		rating.Method = "CVSSv31"
+	case "3.0":
+		rating.Method = "CVSSv3"
+	case "2.0":
+		rating.Method = "CVSSv2"
+	default:
+		rating.Method = "other"
+	}
+	if rating.Score == nil && rating.Vector == "" {
+		return nil
+	}
+	return rating
+}
+
 type Vulnerability struct {
 	ID         string        `json:"id"`
 	Source     *Source       `json:"source,omitempty"`
 	References []Reference   `json:"references,omitempty"`
+	Ratings    []Rating      `json:"ratings,omitempty"`
 	Analysis   Analysis      `json:"analysis"`
 	Affects    []AffectedRef `json:"affects"`
 }
@@ -206,6 +248,11 @@ func overrideToVulnerability(o *hdf.StandaloneOverride, componentRegistry map[st
 		Source:   &Source{Name: "NVD", URL: "https://nvd.nist.gov/vuln/detail/" + o.RequirementID},
 		Analysis: analysis,
 		Affects:  affectsForProducts(pids),
+	}
+
+	// Emit consumer-supplied CVSS enrichment as a CycloneDX rating.
+	if rating := buildCdxRating(o.Cvss); rating != nil {
+		v.Ratings = append(v.Ratings, *rating)
 	}
 
 	for _, e := range o.Evidence {

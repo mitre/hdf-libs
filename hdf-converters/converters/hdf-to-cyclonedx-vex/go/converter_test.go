@@ -241,3 +241,24 @@ func TestAllMilestonesCompleted(t *testing.T) {
 	assert.True(t, allMilestonesCompleted(&hdf.StandaloneOverride{Milestones: []hdf.Milestone{{Status: hdf.Completed}, {Status: hdf.Completed}}}))
 	assert.False(t, allMilestonesCompleted(&hdf.StandaloneOverride{Milestones: []hdf.Milestone{{Status: hdf.Completed}, {Status: hdf.Pending}}}))
 }
+
+func TestConvertHDFToCycloneDXVEX_CvssRating(t *testing.T) {
+	input := []byte(`{"overrides":[{
+		"type":"falsePositive","requirementId":"CVE-2021-44228","status":"notApplicable","reason":"nr",
+		"componentRef":"pkg:maven/log4j@2.14.1",
+		"appliedBy":{"type":"simple","identifier":"a"},"appliedAt":"2026-01-01T00:00:00Z",
+		"cvss":{"version":"3.1","baseVector":"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","baseScore":10,"baseSeverity":"critical"}
+	}]}`)
+	out, err := ConvertHDFToCycloneDXVEX(input, testVersion)
+	require.NoError(t, err)
+	var bom BOM
+	require.NoError(t, json.Unmarshal(out, &bom))
+	require.Len(t, bom.Vulnerabilities, 1)
+	r := bom.Vulnerabilities[0].Ratings
+	require.NotEmpty(t, r)
+	require.NotNil(t, r[0].Score)
+	assert.InDelta(t, 10.0, *r[0].Score, 0.001)
+	assert.Equal(t, "CVSSv31", r[0].Method)
+	assert.Contains(t, r[0].Vector, "CVSS:3.1")
+	assert.Equal(t, "critical", r[0].Severity)
+}

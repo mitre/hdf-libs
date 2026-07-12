@@ -58,6 +58,36 @@ interface Vulnerability {
   threats?: { category: string; details: string; product_ids?: string[] }[];
   remediations?: { category: string; details: string; product_ids?: string[] }[];
   references?: { category?: string; summary?: string; url: string }[];
+  scores?: CsafScore[];
+}
+
+interface CsafCvss {
+  version: string;
+  vectorString?: string;
+  baseScore?: number;
+  baseSeverity?: string;
+}
+
+interface CsafScore {
+  products: string[];
+  cvss_v2?: CsafCvss;
+  cvss_v3?: CsafCvss;
+  cvss_v4?: CsafCvss;
+}
+
+/** Map an HDF Cvss block to a CSAF score entry (cvss_v2/v3/v4 by version). */
+function buildCsafScore(cvss: NonNullable<StandaloneOverride['cvss']>, products: string[]): CsafScore | undefined {
+  const inner: CsafCvss = {
+    version: cvss.version,
+    ...(cvss.baseVector && { vectorString: cvss.baseVector }),
+    ...(typeof cvss.baseScore === 'number' && { baseScore: cvss.baseScore }),
+    ...(cvss.baseSeverity && { baseSeverity: cvss.baseSeverity }),
+  };
+  if (inner.vectorString === undefined && inner.baseScore === undefined) {
+    return undefined;
+  }
+  const key = cvss.version.startsWith('4') ? 'cvss_v4' : cvss.version.startsWith('2') ? 'cvss_v2' : 'cvss_v3';
+  return { [key]: inner, products };
 }
 
 export function convertHdfToCsafVex(input: string, converterVersion: string): string {
@@ -155,6 +185,16 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
 
   for (const o of group.overrides) {
     const pids = productIDsFor(o);
+
+    // Emit consumer-supplied CVSS enrichment as a CSAF score entry.
+    if (o.cvss) {
+      const score = buildCsafScore(o.cvss, pids);
+      if (score) {
+        v.scores = (v.scores ?? []).concat(score);
+        emitted = true;
+      }
+    }
+
     let canonical = exportStatusFor(o, allMilestonesCompleted(o), false);
     if (!canonical) continue;
 

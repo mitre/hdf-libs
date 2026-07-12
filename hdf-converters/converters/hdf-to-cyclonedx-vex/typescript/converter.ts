@@ -53,10 +53,19 @@ interface BOM {
   vulnerabilities: Vulnerability[];
 }
 
+interface Rating {
+  source?: { name?: string };
+  score?: number;
+  severity?: string;
+  method?: string;
+  vector?: string;
+}
+
 interface Vulnerability {
   id: string;
   source?: { name?: string; url: string };
   references?: { id: string; source: { name?: string; url: string } }[];
+  ratings?: Rating[];
   analysis: {
     state: string;
     justification?: string;
@@ -64,6 +73,18 @@ interface Vulnerability {
     detail?: string;
   };
   affects: { ref: string }[];
+}
+
+/** Map an HDF Cvss block to a CycloneDX rating. */
+function buildCdxRating(cvss: NonNullable<StandaloneOverride['cvss']>): Rating | undefined {
+  const rating: Rating = {};
+  if (typeof cvss.baseScore === 'number') rating.score = cvss.baseScore;
+  if (cvss.baseSeverity) rating.severity = cvss.baseSeverity;
+  if (cvss.baseVector) rating.vector = cvss.baseVector;
+  const v = cvss.version;
+  rating.method = v === '4.0' ? 'CVSSv4' : v === '3.1' ? 'CVSSv31' : v === '3.0' ? 'CVSSv3' : v === '2.0' ? 'CVSSv2' : 'other';
+  if (rating.score === undefined && rating.vector === undefined) return undefined;
+  return rating;
 }
 
 export function convertHdfToCyclonedxVex(input: string, converterVersion: string): string {
@@ -157,6 +178,12 @@ function overrideToVulnerability(
     analysis,
     affects: pids.map((p) => ({ ref: p })),
   };
+
+  // Emit consumer-supplied CVSS enrichment as a CycloneDX rating.
+  if (o.cvss) {
+    const rating = buildCdxRating(o.cvss);
+    if (rating) v.ratings = [rating];
+  }
 
   for (const e of o.evidence ?? []) {
     if (e.type !== 'url' || !e.data) continue;
