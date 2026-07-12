@@ -262,3 +262,53 @@ func TestConvertHDFToCycloneDXVEX_CvssRating(t *testing.T) {
 	assert.Contains(t, r[0].Vector, "CVSS:3.1")
 	assert.Equal(t, "critical", r[0].Severity)
 }
+
+func TestConvertHDFToCycloneDXVEX_FixedInVersionEmitsVersRange(t *testing.T) {
+	t.Parallel()
+	input := []byte(`{
+		"name": "fixedInVersion",
+		"overrides": [{
+			"type": "falsePositive",
+			"requirementId": "CVE-2026-7777",
+			"status": "passed",
+			"appliedAt": "2026-01-01T00:00:00Z",
+			"expiresAt": "2099-12-31T00:00:00Z",
+			"appliedBy": {"type": "simple", "identifier": "team"},
+			"reason": "patched upstream",
+			"affectedPackages": [{"name": "abc", "version": "4.2", "purl": "pkg:npm/abc@4.2", "fixedInVersion": "4.5"}]
+		}]
+	}`)
+	out, err := ConvertHDFToCycloneDXVEX(input, testVersion)
+	require.NoError(t, err)
+	bom := parseBOM(t, out)
+	require.Len(t, bom.Vulnerabilities, 1)
+	affects := bom.Vulnerabilities[0].Affects
+	require.Len(t, affects, 1)
+	require.Len(t, affects[0].Versions, 2)
+	assert.Equal(t, CdxVersion{Version: "4.2", Status: "affected"}, affects[0].Versions[0])
+	assert.Equal(t, CdxVersion{Range: "vers:npm/>=4.5", Status: "unaffected"}, affects[0].Versions[1])
+	assert.Empty(t, bom.Vulnerabilities[0].Recommendation)
+}
+
+func TestConvertHDFToCycloneDXVEX_FixedInVersionFallsBackToRecommendation(t *testing.T) {
+	t.Parallel()
+	input := []byte(`{
+		"name": "fixedInVersion",
+		"overrides": [{
+			"type": "falsePositive",
+			"requirementId": "CVE-2026-8888",
+			"status": "passed",
+			"appliedAt": "2026-01-01T00:00:00Z",
+			"expiresAt": "2099-12-31T00:00:00Z",
+			"appliedBy": {"type": "simple", "identifier": "team"},
+			"reason": "patched upstream",
+			"affectedPackages": [{"cpe": "cpe:2.3:a:acme:abc:4.2:*:*:*:*:*:*:*", "fixedInVersion": "4.5"}]
+		}]
+	}`)
+	out, err := ConvertHDFToCycloneDXVEX(input, testVersion)
+	require.NoError(t, err)
+	bom := parseBOM(t, out)
+	require.Len(t, bom.Vulnerabilities, 1)
+	assert.Equal(t, "Upgrade to 4.5", bom.Vulnerabilities[0].Recommendation)
+	assert.Empty(t, bom.Vulnerabilities[0].Affects[0].Versions)
+}

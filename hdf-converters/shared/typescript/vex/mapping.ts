@@ -307,6 +307,45 @@ export function affectedPackageToIdentifier(
   return undefined;
 }
 
+/** Replace the `@version` segment of a purl (between `@` and `?`/`#`), inserting one if absent. */
+export function swapPurlVersion(purl: string, version: string): string {
+  const at = purl.indexOf('@');
+  if (at >= 0) {
+    const rest = purl.slice(at + 1);
+    const end = rest.search(/[?#]/);
+    const tail = end >= 0 ? rest.slice(end) : '';
+    return `${purl.slice(0, at)}@${version}${tail}`;
+  }
+  const end = purl.search(/[?#]/);
+  return end >= 0 ? `${purl.slice(0, end)}@${version}${purl.slice(end)}` : `${purl}@${version}`;
+}
+
+/**
+ * Identifier for the FIXED version of a package (purl with the version swapped
+ * to fixedInVersion, or name@fixedInVersion). Undefined when there is no
+ * fixedInVersion or no purl/name to anchor it (a bare cpe cannot be swapped).
+ */
+export function fixedPackageIdentifier(pkg: AffectedPackage): string | undefined {
+  if (!pkg.fixedInVersion) return undefined;
+  if (pkg.purl) return swapPurlVersion(pkg.purl, pkg.fixedInVersion);
+  if (pkg.name) return `${pkg.name}@${pkg.fixedInVersion}`;
+  return undefined;
+}
+
+/**
+ * `vers` (Package URL version-range) type for a package, from its ecosystem or
+ * the purl type. Returns undefined when neither is known (so callers avoid
+ * emitting an invalid range).
+ */
+export function versTypeFor(pkg: AffectedPackage): string | undefined {
+  if (pkg.ecosystem) return String(pkg.ecosystem).toLowerCase();
+  if (pkg.purl) {
+    const m = /^pkg:([^/]+)\//.exec(pkg.purl);
+    if (m?.[1]) return m[1].toLowerCase();
+  }
+  return undefined;
+}
+
 /**
  * Build an HDF Evidence entry pointing at the upstream VEX document. Used by
  * importers to preserve provenance even though we lose the structured

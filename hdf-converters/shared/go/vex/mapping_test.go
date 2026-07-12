@@ -188,3 +188,43 @@ func TestJustificationForCycloneDX(t *testing.T) {
 	_, ok = JustificationForCycloneDX(hdf.VulnerableCodeCannotBeControlledByAdversary)
 	assert.False(t, ok, "vulnerable_code_cannot_be_controlled_by_adversary has no CycloneDX equivalent")
 }
+
+func strptr(s string) *string { return &s }
+
+func TestSwapPurlVersion(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "pkg:npm/abc@4.5?arch=x64", SwapPurlVersion("pkg:npm/abc@4.2?arch=x64", "4.5"))
+	assert.Equal(t, "pkg:npm/abc@4.5", SwapPurlVersion("pkg:npm/abc", "4.5"))
+	assert.Equal(t, "pkg:npm/abc@4.5?arch=x64", SwapPurlVersion("pkg:npm/abc?arch=x64", "4.5"))
+}
+
+func TestFixedPackageIdentifier(t *testing.T) {
+	t.Parallel()
+	id, ok := FixedPackageIdentifier(hdf.AffectedPackage{Purl: strptr("pkg:npm/abc@4.2"), FixedInVersion: strptr("4.5")})
+	require.True(t, ok)
+	assert.Equal(t, "pkg:npm/abc@4.5", id)
+
+	id, ok = FixedPackageIdentifier(hdf.AffectedPackage{Name: strptr("abc"), FixedInVersion: strptr("4.5")})
+	require.True(t, ok)
+	assert.Equal(t, "abc@4.5", id)
+
+	_, ok = FixedPackageIdentifier(hdf.AffectedPackage{Purl: strptr("pkg:npm/abc@4.2")})
+	assert.False(t, ok)
+	_, ok = FixedPackageIdentifier(hdf.AffectedPackage{Cpe: strptr("cpe:2.3:a:x:y:1:*:*:*:*:*:*:*"), FixedInVersion: strptr("4.5")})
+	assert.False(t, ok)
+}
+
+func TestVersTypeFor(t *testing.T) {
+	t.Parallel()
+	eco := hdf.Ecosystem("Npm")
+	typ, ok := VersTypeFor(hdf.AffectedPackage{Ecosystem: &eco})
+	require.True(t, ok)
+	assert.Equal(t, "npm", typ)
+
+	typ, ok = VersTypeFor(hdf.AffectedPackage{Purl: strptr("pkg:RPM/openssl@1.1")})
+	require.True(t, ok)
+	assert.Equal(t, "rpm", typ)
+
+	_, ok = VersTypeFor(hdf.AffectedPackage{Cpe: strptr("cpe:2.3:a:x:y:1:*:*:*:*:*:*:*")})
+	assert.False(t, ok)
+}

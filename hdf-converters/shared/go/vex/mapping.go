@@ -11,6 +11,7 @@
 package vex
 
 import (
+	"regexp"
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -307,6 +308,56 @@ func AffectedPackageToIdentifier(pkg hdf.AffectedPackage) (string, bool) {
 	}
 	return "", false
 }
+
+// SwapPurlVersion replaces the @version segment of a purl (between @ and ?/#),
+// inserting one if absent.
+func SwapPurlVersion(purl, version string) string {
+	if at := strings.Index(purl, "@"); at >= 0 {
+		rest := purl[at+1:]
+		tail := ""
+		if end := strings.IndexAny(rest, "?#"); end >= 0 {
+			tail = rest[end:]
+		}
+		return purl[:at] + "@" + version + tail
+	}
+	if end := strings.IndexAny(purl, "?#"); end >= 0 {
+		return purl[:end] + "@" + version + purl[end:]
+	}
+	return purl + "@" + version
+}
+
+// FixedPackageIdentifier renders the identifier for the FIXED version of a
+// package (purl with the version swapped to fixedInVersion, or
+// name@fixedInVersion). Returns ("", false) when there is no fixedInVersion or
+// no purl/name to anchor it (a bare cpe cannot be swapped).
+func FixedPackageIdentifier(pkg hdf.AffectedPackage) (string, bool) {
+	if pkg.FixedInVersion == nil || *pkg.FixedInVersion == "" {
+		return "", false
+	}
+	if pkg.Purl != nil && *pkg.Purl != "" {
+		return SwapPurlVersion(*pkg.Purl, *pkg.FixedInVersion), true
+	}
+	if pkg.Name != nil && *pkg.Name != "" {
+		return *pkg.Name + "@" + *pkg.FixedInVersion, true
+	}
+	return "", false
+}
+
+// VersTypeFor returns the vers (Package URL version-range) type for a package,
+// from its ecosystem or the purl type. Returns ("", false) when neither is known.
+func VersTypeFor(pkg hdf.AffectedPackage) (string, bool) {
+	if pkg.Ecosystem != nil && *pkg.Ecosystem != "" {
+		return strings.ToLower(string(*pkg.Ecosystem)), true
+	}
+	if pkg.Purl != nil && *pkg.Purl != "" {
+		if m := purlTypeRe.FindStringSubmatch(*pkg.Purl); m != nil {
+			return strings.ToLower(m[1]), true
+		}
+	}
+	return "", false
+}
+
+var purlTypeRe = regexp.MustCompile(`^pkg:([^/]+)/`)
 
 // SupplierEvidence builds an HDF Evidence entry pointing at the upstream VEX
 // document. Used by importers to preserve provenance (the original

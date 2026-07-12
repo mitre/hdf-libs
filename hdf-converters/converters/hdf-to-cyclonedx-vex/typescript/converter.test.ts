@@ -215,6 +215,57 @@ describe('convertHdfToCyclonedxVex — affectedPackages preserve name/version in
   });
 });
 
+describe('convertHdfToCyclonedxVex — fixedInVersion mapping', () => {
+  it('maps fixedInVersion to affects[].versions as a vers range (unaffected)', () => {
+    const amendments: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-7777',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason: 'patched upstream',
+          affectedPackages: [
+            { name: 'abc', version: '4.2', purl: 'pkg:npm/abc@4.2', fixedInVersion: '4.5' },
+          ],
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const bom = JSON.parse(out);
+    expect(bom.vulnerabilities[0].affects[0].versions).toEqual([
+      { version: '4.2', status: 'affected' },
+      { range: 'vers:npm/>=4.5', status: 'unaffected' },
+    ]);
+    expect(bom.vulnerabilities[0].recommendation).toBeUndefined();
+  });
+
+  it('falls back to a recommendation when fixedInVersion has no vers type', () => {
+    const amendments: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-8888',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason: 'patched upstream',
+          affectedPackages: [
+            { cpe: 'cpe:2.3:a:acme:abc:4.2:*:*:*:*:*:*:*', fixedInVersion: '4.5' },
+          ],
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const bom = JSON.parse(out);
+    expect(bom.vulnerabilities[0].recommendation).toBe('Upgrade to 4.5');
+    expect(bom.vulnerabilities[0].affects[0].versions).toBeUndefined();
+  });
+});
+
 describe('convertHdfToCyclonedxVex — CycloneDX-specific justification', () => {
   it('emits requires_configuration from the structured justification field', () => {
     const amendments: HDFAmendments = {

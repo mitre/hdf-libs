@@ -42,6 +42,75 @@ describe('convertHdfToCsafVex — fixed import becomes known_affected on export'
   });
 });
 
+describe('convertHdfToCsafVex — fixedInVersion export', () => {
+  it('maps fixedInVersion to a first_fixed product + vendor_fix remediation', () => {
+    const amendments: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-9999',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason: 'patched upstream',
+          affectedPackages: [
+            { name: 'abc', version: '4.2', purl: 'pkg:npm/abc@4.2', fixedInVersion: '4.5' },
+          ],
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCsafVex(JSON.stringify(amendments), TEST_VERSION);
+    const doc = JSON.parse(out);
+    const v = doc.vulnerabilities[0];
+    expect(v.product_status.first_fixed).toContain('pkg:npm/abc@4.5');
+    expect(v.product_status.fixed).toContain('pkg:npm/abc@4.5');
+    const vf = v.remediations.find(
+      (r: { category: string }) => r.category === 'vendor_fix',
+    );
+    expect(vf.details).toBe('Fixed in 4.5');
+    expect(vf.product_ids).toEqual(['pkg:npm/abc@4.5']);
+    const ids = doc.product_tree.full_product_names.map(
+      (p: { product_id: string }) => p.product_id,
+    );
+    expect(ids).toContain('pkg:npm/abc@4.5');
+  });
+});
+
+describe('convertHdfToCsafVex — product_tree ordering', () => {
+  it('emits product ids globally sorted (parity with Go), not in CVE/group order', () => {
+    const amendments: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-0001',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason: 'x',
+          affectedPackages: [{ purl: 'pkg:npm/zzz@1.0' }],
+        },
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-0002',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason: 'x',
+          affectedPackages: [{ purl: 'pkg:npm/aaa@1.0' }],
+        },
+      ] as never,
+    } as never;
+    const doc = JSON.parse(convertHdfToCsafVex(JSON.stringify(amendments), TEST_VERSION));
+    const ids = doc.product_tree.full_product_names.map(
+      (p: { product_id: string }) => p.product_id,
+    );
+    expect(ids).toEqual(['pkg:npm/aaa@1.0', 'pkg:npm/zzz@1.0']);
+  });
+});
+
 describe('convertHdfToCsafVex — round trip', () => {
   it('preserves canonical fields through CSAF -> HDF -> CSAF', async () => {
     const csafInput = readFileSync(

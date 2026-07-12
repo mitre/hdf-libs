@@ -19,6 +19,7 @@ import { parseJSON, formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
+  versTypeFor,
   exportStatusFor,
   justificationForCycloneDX,
   VexStatus,
@@ -72,7 +73,30 @@ interface Vulnerability {
     response?: string[];
     detail?: string;
   };
-  affects: { ref: string }[];
+  recommendation?: string;
+  affects: { ref: string; versions?: CdxVersion[] }[];
+}
+
+interface CdxVersion {
+  version?: string;
+  range?: string;
+  status: string;
+}
+
+/**
+ * Build CycloneDX affects[].versions[] for a package with a fixedInVersion:
+ * the current version is `affected`, and `>= fixedInVersion` is `unaffected`,
+ * expressed as a `vers` range. Undefined when there is no vers type to key the
+ * range (caller falls back to a free-text recommendation).
+ */
+function buildCdxAffectsVersions(pkg?: AffectedPackage): CdxVersion[] | undefined {
+  if (!pkg?.fixedInVersion) return undefined;
+  const t = versTypeFor(pkg);
+  if (!t) return undefined;
+  const versions: CdxVersion[] = [];
+  if (pkg.version) versions.push({ version: pkg.version, status: 'affected' });
+  versions.push({ range: `vers:${t}/>=${pkg.fixedInVersion}`, status: 'unaffected' });
+  return versions;
 }
 
 /** Map an HDF Cvss block to a CycloneDX rating. */
@@ -176,7 +200,10 @@ function overrideToVulnerability(
     id: o.requirementId,
     source: { name: 'NVD', url: `https://nvd.nist.gov/vuln/detail/${o.requirementId}` },
     analysis,
-    affects: pids.map((p) => ({ ref: p })),
+    affects: pids.map((pid) => {
+      const versions = buildCdxAffectsVersions(pkgById.get(pid));
+      return versions ? { ref: pid, versions } : { ref: pid };
+    }),
   };
 
   // Emit consumer-supplied CVSS enrichment as a CycloneDX rating.
@@ -184,6 +211,11 @@ function overrideToVulnerability(
     const rating = buildCdxRating(o.cvss);
     if (rating) v.ratings = [rating];
   }
+
+  // A fixedInVersion we could not express as a vers range (no ecosystem/purl to
+  // key the range) becomes a free-text recommendation instead of an invalid range.
+  const unranged = (o.affectedPackages ?? []).find((p) => p.fixedInVersion && !versTypeFor(p));
+  if (unranged) v.recommendation = `Upgrade to ${unranged.fixedInVersion}`;
 
   for (const e of o.evidence ?? []) {
     if (e.type !== 'url' || !e.data) continue;

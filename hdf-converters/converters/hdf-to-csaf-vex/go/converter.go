@@ -158,6 +158,7 @@ type Vulnerability struct {
 
 type ProductStatus struct {
 	Fixed            []string `json:"fixed,omitempty"`
+	FirstFixed       []string `json:"first_fixed,omitempty"`
 	KnownAffected    []string `json:"known_affected,omitempty"`
 	KnownNotAffected []string `json:"known_not_affected,omitempty"`
 }
@@ -206,7 +207,15 @@ func ConvertHDFToCSAFVEX(input []byte, converterVersion string) ([]byte, error) 
 		for _, pid := range group.productIDs() {
 			doc.ProductTree.FullProductNames = appendUnique(doc.ProductTree.FullProductNames, pid)
 		}
+		for _, pid := range group.fixedProductIDs() {
+			doc.ProductTree.FullProductNames = appendUnique(doc.ProductTree.FullProductNames, pid)
+		}
 	}
+	// Global product-id sort so the product_tree order matches the TS exporter
+	// (which sorts its product set) — otherwise multi-product docs diverge.
+	sort.Slice(doc.ProductTree.FullProductNames, func(i, j int) bool {
+		return doc.ProductTree.FullProductNames[i].ProductID < doc.ProductTree.FullProductNames[j].ProductID
+	})
 
 	if len(doc.Vulnerabilities) == 0 {
 		return nil, fmt.Errorf("hdf-to-csaf-vex: no overrides with CVE-shaped requirementIds; nothing to emit")
@@ -298,6 +307,20 @@ func (g cveGroup) productIDs() []string {
 	return out
 }
 
+// fixedProductIDs returns the synthesized fixed-version product ids across a
+// group's affectedPackages, so they can be registered in the product_tree.
+func (g cveGroup) fixedProductIDs() []string {
+	var out []string
+	for i := range g.overrides {
+		for _, p := range g.overrides[i].AffectedPackages {
+			if id, ok := vex.FixedPackageIdentifier(p); ok {
+				out = append(out, id)
+			}
+		}
+	}
+	return out
+}
+
 // groupOverridesByCVE returns one group per CVE-shaped requirementId, in
 // stable (sorted) CVE order so the output is deterministic. Non-CVE
 // requirementIds are dropped — CSAF VEX is vulnerability-keyed.
@@ -346,6 +369,23 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 		// Emit consumer-supplied CVSS enrichment as a CSAF score entry.
 		if s := buildCsafScore(o.Cvss, pids); s != nil {
 			v.Scores = append(v.Scores, *s)
+			emittedAny = true
+		}
+
+		// Map each affectedPackages[].fixedInVersion to a distinct fixed-version
+		// product referenced in product_status.first_fixed + a vendor_fix remediation.
+		for j := range o.AffectedPackages {
+			fixedID, ok := vex.FixedPackageIdentifier(o.AffectedPackages[j])
+			if !ok {
+				continue
+			}
+			status.FirstFixed = append(status.FirstFixed, fixedID)
+			status.Fixed = append(status.Fixed, fixedID)
+			v.Remediations = append(v.Remediations, Remediation{
+				Category:   "vendor_fix",
+				Details:    "Fixed in " + *o.AffectedPackages[j].FixedInVersion,
+				ProductIDs: []string{fixedID},
+			})
 			emittedAny = true
 		}
 
@@ -433,6 +473,7 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 	}
 
 	dedupeStrings(&status.Fixed)
+	dedupeStrings(&status.FirstFixed)
 	dedupeStrings(&status.KnownAffected)
 	dedupeStrings(&status.KnownNotAffected)
 	v.ProductStatus = status

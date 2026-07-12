@@ -9,11 +9,14 @@ import {
   affectedPackageToIdentifier,
   affectedPackagesFromIdentifiers,
   exportStatusFor,
+  fixedPackageIdentifier,
   importTargetFor,
   justificationForCycloneDX,
   normalizeJustification,
   normalizeStatus,
   supplierEvidence,
+  swapPurlVersion,
+  versTypeFor,
   VexStatus,
 } from './mapping.js';
 
@@ -323,5 +326,40 @@ describe('affectedPackageToIdentifier', () => {
 
   it('returns undefined for an empty AffectedPackage', () => {
     expect(affectedPackageToIdentifier({})).toBeUndefined();
+  });
+});
+
+describe('swapPurlVersion', () => {
+  it('swaps an existing @version, preserving the ?/# tail', () => {
+    expect(swapPurlVersion('pkg:npm/abc@4.2?arch=x64', '4.5')).toBe('pkg:npm/abc@4.5?arch=x64');
+  });
+  it('inserts a version when the purl has none (no @)', () => {
+    expect(swapPurlVersion('pkg:npm/abc', '4.5')).toBe('pkg:npm/abc@4.5');
+    expect(swapPurlVersion('pkg:npm/abc?arch=x64', '4.5')).toBe('pkg:npm/abc@4.5?arch=x64');
+  });
+});
+
+describe('fixedPackageIdentifier', () => {
+  it('swaps the purl version when a purl is present', () => {
+    expect(fixedPackageIdentifier({ purl: 'pkg:npm/abc@4.2', fixedInVersion: '4.5' })).toBe('pkg:npm/abc@4.5');
+  });
+  it('falls back to name@fixedInVersion without a purl', () => {
+    expect(fixedPackageIdentifier({ name: 'abc', fixedInVersion: '4.5' })).toBe('abc@4.5');
+  });
+  it('returns undefined without a fixedInVersion or an anchor', () => {
+    expect(fixedPackageIdentifier({ purl: 'pkg:npm/abc@4.2' })).toBeUndefined();
+    expect(fixedPackageIdentifier({ cpe: 'cpe:2.3:a:x:y:1:*:*:*:*:*:*:*', fixedInVersion: '4.5' })).toBeUndefined();
+  });
+});
+
+describe('versTypeFor', () => {
+  it('prefers the ecosystem, lowercased', () => {
+    expect(versTypeFor({ ecosystem: 'Npm' } as never)).toBe('npm');
+  });
+  it('derives the type from the purl when no ecosystem', () => {
+    expect(versTypeFor({ purl: 'pkg:RPM/openssl@1.1' })).toBe('rpm');
+  });
+  it('returns undefined when neither ecosystem nor purl is set', () => {
+    expect(versTypeFor({ cpe: 'cpe:2.3:a:x:y:1:*:*:*:*:*:*:*' })).toBeUndefined();
   });
 });

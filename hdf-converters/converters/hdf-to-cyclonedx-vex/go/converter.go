@@ -112,12 +112,13 @@ func buildCdxRating(cvss *hdf.Cvss) *Rating {
 }
 
 type Vulnerability struct {
-	ID         string        `json:"id"`
-	Source     *Source       `json:"source,omitempty"`
-	References []Reference   `json:"references,omitempty"`
-	Ratings    []Rating      `json:"ratings,omitempty"`
-	Analysis   Analysis      `json:"analysis"`
-	Affects    []AffectedRef `json:"affects"`
+	ID             string        `json:"id"`
+	Source         *Source       `json:"source,omitempty"`
+	References     []Reference   `json:"references,omitempty"`
+	Ratings        []Rating      `json:"ratings,omitempty"`
+	Recommendation string        `json:"recommendation,omitempty"`
+	Analysis       Analysis      `json:"analysis"`
+	Affects        []AffectedRef `json:"affects"`
 }
 
 type Source struct {
@@ -138,7 +139,14 @@ type Analysis struct {
 }
 
 type AffectedRef struct {
-	Ref string `json:"ref"`
+	Ref      string       `json:"ref"`
+	Versions []CdxVersion `json:"versions,omitempty"`
+}
+
+type CdxVersion struct {
+	Version string `json:"version,omitempty"`
+	Range   string `json:"range,omitempty"`
+	Status  string `json:"status"`
 }
 
 // ConvertHDFToCycloneDXVEX parses HDF Amendments and emits a CycloneDX
@@ -247,12 +255,25 @@ func overrideToVulnerability(o *hdf.StandaloneOverride, componentRegistry map[st
 		ID:       o.RequirementID,
 		Source:   &Source{Name: "NVD", URL: "https://nvd.nist.gov/vuln/detail/" + o.RequirementID},
 		Analysis: analysis,
-		Affects:  affectsForProducts(pids),
+		Affects:  affectsForProducts(pids, pkgByID),
 	}
 
 	// Emit consumer-supplied CVSS enrichment as a CycloneDX rating.
 	if rating := buildCdxRating(o.Cvss); rating != nil {
 		v.Ratings = append(v.Ratings, *rating)
+	}
+
+	// A fixedInVersion we could not express as a vers range (no ecosystem/purl
+	// to key the range) becomes a free-text recommendation instead.
+	for i := range o.AffectedPackages {
+		p := o.AffectedPackages[i]
+		if p.FixedInVersion == nil || *p.FixedInVersion == "" {
+			continue
+		}
+		if _, ok := vex.VersTypeFor(p); !ok {
+			v.Recommendation = "Upgrade to " + *p.FixedInVersion
+			break
+		}
 	}
 
 	for _, e := range o.Evidence {
@@ -361,12 +382,36 @@ func productIDsFor(o *hdf.StandaloneOverride) []string {
 	return []string{defaultProductID}
 }
 
-func affectsForProducts(pids []string) []AffectedRef {
+func affectsForProducts(pids []string, pkgByID map[string]hdf.AffectedPackage) []AffectedRef {
 	out := make([]AffectedRef, 0, len(pids))
 	for _, p := range pids {
-		out = append(out, AffectedRef{Ref: p})
+		ref := AffectedRef{Ref: p}
+		if pkg, ok := pkgByID[p]; ok {
+			ref.Versions = buildCdxAffectsVersions(pkg)
+		}
+		out = append(out, ref)
 	}
 	return out
+}
+
+// buildCdxAffectsVersions renders affects[].versions[] for a package with a
+// fixedInVersion: the current version is `affected`, and `>= fixedInVersion`
+// is `unaffected`, expressed as a vers range. Returns nil when there is no
+// vers type to key the range (caller falls back to a free-text recommendation).
+func buildCdxAffectsVersions(pkg hdf.AffectedPackage) []CdxVersion {
+	if pkg.FixedInVersion == nil || *pkg.FixedInVersion == "" {
+		return nil
+	}
+	t, ok := vex.VersTypeFor(pkg)
+	if !ok {
+		return nil
+	}
+	var versions []CdxVersion
+	if pkg.Version != nil && *pkg.Version != "" {
+		versions = append(versions, CdxVersion{Version: *pkg.Version, Status: "affected"})
+	}
+	versions = append(versions, CdxVersion{Range: "vers:" + t + "/>=" + *pkg.FixedInVersion, Status: "unaffected"})
+	return versions
 }
 
 // stripReasonAnnotations removes the 'Products: …' tail line that

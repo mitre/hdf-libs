@@ -17,6 +17,7 @@ import { parseJSON, formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
+  fixedPackageIdentifier,
   exportStatusFor,
   VexStatus,
 } from '../../../shared/typescript/vex/mapping.js';
@@ -51,6 +52,7 @@ interface Vulnerability {
   notes?: { category: string; text: string }[];
   product_status?: {
     fixed?: string[];
+    first_fixed?: string[];
     known_affected?: string[];
     known_not_affected?: string[];
   };
@@ -102,6 +104,7 @@ export function convertHdfToCsafVex(input: string, converterVersion: string): st
     if (!v) continue;
     vulnerabilities.push(v);
     for (const p of productIDsForGroup(group)) productSet.set(p, true);
+    for (const p of fixedProductIDsForGroup(group)) productSet.set(p, true);
   }
 
   if (vulnerabilities.length === 0) {
@@ -146,6 +149,18 @@ function productIDsForGroup(group: CveGroup): string[] {
     for (const p of productIDsFor(o)) seen.add(p);
   }
   return [...seen].sort();
+}
+
+/** Synthesized fixed-version product ids across a group's affectedPackages. */
+function fixedProductIDsForGroup(group: CveGroup): string[] {
+  const ids: string[] = [];
+  for (const o of group.overrides) {
+    for (const p of o.affectedPackages ?? []) {
+      const f = fixedPackageIdentifier(p);
+      if (f) ids.push(f);
+    }
+  }
+  return ids;
 }
 
 export function productIDsFor(o: StandaloneOverride): string[] {
@@ -193,6 +208,21 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
         v.scores = (v.scores ?? []).concat(score);
         emitted = true;
       }
+    }
+
+    // Map each affectedPackages[].fixedInVersion to a distinct fixed-version
+    // product referenced in product_status.first_fixed + a vendor_fix remediation.
+    for (const p of o.affectedPackages ?? []) {
+      const fixedId = fixedPackageIdentifier(p);
+      if (!fixedId) continue;
+      status.first_fixed = (status.first_fixed ?? []).concat(fixedId);
+      status.fixed = (status.fixed ?? []).concat(fixedId);
+      v.remediations = (v.remediations ?? []).concat({
+        category: 'vendor_fix',
+        details: `Fixed in ${p.fixedInVersion}`,
+        product_ids: [fixedId],
+      });
+      emitted = true;
     }
 
     let canonical = exportStatusFor(o, allMilestonesCompleted(o), false);
@@ -266,6 +296,7 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
   if (!emitted) return undefined;
 
   if (status.fixed) status.fixed = [...new Set(status.fixed)];
+  if (status.first_fixed) status.first_fixed = [...new Set(status.first_fixed)];
   if (status.known_affected) status.known_affected = [...new Set(status.known_affected)];
   if (status.known_not_affected) status.known_not_affected = [...new Set(status.known_not_affected)];
   v.product_status = status;
