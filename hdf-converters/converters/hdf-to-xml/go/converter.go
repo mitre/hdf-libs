@@ -128,7 +128,9 @@ type XMLTargets struct {
 type XMLTarget struct {
 	Name      string  `xml:"name"`
 	Type      string  `xml:"type"`
+	Hostname  *string `xml:"hostname,omitempty"`
 	FQDN      *string `xml:"fqdn,omitempty"`
+	Domain    *string `xml:"domain,omitempty"`
 	IPAddress *string `xml:"ipAddress,omitempty"`
 }
 
@@ -181,7 +183,9 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 			result.Targets.Target[i] = XMLTarget{
 				Name:      target.Name,
 				Type:      string(target.Type),
+				Hostname:  target.Hostname,
 				FQDN:      target.FQDN,
+				Domain:    target.Domain,
 				IPAddress: target.IPAddress,
 			}
 		}

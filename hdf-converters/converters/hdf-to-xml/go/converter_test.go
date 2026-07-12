@@ -78,6 +78,24 @@ func TestConvertHDFToXML(t *testing.T) {
 		assert.Contains(t, resultStr, "<name>Empty Baseline</name>")
 	})
 
+	t.Run("emits host identity fields (hostname, fqdn, domain) in a stable order", func(t *testing.T) {
+		input := []byte(`{
+			"baselines": [{ "name": "B", "version": "1.0.0", "title": "T", "checksum": { "algorithm": "sha256", "value": "abc" }, "requirements": [] }],
+			"components": [{ "type": "host", "name": "web01", "hostname": "web01", "fqdn": "web01.prod.example.com", "domain": "CORP", "ipAddress": "10.0.1.5" }],
+			"statistics": { "duration": 0 }
+		}`)
+		result, err := ConvertHDFToXML(input)
+		require.NoError(t, err)
+		out := string(result)
+		assert.Contains(t, out, "<hostname>web01</hostname>")
+		assert.Contains(t, out, "<fqdn>web01.prod.example.com</fqdn>")
+		assert.Contains(t, out, "<domain>CORP</domain>")
+		// hostname before fqdn before domain before ipAddress (parity with TS).
+		assert.True(t, strings.Index(out, "<hostname>") < strings.Index(out, "<fqdn>"))
+		assert.True(t, strings.Index(out, "<fqdn>") < strings.Index(out, "<domain>"))
+		assert.True(t, strings.Index(out, "<domain>") < strings.Index(out, "<ipAddress>"))
+	})
+
 	t.Run("should throw error for invalid JSON", func(t *testing.T) {
 		_, err := ConvertHDFToXML([]byte("not json"))
 		assert.Error(t, err)

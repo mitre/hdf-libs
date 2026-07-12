@@ -934,8 +934,21 @@ type Component struct {
 	// Component type discriminator. Same values as Target types, plus aiModel and dataset (thin                  
 	// AI subject components whose detail lives in an attached ai-model / dataset BOM).                           
 	Type                                                                                        TargetType        `json:"type"`
-	// Fully qualified domain name.                                                                               
+	// Directory domain the host is a member of — Active Directory / NetBIOS / LDAP domain (ECS                   
+	// host.domain semantics), NOT necessarily the DNS suffix of the FQDN. A standalone or                        
+	// workgroup host has a hostname but no domain. Not derivable from the FQDN; populate only                    
+	// from a source that carries directory membership.                                                           
+	Domain                                                                                      *string           `json:"domain,omitempty"`
+	// Fully qualified domain name (e.g. 'web01.prod.example.com'). Distinct from 'hostname'                      
+	// (short) and 'domain' (directory domain). ECS recommends storing this lowercase; the                        
+	// schema does not enforce case so source fidelity is preserved on round-trip.                                
 	FQDN                                                                                        *string           `json:"fqdn,omitempty"`
+	// Short, OS-reported host name (the unqualified machine name, e.g. 'web01'). Kept distinct                   
+	// from 'fqdn' because an FQDN is not reliably decomposable into hostname + domain                            
+	// (standalone/workgroup hosts have no domain; a directory domain is not the FQDN's DNS                       
+	// suffix). Aligns with ECS host.hostname and DISA STIG CKL HOST_NAME. Store the short name                   
+	// the source reports; do not derive it from the FQDN.                                                        
+	Hostname                                                                                    *string           `json:"hostname,omitempty"`
 	// IP address of the host.                                                                                    
 	IPAddress                                                                                   *string           `json:"ipAddress,omitempty"`
 	// MAC address in colon-separated hexadecimal format.                                                         
@@ -1273,7 +1286,14 @@ type Runner struct {
 	// The container image used for the test execution. Example: 'inspec/inspec:latest',                   
 	// 'ghcr.io/my-org/scanner:v2.1.0'. Useful for CI/CD pipelines where tests run in containers.          
 	ContainerImage                                                                               *string   `json:"containerImage,omitempty"`
-	// The hostname of the runner system. Example: 'ci-runner-01', 'jenkins-agent-03',                     
+	// The directory domain the runner system belongs to (Active Directory / NetBIOS / LDAP),              
+	// NOT the DNS suffix of the FQDN. Example: 'CORP'.                                                    
+	Domain                                                                                       *string   `json:"domain,omitempty"`
+	// The fully qualified domain name of the runner system, when known. Distinct from the short           
+	// 'hostname'; kept separate for the same reason as on host components (an FQDN is not                 
+	// reliably decomposable). Example: 'ci-runner-01.build.example.com'.                                  
+	FQDN                                                                                         *string   `json:"fqdn,omitempty"`
+	// The short hostname of the runner system. Example: 'ci-runner-01', 'jenkins-agent-03',               
 	// 'k8s-node-worker-03'.                                                                               
 	Hostname                                                                                     *string   `json:"hostname,omitempty"`
 	// The name of the runner environment. Examples: 'ubuntu', 'macos', 'windows', 'docker',               

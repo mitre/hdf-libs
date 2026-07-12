@@ -626,6 +626,12 @@ function convertReportHostToTarget(host: ReportHost): Component {
     type: TargetType.Host,
   };
 
+  // The short, OS-reported hostname is a distinct property from the FQDN;
+  // carry it in the dedicated field instead of dropping it.
+  if (hostProps['hostname']) {
+    target.hostname = hostProps['hostname'];
+  }
+
   // Map host properties to typed Component fields
   if (isFQDN(hostName)) {
     target.fqdn = hostName;

@@ -176,6 +176,11 @@ func assetToComponent(a *Asset) (hdf.Component, bool) {
 		name = a.HostIP
 	}
 	c := hdf.Component{Name: name, Type: hdf.Host}
+	// HOST_NAME is the short, OS-reported hostname; store it in the dedicated
+	// field so it stays distinct from the Name display-fallback and from fqdn.
+	if a.HostName != "" {
+		c.Hostname = hdfutil.Ptr(a.HostName)
+	}
 	if a.HostIP != "" {
 		c.IPAddress = hdfutil.Ptr(a.HostIP)
 	}

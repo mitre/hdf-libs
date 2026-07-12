@@ -23,7 +23,15 @@
         },
         "hostname": {
           "type": "string",
-          "description": "The hostname of the runner system. Example: 'ci-runner-01', 'jenkins-agent-03', 'k8s-node-worker-03'."
+          "description": "The short hostname of the runner system. Example: 'ci-runner-01', 'jenkins-agent-03', 'k8s-node-worker-03'."
+        },
+        "fqdn": {
+          "type": "string",
+          "description": "The fully qualified domain name of the runner system, when known. Distinct from the short 'hostname'; kept separate for the same reason as on host components (an FQDN is not reliably decomposable). Example: 'ci-runner-01.build.example.com'."
+        },
+        "domain": {
+          "type": "string",
+          "description": "The directory domain the runner system belongs to (Active Directory / NetBIOS / LDAP), NOT the DNS suffix of the FQDN. Example: 'CORP'."
         },
         "containerImage": {
           "type": "string",
@@ -44,6 +52,8 @@
           "release": "20.04",
           "architecture": "x86_64",
           "hostname": "github-runner-prod-01",
+          "fqdn": "github-runner-prod-01.build.example.com",
+          "domain": "CORP",
           "containerImage": "ghcr.io/inspec/inspec:5.22.3",
           "containerId": "security-scan-job-a1b2c3d4",
           "operator": {

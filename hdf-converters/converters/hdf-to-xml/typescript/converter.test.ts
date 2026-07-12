@@ -106,6 +106,23 @@ describe('hdf-to-xml Converter', () => {
       expect(result).toContain('<type>host</type>');
     });
 
+    it('emits host identity fields (hostname, fqdn, domain) in a stable order', () => {
+      const input = JSON.stringify({
+        baselines: [{ name: 'B', version: '1.0.0', integrity: { algorithm: 'sha256', checksum: 'abc' }, requirements: [] }],
+        components: [{ type: 'host', name: 'web01', hostname: 'web01', fqdn: 'web01.prod.example.com', domain: 'CORP', ipAddress: '10.0.1.5' }],
+        statistics: { duration: 0 }
+      });
+
+      const result = convertHdfToXml(input);
+      expect(result).toContain('<hostname>web01</hostname>');
+      expect(result).toContain('<fqdn>web01.prod.example.com</fqdn>');
+      expect(result).toContain('<domain>CORP</domain>');
+      // hostname before fqdn before domain before ipAddress (parity with Go).
+      expect(result.indexOf('<hostname>')).toBeLessThan(result.indexOf('<fqdn>'));
+      expect(result.indexOf('<fqdn>')).toBeLessThan(result.indexOf('<domain>'));
+      expect(result.indexOf('<domain>')).toBeLessThan(result.indexOf('<ipAddress>'));
+    });
+
     it('should preserve special characters in XML', () => {
       const input = JSON.stringify({
         baselines: [{

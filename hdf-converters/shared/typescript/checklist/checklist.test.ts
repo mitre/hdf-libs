@@ -265,6 +265,40 @@ describe('checklist shared model', () => {
     expect(hdf.components).toBeUndefined();
   });
 
+  it('stores HOST_NAME in a dedicated hostname field, distinct from the Name fallback', () => {
+    const both = checklistToHdf(
+      { format: 'ckl', asset: { hostName: 'web01', hostFQDN: 'web01.prod.example.com', hostIP: '10.0.1.5' }, stigs: [{ vulns: [] }] },
+      CHECKSUM,
+      'test-converter',
+    );
+    expect(both.components?.[0].hostname).toBe('web01');
+    expect(both.components?.[0].fqdn).toBe('web01.prod.example.com');
+
+    // No HOST_NAME: hostname is not fabricated from the FQDN fallback.
+    const fqdnOnly = checklistToHdf(
+      { format: 'ckl', asset: { hostFQDN: 'web01.prod.example.com', hostIP: '10.0.1.5' }, stigs: [{ vulns: [] }] },
+      CHECKSUM,
+      'test-converter',
+    );
+    expect(fqdnOnly.components?.[0].hostname).toBeUndefined();
+    expect(fqdnOnly.components?.[0].name).toBe('web01.prod.example.com');
+  });
+
+  it('preserves both HOST_NAME and HOST_FQDN through a round-trip without fabricating a short name', () => {
+    const rt = (asset: Record<string, unknown>) => {
+      const hdf = checklistToHdf({ format: 'ckl', asset, stigs: [{ stigId: 'S', title: 'T', version: '1', vulns: [{ vulnNum: 'V-1', ruleId: 'SV-1_rule', severity: 'low', ccis: [], status: CheckStatus.Open }] }] }, CHECKSUM, 'test-converter');
+      return hdfToChecklist(JSON.stringify(hdf)).asset;
+    };
+
+    const both = rt({ hostName: 'web01', hostFQDN: 'web01.prod.example.com', hostIP: '10.0.1.5' });
+    expect(both.hostName).toBe('web01');
+    expect(both.hostFQDN).toBe('web01.prod.example.com');
+
+    const fqdnOnly = rt({ hostFQDN: 'web01.prod.example.com', hostIP: '10.0.1.5' });
+    expect(fqdnOnly.hostName).toBeFalsy();
+    expect(fqdnOnly.hostFQDN).toBe('web01.prod.example.com');
+  });
+
   it('coerces CKLB null fields to undefined (e.g. classification: null)', () => {
     const cklb = JSON.stringify({
       cklb_version: '1.0',

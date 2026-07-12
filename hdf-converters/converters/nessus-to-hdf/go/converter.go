@@ -455,11 +455,20 @@ func convertReportHostToTarget(host *ReportHost) hdf.Component {
 	hostName := host.Name
 
 	// Extract host properties
-	var fqdn, ipAddress, osName, osVersion *string
+	var hostname, fqdn, ipAddress, osName, osVersion *string
+
+	// The short, OS-reported hostname is a distinct property from the FQDN;
+	// carry it in the dedicated field instead of dropping it.
+	if hn := getHostPropertyValue(host, "hostname"); hn != "" {
+		hostname = &hn
+	}
 
 	// Determine FQDN: if the hostname is an FQDN, populate the fqdn field
 	if isFQDN(hostName) {
 		fqdn = &hostName
+	}
+	if hostFQDN := getHostPropertyValue(host, "host-fqdn"); hostFQDN != "" {
+		fqdn = &hostFQDN
 	}
 
 	// Determine IP address: prefer host-ip property, fall back to name if it's an IP
@@ -482,6 +491,7 @@ func convertReportHostToTarget(host *ReportHost) hdf.Component {
 	return hdf.Component{
 		Name:      hostName,
 		Type:      hdf.Host,
+		Hostname:  hostname,
 		FQDN:      fqdn,
 		IPAddress: ipAddress,
 		OSName:    osName,
