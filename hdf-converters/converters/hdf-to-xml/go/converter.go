@@ -200,7 +200,9 @@ type XMLTarget struct {
 	ComponentID *string `xml:"componentId,omitempty"`
 	Name        string  `xml:"name"`
 	Type        string  `xml:"type"`
+	Hostname    *string `xml:"hostname,omitempty"`
 	FQDN        *string `xml:"fqdn,omitempty"`
+	Domain      *string `xml:"domain,omitempty"`
 	IPAddress   *string `xml:"ipAddress,omitempty"`
 }
 
@@ -268,7 +270,9 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 				ComponentID: target.ComponentID,
 				Name:        target.Name,
 				Type:        string(target.Type),
+				Hostname:    target.Hostname,
 				FQDN:        target.FQDN,
+				Domain:      target.Domain,
 				IPAddress:   target.IPAddress,
 			}
 		}

@@ -809,10 +809,18 @@
                 "type": {
                   "const": "host"
                 },
+                "hostname": {
+                  "type": "string",
+                  "description": "Short, OS-reported host name (the unqualified machine name, e.g. 'web01'). Kept distinct from 'fqdn' because an FQDN is not reliably decomposable into hostname + domain (standalone/workgroup hosts have no domain; a directory domain is not the FQDN's DNS suffix). Aligns with ECS host.hostname and DISA STIG CKL HOST_NAME. Store the short name the source reports; do not derive it from the FQDN."
+                },
                 "fqdn": {
                   "type": "string",
                   "format": "hostname",
-                  "description": "Fully qualified domain name."
+                  "description": "Fully qualified domain name (e.g. 'web01.prod.example.com'). Distinct from 'hostname' (short) and 'domain' (directory domain). ECS recommends storing this lowercase; the schema does not enforce case so source fidelity is preserved on round-trip."
+                },
+                "domain": {
+                  "type": "string",
+                  "description": "Directory domain the host is a member of — Active Directory / NetBIOS / LDAP domain (ECS host.domain semantics), NOT necessarily the DNS suffix of the FQDN. A standalone or workgroup host has a hostname but no domain. Not derivable from the FQDN; populate only from a source that carries directory membership."
                 },
                 "ipAddress": {
                   "anyOf": [
@@ -845,10 +853,13 @@
           ],
           "examples": [
             {
+              "$comment": "Domain-joined host carrying all three identity fields separately: short hostname, FQDN, and the (distinct) directory domain. HOST_NAME and HOST_FQDN from a STIG checklist map here; note the AD domain differs from the FQDN's DNS suffix.",
               "type": "host",
               "name": "web-server-prod-01",
               "componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+              "hostname": "web01",
               "fqdn": "web01.prod.example.com",
+              "domain": "CORP",
               "ipAddress": "10.0.1.50",
               "osName": "Ubuntu",
               "osVersion": "22.04 LTS",
@@ -856,6 +867,16 @@
                 "cmdb": "ASSET-12345",
                 "aws": "i-0abc123def456789"
               }
+            },
+            {
+              "$comment": "Standalone/workgroup host: has a short hostname but no directory domain — 'domain' is omitted rather than fabricated from the FQDN suffix.",
+              "type": "host",
+              "name": "kiosk-lab-07",
+              "hostname": "kiosk-lab-07",
+              "fqdn": "kiosk-lab-07.lab.example.com",
+              "ipAddress": "192.168.4.7",
+              "osName": "Windows",
+              "osVersion": "11 23H2"
             }
           ],
           "description": "A physical or virtual server, workstation, or network device.",
@@ -4136,7 +4157,15 @@
             },
             "hostname": {
               "type": "string",
-              "description": "The hostname of the runner system. Example: 'ci-runner-01', 'jenkins-agent-03', 'k8s-node-worker-03'."
+              "description": "The short hostname of the runner system. Example: 'ci-runner-01', 'jenkins-agent-03', 'k8s-node-worker-03'."
+            },
+            "fqdn": {
+              "type": "string",
+              "description": "The fully qualified domain name of the runner system, when known. Distinct from the short 'hostname'; kept separate for the same reason as on host components (an FQDN is not reliably decomposable). Example: 'ci-runner-01.build.example.com'."
+            },
+            "domain": {
+              "type": "string",
+              "description": "The directory domain the runner system belongs to (Active Directory / NetBIOS / LDAP), NOT the DNS suffix of the FQDN. Example: 'CORP'."
             },
             "containerImage": {
               "type": "string",
@@ -4157,6 +4186,8 @@
               "release": "20.04",
               "architecture": "x86_64",
               "hostname": "github-runner-prod-01",
+              "fqdn": "github-runner-prod-01.build.example.com",
+              "domain": "CORP",
               "containerImage": "ghcr.io/inspec/inspec:5.22.3",
               "containerId": "security-scan-job-a1b2c3d4",
               "operator": {

@@ -382,6 +382,88 @@ func TestComponentNameFallback(t *testing.T) {
 	assert.Nil(t, mk(Asset{}))
 }
 
+// HOST_NAME lands in a dedicated hostname field, not just the overloaded Name.
+// The short name must be recoverable independent of the Name display-fallback.
+func TestComponentDedicatedHostname(t *testing.T) {
+	mk := func(a Asset) *hdf.Component {
+		cl := &Checklist{Asset: a, Stigs: []Stig{{Vulns: []Vuln{{VulnNum: "V-1", Status: StatusOpen}}}}}
+		r := ChecklistToHDF(cl, shared.InputChecksum([]byte("x")), "1.0.0", "test-converter")
+		return &r.Components[0]
+	}
+	// Both HOST_NAME and HOST_FQDN present: hostname holds the short name, fqdn the FQDN.
+	c := mk(Asset{HostName: "web01", HostFQDN: "web01.prod.example.com", HostIP: "10.0.1.5"})
+	require.NotNil(t, c.Hostname)
+	assert.Equal(t, "web01", *c.Hostname)
+	require.NotNil(t, c.FQDN)
+	assert.Equal(t, "web01.prod.example.com", *c.FQDN)
+
+	// No HOST_NAME: hostname is not fabricated from the FQDN fallback, even though
+	// Name still falls back to the FQDN for a usable display identity.
+	c = mk(Asset{HostFQDN: "web01.prod.example.com", HostIP: "10.0.1.5"})
+	assert.Nil(t, c.Hostname)
+	assert.Equal(t, "web01.prod.example.com", c.Name)
+}
+
+// A CKL with both HOST_NAME and HOST_FQDN preserves BOTH through HDF, and an
+// absent HOST_NAME is not fabricated from the fqdn/ip Name-fallback on export.
+func TestRoundTripPreservesHostnameAndFQDN(t *testing.T) {
+	rt := func(a Asset) Asset {
+		cl := &Checklist{Format: "ckl", Asset: a, Stigs: []Stig{{
+			StigID: "S", Title: "T", Version: "1",
+			Vulns: []Vuln{{VulnNum: "V-1", RuleID: "SV-1_rule", Severity: "low", Status: StatusOpen}},
+		}}}
+		results := ChecklistToHDF(cl, shared.InputChecksum([]byte("x")), "1.0.0", "test-converter")
+		b, err := json.Marshal(results)
+		require.NoError(t, err)
+		out, err := HDFToChecklist(b)
+		require.NoError(t, err)
+		return out.Asset
+	}
+
+	// Both present and distinct -> both survive.
+	got := rt(Asset{HostName: "web01", HostFQDN: "web01.prod.example.com", HostIP: "10.0.1.5"})
+	assert.Equal(t, "web01", got.HostName)
+	assert.Equal(t, "web01.prod.example.com", got.HostFQDN)
+
+	// HOST_NAME absent -> not fabricated from the fqdn fallback.
+	got = rt(Asset{HostFQDN: "web01.prod.example.com", HostIP: "10.0.1.5"})
+	assert.Empty(t, got.HostName)
+	assert.Equal(t, "web01.prod.example.com", got.HostFQDN)
+}
+
+// Backward-compat: HDF produced before the hostname field existed stored the
+// short HOST_NAME in Component.Name (even alongside fqdn). Export must recover
+// it from Name, yet still not promote a Name that merely mirrors fqdn/ip.
+func TestFromHDFLegacyNameFallback(t *testing.T) {
+	build := func(c hdf.Component) Asset {
+		results := hdf.HDFResults{
+			Components: []hdf.Component{c},
+			Baselines: []hdf.EvaluatedBaseline{{
+				Name:         "b",
+				Requirements: []hdf.EvaluatedRequirement{{ID: "V-1", Results: []hdf.RequirementResult{{Status: hdf.Passed}}}},
+			}},
+		}
+		b, err := json.Marshal(results)
+		require.NoError(t, err)
+		out, err := HDFToChecklist(b)
+		require.NoError(t, err)
+		return out.Asset
+	}
+
+	// Legacy HDF: real short name in Name, fqdn also present, no hostname field.
+	got := build(hdf.Component{Type: hdf.Host, Name: "web01", FQDN: ptr("web01.prod.example.com")})
+	assert.Equal(t, "web01", got.HostName, "legacy short name must survive")
+	assert.Equal(t, "web01.prod.example.com", got.HostFQDN)
+
+	// Legacy HDF where Name mirrors the fqdn fallback -> must not fabricate HOST_NAME.
+	got = build(hdf.Component{Type: hdf.Host, Name: "web01.prod.example.com", FQDN: ptr("web01.prod.example.com")})
+	assert.Empty(t, got.HostName)
+
+	// Legacy HDF where Name mirrors the ip fallback -> must not fabricate HOST_NAME.
+	got = build(hdf.Component{Type: hdf.Host, Name: "10.0.1.5", IPAddress: ptr("10.0.1.5")})
+	assert.Empty(t, got.HostName)
+}
+
 func TestResolveSeverityFromImpact(t *testing.T) {
 	mk := func(impact float64) *hdf.EvaluatedRequirement {
 		return &hdf.EvaluatedRequirement{Impact: impact, Tags: map[string]interface{}{}}

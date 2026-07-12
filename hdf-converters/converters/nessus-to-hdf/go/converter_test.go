@@ -349,6 +349,48 @@ func TestIsFQDN(t *testing.T) {
 	}
 }
 
+// The short hostname HostProperty must be carried into the dedicated hostname
+// field alongside the FQDN, not dropped.
+func TestConvertReportHostToTarget_HostnameAndFQDN(t *testing.T) {
+	host := &ReportHost{
+		Name: "10.0.0.3",
+		HostProperties: HostProperties{Tags: []HostPropertyTag{
+			{Name: "hostname", Value: "web01"},
+			{Name: "host-fqdn", Value: "web01.prod.example.com"},
+			{Name: "host-ip", Value: "10.0.0.3"},
+		}},
+	}
+	c := convertReportHostToTarget(host)
+	require.NotNil(t, c.Hostname)
+	assert.Equal(t, "web01", *c.Hostname)
+	require.NotNil(t, c.FQDN)
+	assert.Equal(t, "web01.prod.example.com", *c.FQDN)
+	require.NotNil(t, c.IPAddress)
+	assert.Equal(t, "10.0.0.3", *c.IPAddress)
+}
+
+// Real-fixture regression: the short hostname must survive end-to-end (it was
+// silently dropped before the host-identity fields existed).
+func TestConvertNessusToHDF_PreservesShortHostname(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+	result, err := ConvertNessusToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	var host *hdf.Component
+	for i := range result.Components {
+		if result.Components[i].Name == "10.0.0.3" {
+			host = &result.Components[i]
+		}
+	}
+	require.NotNil(t, host, "host 10.0.0.3 not found")
+	require.NotNil(t, host.Hostname, "short hostname should be preserved")
+	assert.Equal(t, "s", *host.Hostname)
+	require.NotNil(t, host.FQDN)
+	assert.Equal(t, "DESKTOP-TEST001.localdomain", *host.FQDN)
+}
+
 func TestConvertNessusToHDF_SeeAlsoMultiURLSplit(t *testing.T) {
 	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
 	inputData, err := os.ReadFile(inputPath)

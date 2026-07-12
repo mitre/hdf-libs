@@ -5347,6 +5347,8 @@
     {
       "name": "10.0.0.3",
       "type": "host",
+      "fqdn": "DESKTOP-TEST001.localdomain",
+      "hostname": "s",
       "ipAddress": "10.0.0.3",
       "osName": "Linux Kernel 5.13.0-37-generic on Ubuntu 20.04",
       "osVersion": "linux"
@@ -5354,6 +5356,7 @@
     {
       "name": "10.0.0.2",
       "type": "host",
+      "fqdn": "splunk.cmoo.rs",
       "ipAddress": "10.0.0.2",
       "osName": "Linux Kernel 4.15 on Ubuntu 18.04 (bionic)",
       "osVersion": "linux"
@@ -5361,6 +5364,7 @@
     {
       "name": "10.0.0.1",
       "type": "host",
+      "fqdn": "setup.ubnt.com",
       "ipAddress": "10.0.0.1",
       "osName": "Linux Kernel 3.2 on Debian 7.0 (wheezy)",
       "osVersion": "linux"

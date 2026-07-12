@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-libs/hdf-extension-graph/go/v3
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/mitre/hdf-libs/hdf-fixtures v0.0.0-00010101000000-000000000000

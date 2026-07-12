@@ -173,6 +173,76 @@ describe('hdf-evidence-package.schema.json', () => {
     expect(validate(doc)).toBe(false);
   });
 
+  // -- External_Evidence_Reference --
+
+  const ecsRef = { uri: 'https://evidence.agency.gov/logs/2026-q1.ndjson', format: 'ecs' };
+
+  it('should accept an external evidence reference (ecs)', () => {
+    expect(validate({ ...minimal, externalEvidence: [ecsRef] })).toBe(true);
+    expect(validate.errors).toBeNull();
+  });
+
+  it('should accept a fully specified external evidence reference', () => {
+    const doc = {
+      ...minimal,
+      externalEvidence: [{
+        uri: 'https://evidence.agency.gov/ocsf/portal-2026-q1.parquet',
+        format: 'ocsf',
+        formatVersion: '1.8.0',
+        mediaType: 'application/vnd.apache.parquet',
+        checksum: { algorithm: 'sha256', value: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' },
+        description: 'Portal OCSF telemetry, Q1 2026',
+        metadata: {
+          recordCount: 1500000,
+          timeRange: { start: '2026-01-01T00:00:00Z', end: '2026-03-31T23:59:59Z' },
+          collector: 'aws-security-lake',
+        },
+      }],
+    };
+    expect(validate(doc)).toBe(true);
+    expect(validate.errors).toBeNull();
+  });
+
+  it('should accept the reserved format values', () => {
+    for (const format of ['ecs', 'ocsf', 'cyclonedx', 'spdx', 'raw-log']) {
+      expect(validate({ ...minimal, externalEvidence: [{ uri: 'x.json', format }] })).toBe(true);
+    }
+  });
+
+  it('should accept an x- custom format (e.g. a Splunk/Sentinel export)', () => {
+    const doc = { ...minimal, externalEvidence: [{ uri: 'siem-export.json', format: 'x-splunk-export' }] };
+    expect(validate(doc)).toBe(true);
+  });
+
+  it('should reject query-time normalization models as formats (splunk-cim, ms-asim, schema-one deferred)', () => {
+    for (const format of ['splunk-cim', 'ms-asim', 'schema-one']) {
+      expect(validate({ ...minimal, externalEvidence: [{ uri: 'x.json', format }] })).toBe(false);
+    }
+  });
+
+  it('should reject a non-x custom format value', () => {
+    const doc = { ...minimal, externalEvidence: [{ uri: 'x.json', format: 'bogus' }] };
+    expect(validate(doc)).toBe(false);
+  });
+
+  it('should reject external evidence missing uri', () => {
+    expect(validate({ ...minimal, externalEvidence: [{ format: 'ecs' }] })).toBe(false);
+  });
+
+  it('should reject external evidence missing format', () => {
+    expect(validate({ ...minimal, externalEvidence: [{ uri: 'x.json' }] })).toBe(false);
+  });
+
+  it('should reject external evidence with unknown properties', () => {
+    const doc = { ...minimal, externalEvidence: [{ ...ecsRef, embedded: 'no' }] };
+    expect(validate(doc)).toBe(false);
+  });
+
+  it('should reject a negative recordCount', () => {
+    const doc = { ...minimal, externalEvidence: [{ ...ecsRef, metadata: { recordCount: -1 } }] };
+    expect(validate(doc)).toBe(false);
+  });
+
   // -- Completeness_Check --
 
   it('should accept package with partial completeness check', () => {

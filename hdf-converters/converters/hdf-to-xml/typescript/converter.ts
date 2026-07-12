@@ -104,7 +104,9 @@ function transformHdfToXmlObject(hdf: HDFResults): Record<string, unknown> {
         ...(target.componentId && { componentId: wrap(target.componentId) }),
         name: wrap(target.name),
         type: wrap(target.type),
+        ...(target.hostname && { hostname: wrap(target.hostname) }),
         ...(target.fqdn && { fqdn: wrap(target.fqdn) }),
+        ...(target.domain && { domain: wrap(target.domain) }),
         ...(target.ipAddress && { ipAddress: wrap(target.ipAddress) })
       }))
     };

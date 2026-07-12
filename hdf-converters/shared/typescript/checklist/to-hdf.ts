@@ -119,6 +119,9 @@ function assetToComponent(a: Asset): Component | undefined {
   // identity (a checklist may carry only HOST_IP / HOST_FQDN).
   const name = a.hostName || a.hostFQDN || a.hostIP || '';
   const c: Component = { name, type: TargetType.Host };
+  // HOST_NAME is the short, OS-reported hostname; store it in the dedicated
+  // field so it stays distinct from the Name display-fallback and from fqdn.
+  if (a.hostName) c.hostname = a.hostName;
   if (a.hostIP) c.ipAddress = a.hostIP;
   if (a.hostFQDN) c.fqdn = a.hostFQDN;
   if (a.hostMAC) c.macAddress = a.hostMAC;

@@ -50,6 +50,13 @@
       },
       "description": "References to HDF documents included in this evidence package."
     },
+    "externalEvidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/External_Evidence_Reference"
+      },
+      "description": "References to external native-format evidence (log/telemetry corpora and other artifacts) carried by URI + integrity hash + format discriminator, without recreating the data inside HDF. Logs in ECS/OCSF/etc. are legitimate accreditation evidence; HDF indexes them here rather than transcoding them."
+    },
     "completenessCheck": {
       "$ref": "#/$defs/Completeness_Check",
       "description": "Summary of assessment completeness and compliance status."
@@ -150,6 +157,143 @@
       ],
       "description": "A reference to an HDF document or BOM/manifest included in the evidence package.",
       "title": "Content Reference"
+    },
+    "External_Evidence_Format": {
+      "type": "string",
+      "title": "External Evidence Format",
+      "anyOf": [
+        {
+          "enum": [
+            "ecs",
+            "ocsf",
+            "cyclonedx",
+            "spdx",
+            "raw-log"
+          ]
+        },
+        {
+          "pattern": "^x-[a-z0-9]+(-[a-z0-9]+)*$"
+        }
+      ],
+      "description": "The native format of the referenced external evidence. Reserved values are OPEN, referenceable, serialized standards: ecs (Elastic Common Schema), ocsf (Open Cybersecurity Schema Framework), cyclonedx, spdx, raw-log (unstructured/native logs). Custom or vendor-specific kinds MUST use an 'x-' prefix (e.g. 'x-splunk-export') so they cannot collide with a value later promoted into the reserved set. Adding a reserved value is a schema version bump.",
+      "$comment": "Reserved values must be OPEN, serialized, uri+hash-referenceable artifacts. Query-time normalization MODELS are deliberately EXCLUDED because they have no portable stored artifact to reference: Splunk CIM is a search-time 'schema-on-the-fly' over Splunk-internal indexes, and Microsoft ASIM is a set of query-time KQL parsers over Sentinel tables. To carry Splunk/Sentinel-derived evidence, reference its EXPORTED result set (JSON/CSV/NDJSON) via an 'x-' format + mediaType — never the model name. 'schema-one' is intentionally NOT yet reserved: it has no open public spec (as of 2026-07), and reserving a value whose shape/version is unverified would violate the fixture-integrity rule; it will be added once the authoritative spec is obtained. Carriage is reference-only and never parses the payload, so a large/complex or spec-gated format (e.g. Schema One) is still referenceable as an opaque 'x-' value."
+    },
+    "External_Evidence_Time_Range": {
+      "type": "object",
+      "title": "External Evidence Time Range",
+      "unevaluatedProperties": false,
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Start of the time window the corpus covers (ISO 8601)."
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End of the time window the corpus covers (ISO 8601)."
+        }
+      },
+      "description": "The time window a referenced external evidence corpus covers."
+    },
+    "External_Evidence_Metadata": {
+      "type": "object",
+      "title": "External Evidence Metadata",
+      "unevaluatedProperties": false,
+      "properties": {
+        "recordCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Approximate number of records/events in the referenced corpus."
+        },
+        "timeRange": {
+          "$ref": "#/$defs/External_Evidence_Time_Range",
+          "description": "The time window the referenced evidence covers."
+        },
+        "collector": {
+          "type": "string",
+          "description": "The tool/pipeline that collected or produced the corpus. Example: 'aws-security-lake', 'elastic-agent'."
+        }
+      },
+      "description": "Descriptive metadata about a referenced external evidence corpus. Does not affect integrity."
+    },
+    "External_Evidence_Reference": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "uri",
+        "format"
+      ],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "URI to the external native-format evidence artifact (log/telemetry corpus, etc.). Can be a relative path or absolute URL. The data stays canonical in its native format — HDF references it, never parses or transcodes it."
+        },
+        "format": {
+          "$ref": "#/$defs/External_Evidence_Format",
+          "description": "The native format discriminator of the referenced artifact."
+        },
+        "checksum": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Checksum",
+          "description": "Cryptographic checksum of the referenced artifact for integrity verification.",
+          "$comment": "Strongly recommended for external evidence — a point-in-time reference without an integrity hash is weakly auditable. Kept out of `description` so this usage-specific note does not aggregate into the shared Checksum type's generated Go doc comment (quicktype concatenates $ref-sibling descriptions onto the referenced type)."
+        },
+        "mediaType": {
+          "type": "string",
+          "description": "Optional IANA media type describing the on-disk serialization, orthogonal to 'format' (the semantic standard). Examples: application/x-ndjson, application/json, application/vnd.apache.parquet, text/csv."
+        },
+        "formatVersion": {
+          "type": "string",
+          "description": "Optional producer-declared version of the format (e.g. ECS '9.4.0', OCSF '1.8.0'). Free-text and untrusted — HDF does not validate it against a registry."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional human-readable description of this evidence entry."
+        },
+        "metadata": {
+          "$ref": "#/$defs/External_Evidence_Metadata",
+          "description": "Optional descriptive metadata about the referenced corpus. Does not affect integrity."
+        }
+      },
+      "examples": [
+        {
+          "$comment": "ECS log corpus carried by reference (NDJSON) — HDF never parses it; the hash pins integrity.",
+          "uri": "https://evidence.agency.gov/logs/portal-2026-q1.ndjson",
+          "format": "ecs",
+          "formatVersion": "9.4.0",
+          "mediaType": "application/x-ndjson",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "metadata": {
+            "recordCount": 4200000,
+            "timeRange": {
+              "start": "2026-01-01T00:00:00Z",
+              "end": "2026-03-31T23:59:59Z"
+            },
+            "collector": "elastic-agent"
+          }
+        },
+        {
+          "$comment": "OCSF telemetry landed as Parquet in a security data lake.",
+          "uri": "s3://agency-security-lake/ocsf/portal/2026/q1/",
+          "format": "ocsf",
+          "formatVersion": "1.8.0",
+          "mediaType": "application/vnd.apache.parquet",
+          "collector": "aws-security-lake"
+        },
+        {
+          "$comment": "A Splunk export carried as an opaque x- custom format — CIM/ASIM are query-time models, so reference the EXPORT, not the model.",
+          "uri": "siem/auth-events-2026-q1.json",
+          "format": "x-splunk-export",
+          "mediaType": "application/json"
+        }
+      ],
+      "description": "A reference to external native-format evidence (log/telemetry corpus or other artifact) carried by URI + integrity hash + format discriminator. Reference-only: the artifact is never embedded (corpora can be huge) or transcoded (that would be lossy) — it stays canonical in its native format and HDF acts as the structured index.",
+      "$comment": "Deliberately distinct from two look-alike primitives — the shared DRY is the common Checksum type, not the container. Bom (boms[] on components/system) models component COMPOSITION and is richer: also embeddable (document) and normalizable into HDF's queryable shape (packages/model/dataset). Content_Reference (contents[]) references HDF-ECOSYSTEM documents and BOMs by Content_Type. External_Evidence_Reference is reference-only and OPAQUE (HDF never inspects it), for NATIVE non-HDF log/telemetry corpora indexed as accreditation evidence; it carries log-specific metadata (recordCount/timeRange/collector) the other two do not. Do not merge these — collapsing them would mix incompatible discriminator axes and lose Bom's normalization.",
+      "title": "External Evidence Reference"
     },
     "SBOM_Coverage": {
       "type": "object",

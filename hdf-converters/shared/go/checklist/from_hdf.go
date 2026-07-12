@@ -46,7 +46,15 @@ func buildAsset(results *hdf.HDFResults, cl *Checklist) Asset {
 	var a Asset
 	if len(results.Components) > 0 {
 		c := results.Components[0]
-		a.HostName = c.Name
+		// Prefer the dedicated hostname. For HDF produced before hostname existed,
+		// fall back to Name — but only when Name holds a real short name, not when
+		// it merely mirrors the fqdn/ip fallback the old converter stored there
+		// (which would fabricate a HOST_NAME the source never had).
+		if c.Hostname != nil {
+			a.HostName = *c.Hostname
+		} else if c.Name != derefStr(c.FQDN) && c.Name != derefStr(c.IPAddress) {
+			a.HostName = c.Name
+		}
 		a.HostIP = derefStr(c.IPAddress)
 		a.HostFQDN = derefStr(c.FQDN)
 		a.HostMAC = derefStr(c.MACAddress)

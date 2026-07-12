@@ -51,6 +51,18 @@ func GetSchemaDir() string {
 	return schemaDir
 }
 
+// SchemaBytes returns the raw JSON of the embedded (or --schema-dir override)
+// schema for the given type. Exposed so callers can derive constraints from the
+// single source of truth (e.g. an enum) instead of duplicating them.
+func SchemaBytes(schemaType SchemaType) ([]byte, error) {
+	filename, ok := schemaFiles[schemaType]
+	if !ok {
+		return nil, fmt.Errorf("unknown schema type %q", schemaType)
+	}
+	data, _, err := readSchemaData(filename)
+	return data, err
+}
+
 // SchemaType represents the type of HDF schema.
 type SchemaType string
 

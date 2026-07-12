@@ -420,16 +420,18 @@ USAGE
   hdf evidence <subcommand> <file> [flags]
 
 SUBCOMMANDS
-  build    Bundle HDF documents into an evidence package
-  info     Summarize an evidence package (with per-document checksum status)
-  verify   Verify an evidence package against its assessment plan
-  export   Export package documents to another format
-  set      Set/unset top-level fields
+  build         Bundle HDF documents into an evidence package
+  info          Summarize an evidence package (with per-document checksum status)
+  verify        Verify an evidence package against its assessment plan
+  export        Export package documents to another format
+  set           Set/unset top-level fields
+  add-evidence  Reference external native-format evidence (logs/telemetry) by uri + hash + format
 
 EXAMPLES
   hdf evidence build --system system.json --results r1.json --results r2.json -o q1.hdf-evidence-package.json
   hdf evidence info q1.hdf-evidence-package.json
   hdf evidence verify q1.hdf-evidence-package.json
+  hdf evidence add-evidence q1.hdf-evidence-package.json --uri logs/q1.ndjson --format ecs --collector elastic-agent
 ```
 
 Example output:
@@ -720,6 +722,9 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | Source | Destination | Description |
 |--------|-------------|-------------|
 | `hdf` | `csv` | Export requirements to CSV spreadsheet |
+| `hdf` | `ecs` | Export findings as Elastic Common Schema (ECS 9.4.0) NDJSON events |
+| `hdf` | `splunk` | Export findings as Splunk HEC (CIM Vulnerabilities) NDJSON events |
+| `hdf` | `ocsf` | Export findings as OCSF v1.8.0 Finding NDJSON (Compliance / Vulnerability Finding) |
 | `hdf` | `xml` | Export requirements to XML |
 | `hdf` | `xccdf` | Export to XCCDF results XML |
 | `hdf` | `ckl` | Export to DISA STIG Viewer checklist (`.ckl` XML) |

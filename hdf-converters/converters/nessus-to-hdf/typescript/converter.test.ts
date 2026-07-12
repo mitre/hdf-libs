@@ -228,6 +228,9 @@ describe('Nessus to HDF Converter', async () => {
       expect(target).toBeDefined();
       expect(target?.osName).toContain('Ubuntu');
       expect(target?.ipAddress).toBe('10.0.0.3');
+      // The short hostname HostProperty is carried into the dedicated field.
+      expect(target?.hostname).toBe('s');
+      expect(target?.fqdn).toBe('DESKTOP-TEST001.localdomain');
     });
 
     it('should set generator metadata', async () => {

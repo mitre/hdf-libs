@@ -1,0 +1,125 @@
+{
+  "baselines": [
+    {
+      "name": "rhel9-stig-baseline",
+      "title": "RHEL 9 STIG Baseline",
+      "version": "1.0.0",
+      "inputs": [],
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "abc123"
+      },
+      "depends": [],
+      "groups": [
+        {
+          "id": "controls/stig.rb",
+          "title": "STIG Controls",
+          "requirements": [
+            "SV-NA-001",
+            "SV-NR-002",
+            "SV-ERR-003"
+          ]
+        }
+      ],
+      "supports": [],
+      "requirements": [
+        {
+          "id": "SV-NA-001",
+          "title": "Control does not apply to this platform",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "This control is scoped out for the target platform."
+            }
+          ],
+          "impact": 0.5,
+          "refs": [],
+          "tags": {
+            "nist": ["CM-6"]
+          },
+          "sourceLocation": {
+            "ref": "controls/stig.rb",
+            "line": 1
+          },
+          "results": [
+            {
+              "status": "notApplicable",
+              "codeDesc": "platform guard: control not applicable",
+              "startTime": "2024-01-01T00:00:00Z",
+              "runTime": 0.1
+            }
+          ]
+        },
+        {
+          "id": "SV-NR-002",
+          "title": "Control requires manual verification",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "This control must be assessed manually and was not reviewed in this run."
+            }
+          ],
+          "impact": 0.5,
+          "refs": [],
+          "tags": {
+            "nist": ["CA-2"]
+          },
+          "sourceLocation": {
+            "ref": "controls/stig.rb",
+            "line": 2
+          },
+          "results": [
+            {
+              "status": "notReviewed",
+              "codeDesc": "manual control: not assessed",
+              "startTime": "2024-01-01T00:00:00Z",
+              "runTime": 0.1
+            }
+          ]
+        },
+        {
+          "id": "SV-ERR-003",
+          "title": "Control test errored during execution",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "The test raised an execution error and did not yield a pass/fail result."
+            }
+          ],
+          "impact": 0.5,
+          "refs": [],
+          "tags": {
+            "nist": ["SI-2"]
+          },
+          "sourceLocation": {
+            "ref": "controls/stig.rb",
+            "line": 3
+          },
+          "results": [
+            {
+              "status": "error",
+              "codeDesc": "command failed: connection refused",
+              "message": "SSH probe raised: connection refused",
+              "startTime": "2024-01-01T00:00:00Z",
+              "runTime": 0.1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "duration": 0.3
+  },
+  "timestamp": "2024-01-15T00:00:00Z",
+  "components": [
+    {
+      "type": "host",
+      "name": "rhel9-server-01",
+      "componentId": "8f3b2c1a-0000-4a00-8000-000000000001",
+      "ipAddress": "10.0.0.50",
+      "osName": "Red Hat Enterprise Linux 9",
+      "osVersion": "9.3"
+    }
+  ]
+}

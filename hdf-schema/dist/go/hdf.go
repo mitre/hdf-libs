@@ -326,6 +326,8 @@ type Integrity struct {
 // for the first amendment.
 //
 // Cryptographic checksum for verifying the referenced document's integrity.
+//
+// Cryptographic checksum of the referenced artifact for integrity verification.
 type Checksum struct {
 	// The hash algorithm used for the checksum.              
 	Algorithm                                   HashAlgorithm `json:"algorithm"`
@@ -934,8 +936,21 @@ type Component struct {
 	// Component type discriminator. Same values as Target types, plus aiModel and dataset (thin                  
 	// AI subject components whose detail lives in an attached ai-model / dataset BOM).                           
 	Type                                                                                        TargetType        `json:"type"`
-	// Fully qualified domain name.                                                                               
+	// Directory domain the host is a member of — Active Directory / NetBIOS / LDAP domain (ECS                   
+	// host.domain semantics), NOT necessarily the DNS suffix of the FQDN. A standalone or                        
+	// workgroup host has a hostname but no domain. Not derivable from the FQDN; populate only                    
+	// from a source that carries directory membership.                                                           
+	Domain                                                                                      *string           `json:"domain,omitempty"`
+	// Fully qualified domain name (e.g. 'web01.prod.example.com'). Distinct from 'hostname'                      
+	// (short) and 'domain' (directory domain). ECS recommends storing this lowercase; the                        
+	// schema does not enforce case so source fidelity is preserved on round-trip.                                
 	FQDN                                                                                        *string           `json:"fqdn,omitempty"`
+	// Short, OS-reported host name (the unqualified machine name, e.g. 'web01'). Kept distinct                   
+	// from 'fqdn' because an FQDN is not reliably decomposable into hostname + domain                            
+	// (standalone/workgroup hosts have no domain; a directory domain is not the FQDN's DNS                       
+	// suffix). Aligns with ECS host.hostname and DISA STIG CKL HOST_NAME. Store the short name                   
+	// the source reports; do not derive it from the FQDN.                                                        
+	Hostname                                                                                    *string           `json:"hostname,omitempty"`
 	// IP address of the host.                                                                                    
 	IPAddress                                                                                   *string           `json:"ipAddress,omitempty"`
 	// MAC address in colon-separated hexadecimal format.                                                         
@@ -1273,7 +1288,14 @@ type Runner struct {
 	// The container image used for the test execution. Example: 'inspec/inspec:latest',                   
 	// 'ghcr.io/my-org/scanner:v2.1.0'. Useful for CI/CD pipelines where tests run in containers.          
 	ContainerImage                                                                               *string   `json:"containerImage,omitempty"`
-	// The hostname of the runner system. Example: 'ci-runner-01', 'jenkins-agent-03',                     
+	// The directory domain the runner system belongs to (Active Directory / NetBIOS / LDAP),              
+	// NOT the DNS suffix of the FQDN. Example: 'CORP'.                                                    
+	Domain                                                                                       *string   `json:"domain,omitempty"`
+	// The fully qualified domain name of the runner system, when known. Distinct from the short           
+	// 'hostname'; kept separate for the same reason as on host components (an FQDN is not                 
+	// reliably decomposable). Example: 'ci-runner-01.build.example.com'.                                  
+	FQDN                                                                                         *string   `json:"fqdn,omitempty"`
+	// The short hostname of the runner system. Example: 'ci-runner-01', 'jenkins-agent-03',               
 	// 'k8s-node-worker-03'.                                                                               
 	Hostname                                                                                     *string   `json:"hostname,omitempty"`
 	// The name of the runner environment. Examples: 'ubuntu', 'macos', 'windows', 'docker',               
@@ -2071,39 +2093,44 @@ type StandaloneOverride struct {
 // Each content entry references a document by type, URI, and checksum for integrity
 // verification.
 type HDFEvidencePackage struct {
-	// Summary of assessment completeness and compliance status.                                                   
-	CompletenessCheck                                                                           *CompletenessCheck `json:"completenessCheck,omitempty"`
-	// References to HDF documents included in this evidence package.                                              
-	Contents                                                                                    []ContentReference `json:"contents"`
-	// Description of the evidence package's purpose and scope.                                                    
-	Description                                                                                 *string            `json:"description,omitempty"`
-	// Information about the tool that generated this document.                                                    
-	Generator                                                                                   *Generator         `json:"generator,omitempty"`
-	// Cryptographic integrity information for verifying this evidence package has not been                        
-	// tampered with.                                                                                              
-	Integrity                                                                                   *Integrity         `json:"integrity,omitempty"`
-	// Optional key-value labels for grouping and querying evidence packages.                                      
-	Labels                                                                                      map[string]string  `json:"labels,omitempty"`
-	// Human-readable name for this evidence package. Example: 'Enterprise Portal ATO Evidence -                   
-	// Q1 2026'.                                                                                                   
-	Name                                                                                        string             `json:"name"`
-	// Unique identifier for this evidence package. Optional in casual use, expected in                            
-	// production ATO submissions. Auto-generated if omitted during creation.                                      
-	PackageID                                                                                   *string            `json:"packageId,omitempty"`
-	// URI to the hdf-plan document that drove this assessment. Used for completeness                              
-	// verification — every baseline in the plan should have a corresponding results document in                   
-	// this package.                                                                                               
-	PlanRef                                                                                     *string            `json:"planRef,omitempty"`
-	// When this evidence package was prepared. ISO 8601 format.                                                   
-	PreparedAt                                                                                  *time.Time         `json:"preparedAt,omitempty"`
-	// Identity of who prepared this evidence package.                                                             
-	PreparedBy                                                                                  *Identity          `json:"preparedBy,omitempty"`
-	// Digital signature covering the entire evidence package.                                                     
-	Signature                                                                                   *Signature         `json:"signature,omitempty"`
-	// URI to the hdf-system document this evidence package covers.                                                
-	SystemRef                                                                                   *string            `json:"systemRef,omitempty"`
-	// Version of this evidence package.                                                                           
-	Version                                                                                     *string            `json:"version,omitempty"`
+	// Summary of assessment completeness and compliance status.                                                            
+	CompletenessCheck                                                                           *CompletenessCheck          `json:"completenessCheck,omitempty"`
+	// References to HDF documents included in this evidence package.                                                       
+	Contents                                                                                    []ContentReference          `json:"contents"`
+	// Description of the evidence package's purpose and scope.                                                             
+	Description                                                                                 *string                     `json:"description,omitempty"`
+	// References to external native-format evidence (log/telemetry corpora and other artifacts)                            
+	// carried by URI + integrity hash + format discriminator, without recreating the data                                  
+	// inside HDF. Logs in ECS/OCSF/etc. are legitimate accreditation evidence; HDF indexes them                            
+	// here rather than transcoding them.                                                                                   
+	ExternalEvidence                                                                            []ExternalEvidenceReference `json:"externalEvidence,omitempty"`
+	// Information about the tool that generated this document.                                                             
+	Generator                                                                                   *Generator                  `json:"generator,omitempty"`
+	// Cryptographic integrity information for verifying this evidence package has not been                                 
+	// tampered with.                                                                                                       
+	Integrity                                                                                   *Integrity                  `json:"integrity,omitempty"`
+	// Optional key-value labels for grouping and querying evidence packages.                                               
+	Labels                                                                                      map[string]string           `json:"labels,omitempty"`
+	// Human-readable name for this evidence package. Example: 'Enterprise Portal ATO Evidence -                            
+	// Q1 2026'.                                                                                                            
+	Name                                                                                        string                      `json:"name"`
+	// Unique identifier for this evidence package. Optional in casual use, expected in                                     
+	// production ATO submissions. Auto-generated if omitted during creation.                                               
+	PackageID                                                                                   *string                     `json:"packageId,omitempty"`
+	// URI to the hdf-plan document that drove this assessment. Used for completeness                                       
+	// verification — every baseline in the plan should have a corresponding results document in                            
+	// this package.                                                                                                        
+	PlanRef                                                                                     *string                     `json:"planRef,omitempty"`
+	// When this evidence package was prepared. ISO 8601 format.                                                            
+	PreparedAt                                                                                  *time.Time                  `json:"preparedAt,omitempty"`
+	// Identity of who prepared this evidence package.                                                                      
+	PreparedBy                                                                                  *Identity                   `json:"preparedBy,omitempty"`
+	// Digital signature covering the entire evidence package.                                                              
+	Signature                                                                                   *Signature                  `json:"signature,omitempty"`
+	// URI to the hdf-system document this evidence package covers.                                                         
+	SystemRef                                                                                   *string                     `json:"systemRef,omitempty"`
+	// Version of this evidence package.                                                                                    
+	Version                                                                                     *string                     `json:"version,omitempty"`
 }
 
 // Summary of assessment completeness and compliance status.
@@ -2148,6 +2175,56 @@ type ContentReference struct {
 	Type                                                                                      ContentType `json:"type"`
 	// URI to the document. Can be a relative path or absolute URL.                                       
 	URI                                                                                       string      `json:"uri"`
+}
+
+// A reference to external native-format evidence (log/telemetry corpus or other artifact)
+// carried by URI + integrity hash + format discriminator. Reference-only: the artifact is
+// never embedded (corpora can be huge) or transcoded (that would be lossy) — it stays
+// canonical in its native format and HDF acts as the structured index.
+type ExternalEvidenceReference struct {
+	// Cryptographic checksum of the referenced artifact for integrity verification.                                     
+	Checksum                                                                                   *Checksum                 `json:"checksum,omitempty"`
+	// Optional human-readable description of this evidence entry.                                                       
+	Description                                                                                *string                   `json:"description,omitempty"`
+	// The native format discriminator of the referenced artifact.                                                       
+	Format                                                                                     string                    `json:"format"`
+	// Optional producer-declared version of the format (e.g. ECS '9.4.0', OCSF '1.8.0').                                
+	// Free-text and untrusted — HDF does not validate it against a registry.                                            
+	FormatVersion                                                                              *string                   `json:"formatVersion,omitempty"`
+	// Optional IANA media type describing the on-disk serialization, orthogonal to 'format'                             
+	// (the semantic standard). Examples: application/x-ndjson, application/json,                                        
+	// application/vnd.apache.parquet, text/csv.                                                                         
+	MediaType                                                                                  *string                   `json:"mediaType,omitempty"`
+	// Optional descriptive metadata about the referenced corpus. Does not affect integrity.                             
+	Metadata                                                                                   *ExternalEvidenceMetadata `json:"metadata,omitempty"`
+	// URI to the external native-format evidence artifact (log/telemetry corpus, etc.). Can be                          
+	// a relative path or absolute URL. The data stays canonical in its native format — HDF                              
+	// references it, never parses or transcodes it.                                                                     
+	URI                                                                                        string                    `json:"uri"`
+}
+
+// Optional descriptive metadata about the referenced corpus. Does not affect integrity.
+//
+// Descriptive metadata about a referenced external evidence corpus. Does not affect
+// integrity.
+type ExternalEvidenceMetadata struct {
+	// The tool/pipeline that collected or produced the corpus. Example: 'aws-security-lake',                           
+	// 'elastic-agent'.                                                                                                 
+	Collector                                                                                *string                    `json:"collector,omitempty"`
+	// Approximate number of records/events in the referenced corpus.                                                   
+	RecordCount                                                                              *int64                     `json:"recordCount,omitempty"`
+	// The time window the referenced evidence covers.                                                                  
+	TimeRange                                                                                *ExternalEvidenceTimeRange `json:"timeRange,omitempty"`
+}
+
+// The time window the referenced evidence covers.
+//
+// The time window a referenced external evidence corpus covers.
+type ExternalEvidenceTimeRange struct {
+	// End of the time window the corpus covers (ISO 8601).             
+	End                                                      *time.Time `json:"end,omitempty"`
+	// Start of the time window the corpus covers (ISO 8601).           
+	Start                                                    *time.Time `json:"start,omitempty"`
 }
 
 // The comparison operator used when evaluating this input against observed values.

@@ -286,6 +286,59 @@ describe('checklist shared model', () => {
     expect(hdf.components).toBeUndefined();
   });
 
+  it('stores HOST_NAME in a dedicated hostname field, distinct from the Name fallback', () => {
+    const both = checklistToHdf(
+      { format: 'ckl', asset: { hostName: 'web01', hostFQDN: 'web01.prod.example.com', hostIP: '10.0.1.5' }, stigs: [{ vulns: [] }] },
+      CHECKSUM,
+      'test-converter',
+    );
+    expect(both.components?.[0].hostname).toBe('web01');
+    expect(both.components?.[0].fqdn).toBe('web01.prod.example.com');
+
+    // No HOST_NAME: hostname is not fabricated from the FQDN fallback.
+    const fqdnOnly = checklistToHdf(
+      { format: 'ckl', asset: { hostFQDN: 'web01.prod.example.com', hostIP: '10.0.1.5' }, stigs: [{ vulns: [] }] },
+      CHECKSUM,
+      'test-converter',
+    );
+    expect(fqdnOnly.components?.[0].hostname).toBeUndefined();
+    expect(fqdnOnly.components?.[0].name).toBe('web01.prod.example.com');
+  });
+
+  it('preserves both HOST_NAME and HOST_FQDN through a round-trip without fabricating a short name', () => {
+    const rt = (asset: Record<string, unknown>) => {
+      const hdf = checklistToHdf({ format: 'ckl', asset, stigs: [{ stigId: 'S', title: 'T', version: '1', vulns: [{ vulnNum: 'V-1', ruleId: 'SV-1_rule', severity: 'low', ccis: [], status: CheckStatus.Open }] }] }, CHECKSUM, 'test-converter');
+      return hdfToChecklist(JSON.stringify(hdf)).asset;
+    };
+
+    const both = rt({ hostName: 'web01', hostFQDN: 'web01.prod.example.com', hostIP: '10.0.1.5' });
+    expect(both.hostName).toBe('web01');
+    expect(both.hostFQDN).toBe('web01.prod.example.com');
+
+    const fqdnOnly = rt({ hostFQDN: 'web01.prod.example.com', hostIP: '10.0.1.5' });
+    expect(fqdnOnly.hostName).toBeFalsy();
+    expect(fqdnOnly.hostFQDN).toBe('web01.prod.example.com');
+  });
+
+  it('recovers a legacy short HOST_NAME from Name without fabricating one from the fqdn/ip fallback', () => {
+    const build = (component: Record<string, unknown>) => {
+      const hdf = {
+        components: [{ type: 'host', ...component }],
+        baselines: [{ name: 'b', requirements: [{ id: 'V-1', impact: 0, tags: {}, descriptions: [], results: [{ status: 'passed', codeDesc: '' }] }] }],
+      };
+      return hdfToChecklist(JSON.stringify(hdf)).asset;
+    };
+
+    // Legacy HDF (no hostname field): real short name in name alongside fqdn -> preserved.
+    const legacy = build({ name: 'web01', fqdn: 'web01.prod.example.com' });
+    expect(legacy.hostName).toBe('web01');
+    expect(legacy.hostFQDN).toBe('web01.prod.example.com');
+
+    // Legacy HDF where name merely mirrors the fqdn/ip fallback -> not fabricated.
+    expect(build({ name: 'web01.prod.example.com', fqdn: 'web01.prod.example.com' }).hostName).toBeFalsy();
+    expect(build({ name: '10.0.1.5', ipAddress: '10.0.1.5' }).hostName).toBeFalsy();
+  });
+
   it('coerces CKLB null fields to undefined (e.g. classification: null)', () => {
     const cklb = JSON.stringify({
       cklb_version: '1.0',
