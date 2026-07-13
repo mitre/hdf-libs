@@ -145,7 +145,7 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 		return err
 	}
 
-	data, err := os.ReadFile(file) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(file) // size-gated read boundary (honors --max-size)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
 	}

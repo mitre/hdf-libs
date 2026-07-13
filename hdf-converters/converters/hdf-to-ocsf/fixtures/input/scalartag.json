@@ -1,0 +1,38 @@
+{
+  "generator": { "name": "nessus-to-hdf", "version": "0.1.0" },
+  "tool": { "name": "Nessus" },
+  "timestamp": "2022-03-22T14:54:47Z",
+  "statistics": { "duration": 5 },
+  "components": [
+    { "name": "10.0.0.3", "type": "host", "ipAddress": "10.0.0.3", "osName": "Ubuntu 20.04", "osVersion": "linux" }
+  ],
+  "baselines": [
+    {
+      "name": "Nessus Basic Network Scan",
+      "version": "1.0.0",
+      "requirements": [
+        {
+          "id": "CVE-2022-21291",
+          "title": "Oracle Java SE multiple vulnerabilities",
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+              "source": "CVE-2022-21291",
+              "version": "3.0"
+            }
+          ],
+          "impact": 0.5,
+          "tags": { "nist": "SI-2", "cci": "CCI-002605" },
+          "descriptions": [
+            { "data": "The remote host is affected by CVE-2022-21291.", "label": "default" }
+          ],
+          "results": [
+            { "status": "failed", "codeDesc": "Vulnerable Java SE version detected.", "startTime": "2022-03-22T14:54:47Z" }
+          ]
+        }
+      ]
+    }
+  ]
+}

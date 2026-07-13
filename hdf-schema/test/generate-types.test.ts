@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { bundleSchemas } from '../src/bundle-schemas';
-import { generateTypes } from '../src/generate-types';
+import { generateTypes, hostIdentityStringFields, insertComponentFields } from '../src/generate-types';
 import { createIndex } from '../src/create-index';
 
 const DIST_DIR = join(__dirname, '..', 'dist');
@@ -67,6 +67,15 @@ describe('generate-types', () => {
     it('should contain Source type', () => {
       const content = readFileSync(join(DIST_DIR, 'ts', 'hdf.ts'), 'utf-8');
       expect(content).toMatch(/Source/);
+    });
+
+    it('exposes Host_Component identity fields on Component (quicktype TS drops them)', () => {
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf.ts'), 'utf-8');
+      const iface = content.slice(content.indexOf('export interface Component {'));
+      const body = iface.slice(0, iface.indexOf('\n}'));
+      expect(body).toMatch(/\n\s*hostname\?:/);
+      expect(body).toMatch(/\n\s*domain\?:/);
+      expect(body).toMatch(/\n\s*fqdn\?:/);
     });
   });
 
@@ -222,6 +231,67 @@ describe('generate-types', () => {
         writeFileSync(schemaFile, original);
         await generateTypes();
       }
+    });
+  });
+});
+
+describe('Component identity-field reconciler', () => {
+  describe('hostIdentityStringFields', () => {
+    it('lifts plain-string Host_Component properties with trimmed descriptions', () => {
+      const schema = {
+        $defs: {
+          Host_Component: {
+            allOf: [
+              { $ref: '#/$defs/Base_Component' },
+              {
+                properties: {
+                  type: { const: 'host' },
+                  hostname: { type: 'string', description: 'short\n  name' },
+                  ipAddress: { anyOf: [{ type: 'string' }] }, // not a plain string -> skipped
+                },
+              },
+            ],
+          },
+        },
+      };
+      expect(hostIdentityStringFields(schema)).toEqual([
+        { name: 'hostname', description: 'short name' },
+      ]);
+    });
+
+    it('returns [] when the schema has no Host_Component / properties branch', () => {
+      expect(hostIdentityStringFields(undefined)).toEqual([]);
+      expect(hostIdentityStringFields({ $defs: {} })).toEqual([]);
+      expect(hostIdentityStringFields({ $defs: { Host_Component: { allOf: [{ $ref: 'x' }] } } })).toEqual([]);
+    });
+  });
+
+  describe('insertComponentFields', () => {
+    const iface = 'export interface Component {\n    name: string;\n    fqdn?: string;\n}\n';
+
+    it('inserts a missing field (with and without a doc comment)', () => {
+      const out = insertComponentFields(iface, [
+        { name: 'hostname', description: 'Short name.' },
+        { name: 'domain', description: '' },
+      ]);
+      expect(out).toMatch(/\n\s*hostname\?: string;/);
+      expect(out).toMatch(/\/\*\*\n\s+\* Short name\.\n\s+\*\/\n\s+hostname\?: string;/);
+      expect(out).toMatch(/\n\s*domain\?: string;/);
+    });
+
+    it('is idempotent — a present field is not re-added', () => {
+      const out = insertComponentFields(iface, [{ name: 'fqdn', description: 'x' }]);
+      expect(out).toBe(iface);
+    });
+
+    it('returns the source unchanged when there is no Component interface', () => {
+      expect(insertComponentFields('export interface Other {}', [{ name: 'hostname', description: '' }]))
+        .toBe('export interface Other {}');
+    });
+
+    it('returns the source unchanged when the interface has no closing brace', () => {
+      const noClose = 'export interface Component {    name: string;';
+      expect(insertComponentFields(noClose, [{ name: 'hostname', description: '' }])).toBe(noClose);
     });
   });
 });

@@ -181,6 +181,7 @@ func TestSeverity_ImpactBands(t *testing.T) {
 	assert.Equal(t, "high", severity(mk(0.7)))
 	assert.Equal(t, "medium", severity(mk(0.5)))
 	assert.Equal(t, "low", severity(mk(0.1)))
+	assert.Equal(t, "low", severity(mk(0.05))) // any impact >0 is low; only 0.0 is informational (shared banding)
 	assert.Equal(t, "informational", severity(mk(0.0)))
 	// no impact -> normalize the source severity string
 	assert.Equal(t, "high", severity(map[string]interface{}{"severity": "high"}))

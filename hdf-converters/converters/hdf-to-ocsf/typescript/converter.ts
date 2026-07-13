@@ -14,6 +14,7 @@ import {
   epochMillis,
   floatNumber,
 } from '../../../shared/typescript/exportmap.js';
+import { impactToSeverity } from '@mitre/hdf-utilities';
 
 /**
  * HDF Results -> OCSF (Open Cybersecurity Schema Framework) Finding NDJSON.
@@ -106,12 +107,7 @@ function buildFinding(
 
 function severityID(req: Obj): number {
   if (typeof req.impact === 'number') {
-    const impact = req.impact;
-    if (impact >= 0.9) return 5;
-    if (impact >= 0.7) return 4;
-    if (impact >= 0.4) return 3;
-    if (impact >= 0.1) return 2;
-    return 1;
+    return severityIDFromString(impactToSeverity(req.impact));
   }
   return severityIDFromString(getStr(req, 'severity'));
 }
@@ -234,8 +230,8 @@ function frameworkTags(req: Obj): Obj[] {
   const tags = asMap(req.tags);
   const out: Obj[] = [];
   for (const key of ['nist', 'cci']) {
-    const v = tags?.[key];
-    if (stringSlice(v).length > 0) out.push({ name: key, values: v });
+    const vals = stringSlice(tags?.[key]);
+    if (vals.length > 0) out.push({ name: key, values: vals });
   }
   return out;
 }

@@ -123,6 +123,7 @@ describe('hdf-to-splunk converter', () => {
     expect(sevForImpact(0.75)).toBe('high');
     expect(sevForImpact(0.5)).toBe('medium');
     expect(sevForImpact(0.2)).toBe('low');
+    expect(sevForImpact(0.05)).toBe('low'); // any impact >0 is low; only 0.0 is informational (shared banding)
     expect(sevForImpact(0.0)).toBe('informational');
   });
 

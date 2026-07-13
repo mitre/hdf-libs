@@ -11,6 +11,7 @@ import {
   firstCVE,
   epochSeconds,
 } from '../../../shared/typescript/exportmap.js';
+import { impactToSeverity } from '@mitre/hdf-utilities';
 
 /**
  * HDF Results -> Splunk HEC-envelope NDJSON, normalized to the Common
@@ -105,12 +106,7 @@ function destHost(component: Obj | undefined): string {
 
 function severity(req: Obj): string {
   if (typeof req.impact === 'number') {
-    const impact = req.impact;
-    if (impact >= 0.9) return 'critical';
-    if (impact >= 0.7) return 'high';
-    if (impact >= 0.4) return 'medium';
-    if (impact >= 0.1) return 'low';
-    return 'informational';
+    return impactToSeverity(req.impact);
   }
   return normalizeSeverity(getStr(req, 'severity'));
 }

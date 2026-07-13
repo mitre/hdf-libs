@@ -167,7 +167,7 @@ func TestConvert_CVE(t *testing.T) {
 }
 
 func TestConvert_GoldenParity(t *testing.T) {
-	for _, name := range []string{"compliance", "cve", "override", "riskadjust", "warnings"} {
+	for _, name := range []string{"compliance", "cve", "override", "riskadjust", "warnings", "scalartag"} {
 		out, err := ConvertHDFToOCSF(fixture(t, "input", name+".json"), converterVersion)
 		require.NoError(t, err)
 		if os.Getenv("UPDATE_GOLDEN") == "1" {
@@ -187,6 +187,7 @@ func TestSeverityID(t *testing.T) {
 	assert.Equal(t, 4, severityID(mk(0.7)))
 	assert.Equal(t, 3, severityID(mk(0.5)))
 	assert.Equal(t, 2, severityID(mk(0.1)))
+	assert.Equal(t, 2, severityID(mk(0.05))) // any impact >0 maps to Low (2); only 0.0 is Informational (shared banding)
 	assert.Equal(t, 1, severityID(mk(0.0)))
 	assert.Equal(t, 4, severityID(map[string]interface{}{"severity": "high"}))
 	assert.Equal(t, 0, severityID(map[string]interface{}{}))

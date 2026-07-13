@@ -1084,7 +1084,7 @@ const SYSTEM_TOP_LEVEL_FIELDS = ['authorizationStatus', 'categorizationLevel', '
 
 /** Fields tracked for component-level field changes. */
 const COMPONENT_TRACKED_FIELDS = [
-  'type', 'description', 'baselineRefs', 'inputOverrides', 'boms', 'targetSelector',
+  'type', 'description', 'baselineRefs', 'inputOverrides', 'boms', 'integrity', 'targetSelector',
 ];
 
 /**

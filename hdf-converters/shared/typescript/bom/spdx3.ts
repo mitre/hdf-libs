@@ -25,6 +25,7 @@ import {
   type PerformanceMetric,
 } from './model.js';
 import { asRecord, asString, buildBom, stringifyScalar } from './normalize.js';
+import { limitArrayWithWarning } from '../converterutil.js';
 
 /** A single normalized AI/dataset subject lifted from the SPDX-3 @graph. */
 export interface SPDX3Subject {
@@ -214,5 +215,5 @@ export function parseSPDX3(obj: Record<string, unknown>): SPDX3ParseResult {
     }
   }
 
-  return { subjects };
+  return { subjects: limitArrayWithWarning(subjects, 'subject') };
 }

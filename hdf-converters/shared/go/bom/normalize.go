@@ -18,8 +18,9 @@ import (
 
 const converterName = "bom-parser"
 
-// maxPackages caps the normalized package inventory (parity with the TS
-// limitArrayWithWarning default used by the shared converterutil).
+// maxPackages caps unbounded normalized inventories — package lists and the
+// SPDX-3 AI/dataset subject list (parity with the TS limitArrayWithWarning
+// default used by the shared converterutil).
 const maxPackages = 100000
 
 // spdxNullLicenses are SPDX sentinels that mean "no license", filtered out of

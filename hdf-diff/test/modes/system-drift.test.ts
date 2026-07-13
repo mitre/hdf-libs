@@ -383,6 +383,27 @@ describe('system drift comparison mode', () => {
       expect(comp?.state).toBe('unchanged');
     });
 
+    it('reports drift when a component artifact integrity[] changes', () => {
+      const intOld = [{ algorithm: 'sha256', value: 'a'.repeat(64) }];
+      const intNew = [{ algorithm: 'sha256', value: 'b'.repeat(64) }];
+      const old = {
+        name: 'System',
+        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', integrity: intOld }],
+      };
+      const updated = {
+        name: 'System',
+        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', integrity: intNew }],
+      };
+      const diff = diffSystems(old, updated);
+      const comp = diff.componentDiffs.find((c: ComponentDiff) => c.name === 'WebApp');
+      expect(comp?.state).toBe('updated');
+      const integrityChange = comp?.fieldChanges.find(fc => fc.path === 'integrity');
+      expect(integrityChange).toBeDefined();
+      expect(integrityChange?.op).toBe('replace');
+      expect(integrityChange?.oldValue).toEqual(intOld);
+      expect(integrityChange?.newValue).toEqual(intNew);
+    });
+
     // Fields outside the tracked set (e.g. the former SBOM ref field removed in ADR-0001)
     // must never surface as component drift.
     it('does not report drift for a change to a field outside the tracked set', () => {

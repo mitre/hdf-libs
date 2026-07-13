@@ -76,6 +76,74 @@ function preprocessSchemaForQuicktype(schemaJson: string): string {
   return JSON.stringify(walk(schema));
 }
 
+/** A plain-string identity property lifted from Host_Component. */
+export interface IdentityField {
+  name: string;
+  description: string;
+}
+
+/**
+ * Collect the plain-string properties Host_Component declares — the identity
+ * fields (`hostname`, `fqdn`, `domain`, …) the reconciler guarantees on the
+ * generated `Component` interface. Exported for unit testing.
+ */
+export function hostIdentityStringFields(compSchema: unknown): IdentityField[] {
+  const host = (compSchema as Record<string, Record<string, unknown>>)?.$defs?.Host_Component as
+    | { allOf?: Array<Record<string, unknown>> }
+    | undefined;
+  const branch = (host?.allOf ?? []).find(
+    (b) => b && typeof b === 'object' && 'properties' in b
+  );
+  const props = (branch?.properties ?? {}) as Record<string, Record<string, unknown>>;
+  return Object.entries(props)
+    .filter(([, def]) => def?.type === 'string')
+    .map(([name, def]) => ({ name, description: String(def.description ?? '').replace(/\s+/g, ' ').trim() }));
+}
+
+/**
+ * Insert any missing `fields` into the generated `Component` interface as
+ * optional properties. Idempotent — a field already present is left untouched;
+ * returns `tsSource` unchanged if there is no `Component` interface or nothing
+ * to add. Exported for unit testing.
+ */
+export function insertComponentFields(tsSource: string, fields: IdentityField[]): string {
+  const header = 'export interface Component {';
+  const start = tsSource.indexOf(header);
+  if (start === -1) return tsSource;
+  const bodyStart = start + header.length;
+  const close = tsSource.indexOf('\n}', bodyStart);
+  if (close === -1) return tsSource;
+  const block = tsSource.slice(bodyStart, close);
+
+  const additions = fields
+    .filter((f) => !new RegExp(`\\n\\s*${f.name}\\?:`).test(block))
+    .map((f) => {
+      const doc = f.description ? `    /**\n     * ${f.description}\n     */\n` : '';
+      return `${doc}    ${f.name}?: string;`;
+    });
+  if (additions.length === 0) return tsSource;
+
+  return tsSource.slice(0, close) + '\n' + additions.join('\n') + tsSource.slice(close);
+}
+
+/**
+ * Reinstate Host_Component identity fields the TypeScript renderer drops.
+ *
+ * quicktype builds an independent type graph per language, and its TS renderer
+ * unifies same-named properties across unrelated types — so Host_Component's
+ * `hostname` (collides with Runner.hostname) and `domain` (collides with
+ * Signature.domain) get attributed to those types and vanish from the flattened
+ * `Component` interface, while `fqdn` (no such collision) survives. The Go
+ * renderer keeps all three. This reconciles the TS output back to the schema.
+ */
+function reinstateComponentIdentityFields(tsSource: string): string {
+  const compSchemaPath = join(
+    __dirname, 'schemas', 'primitives', 'component.schema.json'
+  );
+  const compSchema = JSON.parse(readFileSync(compSchemaPath, 'utf-8'));
+  return insertComponentFields(tsSource, hostIdentityStringFields(compSchema));
+}
+
 /**
  * Generate go.mod file for the Go types package.
  */
@@ -145,7 +213,11 @@ export async function generateTypes(): Promise<void> {
 
     const ext = lang.name === 'go' ? 'go' : 'ts';
     const outputPath = join(outputDir, `hdf.${ext}`);
-    writeFileSync(outputPath, result.lines.join('\n'));
+    let output = result.lines.join('\n');
+    if (lang.name === 'typescript') {
+      output = reinstateComponentIdentityFields(output);
+    }
+    writeFileSync(outputPath, output);
     console.log(`  → ${outputPath}`);
 
     if (lang.name === 'go') {

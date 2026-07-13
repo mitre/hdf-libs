@@ -18,6 +18,8 @@ package bom
 
 import (
 	"strings"
+
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 )
 
 // SPDX3Subject is a single normalized AI/dataset subject lifted from the
@@ -274,5 +276,5 @@ func ParseSPDX3(obj map[string]any) *SPDX3ParseResult {
 		}
 	}
 
-	return &SPDX3ParseResult{Subjects: subjects}
+	return &SPDX3ParseResult{Subjects: shared.LimitSliceWithWarning(subjects, maxPackages, "subject")}
 }

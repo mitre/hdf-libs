@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 const (
@@ -104,18 +105,7 @@ func buildFinding(req, baseline map[string]interface{}, docTimestamp string, too
 // (0 Unknown, 1 Informational … 5 Critical), preferring numeric impact.
 func severityID(req map[string]interface{}) int {
 	if impact, ok := req["impact"].(float64); ok {
-		switch {
-		case impact >= 0.9:
-			return 5
-		case impact >= 0.7:
-			return 4
-		case impact >= 0.4:
-			return 3
-		case impact >= 0.1:
-			return 2
-		default:
-			return 1
-		}
+		return severityIDFromString(hdfutil.ImpactToSeverity(impact))
 	}
 	return severityIDFromString(exportmap.GetStr(req, "severity"))
 }
@@ -282,8 +272,8 @@ func frameworkTags(req map[string]interface{}) []interface{} {
 	tags, _ := exportmap.AsMap(req["tags"])
 	var out []interface{}
 	for _, key := range []string{"nist", "cci"} {
-		if v := tags[key]; len(exportmap.StringSlice(v)) > 0 {
-			out = append(out, map[string]interface{}{"name": key, "values": v})
+		if vals := exportmap.StringSlice(tags[key]); len(vals) > 0 {
+			out = append(out, map[string]interface{}{"name": key, "values": vals})
 		}
 	}
 	return out

@@ -26,6 +26,7 @@ package hdftosplunk
 
 import (
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 const (
@@ -122,18 +123,7 @@ func destHost(component map[string]interface{}) string {
 // falling back to a source severity string.
 func severity(req map[string]interface{}) string {
 	if impact, ok := req["impact"].(float64); ok {
-		switch {
-		case impact >= 0.9:
-			return "critical"
-		case impact >= 0.7:
-			return "high"
-		case impact >= 0.4:
-			return "medium"
-		case impact >= 0.1:
-			return "low"
-		default:
-			return "informational"
-		}
+		return hdfutil.ImpactToSeverity(impact)
 	}
 	return normalizeSeverity(exportmap.GetStr(req, "severity"))
 }

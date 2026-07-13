@@ -149,6 +149,18 @@ func TestEvidenceAddEvidence_RequiresUriAndFormat(t *testing.T) {
 	assert.Contains(t, err.Error(), "format")
 }
 
+// The evidence-package input is read through the size-gated boundary
+// (readInputFile), so --max-size is honored instead of an unbounded os.ReadFile.
+func TestEvidenceAddEvidence_RejectsOversizeInput(t *testing.T) {
+	pkg := filepath.Join(t.TempDir(), "big.json")
+	require.NoError(t, os.WriteFile(pkg, make([]byte, 2*1024*1024), 0o600)) // 2 MB
+	artifact := writeEvidenceArtifact(t, "x")
+
+	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--uri", artifact, "--format", "ecs", "--max-size", "1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "too large")
+}
+
 func TestEvidenceAddEvidence_Metadata(t *testing.T) {
 	pkg := writeTestEvidence(t)
 	_, _, err := executeCommand("evidence", "add-evidence", pkg,
