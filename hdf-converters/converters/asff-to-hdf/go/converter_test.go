@@ -268,3 +268,70 @@ func TestBuildRequirement_RefsAndNormalizedImpact(t *testing.T) {
 	require.NotNil(t, req.Refs[0].URL)
 	assert.Equal(t, "http://ref", *req.Refs[0].URL)
 }
+
+// --- product special-cases: Prowler, Trivy ---
+
+func TestConvertAsff_Prowler(t *testing.T) {
+	result, err := ConvertAsffToHDF(loadFixture(t, "prowler_sample.json"), converterVersion)
+	require.NoError(t, err)
+
+	// Prowler → one baseline named by ProviderName.
+	require.Len(t, result.Baselines, 1)
+	b := result.Baselines[0]
+	assert.Equal(t, "Prowler", b.Name)
+	// control ids are GeneratorId after the first hyphen (prowler-check11 → check11).
+	assert.ElementsMatch(t, []string{"check11", "check12"}, requirementIDs(b))
+
+	for _, req := range b.Requirements {
+		// Prowler folds its description into the result codeDesc; control desc is blank.
+		require.NotEmpty(t, req.Descriptions)
+		assert.Equal(t, " ", req.Descriptions[0].Data)
+		for _, res := range req.Results {
+			assert.Equal(t, hdf.Failed, res.Status)
+			assert.NotEmpty(t, res.CodeDesc)
+		}
+	}
+
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	assert.Truef(t, validators.ValidateResults(out).Valid, "%s", validators.ValidateResults(out).Error())
+}
+
+func TestConvertAsff_Prowler_NDJSON(t *testing.T) {
+	jsonResult, err := ConvertAsffToHDF(loadFixture(t, "prowler_sample.json"), converterVersion)
+	require.NoError(t, err)
+	ndjsonResult, err := ConvertAsffToHDF(loadFixture(t, "prowler_sample.ndjson"), converterVersion)
+	require.NoError(t, err)
+
+	// NDJSON and JSON forms of the same Prowler data yield the same baseline + control set.
+	require.Len(t, ndjsonResult.Baselines, 1)
+	assert.Equal(t, "Prowler", ndjsonResult.Baselines[0].Name)
+	assert.ElementsMatch(t, requirementIDs(jsonResult.Baselines[0]), requirementIDs(ndjsonResult.Baselines[0]))
+}
+
+func TestConvertAsff_Trivy(t *testing.T) {
+	result, err := ConvertAsffToHDF(loadFixture(t, "trivy_sample.json"), converterVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Baselines, 1)
+	b := result.Baselines[0]
+	assert.Equal(t, "Aqua Security - Trivy", b.Name)
+
+	var cve hdf.EvaluatedRequirement
+	for _, req := range b.Requirements {
+		if req.ID == "Trivy/CVE-2021-36159" {
+			cve = req
+		}
+	}
+	require.Equal(t, "Trivy/CVE-2021-36159", cve.ID)
+	require.Len(t, cve.Results, 1)
+	assert.Equal(t, hdf.Failed, cve.Results[0].Status)
+	require.NotNil(t, cve.Results[0].Message)
+	assert.Contains(t, *cve.Results[0].Message, "For package apk-tools")
+	// CVE findings map to the remediation NIST bundle.
+	assert.ElementsMatch(t, []interface{}{"SI-2", "RA-5"}, cve.Tags["nist"])
+
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	assert.Truef(t, validators.ValidateResults(out).Valid, "%s", validators.ValidateResults(out).Error())
+}

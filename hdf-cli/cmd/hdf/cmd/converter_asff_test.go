@@ -52,3 +52,25 @@ func TestAsffConverter_Convert_EmptyFindings(t *testing.T) {
 	assertHDFOutput(t, output)
 	assert.Contains(t, string(output), "asff-no-findings")
 }
+
+func TestAsffConverter_Prowler_Trivy(t *testing.T) {
+	for _, fx := range []string{"prowler_sample.json", "trivy_sample.json"} {
+		t.Run(fx, func(t *testing.T) {
+			inputData, err := os.ReadFile(converterFixturePath(t, "asff-to-hdf", "input/"+fx))
+			require.NoError(t, err)
+			converter, err := GetConverter("asff", "hdf")
+			require.NoError(t, err)
+			output, err := converter.Convert(inputData)
+			require.NoError(t, err, "conversion should succeed")
+			assertHDFOutput(t, output)
+		})
+	}
+}
+
+func TestAsffConverter_AutoDetect_NDJSON(t *testing.T) {
+	fixture := converterFixturePath(t, "asff-to-hdf", "input/prowler_sample.ndjson")
+	stdout, stderr, err := executeCommand("convert", fixture)
+	require.NoErrorf(t, err, "auto-detect of Prowler NDJSON should succeed (stderr: %s)", stderr)
+	assert.Contains(t, stderr, "Detected: AWS Security Finding Format")
+	assertHDFOutput(t, []byte(stdout))
+}

@@ -55,10 +55,42 @@ type asffRemediation struct {
 }
 
 type asffResource struct {
-	Type      string `json:"Type"`
-	ID        string `json:"Id"`
-	Partition string `json:"Partition"`
-	Region    string `json:"Region"`
+	Type      string              `json:"Type"`
+	ID        string              `json:"Id"`
+	Partition string              `json:"Partition"`
+	Region    string              `json:"Region"`
+	Details   *asffResourceDetail `json:"Details"`
+}
+
+type asffResourceDetail struct {
+	// Trivy stashes CVE / package data under Resources[].Details.Other.
+	Other map[string]string `json:"Other"`
+}
+
+// product identifies which ASFF-emitting tool a finding came from, so the
+// converter can apply per-product field overrides (mirrors heimdall2's
+// externalProductHandler dispatch at this repo's scale).
+type product int
+
+const (
+	productDefault product = iota
+	productSecurityHub
+	productProwler
+	productTrivy
+)
+
+func productOf(f asffFinding) product {
+	company, prod := productArnParts(f.ProductArn)
+	switch {
+	case prod == "securityhub":
+		return productSecurityHub
+	case company == "prowler" && prod == "prowler":
+		return productProwler
+	case company == "aquasecurity" && prod == "aquasecurity":
+		return productTrivy
+	default:
+		return productDefault
+	}
 }
 
 type asffCompliance struct {
@@ -177,7 +209,28 @@ func parseFindings(input []byte) ([]asffFinding, error) {
 	if err := json.Unmarshal(input, &single); err == nil {
 		return []asffFinding{single}, nil
 	}
+	// NDJSON (Prowler): one finding object per line.
+	if ndjson, err := parseNDJSON(input); err == nil && len(ndjson) > 0 {
+		return ndjson, nil
+	}
 	return nil, fmt.Errorf("invalid ASFF JSON")
+}
+
+func parseNDJSON(input []byte) ([]asffFinding, error) {
+	lines := strings.Split(strings.TrimSpace(string(input)), "\n")
+	out := make([]asffFinding, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var f asffFinding
+		if err := json.Unmarshal([]byte(line), &f); err != nil {
+			return nil, fmt.Errorf("failed to parse NDJSON line: %w", err)
+		}
+		out = append(out, f)
+	}
+	return out, nil
 }
 
 func buildBaseline(name string, findings []asffFinding, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
@@ -214,10 +267,11 @@ func buildRequirement(id string, group []asffFinding) hdf.EvaluatedRequirement {
 	}
 
 	primary := group[0]
-	descriptions := []hdf.Description{{
-		Label: "default",
-		Data:  firstNonEmpty(primary.Description, primary.Title),
-	}}
+	descData := firstNonEmpty(primary.Description, primary.Title)
+	if productOf(primary) == productProwler {
+		descData = " " // Prowler folds its description into the result codeDesc.
+	}
+	descriptions := []hdf.Description{{Label: "default", Data: descData}}
 	if fix := remediationText(primary); fix != "" {
 		descriptions = append(descriptions, hdf.Description{Label: "fix", Data: fix})
 	}
@@ -253,15 +307,40 @@ func buildResult(f asffFinding) hdf.RequirementResult {
 	if start.IsZero() {
 		start = time.Now().UTC()
 	}
-	res := hdf.RequirementResult{
-		Status:    mapComplianceStatus(f.Compliance.Status),
-		CodeDesc:  resourceCodeDesc(f),
-		StartTime: start,
+	status := mapComplianceStatus(f.Compliance.Status)
+	codeDesc := resourceCodeDesc(f)
+	message := statusReason(f)
+	switch productOf(f) {
+	case productProwler:
+		codeDesc = f.Description
+	case productTrivy:
+		status = hdf.Failed
+		if m := trivyMessage(f); m != "" {
+			message = m
+		}
 	}
-	if msg := statusReason(f); msg != "" {
-		res.Message = hdfutil.Ptr(msg)
+	res := hdf.RequirementResult{Status: status, CodeDesc: codeDesc, StartTime: start}
+	if message != "" {
+		res.Message = hdfutil.Ptr(message)
 	}
 	return res
+}
+
+// trivyMessage summarizes the installed vs patched package for a Trivy CVE finding.
+func trivyMessage(f asffFinding) string {
+	if len(f.Resources) == 0 || f.Resources[0].Details == nil {
+		return ""
+	}
+	o := f.Resources[0].Details.Other
+	if o["CVE ID"] == "" {
+		return ""
+	}
+	patchMsg := "There is no patched version of the package."
+	if p := o["Patched Package"]; p != "" {
+		patchMsg = fmt.Sprintf("The package has been patched since version(s): %s.", p)
+	}
+	return fmt.Sprintf("For package %s, the current version that is installed is %s.  %s",
+		o["PkgName"], o["Installed Package"], patchMsg)
 }
 
 // mapComplianceStatus maps ASFF Compliance.Status to an HDF result status.
@@ -323,30 +402,47 @@ func findingImpact(f asffFinding, control *standardsControl) float64 {
 	return 0.0
 }
 
-// baselineName is the Level-1 grouping key: the Security Hub standard name for
-// Security Hub findings, else the ProductArn product identity.
+// baselineName is the Level-1 grouping key, per product.
 func baselineName(f asffFinding) string {
-	if isSecurityHub(f) {
+	switch productOf(f) {
+	case productSecurityHub:
 		if name := securityHubStandardName(f); name != "" {
 			return name
 		}
+	case productProwler:
+		if name := f.ProductFields["ProviderName"]; name != "" {
+			return name
+		}
+	case productTrivy:
+		return "Aqua Security - Trivy"
 	}
-	company, product := productArnParts(f.ProductArn)
-	if company == "" && product == "" {
+	company, prod := productArnParts(f.ProductArn)
+	if company == "" && prod == "" {
 		return "AWS Security Finding Format"
 	}
-	return fmt.Sprintf("%s - %s", company, product)
+	return fmt.Sprintf("%s - %s", company, prod)
 }
 
-// controlID is the Level-2 grouping key within a baseline.
+// controlID is the Level-2 grouping key within a baseline, per product.
 func controlID(f asffFinding) string {
-	if isSecurityHub(f) {
+	switch productOf(f) {
+	case productSecurityHub:
 		if c := f.ProductFields["ControlId"]; c != "" {
 			return c
 		}
 		if r := f.ProductFields["RuleId"]; r != "" {
 			return r
 		}
+	case productProwler:
+		// Prowler encodes the check id after the first hyphen of GeneratorId.
+		if i := strings.Index(f.GeneratorID, "-"); i >= 0 {
+			return f.GeneratorID[i+1:]
+		}
+	case productTrivy:
+		if cve := trivyCVE(f); cve != "" {
+			return f.GeneratorID + "/" + cve
+		}
+		return f.GeneratorID + "/" + f.ID
 	}
 	if f.GeneratorID != "" {
 		segs := strings.Split(f.GeneratorID, "/")
@@ -356,13 +452,20 @@ func controlID(f asffFinding) string {
 }
 
 func isSecurityHub(f asffFinding) bool {
-	_, product := productArnParts(f.ProductArn)
-	return product == "securityhub"
+	return productOf(f) == productSecurityHub
+}
+
+// trivyCVE returns the CVE id Trivy stashes under Resources[0].Details.Other.
+func trivyCVE(f asffFinding) string {
+	if len(f.Resources) > 0 && f.Resources[0].Details != nil {
+		return f.Resources[0].Details.Other["CVE ID"]
+	}
+	return ""
 }
 
 // productArnParts pulls the company and product segments from a ProductArn like
 // "arn:aws:securityhub:us-east-1::product/aws/securityhub" → ("aws", "securityhub").
-func productArnParts(arn string) (company, product string) {
+func productArnParts(arn string) (company, prod string) {
 	if arn == "" {
 		return "", ""
 	}
@@ -424,6 +527,10 @@ func titleCaseWords(s string) string {
 // rule → NIST via the shared awsconfig mapping, falling back to the static
 // analysis default bundle (matching the SAF CLI) when no config rule applies.
 func nistTags(group []asffFinding) []string {
+	// Trivy CVE findings map to the update/remediation NIST bundle.
+	if len(group) > 0 && productOf(group[0]) == productTrivy && trivyCVE(group[0]) != "" {
+		return shared.DefaultRemediationNIST
+	}
 	seen := map[string]bool{}
 	var out []string
 	for _, f := range group {

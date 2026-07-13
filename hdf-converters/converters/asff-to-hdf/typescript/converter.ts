@@ -21,6 +21,7 @@ import {
   buildNistCciTags,
   serializeHdf,
   validateInputSize,
+  DEFAULT_REMEDIATION_NIST_TAGS,
 } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
@@ -43,7 +44,7 @@ interface AsffSeverity {
   Normalized?: number;
 }
 
-interface AsffFinding {
+export interface AsffFinding {
   Id?: string;
   GeneratorId?: string;
   ProductArn?: string;
@@ -57,23 +58,47 @@ interface AsffFinding {
   Severity?: AsffSeverity;
   Remediation?: { Recommendation?: { Text?: string; Url?: string } };
   ProductFields?: Record<string, string>;
-  Resources?: { Type?: string; Id?: string; Partition?: string; Region?: string }[];
+  Resources?: { Type?: string; Id?: string; Partition?: string; Region?: string; Details?: { Other?: Record<string, string> } }[];
   Compliance?: { Status?: string; StatusReasons?: { ReasonCode?: string; Description?: string }[] };
   Workflow?: { Status?: string };
 }
 
-/** Accepts the `{ "Findings": [...] }` envelope, a bare array, or a single finding. */
+export type Product = 'securityHub' | 'prowler' | 'trivy' | 'default';
+
+export function productOf(f: AsffFinding): Product {
+  const [company, prod] = productArnParts(f.ProductArn);
+  if (prod === 'securityhub') return 'securityHub';
+  if (company === 'prowler' && prod === 'prowler') return 'prowler';
+  if (company === 'aquasecurity' && prod === 'aquasecurity') return 'trivy';
+  return 'default';
+}
+
+/** The CVE id Trivy stashes under Resources[0].Details.Other. */
+export function trivyCVE(f: AsffFinding): string {
+  return f.Resources?.[0]?.Details?.Other?.['CVE ID'] ?? '';
+}
+
+/** Accepts the `{ "Findings": [...] }` envelope, a bare array, a single finding, or NDJSON (Prowler). */
 function parseFindings(input: string): AsffFinding[] {
-  const parsed = parseJSON<unknown>(input);
-  if (parsed !== null && typeof parsed === 'object' && 'Findings' in parsed) {
-    const findings = (parsed as { Findings: unknown }).Findings;
-    return Array.isArray(findings) ? (findings as AsffFinding[]) : [];
+  try {
+    const parsed = parseJSON<unknown>(input);
+    if (parsed !== null && typeof parsed === 'object' && 'Findings' in parsed) {
+      const findings = (parsed as { Findings: unknown }).Findings;
+      return Array.isArray(findings) ? (findings as AsffFinding[]) : [];
+    }
+    if (Array.isArray(parsed)) {
+      return parsed as AsffFinding[];
+    }
+    if (parsed !== null && typeof parsed === 'object') {
+      return [parsed as AsffFinding];
+    }
+  } catch {
+    // fall through to NDJSON
   }
-  if (Array.isArray(parsed)) {
-    return parsed as AsffFinding[];
-  }
-  if (parsed !== null && typeof parsed === 'object') {
-    return [parsed as AsffFinding];
+  const lines = input.trim().split('\n').filter((l) => l.trim().length > 0);
+  const out = lines.map((l) => parseJSON<AsffFinding>(l.trim()));
+  if (out.length > 0) {
+    return out;
   }
   throw new Error('invalid ASFF JSON');
 }
@@ -146,7 +171,7 @@ function productArnParts(arn: string | undefined): [string, string] {
 }
 
 function isSecurityHub(f: AsffFinding): boolean {
-  return productArnParts(f.ProductArn)[1] === 'securityhub';
+  return productOf(f) === 'securityHub';
 }
 
 const normalizeStd = (s: string): string => s.toLowerCase().replace(/-/g, ' ');
@@ -185,22 +210,39 @@ function securityHubStandardName(f: AsffFinding): string {
   return `${standard} v${version}`;
 }
 
-/** Level-1 grouping key: Security Hub standard name, else ProductArn identity. */
+/** Level-1 grouping key, per product. */
 function baselineName(f: AsffFinding): string {
-  if (isSecurityHub(f)) {
-    const name = securityHubStandardName(f);
-    if (name) return name;
+  switch (productOf(f)) {
+    case 'securityHub': {
+      const name = securityHubStandardName(f);
+      if (name) return name;
+      break;
+    }
+    case 'prowler':
+      if (f.ProductFields?.ProviderName) return f.ProductFields.ProviderName;
+      break;
+    case 'trivy':
+      return 'Aqua Security - Trivy';
   }
-  const [company, product] = productArnParts(f.ProductArn);
-  if (!company && !product) return 'AWS Security Finding Format';
-  return `${company} - ${product}`;
+  const [company, prod] = productArnParts(f.ProductArn);
+  if (!company && !prod) return 'AWS Security Finding Format';
+  return `${company} - ${prod}`;
 }
 
-/** Level-2 grouping key within a baseline. */
+/** Level-2 grouping key within a baseline, per product. */
 function controlId(f: AsffFinding): string {
-  if (isSecurityHub(f)) {
-    if (f.ProductFields?.ControlId) return f.ProductFields.ControlId;
-    if (f.ProductFields?.RuleId) return f.ProductFields.RuleId;
+  switch (productOf(f)) {
+    case 'securityHub':
+      if (f.ProductFields?.ControlId) return f.ProductFields.ControlId;
+      if (f.ProductFields?.RuleId) return f.ProductFields.RuleId;
+      break;
+    case 'prowler': {
+      const i = (f.GeneratorId ?? '').indexOf('-');
+      if (i >= 0) return (f.GeneratorId ?? '').slice(i + 1);
+      break;
+    }
+    case 'trivy':
+      return `${f.GeneratorId ?? ''}/${trivyCVE(f) || f.Id || ''}`;
   }
   if (f.GeneratorId) {
     const segs = f.GeneratorId.split('/');
@@ -215,6 +257,10 @@ function controlId(f: AsffFinding): string {
  * bundle (matching the SAF CLI) when no config rule applies.
  */
 function nistTags(group: AsffFinding[]): string[] {
+  // Trivy CVE findings map to the update/remediation NIST bundle.
+  if (group.length > 0 && productOf(group[0]!) === 'trivy' && trivyCVE(group[0]!)) {
+    return DEFAULT_REMEDIATION_NIST_TAGS;
+  }
   const out: string[] = [];
   const seen = new Set<string>();
   for (const f of group) {
@@ -266,20 +312,40 @@ function statusReason(f: AsffFinding): string {
 
 function buildResult(f: AsffFinding): RequirementResult {
   const start = parseTimestamp(f.LastObservedAt ?? f.UpdatedAt ?? '') ?? new Date();
-  const message = statusReason(f);
-  return createResult(mapComplianceStatus(f.Compliance?.Status), message || undefined, {
-    codeDesc: resourceCodeDesc(f),
-    startTime: start,
-  });
+  let status = mapComplianceStatus(f.Compliance?.Status);
+  let codeDesc = resourceCodeDesc(f);
+  let message = statusReason(f);
+  switch (productOf(f)) {
+    case 'prowler':
+      codeDesc = f.Description ?? '';
+      break;
+    case 'trivy': {
+      status = ResultStatus.Failed;
+      const m = trivyMessage(f);
+      if (m) message = m;
+      break;
+    }
+  }
+  return createResult(status, message || undefined, { codeDesc, startTime: start });
+}
+
+/** Summarizes the installed vs patched package for a Trivy CVE finding. */
+function trivyMessage(f: AsffFinding): string {
+  const o = f.Resources?.[0]?.Details?.Other;
+  if (!o || !o['CVE ID']) return '';
+  const patched = o['Patched Package'];
+  const patchMsg = patched
+    ? `The package has been patched since version(s): ${patched}.`
+    : 'There is no patched version of the package.';
+  return `For package ${o['PkgName']}, the current version that is installed is ${o['Installed Package']}.  ${patchMsg}`;
 }
 
 function buildRequirement(id: string, group: AsffFinding[]): EvaluatedRequirement {
   const primary = group[0]!;
   const impact = Math.max(...group.map(findingImpact));
 
-  const descriptions: Description[] = [
-    { label: 'default', data: primary.Description ?? primary.Title ?? '' },
-  ];
+  const descData = productOf(primary) === 'prowler' ? ' ' : (primary.Description ?? primary.Title ?? '');
+  const descriptions: Description[] = [{ label: 'default', data: descData }];
   const fix = remediationText(primary);
   if (fix) descriptions.push({ label: 'fix', data: fix });
 

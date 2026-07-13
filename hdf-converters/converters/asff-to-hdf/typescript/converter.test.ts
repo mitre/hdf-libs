@@ -132,3 +132,42 @@ describe('asff mapping helpers', () => {
     ).toBeCloseTo(0.0, 5);
   });
 });
+
+describe('asff product special-cases', () => {
+  it('converts Prowler (baseline by ProviderName, blank control desc, failed results)', async () => {
+    const hdf = JSON.parse(await convertAsffToHdf(loadFixture('prowler_sample.json'), '0.1.0')) as HDFResults;
+    expect(hdf.baselines).toHaveLength(1);
+    expect(hdf.baselines[0]!.name).toBe('Prowler');
+    expect(hdf.baselines[0]!.requirements.map((r) => r.id).sort()).toEqual(['check11', 'check12']);
+    for (const req of hdf.baselines[0]!.requirements) {
+      expect(req.descriptions[0]!.data).toBe(' ');
+      for (const res of req.results) {
+        expect(res.status).toBe(ResultStatus.Failed);
+        expect(res.codeDesc).toBeTruthy();
+      }
+    }
+    expectValidResults(hdf);
+  });
+
+  it('parses Prowler NDJSON identically to its JSON form', async () => {
+    const j = JSON.parse(await convertAsffToHdf(loadFixture('prowler_sample.json'), '0.1.0')) as HDFResults;
+    const n = JSON.parse(await convertAsffToHdf(loadFixture('prowler_sample.ndjson'), '0.1.0')) as HDFResults;
+    expect(n.baselines[0]!.name).toBe('Prowler');
+    expect(n.baselines[0]!.requirements.map((r) => r.id).sort()).toEqual(
+      j.baselines[0]!.requirements.map((r) => r.id).sort()
+    );
+  });
+
+  it('converts Trivy (CVE control id, failed, package message, remediation NIST)', async () => {
+    const hdf = JSON.parse(await convertAsffToHdf(loadFixture('trivy_sample.json'), '0.1.0')) as HDFResults;
+    expect(hdf.baselines).toHaveLength(1);
+    expect(hdf.baselines[0]!.name).toBe('Aqua Security - Trivy');
+    const cve = hdf.baselines[0]!.requirements.find((r) => r.id === 'Trivy/CVE-2021-36159')!;
+    expect(cve).toBeDefined();
+    expect(cve.results[0]!.status).toBe(ResultStatus.Failed);
+    expect(cve.results[0]!.message).toContain('For package apk-tools');
+    expect(cve.tags.nist).toEqual(['SI-2', 'RA-5']);
+    expectValidResults(hdf);
+  });
+
+});
