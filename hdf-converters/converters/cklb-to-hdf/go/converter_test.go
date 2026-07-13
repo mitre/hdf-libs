@@ -174,3 +174,19 @@ func TestConvertCKLBToHDF_AllPassingNotEmpty(t *testing.T) {
 // Status, parsing, and field-mapping helpers are unit-tested in the shared
 // checklist package (shared/go/checklist); these converter tests exercise the
 // public ConvertCKLBToHDF entry point against the committed fixture.
+
+// finding_details and comments are separate fields in CKLB; message carries
+// finding_details alone and comments round-trips through a tag.
+func TestConvertCKLBToHDF_CommentsStaySeparateFromFindingDetails(t *testing.T) {
+	result, err := ConvertCKLBToHDF(loadFixture(t, "firefox-stig.cklb"), converterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.NotEmpty(t, req.Results)
+	require.NotNil(t, req.Results[0].Message)
+
+	comments, ok := req.Tags["comments"].(string)
+	require.True(t, ok, "comments must round-trip through tags")
+	assert.NotEmpty(t, comments)
+	assert.NotContains(t, *req.Results[0].Message, comments)
+}

@@ -144,4 +144,18 @@ describe('ckl-to-hdf converter', () => {
       expect(r.results[0].status).toBe('passed');
     }
   });
+
+  // FINDING_DETAILS and COMMENTS are separate fields in CKL. Merging them into
+  // the one HDF message would make COMMENTS unrecoverable on export, so message
+  // carries finding_details alone and comments round-trips through a tag.
+  it('keeps COMMENTS out of message and round-trips it through tags', async () => {
+    const hdf = JSON.parse(await convertCklToHdf(loadFixture('firefox-stig.ckl'))) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]! as EvaluatedRequirement;
+
+    expect(req.results[0]!.message).toBe('Installed Firefox version is end-of-life and unsupported.');
+    expect(req.results[0]!.message).not.toContain('Synthetic checklist');
+    expect(req.tags!['comments']).toBe(
+      'Synthetic checklist for hdf-libs converter test fixture - not a real assessment.',
+    );
+  });
 });

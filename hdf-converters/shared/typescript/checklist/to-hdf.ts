@@ -71,10 +71,7 @@ function vulnToRequirement(v: Vuln, scanTime: Date): EvaluatedRequirement {
   if (v.checkContent) descriptions.push({ label: 'check', data: stripHTML(v.checkContent) });
   if (v.fixText) descriptions.push({ label: 'fix', data: stripHTML(v.fixText) });
 
-  const message = [v.findingDetails, v.comments]
-    .map((s) => (s ?? '').trim())
-    .filter(Boolean)
-    .join('\n\n');
+  const message = (v.findingDetails ?? '').trim();
   const result = createResult(statusToHdf(v.status), message, {
     codeDesc: `STIG rule ${v.ruleVer ?? ''}`,
     startTime: scanTime,
@@ -94,6 +91,9 @@ function vulnToRequirement(v: Vuln, scanTime: Date): EvaluatedRequirement {
   setIf(tags, 'gtitle', v.groupTitle);
   setIf(tags, 'group_id', v.groupID);
   setIf(tags, 'weight', v.weight);
+  // COMMENTS is a field of its own in CKL/CKLB. Merging it into the single HDF
+  // message would make it indistinguishable from FINDING_DETAILS on export.
+  setIf(tags, 'comments', v.comments);
   setIf(tags, 'severity', severity);
   if (v.legacyIDs && v.legacyIDs.length) tags['legacy_ids'] = v.legacyIDs;
   if (v.extra && Object.keys(v.extra).length > 0) tags['cklMetadata'] = { ...v.extra };

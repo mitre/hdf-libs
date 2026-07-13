@@ -122,4 +122,15 @@ describe('cklb-to-hdf converter', () => {
       expect(r.results[0].status).toBe('passed');
     }
   });
+
+  // finding_details and comments are separate fields in CKLB; message carries
+  // finding_details alone and comments round-trips through a tag.
+  it('keeps comments out of message and round-trips it through tags', async () => {
+    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]! as EvaluatedRequirement;
+    const comments = req.tags!['comments'] as string;
+
+    expect(comments).toBeTruthy();
+    expect(req.results[0]!.message).not.toContain(comments);
+  });
 });
