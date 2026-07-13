@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.3.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0",
   "title": "HDF Extension Primitives",
   "description": "Extension types for waivers, attestations, generators, and integrity.",
   "$defs": {
@@ -20,15 +20,15 @@
       ],
       "properties": {
         "type": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.3.0#/$defs/Override_Type",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Override_Type",
           "description": "The type of override applied to this requirement."
         },
         "status": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.3.0#/$defs/Result_Status",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0#/$defs/Result_Status",
           "description": "The new status this override sets for the requirement. Optional when only impact is being overridden."
         },
         "impact": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.3.0#/$defs/Impact_Override",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Impact_Override",
           "description": "Override to the requirement's impact score. At least one of status or impact must be set."
         },
         "reason": {
@@ -36,7 +36,7 @@
           "description": "Explanation for why this override was applied."
         },
         "appliedBy": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Identity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
           "description": "Identity of who applied this override. For simple cases, use type 'simple' with just an identifier."
         },
         "appliedAt": {
@@ -50,27 +50,27 @@
           "description": "Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no permanent overrides allowed. ISO 8601 format."
         },
         "signature": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Signature",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Signature",
           "description": "Optional digital signature for enhanced trust and non-repudiation. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing methods."
         },
         "evidence": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Evidence"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Evidence"
           },
           "description": "Supporting evidence for this override, such as screenshots demonstrating manual verification for attestations."
         },
         "previousChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
         },
         "cvss": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.3.0#/$defs/Cvss",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.4.0#/$defs/Cvss",
           "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
           "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
         },
         "justification": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.3.0#/$defs/Justification",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Justification",
           "description": "Structured controlled-vocabulary classification for why this override applies. Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive and attestation overrides where the structured category enables filtering and lossless round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the precedent vocabulary and rationale."
         }
       },
@@ -175,7 +175,7 @@
           "description": "Detailed explanation of the plan, including what actions will be taken."
         },
         "appliedBy": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Identity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
           "description": "Identity of who created this POA&M. For simple cases, use type 'simple' with just an identifier."
         },
         "appliedAt": {
@@ -191,23 +191,23 @@
         "milestones": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Milestone"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Milestone"
           },
           "description": "Optional array of milestones tracking progress toward completion."
         },
         "signature": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Signature",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Signature",
           "description": "Optional digital signature for enhanced trust and non-repudiation."
         },
         "evidence": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Evidence"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Evidence"
           },
           "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
         },
         "previousChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
         }
       },
@@ -358,7 +358,7 @@
       },
       "properties": {
         "algorithm": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Hash_Algorithm",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Hash_Algorithm",
           "description": "The hash algorithm used for the checksum."
         },
         "checksum": {

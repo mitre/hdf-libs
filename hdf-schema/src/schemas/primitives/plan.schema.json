@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.3.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.4.0",
   "title": "HDF Plan Primitives",
   "description": "Types for defining assessment plans — what to scan, how to configure it, and when to run.",
   "$defs": {
@@ -48,7 +48,7 @@
           "description": "componentId of the system component this assessment targets. Use for direct component binding. Alternative to targetSelector."
         },
         "targetSelector": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.3.0#/$defs/Target_Selector",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Target_Selector",
           "description": "Label selector to match targets for this assessment. Overrides the system component's targetSelector if provided."
         },
         "inputs": {

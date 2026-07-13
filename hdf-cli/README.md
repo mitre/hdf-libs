@@ -54,7 +54,7 @@ curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_linux_am
 sudo mv hdf /usr/local/bin/
 ```
 
-Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.3.0_darwin_arm64.tar.gz`).
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.4.0_darwin_arm64.tar.gz`).
 
 ### Build from source
 
@@ -125,8 +125,16 @@ Summarize any HDF document, or expand a section to item-level detail with `--det
 USAGE
   hdf list <file> [file...] [--detail <section>] [flags]
 
-DETAIL SECTIONS (aliases)
-  requirements (r)   baselines (b)   components (t)   overrides
+DETAIL SECTIONS by document type
+  results:           requirements, baselines, components
+  baseline:          requirements, groups
+  system:            components, interconnections
+  plan:              assessments
+  amendments:        overrides
+  evidence-package:  contents
+
+  Short aliases: r (requirements), b (baselines), t/c (components),
+    g (groups), a (assessments), o (overrides)
 
 FLAGS
   -s, --status string    Filter requirements by status: passed, failed, error, not_applicable, not_reviewed
@@ -173,14 +181,14 @@ USAGE
 
 FLAGS
   -s, --status string      Filter by status: passed, failed, error, not_applicable, not_reviewed
-      --severity string    Filter by severity: high, medium, low, none
+      --severity string    Filter by severity (repeatable, OR logic): critical, high, medium, low, informational
       --impact string      Filter by impact value (e.g., ">0.5", ">=0.7", "0.5")
       --cci string         Filter by CCI identifier (e.g., CCI-000366)
       --nist string        Filter by NIST control (e.g., AC-2, CM-6*)
-      --stig-id string     Filter by STIG rule ID (e.g., V-230221)
+      --id string          Filter by requirement ID, STIG ID, GID, or group title
   -t, --tag string         Filter by tag key:value (e.g., severity:high)
       --search string      Search in control title and description
-  -p, --profile string     Filter by profile name
+  -p, --baseline string    Filter by profile name
   -c, --count              Show only the count of matching controls
   -l, --limit int          Limit number of results (0 = unlimited)
 
@@ -189,7 +197,7 @@ EXAMPLES
   hdf query results.json --status failed --severity high
   hdf query results.json --nist "AC-2"
   hdf query results.json --cci CCI-000366
-  hdf query results.json --stig-id V-230221
+  hdf query results.json --id V-230221
   hdf query results.json --tag "severity:high"
   hdf query results.json --search "password policy"
   hdf query results.json --impact ">0.5" --status failed
@@ -657,12 +665,12 @@ These flags apply to all commands.
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--json` | | `false` | Output in JSON format |
-| `--no-color` | | `false` | Disable colored output |
 | `--debug` | `-d` | `false` | Enable debug output |
+| `--fail-fast` | `-F` | `false` | Abort on first file that fails instead of continuing |
 | `--max-size` | | `50` | Maximum input file size in MB |
 | `--no-follow-symlinks` | | `false` | Refuse to read symlinked files |
+| `--no-headers` | | `false` | Suppress column headers in table output |
 | `--schema-dir` | | | Load schemas from a directory instead of the embedded copies |
-| `--interactive` | `-i` | `false` | Launch interactive TUI mode |
 
 ## Supported Conversions
 
@@ -672,6 +680,7 @@ These flags apply to all commands.
 |--------------|---------|-------------|
 | `aws-config` | | AWS Config compliance evaluation results (JSON) |
 | `burpsuite` | | PortSwigger BurpSuite web scanner (XML) |
+| `checkov` | | Checkov IaC static analysis (JSON) |
 | `ckl` | | DISA STIG Viewer checklist (`.ckl` XML) |
 | `cklb` | | DISA STIG Viewer 3.x checklist (`.cklb` JSON) |
 | `conveyor` | | Conveyor container security (JSON) |
@@ -730,10 +739,10 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | `hdf` | `ckl` | Export to DISA STIG Viewer checklist (`.ckl` XML) |
 | `hdf` | `cklb` | Export to DISA STIG Viewer 3.x checklist (`.cklb` JSON) |
 | `hdf` | `oscal-sar` | Export to OSCAL Assessment Results |
-| `hdf` | `oscal-poam` | Export to OSCAL Plan of Action and Milestones |
 | `hdf-amendments` | `csaf-vex` | Export HDF Amendments as CSAF VEX advisory (partial-fidelity round-trip) |
 | `hdf-amendments` | `openvex` | Export HDF Amendments as OpenVEX statements (partial-fidelity round-trip) |
 | `hdf-amendments` | `cyclonedx-vex` | Export HDF Amendments as CycloneDX BOM with VEX analysis (partial-fidelity round-trip) |
+| `hdf-amendments` | `oscal-poam` | Export to OSCAL Plan of Action and Milestones |
 
 ## Credential Handling
 

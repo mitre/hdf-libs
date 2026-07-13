@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.3.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.4.0",
   "title": "HDF System",
   "description": "Describes a system's authorization boundary, components, and interconnections. Maps to OSCAL SSP system-characteristics and FedRAMP system inventory.",
   "type": "object",
@@ -16,7 +16,7 @@
       "description": "Stable UUID (RFC 4122) for this system. Enables cross-document correlation independent of file location. Optional in casual use, expected in production documents."
     },
     "owner": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Identity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
       "description": "Team or individual responsible for this system's authorization and compliance. Maps to OSCAL responsible-party with role 'system-owner'."
     },
     "name": {
@@ -37,7 +37,7 @@
       "description": "Description of the system's purpose and mission."
     },
     "authorizationStatus": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.3.0#/$defs/Authorization_Status",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Authorization_Status",
       "description": "Current Authorization to Operate (ATO) status."
     },
     "authorizationDate": {
@@ -46,7 +46,7 @@
       "description": "Date the current authorization status was granted. ISO 8601 format."
     },
     "categorizationLevel": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.3.0#/$defs/Categorization_Level",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Categorization_Level",
       "description": "FIPS 199 security categorization (impact level)."
     },
     "boundaryDescription": {
@@ -57,28 +57,28 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.3.0#/$defs/Component"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.4.0#/$defs/Component"
       },
       "description": "System components within the authorization boundary. Uses the full polymorphic Component type with stable identity (componentId), external references, and generalized BOM attachment (boms[])."
     },
     "controlDesignations": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.3.0#/$defs/Control_Designation"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Control_Designation"
       },
       "description": "Declares which controls are common, hybrid, or system-specific, and which component provides them. Maps to NIST SP 800-53 control designations and OSCAL leveraged-authorizations."
     },
     "dataFlows": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.3.0#/$defs/Data_Flow"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.4.0#/$defs/Data_Flow"
       },
       "description": "Inter-component data flows describing how components communicate. Supports local, cross-system, and external flows. Replaces the interconnections[] field."
     },
     "boms": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.3.0#/$defs/Bom"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.4.0#/$defs/Bom"
       },
       "description": "System-scoped Bills of Materials whose subject is the authorization boundary rather than a single component (e.g. a SaaSBOM of services, a KBOM of cluster inventory, an OBOM). Component-scoped BOMs (SBOM, ai-model) attach on the component instead. See primitives/bom.schema.json."
     },
@@ -90,7 +90,7 @@
       "description": "Optional key-value labels for grouping and querying systems."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.3.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this system document has not been tampered with."
     },
     "version": {
@@ -98,7 +98,7 @@
       "description": "Version of this system document."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.3.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Generator",
       "description": "Information about the tool that generated this system document."
     }
   },

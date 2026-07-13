@@ -14,6 +14,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 |---|---|---|
 | AWS Config | `convertAwsConfigToHdf` | JSON |
 | BurpSuite | `convertBurpsuiteToHdf` | XML |
+| Checkov | `convertCheckovToHdf` | JSON |
 | CKL (DISA STIG Viewer checklist) | `convertCklToHdf` | XML |
 | CKLB (DISA STIG Viewer 3.x checklist) | `convertCklbToHdf` | JSON |
 | Conveyor | `convertConveyorToHdf` | JSON |

@@ -24,7 +24,7 @@ pnpm workspace with 11 packages + a VitePress schema documentation site:
 | `hdf-mappings` | CCI, NIST, CWE, OWASP control mappings | TS + Go |
 | `hdf-validators` | Schema validation with embedded schemas | TS + Go |
 | `hdf-parsers` | Parse and flatten HDF documents | TS + Go |
-| `hdf-converters` | 33 security tool converters (dual TS + Go) | TS + Go |
+| `hdf-converters` | 39 security tool converters (dual TS + Go) | TS + Go |
 | `hdf-generators` | Generate InSpec profiles from baselines | TS + Go |
 | `hdf-diff` | Structural diff engine for assessments | TS |
 | `hdf-extension-graph` | InSpec overlay/extension chain resolution | TS + Go |

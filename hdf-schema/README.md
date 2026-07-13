@@ -184,6 +184,16 @@ All schemas use **JSON Schema draft/2020-12**.
 Interactive schema reference documentation is published at:
 **<https://mitre.github.io/hdf-libs/schemas/>**
 
+### What's new in v3.4.0
+
+- **Generalized `boms[]` on components** — a single `boms[]` array on `Base_Component` carries any Bill of Materials (SBOM, `ai-model`, `dataset`, or reserved future `bomType`), each by passthrough (`ref`/`document`) or normalized shape. **Breaking:** replaces the former `sbom` / `sbomRef` / `sbomFormat` trio; a component may now carry several BOMs (e.g. an SBOM plus an ai-model BOM). See `primitives/bom.schema.json`.
+- **`aiModel` and `dataset` component types** — thin AI-subject components whose detail lives in an attached ai-model / dataset BOM.
+- **Generic component `integrity[]`** — one array home for artifact/subject integrity (model weights/shards, dataset archive, container image, package bytes). **Breaking:** replaces the per-type `Container_Image.digest` and `Artifact.checksum` fields.
+- **Host identity `hostname` + `domain`** on `Host_Component` — short OS-reported name and directory (AD/NetBIOS/LDAP) domain, kept distinct from `fqdn` (ECS `host.hostname` / `host.domain` semantics).
+- **`agent` identity type** on `Identity` — provenance for AI-agent actors.
+- **`blake3`** added to the `Hash_Algorithm` enum.
+- **Compatibility.** Additive fields validate v3.3.x documents cleanly; the BOM/integrity field removals are the one breaking change — migrate `sbom`/`sbomRef`/`sbomFormat` to `boms[]` and per-type digests to `integrity[]`. See CHANGELOG.
+
 ### What's new in v3.2.0
 
 - **Combined TypeScript output** — all types are now generated into a single `dist/ts/hdf.ts` via quicktype combined mode. This eliminates the duplicate `Identity` type bug (same interface from different per-file outputs was not assignable). Sub-path exports (`@mitre/hdf-schema/hdf-results`, etc.) still work but all resolve to the same module.

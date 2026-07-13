@@ -1,356 +1,156 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.4.0",
-  "title": "HDF Evidence Package",
-  "description": "Bundles references to all HDF documents for audit, authorization, and compliance review. Each content entry references a document by type, URI, and checksum for integrity verification.",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.4.0",
+  "title": "HDF System",
+  "description": "Describes a system's authorization boundary, components, and interconnections. Maps to OSCAL SSP system-characteristics and FedRAMP system inventory.",
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
     "name",
-    "contents"
+    "components"
   ],
   "properties": {
-    "packageId": {
+    "systemId": {
       "type": "string",
       "format": "uuid",
-      "description": "Unique identifier for this evidence package. Optional in casual use, expected in production ATO submissions. Auto-generated if omitted during creation."
+      "description": "Stable UUID (RFC 4122) for this system. Enables cross-document correlation independent of file location. Optional in casual use, expected in production documents."
+    },
+    "owner": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+      "description": "Team or individual responsible for this system's authorization and compliance. Maps to OSCAL responsible-party with role 'system-owner'."
     },
     "name": {
       "type": "string",
-      "description": "Human-readable name for this evidence package. Example: 'Enterprise Portal ATO Evidence - Q1 2026'."
+      "description": "Human-readable system name. Example: 'Enterprise Portal Production'."
+    },
+    "identifier": {
+      "type": "string",
+      "description": "System identifier from an authoritative source. Example: eMASS system ID, FedRAMP package ID."
+    },
+    "identifierScheme": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "URI identifying the scheme of the system identifier. Example: 'https://emass.mil', 'https://fedramp.gov'."
     },
     "description": {
       "type": "string",
-      "description": "Description of the evidence package's purpose and scope."
+      "description": "Description of the system's purpose and mission."
     },
-    "systemRef": {
-      "type": "string",
-      "format": "uri-reference",
-      "description": "URI to the hdf-system document this evidence package covers."
+    "authorizationStatus": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Authorization_Status",
+      "description": "Current Authorization to Operate (ATO) status."
     },
-    "planRef": {
-      "type": "string",
-      "format": "uri-reference",
-      "description": "URI to the hdf-plan document that drove this assessment. Used for completeness verification — every baseline in the plan should have a corresponding results document in this package."
-    },
-    "preparedBy": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
-      "description": "Identity of who prepared this evidence package."
-    },
-    "preparedAt": {
+    "authorizationDate": {
       "type": "string",
       "format": "date-time",
-      "description": "When this evidence package was prepared. ISO 8601 format."
+      "description": "Date the current authorization status was granted. ISO 8601 format."
     },
-    "contents": {
+    "categorizationLevel": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Categorization_Level",
+      "description": "FIPS 199 security categorization (impact level)."
+    },
+    "boundaryDescription": {
+      "type": "string",
+      "description": "Description of the system's authorization boundary. Example: network CIDR blocks, cloud VPC IDs, physical locations."
+    },
+    "components": {
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "#/$defs/Content_Reference"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.4.0#/$defs/Component"
       },
-      "description": "References to HDF documents included in this evidence package."
+      "description": "System components within the authorization boundary. Uses the full polymorphic Component type with stable identity (componentId), external references, and generalized BOM attachment (boms[])."
     },
-    "externalEvidence": {
+    "controlDesignations": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/External_Evidence_Reference"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Control_Designation"
       },
-      "description": "References to external native-format evidence (log/telemetry corpora and other artifacts) carried by URI + integrity hash + format discriminator, without recreating the data inside HDF. Logs in ECS/OCSF/etc. are legitimate accreditation evidence; HDF indexes them here rather than transcoding them."
+      "description": "Declares which controls are common, hybrid, or system-specific, and which component provides them. Maps to NIST SP 800-53 control designations and OSCAL leveraged-authorizations."
     },
-    "completenessCheck": {
-      "$ref": "#/$defs/Completeness_Check",
-      "description": "Summary of assessment completeness and compliance status."
+    "dataFlows": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.4.0#/$defs/Data_Flow"
+      },
+      "description": "Inter-component data flows describing how components communicate. Supports local, cross-system, and external flows. Replaces the interconnections[] field."
     },
-    "signature": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Signature",
-      "description": "Digital signature covering the entire evidence package."
+    "boms": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.4.0#/$defs/Bom"
+      },
+      "description": "System-scoped Bills of Materials whose subject is the authorization boundary rather than a single component (e.g. a SaaSBOM of services, a KBOM of cluster inventory, an OBOM). Component-scoped BOMs (SBOM, ai-model) attach on the component instead. See primitives/bom.schema.json."
     },
     "labels": {
       "type": "object",
       "additionalProperties": {
         "type": "string"
       },
-      "description": "Optional key-value labels for grouping and querying evidence packages."
+      "description": "Optional key-value labels for grouping and querying systems."
     },
     "integrity": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Integrity",
-      "description": "Cryptographic integrity information for verifying this evidence package has not been tampered with."
+      "description": "Cryptographic integrity information for verifying this system document has not been tampered with."
     },
     "version": {
       "type": "string",
-      "description": "Version of this evidence package."
+      "description": "Version of this system document."
     },
     "generator": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Generator",
-      "description": "Information about the tool that generated this document."
+      "description": "Information about the tool that generated this system document."
     }
   },
-  "$defs": {
-    "Content_Type": {
-      "type": "string",
-      "enum": [
-        "hdf-system",
-        "hdf-baseline",
-        "hdf-plan",
-        "hdf-results",
-        "hdf-amendments",
-        "hdf-comparison",
-        "bom"
-      ],
-      "description": "The type of document referenced in the evidence package. 'bom' covers any Bill-of-Materials/manifest document (SBOM, AI model/dataset, and reserved future kinds) — its specific kind is carried by the referenced document's bomType, not by a per-kind Content_Type value.",
-      "title": "Content Type"
-    },
-    "Content_Reference": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "required": [
-        "type",
-        "uri"
-      ],
-      "properties": {
-        "type": {
-          "$ref": "#/$defs/Content_Type",
-          "description": "The type of HDF document being referenced."
-        },
-        "uri": {
-          "type": "string",
-          "format": "uri-reference",
-          "description": "URI to the document. Can be a relative path or absolute URL."
-        },
-        "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
-          "description": "Cryptographic checksum for verifying the referenced document's integrity."
-        },
-        "description": {
-          "type": "string",
-          "description": "Optional description of this content entry."
-        },
-        "componentRef": {
-          "type": "string",
-          "format": "uuid",
-          "description": "componentId of the component this content entry relates to. Use to link SBOMs, results, or other documents to a specific system component."
-        }
-      },
-      "examples": [
+  "examples": [
+    {
+      "name": "Enterprise Portal Production",
+      "identifier": "SYS-2024-00142",
+      "identifierScheme": "https://emass.mil",
+      "authorizationStatus": "authorized",
+      "authorizationDate": "2025-06-15T00:00:00Z",
+      "categorizationLevel": "moderate",
+      "boundaryDescription": "All resources in prod VPC (10.0.0.0/16)",
+      "components": [
         {
-          "type": "hdf-system",
-          "uri": "portal-prod.hdf-system.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "aaa111..."
-          }
-        },
-        {
-          "type": "hdf-results",
-          "uri": "portal-scan-march-2026.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "ddd444..."
-          },
-          "description": "March 2026 monthly scan results"
-        },
-        {
-          "type": "bom",
-          "uri": "https://artifacts.agency.gov/sbom/webtier.cdx.json",
-          "description": "WebTier CycloneDX SBOM (bomType=sbom)"
-        }
-      ],
-      "description": "A reference to an HDF document or BOM/manifest included in the evidence package.",
-      "title": "Content Reference"
-    },
-    "External_Evidence_Format": {
-      "type": "string",
-      "title": "External Evidence Format",
-      "anyOf": [
-        {
-          "enum": [
-            "ecs",
-            "ocsf",
-            "cyclonedx",
-            "spdx",
-            "raw-log"
+          "name": "WebTier",
+          "type": "application",
+          "componentId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "description": "RHEL 9 web servers running the portal",
+          "baselineRefs": [
+            "RHEL9-STIG",
+            "DISA-Container-STIG"
+          ],
+          "boms": [
+            {
+              "bomType": "sbom",
+              "format": "cyclonedx",
+              "ref": "https://artifacts.agency.gov/sbom/webtier-2026-03.cdx.json"
+            }
           ]
         },
         {
-          "pattern": "^x-[a-z0-9]+(-[a-z0-9]+)*$"
+          "name": "DatabaseTier",
+          "type": "database",
+          "componentId": "11111111-2222-3333-4444-555555555555",
+          "baselineRefs": [
+            "PostgreSQL-15-STIG"
+          ]
         }
       ],
-      "description": "The native format of the referenced external evidence. Reserved values are OPEN, referenceable, serialized standards: ecs (Elastic Common Schema), ocsf (Open Cybersecurity Schema Framework), cyclonedx, spdx, raw-log (unstructured/native logs). Custom or vendor-specific kinds MUST use an 'x-' prefix (e.g. 'x-splunk-export') so they cannot collide with a value later promoted into the reserved set. Adding a reserved value is a schema version bump.",
-      "$comment": "Reserved values must be OPEN, serialized, uri+hash-referenceable artifacts. Query-time normalization MODELS are deliberately EXCLUDED because they have no portable stored artifact to reference: Splunk CIM is a search-time 'schema-on-the-fly' over Splunk-internal indexes, and Microsoft ASIM is a set of query-time KQL parsers over Sentinel tables. To carry Splunk/Sentinel-derived evidence, reference its EXPORTED result set (JSON/CSV/NDJSON) via an 'x-' format + mediaType — never the model name. 'schema-one' is intentionally NOT yet reserved: it has no open public spec (as of 2026-07), and reserving a value whose shape/version is unverified would violate the fixture-integrity rule; it will be added once the authoritative spec is obtained. Carriage is reference-only and never parses the payload, so a large/complex or spec-gated format (e.g. Schema One) is still referenceable as an opaque 'x-' value."
-    },
-    "External_Evidence_Time_Range": {
-      "type": "object",
-      "title": "External Evidence Time Range",
-      "unevaluatedProperties": false,
-      "properties": {
-        "start": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Start of the time window the corpus covers (ISO 8601)."
-        },
-        "end": {
-          "type": "string",
-          "format": "date-time",
-          "description": "End of the time window the corpus covers (ISO 8601)."
-        }
-      },
-      "description": "The time window a referenced external evidence corpus covers."
-    },
-    "External_Evidence_Metadata": {
-      "type": "object",
-      "title": "External Evidence Metadata",
-      "unevaluatedProperties": false,
-      "properties": {
-        "recordCount": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Approximate number of records/events in the referenced corpus."
-        },
-        "timeRange": {
-          "$ref": "#/$defs/External_Evidence_Time_Range",
-          "description": "The time window the referenced evidence covers."
-        },
-        "collector": {
-          "type": "string",
-          "description": "The tool/pipeline that collected or produced the corpus. Example: 'aws-security-lake', 'elastic-agent'."
-        }
-      },
-      "description": "Descriptive metadata about a referenced external evidence corpus. Does not affect integrity."
-    },
-    "External_Evidence_Reference": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "required": [
-        "uri",
-        "format"
-      ],
-      "properties": {
-        "uri": {
-          "type": "string",
-          "format": "uri-reference",
-          "description": "URI to the external native-format evidence artifact (log/telemetry corpus, etc.). Can be a relative path or absolute URL. The data stays canonical in its native format — HDF references it, never parses or transcodes it."
-        },
-        "format": {
-          "$ref": "#/$defs/External_Evidence_Format",
-          "description": "The native format discriminator of the referenced artifact."
-        },
-        "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
-          "description": "Cryptographic checksum of the referenced artifact for integrity verification.",
-          "$comment": "Strongly recommended for external evidence — a point-in-time reference without an integrity hash is weakly auditable. Kept out of `description` so this usage-specific note does not aggregate into the shared Checksum type's generated Go doc comment (quicktype concatenates $ref-sibling descriptions onto the referenced type)."
-        },
-        "mediaType": {
-          "type": "string",
-          "description": "Optional IANA media type describing the on-disk serialization, orthogonal to 'format' (the semantic standard). Examples: application/x-ndjson, application/json, application/vnd.apache.parquet, text/csv."
-        },
-        "formatVersion": {
-          "type": "string",
-          "description": "Optional producer-declared version of the format (e.g. ECS '9.4.0', OCSF '1.8.0'). Free-text and untrusted — HDF does not validate it against a registry."
-        },
-        "description": {
-          "type": "string",
-          "description": "Optional human-readable description of this evidence entry."
-        },
-        "metadata": {
-          "$ref": "#/$defs/External_Evidence_Metadata",
-          "description": "Optional descriptive metadata about the referenced corpus. Does not affect integrity."
-        }
-      },
-      "examples": [
+      "dataFlows": [
         {
-          "$comment": "ECS log corpus carried by reference (NDJSON) — HDF never parses it; the hash pins integrity.",
-          "uri": "https://evidence.agency.gov/logs/portal-2026-q1.ndjson",
-          "format": "ecs",
-          "formatVersion": "9.4.0",
-          "mediaType": "application/x-ndjson",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-          },
-          "metadata": {
-            "recordCount": 4200000,
-            "timeRange": {
-              "start": "2026-01-01T00:00:00Z",
-              "end": "2026-03-31T23:59:59Z"
-            },
-            "collector": "elastic-agent"
-          }
-        },
-        {
-          "$comment": "OCSF telemetry landed as Parquet in a security data lake.",
-          "uri": "s3://agency-security-lake/ocsf/portal/2026/q1/",
-          "format": "ocsf",
-          "formatVersion": "1.8.0",
-          "mediaType": "application/vnd.apache.parquet",
-          "collector": "aws-security-lake"
-        },
-        {
-          "$comment": "A Splunk export carried as an opaque x- custom format — CIM/ASIM are query-time models, so reference the EXPORT, not the model.",
-          "uri": "siem/auth-events-2026-q1.json",
-          "format": "x-splunk-export",
-          "mediaType": "application/json"
+          "from": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "to": "11111111-2222-3333-4444-555555555555",
+          "protocol": "jdbc",
+          "port": 5432,
+          "direction": "unidirectional",
+          "description": "Web tier connects to database"
         }
-      ],
-      "description": "A reference to external native-format evidence (log/telemetry corpus or other artifact) carried by URI + integrity hash + format discriminator. Reference-only: the artifact is never embedded (corpora can be huge) or transcoded (that would be lossy) — it stays canonical in its native format and HDF acts as the structured index.",
-      "$comment": "Deliberately distinct from two look-alike primitives — the shared DRY is the common Checksum type, not the container. Bom (boms[] on components/system) models component COMPOSITION and is richer: also embeddable (document) and normalizable into HDF's queryable shape (packages/model/dataset). Content_Reference (contents[]) references HDF-ECOSYSTEM documents and BOMs by Content_Type. External_Evidence_Reference is reference-only and OPAQUE (HDF never inspects it), for NATIVE non-HDF log/telemetry corpora indexed as accreditation evidence; it carries log-specific metadata (recordCount/timeRange/collector) the other two do not. Do not merge these — collapsing them would mix incompatible discriminator axes and lose Bom's normalization.",
-      "title": "External Evidence Reference"
-    },
-    "SBOM_Coverage": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "properties": {
-        "componentsWithSbom": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Number of system components that have an associated SBOM."
-        },
-        "totalComponents": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Total number of components in the system."
-        }
-      },
-      "description": "SBOM coverage statistics for the system.",
-      "$comment": "This metric intentionally measures SOFTWARE (SBOM) inventory coverage only. Coverage accounting for ai-model/dataset/other BOM kinds is deliberately out of scope for now; a future generalized bomCoverage metric may be added. This is a distinct software-inventory metric, not an oversight of the Content_Type 'sbom'->'bom' generalization — do not rename or generalize it.",
-      "title": "SBOM Coverage"
-    },
-    "Completeness_Check": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "properties": {
-        "allBaselinesAssessed": {
-          "type": "boolean",
-          "description": "Whether all baselines referenced by system components have assessment results."
-        },
-        "allComponentsCovered": {
-          "type": "boolean",
-          "description": "Whether all system components have at least one matching target in the results."
-        },
-        "expiredWaivers": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Number of waivers/amendments that have expired."
-        },
-        "unresolvedPoams": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Number of POA&M items that are still open (not completed)."
-        },
-        "compliancePercent": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 100,
-          "description": "Overall compliance percentage across all assessments."
-        },
-        "sbomCoverage": {
-          "$ref": "#/$defs/SBOM_Coverage",
-          "description": "SBOM coverage across system components.",
-          "$comment": "Intentionally software-inventory (SBOM) coverage only; ai-model/dataset/other BOM kinds are out of scope for this metric for now."
-        }
-      },
-      "description": "Informational summary of assessment completeness. Not authoritative — tools should compute these from the referenced documents.",
-      "title": "Completeness Check"
-    },
+      ]
+    }
+  ],
+  "$defs": {
     "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0",
@@ -1277,6 +1077,1489 @@
           ],
           "description": "Cloud service provider identifier.",
           "title": "Cloud Provider"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0",
+      "title": "HDF System Primitives",
+      "description": "Types for describing system architecture, authorization boundaries, and components.",
+      "$defs": {
+        "Authorization_Status": {
+          "type": "string",
+          "enum": [
+            "authorized",
+            "denied",
+            "pendingAuthorization",
+            "conditionallyAuthorized",
+            "notYetRequested",
+            "revoked"
+          ],
+          "description": "Authorization to Operate (ATO) status for the system.",
+          "title": "Authorization Status"
+        },
+        "Categorization_Level": {
+          "type": "string",
+          "enum": [
+            "low",
+            "moderate",
+            "high"
+          ],
+          "description": "FIPS 199 security categorization level (impact level).",
+          "title": "Categorization Level"
+        },
+        "Input_Override": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "inputName",
+            "value"
+          ],
+          "properties": {
+            "baselineRef": {
+              "type": "string",
+              "description": "Name of the baseline this override applies to. If omitted, applies to all baselines that define this input."
+            },
+            "inputName": {
+              "type": "string",
+              "description": "Name of the input being overridden. Must match an Input.name in the referenced baseline."
+            },
+            "value": {
+              "description": "The overridden value. Should match the type of the original input."
+            },
+            "justification": {
+              "type": "string",
+              "description": "Rationale for why this override is needed."
+            },
+            "approvedBy": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+              "description": "Identity of the person or system that approved this override."
+            }
+          },
+          "description": "An override of a baseline input value for a specific component. Enables system-specific tailoring of baseline parameters.",
+          "title": "Input Override"
+        },
+        "Target_Selector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A label selector that matches targets by label key-value pairs. All specified labels must match (AND logic). Example: { \"labels.component\": \"WebTier\" } matches targets with labels.component = \"WebTier\".",
+          "title": "Target Selector"
+        },
+        "Control_Designation": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "controlId",
+            "designation",
+            "description"
+          ],
+          "properties": {
+            "controlId": {
+              "type": "string",
+              "description": "The control identifier (e.g., 'SC-7', 'AC-2 (1)'). Must match a NIST tag in a baseline requirement's tags."
+            },
+            "designation": {
+              "type": "string",
+              "title": "Designation",
+              "enum": [
+                "common",
+                "system-specific",
+                "hybrid"
+              ],
+              "description": "NIST SP 800-53 control designation. 'common': fully provided by another component or system. 'system-specific': implemented by the inheriting component(s) only. 'hybrid': shared responsibility between provider and inheritor."
+            },
+            "providedBy": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of a local component that provides this control. Omit when the provider is an external system."
+            },
+            "systemRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Reference to another hdf-system document whose component provides this control. Use when the provider is in a different system. Omit when the provider is local."
+            },
+            "inheritedBy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "description": "componentIds that inherit this control. If omitted, all components in the system inherit it."
+            },
+            "description": {
+              "type": "string",
+              "description": "Justification for this designation — who provides the control, why it's inherited, and any relevant authorization references."
+            }
+          },
+          "examples": [
+            {
+              "controlId": "IA-2",
+              "designation": "common",
+              "providedBy": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              "inheritedBy": [
+                "11111111-2222-3333-4444-555555555555"
+              ],
+              "description": "User identification and authentication provided by Keycloak SSO via SAML 2.0."
+            },
+            {
+              "controlId": "PE-2",
+              "designation": "common",
+              "description": "Physical access authorizations provided by AWS GovCloud per FedRAMP High authorization."
+            }
+          ],
+          "description": "Declares a control's designation within a system — whether it is common (provided by another component or system), system-specific (implemented locally), or hybrid (shared responsibility). Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component provided/inherited semantics.",
+          "title": "Control Designation"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.4.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.4.0",
+      "title": "HDF Component Primitives",
+      "description": "First-class system component with identity, polymorphic type, generalized BOM attachment (boms[]), and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and manifest inventory (SBOM, AI model/dataset, and reserved future BOM kinds).",
+      "$defs": {
+        "Base_Component": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "type",
+            "name"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "title": "Target Type",
+              "enum": [
+                "host",
+                "containerImage",
+                "containerInstance",
+                "containerPlatform",
+                "cloudAccount",
+                "cloudResource",
+                "repository",
+                "application",
+                "artifact",
+                "network",
+                "database",
+                "aiModel",
+                "dataset"
+              ],
+              "description": "Component type discriminator. Same values as Target types, plus aiModel and dataset (thin AI subject components whose detail lives in an attached ai-model / dataset BOM)."
+            },
+            "name": {
+              "type": "string",
+              "description": "Human-readable name for this component."
+            },
+            "componentId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Stable UUID (RFC 4122) for this component. Required in hdf-system documents, optional in hdf-results. Enables cross-document correlation, diffing, and data flow references."
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of this component's role or purpose."
+            },
+            "owner": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+              "description": "Team or individual responsible for this component. Enables per-component ownership when different teams manage different parts of a system."
+            },
+            "externalIds": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Map of external identifier scheme to value. Well-known schemes: aws (instance ID), azure (resource ID), cmdb (asset ID), emass (system ID), cve (CVE ID). Custom schemes are allowed."
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
+            },
+            "boms": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.4.0#/$defs/Bom"
+              },
+              "description": "Component-scoped Bills of Materials (SBOM, ai-model, dataset, or any reserved bomType), each carried by passthrough (ref/document) or normalized. Replaces the former sbom/sbomRef/sbomFormat trio; a component may carry several BOMs (e.g. an SBOM plus an ai-model BOM). See primitives/bom.schema.json."
+            },
+            "integrity": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum"
+              },
+              "description": "Cryptographic integrity of this component's underlying artifact — model weights or shards, dataset archive, container image, or package bytes. An array supports multi-file/sharded artifacts. This is the single, generic home for artifact/subject integrity across all component types (it replaced the former per-type Container_Image digest and Artifact checksum fields). Distinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence Integrity type."
+            },
+            "baselineRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Names of baselines that apply to this component."
+            },
+            "inputOverrides": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Input_Override"
+              },
+              "description": "System-specific overrides for baseline input values."
+            },
+            "targetSelector": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Target_Selector",
+              "description": "Label selector to match targets belonging to this component during migration. Targets with matching labels are automatically included."
+            }
+          },
+          "examples": [
+            {
+              "type": "aiModel",
+              "name": "Llama-2-7b-chat (finetuned)",
+              "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+              "owner": {
+                "type": "email",
+                "identifier": "ml-platform@agency.gov"
+              },
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
+                }
+              ],
+              "boms": [
+                {
+                  "bomType": "ai-model",
+                  "format": "cyclonedx-ml",
+                  "model": {
+                    "adaptationType": "finetune"
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, generalized BOM attachment (boms[]), and unified artifact integrity (integrity[]).",
+          "title": "Base Component"
+        },
+        "Component": {
+          "description": "A system component. Uses discriminated union pattern with 'type' field as discriminator. Superset of Target with identity, external IDs, and SBOM support.",
+          "title": "Component",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Host_Component"
+            },
+            {
+              "$ref": "#/$defs/Container_Image_Component"
+            },
+            {
+              "$ref": "#/$defs/Container_Instance_Component"
+            },
+            {
+              "$ref": "#/$defs/Container_Platform_Component"
+            },
+            {
+              "$ref": "#/$defs/Cloud_Account_Component"
+            },
+            {
+              "$ref": "#/$defs/Cloud_Resource_Component"
+            },
+            {
+              "$ref": "#/$defs/Repository_Component"
+            },
+            {
+              "$ref": "#/$defs/Application_Component"
+            },
+            {
+              "$ref": "#/$defs/Artifact_Component"
+            },
+            {
+              "$ref": "#/$defs/Network_Component"
+            },
+            {
+              "$ref": "#/$defs/Database_Component"
+            },
+            {
+              "$ref": "#/$defs/AI_Model_Component"
+            },
+            {
+              "$ref": "#/$defs/Dataset_Component"
+            }
+          ]
+        },
+        "Host_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "host"
+                },
+                "hostname": {
+                  "type": "string",
+                  "description": "Short, OS-reported host name (the unqualified machine name, e.g. 'web01'). Kept distinct from 'fqdn' because an FQDN is not reliably decomposable into hostname + domain (standalone/workgroup hosts have no domain; a directory domain is not the FQDN's DNS suffix). Aligns with ECS host.hostname and DISA STIG CKL HOST_NAME. Store the short name the source reports; do not derive it from the FQDN."
+                },
+                "fqdn": {
+                  "type": "string",
+                  "format": "hostname",
+                  "description": "Fully qualified domain name (e.g. 'web01.prod.example.com'). Distinct from 'hostname' (short) and 'domain' (directory domain). ECS recommends storing this lowercase; the schema does not enforce case so source fidelity is preserved on round-trip."
+                },
+                "domain": {
+                  "type": "string",
+                  "description": "Directory domain the host is a member of — Active Directory / NetBIOS / LDAP domain (ECS host.domain semantics), NOT necessarily the DNS suffix of the FQDN. A standalone or workgroup host has a hostname but no domain. Not derivable from the FQDN; populate only from a source that carries directory membership."
+                },
+                "ipAddress": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "ipv4"
+                    },
+                    {
+                      "type": "string",
+                      "format": "ipv6"
+                    }
+                  ],
+                  "description": "IP address of the host."
+                },
+                "macAddress": {
+                  "type": "string",
+                  "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
+                  "description": "MAC address in colon-separated hexadecimal format."
+                },
+                "osName": {
+                  "type": "string",
+                  "description": "Operating system name."
+                },
+                "osVersion": {
+                  "type": "string",
+                  "description": "Operating system version."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "$comment": "Domain-joined host carrying all three identity fields separately: short hostname, FQDN, and the (distinct) directory domain. HOST_NAME and HOST_FQDN from a STIG checklist map here; note the AD domain differs from the FQDN's DNS suffix.",
+              "type": "host",
+              "name": "web-server-prod-01",
+              "componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+              "hostname": "web01",
+              "fqdn": "web01.prod.example.com",
+              "domain": "CORP",
+              "ipAddress": "10.0.1.50",
+              "osName": "Ubuntu",
+              "osVersion": "22.04 LTS",
+              "externalIds": {
+                "cmdb": "ASSET-12345",
+                "aws": "i-0abc123def456789"
+              }
+            },
+            {
+              "$comment": "Standalone/workgroup host: has a short hostname but no directory domain — 'domain' is omitted rather than fabricated from the FQDN suffix.",
+              "type": "host",
+              "name": "kiosk-lab-07",
+              "hostname": "kiosk-lab-07",
+              "fqdn": "kiosk-lab-07.lab.example.com",
+              "ipAddress": "192.168.4.7",
+              "osName": "Windows",
+              "osVersion": "11 23H2"
+            }
+          ],
+          "description": "A physical or virtual server, workstation, or network device.",
+          "title": "Host Component"
+        },
+        "Container_Image_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "containerImage"
+                },
+                "imageId": {
+                  "type": "string",
+                  "description": "Container image ID."
+                },
+                "registry": {
+                  "type": "string",
+                  "description": "Container registry. Example: 'docker.io'."
+                },
+                "repository": {
+                  "type": "string",
+                  "description": "Repository name. Example: 'library/nginx'."
+                },
+                "tag": {
+                  "type": "string",
+                  "description": "Image tag. Example: '1.25'."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "containerImage",
+              "name": "nginx",
+              "registry": "docker.io",
+              "repository": "library/nginx",
+              "tag": "1.25-alpine",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d"
+                }
+              ]
+            }
+          ],
+          "description": "A static container image (not running). Image integrity — formerly the 'digest' field — is expressed via the shared Base_Component.integrity array.",
+          "title": "Container Image Component"
+        },
+        "Container_Instance_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "containerInstance"
+                },
+                "containerId": {
+                  "type": "string",
+                  "description": "Running container ID."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Image the container was started from."
+                },
+                "runtime": {
+                  "type": "string",
+                  "description": "Container runtime. Example: 'docker', 'containerd', 'cri-o'."
+                }
+              }
+            }
+          ],
+          "description": "A running container instance.",
+          "title": "Container Instance Component"
+        },
+        "Container_Platform_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "containerPlatform"
+                },
+                "platformType": {
+                  "type": "string",
+                  "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
+                },
+                "clusterName": {
+                  "type": "string",
+                  "description": "Cluster name."
+                },
+                "namespace": {
+                  "type": "string",
+                  "description": "Namespace within the cluster, if applicable."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Platform version."
+                }
+              }
+            }
+          ],
+          "description": "A container orchestration platform (Kubernetes, OpenShift, ECS, etc.).",
+          "title": "Container Platform Component"
+        },
+        "Cloud_Account_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "cloudAccount"
+                },
+                "provider": {
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Cloud_Provider",
+                  "description": "Cloud provider."
+                },
+                "accountId": {
+                  "type": "string",
+                  "description": "Cloud account identifier."
+                },
+                "region": {
+                  "type": "string",
+                  "description": "Cloud region, if applicable."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "cloudAccount",
+              "name": "Production AWS Account",
+              "componentId": "f1e2d3c4-b5a6-4978-8069-1a2b3c4d5e6f",
+              "provider": "aws",
+              "accountId": "123456789012",
+              "region": "us-east-1"
+            }
+          ],
+          "description": "A cloud provider account (AWS account, Azure subscription, GCP project).",
+          "title": "Cloud Account Component"
+        },
+        "Cloud_Resource_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "cloudResource"
+                },
+                "provider": {
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Cloud_Provider",
+                  "description": "Cloud provider."
+                },
+                "resourceType": {
+                  "type": "string",
+                  "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
+                },
+                "resourceId": {
+                  "type": "string",
+                  "description": "Provider-specific resource identifier."
+                },
+                "arn": {
+                  "type": "string",
+                  "description": "Amazon Resource Name (AWS only)."
+                },
+                "region": {
+                  "type": "string",
+                  "description": "Cloud region where the resource resides."
+                }
+              }
+            }
+          ],
+          "description": "A specific cloud resource (EC2 instance, S3 bucket, Azure VM, etc.).",
+          "title": "Cloud Resource Component"
+        },
+        "Repository_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "repository"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Repository URL."
+                },
+                "branch": {
+                  "type": "string",
+                  "description": "Branch that was scanned."
+                },
+                "commit": {
+                  "type": "string",
+                  "description": "Commit SHA that was scanned."
+                }
+              }
+            }
+          ],
+          "description": "A code repository (for SAST tools).",
+          "title": "Repository Component"
+        },
+        "Application_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "application"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Application URL (for DAST tools)."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Application version."
+                },
+                "environment": {
+                  "type": "string",
+                  "description": "Environment. Example: 'production', 'staging', 'development'."
+                }
+              }
+            }
+          ],
+          "description": "A running application or API (for DAST tools).",
+          "title": "Application Component"
+        },
+        "Artifact_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "artifact"
+                },
+                "packageManager": {
+                  "type": "string",
+                  "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
+                },
+                "packageName": {
+                  "type": "string",
+                  "description": "Package name."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Package version."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "artifact",
+              "name": "express",
+              "packageManager": "npm",
+              "packageName": "express",
+              "version": "4.18.2",
+              "integrity": [
+                {
+                  "algorithm": "sha512",
+                  "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+                }
+              ]
+            }
+          ],
+          "description": "A software artifact or dependency (for SCA tools). Package integrity — formerly the 'checksum' field — is expressed via the shared Base_Component.integrity array.",
+          "title": "Artifact Component"
+        },
+        "Network_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "network"
+                },
+                "cidr": {
+                  "type": "string",
+                  "description": "Network CIDR block."
+                },
+                "gateway": {
+                  "type": "string",
+                  "description": "Network gateway address."
+                }
+              }
+            }
+          ],
+          "description": "A network segment or network device.",
+          "title": "Network Component"
+        },
+        "Database_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "database"
+                },
+                "engine": {
+                  "type": "string",
+                  "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Database version."
+                },
+                "host": {
+                  "type": "string",
+                  "description": "Database host."
+                },
+                "port": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535,
+                  "description": "Database port."
+                }
+              }
+            }
+          ],
+          "description": "A database instance.",
+          "title": "Database Component"
+        },
+        "AI_Model_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "aiModel"
+                },
+                "modelId": {
+                  "type": "string",
+                  "description": "Provider/registry identifier for the model. Examples: a Hugging Face repo id ('meta-llama/Llama-2-7b-hf') or a model purl. Correlates the component to its ai-model BOM(s) and to lineage references from other models."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Model version, revision, or checkpoint tag."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "aiModel",
+              "name": "Llama-2-7b-chat (finetuned)",
+              "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+              "modelId": "acme/llama-2-7b-chat-support",
+              "version": "1.2.0",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
+                }
+              ],
+              "boms": [
+                {
+                  "bomType": "ai-model",
+                  "format": "cyclonedx-ml",
+                  "model": {
+                    "modelArchitecture": "transformer",
+                    "parameterCount": 6738415616,
+                    "serializationFormat": "safetensors",
+                    "adaptationType": "finetune",
+                    "baseModelRef": "meta-llama/Llama-2-7b-hf"
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "A thin AI-model component: identity and correlation only (parallel to Host_Component's fqdn/ip). All model detail — architecture, parameter count, serialization format, lineage — lives in an attached ai-model BOM (boms[]), never on the component itself.",
+          "title": "AI Model Component"
+        },
+        "Dataset_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "dataset"
+                },
+                "datasetId": {
+                  "type": "string",
+                  "description": "Provider/registry identifier for the dataset. Examples: a Hugging Face dataset repo id ('HuggingFaceH4/ultrachat_200k'), a DOI, or a dataset purl. Correlates the component to its dataset BOM(s) and to datasetRefs from ai-model components."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Dataset version, release identifier, or — for highly dynamic datasets — a timestamped release marker."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "dataset",
+              "name": "UltraChat-200k (filtered)",
+              "componentId": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+              "datasetId": "acme/ultrachat-200k-filtered",
+              "version": "2026-06-01",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+                }
+              ],
+              "boms": [
+                {
+                  "bomType": "dataset",
+                  "format": "croissant",
+                  "dataset": {
+                    "recordCount": 180000,
+                    "datasetFormat": "parquet",
+                    "dataClassification": "public",
+                    "baseDatasetRefs": [
+                      "HuggingFaceH4/ultrachat_200k"
+                    ],
+                    "derivation": "filtered"
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "A thin dataset component: identity and correlation only, symmetric with AI_Model_Component. All dataset detail — record count, format, classification, lineage — lives in an attached dataset BOM (boms[]), never on the component itself.",
+          "title": "Dataset Component"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.4.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.4.0",
+      "title": "HDF BOM Primitives",
+      "description": "Generalized Bill-of-Materials / manifest representation. One extensible Bom shape, discriminated by bomType, carries any manifest kind (SBOM, AI model/dataset, and reserved future kinds) either by passthrough (opaque ref/embed of the native document) or normalized (converted into HDF's queryable shape). Subject identity (name, version, componentId) is inherited from the host component or system — the BOM never re-owns it. See ADR-0001.",
+      "$defs": {
+        "Bom_Type": {
+          "type": "string",
+          "title": "BOM Type",
+          "anyOf": [
+            {
+              "enum": [
+                "sbom",
+                "ai-model",
+                "dataset",
+                "hbom",
+                "cbom",
+                "saasbom",
+                "obom",
+                "mbom",
+                "kbom"
+              ]
+            },
+            {
+              "pattern": "^x-[a-z0-9]+(-[a-z0-9]+)*$"
+            }
+          ],
+          "description": "Discriminator for the manifest kind. Reserved, CycloneDX-aligned set: sbom (software), ai-model, dataset, hbom (hardware), cbom (cryptography), saasbom (services), obom (operations), mbom (manufacturing), kbom (Kubernetes). Normalized now: sbom, ai-model, dataset; reserved + passthrough-capable now, normalized in later releases: the rest. Custom or experimental kinds MUST use an 'x-' prefix (e.g. 'x-threat-model') so they cannot collide with a value later promoted into the reserved set; a non-'x-' value outside the reserved set is invalid. Adding a reserved value is a schema version bump. VEX/VDR/SecurityProfile are vulnerability assertions, not BOMs, and are intentionally excluded."
+        },
+        "Bom": {
+          "type": "object",
+          "title": "Bill of Materials",
+          "additionalProperties": false,
+          "required": [
+            "bomType",
+            "format"
+          ],
+          "properties": {
+            "bomType": {
+              "$ref": "#/$defs/Bom_Type",
+              "description": "The manifest kind. Determines which normalized type-extension (model/dataset/packages) may appear."
+            },
+            "format": {
+              "type": "string",
+              "description": "Source manifest format the BOM was produced from or references. Examples: cyclonedx, cyclonedx-ml, spdx, spdx-ai, huggingface, croissant. Free-form so new formats need no schema change; the converter that emits the BOM owns the value."
+            },
+            "ref": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Passthrough by reference: URI (relative path, absolute URI, or fragment) to the native manifest document. Present for externally-hosted BOMs."
+            },
+            "document": {
+              "type": "object",
+              "description": "Passthrough by embedding: the native manifest carried opaquely (e.g. a raw CycloneDX or SPDX object). HDF does not constrain its internal shape — full manifest validation is a tool-level concern."
+            },
+            "hashes": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum"
+              },
+              "description": "Integrity of the carried BOM *document* itself (the referenced/embedded manifest file), NOT the integrity of the BOM's subject artifact. Subject/artifact integrity (model weights, dataset archive) is a component-level concern, not carried here. Subject identity is inherited from the host component/system; per-node identity lives in the type-extension."
+            },
+            "uniqueId": {
+              "type": "string",
+              "description": "Optional stable identifier for this BOM document (e.g. CycloneDX serialNumber, SPDX documentNamespace). Correlates the same BOM across evidence packages."
+            },
+            "license": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional license of the BOM document as a whole (SPDX license expression). Nullable and often meaningless (CBOM algorithms, many HBOM parts have no license); per-node licenses live in the type-extension, not here."
+            },
+            "model": {
+              "$ref": "#/$defs/AI_Model_Extension",
+              "description": "Normalized ai-model extension. Permitted only when bomType is ai-model."
+            },
+            "dataset": {
+              "$ref": "#/$defs/Dataset_Extension",
+              "description": "Normalized dataset extension. Permitted only when bomType is dataset."
+            },
+            "packages": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SBOM_Package"
+              },
+              "description": "Normalized sbom extension: the flattened software package inventory. Permitted only when bomType is sbom."
+            }
+          },
+          "allOf": [
+            {
+              "$comment": "Three-tier discipline: the ai-model extension may appear only on an ai-model BOM.",
+              "if": {
+                "properties": {
+                  "bomType": {
+                    "const": "ai-model"
+                  }
+                },
+                "required": [
+                  "bomType"
+                ]
+              },
+              "else": {
+                "properties": {
+                  "model": false
+                }
+              }
+            },
+            {
+              "$comment": "The dataset extension may appear only on a dataset BOM.",
+              "if": {
+                "properties": {
+                  "bomType": {
+                    "const": "dataset"
+                  }
+                },
+                "required": [
+                  "bomType"
+                ]
+              },
+              "else": {
+                "properties": {
+                  "dataset": false
+                }
+              }
+            },
+            {
+              "$comment": "The normalized packages extension may appear only on an sbom BOM.",
+              "if": {
+                "properties": {
+                  "bomType": {
+                    "const": "sbom"
+                  }
+                },
+                "required": [
+                  "bomType"
+                ]
+              },
+              "else": {
+                "properties": {
+                  "packages": false
+                }
+              }
+            },
+            {
+              "$comment": "A BOM must carry at least one of ref/document/packages/model/dataset. This intentionally checks PRESENCE, not non-emptiness: under the partial-fidelity design a converter MAY emit an empty normalized extension (e.g. model:{}) alongside a raw `document` passthrough when a source has no cleanly-mappable fields, so this constraint deliberately does not require minProperties/minItems on the extension. A bare {bomType, format} carrying none of these keys is unusable and invalid.",
+              "anyOf": [
+                {
+                  "required": [
+                    "ref"
+                  ]
+                },
+                {
+                  "required": [
+                    "document"
+                  ]
+                },
+                {
+                  "required": [
+                    "packages"
+                  ]
+                },
+                {
+                  "required": [
+                    "model"
+                  ]
+                },
+                {
+                  "required": [
+                    "dataset"
+                  ]
+                }
+              ]
+            }
+          ],
+          "examples": [
+            {
+              "$comment": "Passthrough SBOM by external reference — the universal escape hatch, available to every bomType.",
+              "bomType": "sbom",
+              "format": "cyclonedx",
+              "ref": "https://artifacts.agency.gov/sbom/webtier.cdx.json",
+              "hashes": [
+                {
+                  "algorithm": "sha256",
+                  "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                }
+              ]
+            },
+            {
+              "$comment": "Passthrough for a reserved-but-not-yet-normalized type (cbom) — carried opaquely until a normalized extension ships.",
+              "bomType": "cbom",
+              "format": "cyclonedx",
+              "document": {
+                "bomFormat": "CycloneDX",
+                "specVersion": "1.6"
+              }
+            },
+            {
+              "$comment": "Normalized ai-model BOM: CISA/G7-aligned fields live in the model extension, never at the component root or shared base.",
+              "bomType": "ai-model",
+              "format": "cyclonedx-ml",
+              "model": {
+                "modelArchitecture": "transformer",
+                "parameterCount": 6738415616,
+                "serializationFormat": "safetensors",
+                "adaptationType": "finetune",
+                "baseModelRef": "meta-llama/Llama-2-7b-hf",
+                "learningApproach": "supervised",
+                "task": "text-generation",
+                "performanceMetrics": [
+                  {
+                    "name": "MMLU",
+                    "value": "0.457"
+                  }
+                ],
+                "hyperparameters": [
+                  {
+                    "name": "epochs",
+                    "value": "3"
+                  },
+                  {
+                    "name": "learning-rate",
+                    "value": "2e-5"
+                  }
+                ],
+                "inputOutput": {
+                  "dataTypes": [
+                    "string"
+                  ],
+                  "modality": [
+                    "text"
+                  ],
+                  "contextLength": 4096,
+                  "tokenizer": "llama-bpe"
+                }
+              }
+            },
+            {
+              "$comment": "Normalized dataset BOM with lineage — a filtered derivative of a base dataset, referenced by an ai-model via datasetRefs.",
+              "bomType": "dataset",
+              "format": "croissant",
+              "dataset": {
+                "recordCount": 2500000,
+                "datasetFormat": "parquet",
+                "dataClassification": "public",
+                "intendedUse": "instruction fine-tuning",
+                "modality": "text",
+                "provenance": "Filtered from the public UltraChat corpus; low-quality and duplicate turns removed.",
+                "statisticalProperties": "Mean 512 tokens/record; 61% single-turn, 39% multi-turn; English-dominant (~92%).",
+                "baseDatasetRefs": [
+                  "HuggingFaceH4/ultrachat_200k"
+                ],
+                "derivation": "filtered"
+              }
+            }
+          ]
+        },
+        "AI_Model_Extension": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Normalized AI-model fields, aligned to the CISA/G7 'SBOM for AI' minimum elements. All fields optional (standards-correct; only the EU AI Act makes a subset binding for high-risk/GPAI). Left open (additionalProperties: true) so a converter can carry unmapped native fields opaquely (partial-fidelity pattern). Subject name/version are inherited from the host aiModel component, not repeated here.",
+          "title": "AI Model BOM Extension",
+          "properties": {
+            "modelArchitecture": {
+              "type": "string",
+              "description": "Model architecture family. Examples: transformer, cnn, diffusion, mixture-of-experts."
+            },
+            "parameterCount": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Total trainable parameter count. No native CycloneDX/SPDX field exists; first-class here because the EU AI Act keys GPAI obligations off model scale."
+            },
+            "serializationFormat": {
+              "type": "string",
+              "description": "On-disk weight serialization format. Security-critical yet under-modeled by BOM specs: pickle/pytorch permits arbitrary code execution on load; safetensors does not. Examples: safetensors, pytorch, gguf, onnx, tensorflow."
+            },
+            "adaptationType": {
+              "type": "string",
+              "title": "Model Adaptation Type",
+              "enum": [
+                "finetune",
+                "adapter",
+                "quantized",
+                "merge"
+              ],
+              "description": "Lineage relationship to baseModelRef, adopting Hugging Face's base_model_relation vocabulary (the only typed lineage enum in the ecosystem)."
+            },
+            "baseModelRef": {
+              "type": "string",
+              "description": "Reference to the base model this one was adapted from (e.g. a Hugging Face repo id or purl). Correlates the lineage edge; the base model itself may carry its own ai-model BOM."
+            },
+            "datasetRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "References to the training/evaluation datasets this model was produced from — preferably a dataset component's componentId (correlating to a first-class dataset subject rather than duplicating dataset detail, per ADR §10), or a dataset BOM uniqueId/URI when no component exists."
+            },
+            "intendedUse": {
+              "type": "string",
+              "description": "Free-text statement of intended use and out-of-scope uses (CISA/G7 minimum element)."
+            },
+            "learningApproach": {
+              "type": "string",
+              "description": "Model's learning/training paradigm. Free-text because the value set varies across standards. Examples: supervised, self-supervised, semi-supervised, reinforcement. Cross-standard intersection: SPDX 3.0 ai_typeOfModel ∩ CycloneDX modelParameters.approach.type ∩ CISA/G7 learning type."
+            },
+            "task": {
+              "type": "string",
+              "description": "The ML task the model performs. Free-text. Examples: text-classification, sentiment-analysis, object-detection, translation. Sourced from CycloneDX modelParameters.task (SPDX 3.0 ai_domain is domain-level/adjacent, not the task); CISA/G7 intended-application."
+            },
+            "performanceMetrics": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Metric name. Examples: accuracy, f1, BLEU, latency."
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "Reported metric value, free-text because metrics are heterogeneous (percentages, scores, milliseconds)."
+                  }
+                }
+              },
+              "description": "Reported evaluation metrics as name/value pairs. Values are free-text because metrics are heterogeneous (accuracy, f1, BLEU, latency). The item stays open (additionalProperties: true) to carry native CycloneDX slice/confidenceInterval detail opaquely. Cross-standard intersection: SPDX 3.0 ai_metric ∩ CycloneDX quantitativeAnalysis.performanceMetrics ∩ CISA/G7 KPI cluster."
+            },
+            "hyperparameters": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Hyper-parameter name. Examples: epochs, learning-rate, batch-size."
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "Hyper-parameter value (free-text)."
+                  }
+                }
+              },
+              "description": "Training hyper-parameters as name/value pairs (epochs, learning-rate, batch-size). This is the set of training knobs, NOT the model's trainable parameterCount — the two are routinely conflated. CISA/G7 'Model properties: hyper-parameters'; SPDX 3.0 ai_hyperparameter."
+            },
+            "inputOutput": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Model input/output properties (CISA/G7 minimum element): I/O data types, modality, context/sequence length, and tokenizer. Sourced from CycloneDX modelParameters.inputs[].format / outputs[].format. All sub-fields optional.",
+              "properties": {
+                "dataTypes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Input/output data types. Examples: string, byte[], float32, image."
+                },
+                "modality": {
+                  "type": [
+                    "string",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Input/output modalities. String or array of strings. Examples: text, image, audio. Symmetric with Dataset_Extension.modality."
+                },
+                "contextLength": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Maximum context/sequence length the model accepts, in tokens."
+                },
+                "tokenizer": {
+                  "type": "string",
+                  "description": "Tokenizer used for the model's input encoding. Examples: BPE, SentencePiece, tiktoken."
+                }
+              }
+            }
+          }
+        },
+        "Dataset_Extension": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Normalized dataset fields (SPDX 3.0 Dataset profile / MLCommons Croissant aligned). All optional; open for partial-fidelity passthrough of unmapped native fields. Symmetric with AI_Model_Extension: carries the dataset's own lineage (baseDatasetRefs/derivation) just as the model extension carries baseModelRef/adaptationType.",
+          "title": "Dataset BOM Extension",
+          "properties": {
+            "recordCount": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of records/examples in the dataset."
+            },
+            "datasetFormat": {
+              "type": "string",
+              "description": "Physical format of the dataset. Examples: parquet, csv, jsonl, tfrecord, webdataset."
+            },
+            "dataClassification": {
+              "type": "string",
+              "description": "Sensitivity/classification of the data. Examples: public, internal, confidential, pii, phi."
+            },
+            "intendedUse": {
+              "type": "string",
+              "description": "Free-text statement of the dataset's intended use (CISA/G7 minimum element)."
+            },
+            "modality": {
+              "type": [
+                "string",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "Content modality/kind of the data (CISA/G7 'Dataset content: modality'). Examples: text, image, tabular, timeseries, audio. DISTINCT from datasetFormat, which is the physical encoding (parquet/csv). Resolves SPDX 3.0 dataset_datasetType, which is content-kind, not physical format. String or array of strings."
+            },
+            "provenance": {
+              "type": "string",
+              "description": "Free-text description of the dataset's origin and collection process (CISA/G7 'Dataset provenance'; SPDX 3.0 dataset_dataCollectionProcess)."
+            },
+            "statisticalProperties": {
+              "type": "string",
+              "description": "Free-text summary of the dataset's statistical properties (CISA/G7 minimum element; open-ended by design). Intentionally free-text and will remain so permanently: recordCount is the one structured statistic, and restructuring this into an object later would break existing consumers, so it stays a string (additive-only)."
+            },
+            "baseDatasetRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "References to the source dataset(s) this one was derived from — a dataset componentId, or a dataset BOM uniqueId/URI when no component exists. The lineage edge parallel to ai-model's baseModelRef; the base dataset may carry its own dataset BOM."
+            },
+            "derivation": {
+              "type": "string",
+              "title": "Dataset Derivation Type",
+              "enum": [
+                "filtered",
+                "augmented",
+                "merged",
+                "sampled"
+              ],
+              "description": "Relationship of this dataset to baseDatasetRefs, parallel to the model extension's adaptationType. Minimal + extensible: filtered (subset by rule), augmented (added/synthesized records), merged (union of sources), sampled (statistical draw)."
+            }
+          }
+        },
+        "SBOM_Package": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "A single normalized software package entry within an sbom BOM. Minimal identity + version for querying/diffing; the full native record remains available via passthrough (document/ref).",
+          "title": "SBOM Package",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Package name."
+            },
+            "version": {
+              "type": "string",
+              "description": "Package version."
+            },
+            "purl": {
+              "type": "string",
+              "description": "Package URL (purl) — the preferred cross-BOM identity key when present."
+            },
+            "licenses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "SPDX license identifiers/expressions for this package."
+            }
+          }
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.4.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.4.0",
+      "title": "HDF Data Flow Primitives",
+      "description": "Types for describing data flows between components within a system and across system boundaries. Data flows model network connections, API calls, database queries, and other inter-component communication.",
+      "$defs": {
+        "Cross_System_Reference": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "systemRef",
+            "componentId"
+          ],
+          "properties": {
+            "systemRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI reference to the hdf-system document containing the target component. May be a relative path, absolute URI, or fragment identifier."
+            },
+            "componentId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the component in the referenced system."
+            }
+          },
+          "description": "Reference to a component in a different system document, enabling cross-boundary data flow modeling.",
+          "title": "Cross-System Reference"
+        },
+        "External_Endpoint": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "external",
+            "description"
+          ],
+          "properties": {
+            "external": {
+              "type": "boolean",
+              "const": true,
+              "description": "Must be true. Discriminator indicating this endpoint is outside all modeled systems."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of the external endpoint. Example: 'Third-party payment gateway (Stripe API)'."
+            }
+          },
+          "description": "An endpoint outside all modeled systems (e.g., a third-party API, public internet, or partner system not represented in HDF).",
+          "title": "External Endpoint"
+        },
+        "Data_Flow_Endpoint": {
+          "description": "A data flow endpoint: either a local component (UUID), a component in another system (cross-system reference), or an external endpoint outside all modeled systems.",
+          "title": "Data Flow Endpoint",
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of a component in the current system."
+            },
+            {
+              "$ref": "#/$defs/Cross_System_Reference"
+            },
+            {
+              "$ref": "#/$defs/External_Endpoint"
+            }
+          ]
+        },
+        "Data_Flow": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "from",
+            "to"
+          ],
+          "properties": {
+            "from": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the local component that is one end of this data flow. Always references a component in the current system document."
+            },
+            "to": {
+              "$ref": "#/$defs/Data_Flow_Endpoint",
+              "description": "The other end of this data flow. Can be a local component (UUID), a cross-system component reference, or an external endpoint."
+            },
+            "protocol": {
+              "type": "string",
+              "description": "Communication protocol. Examples: 'http', 'https', 'grpc', 'ssh', 'jdbc', 'k8s-api', 'socket', 'sftp'."
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "description": "Network port number."
+            },
+            "direction": {
+              "type": "string",
+              "title": "Direction",
+              "enum": [
+                "unidirectional",
+                "bidirectional"
+              ],
+              "description": "Data flow direction. 'unidirectional' means data flows from→to only. 'bidirectional' means data flows in both directions (e.g., request/response)."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of this data flow's purpose and the data exchanged."
+            },
+            "authentication": {
+              "type": "string",
+              "description": "Authentication mechanism used for this connection. Examples: 'mTLS', 'OAuth2', 'API key', 'SAML', 'Kerberos'."
+            }
+          },
+          "examples": [
+            {
+              "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+              "to": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "protocol": "https",
+              "port": 443,
+              "direction": "bidirectional",
+              "description": "REST API calls from WebTier to API Gateway",
+              "authentication": "mTLS"
+            },
+            {
+              "from": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "to": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+              "protocol": "jdbc",
+              "port": 5432,
+              "direction": "unidirectional",
+              "description": "Database queries from API Gateway to PostgreSQL",
+              "authentication": "username/password + TLS"
+            },
+            {
+              "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+              "to": {
+                "systemRef": "https://systems.agency.gov/auth-system.json",
+                "componentId": "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+              },
+              "protocol": "https",
+              "direction": "bidirectional",
+              "description": "SAML authentication requests to central auth system",
+              "authentication": "SAML 2.0"
+            },
+            {
+              "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+              "to": {
+                "external": true,
+                "description": "Stripe payment processing API"
+              },
+              "protocol": "https",
+              "port": 443,
+              "direction": "bidirectional",
+              "description": "Payment processing via Stripe",
+              "authentication": "API key + TLS"
+            }
+          ],
+          "description": "A data flow between two endpoints. The 'from' endpoint is always a local component; the 'to' endpoint can be local, cross-system, or external. Use 'direction' to indicate whether data flows one-way or both ways.",
+          "title": "Data Flow"
         }
       }
     },
@@ -2460,77 +3743,5 @@
         }
       }
     }
-  },
-  "examples": [
-    {
-      "name": "Enterprise Portal ATO Evidence - Q1 2026",
-      "systemRef": "portal-prod.hdf-system.json",
-      "preparedBy": {
-        "type": "email",
-        "identifier": "compliance@agency.gov"
-      },
-      "preparedAt": "2026-03-31T12:00:00Z",
-      "contents": [
-        {
-          "type": "hdf-system",
-          "uri": "portal-prod.hdf-system.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "aaa111"
-          }
-        },
-        {
-          "type": "hdf-baseline",
-          "uri": "rhel9-stig.hdf-baseline.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "bbb222"
-          }
-        },
-        {
-          "type": "hdf-plan",
-          "uri": "portal-monthly-scan.hdf-plan.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "ccc333"
-          }
-        },
-        {
-          "type": "hdf-results",
-          "uri": "portal-scan-march.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "ddd444"
-          }
-        },
-        {
-          "type": "hdf-amendments",
-          "uri": "portal-waivers-q1.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "eee555"
-          }
-        },
-        {
-          "type": "hdf-comparison",
-          "uri": "portal-diff-feb-mar.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "fff666"
-          }
-        }
-      ],
-      "completenessCheck": {
-        "allBaselinesAssessed": true,
-        "allComponentsCovered": true,
-        "expiredWaivers": 0,
-        "unresolvedPoams": 2,
-        "compliancePercent": 95.8,
-        "sbomCoverage": {
-          "componentsWithSbom": 3,
-          "totalComponents": 5
-        }
-      }
-    }
-  ]
+  }
 }

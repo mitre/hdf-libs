@@ -1,6 +1,6 @@
-# Heimdall Data Format (HDF) v3.3.0 Specification
+# Heimdall Data Format (HDF) v3.4.0 Specification
 
-**Version**: 3.3.0
+**Version**: 3.4.0
 **Schema**: JSON Schema draft 2020-12
 **License**: Apache-2.0 | The MITRE Corporation
 
@@ -25,7 +25,7 @@ Documents reference each other via URI strings: `systemRef`, `planRef`.
 - All documents use `"unevaluatedProperties": false` — unknown fields are rejected.
 - Date/time values use ISO 8601 (`2026-01-15T10:30:00Z`).
 - UUIDs use RFC 4122 format.
-- Checksums use `{algorithm, value}` pairs. Algorithms: `sha256`, `sha384`, `sha512`.
+- Checksums use `{algorithm, value}` pairs. Algorithms: `sha256`, `sha384`, `sha512`, `blake3`.
 - `generator` (optional on all documents): `{name, version}` of the producing tool.
 - `labels` (optional on most documents): `{key: value}` string map for flexible grouping. Well-known keys: `system`, `component`, `environment`, `region`, `team`.
 
@@ -75,7 +75,7 @@ Reference helper implementations: `shared.BuildNoFindingsRequirement` (Go) and `
 
 Assessment findings from running security checks against target systems.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.3.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.4.0`
 
 ### Top-Level Fields
 
@@ -175,7 +175,7 @@ A single test execution within a requirement. Each result records what was teste
 
 ### Component
 
-The system element that was assessed. Components are polymorphic — each has a `type` discriminator that determines which additional fields are available. All components share `name`, `type`, and optional fields for identity (`componentId`), external cross-references (`externalIds`), labels, SBOM embedding, and baseline references. Components in Results are typically populated with minimal fields by converters; components in System documents carry the full set including `componentId` for cross-document correlation.
+The system element that was assessed. Components are polymorphic — each has a `type` discriminator that determines which additional fields are available. All components share `name`, `type`, and optional fields for identity (`componentId`), external cross-references (`externalIds`), labels, BOM attachment (`boms[]` — SBOM, AI-model, or dataset), artifact integrity (`integrity[]`), and baseline references. Components in Results are typically populated with minimal fields by converters; components in System documents carry the full set including `componentId` for cross-document correlation.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -185,26 +185,27 @@ The system element that was assessed. Components are polymorphic — each has a 
 | description | string | no | Component role or purpose |
 | externalIds | {string: string} | no | External ID map (aws, azure, cmdb, emass) |
 | labels | {string: string} | no | Key-value grouping metadata |
-| sbom | object | no | Embedded CycloneDX or SPDX SBOM |
-| sbomRef | URI-reference | no | Reference to external SBOM document |
-| sbomFormat | "cyclonedx" \| "spdx" | no | SBOM format (required when sbom/sbomRef present) |
+| boms | BillOfMaterials[] | no | Component-scoped BOMs (SBOM, `ai-model`, `dataset`, or reserved `bomType`), by passthrough or normalized. Replaces the former `sbom`/`sbomRef`/`sbomFormat` trio *(v3.4.0)* |
+| integrity | Checksum[] | no | Cryptographic integrity of the component's artifact (model weights/shards, dataset archive, image, package bytes). Generic home replacing per-type `digest`/`checksum` *(v3.4.0)* |
 | baselineRefs | string[] | no | Names of baselines that apply |
 
 **Type-specific fields:**
 
 | Type | Extra Fields |
 |------|-------------|
-| host | fqdn, ipAddress, macAddress, osName, osVersion |
-| containerImage | imageId, registry, repository, tag, digest |
+| host | hostname, fqdn, domain, ipAddress, macAddress, osName, osVersion |
+| containerImage | imageId, registry, repository, tag |
 | containerInstance | containerId, image, runtime |
 | containerPlatform | platformType, clusterName, namespace, version |
 | cloudAccount | provider, accountId, region |
 | cloudResource | provider, resourceType, resourceId, arn, region |
 | repository | url, branch, commit |
 | application | url, version, environment |
-| artifact | packageManager, packageName, version, checksum |
+| artifact | packageManager, packageName, version |
 | network | cidr, gateway |
 | database | engine, version, host, port |
+| aiModel *(v3.4.0)* | modelId, version (detail in the attached `ai-model` BOM) |
+| dataset *(v3.4.0)* | datasetId, version (detail in the attached `dataset` BOM) |
 
 ---
 
@@ -212,7 +213,7 @@ The system element that was assessed. Components are polymorphic — each has a 
 
 Security requirements without results (before assessment).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.3.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.4.0`
 
 Shares most fields with Evaluated_Baseline but uses `Baseline_Requirement` (no results, no effectiveStatus) instead of `Evaluated_Requirement`.
 
@@ -269,7 +270,7 @@ A security requirement before assessment. Structurally identical to Evaluated_Re
 
 Describes a system under assessment. A system document defines the authorization boundary, including what components make up the system, its security categorization (FIPS 199), and its authorization status (ATO). This corresponds to a FedRAMP system or an OSCAL SSP's system characteristics. Results and amendments reference the system via `systemRef` to establish which system the assessment applies to.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.3.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.4.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -326,7 +327,7 @@ Declares a control's designation within the system — whether it is common (pro
 
 Assessment plan defining what to assess and how. A plan document describes the scope, methodology, and schedule for an upcoming security assessment. It references the system under test via `systemRef` and lists the individual assessments to be performed. This corresponds to an OSCAL SAP (Security Assessment Plan) or a FedRAMP test plan.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.3.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.4.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -360,7 +361,7 @@ A single assessment within a plan — defines which baseline to run against whic
 
 Status overrides applied after assessment (waivers, attestations, POAMs).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.3.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.4.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -407,7 +408,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 
 Diff between two or more assessment documents. A comparison captures how compliance posture changed between scans, across environments, or between baseline versions. The `comparisonMode` indicates the type of analysis (temporal drift, fleet comparison, baseline evolution, etc.). Each requirement diff records whether a control is new, absent, fixed, regressed, or unchanged. Comparisons are produced by `hdf diff` and consumed by dashboards to show trend data.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.3.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.4.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -434,7 +435,7 @@ Diff between two or more assessment documents. A comparison captures how complia
 
 Bundles references to assessment artifacts for audit and compliance submission. An evidence package collects results, baselines, amendments, system descriptions, and supporting materials (screenshots, logs, SBOMs) into a single auditable unit. This corresponds to a FedRAMP security package or an OSCAL POA&M submission bundle. The `completenessCheck` field validates that all expected artifacts are present.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.3.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.4.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -503,7 +504,7 @@ Impact is a float 0.0 to 1.0. Conventional mapping to severity:
 `low` | `moderate` | `high`
 
 ### ComponentType
-`host` | `containerImage` | `containerInstance` | `containerPlatform` | `cloudAccount` | `cloudResource` | `repository` | `application` | `artifact` | `network` | `database`
+`host` | `containerImage` | `containerInstance` | `containerPlatform` | `cloudAccount` | `cloudResource` | `repository` | `application` | `artifact` | `network` | `database` | `aiModel` | `dataset`
 
 ### Direction (data flow)
 `inbound` | `outbound` | `bidirectional`
@@ -512,7 +513,7 @@ Impact is a float 0.0 to 1.0. Conventional mapping to severity:
 `common` | `system-specific` | `hybrid`
 
 ### HashAlgorithm
-`sha256` | `sha384` | `sha512`
+`sha256` | `sha384` | `sha512` | `blake3`
 
 ---
 

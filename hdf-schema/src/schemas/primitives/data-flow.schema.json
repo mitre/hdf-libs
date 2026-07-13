@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.3.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.4.0",
   "title": "HDF Data Flow Primitives",
   "description": "Types for describing data flows between components within a system and across system boundaries. Data flows model network connections, API calls, database queries, and other inter-component communication.",
   "$defs": {

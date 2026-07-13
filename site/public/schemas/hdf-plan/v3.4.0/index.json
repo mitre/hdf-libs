@@ -1,355 +1,365 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.4.0",
-  "title": "HDF Evidence Package",
-  "description": "Bundles references to all HDF documents for audit, authorization, and compliance review. Each content entry references a document by type, URI, and checksum for integrity verification.",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.4.0",
+  "title": "HDF Plan",
+  "description": "Defines an assessment plan — what baselines to run against which targets, with resolved inputs and scheduling. Maps to OSCAL Assessment Plan.",
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
     "name",
-    "contents"
+    "assessments"
   ],
   "properties": {
-    "packageId": {
+    "planId": {
       "type": "string",
       "format": "uuid",
-      "description": "Unique identifier for this evidence package. Optional in casual use, expected in production ATO submissions. Auto-generated if omitted during creation."
+      "description": "Unique identifier for this plan. Optional in casual use, expected in production documents. Auto-generated if omitted during creation."
     },
     "name": {
       "type": "string",
-      "description": "Human-readable name for this evidence package. Example: 'Enterprise Portal ATO Evidence - Q1 2026'."
+      "description": "Human-readable plan name. Example: 'Portal Monthly Assessment'."
+    },
+    "type": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.4.0#/$defs/Plan_Type",
+      "description": "The type of assessment plan."
     },
     "description": {
       "type": "string",
-      "description": "Description of the evidence package's purpose and scope."
+      "description": "Description of the plan's purpose and scope."
     },
     "systemRef": {
       "type": "string",
       "format": "uri-reference",
-      "description": "URI to the hdf-system document this evidence package covers."
+      "description": "URI to the hdf-system document this plan targets. Example: 'portal-prod.hdf-system.json'."
     },
-    "planRef": {
-      "type": "string",
-      "format": "uri-reference",
-      "description": "URI to the hdf-plan document that drove this assessment. Used for completeness verification — every baseline in the plan should have a corresponding results document in this package."
-    },
-    "preparedBy": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
-      "description": "Identity of who prepared this evidence package."
-    },
-    "preparedAt": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When this evidence package was prepared. ISO 8601 format."
-    },
-    "contents": {
+    "assessments": {
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "#/$defs/Content_Reference"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.4.0#/$defs/Assessment"
       },
-      "description": "References to HDF documents included in this evidence package."
+      "description": "The assessments to perform. Each assessment pairs a baseline with targets and resolved inputs."
     },
-    "externalEvidence": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/External_Evidence_Reference"
-      },
-      "description": "References to external native-format evidence (log/telemetry corpora and other artifacts) carried by URI + integrity hash + format discriminator, without recreating the data inside HDF. Logs in ECS/OCSF/etc. are legitimate accreditation evidence; HDF indexes them here rather than transcoding them."
-    },
-    "completenessCheck": {
-      "$ref": "#/$defs/Completeness_Check",
-      "description": "Summary of assessment completeness and compliance status."
-    },
-    "signature": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Signature",
-      "description": "Digital signature covering the entire evidence package."
+    "schedule": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.4.0#/$defs/Schedule",
+      "description": "Optional scheduling configuration for recurring assessments."
     },
     "labels": {
       "type": "object",
       "additionalProperties": {
         "type": "string"
       },
-      "description": "Optional key-value labels for grouping and querying evidence packages."
+      "description": "Optional key-value labels for grouping and querying plans."
     },
     "integrity": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Integrity",
-      "description": "Cryptographic integrity information for verifying this evidence package has not been tampered with."
+      "description": "Cryptographic integrity information for verifying this plan document has not been tampered with."
     },
     "version": {
       "type": "string",
-      "description": "Version of this evidence package."
+      "description": "Version of this plan document."
     },
     "generator": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Generator",
-      "description": "Information about the tool that generated this document."
+      "description": "Information about the tool that generated this plan."
     }
   },
+  "examples": [
+    {
+      "name": "Portal Monthly Assessment",
+      "type": "automated",
+      "systemRef": "portal-prod.hdf-system.json",
+      "assessments": [
+        {
+          "baselineRef": "RHEL9-STIG",
+          "targetSelector": {
+            "labels.component": "WebTier"
+          },
+          "inputs": {
+            "max_concurrent_sessions": 5,
+            "password_min_length": 15
+          },
+          "runner": {
+            "name": "cinc-auditor",
+            "version": "6.8.1"
+          }
+        }
+      ],
+      "schedule": {
+        "cron": "0 2 1 * *",
+        "notifyOnRegression": [
+          "security-team@agency.gov"
+        ]
+      }
+    }
+  ],
   "$defs": {
-    "Content_Type": {
-      "type": "string",
-      "enum": [
-        "hdf-system",
-        "hdf-baseline",
-        "hdf-plan",
-        "hdf-results",
-        "hdf-amendments",
-        "hdf-comparison",
-        "bom"
-      ],
-      "description": "The type of document referenced in the evidence package. 'bom' covers any Bill-of-Materials/manifest document (SBOM, AI model/dataset, and reserved future kinds) — its specific kind is carried by the referenced document's bomType, not by a per-kind Content_Type value.",
-      "title": "Content Type"
-    },
-    "Content_Reference": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "required": [
-        "type",
-        "uri"
-      ],
-      "properties": {
-        "type": {
-          "$ref": "#/$defs/Content_Type",
-          "description": "The type of HDF document being referenced."
-        },
-        "uri": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.4.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.4.0",
+      "title": "HDF Plan Primitives",
+      "description": "Types for defining assessment plans — what to scan, how to configure it, and when to run.",
+      "$defs": {
+        "Plan_Type": {
           "type": "string",
-          "format": "uri-reference",
-          "description": "URI to the document. Can be a relative path or absolute URL."
-        },
-        "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
-          "description": "Cryptographic checksum for verifying the referenced document's integrity."
-        },
-        "description": {
-          "type": "string",
-          "description": "Optional description of this content entry."
-        },
-        "componentRef": {
-          "type": "string",
-          "format": "uuid",
-          "description": "componentId of the component this content entry relates to. Use to link SBOMs, results, or other documents to a specific system component."
-        }
-      },
-      "examples": [
-        {
-          "type": "hdf-system",
-          "uri": "portal-prod.hdf-system.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "aaa111..."
-          }
-        },
-        {
-          "type": "hdf-results",
-          "uri": "portal-scan-march-2026.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "ddd444..."
-          },
-          "description": "March 2026 monthly scan results"
-        },
-        {
-          "type": "bom",
-          "uri": "https://artifacts.agency.gov/sbom/webtier.cdx.json",
-          "description": "WebTier CycloneDX SBOM (bomType=sbom)"
-        }
-      ],
-      "description": "A reference to an HDF document or BOM/manifest included in the evidence package.",
-      "title": "Content Reference"
-    },
-    "External_Evidence_Format": {
-      "type": "string",
-      "title": "External Evidence Format",
-      "anyOf": [
-        {
           "enum": [
-            "ecs",
-            "ocsf",
-            "cyclonedx",
-            "spdx",
-            "raw-log"
-          ]
+            "automated",
+            "manual",
+            "hybrid"
+          ],
+          "description": "The type of assessment. 'automated' for scanner-driven, 'manual' for human-performed, 'hybrid' for both.",
+          "title": "Plan Type"
         },
-        {
-          "pattern": "^x-[a-z0-9]+(-[a-z0-9]+)*$"
-        }
-      ],
-      "description": "The native format of the referenced external evidence. Reserved values are OPEN, referenceable, serialized standards: ecs (Elastic Common Schema), ocsf (Open Cybersecurity Schema Framework), cyclonedx, spdx, raw-log (unstructured/native logs). Custom or vendor-specific kinds MUST use an 'x-' prefix (e.g. 'x-splunk-export') so they cannot collide with a value later promoted into the reserved set. Adding a reserved value is a schema version bump.",
-      "$comment": "Reserved values must be OPEN, serialized, uri+hash-referenceable artifacts. Query-time normalization MODELS are deliberately EXCLUDED because they have no portable stored artifact to reference: Splunk CIM is a search-time 'schema-on-the-fly' over Splunk-internal indexes, and Microsoft ASIM is a set of query-time KQL parsers over Sentinel tables. To carry Splunk/Sentinel-derived evidence, reference its EXPORTED result set (JSON/CSV/NDJSON) via an 'x-' format + mediaType — never the model name. 'schema-one' is intentionally NOT yet reserved: it has no open public spec (as of 2026-07), and reserving a value whose shape/version is unverified would violate the fixture-integrity rule; it will be added once the authoritative spec is obtained. Carriage is reference-only and never parses the payload, so a large/complex or spec-gated format (e.g. Schema One) is still referenceable as an opaque 'x-' value."
-    },
-    "External_Evidence_Time_Range": {
-      "type": "object",
-      "title": "External Evidence Time Range",
-      "unevaluatedProperties": false,
-      "properties": {
-        "start": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Start of the time window the corpus covers (ISO 8601)."
-        },
-        "end": {
-          "type": "string",
-          "format": "date-time",
-          "description": "End of the time window the corpus covers (ISO 8601)."
-        }
-      },
-      "description": "The time window a referenced external evidence corpus covers."
-    },
-    "External_Evidence_Metadata": {
-      "type": "object",
-      "title": "External Evidence Metadata",
-      "unevaluatedProperties": false,
-      "properties": {
-        "recordCount": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Approximate number of records/events in the referenced corpus."
-        },
-        "timeRange": {
-          "$ref": "#/$defs/External_Evidence_Time_Range",
-          "description": "The time window the referenced evidence covers."
-        },
-        "collector": {
-          "type": "string",
-          "description": "The tool/pipeline that collected or produced the corpus. Example: 'aws-security-lake', 'elastic-agent'."
-        }
-      },
-      "description": "Descriptive metadata about a referenced external evidence corpus. Does not affect integrity."
-    },
-    "External_Evidence_Reference": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "required": [
-        "uri",
-        "format"
-      ],
-      "properties": {
-        "uri": {
-          "type": "string",
-          "format": "uri-reference",
-          "description": "URI to the external native-format evidence artifact (log/telemetry corpus, etc.). Can be a relative path or absolute URL. The data stays canonical in its native format — HDF references it, never parses or transcodes it."
-        },
-        "format": {
-          "$ref": "#/$defs/External_Evidence_Format",
-          "description": "The native format discriminator of the referenced artifact."
-        },
-        "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
-          "description": "Cryptographic checksum of the referenced artifact for integrity verification.",
-          "$comment": "Strongly recommended for external evidence — a point-in-time reference without an integrity hash is weakly auditable. Kept out of `description` so this usage-specific note does not aggregate into the shared Checksum type's generated Go doc comment (quicktype concatenates $ref-sibling descriptions onto the referenced type)."
-        },
-        "mediaType": {
-          "type": "string",
-          "description": "Optional IANA media type describing the on-disk serialization, orthogonal to 'format' (the semantic standard). Examples: application/x-ndjson, application/json, application/vnd.apache.parquet, text/csv."
-        },
-        "formatVersion": {
-          "type": "string",
-          "description": "Optional producer-declared version of the format (e.g. ECS '9.4.0', OCSF '1.8.0'). Free-text and untrusted — HDF does not validate it against a registry."
-        },
-        "description": {
-          "type": "string",
-          "description": "Optional human-readable description of this evidence entry."
-        },
-        "metadata": {
-          "$ref": "#/$defs/External_Evidence_Metadata",
-          "description": "Optional descriptive metadata about the referenced corpus. Does not affect integrity."
-        }
-      },
-      "examples": [
-        {
-          "$comment": "ECS log corpus carried by reference (NDJSON) — HDF never parses it; the hash pins integrity.",
-          "uri": "https://evidence.agency.gov/logs/portal-2026-q1.ndjson",
-          "format": "ecs",
-          "formatVersion": "9.4.0",
-          "mediaType": "application/x-ndjson",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-          },
-          "metadata": {
-            "recordCount": 4200000,
-            "timeRange": {
-              "start": "2026-01-01T00:00:00Z",
-              "end": "2026-03-31T23:59:59Z"
+        "Runner_Config": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the assessment runner. Example: 'cinc-auditor', 'inspec', 'openscap'."
             },
-            "collector": "elastic-agent"
-          }
+            "version": {
+              "type": "string",
+              "description": "Version of the runner."
+            }
+          },
+          "description": "Configuration for the assessment runner/scanner.",
+          "title": "Runner Config"
         },
-        {
-          "$comment": "OCSF telemetry landed as Parquet in a security data lake.",
-          "uri": "s3://agency-security-lake/ocsf/portal/2026/q1/",
-          "format": "ocsf",
-          "formatVersion": "1.8.0",
-          "mediaType": "application/vnd.apache.parquet",
-          "collector": "aws-security-lake"
+        "Assessment": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "baselineRef"
+          ],
+          "properties": {
+            "baselineRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Reference to the baseline to evaluate. May be a baseline name (e.g. 'RHEL9-STIG'), a relative path to an HDF Baseline document (e.g. 'rhel9-stig.hdf-baseline.json'), or an absolute URI."
+            },
+            "componentRef": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of the system component this assessment targets. Use for direct component binding. Alternative to targetSelector."
+            },
+            "targetSelector": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Target_Selector",
+              "description": "Label selector to match targets for this assessment. Overrides the system component's targetSelector if provided."
+            },
+            "inputs": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Resolved input values for this assessment. Keys are input names, values are the final resolved values (after baseline defaults + system overrides)."
+            },
+            "runner": {
+              "$ref": "#/$defs/Runner_Config",
+              "description": "Runner/scanner configuration for this assessment."
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of this assessment's purpose."
+            }
+          },
+          "examples": [
+            {
+              "baselineRef": "RHEL9-STIG",
+              "targetSelector": {
+                "labels.component": "WebTier"
+              },
+              "inputs": {
+                "max_concurrent_sessions": 5,
+                "password_min_length": 15
+              },
+              "runner": {
+                "name": "cinc-auditor",
+                "version": "6.8.1"
+              }
+            }
+          ],
+          "description": "A single assessment within a plan — defines which baseline to run against which targets with what configuration.",
+          "title": "Assessment"
         },
-        {
-          "$comment": "A Splunk export carried as an opaque x- custom format — CIM/ASIM are query-time models, so reference the EXPORT, not the model.",
-          "uri": "siem/auth-events-2026-q1.json",
-          "format": "x-splunk-export",
-          "mediaType": "application/json"
+        "Schedule": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "properties": {
+            "cron": {
+              "type": "string",
+              "description": "Cron expression for recurring assessments. Example: '0 2 1 * *' (2 AM on the 1st of each month)."
+            },
+            "startDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Earliest date to begin assessments. ISO 8601 format."
+            },
+            "endDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Date after which assessments should no longer run. ISO 8601 format."
+            },
+            "notifyOnRegression": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Email addresses or notification endpoints to alert when regressions are detected."
+            },
+            "notifyOnCompletion": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Email addresses or notification endpoints to alert when assessments complete."
+            }
+          },
+          "examples": [
+            {
+              "cron": "0 2 1 * *",
+              "notifyOnRegression": [
+                "security-team@agency.gov"
+              ]
+            }
+          ],
+          "description": "Scheduling configuration for recurring assessments.",
+          "title": "Schedule"
         }
-      ],
-      "description": "A reference to external native-format evidence (log/telemetry corpus or other artifact) carried by URI + integrity hash + format discriminator. Reference-only: the artifact is never embedded (corpora can be huge) or transcoded (that would be lossy) — it stays canonical in its native format and HDF acts as the structured index.",
-      "$comment": "Deliberately distinct from two look-alike primitives — the shared DRY is the common Checksum type, not the container. Bom (boms[] on components/system) models component COMPOSITION and is richer: also embeddable (document) and normalizable into HDF's queryable shape (packages/model/dataset). Content_Reference (contents[]) references HDF-ECOSYSTEM documents and BOMs by Content_Type. External_Evidence_Reference is reference-only and OPAQUE (HDF never inspects it), for NATIVE non-HDF log/telemetry corpora indexed as accreditation evidence; it carries log-specific metadata (recordCount/timeRange/collector) the other two do not. Do not merge these — collapsing them would mix incompatible discriminator axes and lose Bom's normalization.",
-      "title": "External Evidence Reference"
+      }
     },
-    "SBOM_Coverage": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "properties": {
-        "componentsWithSbom": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Number of system components that have an associated SBOM."
+    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0",
+      "title": "HDF System Primitives",
+      "description": "Types for describing system architecture, authorization boundaries, and components.",
+      "$defs": {
+        "Authorization_Status": {
+          "type": "string",
+          "enum": [
+            "authorized",
+            "denied",
+            "pendingAuthorization",
+            "conditionallyAuthorized",
+            "notYetRequested",
+            "revoked"
+          ],
+          "description": "Authorization to Operate (ATO) status for the system.",
+          "title": "Authorization Status"
         },
-        "totalComponents": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Total number of components in the system."
+        "Categorization_Level": {
+          "type": "string",
+          "enum": [
+            "low",
+            "moderate",
+            "high"
+          ],
+          "description": "FIPS 199 security categorization level (impact level).",
+          "title": "Categorization Level"
+        },
+        "Input_Override": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "inputName",
+            "value"
+          ],
+          "properties": {
+            "baselineRef": {
+              "type": "string",
+              "description": "Name of the baseline this override applies to. If omitted, applies to all baselines that define this input."
+            },
+            "inputName": {
+              "type": "string",
+              "description": "Name of the input being overridden. Must match an Input.name in the referenced baseline."
+            },
+            "value": {
+              "description": "The overridden value. Should match the type of the original input."
+            },
+            "justification": {
+              "type": "string",
+              "description": "Rationale for why this override is needed."
+            },
+            "approvedBy": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+              "description": "Identity of the person or system that approved this override."
+            }
+          },
+          "description": "An override of a baseline input value for a specific component. Enables system-specific tailoring of baseline parameters.",
+          "title": "Input Override"
+        },
+        "Target_Selector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A label selector that matches targets by label key-value pairs. All specified labels must match (AND logic). Example: { \"labels.component\": \"WebTier\" } matches targets with labels.component = \"WebTier\".",
+          "title": "Target Selector"
+        },
+        "Control_Designation": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "controlId",
+            "designation",
+            "description"
+          ],
+          "properties": {
+            "controlId": {
+              "type": "string",
+              "description": "The control identifier (e.g., 'SC-7', 'AC-2 (1)'). Must match a NIST tag in a baseline requirement's tags."
+            },
+            "designation": {
+              "type": "string",
+              "title": "Designation",
+              "enum": [
+                "common",
+                "system-specific",
+                "hybrid"
+              ],
+              "description": "NIST SP 800-53 control designation. 'common': fully provided by another component or system. 'system-specific': implemented by the inheriting component(s) only. 'hybrid': shared responsibility between provider and inheritor."
+            },
+            "providedBy": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of a local component that provides this control. Omit when the provider is an external system."
+            },
+            "systemRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Reference to another hdf-system document whose component provides this control. Use when the provider is in a different system. Omit when the provider is local."
+            },
+            "inheritedBy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "description": "componentIds that inherit this control. If omitted, all components in the system inherit it."
+            },
+            "description": {
+              "type": "string",
+              "description": "Justification for this designation — who provides the control, why it's inherited, and any relevant authorization references."
+            }
+          },
+          "examples": [
+            {
+              "controlId": "IA-2",
+              "designation": "common",
+              "providedBy": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              "inheritedBy": [
+                "11111111-2222-3333-4444-555555555555"
+              ],
+              "description": "User identification and authentication provided by Keycloak SSO via SAML 2.0."
+            },
+            {
+              "controlId": "PE-2",
+              "designation": "common",
+              "description": "Physical access authorizations provided by AWS GovCloud per FedRAMP High authorization."
+            }
+          ],
+          "description": "Declares a control's designation within a system — whether it is common (provided by another component or system), system-specific (implemented locally), or hybrid (shared responsibility). Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component provided/inherited semantics.",
+          "title": "Control Designation"
         }
-      },
-      "description": "SBOM coverage statistics for the system.",
-      "$comment": "This metric intentionally measures SOFTWARE (SBOM) inventory coverage only. Coverage accounting for ai-model/dataset/other BOM kinds is deliberately out of scope for now; a future generalized bomCoverage metric may be added. This is a distinct software-inventory metric, not an oversight of the Content_Type 'sbom'->'bom' generalization — do not rename or generalize it.",
-      "title": "SBOM Coverage"
-    },
-    "Completeness_Check": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "properties": {
-        "allBaselinesAssessed": {
-          "type": "boolean",
-          "description": "Whether all baselines referenced by system components have assessment results."
-        },
-        "allComponentsCovered": {
-          "type": "boolean",
-          "description": "Whether all system components have at least one matching target in the results."
-        },
-        "expiredWaivers": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Number of waivers/amendments that have expired."
-        },
-        "unresolvedPoams": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Number of POA&M items that are still open (not completed)."
-        },
-        "compliancePercent": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 100,
-          "description": "Overall compliance percentage across all assessments."
-        },
-        "sbomCoverage": {
-          "$ref": "#/$defs/SBOM_Coverage",
-          "description": "SBOM coverage across system components.",
-          "$comment": "Intentionally software-inventory (SBOM) coverage only; ai-model/dataset/other BOM kinds are out of scope for this metric for now."
-        }
-      },
-      "description": "Informational summary of assessment completeness. Not authoritative — tools should compute these from the referenced documents.",
-      "title": "Completeness Check"
+      }
     },
     "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -2460,77 +2470,5 @@
         }
       }
     }
-  },
-  "examples": [
-    {
-      "name": "Enterprise Portal ATO Evidence - Q1 2026",
-      "systemRef": "portal-prod.hdf-system.json",
-      "preparedBy": {
-        "type": "email",
-        "identifier": "compliance@agency.gov"
-      },
-      "preparedAt": "2026-03-31T12:00:00Z",
-      "contents": [
-        {
-          "type": "hdf-system",
-          "uri": "portal-prod.hdf-system.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "aaa111"
-          }
-        },
-        {
-          "type": "hdf-baseline",
-          "uri": "rhel9-stig.hdf-baseline.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "bbb222"
-          }
-        },
-        {
-          "type": "hdf-plan",
-          "uri": "portal-monthly-scan.hdf-plan.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "ccc333"
-          }
-        },
-        {
-          "type": "hdf-results",
-          "uri": "portal-scan-march.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "ddd444"
-          }
-        },
-        {
-          "type": "hdf-amendments",
-          "uri": "portal-waivers-q1.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "eee555"
-          }
-        },
-        {
-          "type": "hdf-comparison",
-          "uri": "portal-diff-feb-mar.json",
-          "checksum": {
-            "algorithm": "sha256",
-            "value": "fff666"
-          }
-        }
-      ],
-      "completenessCheck": {
-        "allBaselinesAssessed": true,
-        "allComponentsCovered": true,
-        "expiredWaivers": 0,
-        "unresolvedPoams": 2,
-        "compliancePercent": 95.8,
-        "sbomCoverage": {
-          "componentsWithSbom": 3,
-          "totalComponents": 5
-        }
-      }
-    }
-  ]
+  }
 }

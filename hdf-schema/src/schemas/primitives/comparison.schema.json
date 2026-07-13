@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.3.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.4.0",
   "title": "HDF Comparison Primitives",
   "description": "Types for representing structured comparisons between HDF security assessment documents.",
   "$defs": {
@@ -170,7 +170,7 @@
           "description": "The original format of the source document before conversion to HDF."
         },
         "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
           "description": "Cryptographic checksum of the source document for integrity verification."
         },
         "assessmentTimestamp": {
@@ -179,13 +179,13 @@
           "description": "When the source assessment was performed. ISO 8601 format."
         },
         "tool": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.3.0#/$defs/Tool",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Tool",
           "description": "The security tool that produced the assessment data in this source."
         },
         "components": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.3.0#/$defs/Component"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.4.0#/$defs/Component"
           },
           "description": "The components assessed in this source."
         },
@@ -536,14 +536,14 @@
         },
         "before": {
           "oneOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.3.0#/$defs/Component" },
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.4.0#/$defs/Component" },
             { "type": "null" }
           ],
           "description": "Component snapshot from the old system document. Null when state is 'new'."
         },
         "after": {
           "oneOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.3.0#/$defs/Component" },
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.4.0#/$defs/Component" },
             { "type": "null" }
           ],
           "description": "Component snapshot from the new system document. Null when state is 'absent'."
@@ -736,7 +736,7 @@
         "before": {
           "oneOf": [
             {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.3.0#/$defs/Evaluated_Requirement"
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.4.0#/$defs/Evaluated_Requirement"
             },
             {
               "type": "null"
@@ -747,7 +747,7 @@
         "after": {
           "oneOf": [
             {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.3.0#/$defs/Evaluated_Requirement"
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.4.0#/$defs/Evaluated_Requirement"
             },
             {
               "type": "null"
