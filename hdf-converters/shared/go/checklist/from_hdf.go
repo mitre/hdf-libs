@@ -113,6 +113,7 @@ func requirementToVuln(req *hdf.EvaluatedRequirement) Vuln {
 		LegacyIDs:      tagStrSlice(tags, "legacy_ids"),
 		Status:         StatusFromHDF(firstResultStatus(req)),
 		FindingDetails: derefStr(firstResultMessage(req)),
+		Comments:       tagStr(tags, "comments"),
 		Extra:          extractCklMetadata(tags),
 	}
 	v.VulnDiscuss = descByLabel(req.Descriptions, "default")

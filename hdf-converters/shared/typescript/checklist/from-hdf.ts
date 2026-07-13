@@ -100,6 +100,7 @@ function requirementToVuln(req: EvaluatedRequirement): Vuln {
     legacyIDs: strSlice(tags, 'legacy_ids'),
     status: statusFromHdf(req.results?.[0]?.status),
     findingDetails: req.results?.[0]?.message,
+    comments: strVal(tags, 'comments'),
     extra: extractCklMetadata(tags),
   };
 }

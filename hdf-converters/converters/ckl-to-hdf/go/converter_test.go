@@ -223,3 +223,19 @@ func TestConvertCKLToHDF_AllPassingProducesRequirements(t *testing.T) {
 // Status, parsing, and field-mapping helpers are unit-tested in the shared
 // checklist package (shared/go/checklist); these converter tests exercise the
 // public ConvertCKLToHDF entry point against the committed fixture.
+
+// FINDING_DETAILS and COMMENTS are separate fields in CKL. Merging them into
+// the one HDF message would make COMMENTS unrecoverable on export, so message
+// carries finding_details alone and comments round-trips through a tag.
+func TestConvertCKLToHDF_CommentsStaySeparateFromFindingDetails(t *testing.T) {
+	result, err := ConvertCKLToHDF(loadFixture(t, "firefox-stig.ckl"), converterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.NotEmpty(t, req.Results)
+	require.NotNil(t, req.Results[0].Message)
+
+	assert.Equal(t, "Installed Firefox version is end-of-life and unsupported.", *req.Results[0].Message)
+	assert.NotContains(t, *req.Results[0].Message, "Synthetic checklist")
+	assert.Equal(t, "Synthetic checklist for hdf-libs converter test fixture - not a real assessment.", req.Tags["comments"])
+}

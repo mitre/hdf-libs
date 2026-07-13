@@ -111,6 +111,9 @@ func buildTags(v *Vuln) map[string]interface{} {
 	setIfNotEmpty(tags, "gtitle", v.GroupTitle)
 	setIfNotEmpty(tags, "group_id", v.GroupID)
 	setIfNotEmpty(tags, "weight", v.Weight)
+	// COMMENTS is a field of its own in CKL/CKLB. Merging it into the single HDF
+	// message would make it indistinguishable from FINDING_DETAILS on export.
+	setIfNotEmpty(tags, "comments", v.Comments)
 	setIfNotEmpty(tags, "severity", strings.ToLower(v.Severity))
 	if len(v.LegacyIDs) > 0 {
 		tags["legacy_ids"] = v.LegacyIDs
@@ -149,15 +152,8 @@ func buildResult(v *Vuln, startTime time.Time) hdf.RequirementResult {
 		// uses the same value).
 		StartTime: startTime,
 	}
-	var parts []string
 	if fd := strings.TrimSpace(v.FindingDetails); fd != "" {
-		parts = append(parts, fd)
-	}
-	if c := strings.TrimSpace(v.Comments); c != "" {
-		parts = append(parts, c)
-	}
-	if len(parts) > 0 {
-		result.Message = hdfutil.Ptr(strings.Join(parts, "\n\n"))
+		result.Message = hdfutil.Ptr(fd)
 	}
 	return result
 }

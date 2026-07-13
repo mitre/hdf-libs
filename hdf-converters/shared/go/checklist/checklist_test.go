@@ -226,9 +226,11 @@ func TestRoundTripCKL(t *testing.T) {
 	assert.Equal(t, o.VulnDiscuss, n.VulnDiscuss)
 	assert.Equal(t, o.CheckContent, n.CheckContent)
 	assert.Equal(t, o.FixText, n.FixText)
-	// finding_details survives but may be merged with comments through HDF's
-	// single message slot (see hdf-libs-pfse.12), so assert containment.
-	assert.Contains(t, n.FindingDetails, o.FindingDetails)
+	// finding_details and comments occupy separate CKL fields and must stay
+	// separable through HDF: message carries only finding_details, comments
+	// round-trips through tags.
+	assert.Equal(t, o.FindingDetails, n.FindingDetails)
+	assert.Equal(t, o.Comments, n.Comments)
 
 	// And serialize back to valid CKL XML that re-parses.
 	out, err := SerializeCKL(rt)
@@ -241,7 +243,8 @@ func TestRoundTripCKL(t *testing.T) {
 	assert.Equal(t, o.VulnDiscuss, rv.VulnDiscuss)
 	assert.Equal(t, o.CheckContent, rv.CheckContent)
 	assert.Equal(t, o.FixText, rv.FixText)
-	assert.Contains(t, rv.FindingDetails, o.FindingDetails)
+	assert.Equal(t, o.FindingDetails, rv.FindingDetails)
+	assert.Equal(t, o.Comments, rv.Comments)
 }
 
 // Round-trip CKLB -> HDF -> model -> CKLB.
@@ -268,9 +271,9 @@ func TestRoundTripCKLB(t *testing.T) {
 	assert.Equal(t, "Discussion text.", v.VulnDiscuss)
 	assert.Equal(t, "Check it.", v.CheckContent)
 	assert.Equal(t, "Fix it.", v.FixText)
-	// finding_details survives but is merged with comments through HDF's single
-	// message slot (see hdf-libs-pfse.12), so assert containment.
-	assert.Contains(t, v.FindingDetails, "Out of date.")
+	// finding_details and comments stay in their own fields through HDF.
+	assert.Equal(t, "Out of date.", v.FindingDetails)
+	assert.Equal(t, "Reviewer note.", v.Comments)
 	// snake_case status in serialized output
 	assert.Contains(t, string(out), `"status": "open"`)
 	assert.Contains(t, string(out), `"ccis"`)

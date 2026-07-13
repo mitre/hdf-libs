@@ -174,9 +174,11 @@ describe('checklist shared model', () => {
     expect(n.vulnDiscuss).toBe(o.vulnDiscuss);
     expect(n.checkContent).toBe(o.checkContent);
     expect(n.fixText).toBe(o.fixText);
-    // finding_details survives but may merge with comments through HDF's single
-    // message slot (see hdf-libs-pfse.12), so assert containment.
-    expect(n.findingDetails).toContain(o.findingDetails);
+    // finding_details and comments occupy separate CKL fields and must stay
+    // separable through HDF: message carries only finding_details, comments
+    // round-trips through tags.
+    expect(n.findingDetails).toBe(o.findingDetails);
+    expect(n.comments).toBe(o.comments);
 
     const xml = serializeCkl(rt);
     const reparsed = parseCkl(xml);
@@ -186,7 +188,8 @@ describe('checklist shared model', () => {
     expect(rv.vulnDiscuss).toBe(o.vulnDiscuss);
     expect(rv.checkContent).toBe(o.checkContent);
     expect(rv.fixText).toBe(o.fixText);
-    expect(rv.findingDetails).toContain(o.findingDetails);
+    expect(rv.findingDetails).toBe(o.findingDetails);
+    expect(rv.comments).toBe(o.comments);
     // Fields must serialize as child ELEMENTS, not VULN/ASSET attributes —
     // STIG Viewer rejects the attribute form. (Regression guard: with the
     // hdf-utilities default empty attribute prefix, fast-xml-parser would emit
@@ -213,7 +216,8 @@ describe('checklist shared model', () => {
     expect(rv.vulnDiscuss).toBe(o.vulnDiscuss);
     expect(rv.checkContent).toBe(o.checkContent);
     expect(rv.fixText).toBe(o.fixText);
-    expect(rv.findingDetails).toContain(o.findingDetails);
+    expect(rv.findingDetails).toBe(o.findingDetails);
+    expect(rv.comments).toBe(o.comments);
   });
 
   it('synthesizes a valid checklist from arbitrary HDF (nist->cci, defaults)', () => {
