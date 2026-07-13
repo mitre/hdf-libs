@@ -18,6 +18,10 @@ function loadInput(name: string): string {
   return readFileSync(join(__dirname, '..', 'fixtures', 'input', name), 'utf-8');
 }
 
+function loadGolden(name: string): string {
+  return readFileSync(join(__dirname, '..', 'fixtures', 'expected', name), 'utf-8');
+}
+
 describe('convertHdfToOpenVex — not_affected export', () => {
   it('produces an OpenVEX document with the canonical fields', async () => {
     const out = await convertHdfToOpenVex(
@@ -254,4 +258,17 @@ describe('helpers', () => {
   it('stripProductsLine removes the tail', () => {
     expect(stripProductsLine('prose\nProducts: A')).toBe('prose');
   });
+});
+
+// Byte-for-byte equality with the SAME golden files the Go TestGoldenParity
+// asserts against — this is what keeps the TS and Go exporters from drifting.
+describe('convertHdfToOpenVex — golden parity', () => {
+  it.each(['multi-status-amendments', 'spring-boot-log4j-amendments'])(
+    'matches the %s golden byte-for-byte (TS↔Go parity)',
+    async (name) => {
+      expect(await convertHdfToOpenVex(loadInput(`${name}.json`), TEST_VERSION)).toBe(
+        loadGolden(`${name}.openvex.json`),
+      );
+    },
+  );
 });

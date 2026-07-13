@@ -100,28 +100,29 @@ function overrideToStatement(o: StandaloneOverride): Statement | undefined {
     canonical = VexStatus.Fixed;
   }
 
-  const stmt: Statement = {
-    vulnerability: {
-      name: o.requirementId,
-      '@id': `https://nvd.nist.gov/vuln/detail/${o.requirementId}`,
-    },
-    status: String(canonical),
-    timestamp: formatTimestampSeconds(new Date(o.appliedAt)),
-    products: productsFor(o),
-  };
-
-  if (canonical === VexStatus.NotAffected) {
-    if (o.justification) stmt.justification = String(o.justification);
-    const impact = stripProductsLine(o.reason ?? '');
-    if (impact) stmt.impact_statement = impact;
-  } else if (canonical === VexStatus.Fixed) {
-    stmt.action_statement =
-      firstMilestoneAction(o) || 'Fix applied; consumer re-scan confirmed clean.';
+  const notAffected = canonical === VexStatus.NotAffected;
+  const justification = notAffected && o.justification ? String(o.justification) : '';
+  const impact = notAffected ? stripProductsLine(o.reason ?? '') : '';
+  let action = '';
+  if (canonical === VexStatus.Fixed) {
+    action = firstMilestoneAction(o) || 'Fix applied; consumer re-scan confirmed clean.';
   } else if (canonical === VexStatus.Affected) {
-    stmt.action_statement = firstMilestoneAction(o) || stripProductsLine(o.reason ?? '');
+    action = firstMilestoneAction(o) || stripProductsLine(o.reason ?? '');
   }
 
-  return stmt;
+  // Key order mirrors the Go Statement struct so both languages emit identical bytes.
+  return {
+    vulnerability: {
+      '@id': `https://nvd.nist.gov/vuln/detail/${o.requirementId}`,
+      name: o.requirementId,
+    },
+    products: productsFor(o),
+    status: String(canonical),
+    ...(justification && { justification }),
+    ...(impact && { impact_statement: impact }),
+    ...(action && { action_statement: action }),
+    timestamp: formatTimestampSeconds(new Date(o.appliedAt)),
+  };
 }
 
 export function productsFor(o: StandaloneOverride): { '@id': string }[] {

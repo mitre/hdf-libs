@@ -9,6 +9,7 @@
 package hdftocsafvex
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -197,7 +198,7 @@ func ConvertHDFToCSAFVEX(input []byte, converterVersion string) ([]byte, error) 
 		return nil, fmt.Errorf("hdf-to-csaf-vex: parse HDF Amendments: %w", err)
 	}
 
-	doc := buildDocument(&amendments, converterVersion)
+	doc := buildDocument(&amendments, earliestAppliedAt(&amendments), converterVersion)
 	for _, group := range groupOverridesByCVE(amendments.Overrides) {
 		v, ok := buildVulnerability(group)
 		if !ok {
@@ -224,17 +225,44 @@ func ConvertHDFToCSAFVEX(input []byte, converterVersion string) ([]byte, error) 
 		doc.ProductTree.FullProductNames = []FullProductName{{Name: defaultProductID, ProductID: defaultProductID}}
 	}
 
-	return json.MarshalIndent(doc, "", "  ")
+	return marshalIndentPlain(doc)
 }
 
-func buildDocument(a *hdf.HDFAmendments, converterVersion string) CSAFVexDocument {
+// marshalIndentPlain serializes v with two-space indentation and without Go's
+// default HTML escaping, so `<`, `>` and `&` survive as themselves — matching
+// the TypeScript exporter's JSON.stringify output byte-for-byte.
+func marshalIndentPlain(v interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	return bytes.TrimSuffix(buf.Bytes(), []byte("\n")), nil
+}
+
+// earliestAppliedAt derives a stable document time from the input: the earliest
+// override appliedAt, falling back to now only when the input carries none.
+func earliestAppliedAt(a *hdf.HDFAmendments) time.Time {
+	t := time.Now().UTC()
+	for i := range a.Overrides {
+		applied := a.Overrides[i].AppliedAt
+		if !applied.IsZero() && applied.Before(t) {
+			t = applied
+		}
+	}
+	return t
+}
+
+func buildDocument(a *hdf.HDFAmendments, docTime time.Time, converterVersion string) CSAFVexDocument {
 	publisherName := "HDF Amendments Export"
 	publisherNamespace := ""
 	if a.AppliedBy != nil && a.AppliedBy.Identifier != "" {
 		publisherName = a.AppliedBy.Identifier
 	}
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := docTime.UTC().Format(time.RFC3339)
 	trackingID := "HDF-VEX-EXPORT"
 	if a.AmendmentID != nil && *a.AmendmentID != "" {
 		trackingID = *a.AmendmentID

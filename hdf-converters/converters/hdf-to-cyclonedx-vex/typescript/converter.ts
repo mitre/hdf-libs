@@ -15,7 +15,7 @@ import {
   type HDFAmendments,
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
-import { parseJSON, formatTimestampSeconds } from '@mitre/hdf-utilities';
+import { parseJSON, sha256, formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
@@ -67,13 +67,13 @@ interface Vulnerability {
   source?: { name?: string; url: string };
   references?: { id: string; source: { name?: string; url: string } }[];
   ratings?: Rating[];
+  recommendation?: string;
   analysis: {
     state: string;
     justification?: string;
     response?: string[];
     detail?: string;
   };
-  recommendation?: string;
   affects: { ref: string; versions?: CdxVersion[] }[];
 }
 
@@ -111,7 +111,10 @@ function buildCdxRating(cvss: NonNullable<StandaloneOverride['cvss']>): Rating |
   return rating;
 }
 
-export function convertHdfToCyclonedxVex(input: string, converterVersion: string): string {
+export async function convertHdfToCyclonedxVex(
+  input: string,
+  converterVersion: string,
+): Promise<string> {
   validateInputSize(input, 'hdf-to-cyclonedx-vex');
   const amendments = parseJSON<HDFAmendments>(input);
 
@@ -142,7 +145,7 @@ export function convertHdfToCyclonedxVex(input: string, converterVersion: string
   const bom: BOM = {
     bomFormat: 'CycloneDX',
     specVersion: '1.4',
-    serialNumber: buildSerialNumberSync(input, amendments),
+    serialNumber: await buildSerialNumber(input, amendments),
     version: 1,
     metadata: buildMetadata(amendments, earliest ?? new Date(), converterVersion),
     components,
@@ -188,45 +191,43 @@ function overrideToVulnerability(
     const cdxJust = justificationForCycloneDX(o.justification);
     if (cdxJust) analysis.justification = cdxJust;
   }
-  const detail = stripReasonAnnotations(o.reason ?? '');
-  if (detail) analysis.detail = detail;
   if (canonical === VexStatus.Fixed) {
     analysis.response = ['update'];
   } else if (canonical === VexStatus.Affected && o.type === OverrideType.Poam) {
     analysis.response = ['workaround_available'];
   }
+  const detail = stripReasonAnnotations(o.reason ?? '');
+  if (detail) analysis.detail = detail;
 
-  const v: Vulnerability = {
+  const references: NonNullable<Vulnerability['references']> = [];
+  for (const e of o.evidence ?? []) {
+    if (e.type !== 'url' || !e.data) continue;
+    references.push({
+      id: o.requirementId,
+      source: { name: e.description ?? '', url: e.data },
+    });
+  }
+
+  // Emit consumer-supplied CVSS enrichment as a CycloneDX rating.
+  const rating = o.cvss ? buildCdxRating(o.cvss) : undefined;
+
+  // A fixedInVersion we could not express as a vers range (no ecosystem/purl to
+  // key the range) becomes a free-text recommendation instead of an invalid range.
+  const unranged = (o.affectedPackages ?? []).find((p) => p.fixedInVersion && !versTypeFor(p));
+
+  // Key order mirrors the Go BOM structs so both languages emit identical bytes.
+  return {
     id: o.requirementId,
     source: { name: 'NVD', url: `https://nvd.nist.gov/vuln/detail/${o.requirementId}` },
+    ...(references.length > 0 && { references }),
+    ...(rating && { ratings: [rating] }),
+    ...(unranged && { recommendation: `Upgrade to ${unranged.fixedInVersion}` }),
     analysis,
     affects: pids.map((pid) => {
       const versions = buildCdxAffectsVersions(pkgById.get(pid));
       return versions ? { ref: pid, versions } : { ref: pid };
     }),
   };
-
-  // Emit consumer-supplied CVSS enrichment as a CycloneDX rating.
-  if (o.cvss) {
-    const rating = buildCdxRating(o.cvss);
-    if (rating) v.ratings = [rating];
-  }
-
-  // A fixedInVersion we could not express as a vers range (no ecosystem/purl to
-  // key the range) becomes a free-text recommendation instead of an invalid range.
-  const unranged = (o.affectedPackages ?? []).find((p) => p.fixedInVersion && !versTypeFor(p));
-  if (unranged) v.recommendation = `Upgrade to ${unranged.fixedInVersion}`;
-
-  for (const e of o.evidence ?? []) {
-    if (e.type !== 'url' || !e.data) continue;
-    v.references = v.references ?? [];
-    v.references.push({
-      id: o.requirementId,
-      source: { name: e.description ?? '', url: e.data },
-    });
-  }
-
-  return v;
 }
 
 function canonicalToCycloneDXState(canonical: VexStatus): string {
@@ -317,24 +318,10 @@ function buildMetadata(
   return metadata;
 }
 
-// sha256() is async but we want JSON.stringify to be synchronous; pre-hash
-// the input bytes once at the top of convertHdfToCyclonedxVex via a tiny
-// non-cryptographic FNV digest. The CycloneDX serialNumber is opaque to
-// consumers — it only needs to be stable per input.
-function buildSerialNumberSync(input: string, a: HDFAmendments): string {
+// The serial number is the first 16 bytes of the input's SHA-256, matching the
+// Go exporter byte-for-byte.
+async function buildSerialNumber(input: string, a: HDFAmendments): Promise<string> {
   if (a.amendmentId) return `urn:uuid:${a.amendmentId}`;
-  return `urn:uuid:${fnv1a(input)}`;
-}
-
-function fnv1a(s: string): string {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  // Pad to a 32-hex-char string (UUID-ish length) by repeating the
-  // 8-hex-char digest. Not cryptographically meaningful — see note above.
-  const d = h.toString(16).padStart(8, '0');
-  return (d + d + d + d).slice(0, 32);
+  return `urn:uuid:${(await sha256(input)).slice(0, 32)}`;
 }
 

@@ -7,6 +7,7 @@
 package hdftoopenvex
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -112,12 +113,26 @@ func ConvertHDFToOpenVEX(input []byte, converterVersion string) ([]byte, error) 
 		ID:         buildDocumentID(input, &amendments),
 		Author:     author,
 		Role:       role,
-		Timestamp:  docTime.Format(time.RFC3339),
+		Timestamp:  docTime.UTC().Format(time.RFC3339),
 		Version:    1,
 		Statements: statements,
 	}
 
-	return json.MarshalIndent(doc, "", "  ")
+	return marshalIndentPlain(doc)
+}
+
+// marshalIndentPlain serializes v with two-space indentation and without Go's
+// default HTML escaping, so `<`, `>` and `&` survive as themselves — matching
+// the TypeScript exporter's JSON.stringify output byte-for-byte.
+func marshalIndentPlain(v interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	return bytes.TrimSuffix(buf.Bytes(), []byte("\n")), nil
 }
 
 // overrideToStatements returns 0..1 OpenVEX statements for an override.

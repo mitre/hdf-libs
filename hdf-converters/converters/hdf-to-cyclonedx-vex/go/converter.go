@@ -10,6 +10,7 @@
 package hdftocyclonedxvex
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -193,7 +194,21 @@ func ConvertHDFToCycloneDXVEX(input []byte, converterVersion string) ([]byte, er
 		Components:      components,
 		Vulnerabilities: vulnerabilities,
 	}
-	return json.MarshalIndent(bom, "", "  ")
+	return marshalIndentPlain(bom)
+}
+
+// marshalIndentPlain serializes v with two-space indentation and without Go's
+// default HTML escaping, so `<`, `>` and `&` survive as themselves — matching
+// the TypeScript exporter's JSON.stringify output byte-for-byte.
+func marshalIndentPlain(v interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	return bytes.TrimSuffix(buf.Bytes(), []byte("\n")), nil
 }
 
 func overrideToVulnerability(o *hdf.StandaloneOverride, componentRegistry map[string]Component) (Vulnerability, bool) {

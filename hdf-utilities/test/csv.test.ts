@@ -211,7 +211,7 @@ Jane,25`;
 
       const result = buildCsv(data);
 
-      expect(result).toBe(`name,age,city\nJohn,30,NYC\nJane,25,LA`);
+      expect(result).toBe(`name,age,city\nJohn,30,NYC\nJane,25,LA\n`);
     });
 
     it('should quote fields with commas', () => {
@@ -222,7 +222,7 @@ Jane,25`;
       const result = buildCsv(data);
 
       expect(result).toBe(
-        `name,description\nProduct A,"A great, useful product"`
+        `name,description\nProduct A,"A great, useful product"\n`
       );
     });
 
@@ -234,7 +234,7 @@ Jane,25`;
 
       const result = buildCsv(data);
 
-      expect(result).toBe(`name,age,city\nJohn,,NYC\n,25,LA`);
+      expect(result).toBe(`name,age,city\nJohn,,NYC\n,25,LA\n`);
     });
 
     it('should allow custom delimiter', () => {
@@ -242,7 +242,7 @@ Jane,25`;
 
       const result = buildCsv(data, { delimiter: ';' });
 
-      expect(result).toBe(`name;age\nJohn;30`);
+      expect(result).toBe(`name;age\nJohn;30\n`);
     });
 
     it('should allow custom newline', () => {
@@ -253,7 +253,7 @@ Jane,25`;
 
       const result = buildCsv(data, { newline: '\r\n' });
 
-      expect(result).toBe(`name,age\r\nJohn,30\r\nJane,25`);
+      expect(result).toBe(`name,age\r\nJohn,30\r\nJane,25\r\n`);
     });
 
     it('should build CSV without headers when specified', () => {
@@ -264,7 +264,7 @@ Jane,25`;
 
       const result = buildCsv(data, { header: false });
 
-      expect(result).toBe(`John,30\nJane,25`);
+      expect(result).toBe(`John,30\nJane,25\n`);
     });
 
     it('should handle empty array', () => {
@@ -286,7 +286,7 @@ Jane,25`;
 
       const result = buildCsvArray(data);
 
-      expect(result).toBe(`name,age,city\nJohn,30,NYC\nJane,25,LA`);
+      expect(result).toBe(`name,age,city\nJohn,30,NYC\nJane,25,LA\n`);
     });
 
     it('should quote fields with commas', () => {
@@ -294,7 +294,7 @@ Jane,25`;
 
       const result = buildCsvArray(data);
 
-      expect(result).toBe(`Product A,"A great, useful product"`);
+      expect(result).toBe(`Product A,"A great, useful product"\n`);
     });
 
     it('should allow custom delimiter', () => {
@@ -302,7 +302,7 @@ Jane,25`;
 
       const result = buildCsvArray(data, { delimiter: '\t' });
 
-      expect(result).toBe(`John\t30`);
+      expect(result).toBe(`John\t30\n`);
     });
 
     it('should handle empty array', () => {

@@ -1,9 +1,9 @@
 {
   "@context": "https://openvex.dev/ns/v0.2.0",
   "@id": "https://openvex.dev/docs/public/vex-56b475a687332706d1e938883a171c37f933aaf904d222140e746fbf1872c85c",
-  "author": "Spring Builds \u003cspring-builds@users.noreply.github.com\u003e",
+  "author": "Spring Builds <spring-builds@users.noreply.github.com>",
   "role": "Project Release Bot",
-  "timestamp": "2023-01-16T19:07:16-06:00",
+  "timestamp": "2023-01-17T01:07:16Z",
   "version": 1,
   "statements": [
     {

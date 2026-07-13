@@ -217,3 +217,20 @@ func TestBuildDocumentID_HashesInputOtherwise(t *testing.T) {
 	got := buildDocumentID([]byte("input"), a)
 	assert.Contains(t, got, openvexNamespace+"vex-")
 }
+
+// TestGoldenParity asserts byte-for-byte output against frozen golden files.
+// The TypeScript test asserts against the SAME files, guaranteeing TS↔Go parity.
+func TestGoldenParity(t *testing.T) {
+	for _, name := range []string{"multi-status-amendments", "spring-boot-log4j-amendments"} {
+		out, err := ConvertHDFToOpenVEX(loadInput(t, name+".json"), testVersion)
+		require.NoError(t, err)
+		goldenPath := filepath.Join("..", "fixtures", "expected", name+".openvex.json")
+		if os.Getenv("UPDATE_GOLDEN") == "1" {
+			require.NoError(t, os.WriteFile(goldenPath, out, 0o644))
+			continue
+		}
+		golden, err := os.ReadFile(goldenPath)
+		require.NoError(t, err, "read golden %s", goldenPath)
+		assert.Equal(t, string(golden), string(out), "golden mismatch for %s", name)
+	}
+}

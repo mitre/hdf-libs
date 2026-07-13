@@ -245,8 +245,8 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
         v.flags = v.flags ?? [];
         v.flags.push({
           label: String(o.justification as Justification),
-          product_ids: pids,
           date: formatTimestampSeconds(new Date(o.appliedAt)),
+          product_ids: pids,
         });
       }
       emitted = true;
@@ -299,7 +299,6 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
   if (status.first_fixed) status.first_fixed = [...new Set(status.first_fixed)];
   if (status.known_affected) status.known_affected = [...new Set(status.known_affected)];
   if (status.known_not_affected) status.known_not_affected = [...new Set(status.known_not_affected)];
-  v.product_status = status;
 
   if (v.references) {
     const seen = new Set<string>();
@@ -310,14 +309,36 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
     });
   }
 
-  return v;
+  // Key order mirrors the Go Vulnerability struct so both languages emit
+  // identical bytes.
+  return {
+    cve: v.cve,
+    ...(v.notes && { notes: v.notes }),
+    product_status: status,
+    ...(v.flags && { flags: v.flags }),
+    ...(v.threats && { threats: v.threats }),
+    ...(v.remediations && { remediations: v.remediations }),
+    ...(v.references && { references: v.references }),
+    ...(v.scores && { scores: v.scores }),
+  };
+}
+
+/** Stable document time: the earliest override appliedAt, falling back to now. */
+function earliestAppliedAt(amendments: HDFAmendments): Date {
+  let earliest: Date | undefined;
+  for (const o of amendments.overrides ?? []) {
+    if (!o.appliedAt) continue;
+    const t = new Date(o.appliedAt);
+    if (!earliest || t < earliest) earliest = t;
+  }
+  return earliest ?? new Date();
 }
 
 function buildDocument(
   amendments: HDFAmendments,
   converterVersion: string,
 ): CSAFVexDocument {
-  const now = formatTimestampSeconds(new Date());
+  const now = formatTimestampSeconds(earliestAppliedAt(amendments));
   const publisherName = amendments.appliedBy?.identifier || 'HDF Amendments Export';
   const trackingId = amendments.amendmentId || 'HDF-VEX-EXPORT';
   const docVersion = amendments.version || '1';
@@ -331,7 +352,7 @@ function buildDocument(
       category: 'csaf_vex',
       csaf_version: '2.0',
       title,
-      notes,
+      ...(notes.length > 0 && { notes }),
       publisher: { category: 'other', name: publisherName },
       tracking: {
         id: trackingId,

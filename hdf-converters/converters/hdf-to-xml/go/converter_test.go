@@ -4,37 +4,14 @@ import (
 	"encoding/xml"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-var (
-	reXMLHeader = regexp.MustCompile(`<\?xml[^>]*\?>`)
-	reInterTag  = regexp.MustCompile(`>\s+<`)
-)
-
-// normalizeXMLForParity canonicalizes XML so the Go and TS serializers compare
-// equal against a shared golden: drop the XML header, collapse inter-tag
-// whitespace, and decode the entities the two serializers escape differently
-// (Go emits numeric refs like &#39;/&#xA;; TS emits &apos;/literal). Mirrors
-// normalizeXml in the TS test.
-func normalizeXMLForParity(s string) string {
-	s = reXMLHeader.ReplaceAllString(s, "")
-	s = reInterTag.ReplaceAllString(s, "><")
-	s = strings.NewReplacer(
-		"&#39;", "'", "&apos;", "'",
-		"&#34;", "\"", "&quot;", "\"",
-		"&#xA;", "\n", "&#xa;", "\n",
-		"&#xD;", "\r", "&#xd;", "\r",
-		"&#x9;", "\t",
-	).Replace(s)
-	return strings.TrimSpace(s)
-}
 
 func TestConvertHDFToXML(t *testing.T) {
 	t.Run("should convert minimal HDF to XML", func(t *testing.T) {
@@ -46,23 +23,9 @@ func TestConvertHDFToXML(t *testing.T) {
 		result, err := ConvertHDFToXML(input)
 		require.NoError(t, err)
 
-		// Normalize whitespace for comparison
-		normalizeWhitespace := func(s string) string {
-			s = strings.TrimSpace(s)
-			s = strings.ReplaceAll(s, "\r\n", "\n")
-			return s
-		}
-
-		// Skip XML header for comparison
-		resultStr := string(result)
-		if strings.HasPrefix(resultStr, "<?xml") {
-			lines := strings.Split(resultStr, "\n")
-			if len(lines) > 1 {
-				resultStr = strings.Join(lines[1:], "\n")
-			}
-		}
-
-		assert.Equal(t, normalizeWhitespace(string(expected)), normalizeWhitespace(resultStr))
+		// Same shared normalization the TS test uses — previously each language
+		// normalized this golden its own way, so they were not comparing like for like.
+		assert.Equal(t, shared.NormalizeXMLForGolden(string(expected)), shared.NormalizeXMLForGolden(string(result)))
 	})
 
 	t.Run("should losslessly serialize all Requirement_Core / baseline / component fields", func(t *testing.T) {
@@ -76,7 +39,7 @@ func TestConvertHDFToXML(t *testing.T) {
 
 		// Golden compare under the shared normalization — this is the TS/Go
 		// parity assertion (both languages normalize the same golden identically).
-		assert.Equal(t, normalizeXMLForParity(string(expected)), normalizeXMLForParity(string(result)))
+		assert.Equal(t, shared.NormalizeXMLForGolden(string(expected)), shared.NormalizeXMLForGolden(string(result)))
 
 		// Spot-check the fields that were previously dropped.
 		for _, el := range []string{"<code>", "<sourceLocation>", "<controlType>", "<verificationMethod>", "<applicability>", "<refs>", "<summary>", "<resultsChecksum>", "<originalChecksum>", "<componentId>", "<gtitle>", "<generator>"} {

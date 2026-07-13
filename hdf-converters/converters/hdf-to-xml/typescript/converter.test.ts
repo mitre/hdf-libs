@@ -4,31 +4,13 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { results } from '@mitre/hdf-fixtures';
 import { convertHdfToXml } from './converter.js';
+import { normalizeXmlForGolden } from '../../../shared/typescript/xml-golden.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = join(__dirname, '..', 'fixtures');
 
 function loadFixture(type: 'input' | 'expected', filename: string): string {
   return readFileSync(join(fixturesDir, type, filename), 'utf-8');
-}
-
-/**
- * Canonicalize XML for TS/Go parity comparison: drop the XML header, collapse
- * inter-tag whitespace, and decode the entities the two serializers escape
- * differently (Go emits numeric refs like &#39;/&#xA;; TS emits &apos;/literal).
- * The same function is mirrored in the Go test so both languages normalize a
- * shared golden identically.
- */
-function normalizeXml(xml: string): string {
-  return xml
-    .replace(/<\?xml[^>]*\?>/g, '')
-    .replace(/>\s+</g, '><')
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/&#34;|&quot;/g, '"')
-    .replace(/&#xA;/gi, '\n')
-    .replace(/&#xD;/gi, '\r')
-    .replace(/&#x9;/gi, '\t')
-    .trim();
 }
 
 describe('hdf-to-xml Converter', () => {
@@ -39,7 +21,9 @@ describe('hdf-to-xml Converter', () => {
 
       const result = convertHdfToXml(input);
 
-      expect(result.trim()).toBe(expected.trim());
+      // Same shared normalization the Go test uses — previously each language
+      // normalized this golden its own way, so they were not comparing like for like.
+      expect(normalizeXmlForGolden(result)).toBe(normalizeXmlForGolden(expected));
     });
 
     it('should losslessly serialize all Requirement_Core / baseline / component fields', () => {
@@ -49,7 +33,7 @@ describe('hdf-to-xml Converter', () => {
       const result = convertHdfToXml(input);
 
       // Golden compare under the shared normalization (parity with the Go test).
-      expect(normalizeXml(result)).toBe(normalizeXml(expected));
+      expect(normalizeXmlForGolden(result)).toBe(normalizeXmlForGolden(expected));
       // Spot-check the fields that were previously dropped.
       for (const el of ['<code>', '<sourceLocation>', '<controlType>', '<verificationMethod>', '<applicability>', '<refs>', '<summary>', '<resultsChecksum>', '<originalChecksum>', '<componentId>', '<gtitle>', '<generator>']) {
         expect(result).toContain(el);

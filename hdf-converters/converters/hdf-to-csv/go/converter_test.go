@@ -361,3 +361,26 @@ func TestConvertHDFToCSV_InvalidStructure(t *testing.T) {
 	_, err := ConvertHDFToCSV([]byte(`{ "baselines": "not an array" }`))
 	assert.Error(t, err)
 }
+
+// TestGoldenParity asserts byte-for-byte output against the frozen golden.
+// The TypeScript test asserts against the SAME file, which is what guarantees
+// TS<->Go parity: previously only TS compared to this golden, so Go's trailing
+// newline (encoding/csv terminates every record) went unnoticed for months.
+func TestGoldenParity(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "hdf-to-csv", "fixtures", "input", "minimal.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	out, err := ConvertHDFToCSV(inputData)
+	require.NoError(t, err)
+
+	goldenPath := filepath.Join(shared.GetConvertersDir(), "hdf-to-csv", "fixtures", "expected", "minimal.csv")
+	if os.Getenv("UPDATE_GOLDEN") == "1" {
+		require.NoError(t, os.WriteFile(goldenPath, out, 0o600))
+		return
+	}
+
+	golden, err := os.ReadFile(goldenPath)
+	require.NoError(t, err, "read golden %s", goldenPath)
+	assert.Equal(t, string(golden), string(out), "golden mismatch")
+}

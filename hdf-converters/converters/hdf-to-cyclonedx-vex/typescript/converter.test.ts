@@ -23,9 +23,13 @@ function loadInput(name: string): string {
   return readFileSync(join(__dirname, '..', 'fixtures', 'input', name), 'utf-8');
 }
 
+function loadGolden(name: string): string {
+  return readFileSync(join(__dirname, '..', 'fixtures', 'expected', name), 'utf-8');
+}
+
 describe('convertHdfToCyclonedxVex — not_affected export', () => {
-  it('produces a CycloneDX VEX envelope with one vulnerability', () => {
-    const out = convertHdfToCyclonedxVex(
+  it('produces a CycloneDX VEX envelope with one vulnerability', async () => {
+    const out = await convertHdfToCyclonedxVex(
       loadInput('case1-not_affected-amendments.json'),
       TEST_VERSION,
     );
@@ -43,8 +47,8 @@ describe('convertHdfToCyclonedxVex — not_affected export', () => {
 });
 
 describe('convertHdfToCyclonedxVex — open POA&M', () => {
-  it('emits exploitable (NOT resolved) and workaround_available response', () => {
-    const out = convertHdfToCyclonedxVex(
+  it('emits exploitable (NOT resolved) and workaround_available response', async () => {
+    const out = await convertHdfToCyclonedxVex(
       loadInput('case1-fixed-amendments.json'),
       TEST_VERSION,
     );
@@ -57,7 +61,7 @@ describe('convertHdfToCyclonedxVex — open POA&M', () => {
 });
 
 describe('convertHdfToCyclonedxVex — closed POA&M', () => {
-  it('all-milestones-completed promotes to resolved + update response', () => {
+  it('all-milestones-completed promotes to resolved + update response', async () => {
     const closed: HDFAmendments = {
       overrides: [
         {
@@ -78,7 +82,7 @@ describe('convertHdfToCyclonedxVex — closed POA&M', () => {
         } as never,
       ],
     } as never;
-    const out = convertHdfToCyclonedxVex(JSON.stringify(closed), TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(JSON.stringify(closed), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.vulnerabilities[0].analysis.state).toBe('resolved');
     expect(bom.vulnerabilities[0].analysis.response).toContain('update');
@@ -101,7 +105,7 @@ describe('convertHdfToCyclonedxVex — round trip', () => {
     );
     const amendments = await convertCyclonedxVexToHdf(orig, TEST_VERSION);
     const hdfBytes = JSON.stringify(amendments);
-    const out = convertHdfToCyclonedxVex(hdfBytes, TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(hdfBytes, TEST_VERSION);
     const round = JSON.parse(out);
 
     expect(round.vulnerabilities).toHaveLength(1);
@@ -114,7 +118,7 @@ describe('convertHdfToCyclonedxVex — round trip', () => {
 });
 
 describe('convertHdfToCyclonedxVex — HDF-only justification omitted', () => {
-  it('omits analysis.justification when the HDF value has no CycloneDX equivalent', () => {
+  it('omits analysis.justification when the HDF value has no CycloneDX equivalent', async () => {
     const amendments: HDFAmendments = {
       overrides: [
         {
@@ -129,14 +133,14 @@ describe('convertHdfToCyclonedxVex — HDF-only justification omitted', () => {
         } as never,
       ],
     } as never;
-    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.vulnerabilities[0].analysis.justification).toBeUndefined();
   });
 });
 
 describe('convertHdfToCyclonedxVex — affectedPackages preserve name/version in components', () => {
-  it('emits component name+version+purl+cpe when affectedPackages carries them', () => {
+  it('emits component name+version+purl+cpe when affectedPackages carries them', async () => {
     const amendments: HDFAmendments = {
       overrides: [
         {
@@ -159,7 +163,7 @@ describe('convertHdfToCyclonedxVex — affectedPackages preserve name/version in
         } as never,
       ],
     } as never;
-    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.components).toHaveLength(1);
     expect(bom.components[0]).toEqual({
@@ -172,7 +176,7 @@ describe('convertHdfToCyclonedxVex — affectedPackages preserve name/version in
     });
   });
 
-  it('falls back to pid-only component when affectedPackages is absent (legacy path)', () => {
+  it('falls back to pid-only component when affectedPackages is absent (legacy path)', async () => {
     const amendments: HDFAmendments = {
       overrides: [
         {
@@ -186,7 +190,7 @@ describe('convertHdfToCyclonedxVex — affectedPackages preserve name/version in
         } as never,
       ],
     } as never;
-    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.components).toHaveLength(1);
     expect(bom.components[0].name).toBe('pkg:npm/legacy@1.0');
@@ -194,7 +198,7 @@ describe('convertHdfToCyclonedxVex — affectedPackages preserve name/version in
     expect(bom.components[0].version).toBeUndefined();
   });
 
-  it('promotes cpe-only legacy product id to component.cpe', () => {
+  it('promotes cpe-only legacy product id to component.cpe', async () => {
     const amendments: HDFAmendments = {
       overrides: [
         {
@@ -209,14 +213,14 @@ describe('convertHdfToCyclonedxVex — affectedPackages preserve name/version in
         } as never,
       ],
     } as never;
-    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.components[0].cpe).toBe('cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*');
   });
 });
 
 describe('convertHdfToCyclonedxVex — fixedInVersion mapping', () => {
-  it('maps fixedInVersion to affects[].versions as a vers range (unaffected)', () => {
+  it('maps fixedInVersion to affects[].versions as a vers range (unaffected)', async () => {
     const amendments: HDFAmendments = {
       overrides: [
         {
@@ -233,7 +237,7 @@ describe('convertHdfToCyclonedxVex — fixedInVersion mapping', () => {
         } as never,
       ],
     } as never;
-    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.vulnerabilities[0].affects[0].versions).toEqual([
       { version: '4.2', status: 'affected' },
@@ -242,7 +246,7 @@ describe('convertHdfToCyclonedxVex — fixedInVersion mapping', () => {
     expect(bom.vulnerabilities[0].recommendation).toBeUndefined();
   });
 
-  it('falls back to a recommendation when fixedInVersion has no vers type', () => {
+  it('falls back to a recommendation when fixedInVersion has no vers type', async () => {
     const amendments: HDFAmendments = {
       overrides: [
         {
@@ -259,7 +263,7 @@ describe('convertHdfToCyclonedxVex — fixedInVersion mapping', () => {
         } as never,
       ],
     } as never;
-    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.vulnerabilities[0].recommendation).toBe('Upgrade to 4.5');
     expect(bom.vulnerabilities[0].affects[0].versions).toBeUndefined();
@@ -267,7 +271,7 @@ describe('convertHdfToCyclonedxVex — fixedInVersion mapping', () => {
 });
 
 describe('convertHdfToCyclonedxVex — CycloneDX-specific justification', () => {
-  it('emits requires_configuration from the structured justification field', () => {
+  it('emits requires_configuration from the structured justification field', async () => {
     const amendments: HDFAmendments = {
       overrides: [
         {
@@ -282,14 +286,14 @@ describe('convertHdfToCyclonedxVex — CycloneDX-specific justification', () => 
         } as never,
       ],
     } as never;
-    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.vulnerabilities[0].analysis.justification).toBe('requires_configuration');
   });
 });
 
 describe('convertHdfToCyclonedxVex — non-CVE overrides skipped', () => {
-  it('drops non-CVE requirementIds', () => {
+  it('drops non-CVE requirementIds', async () => {
     const mix: HDFAmendments = {
       overrides: [
         {
@@ -313,13 +317,13 @@ describe('convertHdfToCyclonedxVex — non-CVE overrides skipped', () => {
         } as never,
       ],
     } as never;
-    const out = convertHdfToCyclonedxVex(JSON.stringify(mix), TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(JSON.stringify(mix), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.vulnerabilities).toHaveLength(1);
     expect(bom.vulnerabilities[0].id).toBe('CVE-2024-99999');
   });
 
-  it('errors when no CVE-shaped overrides remain', () => {
+  it('errors when no CVE-shaped overrides remain', async () => {
     const noCVE: HDFAmendments = {
       overrides: [
         {
@@ -333,14 +337,14 @@ describe('convertHdfToCyclonedxVex — non-CVE overrides skipped', () => {
         } as never,
       ],
     } as never;
-    expect(() => convertHdfToCyclonedxVex(JSON.stringify(noCVE), TEST_VERSION)).toThrow(
+    await expect(convertHdfToCyclonedxVex(JSON.stringify(noCVE), TEST_VERSION)).rejects.toThrow(
       /no overrides with CVE-shaped requirementIds/,
     );
   });
 });
 
 describe('convertHdfToCyclonedxVex — multi-product + email identity', () => {
-  it('sorts components by bom-ref and emits author email when identity type is Email', () => {
+  it('sorts components by bom-ref and emits author email when identity type is Email', async () => {
     const a: HDFAmendments = {
       appliedBy: { type: IdentityType.Email, identifier: 'ops@example.com' },
       overrides: [
@@ -356,7 +360,7 @@ describe('convertHdfToCyclonedxVex — multi-product + email identity', () => {
         } as never,
       ],
     } as never;
-    const out = convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.components.map((c: { 'bom-ref': string }) => c['bom-ref'])).toEqual(['alpha', 'zeta']);
     expect(bom.metadata.authors[0].email).toBe('ops@example.com');
@@ -365,7 +369,7 @@ describe('convertHdfToCyclonedxVex — multi-product + email identity', () => {
 });
 
 describe('convertHdfToCyclonedxVex — amendmentId and sparse reason', () => {
-  it('uses amendmentId in serialNumber when present and tolerates undefined reason', () => {
+  it('uses amendmentId in serialNumber when present and tolerates undefined reason', async () => {
     const a: HDFAmendments = {
       amendmentId: 'AMD-42',
       overrides: [
@@ -381,7 +385,7 @@ describe('convertHdfToCyclonedxVex — amendmentId and sparse reason', () => {
         } as never,
       ],
     } as never;
-    const out = convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION);
+    const out = await convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.serialNumber).toBe('urn:uuid:AMD-42');
     expect(bom.vulnerabilities[0].affects[0].ref).toBe('HDFPID-0001');
@@ -389,16 +393,18 @@ describe('convertHdfToCyclonedxVex — amendmentId and sparse reason', () => {
 });
 
 describe('convertHdfToCyclonedxVex — edge cases', () => {
-  it('rejects invalid JSON', () => {
-    expect(() => convertHdfToCyclonedxVex('not json', TEST_VERSION)).toThrow();
+  it('rejects invalid JSON', async () => {
+    await expect(convertHdfToCyclonedxVex('not json', TEST_VERSION)).rejects.toThrow();
   });
-  it('rejects oversized input', () => {
-    expect(() => convertHdfToCyclonedxVex('x'.repeat(51 * 1024 * 1024), TEST_VERSION)).toThrow();
+  it('rejects oversized input', async () => {
+    await expect(
+      convertHdfToCyclonedxVex('x'.repeat(51 * 1024 * 1024), TEST_VERSION),
+    ).rejects.toThrow();
   });
 });
 
 describe('helpers', () => {
-  it('productIDsFor prefers affectedPackages over componentRef and reason', () => {
+  it('productIDsFor prefers affectedPackages over componentRef and reason', async () => {
     expect(
       productIDsFor({
         affectedPackages: [{ purl: 'pkg:npm/x@1.0' }],
@@ -407,23 +413,23 @@ describe('helpers', () => {
       } as never),
     ).toEqual(['pkg:npm/x@1.0']);
   });
-  it('productIDsFor skips affectedPackages entries with no identifying field', () => {
+  it('productIDsFor skips affectedPackages entries with no identifying field', async () => {
     expect(
       productIDsFor({ affectedPackages: [{}], reason: 'prose\nProducts: X' } as never),
     ).toEqual(['X']);
   });
-  it('productIDsFor prefers componentRef when affectedPackages is unset', () => {
+  it('productIDsFor prefers componentRef when affectedPackages is unset', async () => {
     expect(productIDsFor({ componentRef: 'pkg:npm/x@1.0', reason: 'Products: IGNORED' } as never)).toEqual([
       'pkg:npm/x@1.0',
     ]);
   });
-  it('productIDsFor parses the Products line', () => {
+  it('productIDsFor parses the Products line', async () => {
     expect(productIDsFor({ reason: 'prose\nProducts: A, B' } as never)).toEqual(['A', 'B']);
   });
-  it('productIDsFor falls back to default', () => {
+  it('productIDsFor falls back to default', async () => {
     expect(productIDsFor({ reason: 'no products' } as never)).toEqual(['HDFPID-0001']);
   });
-  it('stripReasonAnnotations removes Products/VEX justification/Response lines', () => {
+  it('stripReasonAnnotations removes Products/VEX justification/Response lines', async () => {
     expect(
       stripReasonAnnotations(
         'prose\nProducts: A\nVEX justification: code_not_present\nResponse: update',
@@ -431,7 +437,7 @@ describe('helpers', () => {
     ).toBe('prose');
     expect(stripReasonAnnotations('only prose')).toBe('only prose');
   });
-  it('allMilestonesCompleted handles empty / mixed / all-complete', () => {
+  it('allMilestonesCompleted handles empty / mixed / all-complete', async () => {
     expect(allMilestonesCompleted({} as never)).toBe(false);
     expect(allMilestonesCompleted({ milestones: [{ status: MilestoneStatus.Pending }] } as never)).toBe(false);
     expect(
@@ -448,14 +454,14 @@ describe('helpers', () => {
 });
 
 describe('convertHdfToCyclonedxVex — cvss ratings', () => {
-  it('emits a consumer-supplied cvss block as a CycloneDX rating', () => {
+  it('emits a consumer-supplied cvss block as a CycloneDX rating', async () => {
     const amendments = { overrides: [{
       type: 'falsePositive', requirementId: 'CVE-2021-44228', status: 'notApplicable', reason: 'nr',
       componentRef: 'pkg:maven/log4j@2.14.1',
       appliedBy: { type: 'simple', identifier: 'a' }, appliedAt: '2026-01-01T00:00:00Z',
       cvss: { version: '3.1', baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H', baseScore: 10, baseSeverity: 'critical' },
     }] };
-    const out = JSON.parse(convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION));
+    const out = JSON.parse(await convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION));
     const vuln = out.vulnerabilities.find((x: { id: string }) => x.id === 'CVE-2021-44228');
     expect(vuln.ratings[0].score).toBe(10);
     expect(vuln.ratings[0].method).toBe('CVSSv31');
@@ -463,7 +469,7 @@ describe('convertHdfToCyclonedxVex — cvss ratings', () => {
     expect(vuln.ratings[0].severity).toBe('critical');
   });
 
-  const ratingMethod = (version: string): string | undefined => {
+  const ratingMethod = async (version: string): Promise<string | undefined> => {
     const input = JSON.stringify({
       overrides: [{
         type: 'falsePositive', requirementId: 'CVE-2000-0001', status: 'notApplicable', reason: 'r',
@@ -471,18 +477,18 @@ describe('convertHdfToCyclonedxVex — cvss ratings', () => {
         cvss: { version, baseScore: 5 },
       }],
     });
-    const out = JSON.parse(convertHdfToCyclonedxVex(input, TEST_VERSION));
+    const out = JSON.parse(await convertHdfToCyclonedxVex(input, TEST_VERSION));
     return out.vulnerabilities[0].ratings[0].method;
   };
 
-  it('maps the rating method by CVSS version', () => {
-    expect(ratingMethod('4.0')).toBe('CVSSv4');
-    expect(ratingMethod('3.0')).toBe('CVSSv3');
-    expect(ratingMethod('2.0')).toBe('CVSSv2');
-    expect(ratingMethod('9.9')).toBe('other');
+  it('maps the rating method by CVSS version', async () => {
+    expect(await ratingMethod('4.0')).toBe('CVSSv4');
+    expect(await ratingMethod('3.0')).toBe('CVSSv3');
+    expect(await ratingMethod('2.0')).toBe('CVSSv2');
+    expect(await ratingMethod('9.9')).toBe('other');
   });
 
-  it('emits no rating when the cvss block has neither vector nor baseScore', () => {
+  it('emits no rating when the cvss block has neither vector nor baseScore', async () => {
     const input = JSON.stringify({
       overrides: [{
         type: 'falsePositive', requirementId: 'CVE-2000-0002', status: 'notApplicable', reason: 'r',
@@ -490,7 +496,20 @@ describe('convertHdfToCyclonedxVex — cvss ratings', () => {
         cvss: { version: '3.1' },
       }],
     });
-    const out = JSON.parse(convertHdfToCyclonedxVex(input, TEST_VERSION));
+    const out = JSON.parse(await convertHdfToCyclonedxVex(input, TEST_VERSION));
     expect(out.vulnerabilities[0].ratings).toBeUndefined();
+  });
+});
+
+// Byte-for-byte equality with the SAME golden files the Go TestGoldenParity
+// asserts against — this is what keeps the TS and Go exporters from drifting.
+describe('convertHdfToCyclonedxVex — golden parity', () => {
+  it.each([
+    ['case1-fixed-amendments', 'case1-fixed.cdx.json'],
+    ['case1-not_affected-amendments', 'case1-not_affected.cdx.json'],
+  ])('matches the %s golden byte-for-byte (TS↔Go parity)', async (name, goldenName) => {
+    expect(await convertHdfToCyclonedxVex(loadInput(`${name}.json`), TEST_VERSION)).toBe(
+      loadGolden(goldenName),
+    );
   });
 });

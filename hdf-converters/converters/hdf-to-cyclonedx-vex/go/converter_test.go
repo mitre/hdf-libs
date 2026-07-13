@@ -312,3 +312,24 @@ func TestConvertHDFToCycloneDXVEX_FixedInVersionFallsBackToRecommendation(t *tes
 	assert.Equal(t, "Upgrade to 4.5", bom.Vulnerabilities[0].Recommendation)
 	assert.Empty(t, bom.Vulnerabilities[0].Affects[0].Versions)
 }
+
+// TestGoldenParity asserts byte-for-byte output against frozen golden files.
+// The TypeScript test asserts against the SAME files, guaranteeing TS↔Go parity.
+func TestGoldenParity(t *testing.T) {
+	cases := map[string]string{
+		"case1-fixed-amendments":        "case1-fixed.cdx.json",
+		"case1-not_affected-amendments": "case1-not_affected.cdx.json",
+	}
+	for input, goldenName := range cases {
+		out, err := ConvertHDFToCycloneDXVEX(loadInput(t, input+".json"), testVersion)
+		require.NoError(t, err)
+		goldenPath := filepath.Join("..", "fixtures", "expected", goldenName)
+		if os.Getenv("UPDATE_GOLDEN") == "1" {
+			require.NoError(t, os.WriteFile(goldenPath, out, 0o644))
+			continue
+		}
+		golden, err := os.ReadFile(goldenPath)
+		require.NoError(t, err, "read golden %s", goldenPath)
+		assert.Equal(t, string(golden), string(out), "golden mismatch for %s", input)
+	}
+}

@@ -287,3 +287,20 @@ func TestConvertHDFToCSAFVEX_ProductTreeGloballySorted(t *testing.T) {
 	}
 	assert.Equal(t, []string{"pkg:npm/aaa@1.0", "pkg:npm/zzz@1.0"}, ids)
 }
+
+// TestGoldenParity asserts byte-for-byte output against frozen golden files.
+// The TypeScript test asserts against the SAME files, guaranteeing TS↔Go parity.
+func TestGoldenParity(t *testing.T) {
+	for _, name := range []string{"sec-vex-amendments", "uc-01-fixed-amendments"} {
+		out, err := ConvertHDFToCSAFVEX(loadInput(t, name+".json"), testVersion)
+		require.NoError(t, err)
+		goldenPath := filepath.Join("..", "fixtures", "expected", name+".csaf-vex.json")
+		if os.Getenv("UPDATE_GOLDEN") == "1" {
+			require.NoError(t, os.WriteFile(goldenPath, out, 0o644))
+			continue
+		}
+		golden, err := os.ReadFile(goldenPath)
+		require.NoError(t, err, "read golden %s", goldenPath)
+		assert.Equal(t, string(golden), string(out), "golden mismatch for %s", name)
+	}
+}

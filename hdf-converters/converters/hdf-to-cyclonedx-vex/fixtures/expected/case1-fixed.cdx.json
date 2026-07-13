@@ -9,7 +9,7 @@
       {
         "vendor": "mitre",
         "name": "hdf-to-cyclonedx-vex",
-        "version": "dev"
+        "version": "test"
       }
     ]
   },

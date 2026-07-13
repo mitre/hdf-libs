@@ -16,6 +16,10 @@ function loadInput(name: string): string {
   return readFileSync(join(__dirname, '..', 'fixtures', 'input', name), 'utf-8');
 }
 
+function loadGolden(name: string): string {
+  return readFileSync(join(__dirname, '..', 'fixtures', 'expected', name), 'utf-8');
+}
+
 describe('convertHdfToCsafVex — known_not_affected export', () => {
   it('produces three vulnerabilities with flags from the sec-vex amendments', () => {
     const out = convertHdfToCsafVex(loadInput('sec-vex-amendments.json'), TEST_VERSION);
@@ -400,4 +404,17 @@ describe('convertHdfToCsafVex — cvss scores', () => {
     const vuln = out.vulnerabilities.find((x: { cve: string }) => x.cve === 'CVE-2000-0001');
     expect(vuln?.scores).toBeUndefined();
   });
+});
+
+// Byte-for-byte equality with the SAME golden files the Go TestGoldenParity
+// asserts against — this is what keeps the TS and Go exporters from drifting.
+describe('convertHdfToCsafVex — golden parity', () => {
+  it.each(['sec-vex-amendments', 'uc-01-fixed-amendments'])(
+    'matches the %s golden byte-for-byte (TS↔Go parity)',
+    (name) => {
+      expect(convertHdfToCsafVex(loadInput(`${name}.json`), TEST_VERSION)).toBe(
+        loadGolden(`${name}.csaf-vex.json`),
+      );
+    },
+  );
 });

@@ -221,11 +221,23 @@ export function buildCsv<T = Record<string, unknown>>(
     result = dsv.format(processedData as Record<string, unknown>[]);
   }
 
+  result = terminateFinalRecord(result);
+
   if (opts.newline && opts.newline !== '\n') {
     result = result.replace(/\n/g, opts.newline);
   }
 
   return result;
+}
+
+/**
+ * Terminate the final record with a newline. d3-dsv leaves it off, but Go's
+ * encoding/csv (which the Go converters use) always writes it, so without this
+ * every TS CSV would differ from its Go twin by exactly one trailing byte.
+ * Applied before the newline substitution so a \r\n dialect gets it too.
+ */
+function terminateFinalRecord(csv: string): string {
+  return csv.endsWith('\n') ? csv : `${csv}\n`;
 }
 
 /**
@@ -253,7 +265,7 @@ export function buildCsvArray(
   }
 
   const dsv = dsvFormat(opts.delimiter ?? ',');
-  let result = dsv.formatRows(processedData);
+  let result = terminateFinalRecord(dsv.formatRows(processedData));
 
   if (opts.newline && opts.newline !== '\n') {
     result = result.replace(/\n/g, opts.newline);
