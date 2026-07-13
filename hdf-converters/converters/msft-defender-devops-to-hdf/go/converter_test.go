@@ -284,7 +284,7 @@ func TestRepoNameFromURI(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "msft-defender-devops-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertMsftDefenderDevopsToHDF(input, "0.1.0")
+		return ConvertMsftDefenderDevopsToHDF(input, "1.0.0")
 	})
 }
 

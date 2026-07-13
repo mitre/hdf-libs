@@ -16,7 +16,7 @@
           "results": [
             {
               "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Storage/storageAccounts/mystorageacct",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:40.064304Z",
               "status": "passed"
             }
           ],
@@ -61,7 +61,7 @@
             {
               "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Compute/virtualMachines/myvm",
               "message": "Azure Disk Encryption is not enabled on the virtual machine.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:40.064304Z",
               "status": "failed"
             }
           ],
@@ -105,7 +105,7 @@
             {
               "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-database/providers/Microsoft.Sql/servers/mysqlserver",
               "message": "An Azure Active Directory administrator has not been provisioned for this SQL server.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:40.064304Z",
               "status": "failed"
             }
           ],
@@ -149,7 +149,7 @@
           "results": [
             {
               "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Web/sites/mywebapp",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:40.064304Z",
               "status": "passed"
             }
           ],
@@ -192,7 +192,7 @@
             {
               "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.KeyVault/vaults/mykeyvault",
               "message": "Resource does not support virtual network service endpoints.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:40.064304Z",
               "status": "notApplicable"
             }
           ],
@@ -234,7 +234,7 @@
             {
               "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-monitoring/providers/Microsoft.OperationalInsights/workspaces/myworkspace",
               "message": "The Log Analytics agent is not installed on this resource.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:40.064304Z",
               "status": "failed"
             }
           ],
@@ -283,9 +283,9 @@
   ],
   "generator": {
     "name": "msft-defender-cloud-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-15T03:15:05.681765449Z",
+  "timestamp": "2026-07-12T22:56:40.064304Z",
   "tool": {
     "format": "JSON",
     "name": "Microsoft Defender for Cloud"

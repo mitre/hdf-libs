@@ -771,7 +771,7 @@ describe('SARIF Converter', async () => {
       expect(bt[1]).toBe('sink.go:50 - Unsanitized use');
     });
 
-    it('should have empty backtrace when no code flows', async () => {
+    it('should omit backtrace when no code flows', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -793,7 +793,7 @@ describe('SARIF Converter', async () => {
       const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.results).toHaveLength(1);
-      expect(req.results[0].backtrace).toEqual([]);
+      expect(req.results[0].backtrace).toBeUndefined();
     });
   });
 

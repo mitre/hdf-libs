@@ -8,6 +8,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  RequirementResult,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -15,7 +16,6 @@ import {
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
-  createResult,
   type Description,
 } from '@mitre/hdf-schema';
 
@@ -176,11 +176,12 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
   // Build result: all findings are Failed
   const codeDesc = finding.vulnerability.recommendation ?? 'No recommendation available';
 
-  const results = [
-    createResult(ResultStatus.Failed, undefined, {
+  const results: RequirementResult[] = [
+    {
+      status: ResultStatus.Failed,
       codeDesc,
       startTime: (timestamp ? parseTimestamp(timestamp) : null) ?? new Date('0001-01-01T00:00:00Z'),
-    }),
+    },
   ];
 
   const req = createRequirement(

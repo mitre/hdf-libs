@@ -245,6 +245,15 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	return hdfResult, nil
 }
 
+// ptrIfNotEmpty returns nil for the empty string so absent Splunk fields stay
+// absent in HDF instead of serializing as "".
+func ptrIfNotEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
 // convertProfileToBaseline converts a SplunkProfile and its associated controls
 // into an HDF EvaluatedBaseline.
 func convertProfileToBaseline(
@@ -279,12 +288,12 @@ func convertProfileToBaseline(
 
 	baseline := hdf.EvaluatedBaseline{
 		Name:            profile.Name,
-		Title:           hdfutil.Ptr(profile.Title),
-		Version:         hdfutil.Ptr(profile.Version),
-		Summary:         hdfutil.Ptr(profile.Summary),
-		Maintainer:      hdfutil.Ptr(profile.Maintainer),
-		Copyright:       hdfutil.Ptr(profile.Copyright),
-		License:         hdfutil.Ptr(profile.License),
+		Title:           ptrIfNotEmpty(profile.Title),
+		Version:         ptrIfNotEmpty(profile.Version),
+		Summary:         ptrIfNotEmpty(profile.Summary),
+		Maintainer:      ptrIfNotEmpty(profile.Maintainer),
+		Copyright:       ptrIfNotEmpty(profile.Copyright),
+		License:         ptrIfNotEmpty(profile.License),
 		Groups:          groups,
 		Supports:        supports,
 		Requirements:    requirements,
@@ -348,9 +357,9 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 
 	req := hdf.EvaluatedRequirement{
 		ID:                 ctrl.ID,
-		Title:              hdfutil.Ptr(ctrl.Title),
+		Title:              ptrIfNotEmpty(ctrl.Title),
 		Impact:             ctrl.Impact,
-		Code:               hdfutil.Ptr(ctrl.Code),
+		Code:               ptrIfNotEmpty(ctrl.Code),
 		Tags:               ctrl.Tags,
 		ControlType:        shared.DeriveControlTypeFromTags(nistTagsFromJSONMap(ctrl.Tags)),
 		Descriptions:       descriptions,

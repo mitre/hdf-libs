@@ -135,7 +135,7 @@
   ],
   "generator": {
     "name": "nikto-to-hdf",
-    "version": "0.1.0"
+    "version": "unknown"
   },
   "tool": {
     "format": "JSON",

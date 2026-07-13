@@ -1,0 +1,47 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Grype scanned alpine:3.20 and reported zero vulnerable components.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Grype scanned alpine:3.20 and reported zero vulnerable components.",
+              "startTime": "2026-07-12T23:26:56.631377Z",
+              "status": "passed"
+            }
+          ],
+          "id": "grype-no-findings",
+          "impact": 0,
+          "tags": {},
+          "title": "No findings reported"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "5762a830fdfc3127d8871debad1a9654ee3120e96c594ccc380b385491a9b766"
+      },
+      "name": "alpine:3.20"
+    }
+  ],
+  "components": [
+    {
+      "name": "alpine:3.20",
+      "type": "artifact"
+    }
+  ],
+  "generator": {
+    "name": "grype-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-05-26T14:00:00Z",
+  "tool": {
+    "name": "Grype",
+    "version": "0.79.3"
+  }
+}

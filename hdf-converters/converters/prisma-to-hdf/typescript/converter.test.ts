@@ -126,11 +126,11 @@ describe('prisma to HDF converter', () => {
   });
 
   describe('severity to impact mapping', () => {
-    it('should map critical severity to 1.0', async () => {
+    it('should map critical severity to 0.9', async () => {
       const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       const req = findRequirement(host1!.requirements, '46-CVE-2021-44142');
-      expect(req?.impact).toBe(1.0);
+      expect(req?.impact).toBe(0.9);
     });
 
     it('should map low severity to 0.3', async () => {

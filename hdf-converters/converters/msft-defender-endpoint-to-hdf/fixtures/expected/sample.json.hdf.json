@@ -17,7 +17,7 @@
             {
               "codeDesc": "Device: workstation01.corp.contoso.com (OS: Windows11)\nProcess: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe (Command: powershell.exe -encodedCommand JABjAGwAaQBlAG4AdA...)",
               "message": "Alert: Suspicious process executed\nStatus: new\nSeverity: high\nURL: https://security.microsoft.com/alerts/da637472900382838869_1364969609",
-              "startTime": "2021-01-26T20:31:32.9562661Z",
+              "startTime": "2021-01-26T20:31:32.956Z",
               "status": "failed"
             }
           ],
@@ -189,9 +189,9 @@
   ],
   "generator": {
     "name": "msft-defender-endpoint-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-15T03:15:07.397070744Z",
+  "timestamp": "2026-07-12T22:56:40.396742Z",
   "tool": {
     "name": "Microsoft Defender for Endpoint"
   }

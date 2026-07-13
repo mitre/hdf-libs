@@ -101,7 +101,6 @@ function extractEnrichments(raw: MsdoSarif): {
           name: repoNameFromURI(vcp.repositoryUri),
           type: TargetType.Repository,
           url: vcp.repositoryUri,
-          labels: {},
         };
         if (vcp.branch) {
           target.branch = vcp.branch;

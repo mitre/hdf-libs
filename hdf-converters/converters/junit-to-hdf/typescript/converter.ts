@@ -13,7 +13,6 @@ import {
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
-  createResult,
 } from '@mitre/hdf-schema';
 
 // JUnit XML parsed types (from fast-xml-parser via parseXmlWithArrays)
@@ -65,6 +64,22 @@ interface JUnitSkipped {
 
 const DEFAULT_NIST = ['SA-11'];
 const CONVERTER_VERSION = '1.0.0';
+
+/**
+ * The shared XML parser runs with `processEntities: false` (XXE defense), so
+ * character references reach us undecoded. Surefire escapes quotes and angle
+ * brackets in failure messages, so decode them here.
+ */
+function decodeXmlEntities(s: string): string {
+  return s
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
+}
 
 // Tags to always parse as arrays (even when single element)
 const ARRAY_TAGS = ['testsuite', 'testcase'];
@@ -131,7 +146,7 @@ function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string 
   // <testsuites> root
   if (parsed.testsuites) {
     const suites = parsed.testsuites.testsuite ?? [];
-    const name = parsed.testsuites.name || 'JUnit Test Results';
+    const name = parsed.testsuites.name ? decodeXmlEntities(parsed.testsuites.name) : 'JUnit Test Results';
     return { suites, name };
   }
 
@@ -141,7 +156,8 @@ function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string 
     // When testsuite is root, parseXmlWithArrays may return it directly
     // (not wrapped in an array since ARRAY_TAGS only forces arrays for child elements)
     const suites = Array.isArray(suite) ? (suite as JUnitTestSuite[]) : [suite];
-    const name = suites[0]?.name || 'JUnit Test Results';
+    const suiteName = suites[0]?.name;
+    const name = suiteName ? decodeXmlEntities(suiteName) : 'JUnit Test Results';
     return { suites, name };
   }
 
@@ -181,24 +197,32 @@ function testCaseToRequirement(
   const { status, message } = resolveStatus(tc);
   const codeDesc = buildCodeDesc(tc);
 
-  const resultOptions: Record<string, unknown> = { codeDesc, startTime: scanTime };
+  // A passing test has nothing to explain, so `message` stays absent rather
+  // than an empty string.
+  const result: RequirementResult = {
+    status,
+    codeDesc,
+    startTime: scanTime,
+  };
+  if (message !== undefined) {
+    result.message = message;
+  }
   if (tc.time) {
     const parsed = parseFloat(tc.time);
     if (!isNaN(parsed)) {
-      resultOptions.runTime = parsed;
+      result.runTime = parsed;
     }
   }
 
-  const result = createResult(status, message ?? '', resultOptions) as RequirementResult;
-
+  const name = decodeXmlEntities(tc.name);
   const descriptions: Description[] = [
     {
       label: 'default',
-      data: `JUnit test: ${tc.name} in ${tc.classname || 'unknown'}`,
+      data: `JUnit test: ${name} in ${tc.classname ? decodeXmlEntities(tc.classname) : 'unknown'}`,
     },
   ];
 
-  const req = createRequirement(id, tc.name, descriptions, 0.5, [result], {
+  const req = createRequirement(id, name, descriptions, 0.5, [result], {
     tags: { nist: DEFAULT_NIST },
   }) as EvaluatedRequirement;
   const controlType = deriveControlTypeFromTags(DEFAULT_NIST);
@@ -211,9 +235,9 @@ function testCaseToRequirement(
 
 function buildID(tc: JUnitTestCase): string {
   if (tc.classname) {
-    return `${tc.classname}.${tc.name}`;
+    return `${decodeXmlEntities(tc.classname)}.${decodeXmlEntities(tc.name)}`;
   }
-  return tc.name;
+  return decodeXmlEntities(tc.name);
 }
 
 function resolveStatus(tc: JUnitTestCase): { status: ResultStatus; message?: string } {
@@ -236,7 +260,7 @@ function resolveStatus(tc: JUnitTestCase): { status: ResultStatus; message?: str
   if (tc.skipped !== undefined) {
     const skipped = typeof tc.skipped === 'object' ? tc.skipped : null;
     if (skipped?.message) {
-      return { status: ResultStatus.NotReviewed, message: `Skipped: ${skipped.message}` };
+      return { status: ResultStatus.NotReviewed, message: `Skipped: ${decodeXmlEntities(skipped.message)}` };
     }
     return { status: ResultStatus.NotReviewed, message: 'Skipped' };
   }
@@ -246,20 +270,20 @@ function resolveStatus(tc: JUnitTestCase): { status: ResultStatus; message?: str
 function buildFailureMessage(message: string, typeName: string, body: string): string {
   let result = '';
   if (typeName) {
-    result = `${typeName}: `;
+    result = `${decodeXmlEntities(typeName)}: `;
   }
-  result += message;
+  result += decodeXmlEntities(message);
   if (body) {
-    result += '\n' + body;
+    result += '\n' + decodeXmlEntities(body);
   }
   return result;
 }
 
 function buildCodeDesc(tc: JUnitTestCase): string {
   if (tc.classname) {
-    return `${tc.classname} :: ${tc.name}`;
+    return `${decodeXmlEntities(tc.classname)} :: ${decodeXmlEntities(tc.name)}`;
   }
-  return tc.name;
+  return decodeXmlEntities(tc.name);
 }
 
 function noFindingsTarget(baselineName: string, suites: JUnitTestSuite[]): string {
@@ -267,7 +291,7 @@ function noFindingsTarget(baselineName: string, suites: JUnitTestSuite[]): strin
     return baselineName;
   }
   for (const s of suites) {
-    if (s.name) return s.name;
+    if (s.name) return decodeXmlEntities(s.name);
   }
   return 'JUnit test suite';
 }

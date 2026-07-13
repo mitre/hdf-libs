@@ -74,7 +74,7 @@
           ],
           "results": [
             {
-              "codeDesc": "Check \"Browser Service enabled\" execution failed since we are unable to get the required data:\nUser credentials cannot be used for local connections ",
+              "codeDesc": "Check \"Browser Service enabled\" execution failed since we are unable to get the required data:\nUser credentials cannot be used for local connections",
               "startTime": "2021-02-18T15:57:00Z",
               "status": "failed"
             }
@@ -205,9 +205,9 @@
   ],
   "generator": {
     "name": "dbprotect-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-15T03:15:12.740874734Z",
+  "timestamp": "2026-07-12T23:39:51.936729Z",
   "tool": {
     "format": "XML",
     "name": "DBProtect"

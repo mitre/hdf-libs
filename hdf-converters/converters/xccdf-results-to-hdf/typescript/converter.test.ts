@@ -214,14 +214,14 @@ describe('xccdf-results-to-hdf converter', async () => {
       expect(hdf.baselines[0]!.requirements).toHaveLength(5);
     });
 
-    it('should use version element as requirement ID', async () => {
+    it('should use the Rule id vulnerability number as requirement ID', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
       const ids = hdf.baselines[0]!.requirements.map((r) => r.id);
-      expect(ids).toContain('RHEL-07-010030');
-      expect(ids).toContain('RHEL-07-010060');
-      expect(ids).toContain('RHEL-07-010118');
-      expect(ids).toContain('RHEL-07-010290');
-      expect(ids).toContain('RHEL-07-020200');
+      expect(ids).toContain('SV-204393');
+      expect(ids).toContain('SV-204396');
+      expect(ids).toContain('SV-204405');
+      expect(ids).toContain('SV-204424');
+      expect(ids).toContain('SV-204452');
     });
 
     it('should set target name to localhost.localdomain', async () => {
@@ -249,8 +249,8 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should set tool fields', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      expect(hdf.tool?.name).toBe('XCCDF Results');
-      expect(hdf.tool?.format).toBe('XML');
+      expect(hdf.tool?.name).toBe('XCCDF');
+      expect(hdf.tool?.format).toBe('XCCDF');
     });
 
     it('should set timestamp from TestResult start-time', async () => {
@@ -268,7 +268,7 @@ describe('xccdf-results-to-hdf converter', async () => {
     it('should derive controlType from NIST tags (v3.2 classification field)', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
       // RHEL-07-010030 maps to AC-* via CCI; expect technical.
-      const technicalReq = findReq(hdf, 'RHEL-07-010030');
+      const technicalReq = findReq(hdf, 'SV-204393');
       expect(technicalReq!.controlType).toBe('technical');
     });
 
@@ -291,19 +291,19 @@ describe('xccdf-results-to-hdf converter', async () => {
   describe('severity to impact mapping', () => {
     it('should map high severity to 0.7 impact', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010290');
+      const req = findReq(hdf, 'SV-204424');
       expect(req!.impact).toBe(0.7);
     });
 
     it('should map medium severity to 0.5 impact', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010030');
+      const req = findReq(hdf, 'SV-204393');
       expect(req!.impact).toBe(0.5);
     });
 
     it('should map low severity to 0.3 impact', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-020200');
+      const req = findReq(hdf, 'SV-204452');
       expect(req!.impact).toBe(0.3);
     });
   });
@@ -313,13 +313,13 @@ describe('xccdf-results-to-hdf converter', async () => {
   describe('status mapping', () => {
     it('should map fail to Failed (RHEL-07-010030)', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010030');
+      const req = findReq(hdf, 'SV-204393');
       expect(req!.results[0]!.status).toBe(ResultStatus.Failed);
     });
 
     it('should map pass to Passed (RHEL-07-010118)', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010118');
+      const req = findReq(hdf, 'SV-204405');
       expect(req!.results[0]!.status).toBe(ResultStatus.Passed);
     });
 
@@ -441,13 +441,13 @@ describe('xccdf-results-to-hdf converter', async () => {
   describe('CCI and NIST tag extraction', () => {
     it('should extract CCI tags from rule-result idents', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010030');
+      const req = findReq(hdf, 'SV-204393');
       expect(req!.tags?.['cci']).toContain('CCI-000048');
     });
 
     it('should map CCI-000048 to NIST AC-8 tags', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010030');
+      const req = findReq(hdf, 'SV-204393');
       const nist = req!.tags?.['nist'] as string[];
       expect(nist).toBeDefined();
       expect(nist.some((n: string) => n.startsWith('AC-8'))).toBe(true);
@@ -455,7 +455,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should map CCI-000366 to NIST CM-6 tags', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010290');
+      const req = findReq(hdf, 'SV-204424');
       const nist = req!.tags?.['nist'] as string[];
       expect(nist).toBeDefined();
       expect(nist.some((n: string) => n.startsWith('CM-6'))).toBe(true);
@@ -463,7 +463,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should map CCI-002617 to NIST SI-2 tags', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-020200');
+      const req = findReq(hdf, 'SV-204452');
       const nist = req!.tags?.['nist'] as string[];
       expect(nist).toBeDefined();
       expect(nist.some((n: string) => n.startsWith('SI-2'))).toBe(true);
@@ -471,7 +471,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should not include non-CCI idents in cci tags', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010030');
+      const req = findReq(hdf, 'SV-204393');
       const ccis = req!.tags?.['cci'] as string[];
       // Should not include CCE or legacy idents
       for (const cci of ccis) {
@@ -479,11 +479,11 @@ describe('xccdf-results-to-hdf converter', async () => {
       }
     });
 
-    it('should have no cci/nist tags when no CCI idents exist', async () => {
+    it('should emit an empty nist tag and no cci tag when no CCI idents exist', async () => {
       const hdf = await parseHdf('minimal.xml');
       const req = findReq(hdf, 'xccdf_moc.elpmaxe.www_rule_1');
       expect(req!.tags?.['cci']).toBeUndefined();
-      expect(req!.tags?.['nist']).toBeUndefined();
+      expect(req!.tags?.['nist']).toEqual([]);
     });
   });
 
@@ -492,7 +492,7 @@ describe('xccdf-results-to-hdf converter', async () => {
   describe('descriptions', () => {
     it('should extract VulnDiscussion as default description', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010290');
+      const req = findReq(hdf, 'SV-204424');
       const defaultDesc = req!.descriptions.find(
         (d) => d.label === 'default'
       );
@@ -502,7 +502,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should not include raw VulnDiscussion XML tags in description', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010290');
+      const req = findReq(hdf, 'SV-204424');
       const defaultDesc = req!.descriptions.find(
         (d) => d.label === 'default'
       );
@@ -513,7 +513,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should include fix description from fixtext element', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010030');
+      const req = findReq(hdf, 'SV-204393');
       const fixDesc = req!.descriptions.find((d) => d.label === 'fix');
       expect(fixDesc).toBeDefined();
       expect(fixDesc!.data).toContain('dconf');
@@ -521,7 +521,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should include fix description for RHEL-07-010290', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010290');
+      const req = findReq(hdf, 'SV-204424');
       const fixDesc = req!.descriptions.find((d) => d.label === 'fix');
       expect(fixDesc).toBeDefined();
       expect(fixDesc!.data).toContain('nullok');
@@ -533,7 +533,7 @@ describe('xccdf-results-to-hdf converter', async () => {
   describe('rule title', () => {
     it('should set requirement title from Rule title element', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      const req = findReq(hdf, 'RHEL-07-010290');
+      const req = findReq(hdf, 'SV-204424');
       expect(req!.title).toContain('blank or null passwords');
     });
 
@@ -728,22 +728,22 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
     it('should use Rule version as requirement ID', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
       const ids = baseline.requirements.map((r) => r.id);
-      expect(ids).toContain('WN22-00-000010');
-      expect(ids).toContain('WN22-00-000020');
-      expect(ids).toContain('WN22-00-000030');
+      expect(ids).toContain('SV-254238');
+      expect(ids).toContain('SV-254239');
+      expect(ids).toContain('SV-254240');
     });
 
     it('should map severity to impact', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
-      const req10 = findBaselineReq(baseline, 'WN22-00-000010');
+      const req10 = findBaselineReq(baseline, 'SV-254238');
       expect(req10!.impact).toBe(0.5); // medium
-      const req30 = findBaselineReq(baseline, 'WN22-00-000030');
+      const req30 = findBaselineReq(baseline, 'SV-254240');
       expect(req30!.impact).toBe(0.7); // high
     });
 
     it('should extract VulnDiscussion as default description', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
-      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      const req = findBaselineReq(baseline, 'SV-254238');
       const defaultDesc = req!.descriptions.find((d) => d.label === 'default');
       expect(defaultDesc).toBeDefined();
       expect(defaultDesc!.data).toContain('privileged account');
@@ -752,7 +752,7 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
 
     it('should extract check-content as check description', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
-      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      const req = findBaselineReq(baseline, 'SV-254238');
       const checkDesc = req!.descriptions.find((d) => d.label === 'check');
       expect(checkDesc).toBeDefined();
       expect(checkDesc!.data).toContain('administrative privileges');
@@ -760,7 +760,7 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
 
     it('should extract fixtext as fix description', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
-      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      const req = findBaselineReq(baseline, 'SV-254238');
       const fixDesc = req!.descriptions.find((d) => d.label === 'fix');
       expect(fixDesc).toBeDefined();
       expect(fixDesc!.data).toContain('separate account');
@@ -768,14 +768,14 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
 
     it('should extract CCI tags', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
-      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      const req = findBaselineReq(baseline, 'SV-254238');
       expect(req!.tags['cci']).toContain('CCI-000366');
       expect(req!.tags['nist']).toBeDefined();
     });
 
     it('should extract multiple CCI idents', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
-      const req = findBaselineReq(baseline, 'WN22-00-000020');
+      const req = findBaselineReq(baseline, 'SV-254239');
       const ccis = req!.tags['cci'] as string[];
       expect(ccis).toHaveLength(2);
       expect(ccis).toContain('CCI-004066');
@@ -784,7 +784,7 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
 
     it('should include STIG-specific tags', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
-      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      const req = findBaselineReq(baseline, 'SV-254238');
       expect(req!.tags['rid']).toBe('SV-254238r991589_rule');
       expect(req!.tags['stig_id']).toBe('WN22-00-000010');
       expect(req!.tags['severity']).toBe('medium');
@@ -799,7 +799,7 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
       expect(baseline.groups).toHaveLength(3);
       expect(baseline.groups![0]!.id).toBe('V-254238');
       expect(baseline.groups![0]!.title).toBe('SRG-OS-000480-GPOS-00227');
-      expect(baseline.groups![0]!.requirements).toEqual(['WN22-00-000010']);
+      expect(baseline.groups![0]!.requirements).toEqual(['SV-254238']);
     });
 
     it('should include generator', async () => {
@@ -816,9 +816,9 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
 
     it('should set severity field', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
-      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      const req = findBaselineReq(baseline, 'SV-254238');
       expect(req!.severity).toBe('medium');
-      const highReq = findBaselineReq(baseline, 'WN22-00-000030');
+      const highReq = findBaselineReq(baseline, 'SV-254240');
       expect(highReq!.severity).toBe('high');
     });
   });
@@ -896,8 +896,8 @@ describe('convertXccdfToHdf auto-detect', async () => {
     expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
     // Fail status
     expect(hdf.baselines[0]!.requirements[1]!.results[0]!.status).toBe('failed');
-    // Unknown status → notReviewed
-    expect(hdf.baselines[0]!.requirements[2]!.results[0]!.status).toBe('notReviewed');
+    // Unrecognized status → error
+    expect(hdf.baselines[0]!.requirements[2]!.results[0]!.status).toBe('error');
     // No target when no target element
     expect(hdf.components).toHaveLength(0);
   });
@@ -950,7 +950,8 @@ describe('convertXccdfToHdf auto-detect', async () => {
 </Benchmark>`;
     const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
     const req = hdf.baselines[0]!.requirements[0]!;
-    expect(req.id).toBe('SV-001');
+    // A Rule id with no SV- vulnerability number passes through unchanged.
+    expect(req.id).toBe('R1');
     expect(req.title).toBe('Rule One');
     expect(req.tags?.['cci']).toContain('CCI-000001');
     expect(req.tags?.['nist']).toBeDefined();
@@ -982,10 +983,10 @@ describe('convertXccdfToHdf auto-detect', async () => {
 </Benchmark>`;
     const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HDFBaseline;
     expect(baseline.requirements).toHaveLength(2);
-    const r1 = (baseline.requirements as BaselineRequirement[]).find(r => r.id === 'SV-001');
+    const r1 = (baseline.requirements as BaselineRequirement[]).find(r => r.id === 'R1');
     expect(r1).toBeDefined();
     expect(r1!.impact).toBe(0.5); // no severity → default 0.5
-    const r2 = (baseline.requirements as BaselineRequirement[]).find(r => r.id === 'SV-002');
+    const r2 = (baseline.requirements as BaselineRequirement[]).find(r => r.id === 'R2');
     expect(r2).toBeDefined();
     // Top-level rule without Group
     expect(r2!.tags?.['gid']).toBeUndefined();
@@ -1060,7 +1061,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
     expect(hdf.baselines[0]!.requirements).toHaveLength(4);
   });
 
-  it('should handle benchmark with no title (fallback name)', async () => {
+  it('should fall back to the Benchmark id when it has no title', async () => {
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Benchmark id="no_title" xmlns="http://checklists.nist.gov/xccdf/1.2">
   <version>1.0</version>
@@ -1069,6 +1070,6 @@ describe('convertXccdfToHdf auto-detect', async () => {
   </TestResult>
 </Benchmark>`;
     const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
-    expect(hdf.baselines[0]!.name).toBe('XCCDF Benchmark');
+    expect(hdf.baselines[0]!.name).toBe('no_title');
   });
 });

@@ -1,6 +1,7 @@
 package ionchannel
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -195,6 +196,20 @@ func buildTags(dep contextualizedDependency) map[string]interface{} {
 	return shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 }
 
+// marshalDependencyCode renders a dependency as the JSON blob carried in the
+// requirement's code field. HTML escaping is off so a version requirement like
+// ">=0.5.0" is not mangled into a unicode escape inside the embedded blob.
+func marshalDependencyCode(dep Dependency) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(dep); err != nil {
+		return "{}"
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
+}
+
 // ConvertIonChannelToHDF converts Ion Channel analysis JSON to HDF format.
 func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	if len(input) == 0 {
@@ -232,9 +247,7 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		title := buildTitle(dep.Dependency)
 		tags := buildTags(dep)
 
-		// Serialize the dependency as code
-		codeBytes, _ := json.MarshalIndent(dep.Dependency, "", "  ")
-		code := string(codeBytes)
+		code := marshalDependencyCode(dep.Dependency)
 
 		desc := fmt.Sprintf("Dependency %s/%s", dep.Org, dep.Name)
 
@@ -267,7 +280,6 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		Title:        hdfutil.Ptr(baselineTitle),
 		Summary:      hdfutil.Ptr(analysis.Summary),
 		Maintainer:   hdfutil.Ptr("saf@groups.mitre.org"),
-		Version:      hdfutil.Ptr(""),
 		Supports:     []hdf.SupportedPlatform{},
 		Groups:       []hdf.RequirementGroup{},
 		Requirements: requirements,
@@ -275,11 +287,14 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		Status:       hdfutil.Ptr("loaded"),
 	}
 
+	now := time.Now()
+
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "ionchannel-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Ion Channel",
 		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Timestamp:        &now,
 	}), nil
 }

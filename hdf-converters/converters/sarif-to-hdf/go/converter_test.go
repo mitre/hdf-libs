@@ -1376,7 +1376,7 @@ func TestConvertSarifToHDF_DockleFixture(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "sarif-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertSarifToHDF(input, "0.1.0")
+		return ConvertSarifToHDF(input, "1.0.0")
 	})
 }
 

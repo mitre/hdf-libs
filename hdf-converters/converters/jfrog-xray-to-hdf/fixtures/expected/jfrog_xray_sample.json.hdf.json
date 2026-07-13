@@ -13,19 +13,19 @@
           ],
           "descriptions": [
             {
-              "data": "Acorn contains an infinite loop condition in regexp.js that is triggered when handling UTF_16 surrogates while validating regular expressions. This may allow a context-dependent attacker to hang a process using the library.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"7.1/AV:N/AC:M/Au:N/C:N/I:N/A:C\", \"cvss_v3\"=\u003e\"7.5/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\"}]",
+              "data": "Acorn contains an infinite loop condition in regexp.js that is triggered when handling UTF_16 surrogates while validating regular expressions. This may allow a context-dependent attacker to hang a process using the library.\ncves: [{\"cvss_v2\"=\u003e\"7.1/AV:N/AC:M/Au:N/C:N/I:N/A:C\", \"cvss_v3\"=\u003e\"7.5/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\"}]",
               "label": "default"
             }
           ],
           "results": [
             {
-              "codeDesc": "source_comp_id : npm://acorn:5.7.3\nvulnerable_versions : [\"5.5.0 ≤ Version \\u003c 5.7.4\", \"6.0.0 ≤ Version \\u003c 6.4.1\", \"7.0.0\", \"7.1.0\"]\nfixed_versions : [\"5.7.4\", \"6.4.1\", \"7.1.1\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://acorn:5.7.3\nvulnerable_versions : [\"5.5.0 ≤ Version \u003c 5.7.4\", \"6.0.0 ≤ Version \u003c 6.4.1\", \"7.0.0\", \"7.1.0\"]\nfixed_versions : [\"5.7.4\", \"6.4.1\", \"7.1.1\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             },
             {
-              "codeDesc": "source_comp_id : npm://acorn:5.7.3\nvulnerable_versions : [\"5.5.0 ≤ Version \\u003c 5.7.4\", \"6.0.0 ≤ Version \\u003c 6.4.1\", \"7.0.0\", \"7.1.0\"]\nfixed_versions : [\"5.7.4\", \"6.4.1\", \"7.1.1\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://acorn:5.7.3\nvulnerable_versions : [\"5.5.0 ≤ Version \u003c 5.7.4\", \"6.0.0 ≤ Version \u003c 6.4.1\", \"7.0.0\", \"7.1.0\"]\nfixed_versions : [\"5.7.4\", \"6.4.1\", \"7.1.1\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -61,12 +61,12 @@
           "results": [
             {
               "codeDesc": "source_comp_id : npm://lodash:4.17.5\nvulnerable_versions : \nfixed_versions : \nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             },
             {
               "codeDesc": "source_comp_id : npm://lodash:4.17.15\nvulnerable_versions : \nfixed_versions : \nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -96,19 +96,19 @@
           ],
           "descriptions": [
             {
-              "data": "node-handlebars contains a flaw that is triggered during the handling of a specially crafted template. This may allow a remote attacker to make changes to an object's prototype and execute arbitrary code.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"10.0/CVSS:2.0/AV:N/AC:L/Au:N/C:C/I:C/A:C\", \"cvss_v3\"=\u003e\"\"}]",
+              "data": "node-handlebars contains a flaw that is triggered during the handling of a specially crafted template. This may allow a remote attacker to make changes to an object's prototype and execute arbitrary code.\ncves: [{\"cvss_v2\"=\u003e\"10.0/CVSS:2.0/AV:N/AC:L/Au:N/C:C/I:C/A:C\"}]",
               "label": "default"
             }
           ],
           "results": [
             {
               "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"1.0.6\", \"1.0.7 ≤ Version ≤ 1.3.0\", \"2.0.0 ≤ Version ≤ 4.0.13\", \"4.1.0 ≤ Version ≤ 4.1.1\"]\nfixed_versions : [\"4.0.14\", \"4.1.2\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             },
             {
               "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"1.0.6\", \"1.0.7 ≤ Version ≤ 1.3.0\", \"2.0.0 ≤ Version ≤ 4.0.13\", \"4.1.0 ≤ Version ≤ 4.1.1\"]\nfixed_versions : [\"4.0.14\", \"4.1.2\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -144,12 +144,12 @@
           "results": [
             {
               "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : \nfixed_versions : \nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             },
             {
               "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : \nfixed_versions : \nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -185,13 +185,13 @@
           ],
           "results": [
             {
-              "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"\\u003c 3.0.8\", \"4.0.0 ≤ Version \\u003c 4.5.3\"]\nfixed_versions : [\"3.0.8 ≤ Version \\u003c 4.0.0\", \"≥ 4.5.3\"]\nissue_type : security\nprovider : npm advisory",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"\u003c 3.0.8\", \"4.0.0 ≤ Version \u003c 4.5.3\"]\nfixed_versions : [\"3.0.8 ≤ Version \u003c 4.0.0\", \"≥ 4.5.3\"]\nissue_type : security\nprovider : npm advisory",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             },
             {
-              "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"\\u003c 3.0.8\", \"4.0.0 ≤ Version \\u003c 4.5.3\"]\nfixed_versions : [\"3.0.8 ≤ Version \\u003c 4.0.0\", \"≥ 4.5.3\"]\nissue_type : security\nprovider : npm advisory",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"\u003c 3.0.8\", \"4.0.0 ≤ Version \u003c 4.5.3\"]\nfixed_versions : [\"3.0.8 ≤ Version \u003c 4.0.0\", \"≥ 4.5.3\"]\nissue_type : security\nprovider : npm advisory",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -227,13 +227,13 @@
           ],
           "results": [
             {
-              "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"1.0.6\", \"1.0.7 ≤ Version ≤ 1.3.0\", \"2.0.0\", \"3.0.0 ≤ Version ≤ 4.1.1\", \"4.1.2\", \"4.2.0 ≤ Version \\u003c 4.3.0\"]\nfixed_versions : [\"4.3.0\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"1.0.6\", \"1.0.7 ≤ Version ≤ 1.3.0\", \"2.0.0\", \"3.0.0 ≤ Version ≤ 4.1.1\", \"4.1.2\", \"4.2.0 ≤ Version \u003c 4.3.0\"]\nfixed_versions : [\"4.3.0\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             },
             {
-              "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"1.0.6\", \"1.0.7 ≤ Version ≤ 1.3.0\", \"2.0.0\", \"3.0.0 ≤ Version ≤ 4.1.1\", \"4.1.2\", \"4.2.0 ≤ Version \\u003c 4.3.0\"]\nfixed_versions : [\"4.3.0\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"1.0.6\", \"1.0.7 ≤ Version ≤ 1.3.0\", \"2.0.0\", \"3.0.0 ≤ Version ≤ 4.1.1\", \"4.1.2\", \"4.2.0 ≤ Version \u003c 4.3.0\"]\nfixed_versions : [\"4.3.0\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -266,19 +266,19 @@
           ],
           "descriptions": [
             {
-              "data": "Lodash Package for Node.js contains a prototype pollution flaw in the baseSet() function in lodash.js that is triggered as access to object prototypes is not properly handled. This may allow a context-dependent attacker to manipulate object properties and crash a Node process using the library.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"7.1/AV:N/AC:M/Au:N/C:N/I:N/A:C\", \"cvss_v3\"=\u003e\"7.5/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\"}]",
+              "data": "Lodash Package for Node.js contains a prototype pollution flaw in the baseSet() function in lodash.js that is triggered as access to object prototypes is not properly handled. This may allow a context-dependent attacker to manipulate object properties and crash a Node process using the library.\ncves: [{\"cvss_v2\"=\u003e\"7.1/AV:N/AC:M/Au:N/C:N/I:N/A:C\", \"cvss_v3\"=\u003e\"7.5/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\"}]",
               "label": "default"
             }
           ],
           "results": [
             {
-              "codeDesc": "source_comp_id : npm://lodash:4.17.15\nvulnerable_versions : [\"4.0.0 ≤ Version \\u003c 4.17.16\"]\nfixed_versions : [\"4.17.16\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://lodash:4.17.15\nvulnerable_versions : [\"4.0.0 ≤ Version \u003c 4.17.16\"]\nfixed_versions : [\"4.17.16\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             },
             {
-              "codeDesc": "source_comp_id : npm://lodash:4.17.5\nvulnerable_versions : [\"4.0.0 ≤ Version \\u003c 4.17.16\"]\nfixed_versions : [\"4.17.16\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://lodash:4.17.5\nvulnerable_versions : [\"4.0.0 ≤ Version \u003c 4.17.16\"]\nfixed_versions : [\"4.17.16\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -315,12 +315,12 @@
           "results": [
             {
               "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"4.0.0 ≤ Version ≤ 4.1.1\", \"4.1.2\", \"4.2.0 ≤ Version ≤ 4.4.4\"]\nfixed_versions : [\"4.4.5\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             },
             {
               "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"4.0.0 ≤ Version ≤ 4.1.1\", \"4.1.2\", \"4.2.0 ≤ Version ≤ 4.4.4\"]\nfixed_versions : [\"4.4.5\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -353,14 +353,14 @@
           ],
           "descriptions": [
             {
-              "data": "Lodash Package for Node.js contains a flaw in the safeGet() function in lodash.js that is triggered as access to object prototypes is not properly handled. This may allow a context-dependent attacker to add attributes to arbitrary objects, resulting in a denial of service.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"9.3/AV:N/AC:M/Au:N/C:C/I:C/A:C\", \"cvss_v3\"=\u003e\"9.8/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\"}]",
+              "data": "Lodash Package for Node.js contains a flaw in the safeGet() function in lodash.js that is triggered as access to object prototypes is not properly handled. This may allow a context-dependent attacker to add attributes to arbitrary objects, resulting in a denial of service.\ncves: [{\"cvss_v2\"=\u003e\"9.3/AV:N/AC:M/Au:N/C:C/I:C/A:C\", \"cvss_v3\"=\u003e\"9.8/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\"}]",
               "label": "default"
             }
           ],
           "results": [
             {
               "codeDesc": "source_comp_id : npm://lodash:4.17.5\nvulnerable_versions : [\"4.17.5 ≤ Version ≤ 4.17.11\"]\nfixed_versions : [\"4.17.12\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -397,7 +397,7 @@
           "results": [
             {
               "codeDesc": "source_comp_id : npm://kind-of:6.0.2\nvulnerable_versions : [\"6.0.0 ≤ Version ≤ 6.0.2\"]\nfixed_versions : [\"6.0.3\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -436,8 +436,8 @@
           ],
           "results": [
             {
-              "codeDesc": "source_comp_id : npm://ajv:5.5.2\nvulnerable_versions : [\"5.0.0 ≤ Version \\u003c 6.12.3\"]\nfixed_versions : [\"6.12.3\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://ajv:5.5.2\nvulnerable_versions : [\"5.0.0 ≤ Version \u003c 6.12.3\"]\nfixed_versions : [\"6.12.3\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -475,8 +475,8 @@
           ],
           "results": [
             {
-              "codeDesc": "source_comp_id : npm://minimist:0.0.8\nvulnerable_versions : [\"\\u003c 0.2.1\", \"1.0.0 ≤ Version \\u003c 1.2.3\"]\nfixed_versions : [\"0.2.1\", \"1.2.3\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://minimist:0.0.8\nvulnerable_versions : [\"\u003c 0.2.1\", \"1.0.0 ≤ Version \u003c 1.2.3\"]\nfixed_versions : [\"0.2.1\", \"1.2.3\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -508,14 +508,14 @@
           ],
           "descriptions": [
             {
-              "data": "braces Package for Node.js contains a flaw in lib/parsers.js that is triggered during the handling of regular expressions. This may allow a context-dependent attacker to slow down a node process using the library.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"4.3/CVSS:2.0/AV:N/AC:M/Au:N/C:N/I:N/A:P\", \"cvss_v3\"=\u003e\"\"}]",
+              "data": "braces Package for Node.js contains a flaw in lib/parsers.js that is triggered during the handling of regular expressions. This may allow a context-dependent attacker to slow down a node process using the library.\ncves: [{\"cvss_v2\"=\u003e\"4.3/CVSS:2.0/AV:N/AC:M/Au:N/C:N/I:N/A:P\"}]",
               "label": "default"
             }
           ],
           "results": [
             {
               "codeDesc": "source_comp_id : npm://braces:1.8.5\nvulnerable_versions : [\"0.1.0 ≤ Version ≤ 2.3.0\"]\nfixed_versions : [\"2.3.1\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -551,18 +551,18 @@
           ],
           "results": [
             {
-              "codeDesc": "source_comp_id : npm://yargs-parser:8.1.0\nvulnerable_versions : [\"\\u003c 13.1.2\", \"14.0.0 ≤ Version \\u003c 15.0.1\", \"16.0.0 ≤ Version \\u003c 18.1.1\"]\nfixed_versions : [\"13.1.2\", \"15.0.1\", \"18.1.1\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://yargs-parser:8.1.0\nvulnerable_versions : [\"\u003c 13.1.2\", \"14.0.0 ≤ Version \u003c 15.0.1\", \"16.0.0 ≤ Version \u003c 18.1.1\"]\nfixed_versions : [\"13.1.2\", \"15.0.1\", \"18.1.1\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             },
             {
-              "codeDesc": "source_comp_id : npm://yargs-parser:7.0.0\nvulnerable_versions : [\"\\u003c 13.1.2\", \"14.0.0 ≤ Version \\u003c 15.0.1\", \"16.0.0 ≤ Version \\u003c 18.1.1\"]\nfixed_versions : [\"13.1.2\", \"15.0.1\", \"18.1.1\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://yargs-parser:7.0.0\nvulnerable_versions : [\"\u003c 13.1.2\", \"14.0.0 ≤ Version \u003c 15.0.1\", \"16.0.0 ≤ Version \u003c 18.1.1\"]\nfixed_versions : [\"13.1.2\", \"15.0.1\", \"18.1.1\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             },
             {
-              "codeDesc": "source_comp_id : npm://yargs-parser:9.0.2\nvulnerable_versions : [\"\\u003c 13.1.2\", \"14.0.0 ≤ Version \\u003c 15.0.1\", \"16.0.0 ≤ Version \\u003c 18.1.1\"]\nfixed_versions : [\"13.1.2\", \"15.0.1\", \"18.1.1\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://yargs-parser:9.0.2\nvulnerable_versions : [\"\u003c 13.1.2\", \"14.0.0 ≤ Version \u003c 15.0.1\", \"16.0.0 ≤ Version \u003c 18.1.1\"]\nfixed_versions : [\"13.1.2\", \"15.0.1\", \"18.1.1\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -594,14 +594,14 @@
           ],
           "descriptions": [
             {
-              "data": "mem Package for Node.js contains a flaw in index.js that is triggered as old results are not properly handled in the cache. This may allow a remote attacker to exhaust available memory and potentially cause a denial of service.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"5.0/CVSS:2.0/AV:N/AC:L/Au:N/C:N/I:N/A:P\", \"cvss_v3\"=\u003e\"\"}]",
+              "data": "mem Package for Node.js contains a flaw in index.js that is triggered as old results are not properly handled in the cache. This may allow a remote attacker to exhaust available memory and potentially cause a denial of service.\ncves: [{\"cvss_v2\"=\u003e\"5.0/CVSS:2.0/AV:N/AC:L/Au:N/C:N/I:N/A:P\"}]",
               "label": "default"
             }
           ],
           "results": [
             {
-              "codeDesc": "source_comp_id : npm://mem:1.1.0\nvulnerable_versions : [\"\\u003c 4.0.0\"]\nfixed_versions : [\"4.0.0\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://mem:1.1.0\nvulnerable_versions : [\"\u003c 4.0.0\"]\nfixed_versions : [\"4.0.0\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -637,8 +637,8 @@
           ],
           "results": [
             {
-              "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"1.0.6\", \"1.0.7 ≤ Version ≤ 1.3.0\", \"2.0.0\", \"3.0.0 ≤ Version \\u003c 3.0.8\", \"4.0.0 ≤ Version ≤ 4.1.1\", \"4.1.2\", \"4.2.0 ≤ Version ≤ 4.5.2\"]\nfixed_versions : [\"3.0.8\", \"4.5.3\"]\nissue_type : security\nprovider : JFrog",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://handlebars:4.0.11\nvulnerable_versions : [\"1.0.6\", \"1.0.7 ≤ Version ≤ 1.3.0\", \"2.0.0\", \"3.0.0 ≤ Version \u003c 3.0.8\", \"4.0.0 ≤ Version ≤ 4.1.1\", \"4.1.2\", \"4.2.0 ≤ Version ≤ 4.5.2\"]\nfixed_versions : [\"3.0.8\", \"4.5.3\"]\nissue_type : security\nprovider : JFrog",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -676,8 +676,8 @@
           ],
           "results": [
             {
-              "codeDesc": "source_comp_id : npm://yargs-parser:9.0.2\nvulnerable_versions : [\"\\u003c 13.1.2\", \"14.0.0 ≤ Version \\u003c 15.0.1\", \"16.0.0 ≤ Version \\u003c 18.1.2\"]\nfixed_versions : [\"13.1.2 ≤ Version \\u003c 14.0.0\", \"15.0.1 ≤ Version \\u003c 16.0.0\", \"≥ 18.1.2\"]\nissue_type : security\nprovider : npm advisory",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "source_comp_id : npm://yargs-parser:9.0.2\nvulnerable_versions : [\"\u003c 13.1.2\", \"14.0.0 ≤ Version \u003c 15.0.1\", \"16.0.0 ≤ Version \u003c 18.1.2\"]\nfixed_versions : [\"13.1.2 ≤ Version \u003c 14.0.0\", \"15.0.1 ≤ Version \u003c 16.0.0\", \"≥ 18.1.2\"]\nissue_type : security\nprovider : npm advisory",
+              "startTime": "2026-07-12T23:19:47.897421Z",
               "status": "failed"
             }
           ],
@@ -712,9 +712,9 @@
   ],
   "generator": {
     "name": "jfrog-xray-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-06-08T17:42:05.381235Z",
+  "timestamp": "2026-07-12T23:19:47.897421Z",
   "tool": {
     "format": "JSON",
     "name": "JFrog Xray"

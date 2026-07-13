@@ -97,6 +97,32 @@ type GrypeCVSS struct {
 	Version string       `json:"version,omitempty"`
 	Vector  string       `json:"vector,omitempty"`
 	Metrics *CVSSMetrics `json:"metrics,omitempty"`
+
+	// raw is the entry exactly as Grype emitted it. The CVSS blob is echoed back
+	// into a description verbatim, so re-marshaling the typed fields would silently
+	// drop whatever Grype added that this struct does not model (vendorMetadata,
+	// for one) and would reorder the keys away from the TypeScript converter's
+	// pass-through of the same input.
+	raw json.RawMessage
+}
+
+func (c *GrypeCVSS) UnmarshalJSON(data []byte) error {
+	type plain GrypeCVSS
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*c = GrypeCVSS(p)
+	c.raw = append(json.RawMessage(nil), data...)
+	return nil
+}
+
+func (c GrypeCVSS) MarshalJSON() ([]byte, error) {
+	if len(c.raw) > 0 {
+		return c.raw, nil
+	}
+	type plain GrypeCVSS
+	return json.Marshal(plain(c))
 }
 
 type CVSSMetrics struct {
@@ -179,32 +205,34 @@ func getFixInfo(fix *GrypeFix) string {
 	return fmt.Sprintf("vulnerability is %s", fix.State)
 }
 
+// cvssInfo and relatedCVSS are structs rather than maps because this blob is
+// embedded in a description as a string and compared verbatim against the
+// TypeScript converter's output — map marshaling would sort the keys instead.
+type cvssInfo struct {
+	Primary []GrypeCVSS   `json:"primary,omitempty"`
+	Related []relatedCVSS `json:"related,omitempty"`
+}
+
+type relatedCVSS struct {
+	ID         string      `json:"id"`
+	DataSource string      `json:"dataSource,omitempty"`
+	CVSS       []GrypeCVSS `json:"cvss"`
+}
+
 func getCVSSInfo(vuln GrypeVulnerability, relatedVulns []GrypeRelatedVulnerability) string {
-	cvssData := make(map[string]interface{})
+	info := cvssInfo{Primary: vuln.CVSS}
 
-	// Collect CVSS from primary vulnerability
-	if len(vuln.CVSS) > 0 {
-		cvssData["primary"] = vuln.CVSS
-	}
-
-	// Collect CVSS from related vulnerabilities
-	if len(relatedVulns) > 0 {
-		related := []map[string]interface{}{}
-		for _, r := range relatedVulns {
-			if len(r.CVSS) > 0 {
-				related = append(related, map[string]interface{}{
-					"id":         r.ID,
-					"dataSource": r.DataSource,
-					"cvss":       r.CVSS,
-				})
-			}
-		}
-		if len(related) > 0 {
-			cvssData["related"] = related
+	for _, r := range relatedVulns {
+		if len(r.CVSS) > 0 {
+			info.Related = append(info.Related, relatedCVSS{
+				ID:         r.ID,
+				DataSource: r.DataSource,
+				CVSS:       r.CVSS,
+			})
 		}
 	}
 
-	jsonBytes, err := json.Marshal(cvssData)
+	jsonBytes, err := json.Marshal(info)
 	if err != nil {
 		return "{}"
 	}
@@ -212,24 +240,25 @@ func getCVSSInfo(vuln GrypeVulnerability, relatedVulns []GrypeRelatedVulnerabili
 }
 
 func getReferences(vuln GrypeVulnerability, relatedVulns []GrypeRelatedVulnerability) []string {
-	refSet := make(map[string]bool)
+	seen := make(map[string]bool)
+	refs := make([]string, 0, len(vuln.URLs))
 
-	// Add URLs from primary vulnerability
-	for _, url := range vuln.URLs {
-		refSet[url] = true
-	}
-
-	// Add URLs from related vulnerabilities
-	for _, related := range relatedVulns {
-		for _, url := range related.URLs {
-			refSet[url] = true
+	// Dedupe while preserving first-seen order. The TS converter dedupes with a
+	// Set, which iterates in insertion order; ranging a Go map here instead
+	// would randomize the order on every run and never match TS.
+	add := func(urls []string) {
+		for _, url := range urls {
+			if seen[url] {
+				continue
+			}
+			seen[url] = true
+			refs = append(refs, url)
 		}
 	}
 
-	// Convert set to slice
-	refs := make([]string, 0, len(refSet))
-	for url := range refSet {
-		refs = append(refs, url)
+	add(vuln.URLs)
+	for _, related := range relatedVulns {
+		add(related.URLs)
 	}
 
 	return refs

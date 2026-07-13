@@ -1,6 +1,7 @@
 package nessus
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -23,6 +24,9 @@ var cveSourcePattern = regexp.MustCompile(`^CVE-\d{4}-\d{4,}$`)
 // cwePattern matches a CWE identifier in any common form (CWE-79, CWE 79,
 // cwe79). The capture group is the numeric ID.
 var cwePattern = regexp.MustCompile(`(?i)CWE[- ]?(\d+)`)
+
+// htmlTagPattern matches an HTML tag in Nessus plugin text.
+var htmlTagPattern = regexp.MustCompile(`<[^>]*>`)
 
 // nessusAliases maps Nessus numeric severity levels and CAT compliance categories
 // to HDF impact values. Canonical reference: heimdall2 nessus-mapper.ts.
@@ -136,7 +140,7 @@ func parseHostTime(timeStr string) time.Time {
 func getHostPropertyValue(host *ReportHost, name string) string {
 	for _, tag := range host.HostProperties.Tags {
 		if tag.Name == name {
-			return tag.Value
+			return strings.TrimSpace(tag.Value)
 		}
 	}
 	return ""
@@ -176,15 +180,19 @@ func convertReportHostToBaseline(host *ReportHost, policyName, version string, r
 	status := "loaded"
 	summary := fmt.Sprintf("Nessus %s", policyName)
 
-	return hdf.EvaluatedBaseline{
+	baseline := hdf.EvaluatedBaseline{
 		Name:            name,
 		Title:           &title,
-		Version:         &version,
 		Status:          &status,
 		Summary:         &summary,
 		ResultsChecksum: resultsChecksum,
 		Requirements:    requirements,
 	}
+	if version != "" {
+		baseline.Version = &version
+	}
+
+	return baseline
 }
 
 func convertReportItemToRequirement(item *ReportItem, host *ReportHost) hdf.EvaluatedRequirement {
@@ -211,9 +219,7 @@ func convertReportItemToRequirement(item *ReportItem, host *ReportHost) hdf.Eval
 	refs := buildRefs(item)
 	results := []hdf.RequirementResult{buildResult(item, host, isCompliance)}
 
-	// Serialize item as code
-	codeBytes, _ := json.MarshalIndent(item, "", "  ")
-	code := string(codeBytes)
+	code := buildCode(item)
 
 	req := hdf.EvaluatedRequirement{
 		ID:                 id,
@@ -244,6 +250,49 @@ func convertReportItemToRequirement(item *ReportItem, host *ReportHost) hdf.Eval
 	}
 
 	return req
+}
+
+// buildCode renders the source finding as a JSON object preserving Nessus' own
+// field names and document order — the same blob the TypeScript converter
+// produces from its parsed XML, and the reason the two `code` strings compare
+// equal.
+func buildCode(item *ReportItem) string {
+	var b strings.Builder
+	b.WriteString("{\n")
+	for i, f := range item.rawFields {
+		var value interface{} = f.values[0]
+		if f.repeated {
+			value = f.values
+		}
+		b.WriteString("  ")
+		b.WriteString(marshalJSON(f.name))
+		b.WriteString(": ")
+		b.WriteString(marshalJSONIndent(value, "  "))
+		if i < len(item.rawFields)-1 {
+			b.WriteString(",")
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString("}")
+	return b.String()
+}
+
+// marshalJSON encodes v without Go's default HTML escaping, which would turn
+// `<`, `>` and `&` inside plugin text into \u00XX escapes that JSON.stringify
+// leaves alone.
+func marshalJSON(v interface{}) string {
+	return marshalJSONIndent(v, "")
+}
+
+func marshalJSONIndent(v interface{}, prefix string) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent(prefix, "  ")
+	if err := enc.Encode(v); err != nil {
+		return `""`
+	}
+	return strings.TrimRight(buf.String(), "\n")
 }
 
 func buildDescriptions(item *ReportItem, isCompliance bool) []hdf.Description {
@@ -447,8 +496,11 @@ func parseComplianceRef(ref, key string) []string {
 	return results
 }
 
+// parseHTML strips markup but keeps the line breaks Nessus uses to structure
+// plugin text — hdfutil.StripHTML collapses them, which flattens multi-line
+// descriptions and solutions into an unreadable single line.
 func parseHTML(html string) string {
-	return hdfutil.StripHTML(html)
+	return strings.TrimSpace(htmlTagPattern.ReplaceAllString(html, ""))
 }
 
 func convertReportHostToTarget(host *ReportHost) hdf.Component {
@@ -488,14 +540,23 @@ func convertReportHostToTarget(host *ReportHost) hdf.Component {
 		osVersion = &osVer
 	}
 
+	// Nessus reports every interface's MAC in one newline-separated property;
+	// the component carries a single address, so take the primary one.
+	var macAddress *string
+	if macs := getHostPropertyValue(host, "mac-address"); macs != "" {
+		primary := strings.TrimSpace(strings.Split(macs, "\n")[0])
+		macAddress = &primary
+	}
+
 	return hdf.Component{
-		Name:      hostName,
-		Type:      hdf.Host,
-		Hostname:  hostname,
-		FQDN:      fqdn,
-		IPAddress: ipAddress,
-		OSName:    osName,
-		OSVersion: osVersion,
+		Name:       hostName,
+		Type:       hdf.Host,
+		Hostname:   hostname,
+		FQDN:       fqdn,
+		IPAddress:  ipAddress,
+		OSName:     osName,
+		OSVersion:  osVersion,
+		MACAddress: macAddress,
 	}
 }
 

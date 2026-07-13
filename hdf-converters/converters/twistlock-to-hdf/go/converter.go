@@ -348,7 +348,7 @@ func formatCodeDesc(vuln TwistlockVuln) string {
 	}
 	impactedVersions := "N/A"
 	if len(vuln.ImpactedVersions) > 0 {
-		impactedVersions = fmt.Sprintf("%v", vuln.ImpactedVersions)
+		impactedVersions = "[" + strings.Join(vuln.ImpactedVersions, " ") + "]"
 	}
 	return fmt.Sprintf("Package %q should be updated to latest version above impacted versions %s",
 		packageName, impactedVersions)
@@ -512,19 +512,19 @@ func ConvertTwistlockToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	now := time.Now().UTC()
 
+	// Code-repo scans carry no image id, so there is no image label to attach.
+	component := hdf.Component{Name: targetName, Type: hdf.ContainerImage}
+	if imageID := report.Results[0].ID; imageID != "" {
+		component.Labels = map[string]string{"image": imageID}
+	}
+
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "twistlock-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Twistlock",
 		ToolFormat:       "JSON",
 		Baselines:        baselines,
-		Components: []hdf.Component{
-			{
-				Name:   targetName,
-				Type:   hdf.ContainerImage,
-				Labels: map[string]string{"image": report.Results[0].ID},
-			},
-		},
-		Timestamp: &now,
+		Components:       []hdf.Component{component},
+		Timestamp:        &now,
 	}), nil
 }

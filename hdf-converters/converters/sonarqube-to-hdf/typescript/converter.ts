@@ -34,6 +34,9 @@ interface SonarQubeIssuesResponse {
   issues: SonarQubeIssue[];
   components?: SonarQubeComponent[];
   rules?: SonarQubeRule[];
+  // Populated by the fetcher from /api/server/version, so it travels with the
+  // data and lands on tool.version.
+  serverVersion?: string;
 }
 
 type MqrSeverity = 'BLOCKER' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
@@ -300,6 +303,7 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
     generatorName: 'sonarqube-to-hdf',
     converterVersion: '1.0.0',
     toolName: 'SonarQube',
+    toolVersion: sonarData.serverVersion || undefined,
     baselines,
     components,
     timestamp: new Date(),

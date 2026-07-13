@@ -101,7 +101,7 @@
             "type": "pypi",
             "version": "n/a"
           },
-          "code": "{\n  \"latest_version\": \"1.0.0\",\n  \"org\": \"example-corp\",\n  \"name\": \"internal-lib\",\n  \"type\": \"pypi\",\n  \"package\": \"pypi\",\n  \"version\": \"n/a\",\n  \"scope\": \"runtime\",\n  \"requirement\": \"\\u003e=0.5.0\",\n  \"file\": \"requirements.txt\",\n  \"outdated_version\": {\n    \"major_behind\": 0,\n    \"minor_behind\": 0,\n    \"patch_behind\": 0\n  },\n  \"dependencies\": []\n}",
+          "code": "{\n  \"latest_version\": \"1.0.0\",\n  \"org\": \"example-corp\",\n  \"name\": \"internal-lib\",\n  \"type\": \"pypi\",\n  \"package\": \"pypi\",\n  \"version\": \"n/a\",\n  \"scope\": \"runtime\",\n  \"requirement\": \"\u003e=0.5.0\",\n  \"file\": \"requirements.txt\",\n  \"outdated_version\": {\n    \"major_behind\": 0,\n    \"minor_behind\": 0,\n    \"patch_behind\": 0\n  },\n  \"dependencies\": []\n}",
           "title": "Dependency internal-lib from example-corp (Required \u003e=0.5.0)",
           "verificationMethod": "automated"
         }
@@ -110,14 +110,14 @@
       "maintainer": "saf@groups.mitre.org",
       "status": "loaded",
       "summary": "Some dependencies have issues",
-      "title": "Ion Channel Analysis of https://github.com/example-org/python-mixed.git",
-      "version": ""
+      "title": "Ion Channel Analysis of https://github.com/example-org/python-mixed.git"
     }
   ],
   "generator": {
     "name": "ionchannel-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
+  "timestamp": "2026-07-12T19:40:22.569984-04:00",
   "tool": {
     "format": "JSON",
     "name": "Ion Channel"

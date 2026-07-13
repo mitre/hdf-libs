@@ -1,5 +1,12 @@
 package nessus
 
+import (
+	"encoding/xml"
+	"errors"
+	"io"
+	"strings"
+)
+
 // NessusXML represents the root structure of a Nessus XML scan file
 type NessusXML struct {
 	Policy Policy     `xml:"Policy"`
@@ -61,8 +68,10 @@ type ReportItem struct {
 	PluginID   string `xml:"pluginID,attr"`
 	PluginName string `xml:"pluginName,attr"`
 
+	// Nessus emits pluginFamily as a ReportItem attribute, not a child element.
+	PluginFamily string `xml:"pluginFamily,attr"`
+
 	// Basic metadata
-	PluginFamily           string `xml:"pluginFamily"`
 	Description            string `xml:"description"`
 	FName                  string `xml:"fname"`
 	PluginModificationDate string `xml:"plugin_modification_date"`
@@ -101,4 +110,112 @@ type ReportItem struct {
 	ComplianceSolution    string `xml:"http://www.nessus.org/cm compliance-solution"`
 	ComplianceResult      string `xml:"http://www.nessus.org/cm compliance-result"`
 	ComplianceActualValue string `xml:"http://www.nessus.org/cm compliance-actual-value"`
+
+	// Verbatim source finding, in document order, used to build the requirement's
+	// `code` blob. The typed fields above cover only the subset the converter
+	// reasons about; the raw capture keeps every element Nessus emitted.
+	rawFields []rawField
+}
+
+// rawField is one key of the source ReportItem. Values are strings; repeated
+// elements (cve, cwe, xref, ...) collapse into a single multi-value field.
+type rawField struct {
+	name   string
+	values []string
+	// repeated marks a field the converter always renders as a JSON array,
+	// even with a single value, so single- and multi-hit findings share a shape.
+	repeated bool
+}
+
+// alwaysArrayElements mirror the TypeScript parser's alwaysArray list: these
+// elements render as JSON arrays in `code` even when the finding has only one.
+var alwaysArrayElements = map[string]bool{"cve": true, "cwe": true}
+
+// UnmarshalXML decodes the typed fields and, in the same pass, records the raw
+// element/attribute sequence the code blob is built from. Attributes follow the
+// child elements, matching the TypeScript XML parser's key ordering.
+func (r *ReportItem) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	type reportItem ReportItem // sheds UnmarshalXML, so DecodeElement won't recurse
+	aux := struct {
+		*reportItem
+		InnerXML string `xml:",innerxml"`
+	}{reportItem: (*reportItem)(r)}
+
+	if err := d.DecodeElement(&aux, &start); err != nil {
+		return err
+	}
+
+	trimStrings(r)
+
+	children, err := parseRawChildren(aux.InnerXML)
+	if err != nil {
+		return err
+	}
+	for _, attr := range start.Attr {
+		children = appendRawField(children, attr.Name.Local, attr.Value)
+	}
+	r.rawFields = children
+
+	return nil
+}
+
+// parseRawChildren walks a ReportItem's inner XML and returns its child
+// elements in document order, with entity references resolved.
+func parseRawChildren(innerXML string) ([]rawField, error) {
+	var fields []rawField
+	dec := xml.NewDecoder(strings.NewReader(innerXML))
+	for {
+		tok, err := dec.Token()
+		if errors.Is(err, io.EOF) {
+			return fields, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		se, ok := tok.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		var text string
+		if err := dec.DecodeElement(&text, &se); err != nil {
+			return nil, err
+		}
+		fields = appendRawField(fields, se.Name.Local, strings.TrimSpace(text))
+	}
+}
+
+func appendRawField(fields []rawField, name, value string) []rawField {
+	for i := range fields {
+		if fields[i].name == name {
+			fields[i].values = append(fields[i].values, value)
+			fields[i].repeated = true
+			return fields
+		}
+	}
+	return append(fields, rawField{
+		name:     name,
+		values:   []string{value},
+		repeated: alwaysArrayElements[name],
+	})
+}
+
+// trimStrings trims the element-derived fields. The XML decoder keeps the
+// surrounding whitespace Nessus pads multi-line text with; the TypeScript
+// parser drops it, and the untrimmed text leaks into descriptions and messages.
+func trimStrings(r *ReportItem) {
+	for _, p := range []*string{
+		&r.Description, &r.FName, &r.PluginModificationDate, &r.PluginPublicationDate,
+		&r.PluginType, &r.RiskFactor, &r.ScriptVersion, &r.SeeAlso, &r.Solution,
+		&r.Synopsis, &r.PluginOutput, &r.CVSSBaseScore, &r.CVSS3BaseScore, &r.CVE,
+		&r.CVSSVector, &r.CVSS3Vector, &r.CVSSTemporalVector, &r.CVSS3TemporalVector,
+		&r.CVSSTemporalScore, &r.CVSS3TemporalScore, &r.CVSSScoreSource,
+		&r.EPSSScore, &r.EPSSPercentile,
+		&r.ComplianceReference, &r.ComplianceCheckName, &r.ComplianceInfo,
+		&r.ComplianceSolution, &r.ComplianceResult, &r.ComplianceActualValue,
+	} {
+		*p = strings.TrimSpace(*p)
+	}
+	for i := range r.CWE {
+		r.CWE[i] = strings.TrimSpace(r.CWE[i])
+	}
 }

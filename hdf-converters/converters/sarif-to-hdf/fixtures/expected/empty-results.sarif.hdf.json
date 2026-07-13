@@ -1,0 +1,44 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "ExampleAnalyzer ran and reported zero findings.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "ExampleAnalyzer ran and reported zero findings.",
+              "startTime": "2026-07-12T18:56:41.922051-04:00",
+              "status": "passed"
+            }
+          ],
+          "id": "ExampleAnalyzer-no-findings",
+          "impact": 0,
+          "tags": {},
+          "title": "No findings reported"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "7a1eae9ec468a344386172dfd45b70ef0f1ab24ae9cceb3d6d63acc571da85e4"
+      },
+      "name": "ExampleAnalyzer",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-12T18:56:41.922051-04:00",
+  "tool": {
+    "format": "SARIF",
+    "name": "ExampleAnalyzer",
+    "version": "1.4.2"
+  }
+}

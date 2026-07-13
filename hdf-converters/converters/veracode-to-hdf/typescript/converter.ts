@@ -19,6 +19,7 @@ import type {
   EvaluatedRequirement,
   Checksum,
   Description,
+  RequirementResult,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -26,7 +27,6 @@ import {
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
-  createResult,
 } from '@mitre/hdf-schema';
 
 /** Attribute prefix used by fast-xml-parser — all XML attributes are accessed via `@_name`. */
@@ -49,24 +49,40 @@ function veracodeSeverityToImpact(severity: string): number {
 
 // ---- Utility functions ----
 
-/** Get an attribute from a parsed XML node. */
+/** Get an attribute from a parsed XML node, entity-decoded. */
 function attr(node: Record<string, unknown>, name: string): string {
-  return (node[`${A}${name}`] as string) ?? '';
+  const raw = node[`${A}${name}`] as string | undefined;
+  return raw === undefined ? '' : decodeXmlEntities(raw);
 }
 
-/** Decode common XML/HTML character references (&#xHH; and &#NNN;). */
+const NAMED_ENTITIES: Record<string, string> = {
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  amp: '&',
+};
+
+// Veracode escapes nearly every punctuation character in its attributes
+// (&#x28; &#xd; &#x2f; …), and the shared XML parser runs with processEntities
+// off as XXE defense-in-depth, so the references arrive undecoded. Go's
+// encoding/xml decodes them for free. Only predefined and numeric character
+// references are decoded; document-defined entities stay untouched.
 function decodeXmlEntities(s: string): string {
-  return s
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex as string, 16)))
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec as string, 10)));
+  return s.replace(
+    /&(?:#(\d+)|#[xX]([0-9a-fA-F]+)|(lt|gt|quot|apos|amp));/g,
+    (match, dec: string | undefined, hex: string | undefined, name: string | undefined) => {
+      if (dec !== undefined) return String.fromCodePoint(Number.parseInt(dec, 10));
+      if (hex !== undefined) return String.fromCodePoint(Number.parseInt(hex, 16));
+      return name !== undefined ? NAMED_ENTITIES[name] ?? match : match;
+    },
+  );
 }
 
 /** Parse Veracode timestamp format ("2021-12-29 22:16:36 UTC") to Date. */
 function parseVeracodeTimestamp(ts: string): Date | undefined {
   if (!ts) return undefined;
-  // Decode XML entities in timestamps (e.g., &#x3a; -> :)
-  const decoded = decodeXmlEntities(ts);
-  const normalized = decoded.replace(' UTC', 'Z').replace(' ', 'T');
+  const normalized = ts.replace(' UTC', 'Z').replace(' ', 'T');
   return parseTimestamp(normalized) ?? undefined;
 }
 
@@ -241,11 +257,18 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
   const results = cwes.flatMap(c => {
     const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
     const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
-    return flaws.map(flaw => createResult(ResultStatus.Failed, undefined, {
+    return flaws.map((flaw): RequirementResult => ({
+      status: ResultStatus.Failed,
       codeDesc: formatFlawCodeDesc(flaw),
       startTime,
     }));
   });
+
+  const sourceRef = cwes.flatMap(c => {
+    const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
+    const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
+    return flaws.map(flaw => attr(flaw, 'sourcefile')).filter(Boolean);
+  }).join('\n');
 
   const req = createRequirement(
     attr(cat, 'categoryid'),
@@ -253,7 +276,7 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     descriptions,
     impact,
     results,
-    { tags },
+    { tags, sourceLocation: sourceRef ? { ref: sourceRef } : undefined },
   ) as EvaluatedRequirement;
 
   const controlType = deriveControlTypeFromTags(nist);
@@ -339,7 +362,10 @@ function buildCVERequirement(
   // One result per affected component
   const startTime = parseVeracodeTimestamp(firstBuildDate) ?? new Date();
 
-  const results = components.map(comp => createResult(ResultStatus.Failed, undefined, {
+  // Literal rather than createResult: that helper defaults `message` to '',
+  // and Veracode carries no message.
+  const results = components.map((comp): RequirementResult => ({
+    status: ResultStatus.Failed,
     codeDesc: formatSCACodeDesc(comp),
     startTime,
   }));
@@ -350,13 +376,20 @@ function buildCVERequirement(
     { label: 'default', data: cveSummary || '' },
   ];
 
+  const sourceRef = components.flatMap(comp => {
+    const filePaths = comp.file_paths as Record<string, unknown> | undefined;
+    if (!filePaths) return [];
+    const fps = ensureArray(filePaths.file_path as Record<string, unknown> | Record<string, unknown>[]);
+    return fps.map(fp => attr(fp, 'value')).filter(Boolean);
+  }).join('\n');
+
   const req = createRequirement(
     cveId,
     cveId,
     descriptions,
     impact,
     results,
-    { tags },
+    { tags, sourceLocation: sourceRef ? { ref: sourceRef } : undefined },
   ) as EvaluatedRequirement;
 
   const controlType = deriveControlTypeFromTags(nist);
@@ -385,7 +418,12 @@ export async function convertVeracodeToHdf(input: string): Promise<string> {
   // Parse XML with @_ attribute prefix to disambiguate attributes from child elements.
   // This is critical for the <component> element where both `vulnerabilities` attribute
   // (count) and child `<vulnerabilities>` element (list) exist.
-  const parsed = parseXml(input, { attributeNamePrefix: '@_' }) as Record<string, unknown>;
+  // trimValues stays off: Veracode ships attribute text with significant leading
+  // and trailing whitespace, and Go's decoder preserves it.
+  const parsed = parseXml(input, {
+    attributeNamePrefix: '@_',
+    trimValues: false,
+  }) as Record<string, unknown>;
 
   // Check for summary report
   if ('summaryreport' in parsed) {

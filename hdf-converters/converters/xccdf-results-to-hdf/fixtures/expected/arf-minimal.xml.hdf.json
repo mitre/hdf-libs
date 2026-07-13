@@ -15,7 +15,7 @@
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_com.example.www_rule_test-fail",
-              "startTime": "2021-11-30T13:51:50+01:00",
+              "startTime": "2021-11-30T12:51:50Z",
               "status": "failed"
             }
           ],
@@ -46,12 +46,12 @@
   ],
   "generator": {
     "name": "xccdf-results-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   "statistics": {
     "duration": 0
   },
-  "timestamp": "2021-11-30T13:51:50+01:00",
+  "timestamp": "2021-11-30T12:51:50Z",
   "tool": {
     "format": "ARF",
     "name": "ARF"

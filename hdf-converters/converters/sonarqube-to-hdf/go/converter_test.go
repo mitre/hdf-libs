@@ -619,7 +619,7 @@ func TestConvertSonarqubeToHDF_ControlType(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "sonarqube-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertSonarqubeToHDF(input, "0.1.0")
+		return ConvertSonarqubeToHDF(input, "1.0.0")
 	})
 }
 

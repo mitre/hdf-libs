@@ -353,7 +353,7 @@ func TestConvertConveyor_Timestamp(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "conveyor-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertConveyorToHDF(input, "0.1.0")
+		return ConvertConveyorToHDF(input, "1.0.0")
 	})
 }
 

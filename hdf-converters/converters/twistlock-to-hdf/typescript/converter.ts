@@ -10,6 +10,8 @@ import type {
   Checksum,
   Cvss,
   AffectedPackage,
+  RequirementResult,
+  Component,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -20,7 +22,6 @@ import {
   Version as CvssVersion,
   createMinimalBaseline,
   createRequirement,
-  createResult,
   type Description,
 } from '@mitre/hdf-schema';
 
@@ -299,7 +300,7 @@ function buildPackageTypeIndex(pkgs: TwistlockPackage[] | undefined): Map<string
 function formatCodeDesc(vuln: TwistlockVuln): string {
   const packageName = vuln.packageName ?? 'N/A';
   const impactedVersions = vuln.impactedVersions && vuln.impactedVersions.length > 0
-    ? JSON.stringify(vuln.impactedVersions)
+    ? `[${vuln.impactedVersions.join(' ')}]`
     : 'N/A';
   return `Package ${JSON.stringify(packageName)} should be updated to latest version above impacted versions ${impactedVersions}`;
 }
@@ -335,11 +336,14 @@ function buildRequirement(
 
   const startTime = (vuln.discoveredDate ? parseTimestamp(vuln.discoveredDate) : null) ?? new Date('0001-01-01T00:00:00Z');
 
-  const results = [
-    createResult(ResultStatus.Failed, undefined, {
+  // Built as a literal rather than via createResult: that helper defaults
+  // `message` to '', and Twistlock has no message to carry.
+  const results: RequirementResult[] = [
+    {
+      status: ResultStatus.Failed,
       codeDesc: formatCodeDesc(vuln),
       startTime,
-    }),
+    },
   ];
 
   const req = createRequirement(
@@ -454,17 +458,20 @@ export async function convertTwistlockToHdf(input: string): Promise<string> {
   // Use the first result's name or repository as target name
   const targetName = results[0]!.name ?? results[0]!.repository ?? '';
 
+  // Code-repo scans carry no image id, so there is no image label to attach.
+  const component: Component = { name: targetName, type: TargetType.ContainerImage };
+  const imageID = results[0]!.id;
+  if (imageID) {
+    component.labels = { image: imageID };
+  }
+
   return buildHdfResults({
     generatorName: 'twistlock-to-hdf',
     converterVersion: '1.0.0',
     toolName: 'Twistlock',
     toolFormat: 'JSON',
     baselines,
-    components: [{
-      name: targetName,
-      type: TargetType.ContainerImage,
-      labels: { image: results[0]?.id ?? targetName },
-    }],
+    components: [component],
     timestamp: new Date(),
   });
 }

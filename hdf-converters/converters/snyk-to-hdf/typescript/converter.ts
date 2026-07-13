@@ -124,12 +124,14 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, pac
     { label: 'default', data: rep.description },
   ];
 
-  const results = vulns.map(vuln =>
-    createResult(ResultStatus.Failed, undefined, {
+  const results = vulns.map(vuln => {
+    const result = createResult(ResultStatus.Failed, undefined, {
       codeDesc: formatDependencyPath(vuln.from),
       startTime: scanTime,
-    })
-  );
+    });
+    delete result.message;
+    return result;
+  });
 
   const req = createRequirement(
     vulnID,

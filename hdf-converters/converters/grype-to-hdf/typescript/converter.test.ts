@@ -37,8 +37,8 @@ describe('Grype Converter', async () => {
       expectValidResults(hdf);
 
       expect(hdf.baselines).toHaveLength(1);
-      expect(hdf.generator.name).toBe('grype');
-      expect(hdf.generator.version).toBe('0.79.3');
+      expect(hdf.generator.name).toBe('grype-to-hdf');
+      expect(hdf.generator.version).toBe('1.0.0');
       expect(hdf.tool?.name).toBe('Grype');
       expect(hdf.tool?.version).toBe('0.79.3');
       expect(hdf.tool?.format).toBeUndefined();

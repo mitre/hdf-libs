@@ -1,0 +1,124 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_1_vuln.json LINE : 13 COLUMN : 0\n      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\",",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_1_vuln.json LINE : 13 COLUMN : 0\n      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\",",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json LINE : 44 COLUMN : 0\n      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\",",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : dojo/unittests/tools/test_gitlab_secret_detection_report_parser.py LINE : 37 COLUMN : 0\n        self.assertEqual(\"AWS\\nAKIAIOSFODNN7EXAMPLE\", first_finding.description)",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json LINE : 44 COLUMN : 0\n      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\",",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : dojo/unittests/tools/test_gitlab_secret_detection_report_parser.py LINE : 37 COLUMN : 0\n        self.assertEqual(\"AWS\\nAKIAIOSFODNN7EXAMPLE\", first_finding.description)",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 13,
+            "ref": "dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_1_vuln.json"
+          },
+          "id": "AWS Access Key secret detected",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "warning"
+          },
+          "title": "AWS Access Key secret detected",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json LINE : 13 COLUMN : 0\n      \"raw_source_code_extract\": \"-----BEGIN OPENSSH PRIVATE KEY-----\",",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json LINE : 13 COLUMN : 0\n      \"raw_source_code_extract\": \"-----BEGIN OPENSSH PRIVATE KEY-----\",",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 13,
+            "ref": "dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json"
+          },
+          "id": "Asymmetric Private Key secret detected",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "warning"
+          },
+          "title": "Asymmetric Private Key secret detected",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "b9d822a48c58a77c1c01f65c10294a2fb807713afa3983ac9959e7e3c6a15a6a"
+      },
+      "name": "Gitleaks",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-12T18:56:41.922316-04:00",
+  "tool": {
+    "format": "SARIF",
+    "name": "Gitleaks"
+  }
+}

@@ -3,6 +3,7 @@ package checkov
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -81,8 +82,18 @@ func getImpact(severity *string) float64 {
 
 // formatCodeDesc builds the code_desc string for a result.
 func formatCodeDesc(check CheckovCheck) string {
-	return fmt.Sprintf("Resource: %s\nFile: %s (lines %v)",
-		check.Resource, check.FilePath, check.FileLineRange)
+	return fmt.Sprintf("Resource: %s\nFile: %s (lines %s)",
+		check.Resource, check.FilePath, formatLineRange(check.FileLineRange))
+}
+
+// formatLineRange renders the line range as a JSON array literal ("[26,49]").
+// Go's %v on a slice would emit a space-separated Go-ism instead.
+func formatLineRange(lines []int) string {
+	parts := make([]string, len(lines))
+	for i, l := range lines {
+		parts[i] = strconv.Itoa(l)
+	}
+	return "[" + strings.Join(parts, ",") + "]"
 }
 
 // checkToResult converts a single CheckovCheck into an HDF RequirementResult.

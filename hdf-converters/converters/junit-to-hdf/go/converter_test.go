@@ -435,7 +435,7 @@ func TestConvertJUnitToHDF_EntityExpansion(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "junit-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertJUnitToHDF(input, "0.1.0")
+		return ConvertJUnitToHDF(input, "1.0.0")
 	})
 }
 

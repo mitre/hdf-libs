@@ -610,7 +610,7 @@ func TestConvertGosecToHDF_NativeJSONNotRoutedToSARIF(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "gosec-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertGosecToHDF(input, "0.1.0")
+		return ConvertGosecToHDF(input, "1.0.0")
 	})
 }
 

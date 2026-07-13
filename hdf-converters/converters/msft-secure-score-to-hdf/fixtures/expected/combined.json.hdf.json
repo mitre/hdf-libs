@@ -886,7 +886,7 @@
               "label": "default"
             },
             {
-              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; High confidence spam message action \u0026rsquo; option set to \u0026ldquo;Quarantine message\u0026rdquo;, by either updating your existing policies or creating new ones.",
+              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; High confidence spam message action \u0026rsquo; option set to \u0026ldquo;Quarantine message\u0026rdquo;, by either updating your existing policies or creating new ones.",
               "label": "fix"
             },
             {
@@ -919,7 +919,7 @@
               "label": "default"
             },
             {
-              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; Phishing message action \u0026rsquo; option set to \u0026ldquo;Quarantine message\u0026rdquo;, by either updating your existing policies or creating new ones.",
+              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; Phishing message action \u0026rsquo; option set to \u0026ldquo;Quarantine message\u0026rdquo;, by either updating your existing policies or creating new ones.",
               "label": "fix"
             },
             {
@@ -952,7 +952,7 @@
               "label": "default"
             },
             {
-              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; High confidence phishing message action \u0026rsquo; option set to \u0026ldquo;Quarantine message\u0026rdquo;, by either updating your existing policies or creating new ones.",
+              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; High confidence phishing message action \u0026rsquo; option set to \u0026ldquo;Quarantine message\u0026rdquo;, by either updating your existing policies or creating new ones.",
               "label": "fix"
             },
             {
@@ -985,7 +985,7 @@
               "label": "default"
             },
             {
-              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; Bulk complaint level (BCL) met or exceeded \u0026rsquo; option set to \u0026ldquo;Move message to Junk Email folder\u0026rdquo;, by either updating your existing policies or creating new ones.",
+              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; Bulk complaint level (BCL) met or exceeded \u0026rsquo; option set to \u0026ldquo;Move message to Junk Email folder\u0026rdquo;, by either updating your existing policies or creating new ones.",
               "label": "fix"
             },
             {
@@ -1018,7 +1018,7 @@
               "label": "default"
             },
             {
-              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; Retain spam in quarantine for this many days \u0026rsquo; option set to 30 , by either updating your existing policies or creating new ones.",
+              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; Retain spam in quarantine for this many days \u0026rsquo; option set to 30 , by either updating your existing policies or creating new ones.",
               "label": "fix"
             },
             {
@@ -1084,7 +1084,7 @@
               "label": "default"
             },
             {
-              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; Bulk email spam action \u0026rsquo; option enabled and the \u0026lsquo; Bulk email threshold \u0026rsquo; option set to 6 or lower, by either updating your existing policies or creating new ones.",
+              "data": "Ensure that all users have an assigned inbound anti-spam policy with the \u0026lsquo; Bulk email spam action \u0026rsquo; option enabled and the \u0026lsquo; Bulk email threshold \u0026rsquo; option set to 6 or lower, by either updating your existing policies or creating new ones.",
               "label": "fix"
             },
             {
@@ -1328,7 +1328,7 @@
         {
           "descriptions": [
             {
-              "data": "Enables enhanced impersonation results based on each user's individual sender map and allows you to define specific actions for impersonated messages. This setting is available only if \u0026lsquo; Enable mailbox intelligence\u0026rsquo;  is selected.",
+              "data": "Enables enhanced impersonation results based on each user's individual sender map and allows you to define specific actions for impersonated messages. This setting is available only if \u0026lsquo; Enable mailbox intelligence\u0026rsquo; is selected.",
               "label": "default"
             },
             {
@@ -1394,7 +1394,7 @@
         {
           "descriptions": [
             {
-              "data": "Prevents specified domains from being impersonated by the message sender's domain. When you add domains to the \u0026lsquo; Enable domains to protect\u0026rsquo; list, messages from senders in those domains are subject to impersonation protection checks. The message is checked for impersonation if it’s sent to a recipient that the policy applies to. If impersonation is detected in the sender's domain, the impersonation protection actions for domains are applied to the message. By default, no sender domains are covered by impersonation protection, either in the default policy or in custom policies.",
+              "data": "Prevents specified domains from being impersonated by the message sender's domain. When you add domains to the \u0026lsquo; Enable domains to protect\u0026rsquo; list, messages from senders in those domains are subject to impersonation protection checks. The message is checked for impersonation if it’s sent to a recipient that the policy applies to. If impersonation is detected in the sender's domain, the impersonation protection actions for domains are applied to the message. By default, no sender domains are covered by impersonation protection, either in the default policy or in custom policies.",
               "label": "default"
             },
             {
@@ -2052,9 +2052,9 @@
   ],
   "generator": {
     "name": "msft-secure-score-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-15T03:15:07.939571712Z",
+  "timestamp": "2026-07-12T23:30:23.256245Z",
   "tool": {
     "format": "JSON",
     "name": "Microsoft Secure Score"

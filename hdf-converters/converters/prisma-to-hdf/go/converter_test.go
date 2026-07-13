@@ -361,7 +361,7 @@ func TestConvertPrisma_NoFindings(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "prisma-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertPrismaToHDF(input, "0.1.0")
+		return ConvertPrismaToHDF(input, "1.0.0")
 	})
 }
 

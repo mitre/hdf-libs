@@ -269,7 +269,7 @@
   ],
   "generator": {
     "name": "cyclonedx-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   "timestamp": "2024-07-08T17:30:28Z",
   "tool": {

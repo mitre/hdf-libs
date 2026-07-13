@@ -1,0 +1,199 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "SQL string formatting",
+              "label": "default"
+            },
+            {
+              "data": "SQL query construction using string concatenation or formatting, which can lead to SQL injection vulnerabilities.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : internal/db/users.go LINE : 34 COLUMN : 2\n\tquery := fmt.Sprintf(\"SELECT * FROM users WHERE id = %s\", id)",
+              "startTime": "2026-07-12T18:56:41.922525-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 34,
+            "ref": "internal/db/users.go"
+          },
+          "id": "G201",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-89"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "primaryLocationHash": "gosec-g201-users-34"
+              }
+            },
+            "helpUri": "https://github.com/securego/gosec#available-rules",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "SQL query construction using format string",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Potential file inclusion via variable",
+              "label": "default"
+            },
+            {
+              "data": "A file path is constructed from user-controlled input, potentially allowing path traversal attacks.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : internal/handlers/files.go LINE : 56 COLUMN : 15\n\tdata, err := os.ReadFile(filePath)",
+              "message": "Suppressed: #nosec G304 -- filePath is validated against allowlist",
+              "startTime": "2026-07-12T18:56:41.922525-04:00",
+              "status": "notReviewed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 56,
+            "ref": "internal/handlers/files.go"
+          },
+          "id": "G304",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-22"
+            ],
+            "helpUri": "https://github.com/securego/gosec#available-rules",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "warning",
+            "suppressions": [
+              {
+                "justification": "#nosec G304 -- filePath is validated against allowlist",
+                "kind": "inSource",
+                "status": "accepted"
+              }
+            ]
+          },
+          "controlType": "technical",
+          "title": "File path provided as taint input",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Use of weak cryptographic primitive",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : internal/auth/checksum.go LINE : 12 COLUMN : 8\n\th := md5.New()",
+              "startTime": "2026-07-12T18:56:41.922525-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 12,
+            "ref": "internal/auth/checksum.go"
+          },
+          "id": "G401",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-002438"
+            ],
+            "cwe": [
+              "CWE-326"
+            ],
+            "helpUri": "https://github.com/securego/gosec#available-rules",
+            "nist": [
+              "SC-12"
+            ],
+            "severity": "warning"
+          },
+          "controlType": "technical",
+          "title": "Detect the usage of MD5 or SHA1",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Potential hardcoded credentials",
+              "label": "default"
+            },
+            {
+              "data": "Potential hardcoded credentials detected. Secrets should be stored in environment variables or external secret managers.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : internal/config/constants.go LINE : 7 COLUMN : 2\n\tdbPassword = \"supersecret123\"",
+              "startTime": "2026-07-12T18:56:41.922525-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 7,
+            "ref": "internal/config/constants.go"
+          },
+          "id": "G101",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [
+              "CWE-798"
+            ],
+            "helpUri": "https://github.com/securego/gosec#available-rules",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "error"
+          },
+          "title": "Look for hard coded credentials",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "995bebca5395f1a8f1b730583e4dbe44d5493dee09b913c26706f2a5eae8e0ad"
+      },
+      "name": "gosec",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-12T18:56:41.922525-04:00",
+  "tool": {
+    "format": "SARIF",
+    "name": "gosec",
+    "version": "2.18.2"
+  }
+}

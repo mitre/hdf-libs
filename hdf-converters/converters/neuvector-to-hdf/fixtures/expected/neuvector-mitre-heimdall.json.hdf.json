@@ -21,7 +21,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package apk-tools is at version 2.10.5-r1. Update to fixed version 2.10.7-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -59,7 +59,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -97,7 +97,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -135,7 +135,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -173,7 +173,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -211,7 +211,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -249,7 +249,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -287,7 +287,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -325,7 +325,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -363,7 +363,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package freetype is at version 2.10.4-r0. Update to fixed version 2.10.4-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -401,7 +401,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ghostscript is at version 9.52-r0. Update to fixed version 9.52-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -439,7 +439,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package gnutls is at version 3.6.15-r0. Update to fixed version 3.6.15-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -477,7 +477,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package gnutls is at version 3.6.15-r0. Update to fixed version 3.6.15-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -515,7 +515,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libx11 is at version 1.6.12-r0. Update to fixed version 1.6.12-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -553,7 +553,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.1-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -591,7 +591,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.5-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -629,7 +629,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.4-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -667,7 +667,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1l-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -705,7 +705,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package zlib is at version 1.2.11-r3. Update to fixed version 1.2.12-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -743,7 +743,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package apk-tools is at version 2.10.5-r1. Update to fixed version 2.10.6-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -781,7 +781,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -819,7 +819,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -857,7 +857,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -895,7 +895,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -933,7 +933,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -971,7 +971,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1009,7 +1009,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1047,7 +1047,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r20.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1085,7 +1085,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1123,7 +1123,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r22.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1161,7 +1161,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1199,7 +1199,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package cairo is at version 1.16.0-r2. Update to fixed version 1.16.0-r3.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1237,7 +1237,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package cyrus-sasl is at version 2.1.27-r6. Update to fixed version 2.1.28-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1275,7 +1275,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1313,7 +1313,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1351,7 +1351,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1389,7 +1389,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1427,7 +1427,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1465,7 +1465,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1503,7 +1503,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package freetype is at version 2.10.4-r0. Update to fixed version 2.10.4-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1541,7 +1541,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package freetype is at version 2.10.4-r0. Update to fixed version 2.10.4-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1579,7 +1579,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package gdk-pixbuf is at version 2.40.0-r2. Update to fixed version 2.40.0-r3.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1617,7 +1617,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package gmp is at version 6.2.0-r0. Update to fixed version 6.2.1-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1655,7 +1655,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package imagemagick6 is at version 6.9.11.25-r0. Update to fixed version 6.9.11.42-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1693,7 +1693,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.10-r6.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1731,7 +1731,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.10-r6.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1769,7 +1769,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.13-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1807,7 +1807,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses is at version 6.2_p20200523-r0. Update to fixed version 6.2_p20200523-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1845,7 +1845,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nettle is at version 3.5.1-r1. Update to fixed version 3.5.1-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1883,7 +1883,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1921,7 +1921,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.20.1-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1959,7 +1959,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -1997,7 +1997,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2035,7 +2035,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2073,7 +2073,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.21.0-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2111,7 +2111,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.20.1-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2149,7 +2149,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2187,7 +2187,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2225,7 +2225,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2263,7 +2263,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.21.0-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2301,7 +2301,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2339,7 +2339,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2377,7 +2377,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2415,7 +2415,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2453,7 +2453,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1j-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2491,7 +2491,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1n-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2529,7 +2529,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1k-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2567,7 +2567,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1l-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2605,7 +2605,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package p11-kit is at version 0.23.20-r5. Update to fixed version 0.23.22-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2643,7 +2643,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package p11-kit is at version 0.23.20-r5. Update to fixed version 0.23.22-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2681,7 +2681,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.5-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2719,7 +2719,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.5-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2757,7 +2757,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.9-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2795,7 +2795,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.5-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2833,7 +2833,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.7-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2871,7 +2871,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package xz is at version 5.2.5-r0. Update to fixed version 5.2.5-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2909,7 +2909,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package zlib is at version 1.2.11-r3. Update to fixed version 1.2.12-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2947,7 +2947,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package avahi is at version 0.8-r0. Update to fixed version 0.8-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -2985,7 +2985,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package avahi is at version 0.8-r0. Update to fixed version 0.8-r1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3023,7 +3023,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3061,7 +3061,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package c-ares is at version 1.16.1-r0. Update to fixed version 1.17.2-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3099,7 +3099,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package cairo is at version 1.16.0-r2. Update to fixed version 1.16.0-r5.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3137,7 +3137,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3175,7 +3175,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package gdk-pixbuf is at version 2.40.0-r2. Update to fixed version 2.40.0-r4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3213,7 +3213,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package imagemagick6 is at version 6.9.11.25-r0. Update to fixed version 6.9.11.35-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3251,7 +3251,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libjpeg-turbo is at version 2.0.5-r0. Update to fixed version 2.1.0-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3289,7 +3289,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.14-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3327,7 +3327,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.10-r6.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3365,7 +3365,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.12-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3403,7 +3403,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package musl is at version 1.1.24-r9. Update to fixed version 1.1.24-r10.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3441,7 +3441,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3479,7 +3479,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3517,7 +3517,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3555,7 +3555,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3593,7 +3593,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.5-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3631,7 +3631,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.20.1-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3669,7 +3669,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.2-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3707,7 +3707,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.5-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3745,7 +3745,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1k-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3783,7 +3783,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1j-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3821,7 +3821,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1i-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3859,7 +3859,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1j-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3897,7 +3897,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package p11-kit is at version 0.23.20-r5. Update to fixed version 0.23.22-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3935,7 +3935,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.7-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -3973,7 +3973,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.6-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4011,7 +4011,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.6-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4049,7 +4049,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.7-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4087,7 +4087,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.8-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4125,7 +4125,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.9-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4163,7 +4163,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package util-linux is at version 2.35.2-r0. Update to fixed version 2.37.4-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4201,7 +4201,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package util-linux is at version 2.35.2-r0. Update to fixed version 2.37.3-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4239,7 +4239,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package util-linux is at version 2.35.2-r0. Update to fixed version 2.37.3-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4277,7 +4277,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:activerecord is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.1,5.2; OR \u003e=6.0.5.1,6.0; OR \u003e=6.1.6.1,6.1; OR \u003e=7.0.3.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4315,7 +4315,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:activestorage is at version 5.2.4.3. Update to fixed version \u003e=5.2.6.3,5.2; OR \u003e=6.0.4.7,6.0; OR \u003e=6.1.4.7,6.1; OR \u003e=7.0.2.3.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4353,7 +4353,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:bundler is at version 2.1.4. Update to fixed version =2.2.10; OR \u003e=2.2.18.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4391,7 +4391,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:bundler is at version 2.1.4. Update to fixed version \u003e=2.2.33.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4429,7 +4429,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version =2.2.10; OR \u003e=2.2.18.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4467,7 +4467,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version \u003e=2.0.0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4505,7 +4505,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version \u003e=2.2.33.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4543,7 +4543,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:jmespath is at version 1.4.0. Update to fixed version \u003e=1.6.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4581,7 +4581,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:pdfkit is at version 0.8.4.1. Update to fixed version \u003e=0.8.7.2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4619,7 +4619,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.12,4.3; OR \u003e=5.6.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4657,7 +4657,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.1,2.0; OR \u003e=2.1.4.1,2.1; OR \u003e=2.2.3.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4695,7 +4695,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:stringio is at version 0.0.2. Update to fixed version \u003e=3.0.1.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4733,7 +4733,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.6,5.2; OR \u003e=5.2.6,5.2; OR \u003e=6.0.3.7,6.0; OR \u003e=6.1.3.2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4771,7 +4771,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.6,5.2; OR \u003e=5.2.6,5.2; OR \u003e=6.0.3.7,6.0; OR \u003e=6.1.3.2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4809,7 +4809,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4847,7 +4847,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.6.2,5.2; OR \u003e=6.0.4.6,6.0; OR \u003e=6.1.4.6,6.1; OR \u003e=7.0.2.2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4885,7 +4885,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4923,7 +4923,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:actionview is at version 5.2.4.3. Update to fixed version \u003e=6.1.7.3,6.1; OR \u003e=7.0.4.3.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4961,7 +4961,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:activerecord is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -4999,7 +4999,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:activesupport is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5037,7 +5037,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:addressable is at version 2.6.0. Update to fixed version \u003e=2.8.0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5075,7 +5075,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version \u003e=2.1.0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5113,7 +5113,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=1.3.2,1.3; OR \u003e=2.1.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5151,7 +5151,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:date is at version 2.0.0. Update to fixed version \u003e=2.0.1,2.0; OR \u003e=3.0.2,3.0; OR \u003e=3.1.2,3.1; OR \u003e=3.2.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5189,7 +5189,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:globalid is at version 0.4.2. Update to fixed version \u003e=1.0.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5227,7 +5227,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:json is at version 2.1.0. Update to fixed version \u003e=2.3.0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5265,7 +5265,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:loofah is at version 2.5.0. Update to fixed version \u003e=2.19.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5303,7 +5303,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:loofah is at version 2.5.0. Update to fixed version \u003e=2.19.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5341,7 +5341,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5379,7 +5379,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5419,7 +5419,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5459,7 +5459,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5497,7 +5497,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.6.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5535,7 +5535,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5573,7 +5573,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5611,7 +5611,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.12.5.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5649,7 +5649,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5689,7 +5689,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.11,4.3; OR \u003e=5.6.2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5727,7 +5727,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.8,4.3; OR \u003e=5.3.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5765,7 +5765,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.2,2.0; OR \u003e=2.1.4.2,2.1; OR \u003e=2.2.6.1,2.2; OR \u003e=3.0.4.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5803,7 +5803,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.2,2.0; OR \u003e=2.1.4.2,2.1; OR \u003e=2.2.6.1,2.2; OR \u003e=3.0.4.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5841,7 +5841,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.3,2.0; OR \u003e=2.1.4.3,2.1; OR \u003e=2.2.6.3,2.2; OR \u003e=3.0.4.2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5879,7 +5879,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.2,2.0; OR \u003e=2.1.4.2,2.1; OR \u003e=2.2.6.2,2.2; OR \u003e=3.0.4.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5917,7 +5917,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.1,2.0; OR \u003e=2.1.4.1,2.1; OR \u003e=2.2.3.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5955,7 +5955,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -5993,7 +5993,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rdoc is at version 6.1.2. Update to fixed version \u003e=6.1.2.1,6.1; OR \u003e=6.2.1.1,6.2; OR \u003e=6.3.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6031,7 +6031,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.1.9.1,3.1; OR \u003e=3.2.3.1,3.2; OR \u003e=3.2.5.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6069,7 +6069,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:tzinfo is at version 1.2.7. Update to fixed version \u003e=0.3.61,0.3; OR \u003e=1.2.10.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6107,7 +6107,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:webrick is at version 1.4.2. Update to fixed version \u003e=1.6.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6147,7 +6147,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.7.1,5.2; OR \u003e=6.0.4.8,6.0; OR \u003e=6.1.5.1,6.1; OR \u003e=7.0.2.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6185,7 +6185,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:actionview is at version 5.2.4.3. Update to fixed version \u003e=5.2.7.1,5.2; OR \u003e=6.0.4.8,6.0; OR \u003e=6.1.5.1,6.1; OR \u003e=7.0.2.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6223,7 +6223,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:actionview is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.4,5.2; OR \u003e=6.0.3.3.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6261,7 +6261,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:activerecord is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.5,5.2; OR \u003e=6.0.3.5,6.0; OR \u003e=6.1.2.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6299,7 +6299,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:activestorage is at version 5.2.4.3. Update to fixed version \u003e=6.1.7.7,6.1; OR \u003e=7.0.8.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6337,7 +6337,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=1.3.2,1.3; OR \u003e=2.1.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6375,7 +6375,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=2.2.5,2.2; OR \u003e=3.0.5.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6413,7 +6413,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=2.2.6,2.2; OR \u003e=3.0.7.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6451,7 +6451,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:loofah is at version 2.5.0. Update to fixed version \u003e=2.19.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6489,7 +6489,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6527,7 +6527,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.0.rc4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6565,7 +6565,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=5.6.7,5.6; OR \u003e=6.3.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6603,7 +6603,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=5.6.8,5.6; OR \u003e=6.4.2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6641,7 +6641,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.2.8.1,2.2; OR \u003e=3.0.9.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6679,7 +6679,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.2.6.4,2.0; OR \u003e=3.0.6.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6717,7 +6717,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.2.8.1,2.2; OR \u003e=3.0.9.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6755,7 +6755,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.4,2.0; OR \u003e=2.1.4.4,2.1; OR \u003e=2.2.8.1,2.2; OR \u003e=3.0.9.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6793,7 +6793,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rails is at version 5.2.4.3. Update to fixed version \u003e=3.2.17,3.2; OR \u003e=4.0.3,4.0; OR \u003e=4.1.0; OR \u003e=4.1.0.beta2,4.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6831,7 +6831,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6869,7 +6869,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.3.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6907,7 +6907,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6945,7 +6945,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -6983,7 +6983,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rdoc is at version 6.1.2. Update to fixed version \u003e=6.3.4.1,6.3; OR \u003e=6.4.1.1,6.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -7021,7 +7021,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -7059,7 +7059,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.2.7.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -7097,7 +7097,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.6.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -7135,7 +7135,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.3.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -7173,7 +7173,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.3.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -7211,7 +7211,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.9,4.3; OR \u003e=5.5.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.069065Z",
               "status": "failed"
             }
           ],
@@ -7251,9 +7251,9 @@
   ],
   "generator": {
     "name": "neuvector-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-06-08T17:53:16.509614Z",
+  "timestamp": "2026-07-12T22:56:41.069065Z",
   "tool": {
     "format": "JSON",
     "name": "NeuVector"

@@ -9,6 +9,7 @@ import type {
   EvaluatedRequirement,
   Checksum,
   Description,
+  RequirementResult,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -16,7 +17,6 @@ import {
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
-  createResult,
 } from '@mitre/hdf-schema';
 
 /** Impact mapping from heimdall2 DBProtect mapper */
@@ -51,6 +51,28 @@ interface DataRow {
 /** A single compiled finding, mapping column names to string values */
 type Finding = Record<string, string>;
 
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'",
+};
+
+/**
+ * Decodes XML character references. The shared parser runs with
+ * processEntities disabled to block entity-expansion attacks, which also leaves
+ * the five predefined references undecoded — Go's encoding/xml decodes them, so
+ * the raw text would otherwise differ between the two converters.
+ */
+function decodeXmlEntities(s: string): string {
+  return s.replace(/&(#\d+|#x[0-9a-fA-F]+|amp|lt|gt|quot|apos);/g, (match, ref: string) => {
+    if (ref.startsWith('#x') || ref.startsWith('#X')) {
+      return String.fromCodePoint(parseInt(ref.slice(2), 16));
+    }
+    if (ref.startsWith('#')) {
+      return String.fromCodePoint(parseInt(ref.slice(1), 10));
+    }
+    return NAMED_ENTITIES[ref] ?? match;
+  });
+}
+
 /**
  * Maps metadata column names to row values by position index.
  * Mirrors the heimdall2 compileFindings function.
@@ -69,7 +91,7 @@ function compileFindings(parsed: DatasetXml): Finding[] {
       if (val === null || val === undefined || typeof val === 'object') {
         finding[name] = '';
       } else {
-        finding[name] = String(val);
+        finding[name] = decodeXmlEntities(String(val));
       }
     });
     return finding;
@@ -170,10 +192,12 @@ function buildRequirement(
       ? getStatus(f['Result Status'] ?? '')
       : ResultStatus.Failed;
 
-    return createResult(status, undefined, {
+    // DBProtect carries no per-result explanation, so results carry no message key.
+    return {
+      status,
       codeDesc: f['Details'] ?? '',
       startTime: parseDate(f['Date'] ?? ''),
-    });
+    } as RequirementResult;
   });
 
   const req = createRequirement(
@@ -256,6 +280,11 @@ export async function convertDbprotectToHdf(input: string): Promise<string> {
     title,
     summary,
   }) as EvaluatedBaseline;
+
+  const policy = firstFinding['Policy'] ?? '';
+  if (policy) {
+    baseline.version = policy;
+  }
 
   return buildHdfResults({
     generatorName: 'dbprotect-to-hdf',

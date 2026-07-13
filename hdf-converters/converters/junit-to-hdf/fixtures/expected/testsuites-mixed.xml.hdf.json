@@ -38,7 +38,7 @@
           "results": [
             {
               "codeDesc": "com.example.math.MathTest :: testDivisionByZero",
-              "message": "java.lang.AssertionError: Expected exception was not thrown\njava.lang.AssertionError: Expected exception was not thrown\n\tat com.example.math.MathTest.testDivisionByZero(MathTest.java:28)\n",
+              "message": "java.lang.AssertionError: Expected exception was not thrown\njava.lang.AssertionError: Expected exception was not thrown\n\tat com.example.math.MathTest.testDivisionByZero(MathTest.java:28)",
               "runTime": 0.021,
               "startTime": "2024-11-15T10:30:00Z",
               "status": "failed"
@@ -93,7 +93,7 @@
             {
               "codeDesc": "com.example.string.StringTest :: testConcat",
               "runTime": 0.008,
-              "startTime": "2024-11-15T10:30:01Z",
+              "startTime": "2024-11-15T10:30:00Z",
               "status": "passed"
             }
           ],
@@ -118,9 +118,9 @@
           "results": [
             {
               "codeDesc": "com.example.string.StringTest :: testParseInt",
-              "message": "java.lang.NullPointerException: Unexpected null\njava.lang.NullPointerException: Unexpected null\n\tat com.example.string.StringTest.testParseInt(StringTest.java:42)\n",
+              "message": "java.lang.NullPointerException: Unexpected null\njava.lang.NullPointerException: Unexpected null\n\tat com.example.string.StringTest.testParseInt(StringTest.java:42)",
               "runTime": 0.025,
-              "startTime": "2024-11-15T10:30:01Z",
+              "startTime": "2024-11-15T10:30:00Z",
               "status": "error"
             }
           ],
@@ -151,9 +151,9 @@
   ],
   "generator": {
     "name": "junit-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-15T03:15:04.874255391Z",
+  "timestamp": "2024-11-15T10:30:00Z",
   "tool": {
     "format": "XML",
     "name": "JUnit XML"

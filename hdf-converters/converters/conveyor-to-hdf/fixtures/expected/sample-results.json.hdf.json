@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "title_text:Results\nbody:\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\nheuristic_heur_id:CLAMAV.0\nheuristic_score:0\nheuristic_name:Analysis",
-              "startTime": "2023-08-28T12:23:54.164548Z",
+              "startTime": "2023-08-28T12:23:54.164Z",
               "status": "passed"
             }
           ],
@@ -41,7 +41,7 @@
           "results": [
             {
               "codeDesc": "title_text:Results\nbody:\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\nheuristic_heur_id:CLAMAV.0\nheuristic_score:0\nheuristic_name:Analysis",
-              "startTime": "2023-08-28T12:23:53.163875Z",
+              "startTime": "2023-08-28T12:23:53.163Z",
               "status": "passed"
             }
           ],
@@ -80,7 +80,7 @@
           "results": [
             {
               "codeDesc": "body:File Type Not Supported.\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\ntitle_text:Findings",
-              "startTime": "2023-08-28T12:23:56.65559Z",
+              "startTime": "2023-08-28T12:23:56.655Z",
               "status": "passed"
             }
           ],
@@ -109,7 +109,7 @@
           "results": [
             {
               "codeDesc": "body:File Type Not Supported.\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\ntitle_text:Findings",
-              "startTime": "2023-08-28T12:23:55.747943Z",
+              "startTime": "2023-08-28T12:23:55.747Z",
               "status": "passed"
             }
           ],
@@ -148,7 +148,7 @@
           "results": [
             {
               "codeDesc": "title_text:Major Version\nbody:\tGitHub Repository: https://github.com/fireeye/capa.git, version: 1.2.0\nThe package fireeye capa, version 1.2.0 is 5 Major versions behind the latest version v6.1.0 on GitHub.\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\nheuristic_heur_id:MOLDY.3\nheuristic_score:1000\nheuristic_name:Fail",
-              "startTime": "2023-08-28T12:23:53.457023Z",
+              "startTime": "2023-08-28T12:23:53.457Z",
               "status": "failed"
             }
           ],
@@ -177,7 +177,7 @@
           "results": [
             {
               "codeDesc": "No sections reported by Moldy",
-              "startTime": "2023-08-28T12:38:41.769914Z",
+              "startTime": "2023-08-28T12:38:41.769Z",
               "status": "passed"
             }
           ],
@@ -216,12 +216,12 @@
           "results": [
             {
               "codeDesc": "title_text:Package Info\nbody:Package Name: Capa\nVersion: 1.2.0\nbody_format:TEXT\nclassification:TLP:C\ndepth:0",
-              "startTime": "2023-08-28T12:24:04.715274Z",
+              "startTime": "2023-08-28T12:24:04.715Z",
               "status": "passed"
             },
             {
               "codeDesc": "title_text:No Vulnerability\nbody:No vulnerabilities were found\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\nheuristic_heur_id:STIGMA.0\nheuristic_score:0\nheuristic_name:Pass",
-              "startTime": "2023-08-28T12:24:04.715274Z",
+              "startTime": "2023-08-28T12:24:04.715Z",
               "status": "passed"
             }
           ],
@@ -250,12 +250,12 @@
           "results": [
             {
               "codeDesc": "title_text:Package Info\nbody:Package Name: Geographical-Adventures\nVersion: NOASSERTION\nbody_format:TEXT\nclassification:TLP:C\ndepth:0",
-              "startTime": "2023-08-28T12:23:53.215873Z",
+              "startTime": "2023-08-28T12:23:53.215Z",
               "status": "passed"
             },
             {
               "codeDesc": "title_text:No Vulnerability\nbody:No vulnerabilities were found\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\nheuristic_heur_id:STIGMA.0\nheuristic_score:0\nheuristic_name:Pass",
-              "startTime": "2023-08-28T12:23:53.215873Z",
+              "startTime": "2023-08-28T12:23:53.215Z",
               "status": "passed"
             }
           ],
@@ -291,9 +291,9 @@
   ],
   "generator": {
     "name": "conveyor-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-15T03:12:26.830118892Z",
+  "timestamp": "2026-07-12T22:56:34.641354Z",
   "tool": {
     "format": "JSON",
     "name": "Conveyor"

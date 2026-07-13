@@ -1,0 +1,147 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Offering the same experience with the mouse and the keyboard allow users to pick their preferred devices.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "frontend/src/app/sidenav/sidenav.component.html LINE : 5",
+              "message": "Add a 'onFocus' attribute to this element.",
+              "startTime": "2026-01-20T08:15:00Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 5,
+            "ref": "frontend/src/app/sidenav/sidenav.component.html"
+          },
+          "id": "Web:MouseEventWithoutKeyboardEquivalentCheck",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "minor",
+            "severitySource": "legacy",
+            "type": "bug"
+          },
+          "controlType": "management",
+          "title": "Mouse events should have corresponding keyboard events",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "In most cases, trust boundaries are violated when a secret is exposed in a source code repository or an uncontrolled deployment environment.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "server.ts LINE : 15",
+              "message": "Make sure this private key gets revoked, changed, and removed from the code.",
+              "startTime": "2026-03-01T10:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 15,
+            "ref": "server.ts"
+          },
+          "id": "secrets:S6706",
+          "impact": 1,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cwe": [
+              "CWE-259",
+              "CWE-798"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "blocker",
+            "severitySource": "legacy",
+            "type": "vulnerability"
+          },
+          "controlType": "management",
+          "title": "Cryptographic private keys should not be disclosed",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Constructing templates by dynamically inserting strings from third-party sources creates brittle code and increases the risk of Server-Side Template Injections (SSTI).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "routes/vulnCodeSnippet.ts LINE : 42",
+              "message": "Refactor this code to not construct the template dynamically.",
+              "startTime": "2026-02-15T14:30:00Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 42,
+            "ref": "routes/vulnCodeSnippet.ts"
+          },
+          "id": "typescript:S7790",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-20"
+            ],
+            "nist": [
+              "SI-10"
+            ],
+            "owasp": [],
+            "severity": "critical",
+            "severitySource": "legacy",
+            "type": "vulnerability"
+          },
+          "controlType": "technical",
+          "title": "Templates should not be constructed dynamically",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "fdfcf8d3752d01c43ef8b6cdbbca080702f15300794315dd2275950c656e4b1b"
+      },
+      "name": "juice-shop",
+      "title": "SonarQube Analysis for juice-shop"
+    }
+  ],
+  "components": [
+    {
+      "name": "juice-shop",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "sonarqube-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-13T00:39:15.768856Z",
+  "tool": {
+    "name": "SonarQube"
+  }
+}

@@ -546,9 +546,16 @@ func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequ
 		severityPtr = &s
 	}
 
+	// A title-less rule gets no title at all: an empty string is junk, and
+	// synthesizing one from the id would invent data. TS omits it too.
+	var titlePtr *string
+	if rule.Title != "" {
+		titlePtr = hdfutil.Ptr(rule.Title)
+	}
+
 	return hdf.BaselineRequirement{
 		ID:           id,
-		Title:        hdfutil.Ptr(rule.Title),
+		Title:        titlePtr,
 		Impact:       impact,
 		Severity:     severityPtr,
 		Descriptions: descriptions,

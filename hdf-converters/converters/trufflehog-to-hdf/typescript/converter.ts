@@ -126,6 +126,20 @@ function groupFindings(findings: TrufflehogFinding[]): Map<string, TrufflehogFin
 }
 
 /**
+ * Order ExtraData keys the way Go's map marshalling does (lexicographic), so the
+ * embedded message string is byte-identical in both languages.
+ */
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value !== null && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return Object.fromEntries(entries.map(([k, v]) => [k, canonicalize(v)]));
+  }
+  return value;
+}
+
+/**
  * Build the Result.Message JSON from selected finding fields.
  */
 function buildMessage(f: TrufflehogFinding): string {
@@ -137,7 +151,7 @@ function buildMessage(f: TrufflehogFinding): string {
     msg.VerificationError = f.VerificationError;
   }
   if (f.ExtraData && Object.keys(f.ExtraData).length > 0) {
-    msg.ExtraData = f.ExtraData;
+    msg.ExtraData = canonicalize(f.ExtraData);
   }
   return JSON.stringify(msg);
 }

@@ -113,9 +113,9 @@
   ],
   "generator": {
     "name": "dbprotect-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-15T03:15:12.741428989Z",
+  "timestamp": "2026-07-12T23:39:51.937263Z",
   "tool": {
     "format": "XML",
     "name": "DBProtect"

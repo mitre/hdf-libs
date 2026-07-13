@@ -493,7 +493,7 @@ func TestEmptyFixtureSynthesizesPlaceholder(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "grype-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertGrypeToHDF(input, "0.1.0")
+		return ConvertGrypeToHDF(input, "1.0.0")
 	})
 }
 

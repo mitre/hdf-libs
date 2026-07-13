@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const converterVersion = "0.1.0"
+const converterVersion = "1.0.0"
 
 func TestConvertNessusToHDF_Sample(t *testing.T) {
 	// Load real Nessus scan fixture
@@ -239,7 +239,12 @@ func TestParseHTML(t *testing.T) {
 		{
 			name:     "Multiple tags",
 			input:    "<div><p>Hello</p><p>World</p></div>",
-			expected: "Hello World",
+			expected: "HelloWorld",
+		},
+		{
+			name:     "Line breaks in plugin text survive",
+			input:    "First line.\n\n  - second line",
+			expected: "First line.\n\n  - second line",
 		},
 		{
 			name:     "No HTML",

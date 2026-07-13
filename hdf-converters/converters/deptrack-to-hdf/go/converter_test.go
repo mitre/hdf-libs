@@ -340,7 +340,7 @@ func TestGetImpact(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "deptrack-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertDeptrackToHDF(input, "0.1.0")
+		return ConvertDeptrackToHDF(input, "1.0.0")
 	})
 }
 

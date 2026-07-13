@@ -16,7 +16,7 @@
           "results": [
             {
               "codeDesc": "Component urn:cdx:3e671687-395b-41f5-a30f-a58921a69b79/1#pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.10.0?type=jar is vulnerable",
-              "startTime": "2026-07-02T13:51:29.971275Z",
+              "startTime": "2026-07-12T23:29:28.221396Z",
               "status": "failed"
             }
           ],
@@ -84,7 +84,7 @@
                   ],
                   "state": "not_affected"
                 },
-                "created": "2020-12-03T00:00:00.000Z",
+                "created": "2020-12-03T00:00:00Z",
                 "credits": {
                   "individuals": [
                     {
@@ -98,7 +98,7 @@
                 "description": "com.fasterxml.jackson.core:jackson-databind is a library which contains the general-purpose data-binding functionality and tree-model for Jackson Data Processor.\n\nAffected versions of this package are vulnerable to XML External Entity (XXE) Injection. A flaw was found in FasterXML Jackson Databind, where it does not have entity expansion secured properly in the DOMDeserializer class. The highest threat from this vulnerability is data integrity.",
                 "detail": "XXE Injection is a type of attack against an application that parses XML input. XML is a markup language that defines a set of rules for encoding documents in a format that is both human-readable and machine-readable. By default, many XML processors allow specification of an external entity, a URI that is dereferenced and evaluated during XML processing. When an XML document is being parsed, the parser can make a request and include the content at the specified URI inside of the XML document.\n\nAttacks can include disclosing local files, which may contain sensitive data such as passwords or private user data, using file: schemes or relative paths in the system identifier.",
                 "id": "CVE-2020-25649",
-                "published": "2020-12-03T00:00:00.000Z",
+                "published": "2020-12-03T00:00:00Z",
                 "ratings": [
                   {
                     "method": "CVSSv31",
@@ -145,7 +145,7 @@
                   "name": "NVD",
                   "url": "https://nvd.nist.gov/vuln/detail/CVE-2020-25649"
                 },
-                "updated": "2021-10-26T00:00:00.000Z"
+                "updated": "2021-10-26T00:00:00Z"
               }
             ]
           },
@@ -158,9 +158,9 @@
   ],
   "generator": {
     "name": "cyclonedx-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-07-02T13:51:29.971275Z",
+  "timestamp": "2026-07-12T23:29:28.221396Z",
   "tool": {
     "format": "JSON",
     "name": "CycloneDX"

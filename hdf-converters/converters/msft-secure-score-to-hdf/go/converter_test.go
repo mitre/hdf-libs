@@ -320,7 +320,7 @@ func TestConvertMsftSecureScore_Timestamp(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "msft-secure-score-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertMsftSecureScoreToHDF(input, "0.1.0")
+		return ConvertMsftSecureScoreToHDF(input, "1.0.0")
 	})
 }
 

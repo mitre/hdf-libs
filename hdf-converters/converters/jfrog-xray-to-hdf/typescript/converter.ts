@@ -9,6 +9,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  RequirementResult,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -16,7 +17,6 @@ import {
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
-  createResult,
   severityToImpact,
   type Description,
 } from '@mitre/hdf-schema';
@@ -156,12 +156,13 @@ function buildRequirement(entryID: string, entries: XrayEntry[], scanTime: Date)
     { label: 'default', data: formatDescription(rep) },
   ];
 
-  const results = entries.map(entry =>
-    createResult(ResultStatus.Failed, undefined, {
-      codeDesc: formatCodeDesc(entry),
-      startTime: scanTime,
-    })
-  );
+  // Xray carries no per-result explanation, so `message` stays absent rather
+  // than an empty string (createResult would default it to '').
+  const results: RequirementResult[] = entries.map(entry => ({
+    status: ResultStatus.Failed,
+    codeDesc: formatCodeDesc(entry),
+    startTime: scanTime,
+  }));
 
   const req = createRequirement(
     entryID,

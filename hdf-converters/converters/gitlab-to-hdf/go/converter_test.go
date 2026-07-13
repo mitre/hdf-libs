@@ -322,7 +322,7 @@ func Test_scanTypeLabel(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "gitlab-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertGitlabToHDF(input, "0.1.0")
+		return ConvertGitlabToHDF(input, "1.0.0")
 	})
 }
 

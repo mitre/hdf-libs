@@ -385,7 +385,7 @@ func TestConvert_JSONRoundTrip(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "msft-defender-endpoint-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertMsftDefenderEndpointToHDF(input, "0.1.0")
+		return ConvertMsftDefenderEndpointToHDF(input, "1.0.0")
 	})
 }
 

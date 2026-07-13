@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "Nikto scanned Host: clean.example.com Port: 443 and reported zero findings.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.23362Z",
               "status": "passed"
             }
           ],
@@ -39,7 +39,7 @@
   ],
   "generator": {
     "name": "nikto-to-hdf",
-    "version": "0.1.0"
+    "version": "unknown"
   },
   "tool": {
     "format": "JSON",

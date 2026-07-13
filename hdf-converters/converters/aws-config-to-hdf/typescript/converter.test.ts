@@ -221,8 +221,7 @@ describe('AWS Config to HDF converter', async () => {
       expect(failedResult?.message).toBeTruthy();
 
       const passedResult = results.find(r => r.status === 'passed');
-      // message for passed results should be codeDesc (not a violation message)
-      expect(passedResult?.message).not.toContain('does not pass rule compliance');
+      expect(passedResult?.message).toBeUndefined();
     });
 
     it('should handle multiple rules from multi-rule fixture', async () => {

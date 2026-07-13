@@ -12,8 +12,8 @@
           "results": [
             {
               "codeDesc": "{\"Data\":{\"Filesystem\":{\"file\":\".git/config\",\"line\":13}}}",
-              "message": "{\"Redacted\":\"https://gitlab-ci-token:********@gitlab.my_domain.dev\",\"VerificationError\":\"dialing local IP addresses is not allowed\",\"Verified\":false}",
-              "startTime": "2026-05-15T03:18:17.806424923Z",
+              "message": "{\"Verified\":false,\"Redacted\":\"https://gitlab-ci-token:********@gitlab.my_domain.dev\",\"VerificationError\":\"dialing local IP addresses is not allowed\"}",
+              "startTime": "2026-07-12T23:25:15.138663Z",
               "status": "failed"
             }
           ],
@@ -47,14 +47,14 @@
           "results": [
             {
               "codeDesc": "{\"Data\":{\"Filesystem\":{\"file\":\"github.com/jackc/pgx/v5/pgxpool/pool.go\",\"line\":297}}}",
-              "message": "{\"ExtraData\":{\"sslmode\":\"verify-ca\"},\"Redacted\":\"\",\"VerificationError\":\"lookup pg.example.com on 10.96.0.10:53: server misbehaving\",\"Verified\":false}",
-              "startTime": "2026-05-15T03:18:17.806433369Z",
+              "message": "{\"Verified\":false,\"Redacted\":\"\",\"VerificationError\":\"lookup pg.example.com on 10.96.0.10:53: server misbehaving\",\"ExtraData\":{\"sslmode\":\"verify-ca\"}}",
+              "startTime": "2026-07-12T23:25:15.138665Z",
               "status": "failed"
             },
             {
               "codeDesc": "{\"Data\":{\"Filesystem\":{\"file\":\"github.com/jackc/pgx/v5/pgconn/config.go\",\"line\":1}}}",
-              "message": "{\"ExtraData\":{\"sslmode\":\"\\u003cunset\\u003e\"},\"Redacted\":\"\",\"VerificationError\":\"lookup foo.example.com:5432,bar.example.com:5432: no such host\",\"Verified\":false}",
-              "startTime": "2026-05-15T03:18:17.806437447Z",
+              "message": "{\"Verified\":false,\"Redacted\":\"\",\"VerificationError\":\"lookup foo.example.com:5432,bar.example.com:5432: no such host\",\"ExtraData\":{\"sslmode\":\"\u003cunset\u003e\"}}",
+              "startTime": "2026-07-12T23:25:15.138666Z",
               "status": "failed"
             }
           ],
@@ -89,9 +89,9 @@
   ],
   "generator": {
     "name": "trufflehog-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-15T03:18:17.806439651Z",
+  "timestamp": "2026-07-12T23:25:15.138666Z",
   "tool": {
     "format": "JSON",
     "name": "TruffleHog"

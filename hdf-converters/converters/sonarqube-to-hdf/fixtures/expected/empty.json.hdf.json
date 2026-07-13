@@ -1,0 +1,47 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "SonarQube scanned com.example:myproject and reported zero findings.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "SonarQube scanned com.example:myproject and reported zero findings.",
+              "startTime": "2026-07-13T00:39:15.765659Z",
+              "status": "passed"
+            }
+          ],
+          "id": "sonarqube-no-findings",
+          "impact": 0,
+          "tags": {},
+          "title": "No findings reported"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "ad93e72982d2955a28d9504036e5bb7bffc63aea4b5bf5eb10d8c5525ac9289c"
+      },
+      "name": "com.example:myproject",
+      "title": "SonarQube Analysis for com.example:myproject"
+    }
+  ],
+  "components": [
+    {
+      "name": "com.example:myproject",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "sonarqube-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-13T00:39:15.765661Z",
+  "tool": {
+    "name": "SonarQube"
+  }
+}

@@ -2,6 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
+  RequirementResult,
   Checksum,
 } from '@mitre/hdf-schema';
 import {
@@ -10,7 +11,6 @@ import {
   createMinimalBaseline,
   createRequirement,
   createDescription,
-  createResult,
 } from '@mitre/hdf-schema';
 import {
   nistToCci,
@@ -247,11 +247,12 @@ export async function convertIonchannelToHdf(input: string): Promise<string> {
     const descriptions = [
       createDescription('default', `Dependency ${dep.org}/${dep.name}`),
     ];
-    const results = [
-      createResult(ResultStatus.NotReviewed, 'Dependency inventory item', {
+    const results: RequirementResult[] = [
+      {
+        status: ResultStatus.NotReviewed,
         codeDesc: 'Dependency inventory item',
         startTime: new Date('0001-01-01T00:00:00Z'),
-      }),
+      },
     ];
 
     const req = createRequirement(depId, title, descriptions, 0.0, results, {
@@ -278,6 +279,7 @@ export async function convertIonchannelToHdf(input: string): Promise<string> {
       status: 'loaded',
     },
   ) as EvaluatedBaseline;
+  baseline.maintainer = 'saf@groups.mitre.org';
 
   return buildHdfResults({
     generatorName: 'ionchannel-to-hdf',

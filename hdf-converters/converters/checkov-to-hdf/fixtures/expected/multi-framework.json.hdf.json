@@ -15,8 +15,8 @@
           ],
           "results": [
             {
-              "codeDesc": "Resource: aws_iam_policy.ebs_csi_policy\nFile: /main.tf (lines [100 102])",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "Resource: aws_iam_policy.ebs_csi_policy\nFile: /main.tf (lines [100,102])",
+              "startTime": "2026-07-12T23:25:21.464819Z",
               "status": "passed"
             }
           ],
@@ -44,8 +44,8 @@
           ],
           "results": [
             {
-              "codeDesc": "Resource: aws.default\nFile: /main.tf (lines [4 6])",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "Resource: aws.default\nFile: /main.tf (lines [4,6])",
+              "startTime": "2026-07-12T23:25:21.464819Z",
               "status": "passed"
             }
           ],
@@ -73,13 +73,13 @@
           ],
           "results": [
             {
-              "codeDesc": "Resource: vpc\nFile: /main.tf (lines [26 49])",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "Resource: vpc\nFile: /main.tf (lines [26,49])",
+              "startTime": "2026-07-12T23:25:21.464819Z",
               "status": "failed"
             },
             {
-              "codeDesc": "Resource: eks\nFile: /main.tf (lines [51 96])",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "Resource: eks\nFile: /main.tf (lines [51,96])",
+              "startTime": "2026-07-12T23:25:21.464819Z",
               "status": "failed"
             }
           ],
@@ -107,9 +107,9 @@
           ],
           "results": [
             {
-              "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115 119])",
+              "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115,119])",
               "message": "Skipping access logging for demo bucket",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:25:21.464819Z",
               "status": "notReviewed"
             }
           ],
@@ -137,9 +137,9 @@
           ],
           "results": [
             {
-              "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115 119])",
+              "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115,119])",
               "message": "Skipping public access block for demo",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T23:25:21.464819Z",
               "status": "notReviewed"
             }
           ],
@@ -167,8 +167,8 @@
           ],
           "results": [
             {
-              "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1 41])",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1,41])",
+              "startTime": "2026-07-12T23:25:21.464819Z",
               "status": "passed"
             }
           ],
@@ -196,8 +196,8 @@
           ],
           "results": [
             {
-              "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1 41])",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1,41])",
+              "startTime": "2026-07-12T23:25:21.464819Z",
               "status": "passed"
             }
           ],
@@ -225,8 +225,8 @@
           ],
           "results": [
             {
-              "codeDesc": "Resource: /Dockerfile.FROM\nFile: /Dockerfile (lines [22 22])",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "Resource: /Dockerfile.FROM\nFile: /Dockerfile (lines [22,22])",
+              "startTime": "2026-07-12T23:25:21.464819Z",
               "status": "failed"
             }
           ],
@@ -254,8 +254,8 @@
           ],
           "results": [
             {
-              "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1 41])",
-              "startTime": "0001-01-01T00:00:00Z",
+              "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1,41])",
+              "startTime": "2026-07-12T23:25:21.464819Z",
               "status": "failed"
             }
           ],
@@ -280,9 +280,9 @@
   ],
   "generator": {
     "name": "checkov-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-15T03:10:55.863305532Z",
+  "timestamp": "2026-07-12T23:25:21.464819Z",
   "tool": {
     "format": "terraform, dockerfile",
     "name": "Checkov",

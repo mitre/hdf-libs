@@ -339,7 +339,7 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
     components,
     generator: {
       name: 'gitlab-to-hdf',
-      version: 'unknown',
+      version: '1.0.0',
     },
     tool,
   };

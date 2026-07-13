@@ -20,7 +20,6 @@ import {
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
-  createResult,
 } from '@mitre/hdf-schema';
 
 /**
@@ -86,11 +85,16 @@ function mapComplianceStatus(complianceType: string): ResultStatus {
   }
 }
 
+/** Mapping values pack multiple controls into one pipe-delimited string. */
+function splitControls(nistId: string): string[] {
+  return nistId.split('|').map(c => c.trim()).filter(Boolean);
+}
+
 function buildNistTags(sourceIdentifier: string, ruleName: string): string[] {
-  const byIdentifier = getAwsConfigNistControlByIdentifier(sourceIdentifier);
-  if (byIdentifier) return [byIdentifier];
+  const byIdentifier = sourceIdentifier ? getAwsConfigNistControlByIdentifier(sourceIdentifier) : undefined;
+  if (byIdentifier) return splitControls(byIdentifier);
   const byName = getAwsConfigNistControlByName(ruleName);
-  if (byName) return [byName];
+  if (byName) return splitControls(byName);
   return [];
 }
 
@@ -151,17 +155,30 @@ function buildResultMessage(codeDesc: string, annotation: string | undefined, st
   return `(${codeDesc}): ${text}`;
 }
 
+/** Elapsed seconds between rule invocation and result recording; omitted if either time is unusable. */
+function computeRunTime(invoked: string, recorded: string): number | undefined {
+  const start = invoked ? parseTimestamp(invoked) : null;
+  const end = recorded ? parseTimestamp(recorded) : null;
+  if (!start || !end) return undefined;
+  return (end.getTime() - start.getTime()) / 1000;
+}
+
 function buildResult(r: EvaluationResult): RequirementResult {
   const q = r.EvaluationResultIdentifier.EvaluationResultQualifier;
   const status = mapComplianceStatus(r.ComplianceType);
   const codeDesc = buildCodeDesc(q);
   const message = buildResultMessage(codeDesc, r.Annotation, status);
   const startTime = (r.ConfigRuleInvokedTime ? parseTimestamp(r.ConfigRuleInvokedTime) : null) ?? new Date('0001-01-01T00:00:00Z');
+  const runTime = computeRunTime(r.ConfigRuleInvokedTime, r.ResultRecordedTime);
 
-  return createResult(status, message ?? codeDesc, {
+  // message is a failure explanation, so non-failed results carry no message key at all.
+  return {
+    status,
     codeDesc,
-    ...(startTime ? { startTime } : {}),
-  });
+    startTime,
+    ...(runTime !== undefined ? { runTime } : {}),
+    ...(message !== undefined ? { message } : {}),
+  } as RequirementResult;
 }
 
 /**
@@ -173,10 +190,11 @@ function buildResult(r: EvaluationResult): RequirementResult {
  */
 function buildNotApplicableResult(rule: ConfigRule): RequirementResult {
   const codeDesc = `AWS Config rule ${rule.ConfigRuleName} evaluated zero in-scope resources in this account/region.`;
-  return createResult(ResultStatus.NotApplicable, codeDesc, {
+  return {
+    status: ResultStatus.NotApplicable,
     codeDesc,
     startTime: new Date(),
-  });
+  } as RequirementResult;
 }
 
 function buildRequirement(rule: ConfigRule): EvaluatedRequirement {

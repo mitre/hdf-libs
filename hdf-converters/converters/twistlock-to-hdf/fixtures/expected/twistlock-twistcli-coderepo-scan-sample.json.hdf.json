@@ -214,18 +214,15 @@
   ],
   "components": [
     {
-      "labels": {
-        "image": ""
-      },
       "name": "My-Repo",
       "type": "containerImage"
     }
   ],
   "generator": {
     "name": "twistlock-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-28T16:34:12.039147Z",
+  "timestamp": "2026-07-12T23:29:30.765221Z",
   "tool": {
     "format": "JSON",
     "name": "Twistlock"

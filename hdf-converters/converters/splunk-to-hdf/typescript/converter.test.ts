@@ -304,9 +304,11 @@ describe('Splunk to HDF Converter', () => {
       expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
     });
 
-    it('should handle control with no descriptions', async () => {
+    it('should fall back to a default description when the control has none', async () => {
       const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noDescs: true }))) as HDFResults;
-      expect(hdf.baselines[0]!.requirements[0]!.descriptions).toHaveLength(0);
+      expect(hdf.baselines[0]!.requirements[0]!.descriptions).toEqual([
+        { label: 'default', data: '' },
+      ]);
     });
 
     it('should handle profile with no groups/title/version/summary', async () => {

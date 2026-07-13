@@ -21,7 +21,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package apk-tools is at version 2.10.5-r1. Update to fixed version 2.10.7-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.066114Z",
               "status": "failed"
             }
           ],
@@ -59,7 +59,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.066114Z",
               "status": "failed"
             }
           ],
@@ -97,7 +97,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package apk-tools is at version 2.10.5-r1. Update to fixed version 2.10.6-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.066114Z",
               "status": "failed"
             }
           ],
@@ -135,7 +135,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package avahi is at version 0.8-r0. Update to fixed version 0.8-r2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.066114Z",
               "status": "failed"
             }
           ],
@@ -173,7 +173,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.066114Z",
               "status": "failed"
             }
           ],
@@ -213,7 +213,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package zlib is at version 1.2.11-r3. Update to fixed version 1.2.12-r0.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.066114Z",
               "status": "failed"
             }
           ],
@@ -251,7 +251,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ruby:webrick is at version 1.4.2. Update to fixed version \u003e=1.6.1.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.066114Z",
               "status": "failed"
             }
           ],
@@ -290,7 +290,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ca-certificates is at version 2023.2.60_v7.0.306-80.0.el8_8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.066114Z",
               "status": "failed"
             }
           ],
@@ -330,9 +330,9 @@
   ],
   "generator": {
     "name": "neuvector-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-06-08T17:53:16.50567Z",
+  "timestamp": "2026-07-12T22:56:41.066114Z",
   "tool": {
     "format": "JSON",
     "name": "NeuVector"

@@ -459,7 +459,7 @@ func TestConvertBurpsuiteToHDF_EntityExpansion(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "burpsuite-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertBurpsuiteToHDF(input, "0.1.0")
+		return ConvertBurpsuiteToHDF(input, "1.0.0")
 	})
 }
 

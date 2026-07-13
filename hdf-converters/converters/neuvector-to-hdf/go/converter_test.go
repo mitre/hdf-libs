@@ -431,7 +431,7 @@ func TestConvertNeuVector_FullFixtureHeimdall2(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "neuvector-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertNeuVectorToHDF(input, "0.1.0")
+		return ConvertNeuVectorToHDF(input, "1.0.0")
 	})
 }
 

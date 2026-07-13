@@ -116,14 +116,14 @@
       "maintainer": "saf@groups.mitre.org",
       "status": "loaded",
       "summary": "All dependencies are up to date",
-      "title": "Ion Channel Analysis of https://github.com/example-org/example-project.git",
-      "version": ""
+      "title": "Ion Channel Analysis of https://github.com/example-org/example-project.git"
     }
   ],
   "generator": {
     "name": "ionchannel-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
+  "timestamp": "2026-07-12T19:40:22.571296-04:00",
   "tool": {
     "format": "JSON",
     "name": "Ion Channel"

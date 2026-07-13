@@ -1,10 +1,6 @@
 {
   "baselines": [
     {
-      "integrity": {
-        "algorithm": "sha256",
-        "checksum": "c8f8953253ae08be2bdf89e75b2d3fc6af1361b5028f4d3ec6b937a6b5b65219"
-      },
       "requirements": [
         {
           "descriptions": [
@@ -48,6 +44,10 @@
           "verificationMethod": "automated"
         }
       ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "c8f8953253ae08be2bdf89e75b2d3fc6af1361b5028f4d3ec6b937a6b5b65219"
+      },
       "name": "AWS Config",
       "maintainer": "Amazon Web Services",
       "title": "AWS Config Compliance Results",
@@ -67,9 +67,9 @@
   ],
   "generator": {
     "name": "aws-config-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-06-24T03:36:28.426545Z",
+  "timestamp": "2026-07-12T23:19:55.955956Z",
   "tool": {
     "name": "AWS Config"
   }

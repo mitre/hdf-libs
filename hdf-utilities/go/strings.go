@@ -6,9 +6,12 @@ import (
 )
 
 // Pre-compiled regexes for StripHTML — avoids per-call compilation overhead.
+// whitespaceRe spells out the character class JavaScript's `\s` matches (Go's
+// `\s` is ASCII-only): HTML sources carry NBSP and friends, and the TS twin of
+// this helper must normalize them identically.
 var (
 	htmlTagRe    = regexp.MustCompile(`<[^>]*>`)
-	whitespaceRe = regexp.MustCompile(`\s+`)
+	whitespaceRe = regexp.MustCompile(`[\t\n\v\f\r \x{00a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}\x{feff}]+`)
 )
 
 // StripHTML removes HTML tags from a string and normalizes whitespace.

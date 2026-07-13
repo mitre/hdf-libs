@@ -305,7 +305,7 @@ func TestConvertSplunkToHDF_ControlType(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "splunk-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertSplunkToHDF(input, "0.1.0")
+		return ConvertSplunkToHDF(input, "1.0.0")
 	})
 }
 

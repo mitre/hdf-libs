@@ -247,7 +247,7 @@ func TestConverterContract(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "nikto-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertNiktoToHDF(input, "0.1.0")
+		return ConvertNiktoToHDF(input, "unknown")
 	})
 }
 

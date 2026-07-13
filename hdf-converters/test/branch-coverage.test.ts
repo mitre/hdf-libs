@@ -1096,10 +1096,10 @@ describe('XCCDF branch coverage', () => {
     expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 
-  it('should handle rule-result with unrecognized status (default notReviewed)', async () => {
+  it('should handle rule-result with unrecognized status (defaults to error)', async () => {
     const xml = makeXccdfResultsXml({ ruleResults: [{ idref: 'rule_1', result: 'something_else' }] });
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('error');
   });
 
   it('should handle rule-result with no matching rule in index', async () => {
@@ -1211,7 +1211,7 @@ describe('XCCDF branch coverage', () => {
       </Benchmark>`;
     const baseline = parseBaseline(await convertXccdfBenchmarkToHdf(xml));
     expect(baseline.requirements).toHaveLength(1);
-    expect(baseline.requirements[0]!.id).toBe('SV-100');
+    expect(baseline.requirements[0]!.id).toBe('top_rule_1');
   });
 
   it('should handle benchmark rule with no fixtext', async () => {
@@ -3268,8 +3268,8 @@ describe('XCCDF extractCheckContent branch coverage', () => {
         </TestResult>
       </Benchmark>`;
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    // No start-time means no duration calculation
-    expect(hdf.statistics?.duration).toBeUndefined();
+    // No start-time means no elapsed time to report; duration stays 0 (matches Go).
+    expect(hdf.statistics?.duration).toBe(0);
   });
 
   it('should handle rule-result with no description in rule def — L771-777', async () => {
@@ -3385,7 +3385,7 @@ describe('XCCDF extractCheckContent branch coverage', () => {
         </Group>
       </Benchmark>`;
     const baseline = parseBaseline(await convertXccdfBenchmarkToHdf(xml));
-    expect(baseline.requirements[0]!.id).toBe('SV-001');
+    expect(baseline.requirements[0]!.id).toBe('rule_1');
   });
 
   it('should handle benchmark rule with fixtext as #text object — L876', async () => {
@@ -3986,8 +3986,8 @@ describe('XCCDF second-pass branch coverage', () => {
         </Group>
       </Benchmark>`;
     const baseline = parseBaseline(await convertXccdfBenchmarkToHdf(xml));
-    // No title → falls back to id
-    expect(baseline.requirements[0]!.title).toBe('SV-001');
+    // No title → omitted entirely (an empty string is junk; matches Go).
+    expect(baseline.requirements[0]!.title).toBeUndefined();
   });
 
   it('should handle ARF with relationship ref missing — L572', async () => {
@@ -4111,7 +4111,7 @@ describe('XCCDF second-pass branch coverage', () => {
     expect(hdf.baselines).toHaveLength(1);
   });
 
-  it('should handle rule-result with empty result string — L783', async () => {
+  it('should handle rule-result with empty result string (defaults to error) — L783', async () => {
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
       <Benchmark id="test_benchmark">
         <title>Test</title>
@@ -4125,7 +4125,7 @@ describe('XCCDF second-pass branch coverage', () => {
       </Benchmark>`;
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
     // Empty result → default notReviewed
-    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('error');
   });
 
   it('should handle rule-result where idents fall back to rule def idents — L795', async () => {

@@ -115,9 +115,9 @@
   ],
   "generator": {
     "name": "msft-secure-score-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-15T03:15:07.950456471Z",
+  "timestamp": "2026-07-12T23:30:23.258483Z",
   "tool": {
     "format": "JSON",
     "name": "Microsoft Secure Score"

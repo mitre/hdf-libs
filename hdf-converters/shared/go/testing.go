@@ -117,10 +117,11 @@ func RunSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn) {
 
 	entries, err := os.ReadDir(expectedDir)
 	if err != nil {
-		t.Skipf("No expected fixtures for %s: %v", converterName, err)
-		return
+		t.Fatalf("no expected/ fixtures for %s: %v", converterName, err)
 	}
 
+	var misnamed []string
+	asserted := 0
 	for _, entry := range entries {
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
 			continue
@@ -130,18 +131,17 @@ func RunSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn) {
 		expectedName := entry.Name()
 		inputName := strings.TrimSuffix(expectedName, ".hdf.json")
 		if inputName == expectedName {
-			continue // not a .hdf.json file
+			misnamed = append(misnamed, expectedName)
+			continue
 		}
+		asserted++
 
 		t.Run(inputName, func(t *testing.T) {
 			inputPath := filepath.Join(inputDir, inputName)
 			expectedPath := filepath.Join(expectedDir, expectedName)
 
 			inputData, err := os.ReadFile(inputPath)
-			if err != nil {
-				t.Skipf("Input fixture missing: %s", inputPath)
-				return
-			}
+			require.NoError(t, err, "golden %s has no matching input fixture %s", expectedName, inputPath)
 
 			result, err := convertFn(inputData)
 			require.NoError(t, err, "Converter failed for %s", inputName)
@@ -168,6 +168,18 @@ func RunSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn) {
 			require.JSONEq(t, string(normalizedExpected), string(normalizedActual),
 				"Snapshot mismatch for %s.\nRun with -update to accept new output.", inputName)
 		})
+	}
+
+	// A golden only gets asserted if it is named "<input>.hdf.json". Anything
+	// else is dead weight the suite would skip in silence, leaving the test
+	// green while it proves nothing — fail loudly instead.
+	if len(misnamed) > 0 {
+		t.Errorf("%s: golden(s) %v are not named <input>.hdf.json, so no subtest asserts them; rename them or delete them",
+			converterName, misnamed)
+	}
+	if asserted == 0 {
+		t.Fatalf("%s: snapshot suite registered zero subtests — no golden in %s matched the <input>.hdf.json convention",
+			converterName, expectedDir)
 	}
 }
 

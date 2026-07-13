@@ -1,6 +1,7 @@
 package trufflehog
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -129,33 +130,52 @@ func groupFindings(findings []TrufflehogFinding) ([]string, map[string][]Truffle
 	return order, groups
 }
 
+// marshalPlain serializes v without Go's default HTML escaping, so `<` and `>`
+// survive into the embedded blob as themselves (git author emails carry them).
+func marshalPlain(v interface{}) (string, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(buf.String(), "\n"), nil
+}
+
+// trufflehogMessage is the embedded Result.Message payload. It is a struct, not
+// a map, because the field order is part of the serialized string the snapshot
+// compares — a map would emit Go's alphabetical order instead.
+type trufflehogMessage struct {
+	Verified          bool                   `json:"Verified"`
+	Redacted          string                 `json:"Redacted"`
+	VerificationError string                 `json:"VerificationError,omitempty"`
+	ExtraData         map[string]interface{} `json:"ExtraData,omitempty"`
+}
+
 // buildMessage constructs the Result.Message JSON from selected finding fields.
 func buildMessage(f TrufflehogFinding) *string {
-	msg := map[string]interface{}{
-		"Verified": f.Verified,
-		"Redacted": f.Redacted,
-	}
-	if f.VerificationError != "" {
-		msg["VerificationError"] = f.VerificationError
+	msg := trufflehogMessage{
+		Verified:          f.Verified,
+		Redacted:          f.Redacted,
+		VerificationError: f.VerificationError,
 	}
 	if len(f.ExtraData) > 0 {
-		msg["ExtraData"] = f.ExtraData
+		msg.ExtraData = f.ExtraData
 	}
-	data, err := json.Marshal(msg)
+	s, err := marshalPlain(msg)
 	if err != nil {
 		return nil
 	}
-	s := string(data)
 	return &s
 }
 
 // buildCodeDesc constructs the Result.CodeDesc as JSON of SourceMetadata.
 func buildCodeDesc(f TrufflehogFinding) string {
-	data, err := json.Marshal(f.SourceMetadata)
+	s, err := marshalPlain(f.SourceMetadata)
 	if err != nil {
 		return "{}"
 	}
-	return string(data)
+	return s
 }
 
 // getTimestamp extracts a timestamp from a finding's Git source metadata.

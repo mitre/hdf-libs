@@ -126,7 +126,7 @@
   ],
   "generator": {
     "name": "gitlab-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   "timestamp": "2024-03-10T08:05:00Z",
   "tool": {

@@ -146,6 +146,8 @@ function selectSite(sites: ZapSite[]): ZapSite | undefined {
   return best;
 }
 
+const CONVERTER_VERSION = '1.0.0';
+
 // ZAP emits a zone-less RFC1123-like timestamp ("Thu, 6 Dec 2018 10:53:11");
 // parse it as UTC to match the Go peer's parseZapTimestamp and stay host-independent.
 const ZAP_RFC1123_LIKE = /^[A-Za-z]{3}, \d{1,2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2}$/;
@@ -316,7 +318,7 @@ export async function convertZapToHdf(input: string): Promise<string> {
     components,
     generator: {
       name: 'zap-to-hdf',
-      version: 'unknown',
+      version: CONVERTER_VERSION,
     },
     tool,
   };

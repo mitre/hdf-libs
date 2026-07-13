@@ -17,9 +17,11 @@ export function getNessusNistControl(
   pluginFamily: string,
   pluginId = '*'
 ): string | undefined {
-  // First try exact match with plugin ID
+  // The mapping data carries numeric plugin IDs alongside the "*" wildcard, so
+  // compare on the string form — a strict === against the raw value never
+  // matches a scan's (string) plugin ID.
   const exactMatch = mappings.find(
-    (m) => m.pluginFamily === pluginFamily && m.pluginID === pluginId
+    (m) => m.pluginFamily === pluginFamily && String(m.pluginID) === pluginId
   );
   if (exactMatch) {
     return exactMatch['NIST-ID'];
@@ -27,7 +29,7 @@ export function getNessusNistControl(
 
   // Fall back to wildcard match
   const wildcardMatch = mappings.find(
-    (m) => m.pluginFamily === pluginFamily && m.pluginID === '*'
+    (m) => m.pluginFamily === pluginFamily && String(m.pluginID) === '*'
   );
   return wildcardMatch?.['NIST-ID'];
 }

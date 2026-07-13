@@ -20,7 +20,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ca-certificates is at version 2023.2.60_v7.0.306-80.0.el8_8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -57,7 +57,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package krb5-libs is at version 1.18.2-29.el8_10. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -95,7 +95,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.8.1-1.module+el8.9.0+20473+c4e3d824.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -133,7 +133,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.8.1-1.module+el8.9.0+20473+c4e3d824.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -170,7 +170,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package bzip2-libs is at version 1.0.6-26.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -207,7 +207,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libarchive is at version 3.3.3-5.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -244,7 +244,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libgcc is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -281,7 +281,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libstdc++ is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -318,7 +318,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libtasn1 is at version 4.13-4.el8_7. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -355,7 +355,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libzstd is at version 1.4.4-1.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -392,7 +392,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package lz4-libs is at version 1.8.3-3.el8_4. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -430,7 +430,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.11.1-1.module+el8.9.0+21380+12032667.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -467,7 +467,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -505,7 +505,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.12.2-2.module+el8.9.0+21743+0b3f1be2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -543,7 +543,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.12.2-2.module+el8.9.0+21743+0b3f1be2.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -580,7 +580,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -618,7 +618,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.11.1-1.module+el8.9.0+21380+12032667.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -655,7 +655,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs-nodemon is at version 3.0.1-1.module+el8.10.0+21159+f5a7145d. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -692,7 +692,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs-nodemon is at version 3.0.1-1.module+el8.10.0+21159+f5a7145d. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -729,7 +729,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package npm is at version 1:10.7.0-1.18.20.4.1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -766,7 +766,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package sqlite-libs is at version 3.26.0-19.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -803,7 +803,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package curl is at version 7.61.1-34.el8_10.2. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -840,7 +840,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package elfutils-libelf is at version 0.190-2.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -877,7 +877,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package elfutils-libelf is at version 0.190-2.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -914,7 +914,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package file-libs is at version 5.33-26.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -951,7 +951,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package file-libs is at version 5.33-26.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -988,7 +988,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package gawk is at version 4.2.1-4.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1025,7 +1025,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package glib2 is at version 2.56.4-162.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1062,7 +1062,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package glib2 is at version 2.56.4-162.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1099,7 +1099,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package glib2 is at version 2.56.4-162.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1136,7 +1136,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package glib2 is at version 2.56.4-162.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1173,7 +1173,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package gnupg2 is at version 2.2.20-3.el8_6. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1210,7 +1210,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package gnutls is at version 3.6.16-8.el8_9.3. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1247,7 +1247,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package krb5-libs is at version 1.18.2-29.el8_10. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1284,7 +1284,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libarchive is at version 3.3.3-5.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1321,7 +1321,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libarchive is at version 3.3.3-5.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1358,7 +1358,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libcap is at version 2.48-6.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1395,7 +1395,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libcap is at version 2.48-6.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1432,7 +1432,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libcurl is at version 7.61.1-34.el8_10.2. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1469,7 +1469,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libgcc is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1506,7 +1506,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libgcc is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1543,7 +1543,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libgcc is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1580,7 +1580,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libgcrypt is at version 1.8.5-7.el8_6. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1617,7 +1617,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libgcrypt is at version 1.8.5-7.el8_6. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1654,7 +1654,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libstdc++ is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1691,7 +1691,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libstdc++ is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1728,7 +1728,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libstdc++ is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1765,7 +1765,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libxml2 is at version 2.9.7-18.el8_10.1. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1802,7 +1802,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libxml2 is at version 2.9.7-18.el8_10.1. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1839,7 +1839,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libyaml is at version 0.1.7-5.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1876,7 +1876,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libzstd is at version 1.4.4-1.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1913,7 +1913,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1950,7 +1950,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -1987,7 +1987,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2024,7 +2024,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2061,7 +2061,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2098,7 +2098,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2135,7 +2135,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2172,7 +2172,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2209,7 +2209,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2246,7 +2246,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2283,7 +2283,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2320,7 +2320,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2357,7 +2357,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2394,7 +2394,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2431,7 +2431,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2468,7 +2468,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2505,7 +2505,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2542,7 +2542,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2579,7 +2579,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2616,7 +2616,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2653,7 +2653,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2691,7 +2691,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.16.0-1.module+el8.10.0+22203+a88c8310.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2729,7 +2729,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.16.0-1.module+el8.10.0+22203+a88c8310.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2766,7 +2766,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2803,7 +2803,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs-nodemon is at version 3.0.1-1.module+el8.10.0+21159+f5a7145d. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2840,7 +2840,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package nodejs-nodemon is at version 3.0.1-1.module+el8.10.0+21159+f5a7145d. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2878,7 +2878,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package npm is at version 1:10.7.0-1.18.20.4.1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:10.8.1-1.20.16.0.1.module+el8.10.0+22203+a88c8310.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2915,7 +2915,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package npm is at version 1:10.7.0-1.18.20.4.1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2952,7 +2952,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -2989,7 +2989,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3026,7 +3026,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3063,7 +3063,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3100,7 +3100,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3137,7 +3137,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3174,7 +3174,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3211,7 +3211,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package pcre2 is at version 10.32-3.el8_6. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3248,7 +3248,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package sqlite-libs is at version 3.26.0-19.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3285,7 +3285,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package sqlite-libs is at version 3.26.0-19.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3322,7 +3322,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package sqlite-libs is at version 3.26.0-19.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3359,7 +3359,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package sqlite-libs is at version 3.26.0-19.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3396,7 +3396,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package systemd-libs is at version 239-82.el8_10.1. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3433,7 +3433,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package systemd-libs is at version 239-82.el8_10.1. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3470,7 +3470,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package tar is at version 2:1.30-9.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3507,7 +3507,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package tar is at version 2:1.30-9.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3544,7 +3544,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package curl is at version 7.61.1-34.el8_10.2. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3581,7 +3581,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package glib2 is at version 2.56.4-162.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3618,7 +3618,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package libcurl is at version 7.61.1-34.el8_10.2. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3655,7 +3655,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3692,7 +3692,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3729,7 +3729,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3766,7 +3766,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package tar is at version 2:1.30-9.el8. No fixed version available.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3804,7 +3804,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package braces is at version 3.0.2. Update to fixed version 3.0.3.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3842,7 +3842,7 @@
             {
               "codeDesc": "",
               "message": "Vulnerable package micromatch is at version 4.0.5. Update to fixed version 4.0.8.",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.074353Z",
               "status": "failed"
             }
           ],
@@ -3882,9 +3882,9 @@
   ],
   "generator": {
     "name": "neuvector-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-06-08T17:53:16.514171Z",
+  "timestamp": "2026-07-12T22:56:41.074353Z",
   "tool": {
     "format": "JSON",
     "name": "NeuVector"

@@ -1,0 +1,1192 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "buffer/gets: Does not check for buffer overflows (CWE-120, CWE-20).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 36 COLUMN : 2\n gets(f);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 32 COLUMN : 2\n gets(f);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 36,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1014",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-20",
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "6a5bb383fb44030b0d9428b17359e94ba3979bc1ce702be450427f85592c649a"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "buffer/gets",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 60 COLUMN : 3\n  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 60 COLUMN : 3\n  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 59 COLUMN : 3\n  strncat(d,s,10);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 59 COLUMN : 3\n  strncat(d,s,10);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 60,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1010",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "note"
+          },
+          "controlType": "technical",
+          "title": "buffer/strncat",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/_tcsncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 61 COLUMN : 3\n  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 61 COLUMN : 3\n  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 61,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1011",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "c3f6ba2c710efc878e66df4578894fd408452cb7cdec7ae6f492a3b1796f8c42"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "note"
+          },
+          "controlType": "technical",
+          "title": "buffer/_tcsncat",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 64 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 66 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 64 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 66 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 68 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName)/sizeof(wszUserName[0]));",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 70 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName /sizeof(wszUserName[0]));",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 68 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName)/sizeof(wszUserName[0]));",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 70 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName /sizeof(wszUserName[0]));",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 64,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1023",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "4f5b73ff337a54d6e1d9a369659ca0ddb4f80e6b7e38a17e5b112f6d3e266e69"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "note"
+          },
+          "controlType": "technical",
+          "title": "buffer/MultiByteToWideChar",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "misc/SetSecurityDescriptorDacl: Never create NULL ACLs; an attacker can set it to Everyone (Deny All Access), which would even forbid administrator access (CWE-732).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 77,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1060",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-000213"
+            ],
+            "cwe": [
+              "CWE-732"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/732.html",
+            "nist": [
+              "AC-3"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "misc/SetSecurityDescriptorDacl",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 13 COLUMN : 2\n strcpy(b, a);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 21 COLUMN : 2\n strcpy(b, a);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 17 COLUMN : 2\n strcpy(b, a);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 20 COLUMN : 2\n strcpy(a, gettext(\"Hello there\")); // Did this work?",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 16 COLUMN : 2\n strcpy(a, gettext(\"Hello there\")); // Did this work?",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 19 COLUMN : 2\n strcpy(a, \"\\n\"); // Did this work?",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 15 COLUMN : 2\n strcpy(a, \"\\n\"); // Did this work?",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 13,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1001",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "c01c8472bb53022e912da4da2faebc67d537855da324020c44bfd5e608a79b77"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "buffer/strcpy",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/sprintf: Does not check for buffer overflows (CWE-120).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 24 COLUMN : 2\n sprintf(s, \"hello %s\", bug);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 25 COLUMN : 2\n sprintf(s, gettext(\"hello %s\"), bug);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 26 COLUMN : 2\n sprintf(s, unknown, bug);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 20 COLUMN : 2\n sprintf(s, \"hello %s\", bug);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 21 COLUMN : 2\n sprintf(s, gettext(\"hello %s\"), bug);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 22 COLUMN : 2\n sprintf(s, unknown, bug);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 23 COLUMN : 2\n sprintf(s, \"hello\");",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 19 COLUMN : 2\n sprintf(s, \"hello\");",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 22 COLUMN : 2\n sprintf(s, \"\\n\");",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 18 COLUMN : 2\n sprintf(s, \"\\n\");",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 24,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1015",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "814237858ab012010f3355a49480dd6fa0a2cb8cf8356a98ac1c17c9febf6521"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "buffer/sprintf",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "format/printf: If format strings can be influenced by an attacker, they can be exploited (CWE-134).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 27 COLUMN : 2\n printf(bf, x);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 23 COLUMN : 2\n printf(bf, x);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 27,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1016",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-134"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "46f42896019245d2dffc4caf4fe018b073ce2a58203676eaa28b6374558a5b5d"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/134.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "format/printf",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/scanf: The scanf() family's %s operation, without a limit specification, permits buffer overflows (CWE-120, CWE-20).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 29 COLUMN : 2\n scanf(\"%s\", s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 31 COLUMN : 2\n scanf(\"%s\", s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 25 COLUMN : 2\n scanf(\"%s\", s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 27 COLUMN : 2\n scanf(\"%s\", s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 30 COLUMN : 2\n scanf(\"%10s\", s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 26 COLUMN : 2\n scanf(\"%10s\", s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 29,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1020",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-20",
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "buffer/scanf",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "format/syslog: If syslog's format strings can be influenced by an attacker, they can be exploited (CWE-134).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 42 COLUMN : 2\n syslog(LOG_ERR, attacker_string);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 38 COLUMN : 2\n syslog(LOG_ERR, attacker_string);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 42,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1018",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-134"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "22e98963d5af7b197a090bd522d2d39b8d8ee7bdf08453fd2008939c92cd9677"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/134.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "format/syslog",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/_mbscpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 53 COLUMN : 3\n  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 49 COLUMN : 3\n  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 53,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1003",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "e00a4a1a0a3603db98a23fcff3c9cdfd9012f5a81826814d9508e0f22089b993"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "buffer/_mbscpy",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/lstrcat: Does not check for buffer overflows when concatenating to destination [MS-banned] (CWE-120).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 56 COLUMN : 3\n  lstrcat(d,s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 56 COLUMN : 3\n  lstrcat(d,s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 56,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1006",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "364b4c512862fdccbca27d2fa7737995b5d24b637a760976c940ae636218d340"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "buffer/lstrcat",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "shell/CreateProcess: This causes a new process to execute and is difficult to use safely (CWE-78).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 79,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1046",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-78"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/78.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "warning"
+          },
+          "controlType": "technical",
+          "title": "shell/CreateProcess",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/getopt_long: Some older implementations do not protect against internal buffer overflows (CWE-120, CWE-20).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 95 COLUMN : 20\n    while ((optc = getopt_long (argc, argv, \"a\",longopts, NULL )) != EOF) {",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 99 COLUMN : 20\n    while ((optc = getopt_long (argc, argv, \"a\",longopts, NULL )) != EOF) {",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 95,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1027",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-20",
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "5bedf6e5bccf596008ef191ec4c5d4cc51a32cff0c05ef62d5f10fab93d0cc24"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "warning"
+          },
+          "controlType": "technical",
+          "title": "buffer/getopt_long",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "misc/LoadLibraryEx: Ensure that the full path to the library is specified, or current directory may be used (CWE-829, CWE-20).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test.c LINE : 81 COLUMN : 10\n  (void) LoadLibraryEx(L\"user32.dll\", nullptr, LOAD_LIBRARY_AS_DATAFILE);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 81,
+            "ref": "test/test.c"
+          },
+          "id": "FF1059",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-20",
+              "CWE-829"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "b1f99ecaa31e682487d795afbf03282fd56ad9f2aa630d0196219b277d2a68c9"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/829.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "warning"
+          },
+          "controlType": "technical",
+          "title": "misc/LoadLibraryEx",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/char: Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/no-ending-newline.c LINE : 10 COLUMN : 2\n  char    buf[1024], *s;",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 49 COLUMN : 3\n  char d[20];",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 50 COLUMN : 3\n  char s[20];",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 45 COLUMN : 3\n  char d[20];",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 46 COLUMN : 3\n  char s[20];",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 10,
+            "ref": "test/no-ending-newline.c"
+          },
+          "id": "FF1013",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-119",
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "72a7b06096f811a41e009ddc040210db6d355d9d86fe37309f600ead5f027ef8"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/119.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "note"
+          },
+          "controlType": "technical",
+          "title": "buffer/char",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/memcpy: Does not check for buffer overflows when copying to destination (CWE-120).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 54 COLUMN : 3\n  memcpy(d,s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 55 COLUMN : 3\n  CopyMemory(d,s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 50 COLUMN : 3\n  memcpy(d,s); // fail - no size",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 53 COLUMN : 3\n  memcpy(\u0026n,s,sizeof(s)); // fail - sizeof not of destination",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 54 COLUMN : 3\n  memcpy(d,s,n); // fail - size unguessable",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 55 COLUMN : 3\n  CopyMemory(d,s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 54,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1004",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "92c755cad0dde2a75803f34005c0412e084d89ce35f2fe16264702c9bcc3af95"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "note"
+          },
+          "controlType": "technical",
+          "title": "buffer/memcpy",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "misc/fopen: Check when opening files - can an attacker redirect it (via symlinks), force the opening of special file type (e.g., device files), move things around to create a race condition, control its ancestors, or change its contents? (CWE-362).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 101 COLUMN : 7\n  f = fopen(\"/etc/passwd\", \"r\"); ",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 105 COLUMN : 7\n  f = fopen(\"/etc/passwd\", \"r\"); ",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 101,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1040",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001090"
+            ],
+            "cwe": [
+              "CWE-362"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "2ec6928c77a8b54caa61d0459f367c4394ee1f5e6f488753f587bfa9c780bad8"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/362.html",
+            "nist": [
+              "SC-4"
+            ],
+            "severity": "note"
+          },
+          "controlType": "technical",
+          "title": "misc/fopen",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/strncpy: Easily used incorrectly; doesn't always \\0-terminate or check for invalid pointers [MS-banned] (CWE-120).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 57 COLUMN : 3\n  strncpy(d,s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 57 COLUMN : 3\n  strncpy(d,s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 57,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1008",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "8fa14bf72393a00f667ffcc06b7b7e5f0b6d2f16d8d67444db06b0deb35b5f5e"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "note"
+          },
+          "controlType": "technical",
+          "title": "buffer/strncpy",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/_tcsncpy: Easily used incorrectly; doesn't always \\0-terminate or check for invalid pointers [MS-banned] (CWE-120).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 58 COLUMN : 3\n  _tcsncpy(d,s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 58 COLUMN : 3\n  _tcsncpy(d,s);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 58,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1009",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-120"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "691fabd4ca960a00e4c538eee0187ee0fdf59bd43dd71e792c14175150369b8b"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "note"
+          },
+          "controlType": "technical",
+          "title": "buffer/_tcsncpy",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "buffer/strlen: Does not handle strings that are not \\0-terminated; if given one it may perform an over-read (it could cause a crash if unprotected) (CWE-126).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : test/test-patched.c LINE : 62 COLUMN : 7\n  n = strlen(d);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : test/test.c LINE : 62 COLUMN : 7\n  n = strlen(d);",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 62,
+            "ref": "test/test-patched.c"
+          },
+          "id": "FF1022",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-126"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "contextHash/v1": "db7201c7df7f543ea76febb060bda167e414e71e3d18095fe1def69f8c47a4f6"
+              }
+            },
+            "helpUri": "https://cwe.mitre.org/data/definitions/126.html",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "note"
+          },
+          "controlType": "technical",
+          "title": "buffer/strlen",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "87846b1d52b288b27284aac7a8d454d880f4178b833237a51ab3811eda72fa65"
+      },
+      "name": "Flawfinder",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-12T18:56:41.924649-04:00",
+  "tool": {
+    "format": "SARIF",
+    "name": "Flawfinder",
+    "version": "2.0.15"
+  }
+}

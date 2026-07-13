@@ -17,7 +17,7 @@
             {
               "codeDesc": "Device: temp123.middleeast.corp.microsoft.com (OS: Windows10)\nProcess: C:\\Windows\\SysWOW64\\rundll32.exe (Command: rundll32.exe c:\\temp\\suspicious.dll,RepeatAfterMe)",
               "message": "Alert: Low-reputation arbitrary code executed by signed executable\nStatus: new\nSeverity: low\nURL: https://security.microsoft.com/alerts/da637472900382838869_1364969609",
-              "startTime": "2021-01-26T20:31:32.9562661Z",
+              "startTime": "2021-01-26T20:31:32.956Z",
               "status": "failed"
             }
           ],
@@ -59,9 +59,9 @@
   ],
   "generator": {
     "name": "msft-defender-endpoint-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-05-15T03:15:07.396476825Z",
+  "timestamp": "2026-07-12T22:56:40.396014Z",
   "tool": {
     "name": "Microsoft Defender for Endpoint"
   }

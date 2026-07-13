@@ -129,6 +129,34 @@ interface FVDLSnippet {
 
 // --- Helpers ---
 
+const NAMED_ENTITIES: Record<string, string> = {
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  amp: '&',
+};
+
+// FVDL stores its description markup entity-escaped, and the shared XML parser
+// leaves entities encoded (processEntities is off as XXE defense-in-depth), so the
+// markup must be decoded before stripHTML can see it — this is what Go's XML
+// decoder does for free. Only the predefined and numeric character references are
+// decoded; document-defined entities stay untouched.
+function decodeXmlEntities(s: string): string {
+  return s.replace(
+    /&(?:#(\d+)|#[xX]([0-9a-fA-F]+)|(lt|gt|quot|apos|amp));/g,
+    (match, dec: string | undefined, hex: string | undefined, name: string | undefined) => {
+      if (dec !== undefined) return String.fromCodePoint(Number.parseInt(dec, 10));
+      if (hex !== undefined) return String.fromCodePoint(Number.parseInt(hex, 16));
+      return name !== undefined ? NAMED_ENTITIES[name] ?? match : match;
+    },
+  );
+}
+
+function stripFvdlMarkup(s: string): string {
+  return stripHTML(decodeXmlEntities(s));
+}
+
 function buildSnippetMap(snippets: FVDLSnippet[]): Map<string, FVDLSnippet> {
   const map = new Map<string, FVDLSnippet>();
   for (const s of snippets) {
@@ -219,10 +247,10 @@ function buildRequirement(
   const tags = buildNistCciTags(nistTags, cciTags);
 
   // Title from Abstract (HTML stripped)
-  const title = stripHTML(desc.Abstract ?? '');
+  const title = stripFvdlMarkup(desc.Abstract ?? '');
 
   // Default description from Explanation (HTML stripped)
-  let explanationText = stripHTML(desc.Explanation ?? '');
+  let explanationText = stripFvdlMarkup(desc.Explanation ?? '');
   if (!explanationText) {
     explanationText = title;
   }
@@ -234,7 +262,7 @@ function buildRequirement(
   if (desc.Recommendations) {
     descriptions.push({
       label: 'fix',
-      data: stripHTML(desc.Recommendations),
+      data: stripFvdlMarkup(desc.Recommendations),
     });
   }
 

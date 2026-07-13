@@ -1,15 +1,18 @@
 import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, inputChecksum, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { buildHdfResults, deriveControlTypeFromTags, inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
-  HDFResults,
+  Component,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
   Description,
+  Integrity,
   RequirementGroup,
+  Statistics,
 } from '@mitre/hdf-schema';
 import {
+  HashAlgorithm,
   ResultStatus,
   TargetType,
   VerificationMethodEnum,
@@ -18,6 +21,8 @@ import {
   createDescription,
   createResult,
 } from '@mitre/hdf-schema';
+
+const CONVERTER_VERSION = '1.0.0';
 
 /**
  * Splunk event metadata. Each event emitted by the HDF-to-Splunk pipeline
@@ -108,7 +113,8 @@ function mapStatus(status: string): ResultStatus {
 
 /**
  * Convert a Splunk descriptions object (`{ key: value }`) to an array of
- * HDF Description objects.
+ * HDF Description objects. Labels are sorted: Go decodes the same object into
+ * a map, so sorting is the only ordering both languages can agree on.
  */
 function convertDescriptions(
   descriptions: Record<string, string> | undefined,
@@ -116,9 +122,9 @@ function convertDescriptions(
   if (!descriptions || typeof descriptions !== 'object') {
     return [];
   }
-  return Object.entries(descriptions).map(([label, data]) =>
-    createDescription(label, data),
-  );
+  return Object.entries(descriptions)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([label, data]) => createDescription(label, data));
 }
 
 /**
@@ -168,12 +174,14 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
     eventsByGuid.get(guid)!.push(event);
   }
 
-  // Process each GUID group into baselines + components
+  // Process each GUID group into baselines + components. GUIDs are visited in
+  // sorted order because Go groups them in a map and can only agree on that.
   const allBaselines: EvaluatedBaseline[] = [];
-  let targetName = 'unknown';
-  let targetRelease = '';
+  const components: Component[] = [];
+  let statistics: Statistics | undefined;
 
-  for (const [, guidEvents] of eventsByGuid) {
+  for (const guid of [...eventsByGuid.keys()].sort()) {
+    const guidEvents = eventsByGuid.get(guid)!;
     const headers: SplunkHeader[] = [];
     const profiles: SplunkProfile[] = [];
     const controls: SplunkControl[] = [];
@@ -199,8 +207,15 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
     }
 
     const header = headers[0]!;
-    targetName = header.platform.name;
-    targetRelease = header.platform.release;
+    const component: Component = {
+      name: header.platform.name,
+      type: TargetType.Host,
+    };
+    if (header.platform.release) {
+      component.osVersion = header.platform.release;
+    }
+    components.push(component);
+    statistics = convertStatistics(header.statistics);
 
     // Group controls by their profile_sha256
     const controlsByProfile = new Map<string, SplunkControl[]>();
@@ -219,17 +234,27 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
       const requirements: EvaluatedRequirement[] = profileControls.map(
         (control) => {
           const descriptions = convertDescriptions(control.descriptions);
+          if (descriptions.length === 0) {
+            descriptions.push(createDescription('default', control.desc ?? ''));
+          }
 
           const results: RequirementResult[] = Array.isArray(control.results)
-            ? control.results.map((result) =>
-                createResult(mapStatus(result.status), result.message, {
-                  codeDesc: result.code_desc,
-                  startTime: parseTimestamp(result.start_time) ?? new Date('0001-01-01T00:00:00Z'),
-                  runTime: result.run_time,
-                  exception: result.exception,
-                  backtrace: result.backtrace,
-                }),
-              )
+            ? control.results.map((result) => {
+                const res = createResult(
+                  mapStatus(result.status),
+                  result.skip_message || result.message,
+                  {
+                    codeDesc: result.code_desc,
+                    startTime: parseTimestamp(result.start_time) ?? new Date('0001-01-01T00:00:00Z'),
+                    runTime: result.run_time,
+                    exception: result.exception,
+                    backtrace: result.backtrace,
+                  },
+                );
+                if (!res.message) delete res.message;
+                if (result.resource) res.resource = result.resource;
+                return res;
+              })
             : [];
 
           const options: {
@@ -252,6 +277,9 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
             options,
           ) as EvaluatedRequirement;
 
+          if (!req.title) delete req.title;
+          if (control.code) req.code = control.code;
+
           const nistTagsRaw = (control.tags as Record<string, unknown> | undefined)?.['nist'];
           const nistTags = Array.isArray(nistTagsRaw)
             ? nistTagsRaw.filter((t): t is string => typeof t === 'string')
@@ -273,6 +301,7 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
         version?: string;
         summary?: string;
         groups?: RequirementGroup[];
+        integrity?: Integrity;
         resultsChecksum: Checksum;
       } = {
         resultsChecksum,
@@ -290,28 +319,39 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
       if (groups.length > 0) {
         baselineOptions.groups = groups;
       }
+      if (profile.sha256) {
+        baselineOptions.integrity = {
+          algorithm: HashAlgorithm.Sha256,
+          checksum: profile.sha256,
+        };
+      }
 
-      allBaselines.push(
-        createMinimalBaseline(profile.name, requirements, baselineOptions),
-      );
+      const baseline = createMinimalBaseline(profile.name, requirements, baselineOptions);
+      if (profile.copyright) baseline.copyright = profile.copyright;
+      if (profile.maintainer) baseline.maintainer = profile.maintainer;
+      if (profile.license) baseline.license = profile.license;
+
+      allBaselines.push(baseline);
     }
   }
 
-  const hdf: HDFResults = {
+  return buildHdfResults({
+    generatorName: 'splunk-to-hdf',
+    converterVersion: CONVERTER_VERSION,
+    toolName: 'Splunk',
     baselines: allBaselines,
-    components: [
-      {
-        name: targetName,
-        type: TargetType.Host,
-        osName: targetRelease || undefined,
-        labels: {},
-      },
-    ],
-    generator: {
-      name: 'splunk-to-hdf',
-      version: '1.0.0',
-    },
-  };
+    components,
+    statistics,
+    timestamp: new Date(),
+  });
+}
 
-  return serializeHdf(hdf);
+/** Extract the assessment duration from a Splunk header's statistics blob. */
+function convertStatistics(stats: Record<string, unknown> | undefined): Statistics | undefined {
+  if (!stats || typeof stats !== 'object') return undefined;
+  const out: Statistics = {};
+  if (typeof stats['duration'] === 'number') {
+    out.duration = stats['duration'];
+  }
+  return out;
 }

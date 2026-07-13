@@ -1043,7 +1043,7 @@ func TestConvertXccdfResultsToHDF_EmptyArfReport(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTestsRaw(t, "xccdf-results-to-hdf", func(input []byte) ([]byte, error) {
-		output, _, err := ConvertXccdfToHDF(input, "0.1.0")
+		output, _, err := ConvertXccdfToHDF(input, "1.0.0")
 		return output, err
 	})
 }

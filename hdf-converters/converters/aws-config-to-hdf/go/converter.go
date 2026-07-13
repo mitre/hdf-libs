@@ -76,7 +76,7 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		return nil, fmt.Errorf("aws-config: %w", err)
 	}
 
-	integrity := shared.InputIntegrity(input)
+	resultsChecksum := shared.InputChecksum(input)
 
 	var data ConfigRulesFile
 	if err := json.Unmarshal(input, &data); err != nil {
@@ -92,7 +92,7 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		return nil, err
 	}
 
-	baseline := buildBaseline(limitedRules, integrity)
+	baseline := buildBaseline(limitedRules, resultsChecksum)
 	now := time.Now().UTC()
 
 	// Extract account/region from first rule's ARN for target labels
@@ -124,19 +124,19 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 }
 
 // buildBaseline creates one EvaluatedBaseline from the (already size-limited) ConfigRules.
-func buildBaseline(rules []ConfigRule, integrity *hdf.Integrity) hdf.EvaluatedBaseline {
+func buildBaseline(rules []ConfigRule, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(rules))
 	for _, rule := range rules {
 		requirements = append(requirements, buildRequirement(rule))
 	}
 
 	return hdf.EvaluatedBaseline{
-		Name:         "AWS Config",
-		Title:        hdfutil.Ptr("AWS Config Compliance Results"),
-		Version:      hdfutil.Ptr("1.0.0"),
-		Maintainer:   hdfutil.Ptr("Amazon Web Services"),
-		Integrity:    integrity,
-		Requirements: requirements,
+		Name:            "AWS Config",
+		Title:           hdfutil.Ptr("AWS Config Compliance Results"),
+		Version:         hdfutil.Ptr("1.0.0"),
+		Maintainer:      hdfutil.Ptr("Amazon Web Services"),
+		ResultsChecksum: resultsChecksum,
+		Requirements:    requirements,
 	}
 }
 

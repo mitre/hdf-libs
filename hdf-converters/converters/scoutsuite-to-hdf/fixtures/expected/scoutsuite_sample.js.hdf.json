@@ -264,7 +264,7 @@
   ],
   "generator": {
     "name": "scoutsuite-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   "timestamp": "2021-02-19T19:16:10Z",
   "tool": {

@@ -343,7 +343,7 @@ func TestBuildDependencyGraph_ParentAssociation(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "ionchannel-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertIonChannelToHDF(input, "0.1.0")
+		return ConvertIonChannelToHDF(input, "1.0.0")
 	})
 }
 

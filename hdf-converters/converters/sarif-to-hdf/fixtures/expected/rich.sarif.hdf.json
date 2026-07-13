@@ -1,0 +1,290 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "SQL injection: User input concatenated into SQL query without parameterization.",
+              "label": "default"
+            },
+            {
+              "data": "User-controlled input is used directly in a SQL query without proper sanitization, allowing an attacker to manipulate the query.",
+              "label": "rationale"
+            },
+            {
+              "data": "Use parameterized queries or prepared statements instead of string concatenation to build SQL queries.",
+              "label": "check"
+            },
+            {
+              "data": "Use parameterized query: db.Query(\"SELECT * FROM users WHERE name = ?\", userInput)",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "backtrace": [
+                "src/handlers/user.go:22 - User input received from request parameter",
+                "src/handlers/user.go:30 - Input passed to query builder",
+                "src/db/queries.go:45 - Unsanitized input used in SQL query"
+              ],
+              "codeDesc": "URL : src/db/queries.go LINE : 45 COLUMN : 12\ndb.Query(\"SELECT * FROM users WHERE name = '\" + userInput + \"'\")",
+              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : src/db/safe_queries.go LINE : 10 COLUMN : 1",
+              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "status": "notApplicable"
+            },
+            {
+              "codeDesc": "URL : src/db/dynamic.go LINE : 88 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 45,
+            "ref": "src/db/queries.go"
+          },
+          "id": "SEC-001",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-89"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "primaryLocationHash": "abc123def456"
+              },
+              "partialFingerprints": {
+                "primaryLocationLineHash": "line45hash"
+              }
+            },
+            "helpUri": "https://example.com/rules/SEC-001",
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "SqlInjection",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Weak cryptographic algorithm MD5 used for password hashing.",
+              "label": "default"
+            },
+            {
+              "data": "The code uses a cryptographic algorithm that is considered weak and may be vulnerable to attacks.",
+              "label": "rationale"
+            },
+            {
+              "data": "Replace MD5/SHA1 with SHA-256 or stronger algorithms for cryptographic purposes.",
+              "label": "check"
+            },
+            {
+              "data": "Replace md5.New() with sha256.New() or use bcrypt for password hashing.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : src/auth/hash.go LINE : 18 COLUMN : 3\nh := md5.New()",
+              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 18,
+            "ref": "src/auth/hash.go"
+          },
+          "id": "SEC-002",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-002450"
+            ],
+            "cwe": [
+              "CWE-327"
+            ],
+            "helpUri": "https://example.com/rules/SEC-002",
+            "nist": [
+              "SC-13"
+            ],
+            "severity": "warning"
+          },
+          "controlType": "technical",
+          "title": "WeakCrypto",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Hardcoded API key found in source code.",
+              "label": "default"
+            },
+            {
+              "data": "A credential (password, API key, or token) appears to be hardcoded in the source code.",
+              "label": "rationale"
+            },
+            {
+              "data": "Store credentials in environment variables or a secrets manager instead of hardcoding them.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : src/config/settings.go LINE : 8 COLUMN : 1",
+              "message": "Suppressed: This is a test API key used only in development environments",
+              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "status": "notReviewed"
+            },
+            {
+              "codeDesc": "URL : src/config/db.go LINE : 15 COLUMN : 1",
+              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : src/config/tokens.go LINE : 5 COLUMN : 1",
+              "message": "Suppressed: Reviewing whether this token is still active; Marked as false positive by security team",
+              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "status": "notReviewed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 8,
+            "ref": "src/config/settings.go"
+          },
+          "id": "SEC-003",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [
+              "CWE-798"
+            ],
+            "helpUri": "https://example.com/rules/SEC-003",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "error",
+            "suppressions": [
+              {
+                "justification": "This is a test API key used only in development environments",
+                "kind": "inSource",
+                "status": "accepted"
+              }
+            ]
+          },
+          "title": "HardcodedCredential",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Error messages properly sanitized in this handler.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : src/handlers/error.go LINE : 30 COLUMN : 1",
+              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "status": "passed"
+            },
+            {
+              "codeDesc": "URL : src/handlers/api.go LINE : 55 COLUMN : 3",
+              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "status": "notReviewed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 30,
+            "ref": "src/handlers/error.go"
+          },
+          "id": "SEC-004",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [
+              "CWE-209"
+            ],
+            "kind": "pass",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "note"
+          },
+          "title": "InfoLeak",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Deprecated API check not applicable to this file type.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : src/static/index.html LINE : 1 COLUMN : 1",
+              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "status": "notApplicable"
+            }
+          ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": "src/static/index.html"
+          },
+          "id": "SEC-005",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "kind": "notApplicable",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "note"
+          },
+          "title": "DeprecatedAPI",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "361060b3674292276b7ba516f8e0622b19e710de67b422bc40056e388767f912"
+      },
+      "name": "SecurityScanner",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-12T18:56:41.922814-04:00",
+  "tool": {
+    "format": "SARIF",
+    "name": "SecurityScanner",
+    "version": "3.2.1"
+  }
+}

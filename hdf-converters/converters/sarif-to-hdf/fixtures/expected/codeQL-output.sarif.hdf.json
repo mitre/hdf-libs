@@ -1,0 +1,1283 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "'except' clause does nothing but pass and there is no explanatory comment.",
+              "label": "default"
+            },
+            {
+              "data": "Except doesn't do anything and has no comment",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : good/db_init.py LINE : 39 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/db_init.py LINE : 44 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/db_init.py LINE : 40 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/db_init.py LINE : 45 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/libsession.py LINE : 21 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/libsession.py LINE : 22 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : utils/scrypt-crack.py LINE : 43 COLUMN : 9",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 39,
+            "ref": "good/db_init.py"
+          },
+          "id": "py/empty-except",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [
+              "CWE-390"
+            ],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "9cbc869fbfffeb60:1",
+                "primaryLocationStartColumnFingerprint": "0"
+              }
+            },
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "note"
+          },
+          "title": "py/empty-except",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Keyword argument 'request' is not a supported parameter name of [function create](1).",
+              "label": "default"
+            },
+            {
+              "data": "Using a named argument whose name does not correspond to a parameter of the called function or method, will result in a TypeError at runtime.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : good/mod_user.py LINE : 33 COLUMN : 20",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 33,
+            "ref": "good/mod_user.py"
+          },
+          "id": "py/call/wrong-named-argument",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [
+              "CWE-628"
+            ],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "15e245a0c9ecd61e:1",
+                "primaryLocationStartColumnFingerprint": "11"
+              }
+            },
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "error"
+          },
+          "title": "py/call/wrong-named-argument",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Call to [function create](1) with too few arguments; should be no fewer than 3.",
+              "label": "default"
+            },
+            {
+              "data": "Using too many or too few arguments in a call to a function will result in a TypeError at runtime.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : bad/mod_user.py LINE : 32 COLUMN : 20",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 32,
+            "ref": "bad/mod_user.py"
+          },
+          "id": "py/call/wrong-arguments",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [
+              "CWE-685"
+            ],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "8f57764f2c7d98c5:1",
+                "primaryLocationStartColumnFingerprint": "11"
+              }
+            },
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "error"
+          },
+          "title": "py/call/wrong-arguments",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Mixing implicit and explicit returns may indicate an error as implicit returns always return None.",
+              "label": "default"
+            },
+            {
+              "data": "Mixing implicit and explicit returns indicates a likely error as implicit returns always return 'None'.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : bad/api_list.py LINE : 8 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/api_post.py LINE : 10 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : utils/scrypt-crack.py LINE : 17 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 8,
+            "ref": "bad/api_list.py"
+          },
+          "id": "py/mixed-returns",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "74accf6a450cf312:1",
+                "primaryLocationStartColumnFingerprint": "0"
+              }
+            },
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "note"
+          },
+          "title": "py/mixed-returns",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "The module 'libuser' imports itself.",
+              "label": "default"
+            },
+            {
+              "data": "A module imports itself",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : bad/libuser.py LINE : 2 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 2,
+            "ref": "bad/libuser.py"
+          },
+          "id": "py/import-own-module",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "667cfaa6fb788897:1",
+                "primaryLocationStartColumnFingerprint": "0"
+              }
+            },
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "note"
+          },
+          "title": "py/import-own-module",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Import of 'sys' is not used.",
+              "label": "default"
+            },
+            {
+              "data": "Import is not required as it is not used",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : utils/aes-decrypt.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : utils/aes-encrypt.py LINE : 4 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/api_list.py LINE : 1 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : utils/ca-csr-create.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : utils/ca-csr-create.py LINE : 6 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : utils/ca-csr-load.py LINE : 6 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : utils/ca-csr-load.py LINE : 9 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : utils/crack-cvv.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/libapi.py LINE : 2 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/libapi.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/libapi.py LINE : 4 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/libapi.py LINE : 8 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/libmfa.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/libmfa.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/libposts.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/libposts.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/libsession.py LINE : 1 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/libsession.py LINE : 2 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/libuser.py LINE : 2 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/libuser.py LINE : 2 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/mod_api.py LINE : 1 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/mod_api.py LINE : 2 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/mod_api.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_api.py LINE : 1 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_api.py LINE : 2 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_api.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/mod_hello.py LINE : 1 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_hello.py LINE : 1 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_mfa.py LINE : 1 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_mfa.py LINE : 2 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_mfa.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_mfa.py LINE : 4 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/mod_posts.py LINE : 1 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_posts.py LINE : 1 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_user.py LINE : 1 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_welcome1.py LINE : 1 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_welcome1.py LINE : 2 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : utils/scrypt-crack.py LINE : 4 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : utils/scrypt-generate.py LINE : 3 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : utils/scrypt-verify.py LINE : 4 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 3,
+            "ref": "utils/aes-decrypt.py"
+          },
+          "id": "py/unused-import",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "4d26343580d9ed44:1",
+                "primaryLocationStartColumnFingerprint": "0"
+              }
+            },
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "note"
+          },
+          "title": "py/unused-import",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "These comments appear to contain commented-out code.",
+              "label": "default"
+            },
+            {
+              "data": "Commented-out code makes the remaining code more difficult to read.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : bad/libmfa.py LINE : 81 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/libmfa.py LINE : 81 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/mod_user.py LINE : 58 COLUMN : 9",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 81,
+            "ref": "bad/libmfa.py"
+          },
+          "id": "py/commented-out-code",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "a4318a06ab13c9c5:1",
+                "primaryLocationStartColumnFingerprint": "0"
+              }
+            },
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "note"
+          },
+          "title": "py/commented-out-code",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "This path depends on [a user-provided value](1).\nThis path depends on [a user-provided value](2).",
+              "label": "default"
+            },
+            {
+              "data": "Accessing paths influenced by users can allow an attacker to access unexpected resources.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "backtrace": [
+                "bad/mod_api.py:32 - ControlFlowNode for request",
+                "bad/mod_api.py:32 - ControlFlowNode for Attribute",
+                "bad/mod_api.py:39 - ControlFlowNode for Subscript",
+                "bad/libapi.py:0 - ControlFlowNode for username",
+                "bad/libapi.py:22 - ControlFlowNode for Path()",
+                "good/mod_api.py:34 - ControlFlowNode for request",
+                "good/mod_api.py:34 - ControlFlowNode for Attribute",
+                "good/mod_api.py:41 - ControlFlowNode for Subscript",
+                "bad/libapi.py:8 - ControlFlowNode for username",
+                "bad/libapi.py:22 - ControlFlowNode for Path()"
+              ],
+              "codeDesc": "URL : bad/libapi.py LINE : 22 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 22,
+            "ref": "bad/libapi.py"
+          },
+          "id": "py/path-injection",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-022",
+              "CWE-023",
+              "CWE-036",
+              "CWE-073",
+              "CWE-099"
+            ],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "6e479c79e8d1316:1",
+                "primaryLocationStartColumnFingerprint": "0"
+              }
+            },
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "py/path-injection",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Cross-site scripting vulnerability due to [a user-provided value](1).\nCross-site scripting vulnerability due to [a user-provided value](2).\nCross-site scripting vulnerability due to [a user-provided value](3).\nCross-site scripting vulnerability due to [a user-provided value](4).\nCross-site scripting vulnerability due to [a user-provided value](5).\nCross-site scripting vulnerability due to [a user-provided value](1).",
+              "label": "default"
+            },
+            {
+              "data": "Writing user input directly to a web page allows for a cross-site scripting vulnerability.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "backtrace": [
+                "bad/libsession.py:5 - ControlFlowNode for response",
+                "bad/libsession.py:8 - ControlFlowNode for response",
+                "bad/mod_user.py:32 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:33 - ControlFlowNode for response",
+                "bad/libsession.py:7 - ControlFlowNode for response",
+                "bad/libsession.py:8 - ControlFlowNode for response",
+                "bad/mod_user.py:32 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:33 - ControlFlowNode for response",
+                "bad/libsession.py:8 - ControlFlowNode for response",
+                "bad/mod_user.py:32 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:33 - ControlFlowNode for response",
+                "bad/mod_user.py:14 - ControlFlowNode for request",
+                "bad/mod_user.py:16 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:20 - ControlFlowNode for username",
+                "bad/mod_user.py:20 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:32 - ControlFlowNode for username",
+                "bad/mod_user.py:32 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:33 - ControlFlowNode for response",
+                "bad/mod_user.py:14 - ControlFlowNode for request",
+                "bad/mod_user.py:16 - ControlFlowNode for request",
+                "bad/mod_user.py:16 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:20 - ControlFlowNode for username",
+                "bad/mod_user.py:20 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:32 - ControlFlowNode for username",
+                "bad/mod_user.py:32 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:33 - ControlFlowNode for response",
+                "bad/mod_user.py:16 - ControlFlowNode for request",
+                "bad/mod_user.py:16 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:20 - ControlFlowNode for username",
+                "bad/mod_user.py:20 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:32 - ControlFlowNode for username",
+                "bad/mod_user.py:32 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:33 - ControlFlowNode for response",
+                "bad/libsession.py:5 - SSA variable response",
+                "bad/libsession.py:8 - ControlFlowNode for response",
+                "bad/mod_user.py:32 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:33 - ControlFlowNode for response"
+              ],
+              "codeDesc": "URL : bad/mod_user.py LINE : 33 COLUMN : 16",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "backtrace": [
+                "bad/libsession.py:5 - ControlFlowNode for response",
+                "bad/libsession.py:8 - ControlFlowNode for response",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "bad/libsession.py:7 - ControlFlowNode for response",
+                "bad/libsession.py:8 - ControlFlowNode for response",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "bad/libsession.py:8 - ControlFlowNode for response",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "good/mod_user.py:15 - ControlFlowNode for request",
+                "good/mod_user.py:33 - ControlFlowNode for request",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "good/mod_user.py:15 - ControlFlowNode for request",
+                "good/mod_user.py:17 - ControlFlowNode for Attribute",
+                "good/mod_user.py:21 - ControlFlowNode for username",
+                "good/mod_user.py:21 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:33 - ControlFlowNode for username",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "good/mod_user.py:15 - ControlFlowNode for request",
+                "good/mod_user.py:17 - ControlFlowNode for request",
+                "good/mod_user.py:33 - ControlFlowNode for request",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "good/mod_user.py:15 - ControlFlowNode for request",
+                "good/mod_user.py:17 - ControlFlowNode for request",
+                "good/mod_user.py:17 - ControlFlowNode for Attribute",
+                "good/mod_user.py:21 - ControlFlowNode for username",
+                "good/mod_user.py:21 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:33 - ControlFlowNode for username",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "good/mod_user.py:17 - ControlFlowNode for request",
+                "good/mod_user.py:33 - ControlFlowNode for request",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "good/mod_user.py:17 - ControlFlowNode for request",
+                "good/mod_user.py:17 - ControlFlowNode for Attribute",
+                "good/mod_user.py:21 - ControlFlowNode for username",
+                "good/mod_user.py:21 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:33 - ControlFlowNode for username",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "good/mod_user.py:18 - ControlFlowNode for request",
+                "good/mod_user.py:33 - ControlFlowNode for request",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "good/mod_user.py:19 - ControlFlowNode for request",
+                "good/mod_user.py:33 - ControlFlowNode for request",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "good/mod_user.py:33 - ControlFlowNode for request",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response",
+                "bad/libsession.py:5 - SSA variable response",
+                "bad/libsession.py:8 - ControlFlowNode for response",
+                "good/mod_user.py:33 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:34 - ControlFlowNode for response"
+              ],
+              "codeDesc": "URL : good/mod_user.py LINE : 34 COLUMN : 16",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 33,
+            "ref": "bad/mod_user.py"
+          },
+          "id": "py/reflective-xss",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-079",
+              "CWE-116"
+            ],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "68a9962897fd336c:1",
+                "primaryLocationStartColumnFingerprint": "7"
+              }
+            },
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "py/reflective-xss",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "This SQL query depends on [a user-provided value](1).\nThis SQL query depends on [a user-provided value](2).\nThis SQL query depends on [a user-provided value](3).\nThis SQL query depends on [a user-provided value](4).\nThis SQL query depends on [a user-provided value](5).\nThis SQL query depends on [a user-provided value](6).\nThis SQL query depends on [a user-provided value](7).\nThis SQL query depends on [a user-provided value](8).\nThis SQL query depends on [a user-provided value](9).\nThis SQL query depends on [a user-provided value](10).\nThis SQL query depends on [a user-provided value](11).\nThis SQL query depends on [a user-provided value](12).",
+              "label": "default"
+            },
+            {
+              "data": "Building a SQL query from user-controlled sources is vulnerable to insertion of malicious SQL code by the user.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "backtrace": [
+                "bad/mod_api.py:32 - ControlFlowNode for request",
+                "bad/mod_api.py:32 - ControlFlowNode for Attribute",
+                "bad/mod_api.py:39 - ControlFlowNode for Subscript",
+                "bad/libapi.py:8 - ControlFlowNode for username",
+                "bad/libapi.py:11 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "bad/mod_api.py:32 - ControlFlowNode for request",
+                "bad/mod_api.py:32 - ControlFlowNode for Attribute",
+                "bad/mod_api.py:39 - ControlFlowNode for Subscript",
+                "bad/libapi.py:8 - ControlFlowNode for password",
+                "bad/libapi.py:11 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "bad/mod_api.py:32 - ControlFlowNode for request",
+                "bad/mod_api.py:32 - ControlFlowNode for Attribute",
+                "bad/mod_api.py:39 - ControlFlowNode for Subscript",
+                "good/libapi.py:13 - ControlFlowNode for username",
+                "good/libapi.py:16 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "bad/mod_api.py:32 - ControlFlowNode for request",
+                "bad/mod_api.py:32 - ControlFlowNode for Attribute",
+                "bad/mod_api.py:39 - ControlFlowNode for Subscript",
+                "good/libapi.py:13 - ControlFlowNode for password",
+                "good/libapi.py:16 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_api.py:34 - ControlFlowNode for request",
+                "good/mod_api.py:34 - ControlFlowNode for Attribute",
+                "good/mod_api.py:41 - ControlFlowNode for Subscript",
+                "bad/libapi.py:8 - ControlFlowNode for username",
+                "bad/libapi.py:11 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_api.py:34 - ControlFlowNode for request",
+                "good/mod_api.py:34 - ControlFlowNode for Attribute",
+                "good/mod_api.py:41 - ControlFlowNode for Subscript",
+                "bad/libapi.py:8 - ControlFlowNode for password",
+                "bad/libapi.py:11 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_api.py:34 - ControlFlowNode for request",
+                "good/mod_api.py:34 - ControlFlowNode for Attribute",
+                "good/mod_api.py:41 - ControlFlowNode for Subscript",
+                "good/libapi.py:13 - ControlFlowNode for username",
+                "good/libapi.py:16 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_api.py:34 - ControlFlowNode for request",
+                "good/mod_api.py:34 - ControlFlowNode for Attribute",
+                "good/mod_api.py:41 - ControlFlowNode for Subscript",
+                "good/libapi.py:13 - ControlFlowNode for password",
+                "good/libapi.py:16 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:14 - ControlFlowNode for request",
+                "bad/mod_user.py:16 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:20 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:14 - ControlFlowNode for request",
+                "bad/mod_user.py:17 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:20 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:14 - ControlFlowNode for request",
+                "bad/mod_user.py:16 - ControlFlowNode for request",
+                "bad/mod_user.py:16 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:20 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:14 - ControlFlowNode for request",
+                "bad/mod_user.py:17 - ControlFlowNode for request",
+                "bad/mod_user.py:17 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:20 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:16 - ControlFlowNode for request",
+                "bad/mod_user.py:16 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:20 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:16 - ControlFlowNode for request",
+                "bad/mod_user.py:17 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:20 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:16 - ControlFlowNode for request",
+                "bad/mod_user.py:17 - ControlFlowNode for request",
+                "bad/mod_user.py:17 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:20 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "bad/mod_user.py:17 - ControlFlowNode for request",
+                "bad/mod_user.py:17 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:20 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:15 - ControlFlowNode for request",
+                "good/mod_user.py:17 - ControlFlowNode for Attribute",
+                "good/mod_user.py:21 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:15 - ControlFlowNode for request",
+                "good/mod_user.py:18 - ControlFlowNode for Attribute",
+                "good/mod_user.py:21 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:15 - ControlFlowNode for request",
+                "good/mod_user.py:17 - ControlFlowNode for request",
+                "good/mod_user.py:17 - ControlFlowNode for Attribute",
+                "good/mod_user.py:21 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:15 - ControlFlowNode for request",
+                "good/mod_user.py:18 - ControlFlowNode for request",
+                "good/mod_user.py:18 - ControlFlowNode for Attribute",
+                "good/mod_user.py:21 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:17 - ControlFlowNode for request",
+                "good/mod_user.py:17 - ControlFlowNode for Attribute",
+                "good/mod_user.py:21 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:17 - ControlFlowNode for request",
+                "good/mod_user.py:18 - ControlFlowNode for Attribute",
+                "good/mod_user.py:21 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:17 - ControlFlowNode for request",
+                "good/mod_user.py:18 - ControlFlowNode for request",
+                "good/mod_user.py:18 - ControlFlowNode for Attribute",
+                "good/mod_user.py:21 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:18 - ControlFlowNode for request",
+                "good/mod_user.py:18 - ControlFlowNode for Attribute",
+                "good/mod_user.py:21 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:44 - ControlFlowNode for request",
+                "good/mod_user.py:46 - ControlFlowNode for Attribute",
+                "good/mod_user.py:50 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:44 - ControlFlowNode for request",
+                "good/mod_user.py:47 - ControlFlowNode for Attribute",
+                "good/mod_user.py:50 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:44 - ControlFlowNode for request",
+                "good/mod_user.py:46 - ControlFlowNode for request",
+                "good/mod_user.py:46 - ControlFlowNode for Attribute",
+                "good/mod_user.py:50 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:44 - ControlFlowNode for request",
+                "good/mod_user.py:47 - ControlFlowNode for request",
+                "good/mod_user.py:47 - ControlFlowNode for Attribute",
+                "good/mod_user.py:50 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:46 - ControlFlowNode for request",
+                "good/mod_user.py:46 - ControlFlowNode for Attribute",
+                "good/mod_user.py:50 - ControlFlowNode for username",
+                "bad/libuser.py:5 - ControlFlowNode for username",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:46 - ControlFlowNode for request",
+                "good/mod_user.py:47 - ControlFlowNode for Attribute",
+                "good/mod_user.py:50 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:46 - ControlFlowNode for request",
+                "good/mod_user.py:47 - ControlFlowNode for request",
+                "good/mod_user.py:47 - ControlFlowNode for Attribute",
+                "good/mod_user.py:50 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:47 - ControlFlowNode for request",
+                "good/mod_user.py:47 - ControlFlowNode for Attribute",
+                "good/mod_user.py:50 - ControlFlowNode for password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()",
+                "good/mod_user.py:69 - ControlFlowNode for request",
+                "good/mod_user.py:69 - ControlFlowNode for Attribute",
+                "good/mod_user.py:73 - ControlFlowNode for current_password",
+                "bad/libuser.py:5 - ControlFlowNode for password",
+                "bad/libuser.py:12 - ControlFlowNode for Attribute()"
+              ],
+              "codeDesc": "URL : bad/libuser.py LINE : 12 COLUMN : 22",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "backtrace": [
+                "bad/mod_user.py:43 - ControlFlowNode for request",
+                "bad/mod_user.py:45 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:52 - ControlFlowNode for username",
+                "bad/libuser.py:20 - ControlFlowNode for username",
+                "bad/libuser.py:25 - ControlFlowNode for Tuple",
+                "bad/libuser.py:25 - ControlFlowNode for BinaryExpr",
+                "bad/mod_user.py:43 - ControlFlowNode for request",
+                "bad/mod_user.py:46 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:52 - ControlFlowNode for password",
+                "bad/libuser.py:20 - ControlFlowNode for password",
+                "bad/libuser.py:25 - ControlFlowNode for Tuple",
+                "bad/libuser.py:25 - ControlFlowNode for BinaryExpr",
+                "bad/mod_user.py:43 - ControlFlowNode for request",
+                "bad/mod_user.py:45 - ControlFlowNode for request",
+                "bad/mod_user.py:45 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:52 - ControlFlowNode for username",
+                "bad/libuser.py:20 - ControlFlowNode for username",
+                "bad/libuser.py:25 - ControlFlowNode for Tuple",
+                "bad/libuser.py:25 - ControlFlowNode for BinaryExpr",
+                "bad/mod_user.py:43 - ControlFlowNode for request",
+                "bad/mod_user.py:46 - ControlFlowNode for request",
+                "bad/mod_user.py:46 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:52 - ControlFlowNode for password",
+                "bad/libuser.py:20 - ControlFlowNode for password",
+                "bad/libuser.py:25 - ControlFlowNode for Tuple",
+                "bad/libuser.py:25 - ControlFlowNode for BinaryExpr",
+                "bad/mod_user.py:45 - ControlFlowNode for request",
+                "bad/mod_user.py:45 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:52 - ControlFlowNode for username",
+                "bad/libuser.py:20 - ControlFlowNode for username",
+                "bad/libuser.py:25 - ControlFlowNode for Tuple",
+                "bad/libuser.py:25 - ControlFlowNode for BinaryExpr",
+                "bad/mod_user.py:45 - ControlFlowNode for request",
+                "bad/mod_user.py:46 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:52 - ControlFlowNode for password",
+                "bad/libuser.py:20 - ControlFlowNode for password",
+                "bad/libuser.py:25 - ControlFlowNode for Tuple",
+                "bad/libuser.py:25 - ControlFlowNode for BinaryExpr",
+                "bad/mod_user.py:45 - ControlFlowNode for request",
+                "bad/mod_user.py:46 - ControlFlowNode for request",
+                "bad/mod_user.py:46 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:52 - ControlFlowNode for password",
+                "bad/libuser.py:20 - ControlFlowNode for password",
+                "bad/libuser.py:25 - ControlFlowNode for Tuple",
+                "bad/libuser.py:25 - ControlFlowNode for BinaryExpr",
+                "bad/mod_user.py:46 - ControlFlowNode for request",
+                "bad/mod_user.py:46 - ControlFlowNode for Attribute",
+                "bad/mod_user.py:52 - ControlFlowNode for password",
+                "bad/libuser.py:20 - ControlFlowNode for password",
+                "bad/libuser.py:25 - ControlFlowNode for Tuple",
+                "bad/libuser.py:25 - ControlFlowNode for BinaryExpr"
+              ],
+              "codeDesc": "URL : bad/libuser.py LINE : 25 COLUMN : 15",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 12,
+            "ref": "bad/libuser.py"
+          },
+          "id": "py/sql-injection",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-089"
+            ],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "87f19d40ee7aefaf:1",
+                "primaryLocationStartColumnFingerprint": "17"
+              }
+            },
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "py/sql-injection",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "A Flask app appears to be run in debug mode. This may allow an attacker to run arbitrary code through the debugger.",
+              "label": "default"
+            },
+            {
+              "data": "Running a Flask app in debug mode may allow an attacker to run arbitrary code through the Werkzeug debugger.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : good/vulpy-ssl.py LINE : 29 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/vulpy-ssl.py LINE : 29 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/vulpy.py LINE : 55 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/vulpy.py LINE : 53 COLUMN : 0",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 29,
+            "ref": "good/vulpy-ssl.py"
+          },
+          "id": "py/flask-debug",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001312"
+            ],
+            "cwe": [
+              "CWE-215",
+              "CWE-489"
+            ],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "b0c28a6e08dc0c46:1",
+                "primaryLocationStartColumnFingerprint": "0"
+              }
+            },
+            "nist": [
+              "SI-11"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "py/flask-debug",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Unreachable statement.",
+              "label": "default"
+            },
+            {
+              "data": "Code is unreachable",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : good/libuser.py LINE : 51 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_mfa.py LINE : 55 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/mod_mfa.py LINE : 54 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_user.py LINE : 87 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 51,
+            "ref": "good/libuser.py"
+          },
+          "id": "py/unreachable-statement",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [
+              "CWE-561"
+            ],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "462c73efe920db8d:1",
+                "primaryLocationStartColumnFingerprint": "0"
+              }
+            },
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "warning"
+          },
+          "title": "py/unreachable-statement",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "The value assigned to local variable 'rows' is never used.",
+              "label": "default"
+            },
+            {
+              "data": "Local variable is defined but not used",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : good/libposts.py LINE : 28 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : bad/libposts.py LINE : 28 COLUMN : 5",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : good/mod_user.py LINE : 48 COLUMN : 9",
+              "startTime": "2026-07-12T18:56:41.919741-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 28,
+            "ref": "good/libposts.py"
+          },
+          "id": "py/unused-local-variable",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [
+              "CWE-563"
+            ],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "2b43957e7f3d7581:1",
+                "primaryLocationStartColumnFingerprint": "0"
+              }
+            },
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "note"
+          },
+          "title": "py/unused-local-variable",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "280da22fe8722af988ab9f7782f247b19f546a0f10a2843f1664706166e1f2eb"
+      },
+      "name": "CodeQL",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-12T18:56:41.919741-04:00",
+  "tool": {
+    "format": "SARIF",
+    "name": "CodeQL"
+  }
+}

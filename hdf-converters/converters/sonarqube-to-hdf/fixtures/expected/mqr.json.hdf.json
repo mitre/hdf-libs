@@ -341,9 +341,9 @@
   ],
   "generator": {
     "name": "sonarqube-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T22:07:20.227615Z",
+  "timestamp": "2026-07-13T00:39:15.768458Z",
   "tool": {
     "name": "SonarQube",
     "version": "26.1.0.118079"

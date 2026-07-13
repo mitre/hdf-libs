@@ -203,14 +203,15 @@ function getCVSSInfo(vuln: GrypeVulnerability, relatedVulns?: GrypeRelatedVulner
   }
 
   // Collect CVSS from related vulnerabilities
-  if (relatedVulns && relatedVulns.length > 0) {
-    cvssData.related = relatedVulns
-      .filter(r => r.cvss && r.cvss.length > 0)
-      .map(r => ({
-        id: r.id,
-        dataSource: r.dataSource,
-        cvss: r.cvss,
-      }));
+  const related = (relatedVulns ?? [])
+    .filter(r => r.cvss && r.cvss.length > 0)
+    .map(r => ({
+      id: r.id,
+      dataSource: r.dataSource,
+      cvss: r.cvss,
+    }));
+  if (related.length > 0) {
+    cvssData.related = related;
   }
 
   return JSON.stringify(cvssData);
@@ -542,8 +543,8 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
 
   // Build HDF results
   return buildHdfResults({
-    generatorName: grypeData.descriptor?.name || 'grype',
-    converterVersion: grypeData.descriptor?.version || 'unknown',
+    generatorName: 'grype-to-hdf',
+    converterVersion: '1.0.0',
     toolName: 'Grype',
     toolVersion: grypeData.descriptor?.version,
     baselines: [baseline],

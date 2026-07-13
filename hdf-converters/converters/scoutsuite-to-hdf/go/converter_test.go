@@ -384,7 +384,7 @@ func TestConvertScoutsuiteToHDF_ControlType(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "scoutsuite-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertScoutsuiteToHDF(input, "0.1.0")
+		return ConvertScoutsuiteToHDF(input, "1.0.0")
 	})
 }
 

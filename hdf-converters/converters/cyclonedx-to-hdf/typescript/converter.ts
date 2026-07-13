@@ -6,16 +6,17 @@ import {
 import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { parseBom, buildBom, BOMType, type BuildBomParts } from '../../../shared/typescript/bom/index.js';
 import type {
+  Component,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  RequirementResult,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
   TargetType,
   createMinimalBaseline,
   createRequirement,
-  createResult,
   severityToImpact,
   type Description,
 } from '@mitre/hdf-schema';
@@ -316,20 +317,16 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     // All vulnerabilities are Failed — info/unknown severity affects impact
     // score but not status.
     const affects = vuln.affects ?? [];
+    // CycloneDX carries no per-affect explanation, so results carry no message key.
+    const toResult = (codeDesc: string): RequirementResult => ({
+      status: ResultStatus.Failed,
+      codeDesc,
+      startTime: scanTime,
+    });
     const results =
       affects.length > 0
-        ? affects.map((affect) =>
-            createResult(ResultStatus.Failed, undefined, {
-              codeDesc: formatCodeDesc(componentLookup, affect.ref),
-              startTime: scanTime,
-            })
-          )
-        : [
-            createResult(ResultStatus.Failed, undefined, {
-              codeDesc: `Vulnerability ${vuln.id}`,
-              startTime: scanTime,
-            }),
-          ];
+        ? affects.map((affect) => toResult(formatCodeDesc(componentLookup, affect.ref)))
+        : [toResult(`Vulnerability ${vuln.id}`)];
 
     const title = vuln.source?.name
       ? `${vuln.id} (${vuln.source.name})`
@@ -352,7 +349,13 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     resultsChecksum,
   }) as EvaluatedBaseline;
 
-  const targetName = bom.metadata?.component?.name ?? '';
+  const targetComponent: Component = {
+    name: bom.metadata?.component?.name ?? '',
+    type: TargetType.Application,
+  };
+  if (bom.metadata?.component?.version) {
+    targetComponent.version = bom.metadata.component.version;
+  }
 
   // Attach the CycloneDX BOM to the component as a generalized boms[] entry.
   // The shared BOM parser yields the normalized package inventory; the raw
@@ -376,7 +379,7 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     toolName: 'CycloneDX',
     toolFormat: 'JSON',
     baselines: [baseline],
-    components: [{ name: targetName, type: TargetType.Application, boms: [componentBom] }],
+    components: [{ ...targetComponent, boms: [componentBom] }],
     timestamp: scanTime,
   });
 }

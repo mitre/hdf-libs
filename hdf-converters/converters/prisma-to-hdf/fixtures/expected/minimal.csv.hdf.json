@@ -13,7 +13,7 @@
             {
               "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
               "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ecdsa_key",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.752617Z",
               "status": "failed"
             }
           ],
@@ -51,7 +51,7 @@
             {
               "codeDesc": "Version check of package: samba-common\n\nSamba out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution.",
               "message": "Fix Status: fixed in 4.10.16-18.el7_9",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.752617Z",
               "status": "failed"
             }
           ],
@@ -91,7 +91,7 @@
             {
               "codeDesc": "Version check of package: gcc\n\nInteger overflow in libiberty allows remote attackers to execute arbitrary code.",
               "message": "Fix Status: will not fix",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.752617Z",
               "status": "failed"
             }
           ],
@@ -134,7 +134,7 @@
             {
               "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 1.4.3) Ensure authentication required for single user mode",
               "message": "Cause: Password should be set for user \"root\". File: /etc/shadow",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.752617Z",
               "status": "failed"
             }
           ],
@@ -172,7 +172,7 @@
             {
               "codeDesc": "Version check of package: go\n\nGo vulnerability CVE-2021-38297.",
               "message": "Fix Status: fixed in 1.17.2, 1.16.9",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.752617Z",
               "status": "failed"
             }
           ],
@@ -213,7 +213,7 @@
             {
               "codeDesc": "Version check of package: go\n\nGo net/http/httputil ReverseProxy vulnerability.",
               "message": "Fix Status: fixed in 1.16.5, 1.15.13",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2026-07-12T22:56:41.752617Z",
               "status": "failed"
             }
           ],
@@ -256,9 +256,9 @@
   ],
   "generator": {
     "name": "prisma-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2026-06-08T17:46:47.455463Z",
+  "timestamp": "2026-07-12T22:56:41.752617Z",
   "tool": {
     "format": "CSV",
     "name": "Prisma Cloud"

@@ -117,6 +117,44 @@ function parseHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').trim();
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  amp: '&',
+};
+
+/**
+ * Resolve XML predefined and numeric character references. The shared parser
+ * runs with `processEntities: false` (XXE defense), which also leaves `&apos;`
+ * and friends unresolved — so scan text would otherwise carry raw entity
+ * markup into every title, description and message.
+ */
+function decodeXmlEntities(text: string): string {
+  return text.replace(/&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);/g, (match, ref: string) => {
+    if (ref.startsWith('#x') || ref.startsWith('#X')) {
+      return String.fromCodePoint(Number.parseInt(ref.slice(2), 16));
+    }
+    if (ref.startsWith('#')) {
+      return String.fromCodePoint(Number.parseInt(ref.slice(1), 10));
+    }
+    return NAMED_ENTITIES[ref] ?? match;
+  });
+}
+
+/** Apply decodeXmlEntities to every string in a parsed XML document. */
+function decodeEntitiesDeep(value: unknown): unknown {
+  if (typeof value === 'string') return decodeXmlEntities(value);
+  if (Array.isArray(value)) return value.map(decodeEntitiesDeep);
+  if (value !== null && typeof value === 'object') {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      (value as Record<string, unknown>)[k] = decodeEntitiesDeep(v);
+    }
+  }
+  return value;
+}
+
 /**
  * Convert Nessus XML scan results to HDF format
  */
@@ -125,7 +163,9 @@ export async function convertNessusToHdf(nessusXml: string): Promise<HDFResults>
   // Calculate checksum of source scan data for integrity verification
   const resultsChecksum: Checksum = await inputChecksum(nessusXml);
 
-  const parsed = parseXmlWithArrays(nessusXml, ['preference', 'tag', 'ReportItem', 'ReportHost', 'cwe', 'cve']) as unknown as NessusXml;
+  const parsed = decodeEntitiesDeep(
+    parseXmlWithArrays(nessusXml, ['preference', 'tag', 'ReportItem', 'ReportHost', 'cwe', 'cve']),
+  ) as NessusXml;
 
   const policyName = parsed.NessusClientData_v2.Policy.policyName;
   const version = extractVersion(parsed);
@@ -520,7 +560,7 @@ function buildTags(item: ReportItem, isCompliance: boolean): Record<string, unkn
     // Map CCI IDs to NIST controls using hdf-mappings
     // Pattern: Extract source IDs → Map each ID → Flatten results → Deduplicate
     const mappedControls = cciTags.flatMap(cci => getCCINistMappings(cci) ?? []);
-    tags.nist = [...new Set(mappedControls)];
+    tags.nist = [...new Set(mappedControls)].sort();
   } else {
     const nistControls = getNessusNistControl(item['pluginFamily'], item['pluginID']);
     tags.nist = nistControls ? nistControls.split('|') : [];
@@ -563,7 +603,10 @@ function buildRefs(item: ReportItem): Reference[] | undefined {
 function buildResult(item: ReportItem, host: ReportHost, isCompliance: boolean): RequirementResult {
   const status = getStatus(item, isCompliance);
   const codeDesc = getCodeDesc(item);
-  const message = item.plugin_output || item['compliance-actual-value'];
+  const message =
+    isCompliance && item['compliance-actual-value']
+      ? item['compliance-actual-value']
+      : item.plugin_output;
   const startTimeStr = getHostPropertyValue(host, 'HOST_START');
   const startTime = startTimeStr ? (parseTimestamp(startTimeStr) ?? new Date()) : new Date();
 
@@ -659,8 +702,6 @@ function convertReportHostToTarget(host: ReportHost): Component {
   if (hostProps['host-fqdn']) {
     target.fqdn = hostProps['host-fqdn'];
   }
-
-  target.labels = {};
 
   return target;
 }

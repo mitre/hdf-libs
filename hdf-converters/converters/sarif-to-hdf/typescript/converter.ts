@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description } from '@mitre/hdf-schema';
 import { ResultStatus, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
@@ -195,7 +195,6 @@ export async function convertSarifToHdf(input: string): Promise<string> {
     toolVersion: firstDriver?.version,
     toolFormat: 'SARIF',
     baselines: limitedRuns.map(run => convertRun(run, sarif.version, resultsChecksum, timestamp)),
-    components: [],
     timestamp,
   });
 }
@@ -412,8 +411,10 @@ function convertSarifResultToHDFResults(result: SarifResult): RequirementResult[
       status,
       codeDesc: 'No source location',
       startTime: new Date(),
-      backtrace,
     };
+    if (backtrace.length > 0) {
+      locationlessResult.backtrace = backtrace;
+    }
     if (suppressionJustification) {
       locationlessResult.message = `Suppressed: ${suppressionJustification}`;
     }
@@ -487,14 +488,14 @@ function extractCweFromRule(rule?: ReportingDescriptor): string[] {
     }
   }
 
-  // Priority 2: rule.properties.tags containing CWE-\d+ patterns
+  // Priority 2: CWE identifiers embedded in rule.properties.tags. CodeQL writes
+  // them as taxonomy paths ("external/cwe/cwe-022"), so match anywhere in the
+  // tag rather than requiring the whole tag to be a bare CWE id.
   if (rule.properties?.tags && Array.isArray(rule.properties.tags)) {
-    const cweTagPattern = /^CWE-\d+$/;
     const cweIds: string[] = [];
     for (const tag of rule.properties.tags as string[]) {
-      if (typeof tag === 'string' && cweTagPattern.test(tag)) {
-        cweIds.push(tag);
-      }
+      if (typeof tag !== 'string') continue;
+      cweIds.push(...extractCWEIDs(tag).map(id => `CWE-${id}`));
     }
     if (cweIds.length > 0) {
       return cweIds;
@@ -505,28 +506,7 @@ function extractCweFromRule(rule?: ReportingDescriptor): string[] {
 }
 
 function extractCweIds(text: string): string[] {
-  const cwePattern = /\(([^)]+)\)/g;
-  const matches = text.match(cwePattern);
-
-  if (!matches) {
-    return [];
-  }
-
-  const cweIds: string[] = [];
-  for (const match of matches) {
-    const content = match.slice(1, -1);
-    if (content.includes('CWE-')) {
-      const parts = content.split(/,\s*|!\//);
-      for (const part of parts) {
-        const trimmed = part.trim();
-        if (trimmed.startsWith('CWE-')) {
-          cweIds.push(trimmed);
-        }
-      }
-    }
-  }
-
-  return cweIds;
+  return extractCWEIDs(text).map(id => `CWE-${id}`);
 }
 
 // --- Kind → Status mapping ---
@@ -711,15 +691,16 @@ function createHDFResult(
     codeDesc = `${codeDesc}\n${snippet}`;
   }
 
-  const message = suppressionMessage ? `Suppressed: ${suppressionMessage}` : '';
-
-  return createResult(
-    status,
-    message,
-    {
-      codeDesc,
-      startTime: new Date(),
-      backtrace,
-    }
-  );
+  const result = createResult(status, undefined, {
+    codeDesc,
+    startTime: new Date(),
+  });
+  delete result.message;
+  if (suppressionMessage) {
+    result.message = `Suppressed: ${suppressionMessage}`;
+  }
+  if (backtrace.length > 0) {
+    result.backtrace = backtrace;
+  }
+  return result;
 }

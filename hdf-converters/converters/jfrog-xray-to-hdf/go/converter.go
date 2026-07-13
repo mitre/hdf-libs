@@ -1,6 +1,7 @@
 package jfrogxray
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -47,6 +48,45 @@ type MoreDetails struct {
 	CVEs        []CVEEntry `json:"cves"`
 	Description string     `json:"description"`
 	Provider    string     `json:"provider"`
+
+	// CVEsRaw is the source `cves` JSON verbatim. formatDescription renders the
+	// CVE list into human-readable text, and re-marshalling CVEs would invent
+	// zero-valued keys the source never had.
+	CVEsRaw json.RawMessage `json:"-"`
+}
+
+// UnmarshalJSON captures the raw `cves` payload alongside the decoded entries.
+func (m *MoreDetails) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		CVEs        json.RawMessage `json:"cves"`
+		Description string          `json:"description"`
+		Provider    string          `json:"provider"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	m.Description = aux.Description
+	m.Provider = aux.Provider
+	m.CVEsRaw = aux.CVEs
+	m.CVEs = nil
+	if len(aux.CVEs) > 0 {
+		if err := json.Unmarshal(aux.CVEs, &m.CVEs); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// marshalPlain serializes v without Go's default HTML escaping, so `<` and `>`
+// survive into human-readable text as themselves.
+func marshalPlain(v interface{}) (string, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(buf.String(), "\n"), nil
 }
 
 // CVEEntry holds a single CVE entry with optional CWE mappings.
@@ -96,9 +136,9 @@ func formatDescription(entry XrayEntry) string {
 		parts = append(parts, desc)
 	}
 	if len(entry.ComponentVersions.MoreDetails.CVEs) > 0 {
-		cveData, err := json.Marshal(entry.ComponentVersions.MoreDetails.CVEs)
-		if err == nil {
-			cveStr := strings.ReplaceAll(string(cveData), "\":", "\"=>")
+		var compact bytes.Buffer
+		if err := json.Compact(&compact, entry.ComponentVersions.MoreDetails.CVEsRaw); err == nil {
+			cveStr := strings.ReplaceAll(compact.String(), "\":", "\"=>")
 			cveStr = strings.ReplaceAll(cveStr, ",", ", ")
 			parts = append(parts, fmt.Sprintf("cves: %s", cveStr))
 		}
@@ -117,18 +157,18 @@ func formatCodeDesc(entry XrayEntry) string {
 	parts = append(parts, fmt.Sprintf("source_comp_id : %s", entry.SourceCompID))
 
 	if len(entry.ComponentVersions.VulnerableVersions) > 0 {
-		vulnData, err := json.Marshal(entry.ComponentVersions.VulnerableVersions)
+		vulnData, err := marshalPlain(entry.ComponentVersions.VulnerableVersions)
 		if err == nil {
-			parts = append(parts, fmt.Sprintf("vulnerable_versions : %s", string(vulnData)))
+			parts = append(parts, fmt.Sprintf("vulnerable_versions : %s", vulnData))
 		}
 	} else {
 		parts = append(parts, "vulnerable_versions : ")
 	}
 
 	if len(entry.ComponentVersions.FixedVersions) > 0 {
-		fixedData, err := json.Marshal(entry.ComponentVersions.FixedVersions)
+		fixedData, err := marshalPlain(entry.ComponentVersions.FixedVersions)
 		if err == nil {
-			parts = append(parts, fmt.Sprintf("fixed_versions : %s", string(fixedData)))
+			parts = append(parts, fmt.Sprintf("fixed_versions : %s", fixedData))
 		}
 	} else {
 		parts = append(parts, "fixed_versions : ")

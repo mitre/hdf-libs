@@ -3,6 +3,7 @@ package cyclonedx_to_hdf
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -193,6 +194,47 @@ func flattenComponents(components []CDXComponent) []CDXComponent {
 	return result
 }
 
+// isoUTCTrailingZeros matches the trailing fractional zeros of an RFC3339 UTC timestamp.
+var isoUTCTrailingZeros = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\.(\d*?)0+Z$`)
+
+// canonicalTimestamp trims trailing fractional-second zeros from an RFC3339 UTC
+// timestamp, leaving anything else untouched. Mirrors trimUtcFraction in
+// hdf-utilities, which the TS serializer applies to every string it emits.
+func canonicalTimestamp(s string) string {
+	m := isoUTCTrailingZeros.FindStringSubmatch(s)
+	if m == nil {
+		return s
+	}
+	if m[2] == "" {
+		return m[1] + "Z"
+	}
+	return m[1] + "." + m[2] + "Z"
+}
+
+// canonicalizeTimestamps applies canonicalTimestamp to every string in the raw
+// document passthrough. Without it the trimming the TS serializer performs would
+// make the same input yield two different documents.
+func canonicalizeTimestamps(v interface{}) {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		for k, child := range val {
+			if s, ok := child.(string); ok {
+				val[k] = canonicalTimestamp(s)
+				continue
+			}
+			canonicalizeTimestamps(child)
+		}
+	case []interface{}:
+		for i, child := range val {
+			if s, ok := child.(string); ok {
+				val[i] = canonicalTimestamp(s)
+				continue
+			}
+			canonicalizeTimestamps(child)
+		}
+	}
+}
+
 // ConvertCycloneDXToHDF converts CycloneDX SBOM/VEX JSON to HDF format.
 func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	if len(input) == 0 {
@@ -381,6 +423,7 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		}
 		var doc map[string]interface{}
 		if err := json.Unmarshal(input, &doc); err == nil {
+			canonicalizeTimestamps(doc)
 			parts.Document = doc
 		}
 		comp.Boms = []hdf.BillOfMaterials{*bomshared.BuildBom(parts)}

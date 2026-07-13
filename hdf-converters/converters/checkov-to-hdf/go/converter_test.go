@@ -430,7 +430,7 @@ func TestConvertCheckovToHDF_SARIFRouting(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "checkov-to-hdf", func(input []byte) (interface{}, error) {
-		return ConvertCheckovToHDF(input, "0.1.0")
+		return ConvertCheckovToHDF(input, "1.0.0")
 	})
 }
 

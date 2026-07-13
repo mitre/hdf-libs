@@ -59,7 +59,9 @@ func compileFindings(ds *Dataset) []finding {
 		f := make(finding, len(colNames))
 		for i, name := range colNames {
 			if i < len(row.Values) {
-				f[name] = row.Values[i]
+				// The TS parser trims XML text nodes; surrounding whitespace in a
+				// Cognos cell is layout, not data, so trim here too.
+				f[name] = strings.TrimSpace(row.Values[i])
 			}
 		}
 		findings = append(findings, f)

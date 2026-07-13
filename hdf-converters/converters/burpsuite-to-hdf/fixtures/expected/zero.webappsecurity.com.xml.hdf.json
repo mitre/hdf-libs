@@ -782,9 +782,9 @@
   ],
   "generator": {
     "name": "burpsuite-to-hdf",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
-  "timestamp": "2020-02-27T09:28:17Z",
+  "timestamp": "2020-02-27T14:28:17Z",
   "tool": {
     "format": "XML",
     "name": "BurpSuite",

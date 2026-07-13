@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -198,10 +199,14 @@ func testCaseToRequirement(tc junitTestCase, scanTime time.Time) hdf.EvaluatedRe
 		"nist": defaultNIST,
 	}
 
+	className := tc.ClassName
+	if className == "" {
+		className = "unknown"
+	}
 	descriptions := []hdf.Description{
 		{
 			Label: "default",
-			Data:  fmt.Sprintf("JUnit test: %s in %s", tc.Name, tc.ClassName),
+			Data:  fmt.Sprintf("JUnit test: %s in %s", tc.Name, className),
 		},
 	}
 
@@ -236,8 +241,8 @@ func resolveStatus(tc junitTestCase) (hdf.ResultStatus, *string) {
 		return hdf.Error, &msg
 	}
 	if tc.Skipped != nil {
-		if tc.Skipped.Message != "" {
-			msg := fmt.Sprintf("Skipped: %s", tc.Skipped.Message)
+		if skipMsg := strings.TrimSpace(tc.Skipped.Message); skipMsg != "" {
+			msg := fmt.Sprintf("Skipped: %s", skipMsg)
 			return hdf.NotReviewed, &msg
 		}
 		msg := "Skipped"
@@ -247,7 +252,13 @@ func resolveStatus(tc junitTestCase) (hdf.ResultStatus, *string) {
 }
 
 // buildFailureMessage constructs a message from failure/error attributes and body.
+// Surefire pads message attributes and stack-trace bodies with newlines and
+// indentation; that framing whitespace is not part of the message.
 func buildFailureMessage(message, typeName, body string) string {
+	message = strings.TrimSpace(message)
+	typeName = strings.TrimSpace(typeName)
+	body = strings.TrimSpace(body)
+
 	result := ""
 	if typeName != "" {
 		result = typeName + ": "
