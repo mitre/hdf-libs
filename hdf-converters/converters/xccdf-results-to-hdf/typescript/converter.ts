@@ -570,7 +570,7 @@ function ruleToBaselineRequirement(
     data: stripHTML(extractVulnDiscussion(extractText(rule.description))),
   }];
 
-  const check = lastCheck(rule.check);
+  const check = selectCheck(rule.check);
   const checkContent = extractCheckContent(check);
   if (checkContent) {
     descriptions.push({ label: 'check', data: stripHTML(checkContent) });
@@ -982,9 +982,34 @@ function decodeXmlEntities(s: string): string {
  * same rule). Go decodes <check> into one struct field, so encoding/xml overwrites
  * it and the last element wins; match that or the two languages disagree.
  */
-function lastCheck(check: CheckElement | CheckElement[] | undefined): CheckElement | undefined {
-  if (Array.isArray(check)) return check[check.length - 1];
-  return check;
+// checkPriority ranks XCCDF check systems. A rule can carry several <check>
+// elements (SSG emits SCE + OVAL + OCIL for one rule); ranking resolves it to a
+// single deterministic check instead of whichever the author placed last.
+// Automated engines win over the manual questionnaire: OVAL > SCE > OCIL > else.
+function checkPriority(system: string | undefined): number {
+  const s = system ?? '';
+  if (s.includes('oval.mitre.org')) return 0;
+  if (s.includes('open-scap.org') || s.includes('/SCE')) return 1;
+  if (s.includes('ocil')) return 2;
+  return 3;
+}
+
+// selectCheck picks the preferred <check>: the automated OVAL check when
+// present, else SCE, else OCIL, else the first in document order (ties keep
+// document order). Mirrors the Go selectCheck for byte-identical parity.
+function selectCheck(check: CheckElement | CheckElement[] | undefined): CheckElement | undefined {
+  if (check === undefined) return undefined;
+  const checks = Array.isArray(check) ? check : [check];
+  let best: CheckElement | undefined;
+  let bestPri = Infinity;
+  for (const c of checks) {
+    const p = checkPriority(c.system);
+    if (p < bestPri) {
+      best = c;
+      bestPri = p;
+    }
+  }
+  return best;
 }
 
 function extractText(

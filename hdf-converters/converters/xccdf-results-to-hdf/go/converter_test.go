@@ -811,6 +811,39 @@ func TestConvertXccdfBenchmarkToHDF_STIGTags(t *testing.T) {
 	assert.Equal(t, "SRG-OS-000480-GPOS-00227", req.Tags["gtitle"])
 }
 
+func TestConvertXccdfBenchmark_MultiCheckPrefersOval(t *testing.T) {
+	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	const ovalSystem = "http://oval.mitre.org/XMLSchema/oval-definitions-5"
+	// These SSG rules carry several <check> elements (OVAL + OCIL/SCE). check_id
+	// must deterministically prefer the automated OVAL check, not whichever check
+	// the content author happened to place last in document order.
+	for _, rid := range []string{
+		"xccdf_org.ssgproject.content_rule_package_dnsmasq_removed",
+		"xccdf_org.ssgproject.content_rule_package_bind_removed",
+		"xccdf_org.ssgproject.content_rule_service_named_disabled",
+	} {
+		req := findBaselineRequirement(result.Requirements, rid)
+		require.NotNil(t, req, "rule %s", rid)
+		assert.Equal(t, ovalSystem, req.Tags["check_id"], "check_id for %s must prefer OVAL", rid)
+	}
+}
+
+func TestSelectCheck(t *testing.T) {
+	oval := Check{System: "http://oval.mitre.org/XMLSchema/oval-definitions-5"}
+	ocil := Check{System: "http://scap.nist.gov/schema/ocil/2"}
+	sce := Check{System: "http://open-scap.org/page/SCE"}
+	disa := Check{System: "C-57723r848528_chk"}
+
+	assert.Equal(t, oval.System, selectCheck([]Check{oval, ocil}).System, "OVAL over OCIL")
+	assert.Equal(t, oval.System, selectCheck([]Check{sce, oval, ocil}).System, "OVAL over SCE/OCIL regardless of order")
+	assert.Equal(t, sce.System, selectCheck([]Check{ocil, sce}).System, "automated SCE over manual OCIL")
+	assert.Equal(t, disa.System, selectCheck([]Check{disa}).System, "single DISA check unchanged")
+	assert.Equal(t, "", selectCheck(nil).System, "no checks → zero value")
+}
+
 func TestConvertXccdfBenchmarkToHDF_Groups(t *testing.T) {
 	input := loadFixture(t, "benchmark-minimal-1.1.xml")
 	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)

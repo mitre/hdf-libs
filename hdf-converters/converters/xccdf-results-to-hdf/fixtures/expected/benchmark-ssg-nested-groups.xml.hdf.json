@@ -47,7 +47,7 @@
       "impact": 0.3,
       "severity": "low",
       "tags": {
-        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
         "gid": "xccdf_org.ssgproject.content_group_dns",
         "gtitle": "DNS Server",
         "nist": [],
@@ -89,7 +89,7 @@
       "impact": 0.3,
       "severity": "low",
       "tags": {
-        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
         "gid": "xccdf_org.ssgproject.content_group_disabling_dns_server",
         "gtitle": "Disable DNS Server",
         "nist": [],
@@ -110,7 +110,7 @@
       "impact": 0.5,
       "severity": "medium",
       "tags": {
-        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
         "gid": "xccdf_org.ssgproject.content_group_disabling_dns_server",
         "gtitle": "Disable DNS Server",
         "nist": [],

@@ -102,7 +102,7 @@ type Rule struct {
 	Description string  `xml:"description"`
 	Fixtext     Fixtext `xml:"fixtext"`
 	Idents      []Ident `xml:"ident"`
-	Check       Check   `xml:"check"`
+	Checks      []Check `xml:"check"`
 }
 
 // Fixtext represents an XCCDF fixtext element with optional fixref attribute.
@@ -121,6 +121,40 @@ type Ident struct {
 type Check struct {
 	System       string `xml:"system,attr"`
 	CheckContent string `xml:"check-content"`
+}
+
+// checkPriority ranks XCCDF check systems. A rule can carry several <check>
+// elements (SSG emits SCE + OVAL + OCIL for one rule); ranking lets us resolve
+// to a single deterministic check instead of whichever the content author
+// placed last in document order. Automated engines win over the manual
+// questionnaire: OVAL > SCE > OCIL > anything else.
+func checkPriority(system string) int {
+	switch {
+	case strings.Contains(system, "oval.mitre.org"):
+		return 0
+	case strings.Contains(system, "open-scap.org") || strings.Contains(system, "/SCE"):
+		return 1
+	case strings.Contains(system, "ocil"):
+		return 2
+	default:
+		return 3
+	}
+}
+
+// selectCheck picks the preferred <check> from a rule: the automated OVAL check
+// when present, else SCE, else OCIL, else the first in document order (ties keep
+// document order). Returns the zero Check when the rule has none. This replaces
+// the former last-wins behavior where encoding/xml overwrote a single-valued
+// field, making check_id an accident of author ordering.
+func selectCheck(checks []Check) Check {
+	best := Check{}
+	bestPri := 1 << 30
+	for i := range checks {
+		if p := checkPriority(checks[i].System); p < bestPri {
+			best, bestPri = checks[i], p
+		}
+	}
+	return best
 }
 
 // TestResult represents the XCCDF TestResult element containing scan results.
@@ -633,10 +667,10 @@ func buildBaselineDescriptions(rule *Rule) []hdf.Description {
 		})
 	}
 
-	if rule.Check.CheckContent != "" {
+	if cc := selectCheck(rule.Checks).CheckContent; cc != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "check",
-			Data:  hdfutil.StripHTML(rule.Check.CheckContent),
+			Data:  hdfutil.StripHTML(cc),
 		})
 	}
 
@@ -675,8 +709,8 @@ func buildBaselineTags(rule *Rule, group *Group) map[string]interface{} {
 	if rule.Severity != "" {
 		tags["severity"] = strings.ToLower(rule.Severity)
 	}
-	if rule.Check.System != "" {
-		tags["check_id"] = rule.Check.System
+	if c := selectCheck(rule.Checks); c.System != "" {
+		tags["check_id"] = c.System
 	}
 	if rule.Fixtext.Fixref != "" {
 		tags["fix_id"] = rule.Fixtext.Fixref

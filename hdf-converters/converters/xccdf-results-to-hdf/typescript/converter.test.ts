@@ -694,6 +694,21 @@ describe('xccdf-results-to-hdf converter', async () => {
 // ---------------------------------------------------------------------------
 
 describe('xccdf-benchmark-to-hdf converter', async () => {
+  describe('multi-check rules prefer the automated OVAL check', () => {
+    it('sets check_id to the OVAL system, not whichever check comes last', async () => {
+      const baseline = await parseBaseline('benchmark-ssg-nested-groups.xml');
+      const ovalSystem = 'http://oval.mitre.org/XMLSchema/oval-definitions-5';
+      for (const rid of [
+        'xccdf_org.ssgproject.content_rule_package_dnsmasq_removed',
+        'xccdf_org.ssgproject.content_rule_package_bind_removed',
+        'xccdf_org.ssgproject.content_rule_service_named_disabled',
+      ]) {
+        const req = findBaselineReq(baseline, rid);
+        expect(req?.tags?.['check_id']).toBe(ovalSystem);
+      }
+    });
+  });
+
   describe('input validation', () => {
     it('should throw on empty input', async () => {
       await expect(convertXccdfBenchmarkToHdf('')).rejects.toThrow('Empty input');
