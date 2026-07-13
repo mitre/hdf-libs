@@ -87,7 +87,12 @@ export default [
     // Allowed: `new Date()` (now), `new Date(0)` / `new Date('0001-...')`
     // literals, and arithmetic like `new Date(t.getTime() + n)`. See
     // DATE_GUARD_RULES above for the matched argument forms.
-    files: ['converters/*-to-hdf/**/*.ts'],
+    // Both directions: importers parse tool timestamps, and exporters parse HDF's
+    // own. Scoping this to *-to-hdf left every hdf-to-* exporter free to call
+    // new Date(value) — which reads a zone-less timestamp as host-local where Go
+    // reads it as UTC. Exporters were only safe because parseHdf normalises on
+    // ingest, an invariant they do not state and cannot rely on locally.
+    files: ['converters/**/*.ts'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...DATE_GUARD_RULES],

@@ -13,12 +13,16 @@ import {
   type HDFAmendments,
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
-import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
+import { validateInputSize, parseHdf, hdfTime } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
   exportStatusFor,
   VexStatus,
 } from '../../../shared/typescript/vex/mapping.js';
+
+// Go's zero time.Time, which the Go converter emits when appliedAt is absent.
+// TypeScript would otherwise build an Invalid Date here and throw on format.
+const GO_ZERO_TIME = new Date('0001-01-01T00:00:00Z');
 
 const CVE_ID_PATTERN = /^CVE-\d{4}-\d{4,}$/;
 const PRODUCTS_LINE = /^Products:\s*(.+)$/m;
@@ -59,7 +63,8 @@ export async function convertHdfToOpenVex(
     const s = overrideToStatement(o);
     if (!s) continue;
     statements.push(s);
-    const t = new Date(o.appliedAt);
+    const t = hdfTime(o.appliedAt);
+    if (!t) continue;
     if (!earliest || t < earliest) earliest = t;
   }
 
@@ -121,7 +126,7 @@ function overrideToStatement(o: StandaloneOverride): Statement | undefined {
     ...(justification && { justification }),
     ...(impact && { impact_statement: impact }),
     ...(action && { action_statement: action }),
-    timestamp: formatTimestampSeconds(new Date(o.appliedAt)),
+    timestamp: formatTimestampSeconds(hdfTime(o.appliedAt) ?? GO_ZERO_TIME),
   };
 }
 

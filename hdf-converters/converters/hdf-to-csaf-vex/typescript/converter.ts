@@ -14,13 +14,17 @@ import {
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
 import { formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
+import { validateInputSize, parseHdf, hdfTime } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
   fixedPackageIdentifier,
   exportStatusFor,
   VexStatus,
 } from '../../../shared/typescript/vex/mapping.js';
+
+// Go's zero time.Time, which the Go converter emits when appliedAt is absent.
+// TypeScript would otherwise build an Invalid Date here and throw on format.
+const GO_ZERO_TIME = new Date('0001-01-01T00:00:00Z');
 
 const CVE_ID_PATTERN = /^CVE-\d{4}-\d{4,}$/;
 const PRODUCTS_LINE = /^Products:\s*(.+)$/m;
@@ -245,7 +249,7 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
         v.flags = v.flags ?? [];
         v.flags.push({
           label: String(o.justification as Justification),
-          date: formatTimestampSeconds(new Date(o.appliedAt)),
+          date: formatTimestampSeconds(hdfTime(o.appliedAt) ?? GO_ZERO_TIME),
           product_ids: pids,
         });
       }
@@ -328,7 +332,8 @@ function earliestAppliedAt(amendments: HDFAmendments): Date {
   let earliest: Date | undefined;
   for (const o of amendments.overrides ?? []) {
     if (!o.appliedAt) continue;
-    const t = new Date(o.appliedAt);
+    const t = hdfTime(o.appliedAt);
+    if (!t) continue;
     if (!earliest || t < earliest) earliest = t;
   }
   return earliest ?? new Date();

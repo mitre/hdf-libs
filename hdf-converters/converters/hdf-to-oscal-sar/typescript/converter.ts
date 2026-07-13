@@ -5,8 +5,8 @@
  * Results JSON and produces an OSCAL 1.1.2 assessment-results JSON document.
  */
 
-import { parseTimestamp, formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
+import { formatTimestampSeconds } from '@mitre/hdf-utilities';
+import { validateInputSize, parseHdf, hdfTime } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
@@ -66,13 +66,9 @@ export async function convertHdfToOscalSar(input: string): Promise<string> {
 function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
   // Whole-second RFC3339 in UTC, matching what the Go converter emits.
   let timestamp = formatTimestampSeconds(new Date());
-  if (hdfResults.timestamp) {
-    const parsed = typeof hdfResults.timestamp === 'string'
-      ? parseTimestamp(hdfResults.timestamp)
-      : hdfResults.timestamp;
-    if (parsed) {
-      timestamp = formatTimestampSeconds(parsed);
-    }
+  const documentTime = hdfTime(hdfResults.timestamp);
+  if (documentTime) {
+    timestamp = formatTimestampSeconds(documentTime);
   }
 
   const metadata = {
@@ -114,10 +110,7 @@ function earliestResultTime(results: RequirementResult[] | undefined): Date | un
   let earliest: Date | undefined;
 
   for (const result of results ?? []) {
-    // The schema types startTime as a Date, but a parsed HDF document holds the
-    // raw JSON string. parseTimestamp reads a zone-less value as UTC, matching Go.
-    const raw: unknown = result.startTime;
-    const parsed = raw instanceof Date ? raw : parseTimestamp(String(raw ?? ''));
+    const parsed = hdfTime(result.startTime);
     if (!parsed) continue;
 
     if (earliest === undefined || parsed < earliest) {

@@ -16,7 +16,7 @@ import {
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
 import { sha256, formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
+import { validateInputSize, parseHdf, hdfTime } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
   versTypeFor,
@@ -127,7 +127,8 @@ export async function convertHdfToCyclonedxVex(
     const v = overrideToVulnerability(o, componentRegistry);
     if (!v) continue;
     vulnerabilities.push(v);
-    const t = new Date(o.appliedAt);
+    const t = hdfTime(o.appliedAt);
+    if (!t) continue;
     if (!earliest || t < earliest) earliest = t;
   }
 

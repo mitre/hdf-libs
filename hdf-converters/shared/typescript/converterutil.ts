@@ -6,7 +6,7 @@
  * - Re-exports of shared constants and utilities
  */
 
-import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps } from '@mitre/hdf-utilities';
+import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp } from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
@@ -204,6 +204,24 @@ export function validateInputSize(
  */
 export function parseHdf<T>(input: string): T {
   return parseJSON<T>(normalizeHdfTimestamps(input));
+}
+
+/**
+ * Read a timestamp field off a parsed HDF document.
+ *
+ * The generated schema types these as `Date` (startTime, appliedAt, ...), but
+ * JSON.parse does not revive Dates, so at runtime they are strings. Reaching for
+ * `new Date(value)` to bridge that gap reads a zone-less timestamp as host-local,
+ * where Go reads it as UTC — so the same document converts differently depending
+ * on the machine. parseTimestamp reads it as UTC, matching Go.
+ *
+ * Returns null when the field is absent or unparseable; callers decide the
+ * fallback, since a missing time is not the same as the epoch.
+ */
+export function hdfTime(value: unknown): Date | null {
+  if (value instanceof Date) return value;
+  if (value === undefined || value === null || value === '') return null;
+  return parseTimestamp(String(value));
 }
 
 /**
