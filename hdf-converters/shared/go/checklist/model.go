@@ -34,6 +34,13 @@ type Checklist struct {
 	Format string
 	// CKLBVersion is the cklb_version string (CKLB only); empty for CKL.
 	CKLBVersion string
+	// Active, HasPath, and Mode are CKLB-only STIG Viewer document flags. They
+	// carry no HDF meaning but must round-trip losslessly, so they ride the HDF
+	// extensions channel like Format/CKLBVersion. Default zero values for CKL or
+	// HDF-synthesized checklists.
+	Active  bool
+	HasPath bool
+	Mode    int
 }
 
 // Asset is the target host metadata (CKL <ASSET> / CKLB target_data).

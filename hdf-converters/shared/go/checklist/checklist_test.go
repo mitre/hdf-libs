@@ -54,7 +54,9 @@ const sampleCKLB = `{
   "title": "Mozilla Firefox STIG",
   "id": "doc-1",
   "cklb_version": "1.0",
-  "active": false,
+  "active": true,
+  "has_path": true,
+  "mode": 2,
   "target_data": {
     "target_type": "Computing",
     "host_name": "EXAMPLE-HOST",
@@ -277,6 +279,13 @@ func TestRoundTripCKLB(t *testing.T) {
 	// snake_case status in serialized output
 	assert.Contains(t, string(out), `"status": "open"`)
 	assert.Contains(t, string(out), `"ccis"`)
+	// CKLB STIG Viewer document flags survive the full CKLB->HDF->CKLB round-trip
+	// (were silently dropped to active:false/has_path:false before).
+	assert.True(t, reparsed.Active, "active must survive the round-trip")
+	assert.True(t, reparsed.HasPath, "has_path must survive the round-trip")
+	assert.Equal(t, 2, reparsed.Mode, "mode must survive the round-trip")
+	assert.Contains(t, string(out), `"active": true`)
+	assert.Contains(t, string(out), `"has_path": true`)
 }
 
 // Arbitrary HDF with no checklist passthrough still yields a valid checklist,

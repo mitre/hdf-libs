@@ -196,6 +196,17 @@ func rootExtensions(cl *Checklist) map[string]interface{} {
 	if cl.CKLBVersion != "" {
 		ext["cklbVersion"] = cl.CKLBVersion
 	}
+	// CKLB STIG Viewer document flags: stash only the non-default values so the
+	// round-trip restores them (SerializeCKLB defaults the rest to false/0).
+	if cl.Active {
+		ext["cklbActive"] = true
+	}
+	if cl.HasPath {
+		ext["cklbHasPath"] = true
+	}
+	if cl.Mode != 0 {
+		ext["cklbMode"] = cl.Mode
+	}
 	assetExtras := map[string]interface{}{}
 	setIfNotEmpty(assetExtras, "role", cl.Asset.Role)
 	setIfNotEmpty(assetExtras, "assetType", cl.Asset.AssetType)

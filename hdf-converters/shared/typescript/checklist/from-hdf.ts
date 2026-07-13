@@ -28,7 +28,15 @@ export function hdfToChecklist(input: string): Checklist {
   const asset = buildAsset(hdf, ext);
   const stigs = hdf.baselines.map(baselineToStig);
 
-  return { format, cklbVersion: cklbVersion || undefined, asset, stigs };
+  return {
+    format,
+    cklbVersion: cklbVersion || undefined,
+    active: boolVal(ext, 'cklbActive'),
+    hasPath: boolVal(ext, 'cklbHasPath'),
+    mode: numVal(ext, 'cklbMode'),
+    asset,
+    stigs,
+  };
 }
 
 function buildAsset(hdf: HDFResults, ext: Record<string, unknown>): Asset {
@@ -144,6 +152,15 @@ function descData(descs: Description[], label: string): string {
 function strVal(m: Record<string, unknown>, key: string): string {
   const v = m[key];
   return typeof v === 'string' ? v : '';
+}
+
+function boolVal(m: Record<string, unknown>, key: string): boolean {
+  return m[key] === true;
+}
+
+function numVal(m: Record<string, unknown>, key: string): number {
+  const v = m[key];
+  return typeof v === 'number' ? v : 0;
 }
 
 function strSlice(m: Record<string, unknown>, key: string): string[] {

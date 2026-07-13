@@ -84,7 +84,13 @@ func ParseCKLB(input []byte) (*Checklist, error) {
 		return nil, fmt.Errorf("parse cklb: no stigs[] found (not a CKLB document?)")
 	}
 
-	cl := &Checklist{Format: "cklb", CKLBVersion: doc.CklbVersion}
+	cl := &Checklist{
+		Format:      "cklb",
+		CKLBVersion: doc.CklbVersion,
+		Active:      doc.Active,
+		HasPath:     doc.HasPath,
+		Mode:        doc.Mode,
+	}
 	cl.Asset = Asset{
 		Role:           doc.TargetData.Role,
 		AssetType:      doc.TargetData.TargetType,
@@ -169,6 +175,9 @@ func SerializeCKLB(cl *Checklist) ([]byte, error) {
 	doc := cklbDoc{
 		Title:       cklbTitle(cl),
 		CklbVersion: orDefault(cl.CKLBVersion, "1.0"),
+		Active:      cl.Active,
+		HasPath:     cl.HasPath,
+		Mode:        cl.Mode,
 		TargetData: cklbTarget{
 			TargetType:     orDefault(cl.Asset.AssetType, "Computing"),
 			HostName:       cl.Asset.HostName,

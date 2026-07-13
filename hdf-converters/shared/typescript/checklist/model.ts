@@ -73,4 +73,9 @@ export interface Checklist {
   /** Origin format, "ckl" or "cklb". */
   format?: string;
   cklbVersion?: string;
+  /** CKLB-only STIG Viewer document flags. No HDF meaning, but must round-trip
+   * losslessly, so they ride the HDF extensions channel like format/cklbVersion. */
+  active?: boolean;
+  hasPath?: boolean;
+  mode?: number;
 }

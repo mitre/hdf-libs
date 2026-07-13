@@ -5,6 +5,9 @@ import { parseStatus, statusToCklb } from './status.js';
 interface CklbDoc {
   title?: string;
   cklb_version?: string;
+  active?: boolean;
+  mode?: number;
+  has_path?: boolean;
   target_data?: CklbTarget;
   stigs?: CklbStig[];
 }
@@ -95,7 +98,15 @@ export function parseCklb(input: string): Checklist {
     };
   });
 
-  return { format: 'cklb', cklbVersion: nz(doc.cklb_version), asset, stigs };
+  return {
+    format: 'cklb',
+    cklbVersion: nz(doc.cklb_version),
+    active: doc.active ?? false,
+    hasPath: doc.has_path ?? false,
+    mode: doc.mode ?? 0,
+    asset,
+    stigs,
+  };
 }
 
 /** Coerce a possibly-null/non-string JSON value to string | undefined.
@@ -136,10 +147,13 @@ export function serializeCklb(cl: Checklist): string {
   const doc: CklbDoc & { active: boolean; has_path: boolean } = {
     title: cklbTitle(cl),
     cklb_version: cl.cklbVersion || '1.0',
-    active: false,
+    active: cl.active ?? false,
+    // mode is omitempty in the Go struct — emit only when non-zero, in the same
+    // key position (between active and has_path) for byte-for-byte parity.
+    ...(cl.mode ? { mode: cl.mode } : {}),
     // has_path is a required top-level key in real STIG Viewer CKLB output;
     // the Go serializer always emits it, so emit it here for parity.
-    has_path: false,
+    has_path: cl.hasPath ?? false,
     target_data: {
       target_type: cl.asset.assetType || 'Computing',
       host_name: cl.asset.hostName ?? '',

@@ -51,7 +51,9 @@ const SAMPLE_CKL = `<?xml version="1.0" encoding="UTF-8"?>
 const SAMPLE_CKLB = JSON.stringify({
   title: 'Mozilla Firefox STIG',
   cklb_version: '1.0',
-  active: false,
+  active: true,
+  has_path: true,
+  mode: 2,
   target_data: {
     target_type: 'Computing',
     host_name: 'EXAMPLE-HOST',
@@ -218,6 +220,13 @@ describe('checklist shared model', () => {
     expect(rv.fixText).toBe(o.fixText);
     expect(rv.findingDetails).toBe(o.findingDetails);
     expect(rv.comments).toBe(o.comments);
+    // CKLB STIG Viewer document flags survive the full CKLB->HDF->CKLB round-trip
+    // (were silently dropped to active:false/has_path:false before).
+    expect(reparsed.active).toBe(true);
+    expect(reparsed.hasPath).toBe(true);
+    expect(reparsed.mode).toBe(2);
+    expect(out).toContain('"active": true');
+    expect(out).toContain('"has_path": true');
   });
 
   it('synthesizes a valid checklist from arbitrary HDF (nist->cci, defaults)', () => {

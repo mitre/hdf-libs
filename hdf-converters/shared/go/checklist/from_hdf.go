@@ -39,6 +39,9 @@ func HDFToChecklist(input []byte) (*Checklist, error) {
 func applyRootExtensions(cl *Checklist, ext map[string]interface{}) {
 	cl.Format = orDefault(strVal(ext, "checklistFormat"), "ckl")
 	cl.CKLBVersion = strVal(ext, "cklbVersion")
+	cl.Active = boolVal(ext, "cklbActive")
+	cl.HasPath = boolVal(ext, "cklbHasPath")
+	cl.Mode = intVal(ext, "cklbMode")
 }
 
 func buildAsset(results *hdf.HDFResults, cl *Checklist) Asset {
@@ -236,6 +239,30 @@ func mapVal(m map[string]interface{}, key string) (map[string]interface{}, bool)
 		return mv, true
 	}
 	return nil, false
+}
+
+func boolVal(m map[string]interface{}, key string) bool {
+	if m == nil {
+		return false
+	}
+	b, ok := m[key].(bool)
+	return ok && b
+}
+
+// intVal reads a JSON number back as int. JSON round-trips numbers as float64,
+// so accept both float64 (post-unmarshal) and int (in-memory).
+func intVal(m map[string]interface{}, key string) int {
+	if m == nil {
+		return 0
+	}
+	switch n := m[key].(type) {
+	case float64:
+		return int(n)
+	case int:
+		return n
+	default:
+		return 0
+	}
 }
 
 func derefStr(s *string) string {

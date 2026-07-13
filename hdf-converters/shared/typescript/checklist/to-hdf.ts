@@ -131,6 +131,11 @@ function assetToComponent(a: Asset): Component | undefined {
 function rootExtensions(cl: Checklist): Record<string, unknown> {
   const ext: Record<string, unknown> = { checklistFormat: cl.format || 'ckl' };
   if (cl.cklbVersion) ext['cklbVersion'] = cl.cklbVersion;
+  // CKLB STIG Viewer document flags: stash only the non-default values so the
+  // round-trip restores them (serializeCklb defaults the rest to false/0).
+  if (cl.active) ext['cklbActive'] = true;
+  if (cl.hasPath) ext['cklbHasPath'] = true;
+  if (cl.mode) ext['cklbMode'] = cl.mode;
   const ax: Record<string, unknown> = {};
   setIf(ax, 'role', cl.asset.role);
   setIf(ax, 'assetType', cl.asset.assetType);
