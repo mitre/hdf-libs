@@ -678,6 +678,7 @@ These flags apply to all commands.
 
 | Source Format | Aliases | Description |
 |--------------|---------|-------------|
+| `asff` | | AWS Security Finding Format — Security Hub / AWS-integrated tool findings (JSON) |
 | `aws-config` | | AWS Config compliance evaluation results (JSON) |
 | `burpsuite` | | PortSwigger BurpSuite web scanner (XML) |
 | `checkov` | | Checkov IaC static analysis (JSON) |

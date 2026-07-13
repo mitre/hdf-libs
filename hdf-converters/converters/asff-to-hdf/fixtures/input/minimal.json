@@ -1,0 +1,284 @@
+{
+  "Findings": [
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "arn:aws:securityhub:us-east-1:123456789123:subscription/aws-foundational-security-best-practices/v/1.0.0/S3.2/finding/5fd36ec6-3f98-4d5b-a9cb-5f82e389a8e9",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aws/securityhub",
+      "GeneratorId": "aws-foundational-security-best-practices/v/1.0.0/S3.2",
+      "AwsAccountId": "123456789123",
+      "Types": [
+        "Effects/Data Exposure/AWS-Foundational-Security-Best-Practices"
+      ],
+      "FirstObservedAt": "2021-04-28T14:57:54.547Z",
+      "LastObservedAt": "2021-07-02T16:02:48.476Z",
+      "CreatedAt": "2021-04-28T14:57:54.547Z",
+      "UpdatedAt": "2021-07-02T16:02:46.396Z",
+      "Severity": {
+        "Product": 0,
+        "Label": "INFORMATIONAL",
+        "Normalized": 0,
+        "Original": "INFORMATIONAL"
+      },
+      "Title": "S3.2 S3 buckets should prohibit public read access",
+      "Description": "This AWS control checks whether your S3 buckets allow public read access by evaluating the Block Public Access settings, the bucket policy, and the bucket access control list (ACL).",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "For directions on how to fix this issue, please consult the AWS Security Hub Foundational Security Best Practices documentation.",
+          "Url": "https://docs.aws.amazon.com/console/securityhub/S3.2/remediation"
+        }
+      },
+      "ProductFields": {
+        "StandardsArn": "arn:aws:securityhub:::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "StandardsSubscriptionArn": "arn:aws:securityhub:us-east-1:123456789123:subscription/aws-foundational-security-best-practices/v/1.0.0",
+        "ControlId": "S3.2",
+        "RecommendationUrl": "https://docs.aws.amazon.com/console/securityhub/S3.2/remediation",
+        "RelatedAWSResources:0/name": "securityhub-s3-bucket-public-read-prohibited-491148b1",
+        "RelatedAWSResources:0/type": "AWS::Config::ConfigRule",
+        "StandardsControlArn": "arn:aws:securityhub:us-east-1:123456789123:control/aws-foundational-security-best-practices/v/1.0.0/S3.2",
+        "aws/securityhub/ProductName": "Security Hub",
+        "aws/securityhub/CompanyName": "AWS",
+        "Resources:0/Id": "arn:aws:s3:::example-bucket-123456789123-us-east-1",
+        "aws/securityhub/FindingId": "arn:aws:securityhub:us-east-1::product/aws/securityhub/arn:aws:securityhub:us-east-1:123456789123:subscription/aws-foundational-security-best-practices/v/1.0.0/S3.2/finding/5fd36ec6-3f98-4d5b-a9cb-5f82e389a8e9"
+      },
+      "Resources": [
+        {
+          "Type": "AwsS3Bucket",
+          "Id": "arn:aws:s3:::example-bucket-123456789123-us-east-1",
+          "Partition": "aws",
+          "Region": "us-east-1",
+          "Details": {
+            "AwsS3Bucket": {
+              "OwnerId": "abe813ee284239446607ac88bf580a6f7348abec9053fd187e6234b58102e826",
+              "CreatedAt": "2021-03-12T20:14:09.000Z"
+            }
+          }
+        }
+      ],
+      "Compliance": {
+        "Status": "PASSED"
+      },
+      "WorkflowState": "NEW",
+      "Workflow": {
+        "Status": "RESOLVED"
+      },
+      "RecordState": "ACTIVE",
+      "FindingProviderFields": {
+        "Severity": {
+          "Label": "INFORMATIONAL",
+          "Original": "INFORMATIONAL"
+        },
+        "Types": [
+          "Effects/Data Exposure/AWS-Foundational-Security-Best-Practices"
+        ]
+      }
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "arn:aws:securityhub:us-east-1:123456789123:subscription/cis-aws-foundations-benchmark/v/1.2.0/1.1/finding/564b8d35-d697-475e-8a02-dfb23552dc24",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aws/securityhub",
+      "ProductName": "Security Hub",
+      "CompanyName": "AWS",
+      "Region": "us-east-1",
+      "GeneratorId": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/1.1",
+      "AwsAccountId": "123456789123",
+      "Types": [
+        "Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
+      ],
+      "FirstObservedAt": "2021-07-23T23:39:05.607Z",
+      "LastObservedAt": "2021-08-09T11:28:16.331Z",
+      "CreatedAt": "2021-07-23T23:39:05.607Z",
+      "UpdatedAt": "2021-08-09T11:28:13.288Z",
+      "Severity": {
+        "Product": 30,
+        "Label": "LOW",
+        "Normalized": 30,
+        "Original": "LOW"
+      },
+      "Title": "1.1 Avoid the use of the \"root\" account",
+      "Description": "The \"root\" account has unrestricted access to all resources in the AWS account. It is highly recommended that the use of this account be avoided.",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.",
+          "Url": "https://docs.aws.amazon.com/console/securityhub/standards-cis-1.1/remediation"
+        }
+      },
+      "ProductFields": {
+        "StandardsGuideArn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "StandardsGuideSubscriptionArn": "arn:aws:securityhub:us-east-1:123456789123:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+        "RuleId": "1.1",
+        "RecommendationUrl": "https://docs.aws.amazon.com/console/securityhub/standards-cis-1.1/remediation",
+        "StandardsControlArn": "arn:aws:securityhub:us-east-1:123456789123:control/cis-aws-foundations-benchmark/v/1.2.0/1.1",
+        "aws/securityhub/ProductName": "Security Hub",
+        "aws/securityhub/CompanyName": "AWS",
+        "aws/securityhub/annotation": "Multi region CloudTrail with the required configuration does not exist in the account",
+        "Resources:0/Id": "arn:aws:iam::123456789123:root",
+        "aws/securityhub/FindingId": "arn:aws:securityhub:us-east-1::product/aws/securityhub/arn:aws:securityhub:us-east-1:123456789123:subscription/cis-aws-foundations-benchmark/v/1.2.0/1.1/finding/564b8d35-d697-475e-8a02-dfb23552dc24"
+      },
+      "Resources": [
+        {
+          "Type": "AwsAccount",
+          "Id": "AWS::::Account:123456789123",
+          "Partition": "aws",
+          "Region": "us-east-1"
+        }
+      ],
+      "Compliance": {
+        "Status": "FAILED",
+        "StatusReasons": [
+          {
+            "ReasonCode": "CLOUDTRAIL_MULTI_REGION_NOT_PRESENT",
+            "Description": "Multi region CloudTrail with the required configuration does not exist in the account"
+          }
+        ]
+      },
+      "WorkflowState": "NEW",
+      "Workflow": {
+        "Status": "NEW"
+      },
+      "RecordState": "ACTIVE",
+      "FindingProviderFields": {
+        "Severity": {
+          "Label": "LOW",
+          "Original": "LOW"
+        },
+        "Types": [
+          "Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
+        ]
+      }
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "arn:aws:securityhub:us-east-1:123456789123:subscription/cis-aws-foundations-benchmark/v/1.2.0/2.5/finding/fad62e7c-5402-4757-850c-3aadc8212c47",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aws/securityhub",
+      "ProductName": "Security Hub",
+      "CompanyName": "AWS",
+      "Region": "us-east-1",
+      "GeneratorId": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/2.5",
+      "AwsAccountId": "123456789123",
+      "Types": [
+        "Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
+      ],
+      "FirstObservedAt": "2021-07-23T23:39:03.660Z",
+      "LastObservedAt": "2021-08-09T11:28:15.499Z",
+      "CreatedAt": "2021-07-23T23:39:03.660Z",
+      "UpdatedAt": "2021-08-09T11:28:12.889Z",
+      "Severity": {
+        "Product": 40,
+        "Label": "MEDIUM",
+        "Normalized": 40,
+        "Original": "MEDIUM"
+      },
+      "Title": "2.5 Ensure AWS Config is enabled",
+      "Description": "AWS Config is a web service that performs configuration management of supported AWS resources within your account and delivers log files to you. The recorded information includes the configuration item (AWS resource), relationships between configuration items (AWS resources), and any configuration changes between resources. It is recommended to enable AWS Config in all regions.",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.",
+          "Url": "https://docs.aws.amazon.com/console/securityhub/standards-cis-2.5/remediation"
+        }
+      },
+      "ProductFields": {
+        "StandardsGuideArn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "StandardsGuideSubscriptionArn": "arn:aws:securityhub:us-east-1:123456789123:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+        "RuleId": "2.5",
+        "RecommendationUrl": "https://docs.aws.amazon.com/console/securityhub/standards-cis-2.5/remediation",
+        "StandardsControlArn": "arn:aws:securityhub:us-east-1:123456789123:control/cis-aws-foundations-benchmark/v/1.2.0/2.5",
+        "aws/securityhub/ProductName": "Security Hub",
+        "aws/securityhub/CompanyName": "AWS",
+        "Resources:0/Id": "arn:aws:iam::123456789123:root",
+        "aws/securityhub/FindingId": "arn:aws:securityhub:us-east-1::product/aws/securityhub/arn:aws:securityhub:us-east-1:123456789123:subscription/cis-aws-foundations-benchmark/v/1.2.0/2.5/finding/fad62e7c-5402-4757-850c-3aadc8212c47"
+      },
+      "Resources": [
+        {
+          "Type": "AwsAccount",
+          "Id": "AWS::::Account:123456789123",
+          "Partition": "aws",
+          "Region": "us-east-1"
+        }
+      ],
+      "Compliance": {
+        "Status": "FAILED"
+      },
+      "WorkflowState": "NEW",
+      "Workflow": {
+        "Status": "NEW"
+      },
+      "RecordState": "ACTIVE",
+      "FindingProviderFields": {
+        "Severity": {
+          "Label": "MEDIUM",
+          "Original": "MEDIUM"
+        },
+        "Types": [
+          "Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
+        ]
+      }
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "arn:aws:securityhub:us-east-1:123456789123:subscription/aws-foundational-security-best-practices/v/1.0.0/Config.1/finding/9ffec6a3-3ce8-4011-bf90-17dbe94bf1d3",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aws/securityhub",
+      "ProductName": "Security Hub",
+      "CompanyName": "AWS",
+      "Region": "us-east-1",
+      "GeneratorId": "aws-foundational-security-best-practices/v/1.0.0/Config.1",
+      "AwsAccountId": "123456789123",
+      "Types": [
+        "Software and Configuration Checks/Industry and Regulatory Standards/AWS-Foundational-Security-Best-Practices"
+      ],
+      "FirstObservedAt": "2021-07-23T23:40:39.455Z",
+      "LastObservedAt": "2021-08-09T11:21:11.282Z",
+      "CreatedAt": "2021-07-23T23:40:39.455Z",
+      "UpdatedAt": "2021-08-09T11:21:09.408Z",
+      "Severity": {
+        "Product": 40,
+        "Label": "MEDIUM",
+        "Normalized": 40,
+        "Original": "MEDIUM"
+      },
+      "Title": "Config.1 AWS Config should be enabled",
+      "Description": "This AWS control checks whether the Config service is enabled in the account for the local region and is recording all resources.",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "For directions on how to fix this issue, please consult the AWS Security Hub Foundational Security Best Practices documentation.",
+          "Url": "https://docs.aws.amazon.com/console/securityhub/Config.1/remediation"
+        }
+      },
+      "ProductFields": {
+        "StandardsArn": "arn:aws:securityhub:::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "StandardsSubscriptionArn": "arn:aws:securityhub:us-east-1:123456789123:subscription/aws-foundational-security-best-practices/v/1.0.0",
+        "ControlId": "Config.1",
+        "RecommendationUrl": "https://docs.aws.amazon.com/console/securityhub/Config.1/remediation",
+        "StandardsControlArn": "arn:aws:securityhub:us-east-1:123456789123:control/aws-foundational-security-best-practices/v/1.0.0/Config.1",
+        "aws/securityhub/ProductName": "Security Hub",
+        "aws/securityhub/CompanyName": "AWS",
+        "Resources:0/Id": "arn:aws:iam::123456789123:root",
+        "aws/securityhub/FindingId": "arn:aws:securityhub:us-east-1::product/aws/securityhub/arn:aws:securityhub:us-east-1:123456789123:subscription/aws-foundational-security-best-practices/v/1.0.0/Config.1/finding/9ffec6a3-3ce8-4011-bf90-17dbe94bf1d3"
+      },
+      "Resources": [
+        {
+          "Type": "AwsAccount",
+          "Id": "AWS::::Account:123456789123",
+          "Partition": "aws",
+          "Region": "us-east-1"
+        }
+      ],
+      "Compliance": {
+        "Status": "FAILED"
+      },
+      "WorkflowState": "NEW",
+      "Workflow": {
+        "Status": "NEW"
+      },
+      "RecordState": "ACTIVE",
+      "FindingProviderFields": {
+        "Severity": {
+          "Label": "MEDIUM",
+          "Original": "MEDIUM"
+        },
+        "Types": [
+          "Software and Configuration Checks/Industry and Regulatory Standards/AWS-Foundational-Security-Best-Practices"
+        ]
+      }
+    }
+  ]
+}

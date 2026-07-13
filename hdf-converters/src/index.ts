@@ -12,6 +12,9 @@ export {
   type HDFV2Results,
 } from '../converters/legacyhdf-to-hdf/typescript/index.js';
 
+// ASFF (AWS Security Finding Format) to HDF converter
+export { convertAsffToHdf } from '../converters/asff-to-hdf/typescript/index.js';
+
 // SARIF to HDF converter
 export { convertSarifToHdf } from '../converters/sarif-to-hdf/typescript/index.js';
 

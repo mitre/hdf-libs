@@ -1,0 +1,511 @@
+// Package asff converts AWS Security Finding Format (ASFF) documents — the
+// format AWS Security Hub and many AWS-integrated tools emit — into HDF Results.
+//
+// A single ASFF envelope can carry findings from many products, and Security Hub
+// findings span multiple compliance standards (CIS, AFSBP, PCI, ...). Because
+// hdf-results supports multiple baselines in one document, each product — and
+// each Security Hub standard — becomes its own baseline entry, mirroring the
+// per-file split the predecessor SAF CLI produced.
+package asff
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
+
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/awsconfig"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+)
+
+// --- ASFF input structs (only the fields the core converter consumes) ---
+
+type asffFinding struct {
+	ID             string            `json:"Id"`
+	GeneratorID    string            `json:"GeneratorId"`
+	ProductArn     string            `json:"ProductArn"`
+	AwsAccountID   string            `json:"AwsAccountId"`
+	Title          string            `json:"Title"`
+	Description    string            `json:"Description"`
+	Types          []string          `json:"Types"`
+	SourceURL      string            `json:"SourceUrl"`
+	LastObservedAt string            `json:"LastObservedAt"`
+	UpdatedAt      string            `json:"UpdatedAt"`
+	Severity       asffSeverity      `json:"Severity"`
+	Remediation    asffRemediation   `json:"Remediation"`
+	ProductFields  map[string]string `json:"ProductFields"`
+	Resources      []asffResource    `json:"Resources"`
+	Compliance     asffCompliance    `json:"Compliance"`
+	Workflow       asffWorkflow      `json:"Workflow"`
+}
+
+type asffSeverity struct {
+	Label      string   `json:"Label"`
+	Normalized *float64 `json:"Normalized"`
+}
+
+type asffRemediation struct {
+	Recommendation struct {
+		Text string `json:"Text"`
+		URL  string `json:"Url"`
+	} `json:"Recommendation"`
+}
+
+type asffResource struct {
+	Type      string `json:"Type"`
+	ID        string `json:"Id"`
+	Partition string `json:"Partition"`
+	Region    string `json:"Region"`
+}
+
+type asffCompliance struct {
+	Status        string             `json:"Status"`
+	StatusReasons []asffStatusReason `json:"StatusReasons"`
+}
+
+type asffStatusReason struct {
+	ReasonCode  string `json:"ReasonCode"`
+	Description string `json:"Description"`
+}
+
+type asffWorkflow struct {
+	Status string `json:"Status"`
+}
+
+// standardsControl is a Security Hub standards-doc control. The core converter
+// runs without supporting docs (always nil); the parity card wires it in.
+type standardsControl struct {
+	SeverityRating string
+}
+
+// ConvertAsffToHDF converts an ASFF document to HDF Results.
+func ConvertAsffToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("asff: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "asff", 0); err != nil {
+		return nil, fmt.Errorf("asff: %w", err)
+	}
+
+	checksum := shared.InputChecksum(input)
+
+	findings, err := parseFindings(input)
+	if err != nil {
+		return nil, fmt.Errorf("asff: %w", err)
+	}
+
+	// Group findings into baselines (per product / per Security Hub standard),
+	// preserving first-seen order for deterministic output.
+	var baselineOrder []string
+	byBaseline := map[string][]asffFinding{}
+	var accounts []string
+	seenAccount := map[string]bool{}
+	for _, f := range findings {
+		name := baselineName(f)
+		if _, ok := byBaseline[name]; !ok {
+			baselineOrder = append(baselineOrder, name)
+		}
+		byBaseline[name] = append(byBaseline[name], f)
+		if f.AwsAccountID != "" && !seenAccount[f.AwsAccountID] {
+			seenAccount[f.AwsAccountID] = true
+			accounts = append(accounts, f.AwsAccountID)
+		}
+	}
+
+	baselines := make([]hdf.EvaluatedBaseline, 0, len(baselineOrder))
+	for _, name := range baselineOrder {
+		baselines = append(baselines, buildBaseline(name, byBaseline[name], checksum))
+	}
+
+	// A scanner that ran clean still must emit one baseline with one passed
+	// placeholder requirement so the document validates.
+	if len(baselines) == 0 {
+		baselines = []hdf.EvaluatedBaseline{{
+			Name: "AWS Security Finding Format",
+			Requirements: []hdf.EvaluatedRequirement{
+				shared.BuildNoFindingsRequirement(
+					"asff-no-findings",
+					"AWS Security Finding Format input contained zero findings.",
+					time.Now().UTC(),
+				),
+			},
+			ResultsChecksum: checksum,
+		}}
+	}
+
+	var components []hdf.Component
+	if len(accounts) > 0 {
+		refs := baselineNames(baselines)
+		for _, acct := range accounts {
+			components = append(components, hdf.Component{
+				Name:         acct,
+				Type:         hdf.CloudAccount,
+				BaselineRefs: refs,
+			})
+		}
+	}
+
+	now := time.Now().UTC()
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "asff-to-hdf",
+		ConverterVersion: converterVersion,
+		ToolName:         "AWS Security Finding Format",
+		ToolFormat:       "JSON",
+		Baselines:        baselines,
+		Components:       components,
+		Timestamp:        &now,
+	}), nil
+}
+
+// parseFindings accepts the three shapes real ASFF appears in: a
+// `{ "Findings": [...] }` envelope, a bare array, or a single finding object.
+func parseFindings(input []byte) ([]asffFinding, error) {
+	var wrapper struct {
+		Findings []asffFinding `json:"Findings"`
+	}
+	if err := json.Unmarshal(input, &wrapper); err == nil && wrapper.Findings != nil {
+		return wrapper.Findings, nil
+	}
+	var arr []asffFinding
+	if err := json.Unmarshal(input, &arr); err == nil {
+		return arr, nil
+	}
+	var single asffFinding
+	if err := json.Unmarshal(input, &single); err == nil {
+		return []asffFinding{single}, nil
+	}
+	return nil, fmt.Errorf("invalid ASFF JSON")
+}
+
+func buildBaseline(name string, findings []asffFinding, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
+	var order []string
+	groups := map[string][]asffFinding{}
+	for _, f := range findings {
+		id := controlID(f)
+		if _, ok := groups[id]; !ok {
+			order = append(order, id)
+		}
+		groups[id] = append(groups[id], f)
+	}
+
+	reqs := make([]hdf.EvaluatedRequirement, 0, len(order))
+	for _, id := range order {
+		reqs = append(reqs, buildRequirement(id, groups[id]))
+	}
+
+	return hdf.EvaluatedBaseline{
+		Name:            name,
+		Requirements:    reqs,
+		ResultsChecksum: checksum,
+	}
+}
+
+// buildRequirement consolidates findings sharing a control id into one
+// requirement with one result per finding.
+func buildRequirement(id string, group []asffFinding) hdf.EvaluatedRequirement {
+	impact := 0.0
+	for _, f := range group {
+		if i := findingImpact(f, nil); i > impact {
+			impact = i
+		}
+	}
+
+	primary := group[0]
+	descriptions := []hdf.Description{{
+		Label: "default",
+		Data:  firstNonEmpty(primary.Description, primary.Title),
+	}}
+	if fix := remediationText(primary); fix != "" {
+		descriptions = append(descriptions, hdf.Description{Label: "fix", Data: fix})
+	}
+
+	nist := nistTags(group)
+	tags := map[string]interface{}{}
+	if len(nist) > 0 {
+		tags = shared.BuildNISTCCITags(nist, cci.NISTToCCI(nist))
+	}
+
+	results := make([]hdf.RequirementResult, 0, len(group))
+	for _, f := range group {
+		results = append(results, buildResult(f))
+	}
+
+	req := hdf.EvaluatedRequirement{
+		ID:           id,
+		Title:        hdfutil.Ptr(primary.Title),
+		Impact:       impact,
+		Tags:         tags,
+		Descriptions: descriptions,
+		Results:      results,
+		ControlType:  shared.DeriveControlTypeFromTags(nist),
+	}
+	if primary.SourceURL != "" {
+		req.Refs = []hdf.Reference{{URL: hdfutil.Ptr(primary.SourceURL)}}
+	}
+	return req
+}
+
+func buildResult(f asffFinding) hdf.RequirementResult {
+	start := hdfutil.ParseTimestamp(firstNonEmpty(f.LastObservedAt, f.UpdatedAt))
+	if start.IsZero() {
+		start = time.Now().UTC()
+	}
+	res := hdf.RequirementResult{
+		Status:    mapComplianceStatus(f.Compliance.Status),
+		CodeDesc:  resourceCodeDesc(f),
+		StartTime: start,
+	}
+	if msg := statusReason(f); msg != "" {
+		res.Message = hdfutil.Ptr(msg)
+	}
+	return res
+}
+
+// mapComplianceStatus maps ASFF Compliance.Status to an HDF result status.
+// hdf-results has no "skipped": WARNING and NOT_AVAILABLE (no clean pass/fail
+// verdict) map to notReviewed; an absent status defaults to failed.
+func mapComplianceStatus(status string) hdf.ResultStatus {
+	switch status {
+	case "PASSED":
+		return hdf.Passed
+	case "FAILED":
+		return hdf.Failed
+	case "WARNING", "NOT_AVAILABLE":
+		return hdf.NotReviewed
+	case "":
+		return hdf.Failed
+	default:
+		return hdf.Error
+	}
+}
+
+func severityLabelToImpact(label string) float64 {
+	switch strings.ToUpper(label) {
+	case "CRITICAL":
+		return 0.9
+	case "HIGH":
+		return 0.7
+	case "MEDIUM":
+		return 0.5
+	case "LOW":
+		return 0.3
+	case "INFORMATIONAL":
+		return 0.0
+	default:
+		return 0.0
+	}
+}
+
+// findingImpact derives a 0.0–1.0 impact. Suppressed findings are forced to 0.
+// When a standards control is matched, its severity rating wins; otherwise the
+// finding's Severity.Label is used, with Security Hub's INFORMATIONAL up-graded
+// to MEDIUM (Security Hub over-marks findings INFORMATIONAL without context).
+func findingImpact(f asffFinding, control *standardsControl) float64 {
+	if f.Workflow.Status == "SUPPRESSED" {
+		return 0.0
+	}
+	if control != nil && control.SeverityRating != "" {
+		return severityLabelToImpact(control.SeverityRating)
+	}
+	label := f.Severity.Label
+	if isSecurityHub(f) && strings.EqualFold(label, "INFORMATIONAL") {
+		label = "MEDIUM"
+	}
+	if label != "" {
+		return severityLabelToImpact(label)
+	}
+	if f.Severity.Normalized != nil {
+		return *f.Severity.Normalized / 100.0
+	}
+	return 0.0
+}
+
+// baselineName is the Level-1 grouping key: the Security Hub standard name for
+// Security Hub findings, else the ProductArn product identity.
+func baselineName(f asffFinding) string {
+	if isSecurityHub(f) {
+		if name := securityHubStandardName(f); name != "" {
+			return name
+		}
+	}
+	company, product := productArnParts(f.ProductArn)
+	if company == "" && product == "" {
+		return "AWS Security Finding Format"
+	}
+	return fmt.Sprintf("%s - %s", company, product)
+}
+
+// controlID is the Level-2 grouping key within a baseline.
+func controlID(f asffFinding) string {
+	if isSecurityHub(f) {
+		if c := f.ProductFields["ControlId"]; c != "" {
+			return c
+		}
+		if r := f.ProductFields["RuleId"]; r != "" {
+			return r
+		}
+	}
+	if f.GeneratorID != "" {
+		segs := strings.Split(f.GeneratorID, "/")
+		return segs[len(segs)-1]
+	}
+	return f.ID
+}
+
+func isSecurityHub(f asffFinding) bool {
+	_, product := productArnParts(f.ProductArn)
+	return product == "securityhub"
+}
+
+// productArnParts pulls the company and product segments from a ProductArn like
+// "arn:aws:securityhub:us-east-1::product/aws/securityhub" → ("aws", "securityhub").
+func productArnParts(arn string) (company, product string) {
+	if arn == "" {
+		return "", ""
+	}
+	colons := strings.Split(arn, ":")
+	tail := colons[len(colons)-1] // "product/aws/securityhub"
+	segs := strings.Split(tail, "/")
+	if len(segs) >= 3 {
+		return segs[1], segs[2]
+	}
+	return "", ""
+}
+
+// securityHubStandardName derives "CIS AWS Foundations Benchmark v1.2.0" from a
+// finding's StandardsControlArn, preferring the nicer Types[0] casing when it
+// matches the ARN's standard slug (mirrors the SAF CLI grouping key).
+func securityHubStandardName(f asffFinding) string {
+	arn := f.ProductFields["StandardsControlArn"]
+	if arn == "" {
+		return ""
+	}
+	segs := strings.Split(arn, "/")
+	if len(segs) < 4 {
+		return ""
+	}
+	slug := segs[len(segs)-4]
+	version := segs[len(segs)-2]
+
+	typesLast := ""
+	if len(f.Types) > 0 {
+		ts := strings.Split(f.Types[0], "/")
+		typesLast = ts[len(ts)-1]
+	}
+
+	var standard string
+	if typesLast != "" && normalizeStd(typesLast) == normalizeStd(slug) {
+		standard = strings.ReplaceAll(typesLast, "-", " ")
+	} else {
+		standard = titleCaseWords(strings.ReplaceAll(slug, "-", " "))
+	}
+	return fmt.Sprintf("%s v%s", standard, version)
+}
+
+func normalizeStd(s string) string {
+	return strings.ToLower(strings.ReplaceAll(s, "-", " "))
+}
+
+func titleCaseWords(s string) string {
+	words := strings.Fields(s)
+	for i, w := range words {
+		if w == "" {
+			continue
+		}
+		words[i] = strings.ToUpper(w[:1]) + w[1:]
+	}
+	return strings.Join(words, " ")
+}
+
+// nistTags derives NIST controls for a requirement's finding group: AWS Config
+// rule → NIST via the shared awsconfig mapping, falling back to the static
+// analysis default bundle (matching the SAF CLI) when no config rule applies.
+func nistTags(group []asffFinding) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, f := range group {
+		for _, tag := range configRuleNIST(f) {
+			if !seen[tag] {
+				seen[tag] = true
+				out = append(out, tag)
+			}
+		}
+	}
+	if len(out) == 0 {
+		return shared.DefaultStaticAnalysisNIST
+	}
+	return out
+}
+
+func configRuleNIST(f asffFinding) []string {
+	if f.ProductFields["RelatedAWSResources:0/type"] != "AWS::Config::ConfigRule" {
+		return nil
+	}
+	name := f.ProductFields["RelatedAWSResources:0/name"]
+	if name == "" {
+		return nil
+	}
+	return awsconfig.NISTControlsBySubstring(name)
+}
+
+func remediationText(f asffFinding) string {
+	parts := make([]string, 0, 2)
+	if f.Remediation.Recommendation.Text != "" {
+		parts = append(parts, f.Remediation.Recommendation.Text)
+	}
+	if f.Remediation.Recommendation.URL != "" {
+		parts = append(parts, f.Remediation.Recommendation.URL)
+	}
+	return strings.Join(parts, "\n")
+}
+
+// resourceCodeDesc summarizes a finding's affected resources for the result's
+// codeDesc, e.g. "Resources: [Type: AwsAccount, Id: ..., Partition: aws, Region: us-east-1]".
+func resourceCodeDesc(f asffFinding) string {
+	parts := make([]string, 0, len(f.Resources))
+	for _, r := range f.Resources {
+		seg := fmt.Sprintf("Type: %s, Id: %s", r.Type, r.ID)
+		if r.Partition != "" {
+			seg += ", Partition: " + r.Partition
+		}
+		if r.Region != "" {
+			seg += ", Region: " + r.Region
+		}
+		parts = append(parts, seg)
+	}
+	return fmt.Sprintf("Resources: [%s]", strings.Join(parts, "; "))
+}
+
+// statusReason flattens Compliance.StatusReasons into the result message.
+func statusReason(f asffFinding) string {
+	var lines []string
+	for _, r := range f.Compliance.StatusReasons {
+		if r.ReasonCode != "" {
+			lines = append(lines, "ReasonCode: "+r.ReasonCode)
+		}
+		if r.Description != "" {
+			lines = append(lines, "Description: "+r.Description)
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+func baselineNames(baselines []hdf.EvaluatedBaseline) []string {
+	names := make([]string, 0, len(baselines))
+	for _, b := range baselines {
+		names = append(names, b.Name)
+	}
+	return names
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
+}

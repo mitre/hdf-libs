@@ -12,6 +12,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 
 | Source Format | Function | Input |
 |---|---|---|
+| ASFF (AWS Security Finding Format) | `convertAsffToHdf` | JSON |
 | AWS Config | `convertAwsConfigToHdf` | JSON |
 | BurpSuite | `convertBurpsuiteToHdf` | XML |
 | Checkov | `convertCheckovToHdf` | JSON |
