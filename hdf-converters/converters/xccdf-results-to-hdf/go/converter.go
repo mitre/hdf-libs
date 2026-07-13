@@ -56,11 +56,39 @@ type Platform struct {
 	IDRef string `xml:"idref,attr"`
 }
 
-// Group represents an XCCDF Group containing a single Rule.
+// Group represents an XCCDF Group. A Group may hold any number of Rules and may
+// nest further Groups — SCAP Security Guide content relies on both, so a Group
+// bound to a single Rule silently drops every rule after the first, and a Group
+// without nested Groups drops whole subtrees.
 type Group struct {
-	ID    string `xml:"id,attr"`
-	Title string `xml:"title"`
-	Rule  Rule   `xml:"Rule"`
+	ID     string  `xml:"id,attr"`
+	Title  string  `xml:"title"`
+	Rules  []Rule  `xml:"Rule"`
+	Groups []Group `xml:"Group"`
+}
+
+// groupedRule pairs a rule with the Group it was found in, at any depth.
+type groupedRule struct {
+	rule  *Rule
+	group *Group
+}
+
+// flattenGroups walks the Group tree depth-first, collecting every rule at any
+// depth. Rules may sit directly on a Group that also has nested Groups.
+func flattenGroups(groups []Group) []groupedRule {
+	var out []groupedRule
+	for i := range groups {
+		group := &groups[i]
+		for j := range group.Rules {
+			rule := &group.Rules[j]
+			if rule.ID == "" {
+				continue
+			}
+			out = append(out, groupedRule{rule: rule, group: group})
+		}
+		out = append(out, flattenGroups(group.Groups)...)
+	}
+	return out
 }
 
 // Rule represents an XCCDF Rule within a Group or top-level Benchmark.
@@ -249,6 +277,31 @@ type ArfReportContent struct {
 }
 
 // ---------------------------------------------------------------------------
+// xccdfSeverityToHDF maps XCCDF's severity vocabulary (unknown|info|low|medium|
+// high) onto HDF's (critical|high|medium|low|informational). Casting the raw
+// attribute straight to hdf.Severity emitted schema-invalid documents, since
+// XCCDF "unknown" and "info" are not HDF severities.
+//
+// "unknown" states that severity was not determined. HDF cannot express that, so
+// emit no severity at all rather than assert "informational", which would
+// silently downgrade a rule whose severity is merely unstated.
+func xccdfSeverityToHDF(severity string) *hdf.Severity {
+	var s hdf.Severity
+	switch strings.ToLower(severity) {
+	case "high":
+		s = hdf.SeverityHigh
+	case "medium":
+		s = hdf.SeverityMedium
+	case "low":
+		s = hdf.SeverityLow
+	case "info":
+		s = hdf.Informational
+	default: // "unknown", empty, or anything unrecognised
+		return nil
+	}
+	return &s
+}
+
 // Severity and status mappings
 // ---------------------------------------------------------------------------
 
@@ -481,17 +534,20 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 	var requirements []hdf.BaselineRequirement
 	var groups []hdf.RequirementGroup
 
-	for i := range benchmark.Groups {
-		group := &benchmark.Groups[i]
-		rule := &group.Rule
-		if rule.ID == "" {
+	// One RequirementGroup per XCCDF Group, carrying every rule found in it.
+	groupIndex := make(map[string]int)
+	for _, gr := range flattenGroups(benchmark.Groups) {
+		req := convertRuleToBaselineRequirement(gr.rule, gr.group)
+		requirements = append(requirements, req)
+
+		if idx, ok := groupIndex[gr.group.ID]; ok {
+			groups[idx].Requirements = append(groups[idx].Requirements, req.ID)
 			continue
 		}
-		req := convertRuleToBaselineRequirement(rule, group)
-		requirements = append(requirements, req)
+		groupIndex[gr.group.ID] = len(groups)
 		groups = append(groups, hdf.RequirementGroup{
-			ID:           group.ID,
-			Title:        hdfutil.Ptr(group.Title),
+			ID:           gr.group.ID,
+			Title:        hdfutil.Ptr(gr.group.Title),
 			Requirements: []string{req.ID},
 		})
 	}
@@ -540,11 +596,7 @@ func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequ
 	descriptions := buildBaselineDescriptions(rule)
 	tags := buildBaselineTags(rule, group)
 
-	var severityPtr *hdf.Severity
-	if rule.Severity != "" {
-		s := hdf.Severity(strings.ToLower(rule.Severity))
-		severityPtr = &s
-	}
+	severityPtr := xccdfSeverityToHDF(rule.Severity)
 
 	return hdf.BaselineRequirement{
 		ID:           id,
@@ -877,11 +929,8 @@ func enrichTargetWithAsset(target *hdf.Component, asset *ArfAsset) {
 // both Group/Rule and top-level Rules.
 func buildRuleMap(benchmark *Benchmark) map[string]*Rule {
 	ruleMap := make(map[string]*Rule)
-	for i := range benchmark.Groups {
-		rule := &benchmark.Groups[i].Rule
-		if rule.ID != "" {
-			ruleMap[rule.ID] = rule
-		}
+	for _, gr := range flattenGroups(benchmark.Groups) {
+		ruleMap[gr.rule.ID] = gr.rule
 	}
 	for i := range benchmark.Rules {
 		rule := &benchmark.Rules[i]

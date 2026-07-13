@@ -1,0 +1,186 @@
+{
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "0.1.0"
+  },
+  "groups": [
+    {
+      "id": "xccdf_org.ssgproject.content_group_dns",
+      "requirements": [
+        "xccdf_org.ssgproject.content_rule_package_dnsmasq_removed",
+        "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled"
+      ],
+      "title": "DNS Server"
+    },
+    {
+      "id": "xccdf_org.ssgproject.content_group_disabling_dns_server",
+      "requirements": [
+        "xccdf_org.ssgproject.content_rule_package_bind_removed",
+        "xccdf_org.ssgproject.content_rule_service_named_disabled"
+      ],
+      "title": "Disable DNS Server"
+    },
+    {
+      "id": "xccdf_org.ssgproject.content_group_dns_server_protection",
+      "requirements": [
+        "xccdf_org.ssgproject.content_rule_dns_server_authenticate_zone_transfers",
+        "xccdf_org.ssgproject.content_rule_dns_server_disable_dynamic_updates",
+        "xccdf_org.ssgproject.content_rule_dns_server_disable_zone_transfers"
+      ],
+      "title": "Protect DNS Data from Tampering or Attack"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "fa9bc97c9f707a323d43b30c674a58fea65d998836d37df91baa18723c7f33a4"
+  },
+  "name": "xccdf-org.ssgproject.content-benchmark-rhel-8",
+  "requirements": [
+    {
+      "descriptions": [
+        {
+          "data": "dnsmasq is a lightweight tool that provides DNS caching, DNS forwarding and DHCP (Dynamic Host Configuration Protocol) services. The package can be removed with the following command:",
+          "label": "default"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_package_dnsmasq_removed",
+      "impact": 0.3,
+      "severity": "low",
+      "tags": {
+        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "gid": "xccdf_org.ssgproject.content_group_dns",
+        "gtitle": "DNS Server",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_package_dnsmasq_removed",
+        "severity": "low",
+        "stig_id": ""
+      },
+      "title": "Uninstall dnsmasq Package"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "The service can be disabled with the following command:",
+          "label": "default"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_dns",
+        "gtitle": "DNS Server",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Disable dnsmasq Service"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "The service is provided by the package. The package can be removed with the following command:",
+          "label": "default"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_package_bind_removed",
+      "impact": 0.3,
+      "severity": "low",
+      "tags": {
+        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "gid": "xccdf_org.ssgproject.content_group_disabling_dns_server",
+        "gtitle": "Disable DNS Server",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_package_bind_removed",
+        "severity": "low",
+        "stig_id": ""
+      },
+      "title": "Uninstall bind Package"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "The service can be disabled with the following command:",
+          "label": "default"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_service_named_disabled",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "gid": "xccdf_org.ssgproject.content_group_disabling_dns_server",
+        "gtitle": "Disable DNS Server",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_service_named_disabled",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Disable named Service"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "If it is necessary for a secondary nameserver to receive zone data via zone transfer from the primary server, follow the instructions here. Use dnssec-keygen to create a symmetric key file in the current directory: This output is the name of a file containing the new key. Read the file to find the base64-encoded key string: Add the directives to on the primary server: Add the directives below to on the secondary nameserver:",
+          "label": "default"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_dns_server_authenticate_zone_transfers",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "gid": "xccdf_org.ssgproject.content_group_dns_server_protection",
+        "gtitle": "Protect DNS Data from Tampering or Attack",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_dns_server_authenticate_zone_transfers",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Authenticate Zone Transfers"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Is there a mission-critical reason to enable the risky dynamic update functionality? If not, edit . For each zone specification, correct the following directive if necessary:",
+          "label": "default"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_dns_server_disable_dynamic_updates",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.ssgproject.content_group_dns_server_protection",
+        "gtitle": "Protect DNS Data from Tampering or Attack",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_dns_server_disable_dynamic_updates",
+        "severity": "unknown",
+        "stig_id": ""
+      },
+      "title": "Disable Dynamic Updates"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Is it necessary for a secondary nameserver to receive zone data via zone transfer from the primary server? If not, follow the instructions in this section. If so, see the next section for instructions on protecting zone transfers. Add or correct the following directive within :",
+          "label": "default"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_dns_server_disable_zone_transfers",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.ssgproject.content_group_dns_server_protection",
+        "gtitle": "Protect DNS Data from Tampering or Attack",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_dns_server_disable_zone_transfers",
+        "severity": "unknown",
+        "stig_id": ""
+      },
+      "title": "Disable Zone Transfers from the Nameserver"
+    }
+  ],
+  "status": "loaded",
+  "summary": "This guide presents a catalog of security-relevant configuration settings for Red Hat Enterprise Linux 8. It is a rendering of content structured in the eXtensible Configuration Checklist Description Format (XCCDF) in order to support security automation. The SCAP content is is available in the package which is developed at . Providing system administrators with such guidance informs them how to securely configure systems under their control in a variety of network roles. Policy makers and baseline creators can use this catalog of settings, with its associated references to higher-level security control catalogs, in order to assist them in security baseline creation. This guide is a , and satisfaction of every item is not likely to be possible or sensible in many operational scenarios. However, the XCCDF format enables granular selection and adjustment of settings, and their association with OVAL and OCIL content provides an automated checking capability. Transformations of this document, and its associated automated checking content, are capable of providing baselines that meet a diverse set of policy objectives. Some example XCCDF , which are selections of items that form checklists and can be used as baselines, are available with this guide. They can be processed, in an automated fashion, with tools that support the Security Content Automation Protocol (SCAP). The DISA STIG, which provides required settings for US Department of Defense systems, is one example of a baseline created from this guidance.",
+  "title": "Guide to the Secure Configuration of Red Hat Enterprise Linux 8",
+  "version": "0.1.81"
+}

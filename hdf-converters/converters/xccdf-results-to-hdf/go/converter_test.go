@@ -1056,3 +1056,154 @@ func findDescription(descriptions []hdf.Description, label string) *hdf.Descript
 	}
 	return nil
 }
+
+// ---- Nested / multi-rule Group traversal ----
+
+// Real SCAP Security Guide content nests Groups and puts many Rules in one
+// Group. Modelling Group.Rule as a single element dropped every rule after the
+// first, and omitting nested Groups dropped whole subtrees — together those
+// silently discarded ~99% of the rules in an ssg-rhel8 benchmark.
+//
+// Fixture shape (verbatim from ComplianceAsCode v0.1.81, ssg-rhel8):
+//
+//	Benchmark
+//	└── Group services
+//	    └── Group dns                      (2 rules directly on the group)
+//	        ├── Group disabling_dns_server (2 rules)
+//	        └── Group dns_server_protection (3 rules)
+func TestConvertXccdfBenchmark_NestedAndMultiRuleGroups(t *testing.T) {
+	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+
+	baseline, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	ids := make([]string, 0, len(baseline.Requirements))
+	for _, req := range baseline.Requirements {
+		ids = append(ids, req.ID)
+	}
+
+	assert.Len(t, ids, 7, "every rule at every depth must survive")
+
+	// Rules sitting directly on a Group that also has nested Groups.
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_package_dnsmasq_removed")
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled")
+	// Rules from a nested Group holding 2 rules — the second proves we no longer
+	// keep only the last rule of a group.
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_package_bind_removed")
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_service_named_disabled")
+	// Rules from a sibling nested Group holding 3 rules.
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_dns_server_authenticate_zone_transfers")
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_dns_server_disable_dynamic_updates")
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_dns_server_disable_zone_transfers")
+}
+
+// A Group with N rules is one RequirementGroup listing N requirements, not N
+// RequirementGroups each listing one.
+func TestConvertXccdfBenchmark_GroupCarriesAllItsRules(t *testing.T) {
+	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+
+	baseline, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	byID := make(map[string][]string)
+	for _, g := range baseline.Groups {
+		byID[g.ID] = g.Requirements
+	}
+
+	assert.Len(t, byID["xccdf_org.ssgproject.content_group_dns"], 2)
+	assert.Len(t, byID["xccdf_org.ssgproject.content_group_disabling_dns_server"], 2)
+	assert.Len(t, byID["xccdf_org.ssgproject.content_group_dns_server_protection"], 3)
+
+	total := 0
+	for _, reqs := range byID {
+		total += len(reqs)
+	}
+	assert.Equal(t, 7, total, "no rule may be dropped or duplicated across groups")
+}
+
+// flattenGroups is the traversal both bugs came down to.
+func TestFlattenGroups(t *testing.T) {
+	groups := []Group{{
+		ID:    "top",
+		Rules: []Rule{{ID: "r1"}, {ID: "r2"}}, // multiple rules on one group
+		Groups: []Group{{
+			ID:    "nested",
+			Rules: []Rule{{ID: "r3"}},
+			Groups: []Group{{
+				ID:    "deep",
+				Rules: []Rule{{ID: "r4"}},
+			}},
+		}},
+	}}
+
+	got := make([]string, 0)
+	for _, gr := range flattenGroups(groups) {
+		got = append(got, gr.rule.ID+"@"+gr.group.ID)
+	}
+
+	assert.Equal(t, []string{"r1@top", "r2@top", "r3@nested", "r4@deep"}, got,
+		"rules must be collected at every depth, with their owning group")
+}
+
+func TestFlattenGroups_SkipsRulesWithoutID(t *testing.T) {
+	groups := []Group{{ID: "g", Rules: []Rule{{ID: ""}, {ID: "keep"}}}}
+	got := flattenGroups(groups)
+	require.Len(t, got, 1)
+	assert.Equal(t, "keep", got[0].rule.ID)
+}
+
+// XCCDF severity is unknown|info|low|medium|high; HDF severity is
+// critical|high|medium|low|informational. Casting the raw attribute straight
+// across emitted schema-invalid HDF for the two XCCDF values HDF lacks.
+func TestXccdfSeverityToHDF(t *testing.T) {
+	tests := []struct {
+		xccdf string
+		want  *hdf.Severity
+	}{
+		{"high", hdfutil.Ptr(hdf.SeverityHigh)},
+		{"medium", hdfutil.Ptr(hdf.SeverityMedium)},
+		{"low", hdfutil.Ptr(hdf.SeverityLow)},
+		{"HIGH", hdfutil.Ptr(hdf.SeverityHigh)}, // case-insensitive
+		{"info", hdfutil.Ptr(hdf.Informational)},
+		// "unknown" says severity was not determined. Omit it rather than assert
+		// "informational", which would silently downgrade the rule.
+		{"unknown", nil},
+		{"", nil},
+		{"bogus", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.xccdf, func(t *testing.T) {
+			got := xccdfSeverityToHDF(tt.xccdf)
+			if tt.want == nil {
+				assert.Nil(t, got, "XCCDF severity %q has no HDF equivalent and must be omitted", tt.xccdf)
+				return
+			}
+			require.NotNil(t, got)
+			assert.Equal(t, *tt.want, *got)
+		})
+	}
+}
+
+// Real SSG rules carry severity="unknown"; the fixture must stay schema-valid.
+func TestConvertXccdfBenchmark_UnknownSeverityOmitted(t *testing.T) {
+	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+
+	baseline, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	bySeverity := map[string]int{}
+	for _, req := range baseline.Requirements {
+		if req.Severity == nil {
+			bySeverity["<omitted>"]++
+			continue
+		}
+		bySeverity[string(*req.Severity)]++
+	}
+
+	// The fixture holds 2 low, 3 medium, and 2 severity="unknown" rules.
+	assert.Equal(t, 2, bySeverity["low"])
+	assert.Equal(t, 3, bySeverity["medium"])
+	assert.Equal(t, 2, bySeverity["<omitted>"], `severity="unknown" must not be emitted`)
+	assert.Zero(t, bySeverity["unknown"], "raw XCCDF severity must never reach HDF")
+}

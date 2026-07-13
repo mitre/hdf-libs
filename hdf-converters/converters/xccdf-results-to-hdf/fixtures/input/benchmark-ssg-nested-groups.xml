@@ -1,0 +1,759 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" xmlns:html="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="xccdf_org.ssgproject.content_benchmark_RHEL-8" xsi:schemaLocation="http://checklists.nist.gov/xccdf/1.2 xccdf-1.2.xsd" style="SCAP_1.2" resolved="true" xml:lang="en-US"><status date="2026-06-01">draft</status>
+      <title>Guide to the Secure Configuration of Red Hat Enterprise Linux 8</title>
+      <description>This guide presents a catalog of security-relevant
+configuration settings for Red Hat Enterprise Linux 8. It is a rendering of
+content structured in the eXtensible Configuration Checklist Description Format (XCCDF)
+in order to support security automation.  The SCAP content is
+is available in the <html:code>scap-security-guide</html:code> package which is developed at
+
+    <html:a href="https://www.open-scap.org/security-policies/scap-security-guide">https://www.open-scap.org/security-policies/scap-security-guide</html:a>.
+<html:br />
+    <html:br />
+Providing system administrators with such guidance informs them how to securely
+configure systems under their control in a variety of network roles. Policy
+makers and baseline creators can use this catalog of settings, with its
+associated references to higher-level security control catalogs, in order to
+assist them in security baseline creation. This guide is a <html:em>catalog, not a
+checklist</html:em>, and satisfaction of every item is not likely to be possible or
+sensible in many operational scenarios. However, the XCCDF format enables
+granular selection and adjustment of settings, and their association with OVAL
+and OCIL content provides an automated checking capability. Transformations of
+this document, and its associated automated checking content, are capable of
+providing baselines that meet a diverse set of policy objectives. Some example
+XCCDF <html:em>Profiles</html:em>, which are selections of items that form checklists and
+can be used as baselines, are available with this guide. They can be
+processed, in an automated fashion, with tools that support the Security
+Content Automation Protocol (SCAP). The DISA STIG, which provides required
+settings for US Department of Defense systems, is one example of a baseline
+created from this guidance.
+</description>
+      <version update="https://github.com/ComplianceAsCode/content/releases/latest">0.1.81</version>
+      <platform idref="cpe:/o:redhat:enterprise_linux:8.0" />
+      <platform idref="cpe:/o:redhat:enterprise_linux:8.1" />
+      <platform idref="cpe:/o:redhat:enterprise_linux:8.10" />
+      <platform idref="cpe:/o:redhat:enterprise_linux:8.2" />
+      <platform idref="cpe:/o:redhat:enterprise_linux:8.3" />
+      <platform idref="cpe:/o:redhat:enterprise_linux:8.4" />
+      <platform idref="cpe:/o:redhat:enterprise_linux:8.5" />
+      <platform idref="cpe:/o:redhat:enterprise_linux:8.6" />
+      <platform idref="cpe:/o:redhat:enterprise_linux:8.7" />
+      <platform idref="cpe:/o:redhat:enterprise_linux:8.8" />
+      <platform idref="cpe:/o:redhat:enterprise_linux:8.9" />
+      <platform idref="cpe:/o:redhat:enterprise_linux:8" />
+      <Group id="xccdf_org.ssgproject.content_group_services"><title>Services</title>
+        <Group id="xccdf_org.ssgproject.content_group_dns">
+          <title>DNS Server</title>
+          <description>Most organizations have an operational need to run at
+least one nameserver. However, there are many common attacks
+involving DNS server software, and this server software should
+be disabled on any system
+on which it is not needed.</description>
+          <Rule selected="false" id="xccdf_org.ssgproject.content_rule_package_dnsmasq_removed" severity="low">
+            <title>Uninstall dnsmasq Package</title>
+            <description>dnsmasq is a lightweight tool that provides DNS caching, DNS forwarding and
+DHCP (Dynamic Host Configuration Protocol) services.
+<html:br />
+The <html:code>dnsmasq</html:code> package can be removed with the following command:
+<html:pre>
+$ sudo yum erase dnsmasq</html:pre>
+      </description>
+            <rationale>Unless a system is specifically designated to act as a DNS
+caching, DNS forwarding and/or DHCP server, it is recommended that the
+package be removed to reduce the potential attack surface.</rationale>
+            <ident system="https://ncp.nist.gov/cce">CCE-90746-9</ident>
+            <fix system="urn:xccdf:fix:script:sh" id="package_dnsmasq_removed" complexity="low" disruption="low" reboot="false" strategy="disable">
+# CAUTION: This remediation script will remove dnsmasq
+# from the system, and may remove any packages
+# that depend on dnsmasq. Execute this
+# remediation AFTER testing on a non-production
+# system!
+
+
+if rpm -q --quiet "dnsmasq" ; then
+yum remove -y "dnsmasq"
+fi
+</fix>
+            <fix system="urn:xccdf:fix:script:kickstart" id="package_dnsmasq_removed" complexity="low" disruption="low" reboot="false" strategy="disable">
+
+package remove dnsmasq
+</fix>
+            <fix system="urn:redhat:anaconda:pre" id="package_dnsmasq_removed" complexity="low" disruption="low" reboot="false" strategy="disable">
+
+package --remove=dnsmasq
+</fix>
+            <fix system="urn:xccdf:fix:script:bootc" id="package_dnsmasq_removed" complexity="low" disruption="low" reboot="false" strategy="disable">
+
+dnf remove dnsmasq
+</fix>
+            <fix system="urn:xccdf:fix:script:puppet" id="package_dnsmasq_removed" complexity="low" disruption="low" reboot="false" strategy="disable">
+include remove_dnsmasq
+
+class remove_dnsmasq {
+  package { 'dnsmasq':
+    ensure =&gt; 'purged',
+  }
+}
+</fix>
+            <fix system="urn:xccdf:fix:script:ansible" id="package_dnsmasq_removed" complexity="low" disruption="low" reboot="false" strategy="disable">- name: 'Uninstall dnsmasq Package: Ensure dnsmasq is removed'
+  ansible.builtin.package:
+    name: dnsmasq
+    state: absent
+  tags:
+  - CCE-90746-9
+  - disable_strategy
+  - low_complexity
+  - low_disruption
+  - low_severity
+  - no_reboot_needed
+  - package_dnsmasq_removed
+</fix>
+            <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+              <check-content-ref href="ssg-rhel8-oval.xml" name="oval:ssg-package_dnsmasq_removed:def:1" />
+            </check>
+            <check system="http://scap.nist.gov/schema/ocil/2">
+              <check-content-ref href="ssg-rhel8-ocil.xml" name="ocil:ssg-package_dnsmasq_removed_ocil:questionnaire:1" />
+            </check>
+          </Rule>
+          <Rule selected="false" id="xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled" severity="medium">
+            <title>Disable dnsmasq Service</title>
+            <description>
+The <html:code>dnsmasq</html:code> service can be disabled with the following command:
+<html:pre>$ sudo systemctl mask --now dnsmasq.service</html:pre>
+      </description>
+            <reference href="https://www.cisecurity.org/benchmark/red_hat_linux/">2.1.6</reference>
+            <rationale>Unless a system is specifically designated to act as a DNS
+caching, DNS forwarding and/or DHCP server, it is recommended
+that the package be removed to reduce the potential attack surface.</rationale>
+            <platform idref="#system_with_kernel" />
+            <ident system="https://ncp.nist.gov/cce">CCE-90720-4</ident>
+            <fix system="urn:xccdf:fix:script:kubernetes" id="service_dnsmasq_disabled" complexity="low" disruption="medium" reboot="true" strategy="disable">apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+spec:
+  config:
+    ignition:
+      version: 3.1.0
+    systemd:
+      units:
+      - name: dnsmasq.service
+        enabled: false
+        mask: true
+      - name: dnsmasq.socket
+        enabled: false
+        mask: true
+</fix>
+            <fix system="urn:xccdf:fix:script:sh" id="service_dnsmasq_disabled" complexity="low" disruption="low" reboot="false" strategy="disable"># Remediation is applicable only in certain platforms
+if rpm --quiet -q kernel-core; then
+
+SYSTEMCTL_EXEC='/usr/bin/systemctl'
+if [[ $("$SYSTEMCTL_EXEC" is-system-running) != "offline" ]]; then
+  "$SYSTEMCTL_EXEC" stop 'dnsmasq.service'
+fi
+"$SYSTEMCTL_EXEC" disable 'dnsmasq.service'
+"$SYSTEMCTL_EXEC" mask 'dnsmasq.service'
+# Disable socket activation if we have a unit file for it
+if "$SYSTEMCTL_EXEC" -q list-unit-files dnsmasq.socket; then
+    if [[ $("$SYSTEMCTL_EXEC" is-system-running) != "offline" ]]; then
+      "$SYSTEMCTL_EXEC" stop 'dnsmasq.socket'
+    fi
+    "$SYSTEMCTL_EXEC" mask 'dnsmasq.socket'
+fi
+# The service may not be running because it has been started and failed,
+# so let's reset the state so OVAL checks pass.
+# Service should be 'inactive', not 'failed' after reboot though.
+"$SYSTEMCTL_EXEC" reset-failed 'dnsmasq.service' || true
+
+else
+    &gt;&amp;2 echo 'Remediation is not applicable, nothing was done'
+fi
+</fix>
+            <fix system="urn:xccdf:fix:script:kickstart" id="service_dnsmasq_disabled" complexity="low" disruption="low" reboot="false" strategy="disable">
+service disable dnsmasq
+</fix>
+            <fix system="urn:redhat:osbuild:blueprint" id="service_dnsmasq_disabled">
+[customizations.services]
+masked = ["dnsmasq"]
+</fix>
+            <fix system="urn:xccdf:fix:script:puppet" id="service_dnsmasq_disabled" complexity="low" disruption="low" reboot="false" strategy="enable">include disable_dnsmasq
+
+class disable_dnsmasq {
+  service {'dnsmasq':
+    enable =&gt; false,
+    ensure =&gt; 'stopped',
+  }
+}
+</fix>
+            <fix system="urn:xccdf:fix:script:ansible" id="service_dnsmasq_disabled" complexity="low" disruption="low" reboot="false" strategy="disable">- name: Gather the package facts
+  package_facts:
+    manager: auto
+  tags:
+  - CCE-90720-4
+  - disable_strategy
+  - low_complexity
+  - low_disruption
+  - medium_severity
+  - no_reboot_needed
+  - service_dnsmasq_disabled
+
+- name: Disable dnsmasq Service - Disable service dnsmasq
+  block:
+
+  - name: Disable dnsmasq Service - Collect systemd Services Present in the System
+    ansible.builtin.command: systemctl -q list-unit-files --type service
+    register: service_exists
+    changed_when: false
+    failed_when: service_exists.rc not in [0, 1]
+    check_mode: false
+
+  - name: Disable dnsmasq Service - Ensure dnsmasq.service is Masked
+    ansible.builtin.systemd:
+      name: dnsmasq.service
+      state: stopped
+      enabled: false
+      masked: true
+    when: service_exists.stdout_lines is search("dnsmasq.service", multiline=True)
+
+  - name: Unit Socket Exists - dnsmasq.socket
+    ansible.builtin.command: systemctl -q list-unit-files dnsmasq.socket
+    register: socket_file_exists
+    changed_when: false
+    failed_when: socket_file_exists.rc not in [0, 1]
+    check_mode: false
+
+  - name: Disable dnsmasq Service - Disable Socket dnsmasq
+    ansible.builtin.systemd:
+      name: dnsmasq.socket
+      enabled: false
+      state: stopped
+      masked: true
+    when: socket_file_exists.stdout_lines is search("dnsmasq.socket", multiline=True)
+  tags:
+  - CCE-90720-4
+  - disable_strategy
+  - low_complexity
+  - low_disruption
+  - medium_severity
+  - no_reboot_needed
+  - service_dnsmasq_disabled
+  - special_service_block
+  when: '"kernel-core" in ansible_facts.packages'
+</fix>
+            <check system="http://open-scap.org/page/SCE">
+              <check-import import-name="stdout" />
+              <check-content-ref href="rhel8/checks/sce/service_dnsmasq_disabled.sh" />
+            </check>
+            <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+              <check-content-ref href="ssg-rhel8-oval.xml" name="oval:ssg-service_dnsmasq_disabled:def:1" />
+            </check>
+          </Rule>
+          <Group id="xccdf_org.ssgproject.content_group_disabling_dns_server">
+            <title>Disable DNS Server</title>
+            <description>DNS software should be disabled on any systems which does not
+need to be a nameserver. Note that the BIND DNS server software is
+not installed on Red Hat Enterprise Linux 8 by default. The remainder of this section
+discusses secure configuration of systems which must be
+nameservers.</description>
+            <Rule selected="false" id="xccdf_org.ssgproject.content_rule_package_bind_removed" severity="low">
+              <title>Uninstall bind Package</title>
+              <description>The <html:code>named</html:code> service is provided by the <html:code>bind</html:code> package.
+The <html:code>bind</html:code> package can be removed with the following command:
+<html:pre>
+$ sudo yum erase bind</html:pre>
+       </description>
+              <reference href="https://www.cisecurity.org/controls/">11</reference>
+              <reference href="https://www.cisecurity.org/controls/">14</reference>
+              <reference href="https://www.cisecurity.org/controls/">3</reference>
+              <reference href="https://www.cisecurity.org/controls/">9</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.01</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.02</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.03</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.05</reference>
+              <reference href="https://www.isaca.org/resources/cobit">DSS05.02</reference>
+              <reference href="https://www.isaca.org/resources/cobit">DSS05.05</reference>
+              <reference href="https://www.isaca.org/resources/cobit">DSS06.06</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.1</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.3</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.4</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.5</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.6</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.7</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.8</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.1</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.3</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.4</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.5</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.6</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.7</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.8</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.9</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.1</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.3</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.4</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.4.3.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.4.3.3</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.1</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.10</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.11</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.12</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.13</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.2</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.3</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.4</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.5</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.6</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.7</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.8</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.9</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.1</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.2</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.3</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.4</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.5</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.6</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.7</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 7.6</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.12.1.2</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.12.5.1</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.12.6.2</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.14.2.2</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.14.2.3</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.14.2.4</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.9.1.2</reference>
+              <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-7(a)</reference>
+              <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-7(b)</reference>
+              <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-6(a)</reference>
+              <reference href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf">PR.IP-1</reference>
+              <reference href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf">PR.PT-3</reference>
+              <reference href="https://www.cisecurity.org/benchmark/red_hat_linux/">2.1.5</reference>
+              <rationale>If there is no need to make DNS server software available,
+removing it provides a safeguard against its activation.</rationale>
+              <ident system="https://ncp.nist.gov/cce">CCE-82408-6</ident>
+              <fix system="urn:xccdf:fix:script:sh" id="package_bind_removed" complexity="low" disruption="low" reboot="false" strategy="disable">
+# CAUTION: This remediation script will remove bind
+# from the system, and may remove any packages
+# that depend on bind. Execute this
+# remediation AFTER testing on a non-production
+# system!
+
+
+if rpm -q --quiet "bind" ; then
+yum remove -y "bind"
+fi
+</fix>
+              <fix system="urn:xccdf:fix:script:kickstart" id="package_bind_removed" complexity="low" disruption="low" reboot="false" strategy="disable">
+
+package remove bind
+</fix>
+              <fix system="urn:redhat:anaconda:pre" id="package_bind_removed" complexity="low" disruption="low" reboot="false" strategy="disable">
+
+package --remove=bind
+</fix>
+              <fix system="urn:xccdf:fix:script:bootc" id="package_bind_removed" complexity="low" disruption="low" reboot="false" strategy="disable">
+
+dnf remove bind
+</fix>
+              <fix system="urn:xccdf:fix:script:puppet" id="package_bind_removed" complexity="low" disruption="low" reboot="false" strategy="disable">
+include remove_bind
+
+class remove_bind {
+  package { 'bind':
+    ensure =&gt; 'purged',
+  }
+}
+</fix>
+              <fix system="urn:xccdf:fix:script:ansible" id="package_bind_removed" complexity="low" disruption="low" reboot="false" strategy="disable">- name: 'Uninstall bind Package: Ensure bind is removed'
+  ansible.builtin.package:
+    name: bind
+    state: absent
+  tags:
+  - CCE-82408-6
+  - NIST-800-53-CM-6(a)
+  - NIST-800-53-CM-7(a)
+  - NIST-800-53-CM-7(b)
+  - disable_strategy
+  - low_complexity
+  - low_disruption
+  - low_severity
+  - no_reboot_needed
+  - package_bind_removed
+</fix>
+              <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+                <check-content-ref href="ssg-rhel8-oval.xml" name="oval:ssg-package_bind_removed:def:1" />
+              </check>
+              <check system="http://scap.nist.gov/schema/ocil/2">
+                <check-content-ref href="ssg-rhel8-ocil.xml" name="ocil:ssg-package_bind_removed_ocil:questionnaire:1" />
+              </check>
+            </Rule>
+            <Rule selected="false" id="xccdf_org.ssgproject.content_rule_service_named_disabled" severity="medium">
+              <title>Disable named Service</title>
+              <description>
+The <html:code>named</html:code> service can be disabled with the following command:
+<html:pre>$ sudo systemctl mask --now named.service</html:pre>
+       </description>
+              <reference href="https://www.cisecurity.org/controls/">11</reference>
+              <reference href="https://www.cisecurity.org/controls/">14</reference>
+              <reference href="https://www.cisecurity.org/controls/">3</reference>
+              <reference href="https://www.cisecurity.org/controls/">9</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.01</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.02</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.03</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.05</reference>
+              <reference href="https://www.isaca.org/resources/cobit">DSS05.02</reference>
+              <reference href="https://www.isaca.org/resources/cobit">DSS05.05</reference>
+              <reference href="https://www.isaca.org/resources/cobit">DSS06.06</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.1</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.3</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.4</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.5</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.6</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.7</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.8</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.1</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.3</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.4</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.5</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.6</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.7</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.8</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.9</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.1</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.3</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.4</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.4.3.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.4.3.3</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.1</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.10</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.11</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.12</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.13</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.2</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.3</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.4</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.5</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.6</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.7</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.8</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.9</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.1</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.2</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.3</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.4</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.5</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.6</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.7</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 7.6</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.12.1.2</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.12.5.1</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.12.6.2</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.14.2.2</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.14.2.3</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.14.2.4</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.9.1.2</reference>
+              <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-7(a)</reference>
+              <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-7(b)</reference>
+              <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-6(a)</reference>
+              <reference href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf">PR.IP-1</reference>
+              <reference href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf">PR.PT-3</reference>
+              <rationale>All network services involve some risk of compromise due to
+implementation flaws and should be disabled if possible.</rationale>
+              <platform idref="#system_with_kernel" />
+              <ident system="https://ncp.nist.gov/cce">CCE-82409-4</ident>
+              <fix system="urn:xccdf:fix:script:kubernetes" id="service_named_disabled" complexity="low" disruption="medium" reboot="true" strategy="disable">apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+spec:
+  config:
+    ignition:
+      version: 3.1.0
+    systemd:
+      units:
+      - name: named.service
+        enabled: false
+        mask: true
+      - name: named.socket
+        enabled: false
+        mask: true
+</fix>
+              <fix system="urn:xccdf:fix:script:sh" id="service_named_disabled" complexity="low" disruption="low" reboot="false" strategy="disable"># Remediation is applicable only in certain platforms
+if rpm --quiet -q kernel-core; then
+
+SYSTEMCTL_EXEC='/usr/bin/systemctl'
+if [[ $("$SYSTEMCTL_EXEC" is-system-running) != "offline" ]]; then
+  "$SYSTEMCTL_EXEC" stop 'named.service'
+fi
+"$SYSTEMCTL_EXEC" disable 'named.service'
+"$SYSTEMCTL_EXEC" mask 'named.service'
+# Disable socket activation if we have a unit file for it
+if "$SYSTEMCTL_EXEC" -q list-unit-files named.socket; then
+    if [[ $("$SYSTEMCTL_EXEC" is-system-running) != "offline" ]]; then
+      "$SYSTEMCTL_EXEC" stop 'named.socket'
+    fi
+    "$SYSTEMCTL_EXEC" mask 'named.socket'
+fi
+# The service may not be running because it has been started and failed,
+# so let's reset the state so OVAL checks pass.
+# Service should be 'inactive', not 'failed' after reboot though.
+"$SYSTEMCTL_EXEC" reset-failed 'named.service' || true
+
+else
+    &gt;&amp;2 echo 'Remediation is not applicable, nothing was done'
+fi
+</fix>
+              <fix system="urn:xccdf:fix:script:kickstart" id="service_named_disabled" complexity="low" disruption="low" reboot="false" strategy="disable">
+service disable named
+</fix>
+              <fix system="urn:redhat:osbuild:blueprint" id="service_named_disabled">
+[customizations.services]
+masked = ["named"]
+</fix>
+              <fix system="urn:xccdf:fix:script:puppet" id="service_named_disabled" complexity="low" disruption="low" reboot="false" strategy="enable">include disable_named
+
+class disable_named {
+  service {'named':
+    enable =&gt; false,
+    ensure =&gt; 'stopped',
+  }
+}
+</fix>
+              <fix system="urn:xccdf:fix:script:ansible" id="service_named_disabled" complexity="low" disruption="low" reboot="false" strategy="disable">- name: Gather the package facts
+  package_facts:
+    manager: auto
+  tags:
+  - CCE-82409-4
+  - NIST-800-53-CM-6(a)
+  - NIST-800-53-CM-7(a)
+  - NIST-800-53-CM-7(b)
+  - disable_strategy
+  - low_complexity
+  - low_disruption
+  - medium_severity
+  - no_reboot_needed
+  - service_named_disabled
+
+- name: Disable named Service - Disable service named
+  block:
+
+  - name: Disable named Service - Collect systemd Services Present in the System
+    ansible.builtin.command: systemctl -q list-unit-files --type service
+    register: service_exists
+    changed_when: false
+    failed_when: service_exists.rc not in [0, 1]
+    check_mode: false
+
+  - name: Disable named Service - Ensure named.service is Masked
+    ansible.builtin.systemd:
+      name: named.service
+      state: stopped
+      enabled: false
+      masked: true
+    when: service_exists.stdout_lines is search("named.service", multiline=True)
+
+  - name: Unit Socket Exists - named.socket
+    ansible.builtin.command: systemctl -q list-unit-files named.socket
+    register: socket_file_exists
+    changed_when: false
+    failed_when: socket_file_exists.rc not in [0, 1]
+    check_mode: false
+
+  - name: Disable named Service - Disable Socket named
+    ansible.builtin.systemd:
+      name: named.socket
+      enabled: false
+      state: stopped
+      masked: true
+    when: socket_file_exists.stdout_lines is search("named.socket", multiline=True)
+  tags:
+  - CCE-82409-4
+  - NIST-800-53-CM-6(a)
+  - NIST-800-53-CM-7(a)
+  - NIST-800-53-CM-7(b)
+  - disable_strategy
+  - low_complexity
+  - low_disruption
+  - medium_severity
+  - no_reboot_needed
+  - service_named_disabled
+  - special_service_block
+  when: '"kernel-core" in ansible_facts.packages'
+</fix>
+              <check system="http://open-scap.org/page/SCE">
+                <check-import import-name="stdout" />
+                <check-content-ref href="rhel8/checks/sce/service_named_disabled.sh" />
+              </check>
+              <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+                <check-content-ref href="ssg-rhel8-oval.xml" name="oval:ssg-service_named_disabled:def:1" />
+              </check>
+              <check system="http://scap.nist.gov/schema/ocil/2">
+                <check-content-ref href="ssg-rhel8-ocil.xml" name="ocil:ssg-service_named_disabled_ocil:questionnaire:1" />
+              </check>
+            </Rule>
+          </Group>
+          <Group id="xccdf_org.ssgproject.content_group_dns_server_protection">
+            <title>Protect DNS Data from Tampering or Attack</title>
+            <description>This section discusses DNS configuration options which make it
+more difficult for attackers to gain access to private DNS data or to modify
+DNS data.</description>
+            <Rule selected="false" id="xccdf_org.ssgproject.content_rule_dns_server_authenticate_zone_transfers" severity="medium">
+              <title>Authenticate Zone Transfers</title>
+              <description>If it is necessary for a secondary nameserver to receive zone data
+via zone transfer from the primary server, follow the instructions here.  Use
+dnssec-keygen to create a symmetric key file in the current directory:
+<html:pre>$ cd /tmp
+$ sudo dnssec-keygen -a HMAC-MD5 -b 128 -n HOST dns.example.com
+Kdns.example.com .+aaa +iiiii</html:pre>
+This output is the name of a file containing the new key. Read the file to find
+the base64-encoded key string:
+<html:pre>$ sudo cat Kdns.example.com .+NNN +MMMMM .key
+dns.example.com IN KEY 512 3 157 base64-key-string</html:pre>
+Add the directives to <html:code>/etc/named.conf</html:code> on the primary server:
+<html:pre>key zone-transfer-key {
+  algorithm hmac-md5;
+  secret "base64-key-string ";
+};
+zone "example.com " IN {
+  type master;
+  allow-transfer { key zone-transfer-key; };
+  ...
+};</html:pre>
+Add the directives below to <html:code>/etc/named.conf</html:code> on the secondary nameserver:
+<html:pre>key zone-transfer-key {
+  algorithm hmac-md5;
+  secret "base64-key-string ";
+};
+
+server IP-OF-MASTER {
+  keys { zone-transfer-key; };
+};
+
+zone "example.com " IN {
+  type slave;
+  masters { IP-OF-MASTER ; };
+  ...
+};</html:pre>
+       </description>
+              <warning category="general">The purpose of the dnssec-keygen command is to
+create the shared secret string base64-key-string. Once this secret has been
+obtained and inserted into named.conf on the primary and secondary servers, the
+key files Kdns.example.com .+NNN +MMMMM .key and Kdns.example.com .+NNN +MMMMM
+.private are no longer needed, and may safely be deleted.</warning>
+              <reference href="https://www.cisecurity.org/controls/">11</reference>
+              <reference href="https://www.cisecurity.org/controls/">14</reference>
+              <reference href="https://www.cisecurity.org/controls/">3</reference>
+              <reference href="https://www.cisecurity.org/controls/">9</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.01</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.02</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.03</reference>
+              <reference href="https://www.isaca.org/resources/cobit">BAI10.05</reference>
+              <reference href="https://www.isaca.org/resources/cobit">DSS05.02</reference>
+              <reference href="https://www.isaca.org/resources/cobit">DSS05.05</reference>
+              <reference href="https://www.isaca.org/resources/cobit">DSS06.06</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.1</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.3</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.4</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.5</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.6</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.7</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.5.8</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.1</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.3</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.4</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.5</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.6</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.7</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.8</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.6.9</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.1</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.3</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.3.7.4</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.4.3.2</reference>
+              <reference href="https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat">4.3.4.3.3</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.1</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.10</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.11</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.12</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.13</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.2</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.3</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.4</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.5</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.6</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.7</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.8</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 1.9</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.1</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.2</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.3</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.4</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.5</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.6</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 2.7</reference>
+              <reference href="https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu">SR 7.6</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.12.1.2</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.12.5.1</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.12.6.2</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.14.2.2</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.14.2.3</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.14.2.4</reference>
+              <reference href="https://www.iso.org/contents/data/standard/05/45/54534.html">A.9.1.2</reference>
+              <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-7(a)</reference>
+              <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-7(b)</reference>
+              <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-6(a)</reference>
+              <reference href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf">PR.IP-1</reference>
+              <reference href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf">PR.PT-3</reference>
+              <rationale>The BIND transaction signature (TSIG) functionality allows primary
+and secondary nameservers to use a shared secret to verify authorization to
+perform zone transfers. This method is more secure than using IP-based limiting
+to restrict nameserver access, since IP addresses can be easily spoofed.
+However, if you cannot configure TSIG between your servers because, for
+instance, the secondary nameserver is not under your control and its
+administrators are unwilling to configure TSIG, you can configure an
+allow-transfer directive with numerical IP addresses or ACLs as a last resort.</rationale>
+              <ident system="https://ncp.nist.gov/cce">CCE-82410-2</ident>
+            </Rule>
+            <Rule selected="false" id="xccdf_org.ssgproject.content_rule_dns_server_disable_dynamic_updates" severity="unknown">
+              <title>Disable Dynamic Updates</title>
+              <description>Is there a mission-critical reason to enable the risky dynamic
+update functionality? If not, edit <html:code>/etc/named.conf</html:code>. For each zone
+specification, correct the following directive if necessary:
+<html:pre>zone "example.com " IN {
+  allow-update { none; };
+  ...
+};</html:pre>
+       </description>
+              <rationale>Dynamic updates allow remote servers to add, delete, or modify any
+entries in your zone file. Therefore, they should be considered highly risky,
+and disabled unless there is a very good reason for their use. If dynamic
+updates must be allowed, IP-based ACLs are insufficient protection, since they
+are easily spoofed. Instead, use TSIG keys (see the previous section for an
+example), and consider using the update-policy directive to restrict changes to
+only the precise type of change needed.</rationale>
+            </Rule>
+            <Rule selected="false" id="xccdf_org.ssgproject.content_rule_dns_server_disable_zone_transfers" severity="unknown">
+              <title>Disable Zone Transfers from the Nameserver</title>
+              <description>Is it necessary for a secondary nameserver to receive zone data
+via zone transfer from the primary server?  If not, follow the instructions in
+this section. If so, see the next section for instructions on protecting zone
+transfers.
+Add or correct the following directive within <html:code>/etc/named.conf</html:code>:
+<html:pre>options {
+  allow-transfer { none; };
+  ...
+}</html:pre>
+       </description>
+              <rationale>If both the primary and secondary nameserver are under your control,
+or if you have only one nameserver, it may be possible to use an external
+configuration management mechanism to distribute zone updates. In that case, it
+is not necessary to allow zone transfers within BIND itself, so they should be
+disabled to avoid the potential for abuse.</rationale>
+            </Rule>
+          </Group>
+        </Group>
+        </Group></Benchmark>

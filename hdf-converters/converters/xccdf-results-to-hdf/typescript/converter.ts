@@ -62,10 +62,63 @@ interface ProfileElement {
   title?: string | TextElement;
 }
 
+/**
+ * An XCCDF Group. A Group may hold any number of Rules and may nest further
+ * Groups — SCAP Security Guide content relies on both, so a Group must not be
+ * treated as a flat, single-rule container.
+ */
 interface GroupElement {
   id?: string;
   title?: string | TextElement;
   Rule?: RuleElement[];
+  Group?: GroupElement[];
+}
+
+/** A rule paired with the Group it was found in, at any depth. */
+interface GroupedRule {
+  rule: RuleElement;
+  group: GroupElement;
+}
+
+/**
+ * Map XCCDF's severity vocabulary (unknown|info|low|medium|high) onto HDF's
+ * (critical|high|medium|low|informational). Casting the raw attribute straight to
+ * Severity emitted schema-invalid documents, since XCCDF "unknown" and "info" are
+ * not HDF severities.
+ *
+ * "unknown" states that severity was not determined. HDF cannot express that, so
+ * emit no severity at all rather than assert "informational", which would silently
+ * downgrade a rule whose severity is merely unstated.
+ */
+function xccdfSeverityToHdf(severity: string): Severity | undefined {
+  switch (severity.toLowerCase()) {
+    case 'high':
+      return Severity.High;
+    case 'medium':
+      return Severity.Medium;
+    case 'low':
+      return Severity.Low;
+    case 'info':
+      return Severity.Informational;
+    default: // 'unknown', empty, or anything unrecognised
+      return undefined;
+  }
+}
+
+/**
+ * Walk the Group tree depth-first, collecting every rule at any depth. Rules may
+ * sit directly on a Group that also has nested Groups.
+ */
+function flattenGroups(groups: GroupElement[]): GroupedRule[] {
+  const out: GroupedRule[] = [];
+  for (const group of groups) {
+    for (const rule of group.Rule ?? []) {
+      if (!rule.id) continue;
+      out.push({ rule, group });
+    }
+    out.push(...flattenGroups(group.Group ?? []));
+  }
+  return out;
 }
 
 interface RuleElement {
@@ -443,21 +496,24 @@ async function convertBenchmarkToBaselineJson(
   const requirements: BaselineRequirement[] = [];
   const groups: RequirementGroup[] = [];
 
-  const benchmarkGroups = benchmark.Group ?? [];
-  for (const group of benchmarkGroups) {
-    const groupRules = group.Rule ?? [];
-    for (const rule of groupRules) {
-      if (!rule.id) {
-        continue;
-      }
-      const req = ruleToBaselineRequirement(rule, group);
-      requirements.push(req);
-      groups.push({
-        id: group.id ?? '',
-        title: extractText(group.title),
-        requirements: [req.id],
-      });
+  // One RequirementGroup per XCCDF Group, carrying every rule found in it.
+  const groupIndex = new Map<string, number>();
+  for (const { rule, group } of flattenGroups(benchmark.Group ?? [])) {
+    const req = ruleToBaselineRequirement(rule, group);
+    requirements.push(req);
+
+    const groupId = group.id ?? '';
+    const existing = groupIndex.get(groupId);
+    if (existing !== undefined) {
+      groups[existing]!.requirements.push(req.id);
+      continue;
     }
+    groupIndex.set(groupId, groups.length);
+    groups.push({
+      id: groupId,
+      title: extractText(group.title),
+      requirements: [req.id],
+    });
   }
 
   const topRules = benchmark.Rule ?? [];
@@ -556,8 +612,9 @@ function ruleToBaselineRequirement(
     tags,
   };
 
-  if (severity) {
-    req.severity = severity.toLowerCase() as Severity;
+  const hdfSeverity = xccdfSeverityToHdf(severity);
+  if (hdfSeverity) {
+    req.severity = hdfSeverity;
   }
 
   const controlType = deriveControlTypeFromTags(nistTags);
@@ -783,14 +840,8 @@ function buildRuleIndex(benchmark: BenchmarkElement): Map<string, RuleElement> {
     }
   }
 
-  const groups = benchmark.Group ?? [];
-  for (const group of groups) {
-    const rules = group.Rule ?? [];
-    for (const rule of rules) {
-      if (rule.id) {
-        index.set(rule.id, rule);
-      }
-    }
+  for (const { rule } of flattenGroups(benchmark.Group ?? [])) {
+    index.set(rule.id!, rule);
   }
 
   return index;
