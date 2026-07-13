@@ -23,6 +23,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
+  createResult,
   TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
@@ -257,11 +258,8 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
   const results = cwes.flatMap(c => {
     const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
     const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
-    return flaws.map((flaw): RequirementResult => ({
-      status: ResultStatus.Failed,
-      codeDesc: formatFlawCodeDesc(flaw),
-      startTime,
-    }));
+    return flaws.map((flaw): RequirementResult =>
+      createResult(ResultStatus.Failed, undefined, { codeDesc: formatFlawCodeDesc(flaw), startTime }));
   });
 
   const sourceRef = cwes.flatMap(c => {
@@ -362,13 +360,8 @@ function buildCVERequirement(
   // One result per affected component
   const startTime = parseVeracodeTimestamp(firstBuildDate) ?? new Date();
 
-  // Literal rather than createResult: that helper defaults `message` to '',
-  // and Veracode carries no message.
-  const results = components.map((comp): RequirementResult => ({
-    status: ResultStatus.Failed,
-    codeDesc: formatSCACodeDesc(comp),
-    startTime,
-  }));
+  const results = components.map((comp): RequirementResult =>
+    createResult(ResultStatus.Failed, undefined, { codeDesc: formatSCACodeDesc(comp), startTime }));
 
   const cveSummary = attr(vuln, 'cve_summary');
   const cveId = attr(vuln, 'cve_id');

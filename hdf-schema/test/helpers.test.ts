@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeEffectiveStatus, severityToImpact, impactToSeverity } from '../src/helpers.js';
+import { computeEffectiveStatus, severityToImpact, impactToSeverity, createResult } from '../src/helpers.js';
 
 /**
  * Minimal requirement stub with only the fields computeEffectiveStatus inspects.
@@ -266,5 +266,32 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req(0.1, [{ status: 'passed' }]))).toBe(
       'passed'
     );
+  });
+});
+
+describe('createResult', () => {
+  it('omits message when not provided (no spurious empty message)', () => {
+    const r = createResult('passed');
+    expect('message' in r).toBe(false);
+    expect(r.status).toBe('passed');
+    expect(r.codeDesc).toBe('');
+  });
+
+  it('omits message when explicitly empty', () => {
+    expect('message' in createResult('failed', '')).toBe(false);
+  });
+
+  it('includes message when non-empty, in position after status', () => {
+    const r = createResult('failed', 'boom', { codeDesc: 'cd' });
+    expect(r.message).toBe('boom');
+    // key order must stay status, message, codeDesc, … to preserve Go-parity byte order
+    expect(Object.keys(r).slice(0, 3)).toEqual(['status', 'message', 'codeDesc']);
+  });
+
+  it('passes options through', () => {
+    const r = createResult('passed', undefined, { codeDesc: 'x', runTime: 5 });
+    expect(r.codeDesc).toBe('x');
+    expect(r.runTime).toBe(5);
+    expect('message' in r).toBe(false);
   });
 });

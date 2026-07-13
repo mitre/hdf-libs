@@ -14,6 +14,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
+  createResult,
   TargetType,
   createMinimalBaseline,
   createRequirement,
@@ -318,11 +319,8 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
     // score but not status.
     const affects = vuln.affects ?? [];
     // CycloneDX carries no per-affect explanation, so results carry no message key.
-    const toResult = (codeDesc: string): RequirementResult => ({
-      status: ResultStatus.Failed,
-      codeDesc,
-      startTime: scanTime,
-    });
+    const toResult = (codeDesc: string): RequirementResult =>
+      createResult(ResultStatus.Failed, undefined, { codeDesc, startTime: scanTime });
     const results =
       affects.length > 0
         ? affects.map((affect) => toResult(formatCodeDesc(componentLookup, affect.ref)))

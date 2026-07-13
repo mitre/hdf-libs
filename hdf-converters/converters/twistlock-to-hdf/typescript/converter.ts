@@ -15,6 +15,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
+  createResult,
   TargetType,
   VerificationMethodEnum,
   CVSSSeverity,
@@ -336,14 +337,11 @@ function buildRequirement(
 
   const startTime = (vuln.discoveredDate ? parseTimestamp(vuln.discoveredDate) : null) ?? new Date('0001-01-01T00:00:00Z');
 
-  // Built as a literal rather than via createResult: that helper defaults
-  // `message` to '', and Twistlock has no message to carry.
   const results: RequirementResult[] = [
-    {
-      status: ResultStatus.Failed,
+    createResult(ResultStatus.Failed, undefined, {
       codeDesc: formatCodeDesc(vuln),
       startTime,
-    },
+    }),
   ];
 
   const req = createRequirement(

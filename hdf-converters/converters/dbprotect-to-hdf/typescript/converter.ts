@@ -9,10 +9,10 @@ import type {
   EvaluatedRequirement,
   Checksum,
   Description,
-  RequirementResult,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
+  createResult,
   TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
@@ -193,11 +193,10 @@ function buildRequirement(
       : ResultStatus.Failed;
 
     // DBProtect carries no per-result explanation, so results carry no message key.
-    return {
-      status,
+    return createResult(status, undefined, {
       codeDesc: f['Details'] ?? '',
       startTime: parseDate(f['Date'] ?? ''),
-    } as RequirementResult;
+    });
   });
 
   const req = createRequirement(

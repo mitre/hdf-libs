@@ -12,6 +12,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
+  createResult,
   TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
@@ -218,7 +219,7 @@ function buildRequirementFromResult(
   const status = determineStatus(score);
 
   // Conveyor carries no per-section explanation, so results carry no message key.
-  const toResult = (codeDesc: string): RequirementResult => ({ status, codeDesc, startTime });
+  const toResult = (codeDesc: string): RequirementResult => createResult(status, undefined, { codeDesc, startTime });
 
   const results = result.result.sections.length > 0
     ? result.result.sections.map(section => toResult(buildCodeDesc(section, scannerName)))

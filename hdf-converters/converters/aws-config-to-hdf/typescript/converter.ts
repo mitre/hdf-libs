@@ -20,6 +20,7 @@ import {
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
+  createResult,
 } from '@mitre/hdf-schema';
 
 /**
@@ -172,13 +173,7 @@ function buildResult(r: EvaluationResult): RequirementResult {
   const runTime = computeRunTime(r.ConfigRuleInvokedTime, r.ResultRecordedTime);
 
   // message is a failure explanation, so non-failed results carry no message key at all.
-  return {
-    status,
-    codeDesc,
-    startTime,
-    ...(runTime !== undefined ? { runTime } : {}),
-    ...(message !== undefined ? { message } : {}),
-  } as RequirementResult;
+  return createResult(status, message, { codeDesc, startTime, runTime });
 }
 
 /**
@@ -190,11 +185,10 @@ function buildResult(r: EvaluationResult): RequirementResult {
  */
 function buildNotApplicableResult(rule: ConfigRule): RequirementResult {
   const codeDesc = `AWS Config rule ${rule.ConfigRuleName} evaluated zero in-scope resources in this account/region.`;
-  return {
-    status: ResultStatus.NotApplicable,
+  return createResult(ResultStatus.NotApplicable, undefined, {
     codeDesc,
     startTime: new Date(),
-  } as RequirementResult;
+  });
 }
 
 function buildRequirement(rule: ConfigRule): EvaluatedRequirement {

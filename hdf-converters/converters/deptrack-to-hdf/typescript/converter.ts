@@ -12,6 +12,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
+  createResult,
   TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
@@ -177,11 +178,10 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
   const codeDesc = finding.vulnerability.recommendation ?? 'No recommendation available';
 
   const results: RequirementResult[] = [
-    {
-      status: ResultStatus.Failed,
+    createResult(ResultStatus.Failed, undefined, {
       codeDesc,
       startTime: (timestamp ? parseTimestamp(timestamp) : null) ?? new Date('0001-01-01T00:00:00Z'),
-    },
+    }),
   ];
 
   const req = createRequirement(

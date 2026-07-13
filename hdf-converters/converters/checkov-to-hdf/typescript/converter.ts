@@ -16,6 +16,7 @@ import {
   severityToImpact,
   createMinimalBaseline,
   createRequirement,
+  createResult,
   type Description,
 } from '@mitre/hdf-schema';
 
@@ -98,12 +99,7 @@ function checkToResult(check: CheckovCheck, scanTime: Date): RequirementResult {
   }
 
   // message carries the suppression comment, so results without one carry no message key.
-  return {
-    status,
-    codeDesc,
-    startTime: scanTime,
-    ...(message !== undefined ? { message } : {}),
-  } as RequirementResult;
+  return createResult(status, message, { codeDesc, startTime: scanTime });
 }
 
 /**

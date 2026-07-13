@@ -92,14 +92,16 @@ export function createDescription(label, data) {
 /**
  * Create a RequirementResult
  * @param {import('../dist/ts/hdf-results.js').ResultStatus} status - Test result status
- * @param {string} [message] - Optional message explaining the result
+ * @param {string} [message] - Optional message explaining the result. Omitted from
+ *   the result entirely when empty/undefined, so converters no longer emit a spurious
+ *   `"message": ""` that the Go side (omitempty) drops — keeping TS/Go output aligned.
  * @param {Object} [options] - Optional fields
  * @returns {import('../dist/ts/hdf-results.js').RequirementResult}
  */
-export function createResult(status, message = '', options = {}) {
+export function createResult(status, message, options = {}) {
   return {
     status,
-    message,
+    ...(message ? { message } : {}),
     codeDesc: options.codeDesc || '',
     startTime: options.startTime,
     runTime: options.runTime,
