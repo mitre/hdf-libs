@@ -8,6 +8,7 @@ package shared
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -501,6 +502,15 @@ func ValidateJSONSize(input []byte, converterName string, maxSize int) error {
 		return fmt.Errorf("%s: input exceeds maximum allowed size of %d bytes (%d bytes provided)", converterName, maxSize, len(input))
 	}
 	return nil
+}
+
+// DecodeHDF decodes an HDF document into v. It is the single ingest point for
+// every HDF-consuming converter: real HDF carries zone-less timestamps (InSpec
+// emits startTime with no offset), which the schema types' time.Time fields
+// reject, so the bytes are normalized to canonical trimmed-UTC RFC3339 first.
+// Callers keep their own error wrapping.
+func DecodeHDF(input []byte, v interface{}) error {
+	return json.Unmarshal(hdfutil.NormalizeHDFTimestamps(input), v)
 }
 
 // DefaultMaxXMLSize is the maximum allowed XML input size (50 MB).

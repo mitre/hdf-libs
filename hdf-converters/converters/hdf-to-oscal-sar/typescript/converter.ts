@@ -5,8 +5,8 @@
  * Results JSON and produces an OSCAL 1.1.2 assessment-results JSON document.
  */
 
-import { parseJSON, parseTimestamp, formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { parseTimestamp, formatTimestampSeconds } from '@mitre/hdf-utilities';
+import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
@@ -47,7 +47,7 @@ export async function convertHdfToOscalSar(input: string): Promise<string> {
 
   let hdfResults: HDFResults;
   try {
-    hdfResults = parseJSON<HDFResults>(input);
+    hdfResults = parseHdf<HDFResults>(input);
   } catch {
     throw new Error('hdf-to-oscal-sar: failed to parse HDF JSON');
   }

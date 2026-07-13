@@ -15,8 +15,8 @@ import {
   type HDFAmendments,
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
-import { parseJSON, sha256, formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { sha256, formatTimestampSeconds } from '@mitre/hdf-utilities';
+import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
   versTypeFor,
@@ -116,7 +116,7 @@ export async function convertHdfToCyclonedxVex(
   converterVersion: string,
 ): Promise<string> {
   validateInputSize(input, 'hdf-to-cyclonedx-vex');
-  const amendments = parseJSON<HDFAmendments>(input);
+  const amendments = parseHdf<HDFAmendments>(input);
 
   const componentRegistry = new Map<string, Component>();
   const vulnerabilities: Vulnerability[] = [];

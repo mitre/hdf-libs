@@ -14,6 +14,15 @@ function loadFixture(type: 'input' | 'expected', filename: string): string {
 }
 
 describe('hdf-to-xml Converter', () => {
+  // Real InSpec HDF carries zone-less timestamps ("2026-03-25T22:56:27.736808").
+  // They must be emitted as canonical trimmed-UTC RFC3339, identical to the Go output.
+  it('emits canonical UTC timestamps for zone-less input HDF', () => {
+    const result = convertHdfToXml(results.inspecMultilayered.read());
+
+    expect(result).toContain('<startTime>2026-03-25T22:56:27.736Z</startTime>');
+    expect(result).not.toContain('2026-03-25T22:56:27.736808');
+  });
+
   describe('Basic conversion', () => {
     it('should convert minimal HDF to XML', () => {
       const input = results.minimal.read();

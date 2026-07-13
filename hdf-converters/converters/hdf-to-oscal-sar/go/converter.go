@@ -27,7 +27,7 @@ func ConvertHDFToOSCALSAR(input []byte, _ string) ([]byte, error) {
 	}
 
 	var hdfResults hdf.HDFResults
-	if err := json.Unmarshal(input, &hdfResults); err != nil {
+	if err := shared.DecodeHDF(input, &hdfResults); err != nil {
 		return nil, fmt.Errorf("hdf-to-oscal-sar: failed to parse HDF JSON: %w", err)
 	}
 

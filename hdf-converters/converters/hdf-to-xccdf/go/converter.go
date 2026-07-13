@@ -2,7 +2,6 @@
 package hdftoxccdf
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"strings"
@@ -21,7 +20,7 @@ func ConvertHDFToXCCDF(input []byte, converterVersion string) ([]byte, error) {
 	}
 
 	var hdfData hdf.HDFResults
-	if err := json.Unmarshal(input, &hdfData); err != nil {
+	if err := shared.DecodeHDF(input, &hdfData); err != nil {
 		return nil, fmt.Errorf("invalid HDF JSON: %w", err)
 	}
 
@@ -288,7 +287,7 @@ func buildTestResult(hdfData *hdf.HDFResults, baseline hdf.EvaluatedBaseline) *X
 
 	// Set timestamps
 	if hdfData.Timestamp != nil {
-		ts := hdfData.Timestamp.Format(time.RFC3339)
+		ts := hdfData.Timestamp.Format(time.RFC3339Nano)
 		testResult.StartTime = ts
 		testResult.EndTime = ts
 	}
@@ -314,7 +313,9 @@ func buildTestResult(hdfData *hdf.HDFResults, baseline hdf.EvaluatedBaseline) *X
 				Result: hdfStatusToXCCDF(result.Status),
 			}
 
-			rr.Time = result.StartTime.Format(time.RFC3339)
+			// RFC3339Nano keeps the sub-second fraction, matching the canonical
+			// string the TypeScript converter passes through.
+			rr.Time = result.StartTime.Format(time.RFC3339Nano)
 
 			if result.Message != nil && *result.Message != "" {
 				rr.Message = *result.Message

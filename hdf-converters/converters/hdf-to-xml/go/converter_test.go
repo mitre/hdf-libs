@@ -13,6 +13,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Real InSpec HDF carries zone-less timestamps ("2026-03-25T22:56:27.736808").
+// They must be ingested (the schema's time.Time fields reject them raw) and
+// emitted as canonical trimmed-UTC RFC3339, identical to the TypeScript output.
+func TestConvertHDFToXMLBareTimestamps(t *testing.T) {
+	result, err := ConvertHDFToXML(fixtures.Results.InspecMultilayered)
+	require.NoError(t, err)
+
+	out := string(result)
+	assert.Contains(t, out, "<startTime>2026-03-25T22:56:27.736Z</startTime>")
+	assert.NotContains(t, out, "2026-03-25T22:56:27.736808")
+}
+
 func TestConvertHDFToXML(t *testing.T) {
 	t.Run("should convert minimal HDF to XML", func(t *testing.T) {
 		input := fixtures.Results.Minimal

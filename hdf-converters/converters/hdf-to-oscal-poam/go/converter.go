@@ -25,7 +25,7 @@ func ConvertHDFToOSCALPOAM(input []byte, converterVersion string) ([]byte, error
 	}
 
 	var amendments hdf.HDFAmendments
-	if err := json.Unmarshal(input, &amendments); err != nil {
+	if err := shared.DecodeHDF(input, &amendments); err != nil {
 		return nil, fmt.Errorf("hdf-to-oscal-poam: failed to parse JSON: %w", err)
 	}
 

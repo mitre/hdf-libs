@@ -1,7 +1,6 @@
-import { parseJSON } from '@mitre/hdf-utilities';
 import { buildCsv } from '@mitre/hdf-utilities';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Component, Description } from '@mitre/hdf-schema';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 
 /**
  * Row structure for CSV export
@@ -38,7 +37,7 @@ interface CsvRow {
  */
 export function convertHdfToCsv(input: string): string {
   validateInputSize(input, 'hdf-to-csv');
-  const hdf = parseJSON<HDFResults>(input);
+  const hdf = parseHdf<HDFResults>(input);
 
   if (!hdf || typeof hdf !== 'object' || !('baselines' in hdf)) {
     throw new Error('Invalid HDF structure: missing baselines field');

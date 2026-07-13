@@ -72,7 +72,7 @@ func ConvertHDFToOpenVEX(input []byte, converterVersion string) ([]byte, error) 
 		return nil, err
 	}
 	var amendments hdf.HDFAmendments
-	if err := json.Unmarshal(input, &amendments); err != nil {
+	if err := shared.DecodeHDF(input, &amendments); err != nil {
 		return nil, fmt.Errorf("hdf-to-openvex: parse HDF Amendments: %w", err)
 	}
 

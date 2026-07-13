@@ -1,6 +1,6 @@
-import { parseJSON, buildXml } from '@mitre/hdf-utilities';
+import { buildXml } from '@mitre/hdf-utilities';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Component, Description, RequirementResult } from '@mitre/hdf-schema';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 
 /**
  * Convert HDF JSON to XML format
@@ -9,7 +9,7 @@ import { validateInputSize } from '../../../shared/typescript/converterutil.js';
  */
 export function convertHdfToXml(input: string): string {
   validateInputSize(input, 'hdf-to-xml');
-  const hdf = parseJSON<HDFResults>(input);
+  const hdf = parseHdf<HDFResults>(input);
 
   if (!hdf || typeof hdf !== 'object' || !('baselines' in hdf)) {
     throw new Error('Invalid HDF structure: missing baselines field');

@@ -1,10 +1,10 @@
 package hdftoxml
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"sort"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -21,7 +21,7 @@ func ConvertHDFToXML(input []byte) ([]byte, error) {
 
 	// Parse HDF JSON
 	var hdfData hdf.HDFResults
-	if err := json.Unmarshal(input, &hdfData); err != nil {
+	if err := shared.DecodeHDF(input, &hdfData); err != nil {
 		return nil, fmt.Errorf("invalid HDF JSON: %w", err)
 	}
 
@@ -287,7 +287,7 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 
 	// Add timestamp
 	if hdf.Timestamp != nil {
-		result.Timestamp = hdf.Timestamp.Format("2006-01-02T15:04:05Z07:00")
+		result.Timestamp = hdf.Timestamp.Format(time.RFC3339Nano)
 	}
 
 	// Add generator
@@ -378,9 +378,12 @@ func transformRequirement(req hdf.EvaluatedRequirement) XMLRequirement {
 		}
 		for i, res := range req.Results {
 			xmlReq.Results.Result[i] = XMLResult{
-				Status:    string(res.Status),
-				CodeDesc:  res.CodeDesc,
-				StartTime: res.StartTime.Format("2006-01-02T15:04:05Z07:00"),
+				Status:   string(res.Status),
+				CodeDesc: res.CodeDesc,
+				// RFC3339Nano, not RFC3339: it keeps the sub-second fraction (trimming
+				// trailing zeros) so the rendering matches the canonical string the
+				// TypeScript converter passes through.
+				StartTime: res.StartTime.Format(time.RFC3339Nano),
 				Message:   res.Message,
 				RunTime:   res.RunTime,
 			}

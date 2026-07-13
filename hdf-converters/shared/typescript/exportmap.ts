@@ -10,8 +10,8 @@
  * (ECS field names, CIM field names, envelopes) stays in each converter.
  */
 
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
-import { validateInputSize } from './converterutil.js';
+import { parseTimestamp } from '@mitre/hdf-utilities';
+import { validateInputSize, parseHdf } from './converterutil.js';
 
 export type Obj = Record<string, unknown>;
 
@@ -296,7 +296,7 @@ export type EventBuilder = (
  */
 export function runExport(input: string, converterName: string, build: EventBuilder): string {
   validateInputSize(input, converterName);
-  const doc = parseJSON<Obj>(input);
+  const doc = parseHdf<Obj>(input);
 
   const baselines = asArr(doc.baselines);
   if (!baselines) {

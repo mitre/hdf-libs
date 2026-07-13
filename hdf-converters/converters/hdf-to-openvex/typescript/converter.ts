@@ -6,14 +6,14 @@
  * status, justification) survive round-trip; the rest collapse.
  */
 
-import { parseJSON, sha256, formatTimestampSeconds } from '@mitre/hdf-utilities';
+import { sha256, formatTimestampSeconds } from '@mitre/hdf-utilities';
 import {
   MilestoneStatus,
   OverrideType,
   type HDFAmendments,
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
   exportStatusFor,
@@ -51,7 +51,7 @@ export async function convertHdfToOpenVex(
   converterVersion: string,
 ): Promise<string> {
   validateInputSize(input, 'hdf-to-openvex');
-  const amendments = parseJSON<HDFAmendments>(input);
+  const amendments = parseHdf<HDFAmendments>(input);
 
   const statements: Statement[] = [];
   let earliest: Date | undefined;

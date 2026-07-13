@@ -4,8 +4,8 @@
  * This is the reverse direction of the oscal-poam to HDF converter.
  */
 
-import { parseJSON, parseTimestamp, formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { parseTimestamp, formatTimestampSeconds } from '@mitre/hdf-utilities';
+import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 import type { HDFAmendments, StandaloneOverride } from '@mitre/hdf-schema';
 import type {
   Oscal,
@@ -39,7 +39,7 @@ export async function convertHdfToOscalPoam(input: string): Promise<string> {
 
   let amendments: HDFAmendments;
   try {
-    amendments = parseJSON<HDFAmendments>(input);
+    amendments = parseHdf<HDFAmendments>(input);
   } catch {
     throw new Error('hdf-to-oscal-poam: failed to parse JSON');
   }

@@ -119,3 +119,28 @@ export function formatTimestamp(d: Date): string {
 export function formatTimestampSeconds(d: Date): string {
   return d.toISOString().replace(/\.\d+Z$/, 'Z');
 }
+
+/** A JSON string whose entire value is an ISO-8601 date-time with no zone designator. */
+const BARE_ISO_IN_JSON = /"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)"/g;
+
+/**
+ * Rewrite zone-less timestamps in a raw HDF document to HDF's canonical
+ * trimmed-UTC RFC3339 form, before the document is parsed.
+ *
+ * Real HDF carries them — InSpec emits startTime with no offset. Go's schema
+ * types decode date-time fields into time.Time, whose decoder demands an offset
+ * and hard-fails, so Go rejected documents TypeScript read happily; and where
+ * TypeScript did read them, it passed the zone-less value straight through to
+ * its output, which is not canonical HDF. Normalizing on ingest in both
+ * languages means they accept the same real-world files and emit the same bytes,
+ * reading a zone-less value as UTC exactly as parseTimestamp already does.
+ *
+ * Mirrored by NormalizeHDFTimestamps in hdf-utilities/go/timestamp.go.
+ */
+export function normalizeHdfTimestamps(json: string): string {
+  return json.replace(BARE_ISO_IN_JSON, (match, raw: string) => {
+    const parsed = parseTimestamp(raw);
+    if (!parsed) return match;
+    return `"${trimUtcFraction(parsed.toISOString())}"`;
+  });
+}

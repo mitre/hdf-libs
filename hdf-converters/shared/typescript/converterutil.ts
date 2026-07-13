@@ -6,7 +6,7 @@
  * - Re-exports of shared constants and utilities
  */
 
-import { sha256, trimUtcFraction } from '@mitre/hdf-utilities';
+import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps } from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
@@ -192,6 +192,18 @@ export function validateInputSize(
       `${converterName}: input exceeds maximum allowed size of ${maxSize} characters`,
     );
   }
+}
+
+/**
+ * Parse an HDF document. The single ingest point for every HDF-consuming
+ * converter: real HDF carries zone-less timestamps (InSpec emits startTime with
+ * no offset), so the raw JSON is normalized to canonical trimmed-UTC RFC3339
+ * before parsing — otherwise the non-canonical value is laundered into the
+ * converter's output (and Go, whose schema types decode date-time into
+ * time.Time, rejects the document outright).
+ */
+export function parseHdf<T>(input: string): T {
+  return parseJSON<T>(normalizeHdfTimestamps(input));
 }
 
 /**

@@ -13,8 +13,8 @@ import {
   type HDFAmendments,
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
-import { parseJSON, formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { formatTimestampSeconds } from '@mitre/hdf-utilities';
+import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
   fixedPackageIdentifier,
@@ -94,7 +94,7 @@ function buildCsafScore(cvss: NonNullable<StandaloneOverride['cvss']>, products:
 
 export function convertHdfToCsafVex(input: string, converterVersion: string): string {
   validateInputSize(input, 'hdf-to-csaf-vex');
-  const amendments = parseJSON<HDFAmendments>(input);
+  const amendments = parseHdf<HDFAmendments>(input);
   const groups = groupByCVE(amendments.overrides ?? []);
   const productSet = new Map<string, true>();
   const vulnerabilities: Vulnerability[] = [];

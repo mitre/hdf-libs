@@ -1,7 +1,6 @@
 package checklist
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -20,7 +19,7 @@ import (
 // any HDF yields a valid checklist.
 func HDFToChecklist(input []byte) (*Checklist, error) {
 	var results hdf.HDFResults
-	if err := json.Unmarshal(input, &results); err != nil {
+	if err := shared.DecodeHDF(input, &results); err != nil {
 		return nil, fmt.Errorf("hdf to checklist: parse HDF: %w", err)
 	}
 	if len(results.Baselines) == 0 {

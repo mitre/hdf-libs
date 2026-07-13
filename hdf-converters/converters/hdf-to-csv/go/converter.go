@@ -3,7 +3,6 @@ package hdftocsv
 import (
 	"bytes"
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -22,7 +21,7 @@ func ConvertHDFToCSV(input []byte) ([]byte, error) {
 
 	// Parse HDF JSON
 	var hdfData hdf.HDFResults
-	if err := json.Unmarshal(input, &hdfData); err != nil {
+	if err := shared.DecodeHDF(input, &hdfData); err != nil {
 		return nil, fmt.Errorf("invalid HDF JSON: %w", err)
 	}
 

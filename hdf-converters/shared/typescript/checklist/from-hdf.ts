@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseHdf } from '../converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -16,7 +16,7 @@ import { statusFromHdf } from './status.js';
  * fields are synthesized best-effort so any HDF yields a valid checklist.
  */
 export function hdfToChecklist(input: string): Checklist {
-  const hdf = parseJSON<HDFResults>(input);
+  const hdf = parseHdf<HDFResults>(input);
   if (!hdf || !Array.isArray(hdf.baselines) || hdf.baselines.length === 0) {
     throw new Error('hdf to checklist: HDF has no baselines');
   }

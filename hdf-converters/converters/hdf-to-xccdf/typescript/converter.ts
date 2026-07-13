@@ -1,10 +1,10 @@
-import { parseJSON, buildXml } from '@mitre/hdf-utilities';
+import { buildXml } from '@mitre/hdf-utilities';
 import type {
   HDFResults,
   EvaluatedRequirement,
   Description,
 } from '@mitre/hdf-schema';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 
 /** Attribute prefix used by fast-xml-parser to distinguish attrs from elements. */
 const ATTR = '@_';
@@ -31,7 +31,7 @@ const BUILD_OPTIONS = {
 export function convertHdfToXccdf(input: string): string {
   validateInputSize(input, 'hdf-to-xccdf');
 
-  const hdfData = parseJSON<HDFResults>(input);
+  const hdfData = parseHdf<HDFResults>(input);
 
   if (!hdfData || typeof hdfData !== 'object' || !('baselines' in hdfData)) {
     throw new Error('Invalid HDF structure: missing baselines field');

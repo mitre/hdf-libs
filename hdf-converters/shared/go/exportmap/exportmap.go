@@ -312,7 +312,7 @@ func Export(input []byte, converterName string, build EventBuilder) ([]byte, err
 		return nil, fmt.Errorf("%s: %w", converterName, err)
 	}
 	var doc map[string]interface{}
-	if err := json.Unmarshal(input, &doc); err != nil {
+	if err := shared.DecodeHDF(input, &doc); err != nil {
 		return nil, fmt.Errorf("%s: invalid HDF JSON: %w", converterName, err)
 	}
 	baselines, ok := AsSlice(doc["baselines"])
