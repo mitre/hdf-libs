@@ -90,6 +90,49 @@ func buildOSCALDocument(hdfResults *hdf.HDFResults) *oscalSARDocument {
 	}
 }
 
+// earliestResultTime returns the earliest non-zero startTime across the results.
+func earliestResultTime(results []hdf.RequirementResult) time.Time {
+	var earliest time.Time
+	for i := range results {
+		start := results[i].StartTime
+		if start.IsZero() {
+			continue
+		}
+		if earliest.IsZero() || start.Before(earliest) {
+			earliest = start
+		}
+	}
+	return earliest
+}
+
+// formatAssessmentTime renders an assessment time, falling back when HDF carries
+// none. OSCAL requires result.start and observation.collected, so a fallback is
+// always needed — but it must never be the default when a real time exists.
+func formatAssessmentTime(t time.Time, fallback string) string {
+	if t.IsZero() {
+		return fallback
+	}
+	return t.UTC().Format(time.RFC3339)
+}
+
+// assessmentStart returns when the assessment actually ran: the earliest
+// requirement-result startTime in the baseline. OSCAL result.start means the
+// assessment time, so the document timestamp (when the HDF file was produced)
+// must not be used for it.
+func assessmentStart(baseline *hdf.EvaluatedBaseline, fallback string) string {
+	var earliest time.Time
+	for i := range baseline.Requirements {
+		reqEarliest := earliestResultTime(baseline.Requirements[i].Results)
+		if reqEarliest.IsZero() {
+			continue
+		}
+		if earliest.IsZero() || reqEarliest.Before(earliest) {
+			earliest = reqEarliest
+		}
+	}
+	return formatAssessmentTime(earliest, fallback)
+}
+
 // baselineToResult converts a single EvaluatedBaseline to an OSCAL Result.
 func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string) oscal.Result {
 	title := baseline.Name
@@ -122,7 +165,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string) oscal.R
 		UUID:         oscal.GenerateUUID(),
 		Title:        title,
 		Description:  description,
-		Start:        timestamp,
+		Start:        assessmentStart(baseline, timestamp),
 		Findings:     findings,
 		Observations: observations,
 		Risks:        risks,
@@ -227,7 +270,9 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 			UUID:        obsUUID,
 			Description: obsDesc,
 			Methods:     []string{"TEST"},
-			Collected:   timestamp,
+			// When the evidence was gathered — the scan time for this requirement,
+			// not when the file was converted.
+			Collected: formatAssessmentTime(earliestResultTime(req.Results), timestamp),
 		}
 		finding.RelatedObservations = []oscal.RelatedRef{
 			{ObservationUUID: obsUUID},

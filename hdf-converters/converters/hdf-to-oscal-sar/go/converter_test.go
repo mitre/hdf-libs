@@ -16,7 +16,10 @@ import (
 
 // The conversion moment lands in these keys; every other date in the output is
 // input-derived and must stay asserted.
-var sarVolatileKeys = []string{"last-modified", "start", "collected"}
+// Only last-modified is genuinely volatile: it is when the document was written.
+// result.start and observation.collected are assessment times derived from the
+// input, so the golden asserts them rather than masking them away.
+var sarVolatileKeys = []string{"last-modified"}
 
 // TestGoldenParity asserts whole-output equality against a frozen golden.
 // The TypeScript test asserts against the SAME file, guaranteeing TS↔Go parity.
@@ -514,4 +517,51 @@ func TestConvertHDFToOSCALSAR_ZeroImpactNoRisk(t *testing.T) {
 	assert.Empty(t, doc.AssessmentResults.Results[0].Risks)
 	// Finding should have no related risks
 	assert.Empty(t, doc.AssessmentResults.Results[0].Findings[0].RelatedRisks)
+}
+
+// OSCAL result.start means when the ASSESSMENT ran. HDF carries that on each
+// requirement result (startTime); the document-level timestamp is when the HDF
+// file was produced. Stamping the document timestamp (or time.Now) into
+// result.start reports the conversion time and drops the real assessment time.
+func TestConvertHDFToOSCALSAR_StartIsAssessmentTimeNotConversionTime(t *testing.T) {
+	// Document produced long after the scan ran.
+	const documentTimestamp = "2026-07-13T09:00:00Z"
+	const earliestScan = "2026-03-01T08:15:00Z"
+	const laterScan = "2026-03-01T09:45:00Z"
+
+	input := []byte(`{
+		"timestamp": "` + documentTimestamp + `",
+		"baselines": [{
+			"name": "b1",
+			"requirements": [{
+				"id": "AC-1", "impact": 0.5,
+				"descriptions": [{"label": "default", "data": "d"}],
+				"tags": {"nist": ["AC-1"]},
+				"results": [
+					{"status": "passed", "codeDesc": "c", "startTime": "` + laterScan + `"},
+					{"status": "failed", "codeDesc": "c", "startTime": "` + earliestScan + `"}
+				]
+			}]
+		}]
+	}`)
+
+	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.AssessmentResults.Results, 1)
+
+	start := doc.AssessmentResults.Results[0].Start
+	assert.Equal(t, earliestScan, start,
+		"result.start must be the earliest assessment time, not the conversion time")
+	assert.NotEqual(t, documentTimestamp, start,
+		"result.start must not be the document timestamp")
+
+	// observation.collected means when the evidence was gathered, so it is the
+	// scan time for that requirement — not the conversion time either.
+	require.Len(t, doc.AssessmentResults.Results[0].Observations, 1)
+	collected := doc.AssessmentResults.Results[0].Observations[0].Collected
+	assert.Equal(t, earliestScan, collected,
+		"observation.collected must be the assessment time, not the conversion time")
 }

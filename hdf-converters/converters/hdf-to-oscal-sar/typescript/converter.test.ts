@@ -11,7 +11,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // The conversion moment lands in these keys; every other date in the output is
 // input-derived and must stay asserted.
-const SAR_VOLATILE_KEYS = ['last-modified', 'start', 'collected'];
+// Only last-modified is genuinely volatile: it is when the document was written.
+// result.start and observation.collected are assessment times derived from the
+// input, so the golden asserts them rather than masking them away.
+const SAR_VOLATILE_KEYS = ['last-modified'];
 
 /**
  * Returns a minimal valid HDF Results JSON string with one baseline,
@@ -409,5 +412,87 @@ describe('hdf-to-oscal-sar golden parity', () => {
     expect(maskVolatileJson(JSON.parse(out), SAR_VOLATILE_KEYS)).toEqual(
       maskVolatileJson(JSON.parse(golden), SAR_VOLATILE_KEYS),
     );
+  });
+});
+
+describe('result.start is the assessment time', () => {
+  // OSCAL result.start means when the ASSESSMENT ran. HDF carries that on each
+  // requirement result (startTime); the document-level timestamp is when the HDF
+  // file was produced. Stamping the document timestamp into result.start reports
+  // the conversion time and drops the real assessment time.
+  const hdf = (startTimes: string[]) => JSON.stringify({
+    timestamp: '2026-07-13T09:00:00Z',
+    baselines: [{
+      name: 'b1',
+      requirements: [{
+        id: 'AC-1',
+        impact: 0.5,
+        descriptions: [{ label: 'default', data: 'd' }],
+        tags: { nist: ['AC-1'] },
+        results: startTimes.map(startTime => ({
+          status: 'passed', codeDesc: 'c', startTime,
+        })),
+      }],
+    }],
+  });
+
+  it('uses the earliest result startTime, not the document timestamp', async () => {
+    const out = JSON.parse(await convertHdfToOscalSar(
+      hdf(['2026-03-01T09:45:00Z', '2026-03-01T08:15:00Z'])));
+    const result = out['assessment-results'].results[0];
+
+    expect(result.start).toBe('2026-03-01T08:15:00Z');
+    expect(result.start, 'must not be the conversion time').not.toBe('2026-07-13T09:00:00Z');
+  });
+
+  // Go formats with time.RFC3339 (UTC, no fraction). TS must match, or the two
+  // implementations emit different strings for the same instant.
+  it('normalises to UTC at seconds precision, matching Go', async () => {
+    const out = JSON.parse(await convertHdfToOscalSar(
+      hdf(['2026-03-01T03:15:00.123-05:00'])));
+    expect(out['assessment-results'].results[0].start).toBe('2026-03-01T08:15:00Z');
+  });
+
+  it('falls back to the document timestamp when no result carries a startTime', async () => {
+    const input = JSON.stringify({
+      timestamp: '2026-07-13T09:00:00Z',
+      baselines: [{
+        name: 'b1',
+        requirements: [{
+          id: 'AC-1', impact: 0.5,
+          descriptions: [{ label: 'default', data: 'd' }],
+          tags: { nist: ['AC-1'] },
+          results: [{ status: 'passed', codeDesc: 'c' }],
+        }],
+      }],
+    });
+    const out = JSON.parse(await convertHdfToOscalSar(input));
+    // OSCAL requires start, so something valid must still be emitted.
+    expect(out['assessment-results'].results[0].start).toBe('2026-07-13T09:00:00Z');
+  });
+});
+
+describe('observation.collected is the assessment time', () => {
+  it('uses the requirement scan time, not the conversion time', async () => {
+    const input = JSON.stringify({
+      timestamp: '2026-07-13T09:00:00Z',
+      baselines: [{
+        name: 'b1',
+        requirements: [{
+          id: 'AC-1', impact: 0.5,
+          descriptions: [{ label: 'default', data: 'd' }],
+          tags: { nist: ['AC-1'] },
+          results: [
+            { status: 'passed', codeDesc: 'c', startTime: '2026-03-01T09:45:00Z' },
+            { status: 'failed', codeDesc: 'c', startTime: '2026-03-01T08:15:00Z' },
+          ],
+        }],
+      }],
+    });
+    const out = JSON.parse(await convertHdfToOscalSar(input));
+    const observation = out['assessment-results'].results[0].observations[0];
+
+    expect(observation.collected).toBe('2026-03-01T08:15:00Z');
+    expect(observation.collected, 'must not be the conversion time').not.toBe('2026-07-13T09:00:00Z');
   });
 });

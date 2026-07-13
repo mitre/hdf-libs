@@ -107,6 +107,52 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
 /**
  * Converts a single EvaluatedBaseline to an OSCAL Result.
  */
+/**
+ * The earliest requirement-result startTime in the baseline — when the assessment
+ * actually ran. OSCAL result.start means the assessment time, so the document
+ * timestamp (when the HDF file was produced) must not be used for it. Falls back
+ * to the supplied timestamp only when the baseline carries no result times at
+ * all, since OSCAL requires start.
+ */
+/** Earliest non-zero startTime across the results, in epoch ms. */
+function earliestResultTime(results: RequirementResult[] | undefined): number | undefined {
+  let earliest: number | undefined;
+  for (const result of results ?? []) {
+    if (!result.startTime) continue;
+    const ms = new Date(result.startTime as unknown as string | Date).getTime();
+    if (Number.isNaN(ms)) continue;
+    if (earliest === undefined || ms < earliest) {
+      earliest = ms;
+    }
+  }
+  return earliest;
+}
+
+/**
+ * Render an assessment time, falling back when HDF carries none. OSCAL requires
+ * result.start and observation.collected, so a fallback is always needed — but it
+ * must never be the default when a real time exists.
+ *
+ * UTC at seconds precision, matching Go's time.RFC3339, which drops the fraction.
+ * Emitting the source offset or millisecond form here would diverge from Go.
+ */
+function formatAssessmentTime(ms: number | undefined, fallback: string): string {
+  if (ms === undefined) return fallback;
+  return new Date(ms).toISOString().replace(/\.\d+Z$/, 'Z');
+}
+
+function assessmentStart(baseline: EvaluatedBaseline, fallback: string): string {
+  let earliest: number | undefined;
+  for (const req of baseline.requirements) {
+    const reqEarliest = earliestResultTime(req.results);
+    if (reqEarliest === undefined) continue;
+    if (earliest === undefined || reqEarliest < earliest) {
+      earliest = reqEarliest;
+    }
+  }
+  return formatAssessmentTime(earliest, fallback);
+}
+
 function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): AssessmentResult {
   let title = baseline.name;
   if (baseline.title && baseline.title !== '') {
@@ -137,7 +183,7 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Asses
     uuid: crypto.randomUUID(),
     title,
     description,
-    start: timestamp,
+    start: assessmentStart(baseline, timestamp),
     findings,
     observations,
     risks,
@@ -222,7 +268,9 @@ function requirementToFindingSet(
       uuid: obsUUID,
       description: obsDesc,
       methods: ['TEST'],
-      collected: timestamp,
+      // When the evidence was gathered — the scan time for this requirement, not
+      // when the file was converted.
+      collected: formatAssessmentTime(earliestResultTime(req.results), timestamp),
     } as unknown as Observation;
     finding['related-observations'] = [{ 'observation-uuid': obsUUID }];
   }
