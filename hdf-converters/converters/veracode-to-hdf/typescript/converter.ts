@@ -409,7 +409,7 @@ function buildCVERequirement(
  * @param input - Veracode DetailedReport XML string
  * @returns HDF JSON string
  */
-export async function convertVeracodeToHdf(input: string): Promise<string> {
+export async function convertVeracodeToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('veracode: empty input');
   }
@@ -488,7 +488,7 @@ export async function convertVeracodeToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'veracode-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'Veracode',
     toolFormat: 'XML',
     baselines: [baseline],

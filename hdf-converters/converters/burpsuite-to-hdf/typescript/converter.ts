@@ -116,7 +116,7 @@ function formatCodeDesc(
  * @param input - BurpSuite XML string
  * @returns HDF JSON string
  */
-export async function convertBurpsuiteToHdf(input: string): Promise<string> {
+export async function convertBurpsuiteToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('burpsuite: empty input');
   }
@@ -202,7 +202,7 @@ export async function convertBurpsuiteToHdf(input: string): Promise<string> {
     ],
     generator: {
       name: 'burpsuite-to-hdf',
-      version: '1.0.0',
+      version: converterVersion,
     },
     tool,
   };

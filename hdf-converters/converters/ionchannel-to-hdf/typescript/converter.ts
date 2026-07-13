@@ -194,7 +194,7 @@ function buildTags(
 
 // ---- Main converter ----
 
-export async function convertIonchannelToHdf(input: string): Promise<string> {
+export async function convertIonchannelToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input?.trim()) {
     throw new Error('Empty input');
   }
@@ -283,7 +283,7 @@ export async function convertIonchannelToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'ionchannel-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'Ion Channel',
     toolFormat: 'JSON',
     baselines: [baseline],

@@ -146,8 +146,6 @@ function selectSite(sites: ZapSite[]): ZapSite | undefined {
   return best;
 }
 
-const CONVERTER_VERSION = '1.0.0';
-
 // ZAP emits a zone-less RFC1123-like timestamp ("Thu, 6 Dec 2018 10:53:11");
 // parse it as UTC to match the Go peer's parseZapTimestamp and stay host-independent.
 const ZAP_RFC1123_LIKE = /^[A-Za-z]{3}, \d{1,2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2}$/;
@@ -168,13 +166,13 @@ function parseZapTimestamp(s: string): Date | undefined {
 
 // --- Main converter ---
 
-export async function convertZapToHdf(input: string): Promise<string> {
+export async function convertZapToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'zap');
   // SARIF routing — delegate to the shared SARIF converter
   registerAllFingerprints();
   const detected = detectConverter(input);
   if (detected && detected.fingerprint.id === 'sarif-to-hdf') {
-    return convertSarifToHdf(input);
+    return convertSarifToHdf(input, converterVersion);
   }
 
   const resultsChecksum: Checksum = await inputChecksum(input);
@@ -318,7 +316,7 @@ export async function convertZapToHdf(input: string): Promise<string> {
     components,
     generator: {
       name: 'zap-to-hdf',
-      version: CONVERTER_VERSION,
+      version: converterVersion,
     },
     tool,
   };

@@ -194,7 +194,7 @@ function hasMLModelComponent(components: CycloneDXComponent[]): boolean {
  * @param input - CycloneDX JSON string
  * @returns HDF JSON string
  */
-export async function convertCyclonedxToHdf(input: string): Promise<string> {
+export async function convertCyclonedxToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('cyclonedx: empty input');
   }
@@ -375,7 +375,7 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'cyclonedx-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'CycloneDX',
     toolFormat: 'JSON',
     baselines: [baseline],

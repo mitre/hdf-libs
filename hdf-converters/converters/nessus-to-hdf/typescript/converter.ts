@@ -18,10 +18,6 @@ import { ResultStatus, TargetType, createMinimalBaseline, CVSSSeverity, Version 
 
 const CVE_SOURCE_RE = /^CVE-\d{4}-\d{4,}$/;
 const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
-// Per-converter version (matches the pattern used by the other 32 converters).
-// Bumped manually when the nessus converter's output format changes in a way
-// consumers might notice. Distinct from the package's npm version.
-const converterVersion = '1.0.0';
 
 interface NessusXml {
   NessusClientData_v2: {
@@ -158,7 +154,7 @@ function decodeEntitiesDeep(value: unknown): unknown {
 /**
  * Convert Nessus XML scan results to HDF format
  */
-export async function convertNessusToHdf(nessusXml: string): Promise<HDFResults> {
+export async function convertNessusToHdf(nessusXml: string, converterVersion = '1.0.0'): Promise<HDFResults> {
   validateInputSize(nessusXml, 'nessus');
   // Calculate checksum of source scan data for integrity verification
   const resultsChecksum: Checksum = await inputChecksum(nessusXml);

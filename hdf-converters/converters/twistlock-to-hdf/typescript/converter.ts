@@ -423,7 +423,7 @@ function convertSingleResult(
  * @param input - Twistlock JSON string
  * @returns HDF JSON string
  */
-export async function convertTwistlockToHdf(input: string): Promise<string> {
+export async function convertTwistlockToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('twistlock: empty input');
   }
@@ -467,7 +467,7 @@ export async function convertTwistlockToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'twistlock-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'Twistlock',
     toolFormat: 'JSON',
     baselines,

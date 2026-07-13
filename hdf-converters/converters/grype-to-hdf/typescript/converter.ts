@@ -488,7 +488,7 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
   return requirement;
 }
 
-export async function convertGrypeToHdf(input: string): Promise<string> {
+export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'grype');
   // Calculate checksum of input data
   const resultsChecksum: Checksum = await inputChecksum(input);
@@ -544,7 +544,7 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
   // Build HDF results
   return buildHdfResults({
     generatorName: 'grype-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'Grype',
     toolVersion: grypeData.descriptor?.version,
     baselines: [baseline],

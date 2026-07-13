@@ -230,7 +230,7 @@ function buildCodeDesc(scanType: string, location?: GitLabLocation): string {
 
 // --- Main converter ---
 
-export async function convertGitlabToHdf(input: string): Promise<string> {
+export async function convertGitlabToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'gitlab');
   const resultsChecksum: Checksum = await inputChecksum(input);
 
@@ -339,7 +339,7 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
     components,
     generator: {
       name: 'gitlab-to-hdf',
-      version: '1.0.0',
+      version: converterVersion,
     },
     tool,
   };

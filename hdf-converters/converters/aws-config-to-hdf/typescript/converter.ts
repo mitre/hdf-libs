@@ -245,7 +245,7 @@ function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
  *                with get-compliance-details-by-config-rule
  * @returns HDF JSON string
  */
-export async function convertAwsConfigToHdf(input: string): Promise<string> {
+export async function convertAwsConfigToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'aws-config');
   const resultsChecksum: Checksum = await inputChecksum(input);
 
@@ -282,7 +282,7 @@ export async function convertAwsConfigToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'aws-config-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'AWS Config',
     baselines: [baseline],
     components: [{

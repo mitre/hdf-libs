@@ -305,7 +305,7 @@ function buildRequirement(
  * @param input - Netsparker/Invicti XML string
  * @returns HDF JSON string
  */
-export async function convertNetsparkerToHdf(input: string): Promise<string> {
+export async function convertNetsparkerToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('netsparker: empty input');
   }
@@ -365,7 +365,7 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'netsparker-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName,
     toolFormat: 'XML',
     baselines: [baseline],

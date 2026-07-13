@@ -242,7 +242,7 @@ function buildAffectedPackageFromEntry(entry: XrayEntry): ReturnType<typeof buil
  * @param input - JFrog Xray JSON string
  * @returns HDF JSON string
  */
-export async function convertJfrogXrayToHdf(input: string): Promise<string> {
+export async function convertJfrogXrayToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('jfrog-xray: empty input');
   }
@@ -311,7 +311,7 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'jfrog-xray-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'JFrog Xray',
     toolFormat: 'JSON',
     baselines: [baseline],

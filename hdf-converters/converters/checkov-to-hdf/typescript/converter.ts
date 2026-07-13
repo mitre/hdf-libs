@@ -162,14 +162,14 @@ function parseInput(input: string): CheckovReport[] {
  * @param input - checkov JSON or SARIF string
  * @returns HDF JSON string
  */
-export async function convertCheckovToHdf(input: string): Promise<string> {
+export async function convertCheckovToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'checkov');
 
   // Detect SARIF format and delegate
   registerAllFingerprints();
   const detected = detectConverter(input);
   if (detected && detected.fingerprint.id === 'sarif-to-hdf') {
-    return convertSarifToHdf(input);
+    return convertSarifToHdf(input, converterVersion);
   }
 
   const resultsChecksum: Checksum = await inputChecksum(input);
@@ -237,7 +237,7 @@ export async function convertCheckovToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'checkov-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'Checkov',
     toolVersion: version,
     toolFormat: format,

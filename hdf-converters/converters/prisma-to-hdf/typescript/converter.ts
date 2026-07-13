@@ -283,7 +283,7 @@ function buildBaseline(
  * @param input - Prisma Cloud CSV string
  * @returns HDF JSON string
  */
-export async function convertPrismaToHdf(input: string): Promise<string> {
+export async function convertPrismaToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('prisma: empty input');
   }
@@ -331,7 +331,7 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'prisma-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'Prisma Cloud',
     toolFormat: 'CSV',
     baselines,

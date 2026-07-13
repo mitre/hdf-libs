@@ -275,7 +275,7 @@ function buildScannerBaseline(
  * @param input - Conveyor JSON string
  * @returns HDF JSON string
  */
-export async function convertConveyorToHdf(input: string): Promise<string> {
+export async function convertConveyorToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('conveyor: empty input');
   }
@@ -342,7 +342,7 @@ export async function convertConveyorToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'conveyor-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'Conveyor',
     toolFormat: 'JSON',
     baselines,

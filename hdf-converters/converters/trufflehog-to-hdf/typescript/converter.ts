@@ -259,7 +259,7 @@ function buildRequirement(reqID: string, findings: TrufflehogFinding[]): Evaluat
  * @param input - TruffleHog JSON/NDJSON string
  * @returns HDF JSON string
  */
-export async function convertTrufflehogToHdf(input: string): Promise<string> {
+export async function convertTrufflehogToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('trufflehog: empty input');
   }
@@ -305,7 +305,7 @@ export async function convertTrufflehogToHdf(input: string): Promise<string> {
     baselines: [baseline],
     generator: {
       name: 'trufflehog-to-hdf',
-      version: '1.0.0',
+      version: converterVersion,
     },
     tool,
     timestamp: new Date(),

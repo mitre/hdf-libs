@@ -87,7 +87,7 @@ function convertVulnToRequirement(vuln: NiktoVulnerability): EvaluatedRequiremen
   return req;
 }
 
-export async function convertNiktoToHdf(input: string): Promise<string> {
+export async function convertNiktoToHdf(input: string, converterVersion = 'unknown'): Promise<string> {
   validateInputSize(input, 'nikto');
   const resultsChecksum: Checksum = await inputChecksum(input);
 
@@ -157,7 +157,7 @@ export async function convertNiktoToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'nikto-to-hdf',
-    converterVersion: 'unknown',
+    converterVersion,
     toolName: 'Nikto',
     toolFormat: 'JSON',
     baselines: [baseline],

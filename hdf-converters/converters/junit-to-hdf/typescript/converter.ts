@@ -63,7 +63,6 @@ interface JUnitSkipped {
 }
 
 const DEFAULT_NIST = ['SA-11'];
-const CONVERTER_VERSION = '1.0.0';
 
 /**
  * The shared XML parser runs with `processEntities: false` (XXE defense), so
@@ -87,7 +86,7 @@ const ARRAY_TAGS = ['testsuite', 'testcase'];
 /**
  * Converts JUnit XML test results to HDF format.
  */
-export async function convertJunitToHdf(input: string): Promise<string> {
+export async function convertJunitToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
@@ -113,7 +112,7 @@ export async function convertJunitToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'junit-to-hdf',
-    converterVersion: CONVERTER_VERSION,
+    converterVersion,
     toolName: 'JUnit XML',
     toolFormat: 'XML',
     baselines: [baseline],

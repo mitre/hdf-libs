@@ -240,7 +240,7 @@ function buildAffectedPackageFromComponent(c: DeptrackComponent): ReturnType<typ
  * @param input - Dependency-Track FPF JSON string
  * @returns HDF JSON string
  */
-export async function convertDeptrackToHdf(input: string): Promise<string> {
+export async function convertDeptrackToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('deptrack: empty input');
   }
@@ -289,7 +289,7 @@ export async function convertDeptrackToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'deptrack-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'Dependency-Track',
     toolFormat: 'JSON',
     baselines: [baseline],

@@ -225,7 +225,7 @@ function buildRequirement(
  * @param input - ScoutSuite JS/JSON string
  * @returns HDF JSON string
  */
-export async function convertScoutsuiteToHdf(input: string): Promise<string> {
+export async function convertScoutsuiteToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('scoutsuite: empty input');
   }
@@ -274,7 +274,7 @@ export async function convertScoutsuiteToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'scoutsuite-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'ScoutSuite',
     toolFormat: 'JSON',
     toolVersion: report.last_run.version,

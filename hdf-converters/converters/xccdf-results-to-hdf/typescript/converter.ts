@@ -186,8 +186,6 @@ interface ArfReportElement {
 // Constants
 // ---------------------------------------------------------------------------
 
-const CONVERTER_VERSION = '1.0.0';
-
 /** Tags that must always be parsed as arrays even if only one element exists. */
 const ARRAY_TAGS = [
   'Group',
@@ -248,7 +246,7 @@ function parseStartTime(raw: string | undefined): Date {
   return new Date();
 }
 
-export async function convertXccdfResultsToHdf(input: string): Promise<string> {
+export async function convertXccdfResultsToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
@@ -259,7 +257,7 @@ export async function convertXccdfResultsToHdf(input: string): Promise<string> {
   // Detect input format: ARF or raw XCCDF
   const arfParsed = parsed as ArfParsed;
   if (arfParsed['asset-report-collection']) {
-    return convertArfCollection(arfParsed['asset-report-collection'], input);
+    return convertArfCollection(arfParsed['asset-report-collection'], input, converterVersion);
   }
 
   const xccdfParsed = parsed as XccdfBenchmark;
@@ -276,7 +274,7 @@ export async function convertXccdfResultsToHdf(input: string): Promise<string> {
     );
   }
 
-  return convertBenchmarkResultsToHdf(benchmark, input);
+  return convertBenchmarkResultsToHdf(benchmark, input, converterVersion);
 }
 
 /**
@@ -286,7 +284,7 @@ export async function convertXccdfResultsToHdf(input: string): Promise<string> {
  * @param input - Raw XML string (XCCDF Benchmark without TestResult)
  * @returns Stringified HDF Baseline JSON
  */
-export async function convertXccdfBenchmarkToHdf(input: string): Promise<string> {
+export async function convertXccdfBenchmarkToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
@@ -308,7 +306,7 @@ export async function convertXccdfBenchmarkToHdf(input: string): Promise<string>
     );
   }
 
-  return convertBenchmarkToBaselineJson(benchmark, input);
+  return convertBenchmarkToBaselineJson(benchmark, input, converterVersion);
 }
 
 /**
@@ -318,7 +316,7 @@ export async function convertXccdfBenchmarkToHdf(input: string): Promise<string>
  * @param input - Raw XML string
  * @returns Object with json output and outputType ('baseline' or 'results')
  */
-export async function convertXccdfToHdf(input: string): Promise<{ json: string; outputType: 'baseline' | 'results' }> {
+export async function convertXccdfToHdf(input: string, converterVersion = '1.0.0'): Promise<{ json: string; outputType: 'baseline' | 'results' }> {
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
@@ -329,7 +327,7 @@ export async function convertXccdfToHdf(input: string): Promise<{ json: string; 
   // Check ARF first
   const arfParsed = parsed as ArfParsed;
   if (arfParsed['asset-report-collection']) {
-    const json = await convertArfCollection(arfParsed['asset-report-collection'], input);
+    const json = await convertArfCollection(arfParsed['asset-report-collection'], input, converterVersion);
     return { json, outputType: 'results' };
   }
 
@@ -343,11 +341,11 @@ export async function convertXccdfToHdf(input: string): Promise<{ json: string; 
   }
 
   if (benchmark.TestResult) {
-    const json = await convertBenchmarkResultsToHdf(benchmark, input);
+    const json = await convertBenchmarkResultsToHdf(benchmark, input, converterVersion);
     return { json, outputType: 'results' };
   }
 
-  const json = await convertBenchmarkToBaselineJson(benchmark, input);
+  const json = await convertBenchmarkToBaselineJson(benchmark, input, converterVersion);
   return { json, outputType: 'baseline' };
 }
 
@@ -357,7 +355,8 @@ export async function convertXccdfToHdf(input: string): Promise<{ json: string; 
 
 async function convertBenchmarkResultsToHdf(
   benchmark: BenchmarkElement,
-  rawInput: string
+  rawInput: string,
+  converterVersion: string
 ): Promise<string> {
   const testResult = benchmark.TestResult!;
 
@@ -407,7 +406,7 @@ async function convertBenchmarkResultsToHdf(
 
   const hdf: HDFResults = {
     baselines: [baseline],
-    generator: { name: 'xccdf-results-to-hdf', version: CONVERTER_VERSION },
+    generator: { name: 'xccdf-results-to-hdf', version: converterVersion },
     tool: { name: 'XCCDF', format: 'XCCDF' },
     components: buildTargets(testResult),
     timestamp: scanTime,
@@ -433,7 +432,8 @@ function calculateDuration(testResult: TestResultElement): number {
 
 async function convertBenchmarkToBaselineJson(
   benchmark: BenchmarkElement,
-  rawInput: string
+  rawInput: string,
+  converterVersion: string
 ): Promise<string> {
   const integrity = await inputIntegrity(rawInput);
 
@@ -477,7 +477,7 @@ async function convertBenchmarkToBaselineJson(
     integrity,
     requirements,
     groups,
-    generator: { name: 'xccdf-results-to-hdf', version: CONVERTER_VERSION },
+    generator: { name: 'xccdf-results-to-hdf', version: converterVersion },
   };
 
   return serializeHdf(baseline);
@@ -559,7 +559,8 @@ function ruleToBaselineRequirement(
 
 async function convertArfCollection(
   arc: ArfCollectionElement,
-  rawInput: string
+  rawInput: string,
+  converterVersion: string
 ): Promise<string> {
   const resultsChecksum: Checksum = await inputChecksum(rawInput);
 
@@ -675,7 +676,7 @@ async function convertArfCollection(
 
   const hdf: HDFResults = {
     baselines,
-    generator: { name: 'xccdf-results-to-hdf', version: CONVERTER_VERSION },
+    generator: { name: 'xccdf-results-to-hdf', version: converterVersion },
     tool: { name: 'ARF', format: 'ARF' },
     components,
     timestamp: firstTimestamp ?? new Date(),

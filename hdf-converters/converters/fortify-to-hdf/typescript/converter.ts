@@ -317,7 +317,7 @@ function buildRequirement(
  * @param input - Fortify FVDL XML string
  * @returns HDF JSON string
  */
-export async function convertFortifyToHdf(input: string): Promise<string> {
+export async function convertFortifyToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('fortify: empty input');
   }
@@ -406,7 +406,7 @@ export async function convertFortifyToHdf(input: string): Promise<string> {
     ],
     generator: {
       name: 'fortify-to-hdf',
-      version: '1.0.0',
+      version: converterVersion,
     },
     tool,
   };

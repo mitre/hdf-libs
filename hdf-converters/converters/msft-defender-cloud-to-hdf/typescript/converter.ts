@@ -179,7 +179,7 @@ function buildResultFromAssessment(a: Assessment, scanTime: Date): RequirementRe
  * @param input - JSON string containing Azure Security Assessments API response
  * @returns HDF JSON string
  */
-export async function convertMsftDefenderCloudToHdf(input: string): Promise<string> {
+export async function convertMsftDefenderCloudToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'msft-defender-cloud');
 
   const scanTime = new Date();
@@ -251,7 +251,7 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
 
   return buildHdfResults({
     generatorName: 'msft-defender-cloud-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'Microsoft Defender for Cloud',
     toolFormat: 'JSON',
     baselines: [baseline],

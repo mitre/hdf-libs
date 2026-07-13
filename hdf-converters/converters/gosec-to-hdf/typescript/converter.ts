@@ -150,13 +150,13 @@ function buildRequirement(ruleId: string, issues: GosecIssue[], scanTime: Date):
  * @param input - gosec JSON or SARIF string
  * @returns HDF JSON string
  */
-export async function convertGosecToHdf(input: string): Promise<string> {
+export async function convertGosecToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'gosec');
   // Detect format: if SARIF, delegate to the shared SARIF converter
   registerAllFingerprints();
   const detected = detectConverter(input);
   if (detected && detected.fingerprint.id === 'sarif-to-hdf') {
-    return convertSarifToHdf(input);
+    return convertSarifToHdf(input, converterVersion);
   }
 
   const resultsChecksum: Checksum = await inputChecksum(input);
@@ -213,7 +213,7 @@ export async function convertGosecToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'gosec-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'gosec',
     toolVersion: report.GosecVersion || undefined,
     baselines: [baseline],

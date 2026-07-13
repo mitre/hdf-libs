@@ -55,7 +55,7 @@ interface RunEnrichment {
  * Delegates base conversion to the generic SARIF converter and enriches
  * the output with MSDO-specific metadata.
  */
-export async function convertMsftDefenderDevopsToHdf(input: string): Promise<string> {
+export async function convertMsftDefenderDevopsToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'msft-defender-devops');
 
   // 1. Parse raw SARIF to extract MSDO-specific fields
@@ -66,7 +66,7 @@ export async function convertMsftDefenderDevopsToHdf(input: string): Promise<str
   const { components, runEnrichments } = extractEnrichments(raw);
 
   // 2. Delegate to the generic SARIF converter for base HDF
-  const hdfJson = await convertSarifToHdf(input);
+  const hdfJson = await convertSarifToHdf(input, converterVersion);
   const result = JSON.parse(hdfJson) as HDFResults;
 
   // Run before applyEnrichments so synthesized reqs get the same run-level tags.

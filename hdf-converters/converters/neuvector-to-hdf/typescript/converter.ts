@@ -213,7 +213,7 @@ function targetNameFromReport(report: NeuVectorScanReport): string {
  * @param input - NeuVector scan JSON string
  * @returns HDF JSON string
  */
-export async function convertNeuvectorToHdf(input: string): Promise<string> {
+export async function convertNeuvectorToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('neuvector: empty input');
   }
@@ -277,7 +277,7 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'neuvector-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'NeuVector',
     toolFormat: 'JSON',
     baselines: [baseline],

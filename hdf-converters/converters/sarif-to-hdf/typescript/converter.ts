@@ -163,7 +163,7 @@ const IMPACT_MAPPING: Record<string, number> = {
 
 // --- Conversion entry point ---
 
-export async function convertSarifToHdf(input: string): Promise<string> {
+export async function convertSarifToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'sarif');
   const resultsChecksum: Checksum = await inputChecksum(input);
 
@@ -190,7 +190,7 @@ export async function convertSarifToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'sarif-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: firstDriver?.name,
     toolVersion: firstDriver?.version,
     toolFormat: 'SARIF',

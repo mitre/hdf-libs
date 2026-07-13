@@ -228,7 +228,7 @@ function buildRequirement(
  * @param input - Combined JSON string with secureScore and profiles
  * @returns HDF JSON string
  */
-export async function convertMsftSecureScoreToHdf(input: string): Promise<string> {
+export async function convertMsftSecureScoreToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('msft-secure-score: empty input');
   }
@@ -285,7 +285,7 @@ export async function convertMsftSecureScoreToHdf(input: string): Promise<string
 
   return buildHdfResults({
     generatorName: 'msft-secure-score-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'Microsoft Secure Score',
     toolFormat: 'JSON',
     baselines,

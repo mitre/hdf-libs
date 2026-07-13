@@ -279,7 +279,7 @@ function alertToRequirement(alert: MdeAlert, scanTime: Date): EvaluatedRequireme
  * @param input - JSON string of MDE alert response
  * @returns HDF JSON string
  */
-export async function convertMsftDefenderEndpointToHdf(input: string): Promise<string> {
+export async function convertMsftDefenderEndpointToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'msft-defender-endpoint');
 
   const resultsChecksum: Checksum = await inputChecksum(input);
@@ -331,7 +331,7 @@ export async function convertMsftDefenderEndpointToHdf(input: string): Promise<s
 
   return buildHdfResults({
     generatorName: 'msft-defender-endpoint-to-hdf',
-    converterVersion: '1.0.0',
+    converterVersion,
     toolName: 'Microsoft Defender for Endpoint',
     baselines: [baseline],
     components,

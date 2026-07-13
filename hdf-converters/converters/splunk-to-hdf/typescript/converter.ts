@@ -22,8 +22,6 @@ import {
   createResult,
 } from '@mitre/hdf-schema';
 
-const CONVERTER_VERSION = '1.0.0';
-
 /**
  * Splunk event metadata. Each event emitted by the HDF-to-Splunk pipeline
  * carries a `meta` object that describes the event's role.
@@ -154,7 +152,7 @@ function convertGroups(
  * @param input - JSON string of a SplunkEvent array
  * @returns HDF Results JSON string
  */
-export async function convertSplunkToHdf(input: string): Promise<string> {
+export async function convertSplunkToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'splunk');
   const resultsChecksum: Checksum = await inputChecksum(input);
 
@@ -337,7 +335,7 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
 
   return buildHdfResults({
     generatorName: 'splunk-to-hdf',
-    converterVersion: CONVERTER_VERSION,
+    converterVersion,
     toolName: 'Splunk',
     baselines: allBaselines,
     components,
