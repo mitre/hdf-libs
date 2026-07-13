@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Timestamp-handling guard for Go converters.
+ * Timestamp-handling guard for Go converters and shared converter code.
  *
  * A `*-to-hdf` converter must parse tool-supplied timestamps via
  * `hdfutil.ParseTimestamp` (which normalizes to UTC), NOT a bare
@@ -9,8 +9,11 @@
  * covers more formats. Custom-layout `time.Parse("<layout>", ...)` calls are
  * allowed — they handle formats ParseTimestamp does not.
  *
- * The TypeScript side is guarded by the `no-restricted-syntax` rule in
- * hdf-converters/eslint.config.js. See
+ * Scans each converter's Go dir AND hdf-converters/shared/go (recursively):
+ * shared Go code (converterutil, exportmap, bom, checklist, vex) parses
+ * timestamps on behalf of the converters and is equally exposed to the footgun.
+ * Mirrors the TypeScript `no-restricted-syntax` guard in
+ * hdf-converters/eslint.config.js, which covers converters/ and shared/. See
  * site/docs/contributing/developer-guide.md (Timestamp Handling).
  */
 import { readdirSync, readFileSync } from 'node:fs';
@@ -19,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const convertersDir = join(root, 'hdf-converters', 'converters');
+const sharedGoDir = join(root, 'hdf-converters', 'shared', 'go');
 
 // Bare RFC3339 / RFC3339Nano parse — should be hdfutil.ParseTimestamp.
 // `g` flag + whole-file scan so a call wrapped across lines
@@ -26,25 +30,36 @@ const convertersDir = join(root, 'hdf-converters', 'converters');
 // Matches both time.Parse(...) and time.ParseInLocation(...) on an RFC3339 layout.
 const FORBIDDEN = /time\.Parse(InLocation)?\(\s*time\.RFC3339/g;
 
-const offenders = [];
-for (const conv of readdirSync(convertersDir, { withFileTypes: true })) {
-  if (!conv.isDirectory()) continue;
-  const goDir = join(convertersDir, conv.name, 'go');
+// Recursively collect non-test .go files under a directory (missing dir -> none).
+function goFilesUnder(dir) {
+  const out = [];
   let entries;
   try {
-    entries = readdirSync(goDir);
+    entries = readdirSync(dir, { withFileTypes: true });
   } catch {
-    continue; // converter has no Go implementation
+    return out; // no such dir (e.g. converter has no Go implementation)
   }
-  for (const file of entries) {
-    if (!file.endsWith('.go') || file.endsWith('_test.go')) continue;
-    const path = join(goDir, file);
-    const content = readFileSync(path, 'utf8');
-    for (const match of content.matchAll(FORBIDDEN)) {
-      const line = content.slice(0, match.index).split('\n').length;
-      const snippet = content.slice(match.index, match.index + 60).replace(/\s+/g, ' ').trim();
-      offenders.push(`${path}:${line}: ${snippet}`);
-    }
+  for (const e of entries) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) out.push(...goFilesUnder(p));
+    else if (e.name.endsWith('.go') && !e.name.endsWith('_test.go')) out.push(p);
+  }
+  return out;
+}
+
+const files = [];
+for (const conv of readdirSync(convertersDir, { withFileTypes: true })) {
+  if (conv.isDirectory()) files.push(...goFilesUnder(join(convertersDir, conv.name, 'go')));
+}
+files.push(...goFilesUnder(sharedGoDir));
+
+const offenders = [];
+for (const path of files) {
+  const content = readFileSync(path, 'utf8');
+  for (const match of content.matchAll(FORBIDDEN)) {
+    const line = content.slice(0, match.index).split('\n').length;
+    const snippet = content.slice(match.index, match.index + 60).replace(/\s+/g, ' ').trim();
+    offenders.push(`${path}:${line}: ${snippet}`);
   }
 }
 
@@ -59,4 +74,4 @@ if (offenders.length > 0) {
   process.exit(1);
 }
 
-console.log('Timestamp guard: no bare time.Parse(time.RFC3339) in Go converters. OK');
+console.log('Timestamp guard: no bare time.Parse(time.RFC3339) in Go converters or shared/go. OK');
