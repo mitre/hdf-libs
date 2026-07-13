@@ -12,7 +12,11 @@ Run this skill whenever the workspace is moving to a new version. The monorepo u
 - **Minor / major** (`3.2.0 → 3.3.0`, `3.x → 4.0`) — the full skill: schema `$id`s bump, the site archive gains a new version, version-claiming docs and the spec are swept, and (for minors that add fields) schema content is propagated into the spec.
 - **Patch** (`3.2.0 → 3.2.1`) — the schema did not change, so its `$id` URLs **stay** at the old version (publishing an identical bumped schema would be dishonest) and the doc/archive/spec phases (Phases 2–4) **do not apply**. A patch bumps only the workspace `package.json` files + `go.mod` requires and finalizes the CHANGELOG.
 
-**Phase 1 (swarm review) and Phase 9 (reconcile beads + issues) run for *every* release, patch included.** Only the mechanical sweep and content phases are tier-gated.
+**Phase 1 (swarm review), Phase 1.5 (pre-release bead reconciliation), and Phase 9 (release-time GitHub-issue reconciliation) run for *every* release, patch included.** Only the mechanical sweep and content phases are tier-gated.
+
+**Bead vs. GitHub-issue closing policy (two different clocks):**
+- **Beads close when their fix is *merged* (delivered), not when the release ships** — reconciled in Phase 1.5 as a pre-release step so the board shows only work that still genuinely needs addressing *before* cutting the release.
+- **GitHub issues close when the release *ships*** — reconciled in Phase 9 after publish, so external watchers see "Resolved in vNEW." This is why we use `Refs #N` (never auto-closing `Closes #N`).
 
 The current ("from") version is whatever the workspace `package.json` files agree on; mismatch between them means a prior release was incomplete and is itself a finding (treat as a separate cleanup before bumping).
 
@@ -123,6 +127,19 @@ return { confirmed: reviewed.flat().filter(Boolean).filter(f => f.confirmed) }
 - **Block the version bump on unresolved critical/high findings.** Fix them (re-run the affected `pnpm check` slice), then continue. Medium/low: the user decides — fix now, file a bead, or waive with a one-line rationale recorded in the release notes.
 - Deferred findings → `bd create` beads, linked in the response.
 - This phase produces no version edits; it only gates and (optionally) drives fixes.
+
+### Phase 1.5 — Pre-release bead reconciliation (close delivered beads)
+
+Beads close when their fix is **merged**, not when the release ships — do this as a pre-release step so the board reflects only work that still genuinely needs addressing *before* the release. (GitHub issues are the opposite clock — Phase 9, at publish.)
+
+1. `bd dolt pull`.
+2. Build the delivered set: `git log BASE..HEAD` (merged since the last tag) plus any fix commits this release's own prep just produced (Phase 1). Note the `#N` / `hdf-libs-xxxx` refs.
+3. Walk every **open / in_progress** bead and check it against the *actual delivered code on this branch* — not the card's status, and not its title. `in_progress` cards are the highest-suspicion for done-but-not-closed (a fix merged but the card was never moved). Verify the deliverable is really present (grep the code / read the diff) before closing — never close on a title match alone.
+4. Close each genuinely-delivered bead citing the delivering PR/commit: `bd close <id> -r "Delivered by #N (<commit>); shipping in vNEW."`.
+5. Leave genuinely-open work open. **Do not close** a bead just because it is adjacent to a shipped PR — a symptom fix does not close the deeper follow-up card (e.g. a converter bug fix does not close its test-strategy hardening card).
+6. `bd dolt push`.
+
+Then present a one-line-per-card summary of what remains open, grouped by whether it is a **release-blocking bug** vs. **patchable / enhancement / future** — this is the "what's left before we can cut the release" view. Only genuine correctness regressions in *this release's* surface should block; pre-existing narrow bugs and hardening/enhancement cards are candidates for a fast-follow patch series, at the user's call.
 
 ### Phase 2 — Mechanical version sweep *(minor/major only)*
 
@@ -238,18 +255,19 @@ Once the release PR is merged to `main`, the user runs the release workflow. Con
 
 If anything lags, surface it; don't paper over.
 
-### Phase 9 — Reconcile beads board and GitHub issues (after the release is published)
+### Phase 9 — Reconcile GitHub issues (after the release is published)
 
-Per the close-on-release policy, GitHub issues are **not** closed when their fix PR merges — they close when the release ships. After the release workflow publishes `vNEW`:
+Beads were already closed at merge time (Phase 1.5); this phase is the **public** half — GitHub issues close when the release *ships*, so external watchers see "Resolved in vNEW." After the release workflow publishes `vNEW`:
 
 1. Build the delivered set: cross-reference this release's CHANGELOG entry (its `#N` and `hdf-libs-xxxx` references) plus `git log BASE..HEAD` for `Refs #N` / bead IDs.
-2. **Beads (internal — do directly):** `bd dolt pull`; close any delivered bead still open/in_progress with a reason citing `vNEW`; `bd dolt push`. Most are already closed-on-merge — this catches stragglers and any deferred-to-release ones.
-3. **GitHub issues (public — do NOT close or comment as the user without explicit OK):** produce the list of issues fixed and now released, with a suggested resolution comment each (e.g. "Resolved in vNEW"). Present it for the user to action, or close only with explicit per-instance approval. We use `Refs #N` (never auto-closing `Closes #N`) precisely so closing happens here, at release time.
+2. **GitHub issues (public — do NOT close or comment as the user without explicit OK):** produce the list of issues fixed and now released, with a suggested resolution comment each (e.g. "Resolved in vNEW"). Present it for the user to action, or close only with explicit per-instance approval. We use `Refs #N` (never auto-closing `Closes #N`) precisely so closing happens here, at release time.
+3. **Beads backstop:** `bd dolt pull`; catch any straggler bead that was delivered but missed in Phase 1.5 and close it citing `vNEW`; `bd dolt push`. In the normal flow Phase 1.5 already handled these — this is only a safety net.
 4. Surface any mismatch (a bead with no issue, an issue with no shipped fix, a `Refs #N` whose issue is already closed) rather than papering over it.
 
 ## Quick checklist (paste into the response after Phase 0)
 
 - [ ] Phase 1 swarm review run (incl. docs/README-accuracy dimension); critical/high findings resolved or waived; deferrals filed as beads
+- [ ] Phase 1.5 pre-release bead reconciliation: every delivered open/in_progress bead verified against the code and closed citing its PR; remaining-open cards triaged as blocking-bug vs. patchable
 - [ ] 10 `package.json` files at NEW
 - [ ] 5 `go.mod` files: every `hdf-libs/<x>/v3 vNEW` (no stragglers)
 - [ ] *(minor/major)* 7 schema `$id` URLs at NEW
@@ -263,4 +281,4 @@ Per the close-on-release policy, GitHub issues are **not** closed when their fix
 - [ ] `pnpm check` (build + lint + test + security) all green
 - [ ] `git status` shows no `go.work.sum`, `node_modules/`, `dist/`, or unrelated files staged
 - [ ] No `git tag` run manually
-- [ ] Phase 9: beads reconciled; GitHub issue closures prepared for the user (not posted as the user without OK)
+- [ ] Phase 9: GitHub issue closures prepared for the user (not posted as the user without OK); beads backstop checked for stragglers
