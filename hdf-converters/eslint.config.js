@@ -10,7 +10,10 @@ import tsparser from '@typescript-eslint/parser';
 // Safe forms (no-arg now, numeric/string literals, arithmetic) are not matched.
 const DATE_GUARD_MSG =
   'Do not parse a tool timestamp with `new Date(value)` (zone-less values are read as host-local). Use `parseTimestamp` from @mitre/hdf-utilities. See site/docs/contributing/developer-guide.md (Timestamp Handling).';
-const DATE_GUARD_RULES = [
+// Exported so a regression test can assert the guard actually fires — a guard
+// that exists but silently never matches (broken selector or narrowed scope) is
+// worse than none. See test/timestamp-guard.test.ts.
+export const DATE_GUARD_RULES = [
   'Identifier',
   'MemberExpression',
   'TSAsExpression',
@@ -92,7 +95,9 @@ export default [
     // new Date(value) — which reads a zone-less timestamp as host-local where Go
     // reads it as UTC. Exporters were only safe because parseHdf normalises on
     // ingest, an invariant they do not state and cannot rely on locally.
-    files: ['converters/**/*.ts'],
+    // Covers shared/ too: converterutil/exportmap/bom/checklist parse timestamps
+    // on behalf of the converters and are equally exposed to the footgun.
+    files: ['converters/**/*.ts', 'shared/**/*.ts'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...DATE_GUARD_RULES],
