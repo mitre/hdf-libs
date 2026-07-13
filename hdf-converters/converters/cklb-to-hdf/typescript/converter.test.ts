@@ -128,9 +128,12 @@ describe('cklb-to-hdf converter', () => {
   it('keeps comments out of message and round-trips it through tags', async () => {
     const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HDFResults;
     const req = hdf.baselines[0]!.requirements[0]! as EvaluatedRequirement;
-    const comments = req.tags!['comments'] as string;
 
-    expect(comments).toBeTruthy();
-    expect(req.results[0]!.message).not.toContain(comments);
+    expect(req.results[0]!.message).toBe('Installed Firefox version is end-of-life and unsupported.');
+    expect(req.results[0]!.message).not.toContain('Synthetic checklist');
+    // toBe, not a truthy/contains check: a non-string tag value must fail here.
+    expect(req.tags!['comments']).toBe(
+      'Synthetic checklist for hdf-libs converter test fixture - not a real assessment.',
+    );
   });
 });

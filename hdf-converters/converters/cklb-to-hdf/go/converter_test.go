@@ -185,8 +185,7 @@ func TestConvertCKLBToHDF_CommentsStaySeparateFromFindingDetails(t *testing.T) {
 	require.NotEmpty(t, req.Results)
 	require.NotNil(t, req.Results[0].Message)
 
-	comments, ok := req.Tags["comments"].(string)
-	require.True(t, ok, "comments must round-trip through tags")
-	assert.NotEmpty(t, comments)
-	assert.NotContains(t, *req.Results[0].Message, comments)
+	assert.Equal(t, "Installed Firefox version is end-of-life and unsupported.", *req.Results[0].Message)
+	assert.NotContains(t, *req.Results[0].Message, "Synthetic checklist")
+	assert.Equal(t, "Synthetic checklist for hdf-libs converter test fixture - not a real assessment.", req.Tags["comments"])
 }
