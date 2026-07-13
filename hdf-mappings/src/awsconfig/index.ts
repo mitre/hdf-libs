@@ -62,6 +62,33 @@ export function getAwsConfigNistControlByName(
   return getAwsConfigNistMappingByName(ruleName, rev)?.['NIST-ID'];
 }
 
+/**
+ * Resolve NIST controls for a decorated rule name such as Security Hub's
+ * "securityhub-<canonical>-<hash>", where an exact lookup fails. Returns the
+ * split controls of the canonical rule whose name is contained in the given
+ * name; the longest such match wins. Returns [] if none match.
+ */
+export function getAwsConfigNistControlsBySubstring(
+  name: string,
+  rev: number = getCurrentNistRevision()
+): string[] {
+  if (!name) return [];
+  const lower = name.toLowerCase();
+  let best: AwsConfigNistMapping | undefined;
+  let bestLen = 0;
+  for (const [key, m] of nameIndex(rev)) {
+    if (key && key.length > bestLen && lower.includes(key.toLowerCase())) {
+      best = m;
+      bestLen = key.length;
+    }
+  }
+  if (!best) return [];
+  return best['NIST-ID']
+    .split('|')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 /** Get all AWS Config rule source identifiers present at the given revision. */
 export function getAllAwsConfigIdentifiers(rev: number = getCurrentNistRevision()): string[] {
   return Array.from(idIndex(rev).keys());

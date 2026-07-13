@@ -4,6 +4,7 @@ import {
   getAwsConfigNistMappingByName,
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
+  getAwsConfigNistControlsBySubstring,
   getAllAwsConfigIdentifiers,
   getAllAwsConfigRuleNames,
   awsConfigIdentifierExists,
@@ -210,5 +211,25 @@ describe('revision-aware lookup', () => {
 
   it('returns undefined for an unknown revision', () => {
     expect(getAwsConfigNistControlByName('access-keys-rotated', 99)).toBeUndefined();
+  });
+});
+
+describe('getAwsConfigNistControlsBySubstring', () => {
+  it('resolves a decorated Security Hub rule name to canonical controls', () => {
+    const got = getAwsConfigNistControlsBySubstring(
+      'securityhub-s3-bucket-public-read-prohibited-491148b1',
+      4
+    );
+    expect(got.length).toBeGreaterThan(0);
+    const raw = getAwsConfigNistControlByName('s3-bucket-public-read-prohibited', 4);
+    expect(got).toEqual(raw?.split('|').map((s) => s.trim()));
+  });
+
+  it('returns [] for an unmatched name', () => {
+    expect(getAwsConfigNistControlsBySubstring('totally-unknown-rule-xyz', 4)).toEqual([]);
+  });
+
+  it('returns [] for an empty name', () => {
+    expect(getAwsConfigNistControlsBySubstring('')).toEqual([]);
   });
 });

@@ -325,3 +325,30 @@ func TestNISTControlsByIdentifier(t *testing.T) {
 		t.Error("expected nil for unknown identifier")
 	}
 }
+
+// TestNISTControlsBySubstring covers Security Hub's decorated config-rule names
+// (securityhub-<canonical>-<hash>) that an exact lookup would miss.
+func TestNISTControlsBySubstring(t *testing.T) {
+	t.Run("decorated Security Hub rule name resolves to canonical controls", func(t *testing.T) {
+		got := NISTControlsBySubstringForRevision("securityhub-s3-bucket-public-read-prohibited-491148b1", 4)
+		if len(got) == 0 {
+			t.Fatal("expected NIST controls for decorated s3-bucket-public-read-prohibited rule")
+		}
+		want := NISTControlsBySubstringForRevision("s3-bucket-public-read-prohibited", 4)
+		if len(got) != len(want) {
+			t.Errorf("decorated name should resolve to the same controls as the canonical name: got %v want %v", got, want)
+		}
+	})
+
+	t.Run("unmatched name returns nil", func(t *testing.T) {
+		if got := NISTControlsBySubstringForRevision("totally-unknown-rule-xyz", 4); got != nil {
+			t.Errorf("expected nil for unmatched name, got %v", got)
+		}
+	})
+
+	t.Run("empty name returns nil", func(t *testing.T) {
+		if got := NISTControlsBySubstring(""); got != nil {
+			t.Errorf("expected nil for empty name, got %v", got)
+		}
+	})
+}

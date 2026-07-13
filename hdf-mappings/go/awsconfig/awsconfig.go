@@ -98,6 +98,33 @@ func NISTControlsByIdentifierForRevision(identifier string, rev int) []string {
 	return controlsFromMapping(GetByIdentifierForRevision(identifier, rev))
 }
 
+// NISTControlsBySubstring resolves NIST controls for a decorated rule name such
+// as Security Hub's "securityhub-<canonical-name>-<hash>", where an exact lookup
+// fails. It returns the controls of the canonical rule whose name is contained
+// in the given name; the longest such match wins. Returns nil if none match.
+func NISTControlsBySubstring(name string) []string {
+	return NISTControlsBySubstringForRevision(name, nist.Revision())
+}
+
+// NISTControlsBySubstringForRevision is NISTControlsBySubstring at a specific
+// NIST revision.
+func NISTControlsBySubstringForRevision(name string, rev int) []string {
+	load()
+	if name == "" {
+		return nil
+	}
+	lower := strings.ToLower(name)
+	var best *Mapping
+	bestLen := 0
+	for key, m := range byRuleName[rev] {
+		if key != "" && len(key) > bestLen && strings.Contains(lower, strings.ToLower(key)) {
+			best = m
+			bestLen = len(key)
+		}
+	}
+	return controlsFromMapping(best)
+}
+
 func controlsFromMapping(m *Mapping) []string {
 	if m == nil || m.NISTID == "" {
 		return nil

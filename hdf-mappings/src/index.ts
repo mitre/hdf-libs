@@ -99,6 +99,7 @@ export {
   getAwsConfigNistMappingByName,
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
+  getAwsConfigNistControlsBySubstring,
   getAllAwsConfigIdentifiers,
   getAllAwsConfigRuleNames,
   awsConfigIdentifierExists,
