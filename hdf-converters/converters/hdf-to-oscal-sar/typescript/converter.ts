@@ -104,55 +104,58 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
   };
 }
 
-/**
- * Converts a single EvaluatedBaseline to an OSCAL Result.
- */
-/**
- * The earliest requirement-result startTime in the baseline — when the assessment
- * actually ran. OSCAL result.start means the assessment time, so the document
- * timestamp (when the HDF file was produced) must not be used for it. Falls back
- * to the supplied timestamp only when the baseline carries no result times at
- * all, since OSCAL requires start.
- */
-/** Earliest non-zero startTime across the results, in epoch ms. */
-function earliestResultTime(results: RequirementResult[] | undefined): number | undefined {
-  let earliest: number | undefined;
+// Assessment-time helpers. OSCAL result.start (when the assessment ran) and
+// observation.collected (when the evidence was gathered) both describe the scan,
+// which HDF carries on each requirement result — not the document timestamp,
+// which is merely when the file was written.
+
+/** Earliest startTime across the results, or undefined if none carry one. */
+function earliestResultTime(results: RequirementResult[] | undefined): Date | undefined {
+  let earliest: Date | undefined;
+
   for (const result of results ?? []) {
-    if (!result.startTime) continue;
-    const ms = new Date(result.startTime as unknown as string | Date).getTime();
-    if (Number.isNaN(ms)) continue;
-    if (earliest === undefined || ms < earliest) {
-      earliest = ms;
+    // The schema types startTime as a Date, but a parsed HDF document holds the
+    // raw JSON string. parseTimestamp reads a zone-less value as UTC, matching Go.
+    const raw: unknown = result.startTime;
+    const parsed = raw instanceof Date ? raw : parseTimestamp(String(raw ?? ''));
+    if (!parsed) continue;
+
+    if (earliest === undefined || parsed < earliest) {
+      earliest = parsed;
     }
   }
+
   return earliest;
 }
 
 /**
- * Render an assessment time, falling back when HDF carries none. OSCAL requires
- * result.start and observation.collected, so a fallback is always needed — but it
- * must never be the default when a real time exists.
- *
- * UTC at seconds precision, matching Go's time.RFC3339, which drops the fraction.
- * Emitting the source offset or millisecond form here would diverge from Go.
+ * Render an assessment time. OSCAL requires result.start and
+ * observation.collected, so a fallback is needed when HDF carries no result time
+ * — but it must never win over a real one.
  */
-function formatAssessmentTime(ms: number | undefined, fallback: string): string {
-  if (ms === undefined) return fallback;
-  return new Date(ms).toISOString().replace(/\.\d+Z$/, 'Z');
+function formatAssessmentTime(time: Date | undefined, fallback: string): string {
+  return time === undefined ? fallback : formatTimestampSeconds(time);
 }
 
+/** When the assessment ran: the earliest result time anywhere in the baseline. */
 function assessmentStart(baseline: EvaluatedBaseline, fallback: string): string {
-  let earliest: number | undefined;
+  let earliest: Date | undefined;
+
   for (const req of baseline.requirements) {
     const reqEarliest = earliestResultTime(req.results);
     if (reqEarliest === undefined) continue;
+
     if (earliest === undefined || reqEarliest < earliest) {
       earliest = reqEarliest;
     }
   }
+
   return formatAssessmentTime(earliest, fallback);
 }
 
+/**
+ * Converts a single EvaluatedBaseline to an OSCAL Result.
+ */
 function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): AssessmentResult {
   let title = baseline.name;
   if (baseline.title && baseline.title !== '') {

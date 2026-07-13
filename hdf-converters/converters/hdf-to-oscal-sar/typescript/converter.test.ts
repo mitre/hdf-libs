@@ -453,6 +453,14 @@ describe('result.start is the assessment time', () => {
     expect(out['assessment-results'].results[0].start).toBe('2026-03-01T08:15:00Z');
   });
 
+  // Real HDF carries zone-less startTimes (InSpec emits them). They must read as
+  // UTC, matching Go — never as host-local, which would make output depend on the
+  // machine's timezone.
+  it('reads a zone-less startTime as UTC, not host-local', async () => {
+    const out = JSON.parse(await convertHdfToOscalSar(hdf(['2026-03-01T08:15:00'])));
+    expect(out['assessment-results'].results[0].start).toBe('2026-03-01T08:15:00Z');
+  });
+
   it('falls back to the document timestamp when no result carries a startTime', async () => {
     const input = JSON.stringify({
       timestamp: '2026-07-13T09:00:00Z',
