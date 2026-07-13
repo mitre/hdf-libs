@@ -57,9 +57,9 @@ Linting thresholds (`.golangci.yml`): `gocyclo` min-complexity 20, `gocognit` mi
 
 ### Command Layer (`cmd/hdf/cmd/`)
 
-Built on [Cobra](https://github.com/spf13/cobra). Each command is in its own file. The root command defines persistent flags (`--json`, `--no-color`, `--debug`, `--max-size`, `--no-follow-symlinks`, `--schema-dir`).
+Built on [Cobra](https://github.com/spf13/cobra). Each command is in its own file. The root command defines persistent flags (`--json`, `--debug`/`-d`, `--fail-fast`/`-F`, `--max-size`, `--no-follow-symlinks`, `--no-headers`, `--schema-dir`).
 
-Commands: `validate`, `info`, `stats`, `list`, `query`, `version`, `convert`.
+Commands: `validate`, `list`, `query`, `convert`, `diff`, `amend`, `evidence`, `plan`, `system`, `label`, `generate`, `fetch`, `version`. (The former `info` and `stats` commands were folded into `list <file> --detail`.)
 
 ### Input Handling (`input.go`)
 
@@ -99,7 +99,7 @@ Schema validation is provided by the sibling `hdf-validators/go` package (import
 
 ### Query Engine (`query.go`)
 
-Filters controls using AND logic across: `--status`, `--severity`, `--impact`, `--cci`, `--nist`, `--stig-id`, `--tag`, `--search`, `--profile`. `safematch.go` provides panic-safe regex matching used throughout the query layer.
+Filters controls using AND logic across: `--status`, `--severity`, `--impact`, `--cci`, `--nist`, `--id` (requirement ID, STIG ID, GID, or group title), `--tag`, `--search`, `--baseline`. `safematch.go` provides panic-safe regex matching used throughout the query layer.
 
 ## Monorepo Context
 
