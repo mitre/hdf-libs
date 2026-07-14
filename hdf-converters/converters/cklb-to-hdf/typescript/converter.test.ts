@@ -4,6 +4,11 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertCklbToHdf } from './converter.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { runSnapshotTests } from '../../../shared/typescript/snapshot.js';
+import {
+  assertRequirementCount,
+  countJsonItemsUnderKey,
+} from '../../../shared/typescript/anchor.js';
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -20,6 +25,29 @@ function findReq(reqs: EvaluatedRequirement[], id: string): EvaluatedRequirement
   }
   return r;
 }
+
+runSnapshotTests('cklb-to-hdf', convertCklbToHdf);
+
+// Ground-truth anchors (input-derived counts; see shared/typescript/anchor.ts).
+describe('cklb-to-hdf ground-truth anchors', () => {
+  it('emits one requirement per stigs[].rules[] (firefox)', async () => {
+    const input = loadFixture('firefox-stig.cklb');
+    assertRequirementCount(
+      await convertCklbToHdf(input),
+      countJsonItemsUnderKey(input, 'rules'),
+      'firefox-stig.cklb: one requirement per stigs[].rules[]',
+    );
+  });
+
+  it('emits one requirement per stigs[].rules[] (all-passing)', async () => {
+    const input = loadFixture('all-passing.cklb');
+    assertRequirementCount(
+      await convertCklbToHdf(input),
+      countJsonItemsUnderKey(input, 'rules'),
+      'all-passing.cklb: one requirement per stigs[].rules[]',
+    );
+  });
+});
 
 describe('cklb-to-hdf converter', () => {
   it('throws on empty input', async () => {

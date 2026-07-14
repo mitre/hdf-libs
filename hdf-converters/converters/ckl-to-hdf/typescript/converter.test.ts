@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertCklToHdf } from './converter.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { runSnapshotTests } from '../../../shared/typescript/snapshot.js';
+import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -44,6 +46,29 @@ const MINIMAL_CKL = `<?xml version="1.0" encoding="UTF-8"?>
     </iSTIG>
   </STIGS>
 </CHECKLIST>`;
+
+runSnapshotTests('ckl-to-hdf', convertCklToHdf);
+
+// Ground-truth anchors (input-derived counts; see shared/typescript/anchor.ts).
+describe('ckl-to-hdf ground-truth anchors', () => {
+  it('emits one requirement per <VULN> (firefox)', async () => {
+    const input = loadFixture('firefox-stig.ckl');
+    assertRequirementCount(
+      await convertCklToHdf(input),
+      countXmlElements(input, 'VULN'),
+      'firefox-stig.ckl: one requirement per <VULN>',
+    );
+  });
+
+  it('emits one requirement per <VULN> (all-passing)', async () => {
+    const input = loadFixture('all-passing.ckl');
+    assertRequirementCount(
+      await convertCklToHdf(input),
+      countXmlElements(input, 'VULN'),
+      'all-passing.ckl: one requirement per <VULN>',
+    );
+  });
+});
 
 describe('ckl-to-hdf converter', () => {
   it('throws on empty input', async () => {

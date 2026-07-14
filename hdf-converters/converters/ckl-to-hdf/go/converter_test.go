@@ -209,15 +209,34 @@ func TestConvertCKLToHDF_OversizedInput(t *testing.T) {
 // (never an empty requirements slice) so a future refactor cannot silently
 // introduce the "emit empty requirements" anti-pattern.
 func TestConvertCKLToHDF_AllPassingProducesRequirements(t *testing.T) {
-	result, err := ConvertCKLToHDF(loadFixture(t, "all-passing.ckl"), converterVersion)
+	input := loadFixture(t, "all-passing.ckl")
+	result, err := ConvertCKLToHDF(input, converterVersion)
 	require.NoError(t, err)
 	require.Len(t, result.Baselines, 1)
 	reqs := result.Baselines[0].Requirements
-	require.Len(t, reqs, 3, "all-passing.ckl has 3 VULN entries; converter must emit 3 requirements")
+	// Ground-truth anchor: one requirement per <VULN>, counted from the source.
+	shared.AssertRequirementCount(t, result, shared.CountXMLElements(t, input, "VULN"),
+		"all-passing.ckl: one requirement per <VULN>")
 	for _, r := range reqs {
 		require.NotEmpty(t, r.Results, "requirement %s must have at least one result", r.ID)
 		assert.Equal(t, hdf.Passed, r.Results[0].Status, "requirement %s status should be passed (NotAFinding)", r.ID)
 	}
+}
+
+// Ground-truth anchor over the richer firefox fixture: one requirement per
+// <VULN>, counted independently of the converter (see shared/go/anchor.go).
+func TestConvertCKLToHDF_VulnAnchor(t *testing.T) {
+	input := loadFixture(t, "firefox-stig.ckl")
+	result, err := ConvertCKLToHDF(input, converterVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, shared.CountXMLElements(t, input, "VULN"),
+		"firefox-stig.ckl: one requirement per <VULN>")
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "ckl-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertCKLToHDF(input, converterVersion)
+	})
 }
 
 // Status, parsing, and field-mapping helpers are unit-tested in the shared

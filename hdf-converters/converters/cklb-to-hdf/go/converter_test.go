@@ -157,18 +157,36 @@ func TestConvertCKLBToHDF_OversizedInput(t *testing.T) {
 
 // Pins safe behavior: an all-passing CKLB must emit one requirement per rule, never requirements:[].
 func TestConvertCKLBToHDF_AllPassingNotEmpty(t *testing.T) {
-	result, err := ConvertCKLBToHDF(loadFixture(t, "all-passing.cklb"), converterVersion)
+	input := loadFixture(t, "all-passing.cklb")
+	result, err := ConvertCKLBToHDF(input, converterVersion)
 	require.NoError(t, err)
 	require.Len(t, result.Baselines, 1)
 
 	reqs := result.Baselines[0].Requirements
-	assert.Len(t, reqs, 6)
-	assert.Greater(t, len(reqs), 0)
+	// Ground-truth anchor: one requirement per stigs[].rules[] entry.
+	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "rules"),
+		"all-passing.cklb: one requirement per stigs[].rules[]")
 
 	for _, r := range reqs {
 		require.Len(t, r.Results, 1)
 		assert.Equal(t, hdf.Passed, r.Results[0].Status)
 	}
+}
+
+// Ground-truth anchor over the firefox fixture: one requirement per
+// stigs[].rules[], counted independently of the converter (shared/go/anchor.go).
+func TestConvertCKLBToHDF_RulesAnchor(t *testing.T) {
+	input := loadFixture(t, "firefox-stig.cklb")
+	result, err := ConvertCKLBToHDF(input, converterVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "rules"),
+		"firefox-stig.cklb: one requirement per stigs[].rules[]")
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "cklb-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertCKLBToHDF(input, converterVersion)
+	})
 }
 
 // Status, parsing, and field-mapping helpers are unit-tested in the shared
