@@ -138,9 +138,6 @@ type HDFResults struct {
 }
 
 // Information on a baseline that was evaluated, including any findings.
-//
-// Shared metadata fields for baselines. Used in both standalone baseline documents and
-// evaluated baseline results.
 type EvaluatedBaseline struct {
 	// The set of dependencies this baseline depends on.                                                              
 	Depends                                                                                    []Dependency           `json:"depends,omitempty"`
@@ -197,8 +194,7 @@ type EvaluatedBaseline struct {
 	Version                                                                                    *string                `json:"version,omitempty"`
 }
 
-// A dependency for a baseline. Can include relative paths or URLs for where to find the
-// dependency.
+// A dependency for a baseline. Can include relative paths or URLs for where to find the dependency.
 type Dependency struct {
 	// The branch name for a git repo.                                    
 	Branch                                                        *string `json:"branch,omitempty"`
@@ -232,9 +228,9 @@ type RequirementGroup struct {
 	Title                                                                                    *string  `json:"title,omitempty"`
 }
 
-// A typed input parameter that bridges governance requirements and scanner automation.
-// Inputs carry expected configuration values with type information, comparison operators,
-// and validation constraints, enabling traceability from policy through to scan results.
+// A typed input parameter that bridges governance requirements and scanner automation. Inputs carry
+// expected configuration values with type information, comparison operators, and validation
+// constraints, enabling traceability from policy through to scan results.
 type Input struct {
 	// Validation constraints for the input value.                                                                 
 	Constraints                                                                                *InputConstraints   `json:"constraints,omitempty"`
@@ -256,8 +252,6 @@ type Input struct {
 	Value                                                                                      interface{}         `json:"value,omitempty"`
 }
 
-// Validation constraints for the input value.
-//
 // Validation constraints for an input value.
 type InputConstraints struct {
 	// Enumeration of permitted values.                                                  
@@ -270,27 +264,8 @@ type InputConstraints struct {
 	Pattern                                                                *string       `json:"pattern,omitempty"`
 }
 
-// Cryptographic integrity information for verifying this baseline has not been tampered
-// with.
-//
-// Cryptographic integrity information for verifying the HDF file has not been tampered
-// with. If algorithm is provided, checksum must also be provided, and vice versa.
-//
-// Cryptographic integrity information for verifying this file.
-//
-// Cryptographic integrity information for verifying this comparison document.
-//
-// Cryptographic integrity information for verifying this system document has not been
-// tampered with.
-//
-// Cryptographic integrity information for verifying this plan document has not been
-// tampered with.
-//
-// Cryptographic integrity information for verifying this amendments document has not been
-// tampered with.
-//
-// Cryptographic integrity information for verifying this evidence package has not been
-// tampered with.
+// Cryptographic integrity information for verifying the HDF file has not been tampered with. If
+// algorithm is provided, checksum must also be provided, and vice versa.
 type Integrity struct {
 	// The hash algorithm used for the checksum.               
 	Algorithm                                   *HashAlgorithm `json:"algorithm,omitempty"`
@@ -302,32 +277,7 @@ type Integrity struct {
 	SignedBy                                    *string        `json:"signedBy,omitempty"`
 }
 
-// SHA-256 checksum of the original baseline definition file (before execution). This is an
-// immutable reference to the baseline as defined, used to detect tampering with baseline
-// requirements or metadata.
-//
 // Cryptographic checksum for baseline integrity verification.
-//
-// SHA-256 checksum of the previous amendment in chronological order. Creates a
-// tamper-evident chain of amendments (similar to blockchain). Null for the first amendment
-// on a requirement.
-//
-// SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs).
-// Used to detect tampering with test results. Compare with currentChecksum to verify
-// amendment integrity.
-//
-// Optional cryptographic checksum for verifying the integrity of remediation resources
-// fetched from the URI. Recommended for security when referencing external automation
-// scripts.
-//
-// Cryptographic checksum of the source document for integrity verification.
-//
-// Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null
-// for the first amendment.
-//
-// Cryptographic checksum for verifying the referenced document's integrity.
-//
-// Cryptographic checksum of the referenced artifact for integrity verification.
 type Checksum struct {
 	// The hash algorithm used for the checksum.              
 	Algorithm                                   HashAlgorithm `json:"algorithm"`
@@ -336,9 +286,6 @@ type Checksum struct {
 }
 
 // A requirement that has been evaluated, including any findings.
-//
-// Core requirement fields shared between baseline requirements and evaluated requirements.
-// Contains the fundamental requirement definition without assessment results.
 type EvaluatedRequirement struct {
 	// Packages affected by this vulnerability finding. Vulnerability-finding-scoped — see                              
 	// components[] on hdf-system for component-level package inventories. One entry per matched                        
@@ -435,14 +382,13 @@ type EvaluatedRequirement struct {
 }
 
 // Represents a package referenced by a vulnerability finding or by an amendment's scope. On
-// Evaluated_Requirement.affectedPackages it says 'this CVE affects these package versions'.
-// On Standalone_Override.affectedPackages it says 'this amendment is scoped to these
-// packages' (used by VEX, OSCAL POA&M, FedRAMP component-aware amendments). NOT a
-// system-level component identifier — see `components[]` on hdf-system for those. Validity
-// requires at least one of: (name + version + ecosystem), purl alone, or cpe alone. purl
-// and cpe are self-describing identifiers that encode name/version implicitly, so either
-// may stand on its own; the name+version+ecosystem combination is the explicit form for
-// sources without formal identifiers.
+// Evaluated_Requirement.affectedPackages it says 'this CVE affects these package versions'. On
+// Standalone_Override.affectedPackages it says 'this amendment is scoped to these packages' (used
+// by VEX, OSCAL POA&M, FedRAMP component-aware amendments). NOT a system-level component identifier
+// — see `components[]` on hdf-system for those. Validity requires at least one of: (name + version
+// + ecosystem), purl alone, or cpe alone. purl and cpe are self-describing identifiers that encode
+// name/version implicitly, so either may stand on its own; the name+version+ecosystem combination
+// is the explicit form for sources without formal identifiers.
 type AffectedPackage struct {
 	// Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the                
 	// 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating            
@@ -471,16 +417,12 @@ type AffectedPackage struct {
 	Version                                                                                     *string    `json:"version,omitempty"`
 }
 
-// Structured CVSS scoring data backing this override. Captures the rubric (which
-// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify
-// a riskAdjustment. For other override types this is optional context.
-//
-// A CVSS (Common Vulnerability Scoring System) score record for a vulnerability finding.
-// Captures the vendor-supplied Base metric group and optional consumer-supplied Threat,
-// Environmental, and Supplemental metric groups. Supports all four CVSS major versions
-// (2.0, 3.0, 3.1, 4.0). Vector strings are validated against a permissive umbrella grammar;
-// semantic validation (correct metrics per version, correct values per metric) is performed
-// by the hdf-utilities `validateCvssVector` helper rather than at the schema layer.
+// A CVSS (Common Vulnerability Scoring System) score record for a vulnerability finding. Captures
+// the vendor-supplied Base metric group and optional consumer-supplied Threat, Environmental, and
+// Supplemental metric groups. Supports all four CVSS major versions (2.0, 3.0, 3.1, 4.0). Vector
+// strings are validated against a permissive umbrella grammar; semantic validation (correct metrics
+// per version, correct values per metric) is performed by the hdf-utilities `validateCvssVector`
+// helper rather than at the schema layer.
 type Cvss struct {
 	// The Base score (0.0–10.0) computed from the base vector. Reflects the intrinsic,                       
 	// vendor-published severity before consumer enrichment.                                                  
@@ -534,13 +476,9 @@ type Description struct {
 	Label                                                                                       string `json:"label"`
 }
 
-// FIRST.org EPSS (Exploit Prediction Scoring System) score for this CVE finding. Used
-// alongside CVSS for prioritization — captures the probability the vulnerability will be
-// exploited.
-//
-// FIRST.org Exploit Prediction Scoring System (EPSS) data for a single vulnerability. All
-// three fields are required when an Epss object is present; the date disambiguates which
-// day's score this is, since EPSS recomputes daily.
+// FIRST.org Exploit Prediction Scoring System (EPSS) data for a single vulnerability. All three
+// fields are required when an Epss object is present; the date disambiguates which day's score this
+// is, since EPSS recomputes daily.
 type Epss struct {
 	// ISO 8601 date (YYYY-MM-DD) on which FIRST.org published this EPSS score.                        
 	Date                                                                                       string  `json:"date"`
@@ -554,8 +492,8 @@ type Epss struct {
 	Score                                                                                      float64 `json:"score"`
 }
 
-// Supporting evidence for a finding or override, such as screenshots, code samples, log
-// excerpts, or URLs.
+// Supporting evidence for a finding or override, such as screenshots, code samples, log excerpts,
+// or URLs.
 type Evidence struct {
 	// Timestamp when this evidence was captured. ISO 8601 format.                                         
 	CapturedAt                                                                                *time.Time   `json:"capturedAt,omitempty"`
@@ -576,41 +514,8 @@ type Evidence struct {
 	Type                                                                                      EvidenceType `json:"type"`
 }
 
-// Identity of who or what captured this evidence.
-//
-// Represents an identity that performed an action, such as capturing evidence or applying
-// an override.
-//
-// Identity of who created this POA&M. For simple cases, use type 'simple' with just an
-// identifier.
-//
-// Identity of who completed this milestone.
-//
-// The identity that created this signature.
-//
-// Identity of who applied this override. For simple cases, use type 'simple' with just an
-// identifier.
-//
-// Identity of the person or system that approved this override.
-//
-// Team or individual responsible for this component. Enables per-component ownership when
-// different teams manage different parts of a system.
-//
-// The identity of the person or system responsible for executing the test. This could be a
-// human auditor manually completing a checklist, an automated CI/CD system, or a security
-// tool. Optional field to support both automated and manual HDF generation.
-//
-// Team or individual responsible for this system's authorization and compliance. Maps to
-// OSCAL responsible-party with role 'system-owner'.
-//
-// Default identity of who created this amendments document. Individual overrides may
-// specify their own appliedBy.
-//
-// Identity of the authorizing official who approved these amendments.
-//
-// Identity of who applied this amendment.
-//
-// Identity of who prepared this evidence package.
+// Represents an identity that performed an action, such as capturing evidence or applying an
+// override.
 type Identity struct {
 	// Optional description of the identity or identity system, particularly useful when type is             
 	// 'other'.                                                                                              
@@ -688,21 +593,9 @@ type Milestone struct {
 	Status                                          MilestoneStatus `json:"status"`
 }
 
-// Optional digital signature for enhanced trust and non-repudiation.
-//
-// A digital signature following W3C Data Integrity Proofs pattern. Supports hardware
-// security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other cryptographic
-// signing methods via JWK, PEM, or Base58 key formats.
-//
-// Optional digital signature for enhanced trust and non-repudiation. Supports hardware
-// security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing
-// methods.
-//
-// Digital signature for non-repudiation.
-//
-// Document-level digital signature covering all amendments.
-//
-// Digital signature covering the entire evidence package.
+// A digital signature following W3C Data Integrity Proofs pattern. Supports hardware security
+// tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other cryptographic signing methods
+// via JWK, PEM, or Base58 key formats.
 type Signature struct {
 	// Challenge value from the verifier, used in challenge-response authentication.                    
 	Challenge                                                                        *string            `json:"challenge,omitempty"`
@@ -726,10 +619,8 @@ type Signature struct {
 	VerificationMethod                                                               VerificationMethod `json:"verificationMethod"`
 }
 
-// The verification method containing the public key for signature verification.
-//
-// Verification method containing the public key needed to verify a digital signature.
-// Supports multiple key formats including JWK (for RSA, EC), PEM, and Base58.
+// Verification method containing the public key needed to verify a digital signature. Supports
+// multiple key formats including JWK (for RSA, EC), PEM, and Base58.
 type VerificationMethod struct {
 	// The entity that controls this verification method. Can be a DID, URI, or other identifier.                       
 	Controller                                                                                   string                 `json:"controller"`
@@ -746,12 +637,6 @@ type VerificationMethod struct {
 }
 
 // A reference to an external document.
-//
-// A reference using the 'ref' field.
-//
-// A URL pointing at the reference.
-//
-// A URI pointing at the reference.
 type Reference struct {
 	Ref *Ref    `json:"ref,omitempty"`
 	URL *string `json:"url,omitempty"`
@@ -782,8 +667,6 @@ type RequirementResult struct {
 	Status                                                                                  ResultStatus `json:"status"`
 }
 
-// The explicit location of the requirement within the source code.
-//
 // The explicit location of a requirement within source code.
 type SourceLocation struct {
 	// The line on which this requirement is located.                  
@@ -792,9 +675,9 @@ type SourceLocation struct {
 	Ref                                                       *string  `json:"ref,omitempty"`
 }
 
-// An intentional change to a requirement's compliance status and/or impact score. At least
-// one of status or impact must be set. Overrides change the effectiveStatus or impact of
-// the requirement. All overrides must have an expiration date to enforce periodic review.
+// An intentional change to a requirement's compliance status and/or impact score. At least one of
+// status or impact must be set. Overrides change the effectiveStatus or impact of the requirement.
+// All overrides must have an expiration date to enforce periodic review.
 type StatusOverride struct {
 	// Timestamp when this override was applied. ISO 8601 format.                                               
 	AppliedAt                                                                                   time.Time       `json:"appliedAt"`
@@ -836,11 +719,8 @@ type StatusOverride struct {
 	Type                                                                                        OverrideType    `json:"type"`
 }
 
-// Override to the requirement's impact score. At least one of status or impact must be
-// set.
-//
-// An override to the requirement's impact score. The prior impact is the original result
-// value or the preceding override in the chain.
+// An override to the requirement's impact score. The prior impact is the original result value or
+// the preceding override in the chain.
 type ImpactOverride struct {
 	// The overridden impact score (0.0–1.0).        
 	Value                                    float64 `json:"value"`
@@ -858,44 +738,8 @@ type SupportedPlatform struct {
 	Release                                                                 *string `json:"release,omitempty"`
 }
 
-// A system component. Uses discriminated union pattern with 'type' field as discriminator.
-// Superset of Target with identity, external IDs, and SBOM support.
-//
-// A physical or virtual server, workstation, or network device.
-//
-// Base properties shared by all component types. Extends the Target concept with stable
-// identity, external references, generalized BOM attachment (boms[]), and unified artifact
-// integrity (integrity[]).
-//
-// A static container image (not running). Image integrity — formerly the 'digest' field —
-// is expressed via the shared Base_Component.integrity array.
-//
-// A running container instance.
-//
-// A container orchestration platform (Kubernetes, OpenShift, ECS, etc.).
-//
-// A cloud provider account (AWS account, Azure subscription, GCP project).
-//
-// A specific cloud resource (EC2 instance, S3 bucket, Azure VM, etc.).
-//
-// A code repository (for SAST tools).
-//
-// A running application or API (for DAST tools).
-//
-// A software artifact or dependency (for SCA tools). Package integrity — formerly the
-// 'checksum' field — is expressed via the shared Base_Component.integrity array.
-//
-// A network segment or network device.
-//
-// A database instance.
-//
-// A thin AI-model component: identity and correlation only (parallel to Host_Component's
-// fqdn/ip). All model detail — architecture, parameter count, serialization format, lineage
-// — lives in an attached ai-model BOM (boms[]), never on the component itself.
-//
-// A thin dataset component: identity and correlation only, symmetric with
-// AI_Model_Component. All dataset detail — record count, format, classification, lineage —
-// lives in an attached dataset BOM (boms[]), never on the component itself.
+// A system component. Uses discriminated union pattern with 'type' field as discriminator. Superset
+// of Target with identity, external IDs, and SBOM support.
 type Component struct {
 	// Names of baselines that apply to this component.                                                           
 	BaselineRefs                                                                                []string          `json:"baselineRefs,omitempty"`
@@ -1077,12 +921,10 @@ type BillOfMaterials struct {
 	UniqueID                                                                                   *string                `json:"uniqueId,omitempty"`
 }
 
-// Normalized dataset extension. Permitted only when bomType is dataset.
-//
-// Normalized dataset fields (SPDX 3.0 Dataset profile / MLCommons Croissant aligned). All
-// optional; open for partial-fidelity passthrough of unmapped native fields. Symmetric with
-// AI_Model_Extension: carries the dataset's own lineage (baseDatasetRefs/derivation) just
-// as the model extension carries baseModelRef/adaptationType.
+// Normalized dataset fields (SPDX 3.0 Dataset profile / MLCommons Croissant aligned). All optional;
+// open for partial-fidelity passthrough of unmapped native fields. Symmetric with
+// AI_Model_Extension: carries the dataset's own lineage (baseDatasetRefs/derivation) just as the
+// model extension carries baseModelRef/adaptationType.
 type DatasetBOMExtension struct {
 	// References to the source dataset(s) this one was derived from — a dataset componentId, or                       
 	// a dataset BOM uniqueId/URI when no component exists. The lineage edge parallel to                               
@@ -1116,13 +958,11 @@ type DatasetBOMExtension struct {
 	StatisticalProperties                                                                       *string                `json:"statisticalProperties,omitempty"`
 }
 
-// Normalized ai-model extension. Permitted only when bomType is ai-model.
-//
-// Normalized AI-model fields, aligned to the CISA/G7 'SBOM for AI' minimum elements. All
-// fields optional (standards-correct; only the EU AI Act makes a subset binding for
-// high-risk/GPAI). Left open (additionalProperties: true) so a converter can carry unmapped
-// native fields opaquely (partial-fidelity pattern). Subject name/version are inherited
-// from the host aiModel component, not repeated here.
+// Normalized AI-model fields, aligned to the CISA/G7 'SBOM for AI' minimum elements. All fields
+// optional (standards-correct; only the EU AI Act makes a subset binding for high-risk/GPAI). Left
+// open (additionalProperties: true) so a converter can carry unmapped native fields opaquely
+// (partial-fidelity pattern). Subject name/version are inherited from the host aiModel component,
+// not repeated here.
 type AIModelBOMExtension struct {
 	// Lineage relationship to baseModelRef, adopting Hugging Face's base_model_relation                             
 	// vocabulary (the only typed lineage enum in the ecosystem).                                                    
@@ -1203,9 +1043,8 @@ type PerformanceMetric struct {
 	Value                                                                                      *string `json:"value,omitempty"`
 }
 
-// A single normalized software package entry within an sbom BOM. Minimal identity + version
-// for querying/diffing; the full native record remains available via passthrough
-// (document/ref).
+// A single normalized software package entry within an sbom BOM. Minimal identity + version for
+// querying/diffing; the full native record remains available via passthrough (document/ref).
 type SBOMPackage struct {
 	// SPDX license identifiers/expressions for this package.                          
 	Licenses                                                                  []string `json:"licenses,omitempty"`
@@ -1217,8 +1056,8 @@ type SBOMPackage struct {
 	Version                                                                   *string  `json:"version,omitempty"`
 }
 
-// An override of a baseline input value for a specific component. Enables system-specific
-// tailoring of baseline parameters.
+// An override of a baseline input value for a specific component. Enables system-specific tailoring
+// of baseline parameters.
 type InputOverride struct {
 	// Identity of the person or system that approved this override.                                       
 	ApprovedBy                                                                                 *Identity   `json:"approvedBy,omitempty"`
@@ -1233,19 +1072,7 @@ type InputOverride struct {
 	Value                                                                                      interface{} `json:"value"`
 }
 
-// Information about the tool that generated this file.
-//
 // Information about the tool that generated this HDF file.
-//
-// The tool that generated this file.
-//
-// Information about the tool that generated this comparison.
-//
-// Information about the tool that generated this system document.
-//
-// Information about the tool that generated this plan.
-//
-// Information about the tool that generated this document.
 type Generator struct {
 	// The name of the software that produced this HDF file. Example: 'gosec-to-hdf'.       
 	Name                                                                             string `json:"name"`
@@ -1253,15 +1080,9 @@ type Generator struct {
 	Version                                                                          string `json:"version"`
 }
 
-// Optional reference to automated remediation resources (Ansible playbooks, Terraform
-// scripts, etc.) for fixing failing requirements found in this assessment.
-//
-// Reference to automated remediation resources for implementing security controls. Points
-// to external automation content like Ansible playbooks, Terraform scripts, or
-// vendor-provided remediation tools.
-//
-// Optional reference to automated remediation resources (Ansible playbooks, Terraform
-// scripts, etc.) for implementing the security controls defined in this baseline.
+// Reference to automated remediation resources for implementing security controls. Points to
+// external automation content like Ansible playbooks, Terraform scripts, or vendor-provided
+// remediation tools.
 type Remediation struct {
 	// Optional cryptographic checksum for verifying the integrity of remediation resources            
 	// fetched from the URI. Recommended for security when referencing external automation             
@@ -1273,12 +1094,8 @@ type Remediation struct {
 	URI                                                                                      string    `json:"uri"`
 }
 
-// Information about the test execution environment where the security tool was run.
-// Distinct from targets (what is being tested).
-//
-// Information about the test execution environment. This is distinct from the target being
-// scanned - the runner is where the security tool executes, while targets are what is being
-// assessed.
+// Information about the test execution environment. This is distinct from the target being scanned
+// - the runner is where the security tool executes, while targets are what is being assessed.
 type Runner struct {
 	// The CPU architecture of the runner system. Example: 'x86_64', 'arm64', 'aarch64'.                   
 	Architecture                                                                                 *string   `json:"architecture,omitempty"`
@@ -1309,8 +1126,6 @@ type Runner struct {
 	Release                                                                                      *string   `json:"release,omitempty"`
 }
 
-// Statistics for the assessment run, including duration and result counts.
-//
 // Statistics for the assessment run(s) such as duration and result counts.
 type Statistics struct {
 	// How long (in seconds) this assessment run took.                      
@@ -1319,8 +1134,6 @@ type Statistics struct {
 	Requirements                                             *StatisticHash `json:"requirements,omitempty"`
 }
 
-// Breakdowns of requirement statistics by result status.
-//
 // Statistics for requirement results, grouped by status.
 type StatisticHash struct {
 	// Statistics for requirements that encountered an error during assessment.                   
@@ -1335,28 +1148,14 @@ type StatisticHash struct {
 	Passed                                                                        *StatisticBlock `json:"passed,omitempty"`
 }
 
-// Statistics for requirements that encountered an error during assessment.
-//
 // Statistics for a given item, such as the total count.
-//
-// Statistics for requirements that failed.
-//
-// Statistics for requirements that are not applicable to the target.
-//
-// Statistics for requirements that were not reviewed (manual check required).
-//
-// Statistics for requirements that passed.
 type StatisticBlock struct {
 	// The total count. Example: the total number of requirements in a given category for a run.      
 	Total                                                                                       int64 `json:"total"`
 }
 
-// The security tool that produced the assessment data in this file.
-//
-// The security tool that produced the assessment data represented in this HDF file. Aligns
-// with SARIF, OSCAL, and CycloneDX terminology.
-//
-// The security tool that produced the assessment data in this source.
+// The security tool that produced the assessment data represented in this HDF file. Aligns with
+// SARIF, OSCAL, and CycloneDX terminology.
 type Tool struct {
 	// The file format, if it is a recognized named format shared by multiple tools. Examples:         
 	// 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the        
@@ -1369,11 +1168,8 @@ type Tool struct {
 	Version                                                                                    *string `json:"version,omitempty"`
 }
 
-// Information on the set of requirements that can be assessed, including baseline metadata
-// and requirement definitions.
-//
-// Shared metadata fields for baselines. Used in both standalone baseline documents and
-// evaluated baseline results.
+// Information on the set of requirements that can be assessed, including baseline metadata and
+// requirement definitions.
 type HDFBaseline struct {
 	// The set of dependencies this baseline depends on.                                                           
 	Depends                                                                                  []Dependency          `json:"depends,omitempty"`
@@ -1417,9 +1213,6 @@ type HDFBaseline struct {
 }
 
 // A requirement definition without assessment results.
-//
-// Core requirement fields shared between baseline requirements and evaluated requirements.
-// Contains the fundamental requirement definition without assessment results.
 type BaselineRequirement struct {
 	// Array of labeled descriptions. At least one description with label 'default' must be                             
 	// present. Convention: place default description first. Common labels: 'default', 'check',                         
@@ -1468,8 +1261,8 @@ type BaselineRequirement struct {
 	VerificationMethod                                                                          *VerificationMethodEnum `json:"verificationMethod,omitempty"`
 }
 
-// Structured comparison between two or more HDF security assessment documents. Supports
-// temporal, baseline, fleet, and multi-source comparison modes.
+// Structured comparison between two or more HDF security assessment documents. Supports temporal,
+// baseline, fleet, and multi-source comparison modes.
 type HDFComparison struct {
 	// Map of annotation IDs to annotation objects, providing context or action items for                              
 	// requirement diffs.                                                                                              
@@ -1632,8 +1425,6 @@ type Value struct {
 	Value                                                          interface{} `json:"value"`
 }
 
-// Configuration for how requirements were matched across sources.
-//
 // Configuration for how requirements are matched across sources.
 type MatchingConfig struct {
 	// Ordered list of fallback strategies tried when the primary strategy fails to find a match.                
@@ -1740,8 +1531,6 @@ type ComparisonSummary struct {
 	Updated                                                                       *int64             `json:"updated,omitempty"`
 }
 
-// State counts broken down by severity level.
-//
 // Breakdown of state counts by severity level.
 type SeverityBreakdown struct {
 	// State counts for critical severity requirements.             
@@ -1754,15 +1543,7 @@ type SeverityBreakdown struct {
 	Medium                                             *StateCounts `json:"medium,omitempty"`
 }
 
-// State counts for critical severity requirements.
-//
 // Counts of requirements in each state.
-//
-// State counts for high severity requirements.
-//
-// State counts for low severity requirements.
-//
-// State counts for medium severity requirements.
 type StateCounts struct {
 	// Number of requirements present only in the old source.                     
 	Absent                                                                 *int64 `json:"absent,omitempty"`
@@ -1802,8 +1583,8 @@ type PerSourceSummary struct {
 	Updated                                                                                 *int64 `json:"updated,omitempty"`
 }
 
-// Describes a system's authorization boundary, components, and interconnections. Maps to
-// OSCAL SSP system-characteristics and FedRAMP system inventory.
+// Describes a system's authorization boundary, components, and interconnections. Maps to OSCAL SSP
+// system-characteristics and FedRAMP system inventory.
 type HDFSystem struct {
 	// Date the current authorization status was granted. ISO 8601 format.                                           
 	AuthorizationDate                                                                           *time.Time           `json:"authorizationDate,omitempty"`
@@ -1857,10 +1638,10 @@ type HDFSystem struct {
 	Version                                                                                     *string              `json:"version,omitempty"`
 }
 
-// Declares a control's designation within a system — whether it is common (provided by
-// another component or system), system-specific (implemented locally), or hybrid (shared
-// responsibility). Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP
-// by-component provided/inherited semantics.
+// Declares a control's designation within a system — whether it is common (provided by another
+// component or system), system-specific (implemented locally), or hybrid (shared responsibility).
+// Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component
+// provided/inherited semantics.
 type ControlDesignation struct {
 	// The control identifier (e.g., 'SC-7', 'AC-2 (1)'). Must match a NIST tag in a baseline               
 	// requirement's tags.                                                                                  
@@ -1883,9 +1664,9 @@ type ControlDesignation struct {
 	SystemRef                                                                                   *string     `json:"systemRef,omitempty"`
 }
 
-// A data flow between two endpoints. The 'from' endpoint is always a local component; the
-// 'to' endpoint can be local, cross-system, or external. Use 'direction' to indicate
-// whether data flows one-way or both ways.
+// A data flow between two endpoints. The 'from' endpoint is always a local component; the 'to'
+// endpoint can be local, cross-system, or external. Use 'direction' to indicate whether data flows
+// one-way or both ways.
 type DataFlow struct {
 	// Authentication mechanism used for this connection. Examples: 'mTLS', 'OAuth2', 'API key',            
 	// 'SAML', 'Kerberos'.                                                                                  
@@ -1908,8 +1689,8 @@ type DataFlow struct {
 	To                                                                                          interface{} `json:"to"`
 }
 
-// Defines an assessment plan — what baselines to run against which targets, with resolved
-// inputs and scheduling. Maps to OSCAL Assessment Plan.
+// Defines an assessment plan — what baselines to run against which targets, with resolved inputs
+// and scheduling. Maps to OSCAL Assessment Plan.
 type HDFPlan struct {
 	// The assessments to perform. Each assessment pairs a baseline with targets and resolved                     
 	// inputs.                                                                                                    
@@ -1938,8 +1719,8 @@ type HDFPlan struct {
 	Version                                                                                     *string           `json:"version,omitempty"`
 }
 
-// A single assessment within a plan — defines which baseline to run against which targets
-// with what configuration.
+// A single assessment within a plan — defines which baseline to run against which targets with what
+// configuration.
 type Assessment struct {
 	// Reference to the baseline to evaluate. May be a baseline name (e.g. 'RHEL9-STIG'), a                         
 	// relative path to an HDF Baseline document (e.g. 'rhel9-stig.hdf-baseline.json'), or an                       
@@ -1960,8 +1741,6 @@ type Assessment struct {
 	TargetSelector                                                                           map[string]string      `json:"targetSelector,omitempty"`
 }
 
-// Runner/scanner configuration for this assessment.
-//
 // Configuration for the assessment runner/scanner.
 type RunnerConfig struct {
 	// Name of the assessment runner. Example: 'cinc-auditor', 'inspec', 'openscap'.        
@@ -1970,8 +1749,6 @@ type RunnerConfig struct {
 	Version                                                                         *string `json:"version,omitempty"`
 }
 
-// Optional scheduling configuration for recurring assessments.
-//
 // Scheduling configuration for recurring assessments.
 type Schedule struct {
 	// Cron expression for recurring assessments. Example: '0 2 1 * *' (2 AM on the 1st of each           
@@ -1987,8 +1764,8 @@ type Schedule struct {
 	StartDate                                                                                  *time.Time `json:"startDate,omitempty"`
 }
 
-// Waivers, attestations, and POA&Ms that modify requirement compliance status or impact.
-// Amendments are standalone documents that can be applied to results via merge operations.
+// Waivers, attestations, and POA&Ms that modify requirement compliance status or impact. Amendments
+// are standalone documents that can be applied to results via merge operations.
 type HDFAmendments struct {
 	// Unique identifier for this amendments document. Useful for cross-referencing when                           
 	// multiple amendment documents target the same results.                                                       
@@ -2019,18 +1796,18 @@ type HDFAmendments struct {
 	Version                                                                                   *string              `json:"version,omitempty"`
 }
 
-// A standalone override to a requirement's compliance status or risk impact. Validation has
-// two branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor
-// 'impact' may be set — the override records accepted risk without changing the finding
-// (documentation-only). For all other types, at least one of 'status' or 'impact' must be
-// set. This rule aligns with: (1) OSCAL Assessment Results — finding.target.status and
+// A standalone override to a requirement's compliance status or risk impact. Validation has two
+// branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor 'impact'
+// may be set — the override records accepted risk without changing the finding
+// (documentation-only). For all other types, at least one of 'status' or 'impact' must be set. This
+// rule aligns with: (1) OSCAL Assessment Results — finding.target.status and
 // finding.associated-risk[].facet[] are separate axes
-// (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/); (2)
-// FedRAMP deviation request types — Risk Adjustment changes impact only, Operational
-// Requirement documents acceptance only, False Positive changes status
-// (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/); (3)
-// NIST SP 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from
-// control assessment status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).
+// (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/); (2) FedRAMP
+// deviation request types — Risk Adjustment changes impact only, Operational Requirement documents
+// acceptance only, False Positive changes status
+// (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/); (3) NIST SP
+// 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment
+// status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).
 type StandaloneOverride struct {
 	// Software packages this amendment is scoped to, distinct from componentRef (which scopes                    
 	// to an HDF-internal Component by UUID). Use when the source amendment format references                     
@@ -2089,9 +1866,8 @@ type StandaloneOverride struct {
 	Type                                                                                        OverrideType      `json:"type"`
 }
 
-// Bundles references to all HDF documents for audit, authorization, and compliance review.
-// Each content entry references a document by type, URI, and checksum for integrity
-// verification.
+// Bundles references to all HDF documents for audit, authorization, and compliance review. Each
+// content entry references a document by type, URI, and checksum for integrity verification.
 type HDFEvidencePackage struct {
 	// Summary of assessment completeness and compliance status.                                                            
 	CompletenessCheck                                                                           *CompletenessCheck          `json:"completenessCheck,omitempty"`
@@ -2133,10 +1909,8 @@ type HDFEvidencePackage struct {
 	Version                                                                                     *string                     `json:"version,omitempty"`
 }
 
-// Summary of assessment completeness and compliance status.
-//
-// Informational summary of assessment completeness. Not authoritative — tools should
-// compute these from the referenced documents.
+// Informational summary of assessment completeness. Not authoritative — tools should compute these
+// from the referenced documents.
 type CompletenessCheck struct {
 	// Whether all baselines referenced by system components have assessment results.               
 	AllBaselinesAssessed                                                              *bool         `json:"allBaselinesAssessed,omitempty"`
@@ -2152,8 +1926,6 @@ type CompletenessCheck struct {
 	UnresolvedPoams                                                                   *int64        `json:"unresolvedPoams,omitempty"`
 }
 
-// SBOM coverage across system components.
-//
 // SBOM coverage statistics for the system.
 type SBOMCoverage struct {
 	// Number of system components that have an associated SBOM.       
@@ -2177,10 +1949,10 @@ type ContentReference struct {
 	URI                                                                                       string      `json:"uri"`
 }
 
-// A reference to external native-format evidence (log/telemetry corpus or other artifact)
-// carried by URI + integrity hash + format discriminator. Reference-only: the artifact is
-// never embedded (corpora can be huge) or transcoded (that would be lossy) — it stays
-// canonical in its native format and HDF acts as the structured index.
+// A reference to external native-format evidence (log/telemetry corpus or other artifact) carried
+// by URI + integrity hash + format discriminator. Reference-only: the artifact is never embedded
+// (corpora can be huge) or transcoded (that would be lossy) — it stays canonical in its native
+// format and HDF acts as the structured index.
 type ExternalEvidenceReference struct {
 	// Cryptographic checksum of the referenced artifact for integrity verification.                                     
 	Checksum                                                                                   *Checksum                 `json:"checksum,omitempty"`
@@ -2203,10 +1975,7 @@ type ExternalEvidenceReference struct {
 	URI                                                                                        string                    `json:"uri"`
 }
 
-// Optional descriptive metadata about the referenced corpus. Does not affect integrity.
-//
-// Descriptive metadata about a referenced external evidence corpus. Does not affect
-// integrity.
+// Descriptive metadata about a referenced external evidence corpus. Does not affect integrity.
 type ExternalEvidenceMetadata struct {
 	// The tool/pipeline that collected or produced the corpus. Example: 'aws-security-lake',                           
 	// 'elastic-agent'.                                                                                                 
@@ -2217,8 +1986,6 @@ type ExternalEvidenceMetadata struct {
 	TimeRange                                                                                *ExternalEvidenceTimeRange `json:"timeRange,omitempty"`
 }
 
-// The time window the referenced evidence covers.
-//
 // The time window a referenced external evidence corpus covers.
 type ExternalEvidenceTimeRange struct {
 	// End of the time window the corpus covers (ISO 8601).             
@@ -2227,8 +1994,6 @@ type ExternalEvidenceTimeRange struct {
 	Start                                                    *time.Time `json:"start,omitempty"`
 }
 
-// The comparison operator used when evaluating this input against observed values.
-//
 // Comparison operator for evaluating the input value against observed values. Numeric:
 // eq/ne/lt/le/gt/ge. String: eq/ne/contains/matches. Collection: in/notIn.
 type ComparisonOperator string
@@ -2246,8 +2011,6 @@ const (
 	NotIn    ComparisonOperator = "notIn"
 )
 
-// The data type of this input.
-//
 // The data type of the input value. Aligns with InSpec input types.
 type InputType string
 
@@ -2260,10 +2023,8 @@ const (
 	String  InputType = "String"
 )
 
-// The hash algorithm used for the checksum.
-//
-// Supported cryptographic hash algorithms for checksums and integrity verification. blake3
-// covers container-image and other artifact digests that use it.
+// Supported cryptographic hash algorithms for checksums and integrity verification. blake3 covers
+// container-image and other artifact digests that use it.
 type HashAlgorithm string
 
 const (
@@ -2320,15 +2081,9 @@ const (
 	Technical   ControlType = "technical"
 )
 
-// Qualitative severity band corresponding to baseScore. CVSS 2.0 does not natively use
-// 'none' or 'critical' bands; map accordingly when populating.
-//
 // Qualitative CVSS severity band. Aligns with FIRST/NVD bands: none=0.0, low=0.1-3.9,
-// medium=4.0-6.9, high=7.0-8.9, critical=9.0-10.0. Distinct from the broader Severity enum
-// used on Requirement_Core (which includes 'informational').
-//
-// Qualitative severity band corresponding to computedScore. Same band convention as
-// baseSeverity.
+// medium=4.0-6.9, high=7.0-8.9, critical=9.0-10.0. Distinct from the broader Severity enum used on
+// Requirement_Core (which includes 'informational').
 type CVSSSeverity string
 
 const (
@@ -2350,29 +2105,19 @@ const (
 	The40 Version = "4.0"
 )
 
-// The type of the most recent non-expired override or POAM governing this requirement.
-// Indicates why the requirement is in its current state (e.g., waiver, falsePositive,
-// riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or
-// POAMs apply.
-//
-// The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk
-// accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam':
-// remediation tracked (no status change). 'inherited': control provided by another
-// component or system. 'falsePositive': scanner incorrectly identified a finding — for
-// compliance scans (STIG, CIS), the check actually passes, so status is typically set to
-// 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to
-// this system, so status is typically set to 'notApplicable'. The disposition field on the
-// requirement distinguishes false positives from genuinely not-applicable findings.
-// 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk
-// Adjustment); does not change pass/fail status, only impact via the impact field.
-// 'operationalRequirement': deviation required by operational constraints (FedRAMP
-// Operational Requirement); the finding cannot be remediated because the system requires
-// the affected functionality. Remains an open risk. Migration note: 'exception' was removed
-// in v3.1.0 — use 'waiver' with status 'notApplicable' instead.
-//
-// The type of override applied to this requirement.
-//
-// The type of amendment.
+// The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk accepted
+// by Authorizing Official. 'attestation': manually verified by assessor. 'poam': remediation
+// tracked (no status change). 'inherited': control provided by another component or system.
+// 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the
+// check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE,
+// SCA), the flagged vulnerability does not apply to this system, so status is typically set to
+// 'notApplicable'. The disposition field on the requirement distinguishes false positives from
+// genuinely not-applicable findings. 'riskAdjustment': impact score adjusted based on environmental
+// context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact
+// field. 'operationalRequirement': deviation required by operational constraints (FedRAMP
+// Operational Requirement); the finding cannot be remediated because the system requires the
+// affected functionality. Remains an open risk. Migration note: 'exception' was removed in v3.1.0 —
+// use 'waiver' with status 'notApplicable' instead.
 type OverrideType string
 
 const (
@@ -2385,20 +2130,9 @@ const (
 	RiskAdjustment         OverrideType = "riskAdjustment"
 )
 
-// The current effective compliance status of this requirement after applying the most
-// recent non-expired override with a status field, or computed from results (worst-wins) if
-// no status-bearing overrides exist.
-//
-// The status of an individual test result. 'notApplicable' indicates the requirement does
-// not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g.,
-// requires manual verification).
-//
-// The status of this test within the requirement. Example: 'failed'.
-//
-// The new status this override sets for the requirement. Optional when only impact is being
-// overridden.
-//
-// The new status this amendment sets. Optional when only impact is being overridden.
+// The status of an individual test result. 'notApplicable' indicates the requirement does not apply
+// to the target. 'notReviewed' indicates the requirement was not assessed (e.g., requires manual
+// verification).
 type ResultStatus string
 
 const (
@@ -2460,9 +2194,6 @@ const (
 	VendorDependency    POAMType = "vendorDependency"
 )
 
-// Explicit severity rating. Typically derived from impact score but provided explicitly for
-// clarity.
-//
 // Severity rating for a requirement. Typically derived from the numeric impact score.
 type Severity string
 
@@ -2474,28 +2205,21 @@ const (
 	SeverityMedium   Severity = "medium"
 )
 
-// Structured controlled-vocabulary classification for why this override applies.
-// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive
-// and attestation overrides where the structured category enables filtering and lossless
-// round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the
-// precedent vocabulary and rationale.
-//
-// Structured controlled-vocabulary reason for an override, complementing the free-text
-// 'reason' field. 'reason' carries the human-readable rationale an auditor reads;
-// 'justification' carries the machine-readable category enabling filtering, aggregation,
-// and lossless round-trip with structured ecosystems (VEX, OSCAL, FedRAMP DR). Both fields
-// may be present simultaneously and are NOT redundant: 'reason' explains the specific
-// circumstance; 'justification' classifies it. Authors SHOULD populate both when a
-// controlled-vocabulary value applies — the enum value alone is not self-explanatory to an
-// auditor. The vocabulary is drawn from the VEX ecosystem: the first five values are common
-// across OpenVEX, CSAF VEX, and CycloneDX VEX; the remaining six (requires_configuration /
-// requires_dependency / requires_environment / protected_by_compiler / protected_at_runtime
-// / protected_at_perimeter) are CycloneDX-specific and describe why the vulnerable code
-// path is unreachable in the deployed configuration. The enum is extended additively across
-// schema versions as other ecosystems' controlled vocabularies are integrated; documents
-// using values added in a newer schema version will fail validation against an older
-// schema. Consumers SHOULD validate against the schema version declared by the document
-// ($schema) rather than assume a fixed vocabulary.
+// Structured controlled-vocabulary reason for an override, complementing the free-text 'reason'
+// field. 'reason' carries the human-readable rationale an auditor reads; 'justification' carries
+// the machine-readable category enabling filtering, aggregation, and lossless round-trip with
+// structured ecosystems (VEX, OSCAL, FedRAMP DR). Both fields may be present simultaneously and are
+// NOT redundant: 'reason' explains the specific circumstance; 'justification' classifies it.
+// Authors SHOULD populate both when a controlled-vocabulary value applies — the enum value alone is
+// not self-explanatory to an auditor. The vocabulary is drawn from the VEX ecosystem: the first
+// five values are common across OpenVEX, CSAF VEX, and CycloneDX VEX; the remaining six
+// (requires_configuration / requires_dependency / requires_environment / protected_by_compiler /
+// protected_at_runtime / protected_at_perimeter) are CycloneDX-specific and describe why the
+// vulnerable code path is unreachable in the deployed configuration. The enum is extended
+// additively across schema versions as other ecosystems' controlled vocabularies are integrated;
+// documents using values added in a newer schema version will fail validation against an older
+// schema. Consumers SHOULD validate against the schema version declared by the document ($schema)
+// rather than assume a fixed vocabulary.
 type Justification string
 
 const (
@@ -2512,19 +2236,12 @@ const (
 	VulnerableCodeNotPresent                    Justification = "vulnerable_code_not_present"
 )
 
-// How this requirement is intended to be verified. Disambiguates the two cases that null
-// 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable
-// to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could
-// exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and
-// runs without operator action; 'hybrid' = part automated, part manual. Optional: when
-// omitted, consumers should not infer a default.
-//
-// How a requirement is intended to be verified. Disambiguates the two cases that null
-// 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable
-// to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could
-// exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and
-// runs without operator action; 'hybrid' = part automated, part manual. Named '_Enum' to
-// disambiguate from the unrelated Verification_Method DID-context struct.
+// How a requirement is intended to be verified. Disambiguates the two cases that null 'code'
+// overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation,
+// e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet,
+// e.g. a STIG rule lacking a fix). 'automated' = a check exists and runs without operator action;
+// 'hybrid' = part automated, part manual. Named '_Enum' to disambiguate from the unrelated
+// Verification_Method DID-context struct.
 type VerificationMethodEnum string
 
 const (
@@ -2587,8 +2304,6 @@ const (
 	Repository        TargetType = "repository"
 )
 
-// The category of this annotation.
-//
 // The category of an annotation attached to a comparison.
 type AnnotationCategory string
 
@@ -2612,13 +2327,11 @@ const (
 	BaselineDiffStateUpdated   BaselineDiffState = "updated"
 )
 
-// The mode of comparison being performed.
-//
-// The mode of comparison. 'temporal' compares the same target over time. 'baseline'
-// compares against a golden reference. 'fleet' compares across multiple systems.
-// 'multiSource' compares outputs from different scanners. 'baselineEvolution' compares two
-// baseline documents to detect requirement changes between versions. 'systemDrift' compares
-// two system documents to detect component-level changes.
+// The mode of comparison. 'temporal' compares the same target over time. 'baseline' compares
+// against a golden reference. 'fleet' compares across multiple systems. 'multiSource' compares
+// outputs from different scanners. 'baselineEvolution' compares two baseline documents to detect
+// requirement changes between versions. 'systemDrift' compares two system documents to detect
+// component-level changes.
 type ComparisonMode string
 
 const (
@@ -2657,8 +2370,6 @@ const (
 	TargetChanged    ChangeReason = "targetChanged"
 )
 
-// How the conflict was resolved.
-//
 // How a conflict between multiple scanner results was resolved.
 type ConflictResolution string
 
@@ -2669,13 +2380,9 @@ const (
 	Unresolved               ConflictResolution = "unresolved"
 )
 
-// The strategy that was used to match this requirement across sources.
-//
-// The strategy used to match requirements across sources. 'exactId' matches by identical
-// IDs. 'mappedId' uses an ID mapping table. 'cciMatch'/'nistMatch' match by framework
-// identifiers. 'fuzzyTitle'/'fuzzyContent' use text similarity.
-//
-// The primary strategy used to match requirements across sources.
+// The strategy used to match requirements across sources. 'exactId' matches by identical IDs.
+// 'mappedId' uses an ID mapping table. 'cciMatch'/'nistMatch' match by framework identifiers.
+// 'fuzzyTitle'/'fuzzyContent' use text similarity.
 type MatchStrategy string
 
 const (
@@ -2687,12 +2394,10 @@ const (
 	NISTMatch    MatchStrategy = "nistMatch"
 )
 
-// The state of this requirement in the comparison.
-//
-// SARIF-compatible vocabulary extended for security. 'new' = present only in new source,
-// 'absent' = present only in old, 'unchanged' = same effective status, 'updated' = status
-// changed (generic), 'fixed' = was failing now passing, 'regressed' = was passing now
-// failing, 'moved' = reorganized same content, 'split'/'merged' = reserved for v1.1.
+// SARIF-compatible vocabulary extended for security. 'new' = present only in new source, 'absent' =
+// present only in old, 'unchanged' = same effective status, 'updated' = status changed (generic),
+// 'fixed' = was failing now passing, 'regressed' = was passing now failing, 'moved' = reorganized
+// same content, 'split'/'merged' = reserved for v1.1.
 type RequirementState string
 
 const (
@@ -2735,8 +2440,6 @@ const (
 	Xccdf    OriginalFormat = "xccdf"
 )
 
-// The role of this source in the comparison.
-//
 // The role of a source document in the comparison.
 type SourceRole string
 
@@ -2748,8 +2451,6 @@ const (
 	SourceRoleSystem    SourceRole = "system"
 )
 
-// Current Authorization to Operate (ATO) status.
-//
 // Authorization to Operate (ATO) status for the system.
 type AuthorizationStatus string
 
@@ -2762,8 +2463,6 @@ const (
 	Revoked                 AuthorizationStatus = "revoked"
 )
 
-// FIPS 199 security categorization (impact level).
-//
 // FIPS 199 security categorization level (impact level).
 type CategorizationLevel string
 
@@ -2793,10 +2492,8 @@ const (
 	Unidirectional Direction = "unidirectional"
 )
 
-// The type of assessment plan.
-//
-// The type of assessment. 'automated' for scanner-driven, 'manual' for human-performed,
-// 'hybrid' for both.
+// The type of assessment. 'automated' for scanner-driven, 'manual' for human-performed, 'hybrid'
+// for both.
 type PlanType string
 
 const (
@@ -2805,12 +2502,10 @@ const (
 	PlanTypeManual    PlanType = "manual"
 )
 
-// The type of HDF document being referenced.
-//
 // The type of document referenced in the evidence package. 'bom' covers any
-// Bill-of-Materials/manifest document (SBOM, AI model/dataset, and reserved future kinds) —
-// its specific kind is carried by the referenced document's bomType, not by a per-kind
-// Content_Type value.
+// Bill-of-Materials/manifest document (SBOM, AI model/dataset, and reserved future kinds) — its
+// specific kind is carried by the referenced document's bomType, not by a per-kind Content_Type
+// value.
 type ContentType string
 
 const (

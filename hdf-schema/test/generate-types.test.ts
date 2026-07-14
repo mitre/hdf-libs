@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { bundleSchemas } from '../src/bundle-schemas';
-import { generateTypes, hostIdentityStringFields, insertComponentFields } from '../src/generate-types';
+import { generateTypes, hostIdentityStringFields, insertComponentFields, normalizeSharedTypeDocs } from '../src/generate-types';
 import { createIndex } from '../src/create-index';
 
 const DIST_DIR = join(__dirname, '..', 'dist');
@@ -293,5 +293,48 @@ describe('Component identity-field reconciler', () => {
       const noClose = 'export interface Component {    name: string;';
       expect(insertComponentFields(noClose, [{ name: 'hostname', description: '' }])).toBe(noClose);
     });
+  });
+});
+
+describe('shared-type doc normalization (nxxy)', () => {
+  it('replaces an aggregated Go type doc with its canonical $def description', () => {
+    const src = [
+      '// Per-use A description.',
+      '//',
+      '// Cryptographic checksum for baseline integrity verification.',
+      '//',
+      '// Per-use B description.',
+      'type Checksum struct {',
+      '\tValue *string `json:"value"`',
+      '}',
+    ].join('\n');
+    const out = normalizeSharedTypeDocs(src, 'go');
+    expect(out).toContain(
+      '// Cryptographic checksum for baseline integrity verification.\ntype Checksum struct'
+    );
+    expect(out).not.toContain('Per-use A');
+    expect(out).not.toContain('Per-use B');
+  });
+
+  it('leaves a quicktype-invented type with no matching $def unchanged', () => {
+    const src = '// Some invented doc.\ntype SomeInventedUnionType struct {\n}';
+    expect(normalizeSharedTypeDocs(src, 'go')).toBe(src);
+  });
+
+  it('generated shared primitives carry exactly their own $def description (no $ref-sibling grab-bag)', () => {
+    const go = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
+    for (const t of ['Checksum', 'Integrity', 'Identity', 'Signature', 'Generator']) {
+      const m = go.match(new RegExp(`((?:^//[^\\n]*\\n)+)type ${t} `, 'm'));
+      expect(m, `${t} type doc block`).toBeTruthy();
+      const paragraphs = m![1].split(/^\/\/\s*$/m).filter((p) => p.trim());
+      expect(paragraphs.length, `${t} must have one description paragraph, not an aggregation`).toBe(1);
+    }
+  });
+
+  it('Checksum doc is its canonical description, not the amendment/evidence grab-bag', () => {
+    const go = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
+    const block = go.match(/((?:^\/\/[^\n]*\n)+)type Checksum /m)![1];
+    expect(block).toContain('baseline integrity verification');
+    expect(block).not.toMatch(/amendment|referenced artifact|referenced document/);
   });
 });

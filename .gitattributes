@@ -15,3 +15,8 @@ hdf-validators/test/**/*.json eol=lf
 # well in packfiles). Large full-scan fixtures that exceed ~1 MB should not
 # be committed — use trimmed or minimal versions for unit tests, and test
 # against full real data locally during converter development.
+
+# quicktype-generated Go types (regenerated from hdf-schema/src/schemas via
+# `pnpm build`; never hand-edited). Marked generated so GitHub collapses it in
+# diffs and code-review tools (Copilot) exclude it from their review budget.
+hdf-schema/dist/go/hdf.go linguist-generated=true

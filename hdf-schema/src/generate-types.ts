@@ -1,4 +1,4 @@
-import { mkdirSync, existsSync, writeFileSync, readFileSync } from 'fs';
+import { mkdirSync, existsSync, writeFileSync, readFileSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import {
@@ -74,6 +74,106 @@ function preprocessSchemaForQuicktype(schemaJson: string): string {
   }
 
   return JSON.stringify(walk(schema));
+}
+
+/**
+ * Normalize quicktype's shared-type doc comments.
+ *
+ * quicktype set-unions every `$ref`-sibling `description` onto the referenced
+ * type's doc comment (DescriptionTypeAttributeKind.combine), so a shared type
+ * like Checksum ends up with a grab-bag of unrelated per-use sentences. Per JSON
+ * Schema 2020-12 a `$ref`-sibling description annotates the referencing FIELD,
+ * not the referenced type — and every other generator (go-jsonschema,
+ * oapi-codegen, json-schema-to-typescript, datamodel-code-generator) treats it
+ * that way. quicktype has no flag to disable the union, so we correct its output:
+ * force each generated type's doc comment to equal its own `$def` description.
+ * The per-field docs quicktype already emits correctly are left untouched.
+ */
+
+/** Collapse a title / generated type name to a casing- and separator-insensitive
+ * key, so "External Evidence Reference", "ExternalEvidenceReference", and
+ * "SBOMCoverage" all match their `$def`. */
+function normKey(s: string): string {
+  return s.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+}
+
+/** normKey(title) -> the `$def`'s own description, for every source `$def` that
+ * carries both a title and a description. A title that collides on two different
+ * descriptions is dropped (ambiguous — leave those types alone). */
+function canonicalTypeDescriptions(): Map<string, string> {
+  const byKey = new Map<string, string>();
+  const dropped = new Set<string>();
+  const walkDir = (dir: string): string[] => {
+    const out: string[] = [];
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) out.push(...walkDir(p));
+      else if (e.name.endsWith('.schema.json')) out.push(p);
+    }
+    return out;
+  };
+  const add = (title?: string, description?: string): void => {
+    if (!title || !description) return;
+    const key = normKey(title);
+    const desc = description.replace(/\s+/g, ' ').trim();
+    if (byKey.has(key) && byKey.get(key) !== desc) dropped.add(key);
+    else byKey.set(key, desc);
+  };
+  for (const file of walkDir(join(__dirname, 'schemas'))) {
+    const schema = JSON.parse(readFileSync(file, 'utf-8')) as {
+      title?: string;
+      description?: string;
+      $defs?: Record<string, { title?: string; description?: string }>;
+    };
+    // Root document type (e.g. HDF Baseline) — quicktype can union an allOf-extended
+    // base type's description onto it, same grab-bag symptom.
+    add(schema.title, schema.description);
+    for (const def of Object.values(schema.$defs ?? {})) {
+      if (def && typeof def === 'object') add(def.title, def.description);
+    }
+  }
+  for (const k of dropped) byKey.delete(k);
+  return byKey;
+}
+
+/** Wrap a description as `// ` comment lines at ~100 cols (quicktype's width). */
+function wrapComment(text: string, linePrefix: string): string[] {
+  const lines: string[] = [];
+  let cur = linePrefix;
+  for (const w of text.split(' ')) {
+    if (cur !== linePrefix && (cur + ' ' + w).length > 100) {
+      lines.push(cur);
+      cur = linePrefix;
+    }
+    cur += (cur === linePrefix ? ' ' : ' ') + w;
+  }
+  lines.push(cur);
+  return lines;
+}
+
+/** Replace each generated type's doc comment with its own `$def` description,
+ * dropping quicktype's cross-reference description union. Exported for testing. */
+export function normalizeSharedTypeDocs(source: string, lang: 'go' | 'typescript'): string {
+  const byKey = canonicalTypeDescriptions();
+  if (lang === 'go') {
+    return source.replace(
+      /(?:^\/\/[^\n]*\n)+(type (\w+) )/gm,
+      (m, decl: string, name: string) => {
+        const canon = byKey.get(normKey(name));
+        return canon ? wrapComment(canon, '//').join('\n') + '\n' + decl : m;
+      },
+    );
+  }
+  // Anchor to a column-0 JSDoc block immediately before a column-0 export — a
+  // type doc. Field JSDocs are indented, so `^/**` never matches them (and an
+  // unanchored match would let `[\s\S]*?` swallow the interface body).
+  return source.replace(
+    /^\/\*\*\n(?: \*[^\n]*\n)* \*\/\n(export (?:interface|type|enum) (\w+))/gm,
+    (m, decl: string, name: string) => {
+      const canon = byKey.get(normKey(name));
+      return canon ? '/**\n' + wrapComment(canon, ' *').join('\n') + '\n */\n' + decl : m;
+    },
+  );
 }
 
 /** A plain-string identity property lifted from Host_Component. */
@@ -214,6 +314,7 @@ export async function generateTypes(): Promise<void> {
     const ext = lang.name === 'go' ? 'go' : 'ts';
     const outputPath = join(outputDir, `hdf.${ext}`);
     let output = result.lines.join('\n');
+    output = normalizeSharedTypeDocs(output, lang.name as 'go' | 'typescript');
     if (lang.name === 'typescript') {
       output = reinstateComponentIdentityFields(output);
     }
