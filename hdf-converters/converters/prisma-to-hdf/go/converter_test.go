@@ -1,6 +1,9 @@
 package prisma
 
 import (
+	"bytes"
+	"encoding/csv"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -404,4 +407,45 @@ func TestConvertPrisma_VerificationMethod(t *testing.T) {
 		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
 			"requirement %q expected verificationMethod=automated", req.ID)
 	}
+}
+
+// countPrismaCSVRows counts CSV data rows (everything after the header) via a
+// generic CSV walk, deliberately NOT the converter's prismaRecord struct or
+// column mapping. Prisma emits exactly one requirement per finding row (grouping
+// by hostname distributes rows across baselines but preserves the total, and
+// there is no dedup), so the data-row count is the ground-truth requirement
+// count. Uses a real CSV reader so quoted fields with embedded newlines count as
+// one row.
+func countPrismaCSVRows(t *testing.T, input []byte) int {
+	t.Helper()
+	r := csv.NewReader(bytes.NewReader(input))
+	r.LazyQuotes = true
+	r.FieldsPerRecord = -1
+	_, err := r.Read() // header
+	require.NoError(t, err, "failed to read Prisma CSV header for anchor count")
+	n := 0
+	for {
+		_, readErr := r.Read()
+		if readErr == io.EOF {
+			break
+		}
+		require.NoError(t, readErr, "error reading Prisma CSV row for anchor count")
+		n++
+	}
+	return n
+}
+
+// Ground-truth anchor (input-derived count; see shared/go/anchor.go). Golden
+// parity proves Go and TS agree, not that either is correct. Prisma emits one
+// requirement per CSV finding row (no dedup); assert that count derived
+// INDEPENDENTLY from the source CSV, so a silent under-extraction fails even when
+// both languages agree.
+func TestConvertPrisma_FindingRowAnchor(t *testing.T) {
+	input := loadFixture(t, "input/prismacloud_sample.csv")
+	result, err := ConvertPrismaToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	want := countPrismaCSVRows(t, input)
+	shared.AssertRequirementCount(t, result, want,
+		"prismacloud_sample.csv: one requirement per CSV finding row")
 }

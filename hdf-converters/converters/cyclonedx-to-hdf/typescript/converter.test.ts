@@ -5,6 +5,10 @@ import { describe, it, expect } from 'vitest';
 import { convertCyclonedxToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import {
+  assertRequirementCount,
+  countJsonItemsUnderKey,
+} from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -18,6 +22,21 @@ runConverterContractTests({
   converterName: 'cyclonedx-to-hdf',
   convertFn: convertCyclonedxToHdf,
   minimalFixture: 'minimal-vulns.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per BOM vulnerabilities[] entry (no grouping/dedup), counted
+// independently of the converter's parser so a silent under-extraction fails even
+// when Go/TS agree. dropwizard-vulns.json carries 87 vulnerabilities.
+describe('cyclonedx-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per vulnerabilities[] entry', async () => {
+    const input = loadFixture('dropwizard-vulns.json');
+    assertRequirementCount(
+      await convertCyclonedxToHdf(input),
+      countJsonItemsUnderKey(input, 'vulnerabilities'),
+      'dropwizard-vulns.json: one requirement per vulnerabilities[]',
+    );
+  });
 });
 
 describe('timestamp parse fallback', () => {

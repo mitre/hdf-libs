@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { convertNetsparkerToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
@@ -49,6 +50,21 @@ describe('timestamp parse fallback', () => {
 });
 
 describe('Netsparker to HDF converter', () => {
+  // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+  // Golden parity proves Go and TS agree, not that either is correct.
+  // Netsparker emits one requirement per <vulnerability> element (no
+  // grouping/dedup); assert that count derived INDEPENDENTLY from the source
+  // XML, catching a silent under-extraction even when both languages agree.
+  it('emits one requirement per <vulnerability> (sample-netsparker-invicti.xml)', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const result = await convertNetsparkerToHdf(input);
+    assertRequirementCount(
+      result,
+      countXmlElements(input, 'vulnerability'),
+      'sample-netsparker-invicti.xml: one requirement per <vulnerability>',
+    );
+  });
+
   // ---- Baseline structure ----
 
   it('should produce exactly one baseline', async () => {

@@ -1,6 +1,10 @@
 package veracode
 
 import (
+	"bytes"
+	"encoding/xml"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -264,6 +268,68 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "veracode-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertVeracodeToHDF(input, "1.0.0")
 	})
+}
+
+// countVeracodeEmissionUnits walks the raw Veracode XML generically — NOT via
+// the converter's structs — and returns the number of requirements the
+// converter should emit: one per CWE <category> element plus one per DISTINCT
+// SCA cve_id. The CWE side emits per-category unconditionally; the CVE side
+// groups/dedups by cve_id across components (skipping components whose
+// vulnerabilities attr is "0"), so a plain <vulnerability> count would overshoot.
+func countVeracodeEmissionUnits(t *testing.T, input []byte) int {
+	t.Helper()
+	dec := xml.NewDecoder(bytes.NewReader(input))
+	dec.Strict = false
+	dec.CharsetReader = func(_ string, r io.Reader) (io.Reader, error) { return r, nil }
+	categories := 0
+	distinctCVE := make(map[string]struct{})
+	componentSkipped := false
+	for {
+		tok, err := dec.Token()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		require.NoError(t, err, "veracode anchor: XML token error")
+		se, ok := tok.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		switch se.Name.Local {
+		case "category":
+			categories++
+		case "component":
+			componentSkipped = attr(se, "vulnerabilities") == "0"
+		case "vulnerability":
+			if componentSkipped {
+				continue
+			}
+			if cve := attr(se, "cve_id"); cve != "" {
+				distinctCVE[cve] = struct{}{}
+			}
+		}
+	}
+	return categories + len(distinctCVE)
+}
+
+func attr(se xml.StartElement, name string) string {
+	for _, a := range se.Attr {
+		if a.Name.Local == name {
+			return a.Value
+		}
+	}
+	return ""
+}
+
+// Ground-truth anchor: the converter emits one requirement per CWE <category>
+// plus one per distinct SCA cve_id. The count is derived independently of the
+// converter's parser, so a silent under-extraction fails even when Go/TS golden
+// parity agrees. veracode.xml carries 14 categories + 39 distinct CVEs = 53.
+func TestConvertVeracodeToHDF_EmissionAnchor(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countVeracodeEmissionUnits(t, input),
+		"veracode.xml: one requirement per CWE category + one per distinct SCA cve_id")
 }
 
 func TestConvertVeracodeToHDF_NoFindings(t *testing.T) {

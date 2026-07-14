@@ -303,6 +303,42 @@ func TestConvertSplunkToHDF_ControlType(t *testing.T) {
 	assert.True(t, sawDerivation, "at least one requirement should derive controlType")
 }
 
+// countSplunkControlEvents walks the raw Splunk event array — deliberately NOT
+// the converter's structs — and returns the number of events whose
+// meta.subtype is "control". Splunk input is a flat array of header/profile/
+// control events; the converter emits exactly one requirement per control
+// event, so the control-event count is the emission-unit ground truth
+// (header and profile events must be excluded).
+func countSplunkControlEvents(t *testing.T, input []byte) int {
+	t.Helper()
+	var events []struct {
+		Meta struct {
+			Subtype string `json:"subtype"`
+		} `json:"meta"`
+	}
+	require.NoError(t, json.Unmarshal(input, &events), "failed to parse Splunk JSON for anchor count")
+	n := 0
+	for _, e := range events {
+		if e.Meta.Subtype == "control" {
+			n++
+		}
+	}
+	return n
+}
+
+// Ground-truth anchor: the converter emits one requirement per control event
+// (meta.subtype == "control"). The count is derived independently of the
+// converter's parser, so a silent under-extraction (e.g. dropping a control
+// event) fails even when Go/TS golden parity agrees. splunk-events.json holds
+// 8 events, of which 6 are controls.
+func TestConvertSplunkToHDF_ControlEventAnchor(t *testing.T) {
+	input := loadEventsFixture(t)
+	result, err := ConvertSplunkToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countSplunkControlEvents(t, input),
+		"splunk-events.json: one requirement per meta.subtype==control event")
+}
+
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "splunk-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertSplunkToHDF(input, "1.0.0")

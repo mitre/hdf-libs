@@ -476,6 +476,19 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+// Ground-truth anchor: the converter emits one requirement per BOM
+// vulnerabilities[] entry (no grouping/dedup). The array count is derived
+// independently of the converter's parser, so a silent under-extraction fails
+// even when Go/TS golden parity agrees. dropwizard-vulns.json carries 87
+// vulnerabilities.
+func TestConvertCycloneDX_VulnerabilityAnchor(t *testing.T) {
+	input := loadFixture(t, "input/dropwizard-vulns.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "vulnerabilities"),
+		"dropwizard-vulns.json: one requirement per vulnerabilities[]")
+}
+
 func TestConvertCycloneDX_VerificationMethodNotSet(t *testing.T) {
 	input := loadFixture(t, "input/dropwizard-vulns.json")
 	result, err := ConvertCycloneDXToHDF(input, testVersion)

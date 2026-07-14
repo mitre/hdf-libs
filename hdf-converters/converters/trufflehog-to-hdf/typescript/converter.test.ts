@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { convertTrufflehogToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -18,6 +19,44 @@ runConverterContractTests({
   converterName: 'trufflehog-to-hdf',
   convertFn: convertTrufflehogToHdf,
   minimalFixture: 'minimal.json',
+});
+
+// countDistinctTrufflehogGroups parses raw TruffleHog output generically — NOT
+// via the converter's parser — and returns the number of distinct
+// "DetectorName DecoderName" groups. TruffleHog's emission unit is that group
+// (findings sharing a detector+decoder collapse into one requirement with many
+// results), so a plain findings count would overshoot. Accepts the same three
+// input shapes the converter does: JSON array, single JSON object, or NDJSON.
+function countDistinctTrufflehogGroups(input: string): number {
+  type Finding = { DetectorName?: string; DecoderName?: string };
+  let findings: Finding[];
+  try {
+    const parsed = JSON.parse(input) as Finding | Finding[];
+    findings = Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    findings = input
+      .trim()
+      .split('\n')
+      .filter((line) => line.trim().length > 0)
+      .map((line) => JSON.parse(line) as Finding);
+  }
+  const distinct = new Set(findings.map((f) => `${f.DetectorName ?? ''} ${f.DecoderName ?? ''}`));
+  return distinct.size;
+}
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per DISTINCT DetectorName+DecoderName group, counted
+// independently of the converter's parser so a silent under-extraction fails
+// even when Go/TS agree. multi-detector.json's 3 findings collapse to 2 groups.
+describe('trufflehog-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per distinct DetectorName+DecoderName', async () => {
+    const input = loadFixture('multi-detector.json');
+    assertRequirementCount(
+      await convertTrufflehogToHdf(input),
+      countDistinctTrufflehogGroups(input),
+      'multi-detector.json: one requirement per distinct DetectorName+DecoderName',
+    );
+  });
 });
 
 describe('trufflehog to HDF converter', async () => {

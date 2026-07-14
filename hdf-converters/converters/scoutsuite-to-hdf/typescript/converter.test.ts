@@ -4,11 +4,31 @@ import { describe, it, expect } from 'vitest';
 import { convertScoutsuiteToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
 function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, name), 'utf-8');
+}
+
+// countScoutsuiteFindings counts every finding across all services by walking
+// the raw ScoutSuite document — deliberately NOT the converter's parser.
+// ScoutSuite holds findings as a MAP keyed by rule id under
+// services[*].findings, so countJsonItemsUnderKey (which counts array items)
+// does not apply; the emission unit is one requirement per findings map entry.
+// The JS variable prefix is stripped the same way the converter does.
+function countScoutsuiteFindings(input: string): number {
+  const idx = input.indexOf('{');
+  const json = idx > 0 ? input.slice(idx) : input;
+  const doc = JSON.parse(json) as {
+    services?: Record<string, { findings?: Record<string, unknown> }>;
+  };
+  let n = 0;
+  for (const svc of Object.values(doc.services ?? {})) {
+    n += Object.keys(svc.findings ?? {}).length;
+  }
+  return n;
 }
 
 function parseOutput(output: string) {
@@ -28,6 +48,20 @@ runConverterContractTests({
   converterName: 'scoutsuite-to-hdf',
   convertFn: convertScoutsuiteToHdf,
   minimalFixture: 'scoutsuite_sample.js',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per services[*].findings entry, counted independently of the
+// converter so a silent under-extraction fails even when Go/TS parity agrees.
+describe('scoutsuite-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per services[*].findings entry', async () => {
+    const input = loadFixture('input/scoutsuite_sample.js');
+    assertRequirementCount(
+      await convertScoutsuiteToHdf(input),
+      countScoutsuiteFindings(input),
+      'scoutsuite_sample.js: one requirement per services[*].findings entry',
+    );
+  });
 });
 
 describe('ScoutSuite to HDF Converter', () => {

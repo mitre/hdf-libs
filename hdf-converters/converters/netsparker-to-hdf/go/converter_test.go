@@ -446,3 +446,18 @@ func TestConvertNetsparker_VerificationMethod(t *testing.T) {
 			"requirement %q: Netsparker/Invicti is an automated DAST scanner", req.ID)
 	}
 }
+
+// Ground-truth anchor (input-derived count; see shared/go/anchor.go). Golden
+// parity proves Go and TS agree, not that either is correct. Netsparker emits
+// one requirement per <vulnerability> element (no grouping/dedup); assert that
+// count derived INDEPENDENTLY from the source XML, so a silent under-extraction
+// fails even when both languages agree.
+func TestConvertNetsparker_VulnerabilityAnchor(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	want := shared.CountXMLElements(t, input, "vulnerability")
+	shared.AssertRequirementCount(t, result, want,
+		"sample-netsparker-invicti.xml: one requirement per <vulnerability>")
+}

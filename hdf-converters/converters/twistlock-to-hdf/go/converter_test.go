@@ -408,6 +408,19 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+// Ground-truth anchor: the converter emits one requirement per results[].
+// vulnerabilities[] entry (no grouping/dedup). The array count is derived
+// independently of the converter's parser, so a silent under-extraction fails
+// even when Go/TS golden parity agrees. twistlock-twistcli-sample-1.json carries
+// 97 vulnerabilities.
+func TestConvertTwistlock_VulnerabilityAnchor(t *testing.T) {
+	input := loadFixture(t, "input/twistlock-twistcli-sample-1.json")
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "vulnerabilities"),
+		"twistlock-twistcli-sample-1.json: one requirement per results[].vulnerabilities[]")
+}
+
 // ---- Structured CVE-ecosystem fields (cvss[], cwe[], affectedPackages[]) ----
 
 func TestConvertTwistlock_CvssPopulated_CodeRepo(t *testing.T) {

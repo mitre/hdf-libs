@@ -6,6 +6,7 @@ import { convertSnykToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { DEFAULT_MAX_INPUT_SIZE } from '../../../shared/typescript/converterutil.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -15,10 +16,40 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+// countDistinctSnykVulnIDs walks the raw Snyk document — deliberately NOT the
+// converter's parser — and returns the number of distinct vulnerabilities[].id
+// values. Snyk groups every entry sharing an id into one requirement, so a plain
+// vulnerabilities count overshoots; the emission unit is the distinct vuln id.
+// Handles both single-project (object) and multi-project (array) input.
+function countDistinctSnykVulnIDs(input: string): number {
+  const parsed = JSON.parse(input) as unknown;
+  const projects = Array.isArray(parsed) ? parsed : [parsed];
+  const distinct = new Set<string>();
+  for (const p of projects as Array<{ vulnerabilities?: Array<{ id: string }> }>) {
+    for (const v of p.vulnerabilities ?? []) distinct.add(v.id);
+  }
+  return distinct.size;
+}
+
 runConverterContractTests({
   converterName: 'snyk-to-hdf',
   convertFn: convertSnykToHdf,
   minimalFixture: 'minimal.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per DISTINCT vulnerabilities[].id, counted independently of
+// the converter so a silent under-extraction fails even when Go/TS parity
+// agrees. nodejs-goof-local's 379 vulns collapse to 94 distinct ids.
+describe('snyk-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per distinct vulnerabilities[].id', async () => {
+    const input = loadFixture('nodejs-goof-local.json');
+    assertRequirementCount(
+      await convertSnykToHdf(input),
+      countDistinctSnykVulnIDs(input),
+      'nodejs-goof-local.json: one requirement per distinct vulnerabilities[].id',
+    );
+  });
 });
 
 describe('snyk to HDF converter', async () => {

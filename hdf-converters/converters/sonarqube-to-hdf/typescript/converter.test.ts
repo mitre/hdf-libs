@@ -5,14 +5,46 @@ import { fileURLToPath } from 'url';
 import { convertSonarqubeToHdf, selectSeverity } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// countDistinctSonarqubeProjectRules walks the raw SonarQube document —
+// deliberately NOT the converter's parser — and returns the number of distinct
+// (project, rule) pairs across issues[]. The converter double-groups issues by
+// project (baselines) then by rule (requirements), so the emission unit is one
+// requirement per distinct (project, rule) pair; a plain issues count overshoots
+// whenever two issues share both project and rule.
+function countDistinctSonarqubeProjectRules(input: string): number {
+  const doc = JSON.parse(input) as {
+    issues?: Array<{ project?: string; rule?: string }>;
+  };
+  const distinct = new Set<string>();
+  for (const i of doc.issues ?? []) {
+    distinct.add(`${i.project ?? ''} ${i.rule ?? ''}`);
+  }
+  return distinct.size;
+}
 
 runConverterContractTests({
   converterName: 'sonarqube-to-hdf',
   convertFn: convertSonarqubeToHdf,
   minimalFixture: 'minimal.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per distinct (project, rule) pair, counted independently of
+// the converter so a silent under-extraction fails even when Go/TS parity agrees.
+describe('sonarqube-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per distinct (project, rule) pair', async () => {
+    const input = readFileSync(join(__dirname, '../fixtures/input/mqr.json'), 'utf-8');
+    assertRequirementCount(
+      await convertSonarqubeToHdf(input),
+      countDistinctSonarqubeProjectRules(input),
+      'mqr.json: one requirement per distinct (project, rule) pair',
+    );
+  });
 });
 
 describe('SonarQube to HDF Converter', async () => {

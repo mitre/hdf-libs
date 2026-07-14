@@ -5,14 +5,41 @@ import { fileURLToPath } from 'url';
 import { convertSplunkToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// countSplunkControlEvents walks the raw Splunk event array — deliberately NOT
+// the converter's parser — and returns the number of events whose meta.subtype
+// is "control". Splunk input is a flat array of header/profile/control events;
+// the converter emits exactly one requirement per control event, so the
+// control-event count is the emission-unit ground truth (header and profile
+// events must be excluded).
+function countSplunkControlEvents(input: string): number {
+  const events = JSON.parse(input) as Array<{ meta?: { subtype?: string } }>;
+  return events.filter(e => e.meta?.subtype === 'control').length;
+}
 
 runConverterContractTests({
   converterName: 'splunk-to-hdf',
   convertFn: convertSplunkToHdf,
   minimalFixture: 'splunk-events.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per meta.subtype=="control" event, counted independently of
+// the converter so a silent under-extraction fails even when Go/TS parity
+// agrees. splunk-events.json holds 8 events, of which 6 are controls.
+describe('splunk-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per control event', async () => {
+    const input = loadFixture('splunk-events.json');
+    assertRequirementCount(
+      await convertSplunkToHdf(input),
+      countSplunkControlEvents(input),
+      'splunk-events.json: one requirement per meta.subtype==control event',
+    );
+  });
 });
 
 describe('timestamp parse fallback', () => {

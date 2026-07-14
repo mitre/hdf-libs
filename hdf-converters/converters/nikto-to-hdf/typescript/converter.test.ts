@@ -3,9 +3,23 @@ import {join} from 'path';
 import {describe, expect, it} from 'vitest';
 import {convertNiktoToHdf} from './converter';
 import {runConverterContractTests} from '../../../shared/typescript/converter-contract.js';
+import {assertRequirementCount} from '../../../shared/typescript/anchor.js';
 import {expectValidResults} from '../../../test/helpers/expectValidHdf.js';
 import {parseJSON} from '@mitre/hdf-utilities';
 import type {HDFResults} from '@mitre/hdf-schema';
+
+// countDistinctNiktoIDs parses raw Nikto JSON — deliberately NOT the converter's
+// parser — and returns the number of vulnerabilities distinct by id. The
+// converter groups vulnerabilities by id (duplicates fold into one requirement),
+// so a plain array count over-counts when ids repeat; this mirrors the grouping.
+function countDistinctNiktoIDs(input: string): number {
+  const doc = JSON.parse(input) as {vulnerabilities?: Array<{id?: string}>};
+  const distinct = new Set<string | undefined>();
+  for (const v of doc.vulnerabilities ?? []) {
+    distinct.add(v.id);
+  }
+  return distinct.size;
+}
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -20,6 +34,21 @@ runConverterContractTests({
 });
 
 describe('Nikto Converter', async () => {
+  // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+  // Golden parity proves Go and TS agree, not that either is correct. Nikto
+  // emits one requirement per distinct vulnerability id (it groups by id);
+  // assert that distinct count derived INDEPENDENTLY from the source, catching a
+  // silent under-extraction even when both languages agree.
+  it('emits one requirement per distinct vulnerability id (zero.webappsecurity.json)', async () => {
+    const input = loadFixture('zero.webappsecurity.json');
+    const result = await convertNiktoToHdf(input);
+    assertRequirementCount(
+      result,
+      countDistinctNiktoIDs(input),
+      'zero.webappsecurity.json: one requirement per distinct vulnerability id',
+    );
+  });
+
   describe('validation', () => {
     it('should synthesize a passed placeholder when vulnerabilities array is missing', async () => {
       const input = JSON.stringify({host: 'example.com', port: '80'});

@@ -1,8 +1,10 @@
 package scoutsuite
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -380,6 +382,44 @@ func TestConvertScoutsuiteToHDF_ControlType(t *testing.T) {
 		}
 	}
 	assert.True(t, sawDerivation, "at least one requirement should derive controlType")
+}
+
+// countScoutsuiteFindings counts every finding across all services by walking
+// the raw ScoutSuite document — deliberately NOT the converter's structs.
+// ScoutSuite holds findings as a MAP keyed by rule id under
+// services[*].findings, so CountJSONItemsUnderKey (which counts array items)
+// does not apply; the emission unit is one requirement per findings map entry
+// (collapseFindings flattens with no dedup). The JS variable prefix is stripped
+// the same way the converter does before JSON parsing.
+func countScoutsuiteFindings(t *testing.T, input []byte) int {
+	t.Helper()
+	s := string(input)
+	if idx := strings.Index(s, "{"); idx > 0 {
+		s = s[idx:]
+	}
+	var doc struct {
+		Services map[string]struct {
+			Findings map[string]json.RawMessage `json:"findings"`
+		} `json:"services"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(s), &doc), "failed to parse ScoutSuite JSON for anchor count")
+	n := 0
+	for _, svc := range doc.Services {
+		n += len(svc.Findings)
+	}
+	return n
+}
+
+// Ground-truth anchor: the converter emits one requirement per finding across
+// all services[*].findings map entries. The count is derived independently of
+// the converter's parser, so a silent under-extraction (e.g. dropping a
+// service's findings) fails even when Go/TS golden parity agrees.
+func TestConvertScoutsuiteToHDF_FindingsAnchor(t *testing.T) {
+	input := loadFixture(t, "input/scoutsuite_sample.js")
+	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countScoutsuiteFindings(t, input),
+		"scoutsuite_sample.js: one requirement per services[*].findings entry")
 }
 
 func TestSnapshots(t *testing.T) {

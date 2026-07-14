@@ -1,6 +1,7 @@
 package neuvector
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -472,4 +473,44 @@ func TestConvertNeuVector_VerificationMethod(t *testing.T) {
 		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
 			"requirement %q: NeuVector is an automated container vulnerability scanner", req.ID)
 	}
+}
+
+// countDistinctNeuVectorVulns unmarshals raw NeuVector JSON into a minimal local
+// struct — deliberately NOT the converter's structs — and returns the number of
+// vulnerabilities distinct by the composite ID name/package_name/package_version.
+// The converter dedups on that key, so a plain array count over-counts; this
+// mirrors the dedup independently to give the true ground-truth requirement count.
+func countDistinctNeuVectorVulns(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Report struct {
+			Vulnerabilities []struct {
+				Name           string `json:"name"`
+				PackageName    string `json:"package_name"`
+				PackageVersion string `json:"package_version"`
+			} `json:"vulnerabilities"`
+		} `json:"report"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "failed to parse NeuVector JSON for anchor count")
+	distinct := make(map[string]struct{})
+	for _, v := range doc.Report.Vulnerabilities {
+		distinct[v.Name+"/"+v.PackageName+"/"+v.PackageVersion] = struct{}{}
+	}
+	return len(distinct)
+}
+
+// Ground-truth anchor (input-derived count; see shared/go/anchor.go). Golden
+// parity proves Go and TS agree, not that either is correct. NeuVector emits one
+// requirement per vulnerability distinct by name/package_name/package_version
+// (it dedups on that composite ID); assert that distinct count derived
+// INDEPENDENTLY from the source, so a silent under-extraction fails even when
+// both languages agree.
+func TestConvertNeuVector_VulnerabilityAnchor(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	want := countDistinctNeuVectorVulns(t, input)
+	shared.AssertRequirementCount(t, result, want,
+		"neuvector-mitre-heimdall.json: one requirement per distinct name/package_name/package_version vulnerability")
 }

@@ -1,6 +1,7 @@
 package trufflehog
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -322,6 +323,53 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "trufflehog-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertTrufflehogToHDF(input, "1.0.0")
 	})
+}
+
+// countDistinctTrufflehogGroups parses raw TruffleHog output generically — NOT
+// via the converter's parser — and returns the number of distinct
+// "DetectorName DecoderName" groups. TruffleHog's emission unit is that group
+// (findings sharing a detector+decoder collapse into one requirement with many
+// results), so a plain findings count would overshoot. Accepts the same three
+// input shapes the converter does: JSON array, single JSON object, or NDJSON.
+func countDistinctTrufflehogGroups(t *testing.T, input []byte) int {
+	t.Helper()
+	type finding struct {
+		DetectorName string `json:"DetectorName"`
+		DecoderName  string `json:"DecoderName"`
+	}
+	var findings []finding
+	if err := json.Unmarshal(input, &findings); err != nil {
+		var single finding
+		if err := json.Unmarshal(input, &single); err == nil {
+			findings = []finding{single}
+		} else {
+			for _, line := range bytes.Split(bytes.TrimSpace(input), []byte("\n")) {
+				if len(bytes.TrimSpace(line)) == 0 {
+					continue
+				}
+				var f finding
+				require.NoError(t, json.Unmarshal(line, &f), "failed to parse trufflehog NDJSON line for anchor count")
+				findings = append(findings, f)
+			}
+		}
+	}
+	distinct := make(map[string]struct{})
+	for _, f := range findings {
+		distinct[f.DetectorName+" "+f.DecoderName] = struct{}{}
+	}
+	return len(distinct)
+}
+
+// Ground-truth anchor: the converter emits one requirement per DISTINCT
+// DetectorName+DecoderName group. The distinct count is derived independently of
+// the converter's parser, so a silent under-extraction fails even when Go/TS
+// golden parity agrees. multi-detector.json's 3 findings collapse to 2 groups.
+func TestConvertTrufflehogToHDF_DistinctGroupAnchor(t *testing.T) {
+	input := loadFixture(t, "input/multi-detector.json")
+	result, err := ConvertTrufflehogToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countDistinctTrufflehogGroups(t, input),
+		"multi-detector.json: one requirement per distinct DetectorName+DecoderName")
 }
 
 func TestConvertTrufflehogToHDF_VerificationMethod(t *testing.T) {

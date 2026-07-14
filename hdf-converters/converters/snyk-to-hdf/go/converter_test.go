@@ -1,6 +1,7 @@
 package snyk
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -400,6 +401,46 @@ func TestConvertSnyk_ControlType(t *testing.T) {
 		}
 	}
 	assert.True(t, sawDerivation, "at least one requirement should derive controlType")
+}
+
+// countDistinctSnykVulnIDs walks the raw Snyk document — deliberately NOT the
+// converter's structs — and returns the number of distinct vulnerabilities[].id
+// values. Snyk's emission unit is the distinct vuln id (groupByID collapses
+// every entry sharing an id into one requirement with many results), so a plain
+// vulnerabilities count overshoots. Handles both single-project (object) and
+// multi-project (array) input.
+func countDistinctSnykVulnIDs(t *testing.T, input []byte) int {
+	t.Helper()
+	type project struct {
+		Vulnerabilities []struct {
+			ID string `json:"id"`
+		} `json:"vulnerabilities"`
+	}
+	var projects []project
+	if err := json.Unmarshal(input, &projects); err != nil {
+		var single project
+		require.NoError(t, json.Unmarshal(input, &single), "failed to parse Snyk JSON for anchor count")
+		projects = []project{single}
+	}
+	distinct := make(map[string]struct{})
+	for _, p := range projects {
+		for _, v := range p.Vulnerabilities {
+			distinct[v.ID] = struct{}{}
+		}
+	}
+	return len(distinct)
+}
+
+// Ground-truth anchor: the converter emits one requirement per DISTINCT vuln id.
+// The distinct count is derived independently of the converter's parser, so a
+// silent under-extraction (e.g. dropping a vuln group) fails even when Go/TS
+// golden parity agrees. nodejs-goof-local's 379 vulns collapse to 94 ids.
+func TestConvertSnyk_DistinctVulnIDAnchor(t *testing.T) {
+	input := loadFixture(t, "input/nodejs-goof-local.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countDistinctSnykVulnIDs(t, input),
+		"nodejs-goof-local.json: one requirement per distinct vulnerabilities[].id")
 }
 
 func TestSnapshots(t *testing.T) {

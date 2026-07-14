@@ -1,6 +1,7 @@
 package nikto_to_hdf
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -288,4 +289,39 @@ func TestConvertNiktoToHDF_VerificationMethod(t *testing.T) {
 		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
 			"requirement %q: Nikto is an automated web server scanner", req.ID)
 	}
+}
+
+// countDistinctNiktoIDs parses raw Nikto JSON into a minimal local struct —
+// deliberately NOT the converter's structs — and returns the number of
+// vulnerabilities distinct by id. The converter groups vulnerabilities by id
+// (duplicates fold into one requirement with extra results), so a plain array
+// count over-counts when ids repeat; this mirrors the grouping independently.
+func countDistinctNiktoIDs(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Vulnerabilities []struct {
+			ID string `json:"id"`
+		} `json:"vulnerabilities"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "failed to parse Nikto JSON for anchor count")
+	distinct := make(map[string]struct{})
+	for _, v := range doc.Vulnerabilities {
+		distinct[v.ID] = struct{}{}
+	}
+	return len(distinct)
+}
+
+// Ground-truth anchor (input-derived count; see shared/go/anchor.go). Golden
+// parity proves Go and TS agree, not that either is correct. Nikto emits one
+// requirement per distinct vulnerability id (it groups by id); assert that
+// distinct count derived INDEPENDENTLY from the source, so a silent
+// under-extraction fails even when both languages agree.
+func TestConvertNiktoToHDF_VulnerabilityAnchor(t *testing.T) {
+	input := loadFixture(t, "input/zero.webappsecurity.json")
+	result, err := ConvertNiktoToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	want := countDistinctNiktoIDs(t, input)
+	shared.AssertRequirementCount(t, result, want,
+		"zero.webappsecurity.json: one requirement per distinct vulnerability id")
 }

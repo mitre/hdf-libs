@@ -4,8 +4,26 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertNeuvectorToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
+
+// countDistinctNeuVectorVulns parses raw NeuVector JSON — deliberately NOT the
+// converter's parser — and returns the number of vulnerabilities distinct by the
+// composite ID name/package_name/package_version. The converter dedups on that
+// key, so a plain array count over-counts; this mirrors the dedup independently.
+function countDistinctNeuVectorVulns(input: string): number {
+  const doc = JSON.parse(input) as {
+    report?: {
+      vulnerabilities?: Array<{ name?: string; package_name?: string; package_version?: string }>;
+    };
+  };
+  const distinct = new Set<string>();
+  for (const v of doc.report?.vulnerabilities ?? []) {
+    distinct.add(`${v.name}/${v.package_name}/${v.package_version}`);
+  }
+  return distinct.size;
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -21,6 +39,22 @@ runConverterContractTests({
 });
 
 describe('neuvector to HDF converter', async () => {
+  // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+  // Golden parity proves Go and TS agree, not that either is correct. NeuVector
+  // emits one requirement per vulnerability distinct by
+  // name/package_name/package_version (it dedups on that composite ID); assert
+  // that distinct count derived INDEPENDENTLY from the source, catching a silent
+  // under-extraction even when both languages agree.
+  it('emits one requirement per distinct vulnerability (neuvector-mitre-heimdall.json)', async () => {
+    const input = loadFixture('neuvector-mitre-heimdall.json');
+    const result = await convertNeuvectorToHdf(input);
+    assertRequirementCount(
+      result,
+      countDistinctNeuVectorVulns(input),
+      'neuvector-mitre-heimdall.json: one requirement per distinct name/package_name/package_version vulnerability',
+    );
+  });
+
   describe('conversion basics', async () => {
     it('should produce valid HDF from minimal fixture', async () => {
       const output = await convertNeuvectorToHdf(loadFixture('minimal.json'));

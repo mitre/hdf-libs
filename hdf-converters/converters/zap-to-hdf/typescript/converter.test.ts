@@ -5,6 +5,7 @@ import {describe, expect, it} from 'vitest';
 import {convertZapToHdf} from './converter';
 import {runConverterContractTests} from '../../../shared/typescript/converter-contract.js';
 import {expectValidResults} from '../../../test/helpers/expectValidHdf.js';
+import {assertRequirementCount} from '../../../shared/typescript/anchor.js';
 import {parseJSON} from '@mitre/hdf-utilities';
 import type {HDFResults} from '@mitre/hdf-schema';
 
@@ -19,6 +20,33 @@ runConverterContractTests({
   converterName: 'zap-to-hdf',
   convertFn: convertZapToHdf,
   minimalFixture: 'minimal.json',
+});
+
+// countSelectedSiteAlerts parses raw ZAP JSON generically — NOT via the
+// converter's parser — and returns the alert count of the site with the MOST
+// alerts. The converter processes only that one site (selectSite) and emits one
+// requirement per alert (the pluginid dedup only uniquifies IDs, it does not
+// collapse alerts), so a whole-document "alerts" count would overshoot when the
+// report has multiple sites.
+function countSelectedSiteAlerts(input: string): number {
+  const doc = JSON.parse(input) as {site?: Array<{alerts?: unknown[]}>};
+  return (doc.site ?? []).reduce((best, s) => Math.max(best, s.alerts?.length ?? 0), 0);
+}
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// the converter selects the single site with the most alerts and emits one
+// requirement per alert of that site, counted independently of the converter's
+// parser so a silent under-extraction fails even when Go/TS agree. webgoat.json's
+// busiest site has 25 alerts (of 28 across all 4 sites).
+describe('zap-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per alert of the site with the most alerts', async () => {
+    const input = loadFixture('webgoat.json');
+    assertRequirementCount(
+      await convertZapToHdf(input),
+      countSelectedSiteAlerts(input),
+      'webgoat.json: one requirement per alert of the site with the most alerts',
+    );
+  });
 });
 
 describe('ZAP Converter', () => {

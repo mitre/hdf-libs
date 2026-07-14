@@ -1,6 +1,7 @@
 package sonarqube
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -615,6 +616,40 @@ func TestConvertSonarqubeToHDF_ControlType(t *testing.T) {
 		}
 	}
 	assert.True(t, sawDerivation, "at least one requirement should derive controlType")
+}
+
+// countDistinctSonarqubeProjectRules walks the raw SonarQube document —
+// deliberately NOT the converter's structs — and returns the number of distinct
+// (project, rule) pairs across issues[]. The converter double-groups: issues by
+// project into baselines, then by rule into requirements, so the emission unit
+// is one requirement per distinct (project, rule) pair. A plain issues count
+// overshoots whenever two issues share both project and rule.
+func countDistinctSonarqubeProjectRules(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Issues []struct {
+			Project string `json:"project"`
+			Rule    string `json:"rule"`
+		} `json:"issues"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "failed to parse SonarQube JSON for anchor count")
+	distinct := make(map[[2]string]struct{})
+	for _, i := range doc.Issues {
+		distinct[[2]string{i.Project, i.Rule}] = struct{}{}
+	}
+	return len(distinct)
+}
+
+// Ground-truth anchor: the converter emits one requirement per distinct
+// (project, rule) pair. The count is derived independently of the converter's
+// parser, so a silent under-extraction (e.g. dropping a rule group) fails even
+// when Go/TS golden parity agrees.
+func TestConvertSonarqubeToHDF_ProjectRuleAnchor(t *testing.T) {
+	input := loadMQRFixture(t)
+	result, err := ConvertSonarqubeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countDistinctSonarqubeProjectRules(t, input),
+		"mqr.json: one requirement per distinct (project, rule) pair")
 }
 
 func TestSnapshots(t *testing.T) {

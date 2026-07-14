@@ -3,8 +3,40 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertPrismaToHdf } from './converter.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
+
+// countPrismaCsvRows counts CSV data rows (everything after the header) with a
+// minimal RFC-4180 quote-aware scan — deliberately NOT the converter's parseCsv
+// or PrismaRecord model. It tracks quote state so a quoted field with embedded
+// newlines counts as part of one record. Prisma emits exactly one requirement
+// per finding row (grouping by hostname preserves the total; no dedup), so the
+// data-row count is the ground-truth requirement count.
+function countPrismaCsvRows(input: string): number {
+  let records = 0;
+  let inQuotes = false;
+  let sawContent = false;
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    if (ch === '"') {
+      if (inQuotes && input[i + 1] === '"') {
+        i++; // escaped quote inside a quoted field
+      } else {
+        inQuotes = !inQuotes;
+      }
+      sawContent = true;
+    } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (sawContent) records++;
+      if (ch === '\r' && input[i + 1] === '\n') i++;
+      sawContent = false;
+    } else {
+      sawContent = true;
+    }
+  }
+  if (sawContent) records++; // final row without a trailing newline
+  return records - 1; // minus the header row
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -22,6 +54,21 @@ function findRequirement(reqs: EvaluatedRequirement[], id: string): EvaluatedReq
 }
 
 describe('prisma to HDF converter', () => {
+  // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+  // Golden parity proves Go and TS agree, not that either is correct. Prisma
+  // emits one requirement per CSV finding row (no dedup); assert that count
+  // derived INDEPENDENTLY from the source CSV, catching a silent
+  // under-extraction even when both languages agree.
+  it('emits one requirement per CSV finding row (prismacloud_sample.csv)', async () => {
+    const input = loadFixture('prismacloud_sample.csv');
+    const result = await convertPrismaToHdf(input);
+    assertRequirementCount(
+      result,
+      countPrismaCsvRows(input),
+      'prismacloud_sample.csv: one requirement per CSV finding row',
+    );
+  });
+
   describe('input validation', () => {
     it('should throw on empty input', async () => {
       await expect(convertPrismaToHdf('')).rejects.toThrow();

@@ -1,6 +1,7 @@
 package zap_to_hdf
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -520,6 +521,42 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "zap-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertZapToHDF(input, "1.0.0")
 	})
+}
+
+// countSelectedSiteAlerts parses raw ZAP JSON generically — NOT via the
+// converter's parser — and returns the alert count of the site with the MOST
+// alerts. The converter processes only that one site (selectSite) and emits one
+// requirement per alert (the pluginid dedup only uniquifies IDs, it does not
+// collapse alerts), so a whole-document "alerts" count would overshoot when the
+// report has multiple sites.
+func countSelectedSiteAlerts(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Site []struct {
+			Alerts []json.RawMessage `json:"alerts"`
+		} `json:"site"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "failed to parse zap JSON for anchor count")
+	best := 0
+	for _, s := range doc.Site {
+		if len(s.Alerts) > best {
+			best = len(s.Alerts)
+		}
+	}
+	return best
+}
+
+// Ground-truth anchor: the converter selects the single site with the most
+// alerts and emits one requirement per alert of that site. The count is derived
+// independently of the converter's parser, so a silent under-extraction fails
+// even when Go/TS golden parity agrees. webgoat.json's busiest site has 25 alerts
+// (of 28 across all 4 sites), which the anchor distinguishes from the total.
+func TestConvertZapToHDF_SelectedSiteAlertAnchor(t *testing.T) {
+	input := loadFixture(t, "input/webgoat.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countSelectedSiteAlerts(t, input),
+		"webgoat.json: one requirement per alert of the site with the most alerts")
 }
 
 func TestConvertZapToHDF_VerificationMethod(t *testing.T) {

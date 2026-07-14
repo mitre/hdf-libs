@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { convertVeracodeToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,49 @@ runConverterContractTests({
   converterName: 'veracode-to-hdf',
   convertFn: convertVeracodeToHdf,
   minimalFixture: 'veracode.xml',
+});
+
+// countVeracodeEmissionUnits scans the raw Veracode XML generically — NOT via
+// the converter's parser — and returns the number of requirements the converter
+// should emit: one per CWE <category> element plus one per DISTINCT SCA cve_id.
+// The CWE side emits per-category unconditionally; the CVE side groups/dedups by
+// cve_id across components (skipping components whose vulnerabilities attr is
+// "0"), so a plain <vulnerability> count would overshoot.
+function countVeracodeEmissionUnits(input: string): number {
+  let categories = 0;
+  const distinctCVE = new Set<string>();
+  let componentSkipped = false;
+  const tagRe = /<(?:[\w.-]+:)?(category|component|vulnerability)((?:\s[^>]*)?)\/?>/g;
+  const attr = (raw: string, name: string): string =>
+    new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`).exec(raw)?.[1] ?? '';
+  for (const m of input.matchAll(tagRe)) {
+    const tag = m[1]!;
+    const rawAttrs = m[2] ?? '';
+    if (tag === 'category') {
+      categories += 1;
+    } else if (tag === 'component') {
+      componentSkipped = attr(rawAttrs, 'vulnerabilities') === '0';
+    } else if (tag === 'vulnerability' && !componentSkipped) {
+      const cve = attr(rawAttrs, 'cve_id');
+      if (cve) distinctCVE.add(cve);
+    }
+  }
+  return categories + distinctCVE.size;
+}
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per CWE <category> plus one per distinct SCA cve_id, counted
+// independently of the converter's parser so a silent under-extraction fails even
+// when Go/TS agree. veracode.xml carries 14 categories + 39 distinct CVEs = 53.
+describe('veracode-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per CWE category plus one per distinct SCA cve_id', async () => {
+    const input = loadFixture('veracode.xml');
+    assertRequirementCount(
+      await convertVeracodeToHdf(input),
+      countVeracodeEmissionUnits(input),
+      'veracode.xml: one requirement per CWE category + one per distinct SCA cve_id',
+    );
+  });
 });
 
 describe('Veracode to HDF converter', () => {
