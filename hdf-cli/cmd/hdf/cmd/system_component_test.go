@@ -511,3 +511,54 @@ func TestSystemUpdateComponent_URLPositional(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "juice.cdx.json")
 }
+
+// findComponentByBOMUniqueID returns the live component map and boms slice so
+// the reconcile caller mutates them directly instead of re-asserting
+// components[ci].(map) / comp["boms"].([]interface{}).
+func TestFindComponentByBOMUniqueID_ReturnsResolvedComponent(t *testing.T) {
+	comp := map[string]interface{}{
+		"name": "word-model",
+		"boms": []interface{}{
+			map[string]interface{}{"uniqueId": "id-a"},
+			map[string]interface{}{"uniqueId": "id-b"},
+		},
+	}
+	components := []interface{}{comp}
+
+	ci, bi, gotComp, gotBoms, ok := findComponentByBOMUniqueID(components, "id-b")
+	require.True(t, ok)
+	assert.Equal(t, 0, ci)
+	assert.Equal(t, 1, bi)
+
+	// The returned refs are the live objects: mutating them updates the slice,
+	// so the caller never re-asserts (the cross-function invariant is gone).
+	gotBoms[bi] = map[string]interface{}{"uniqueId": "refreshed"}
+	gotComp["boms"] = gotBoms
+	assert.Equal(t, "refreshed", comp["boms"].([]interface{})[1].(map[string]interface{})["uniqueId"])
+}
+
+// A component whose boms is stored as a differently-typed slice (or whose entry
+// is not a map) is the exact input that would have panicked the old caller's
+// unchecked comp["boms"].([]interface{}) assertion. The finder must skip it and
+// return only a fully-usable component.
+func TestFindComponentByBOMUniqueID_SkipsMalformedComponents(t *testing.T) {
+	valid := map[string]interface{}{
+		"name": "keeper",
+		"boms": []interface{}{map[string]interface{}{"uniqueId": "match"}},
+	}
+	components := []interface{}{
+		"not-a-map",
+		map[string]interface{}{"name": "no-boms"},
+		map[string]interface{}{"boms": []map[string]interface{}{{"uniqueId": "match"}}}, // wrong boms type
+		valid,
+	}
+
+	require.NotPanics(t, func() {
+		ci, bi, gotComp, gotBoms, ok := findComponentByBOMUniqueID(components, "match")
+		require.True(t, ok)
+		assert.Equal(t, 3, ci)
+		assert.Equal(t, 0, bi)
+		assert.Equal(t, "keeper", gotComp["name"])
+		assert.Len(t, gotBoms, 1)
+	})
+}

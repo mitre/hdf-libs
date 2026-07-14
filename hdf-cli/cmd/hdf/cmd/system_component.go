@@ -318,15 +318,13 @@ func updateComponentsReconcile(components []interface{}, data []byte, bomDoc map
 			skipped++
 			continue
 		}
-		if ci, bi, ok := findComponentByBOMUniqueID(components, key); ok {
+		if ci, bi, comp, boms, ok := findComponentByBOMUniqueID(components, key); ok {
 			// Refresh is boms-entry-granular by design: swap only the matched
 			// entry, not the whole component. A component may carry several BOMs,
 			// and the normalized model/dataset refresh lives in this entry.
 			// Component-level derived fields are intentionally left alone — the
 			// join key (modelId/datasetId == uniqueId) is stable, and the
 			// multi-subject builder produces no version/description to refresh.
-			comp := components[ci].(map[string]interface{})
-			boms := comp["boms"].([]interface{})
 			boms[bi] = firstBOM(nc)
 			comp["boms"] = boms
 			matchedExisting[ci] = true
@@ -490,27 +488,29 @@ func firstBOMUniqueID(comp map[string]interface{}) string {
 	return ""
 }
 
-// findComponentByBOMUniqueID locates the component (and boms[] index) carrying a
-// BOM entry whose uniqueId equals key — the reconcile join.
-func findComponentByBOMUniqueID(components []interface{}, key string) (compIdx, bomIdx int, ok bool) {
+// findComponentByBOMUniqueID locates the component carrying a BOM entry whose
+// uniqueId equals key — the reconcile join. It returns the resolved component
+// map and its boms slice (already type-checked here) so the caller mutates them
+// directly rather than re-asserting components[compIdx] / comp["boms"].
+func findComponentByBOMUniqueID(components []interface{}, key string) (compIdx, bomIdx int, comp map[string]interface{}, boms []interface{}, ok bool) {
 	for i, c := range components {
-		comp, ok := c.(map[string]interface{})
-		if !ok {
+		cm, cok := c.(map[string]interface{})
+		if !cok {
 			continue
 		}
-		boms, ok := comp["boms"].([]interface{})
-		if !ok {
+		bs, bok := cm["boms"].([]interface{})
+		if !bok {
 			continue
 		}
-		for j, b := range boms {
+		for j, b := range bs {
 			if bm, ok := b.(map[string]interface{}); ok {
 				if id, _ := bm["uniqueId"].(string); id == key {
-					return i, j, true
+					return i, j, cm, bs, true
 				}
 			}
 		}
 	}
-	return 0, 0, false
+	return 0, 0, nil, nil, false
 }
 
 func writeSystemJSON(sysDoc map[string]interface{}, outputPath, message string) error {
