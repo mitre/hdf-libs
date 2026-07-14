@@ -16,8 +16,22 @@ import { describe, expect, it } from 'vitest';
 
 const GOLDEN_SUFFIX = '.hdf.json';
 
-/** Values that change between runs, so both languages blank them before comparing. */
-export const VOLATILE_KEYS = new Set(['timestamp', 'resultsChecksum', 'startTime']);
+/**
+ * Keys whose values genuinely cannot be derived from the input, so both
+ * languages blank them before comparing. Every entry needs a stated reason it is
+ * not input-derivable — a masked key that CAN be derived from the input is a
+ * hidden bug, not volatility. Kept in lockstep with `volatileKeys` in
+ * shared/go/testing.go.
+ *
+ *   - timestamp: the document write/conversion time.
+ *   - startTime: falls back to conversion time for importers whose source
+ *     carries no scan time (input-derived for those that do — follow-up to make
+ *     this per-converter).
+ *
+ * resultsChecksum is intentionally NOT masked: it is sha256(input), deterministic
+ * and identical across Go/TS, so asserting it catches real checksum divergence.
+ */
+export const VOLATILE_KEYS = new Set(['timestamp', 'startTime']);
 
 /** Path to converters/, resolved from this module's location. */
 export function convertersDir(): string {

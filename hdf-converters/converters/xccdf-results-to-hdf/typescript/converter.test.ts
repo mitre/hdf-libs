@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertXccdfResultsToHdf, convertXccdfBenchmarkToHdf, convertXccdfToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults, HDFBaseline, BaselineRequirement, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
@@ -45,6 +46,34 @@ runConverterContractTests({
   converterName: 'xccdf-results-to-hdf',
   convertFn: convertXccdfResultsToHdf,
   minimalFixture: 'minimal.xml',
+});
+
+// Ground-truth anchors (input-derived counts; see shared/typescript/anchor.ts).
+// These assert the converter reproduces a count derived INDEPENDENTLY from the
+// source, catching a silent under-extraction even when Go and TS agree — the gap
+// parity cannot see (bead nhia).
+describe('xccdf-results-to-hdf ground-truth anchors', () => {
+  // Benchmark-only mode: <Rule>s nested inside nested <Group>s must all be
+  // flattened (the nhia regression). One requirement per source <Rule>.
+  it('emits one requirement per <Rule> across nested groups (SSG)', async () => {
+    const input = loadFixture('benchmark-ssg-nested-groups.xml');
+    const result = await convertXccdfBenchmarkToHdf(input);
+    assertRequirementCount(
+      result,
+      countXmlElements(input, 'Rule'),
+      'benchmark-ssg-nested-groups.xml: one requirement per <Rule> across all nested groups',
+    );
+  });
+
+  it('emits one requirement per <rule-result> (stig-rhel7)', async () => {
+    const input = loadFixture('stig-rhel7.xml');
+    const result = await convertXccdfResultsToHdf(input);
+    assertRequirementCount(
+      result,
+      countXmlElements(input, 'rule-result'),
+      'stig-rhel7.xml: one requirement per <rule-result>',
+    );
+  });
 });
 
 describe('xccdf-results-to-hdf converter', async () => {

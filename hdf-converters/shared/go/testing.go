@@ -200,9 +200,8 @@ func RunSnapshotTestsRaw(t *testing.T, converterName string, convertFn func(inpu
 	})
 }
 
-// normalizeVolatileFields zeroes out fields that change between runs
-// (timestamps, checksums derived from timestamps) so snapshot tests
-// are deterministic. Operates on raw JSON bytes.
+// normalizeVolatileFields zeroes out fields that genuinely change between runs
+// so snapshot tests are deterministic. Operates on raw JSON bytes.
 func normalizeVolatileFields(data []byte) []byte {
 	var doc interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
@@ -216,11 +215,24 @@ func normalizeVolatileFields(data []byte) []byte {
 	return out
 }
 
-// volatileKeys are top-level and nested keys whose values change between runs.
+// volatileKeys are keys whose values genuinely cannot be derived from the input
+// and so must be blanked before comparison. Every entry needs a stated reason it
+// is not input-derivable — a masked key that CAN be derived from the input is a
+// hidden bug, not volatility (the u6j3 oscal-sar failure mode). Kept in lockstep
+// with VOLATILE_KEYS in shared/typescript/snapshot.ts.
+//
+//   - timestamp: the document write/conversion time.
+//   - startTime: falls back to conversion time for importers whose source
+//     carries no scan time. (For importers whose source DOES carry a scan time
+//     it is input-derived and should not be masked — tracked as a follow-up to
+//     make startTime masking per-converter.)
+//
+// resultsChecksum is intentionally NOT masked: it is sha256(input), fully
+// deterministic and identical across Go/TS, so asserting it catches real
+// output/checksum divergence.
 var volatileKeys = map[string]bool{
-	"timestamp":       true,
-	"resultsChecksum": true,
-	"startTime":       true,
+	"timestamp": true,
+	"startTime": true,
 }
 
 func normalizeValue(v interface{}) {

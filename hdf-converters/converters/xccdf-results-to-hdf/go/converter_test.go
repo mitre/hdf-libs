@@ -80,6 +80,36 @@ func TestConvertXccdfResultsToHDF_MinimalRequirementCount(t *testing.T) {
 	assert.Len(t, result.Baselines[0].Requirements, 2, "minimal.xml has 2 rule-results")
 }
 
+// --- Ground-truth anchors (input-derived counts; see shared/go/anchor.go) ---
+// These assert the converter reproduces a count derived INDEPENDENTLY from the
+// source, so a silent under-extraction fails even when Go and TS agree — the
+// gap parity cannot see (bead nhia).
+
+// Benchmark-only mode: the SSG fixture nests <Rule>s inside nested <Group>s, so
+// the converter must flatten every group depth (the nhia regression). Assert one
+// requirement per source <Rule>, counted independently of the converter's own
+// traversal — this is the exact bug parity missed.
+func TestConvertXccdf_BenchmarkAnchor_SSGNestedGroups(t *testing.T) {
+	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	want := shared.CountXMLElements(t, input, "Rule")
+	shared.AssertRequirementCount(t, result, want,
+		"benchmark-ssg-nested-groups.xml: one requirement per <Rule> across all nested groups")
+}
+
+// Results mode: one requirement per <rule-result>, counted from the source.
+func TestConvertXccdf_ResultsAnchor_StigRhel7(t *testing.T) {
+	input := loadFixture(t, "stig-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	want := shared.CountXMLElements(t, input, "rule-result")
+	shared.AssertRequirementCount(t, result, want,
+		"stig-rhel7.xml: one requirement per <rule-result>")
+}
+
 func TestConvertXccdfResultsToHDF_MinimalStatusMapping(t *testing.T) {
 	input := loadFixture(t, "minimal.xml")
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
