@@ -186,6 +186,24 @@ hdf system set /tmp/example-hdf-system.json --unset name
 
 **Expected**: System documents have auto-generated systemId, owner, components. Set/unset work. Required fields are protected.
 
+**Story**: A build pipeline records its artifact's components in the system document — one BOM, or several in one invocation.
+
+```bash
+# Add one component from a BOM (auto-detected; --from asserts a format if given)
+hdf system add-component sbom.cdx.json --system /tmp/example-hdf-system.json --component-name AuthService
+
+# Add SEVERAL BOMs at once (single write). --component-name-prefix namespaces the
+# subjects and numbers unnamed ones continuously across the whole batch.
+hdf system add-component app.cdx.json model.spdx.json --system /tmp/example-hdf-system.json \
+  --component-name-prefix build42-
+
+# --from, when given, is ONE uniform assertion applied to every file (never a
+# per-file/CSV list). Omit it to detect each file independently.
+hdf system add-component a.cdx.json b.cdx.json --system /tmp/example-hdf-system.json --from cyclonedx
+```
+
+**Expected**: Every component from every file is added in a single write. The batch is all-or-nothing — if any file cannot be parsed or built, all failures are reported and the system document is left unchanged (nothing partially added). This is deliberately stricter than `hdf validate`'s per-file continue-and-report, because `add-component` mutates shared state. With multiple files, `--component-name` is rejected (it names a single component); use `--component-name-prefix`.
+
 ---
 
 ## 7. Labels and Component IDs
