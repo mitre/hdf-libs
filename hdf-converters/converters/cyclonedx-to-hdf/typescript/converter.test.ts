@@ -350,6 +350,38 @@ describe('cyclonedx to HDF converter', async () => {
     });
   });
 
+  describe('boms[].document byte parity', async () => {
+    const pickDocument = (r: HDFResults): Record<string, unknown> | undefined =>
+      (r.components?.[0]?.boms?.[0] as { document?: Record<string, unknown> })
+        ?.document;
+
+    // The Go converter serializes the passthrough via json.Marshal, which sorts
+    // map keys in code-point order; without canonicalize the TS side keeps source
+    // insertion order. Re-stringifying both documents isolates key order (it
+    // normalizes away pretty-print whitespace and Go's HTML-escaping, which are
+    // separate axes), so this pins the canonicalize call that keeps the two
+    // languages' key ordering identical against a genuine Go-produced golden.
+    it('emits boms[].document keys in Go json.Marshal order (matches the Go golden)', async () => {
+      const tsDoc = pickDocument(
+        JSON.parse(
+          await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
+        ) as HDFResults
+      );
+      const goDoc = pickDocument(
+        JSON.parse(
+          readFileSync(
+            join(FIXTURES_DIR, 'expected', 'minimal-vulns.json.hdf.json'),
+            'utf-8'
+          )
+        ) as HDFResults
+      );
+
+      expect(tsDoc).toBeDefined();
+      expect(goDoc).toBeDefined();
+      expect(JSON.stringify(tsDoc)).toBe(JSON.stringify(goDoc));
+    });
+  });
+
   describe('descriptions', async () => {
     it('should include fix label from recommendation', async () => {
       const hdf = JSON.parse(

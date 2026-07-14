@@ -5,6 +5,7 @@ import {
 } from '@mitre/hdf-mappings';
 import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { parseBom, buildBom, BOMType, type BuildBomParts } from '../../../shared/typescript/bom/index.js';
+import { canonicalize } from '../../../shared/typescript/exportmap.js';
 import type {
   Component,
   EvaluatedBaseline,
@@ -364,7 +365,9 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
     bomType: BOMType.Sbom,
     format: 'cyclonedx',
     uniqueId: parsedBom.normalized.uniqueId,
-    document: JSON.parse(input) as Record<string, unknown>,
+    // Sort keys in code-point order to match Go's json.Marshal, which sorts map
+    // keys — keeps the raw passthrough byte-identical across the two languages.
+    document: canonicalize(JSON.parse(input)) as Record<string, unknown>,
   };
   if (parsedBom.normalized.packages && parsedBom.normalized.packages.length > 0) {
     bomParts.packages = parsedBom.normalized.packages;
