@@ -1,0 +1,41 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "AWS Security Finding Format input contained zero findings.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "AWS Security Finding Format input contained zero findings.",
+              "startTime": "2026-07-14T01:06:49.520121Z",
+              "status": "passed"
+            }
+          ],
+          "id": "asff-no-findings",
+          "impact": 0,
+          "tags": {},
+          "title": "No findings reported"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "c1d70eb896611fa06e30f621a53fdcdc9ee7e12105a1a63e3c49f5c09d437f69"
+      },
+      "name": "AWS Security Finding Format"
+    }
+  ],
+  "generator": {
+    "name": "asff-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-14T01:06:49.520122Z",
+  "tool": {
+    "format": "JSON",
+    "name": "AWS Security Finding Format"
+  }
+}

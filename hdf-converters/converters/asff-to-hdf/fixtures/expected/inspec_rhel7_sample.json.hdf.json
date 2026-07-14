@@ -1,0 +1,96 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Any password, no matter how complex, can eventually be cracked. Therefore, passwords need to be changed periodically. If the operating system does not limit the lifetime of passwords and force users to change their passwords, there is the risk that the operating system passwords could be compromised. -- Check Text: Check whether the maximum time period for existing passwords is restricted to 60 days.   # awk -F: '$5 \u003e 60 {print $1 \" \" $5}' /etc/shadow   If any results are returned that are not associated with a system account, this is a finding.",
+              "label": "default"
+            },
+            {
+              "data": "Test Description: /etc/shadow with user == \"nfsnobody\" max_days.first.to_i is expected to cmp \u003c= 60 --- Fix: Configure non-compliant accounts to enforce a 60-day maximum password lifetime restriction.   # chage -M 60 [user]",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:12345678910, Partition: aws, Region: us-east-2; Type: AwsIamRole, Id: V-71931 Validation Code]",
+              "startTime": "2022-04-04T16:39:30.536Z",
+              "status": "passed"
+            },
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:12345678910, Partition: aws, Region: us-east-2; Type: AwsIamRole, Id: V-71931 Validation Code]",
+              "startTime": "2022-04-04T16:39:30.537Z",
+              "status": "failed"
+            }
+          ],
+          "id": "V-71931",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "V-71931 | [IA-5 (1) (d)] | The Red Hat Enterprise Linux operating system must be configured so that existing passwords are restricted to a 60-day maximum lifetime."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Passed: 0 (0 individual checks passed) --- Failed: 1 (1 individual checks failed out of 2 total checks) --- Not Applicable: 0 (System exception or absent component) --- Not Reviewed: 0 (Can only be tested manually at this time)",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:12345678910, Partition: aws, Region: us-east-2]",
+              "startTime": "2022-04-04T16:39:30.539Z",
+              "status": "failed"
+            }
+          ],
+          "id": "redhat-enterprise-linux-7-stig-baseline",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "this-is-a-test | redhat-enterprise-linux-7-stig-baseline | 2022-04-04 12:39:30 GMT-0400"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "ac92f29fcd82995a74179eed391d1422716af4fa5c69ec261124120ee8f03854"
+      },
+      "name": "12345678910 - default"
+    }
+  ],
+  "components": [
+    {
+      "baselineRefs": [
+        "12345678910 - default"
+      ],
+      "name": "12345678910",
+      "type": "cloudAccount"
+    }
+  ],
+  "generator": {
+    "name": "asff-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-14T01:06:49.521394Z",
+  "tool": {
+    "format": "JSON",
+    "name": "AWS Security Finding Format"
+  }
+}

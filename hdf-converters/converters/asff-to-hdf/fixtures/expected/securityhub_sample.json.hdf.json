@@ -1,0 +1,639 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "The \"root\" account has unrestricted access to all resources in the AWS account. It is highly recommended that the use of this account be avoided.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-1.1/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:16.331Z",
+              "status": "failed"
+            }
+          ],
+          "id": "1.1",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "1.1 Avoid the use of the \"root\" account"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "AWS Config is a web service that performs configuration management of supported AWS resources within your account and delivers log files to you. The recorded information includes the configuration item (AWS resource), relationships between configuration items (AWS resources), and any configuration changes between resources. It is recommended to enable AWS Config in all regions.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-2.5/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "startTime": "2021-08-09T11:28:15.499Z",
+              "status": "failed"
+            }
+          ],
+          "id": "2.5",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "2.5 Ensure AWS Config is enabled"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for detecting changes to CloudTrail's configurations.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.9/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:12.508Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.9",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for changes to S3 bucket policies.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.8/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:12.46Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.8",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for customer created CMKs which have changed state to disabled or scheduled deletion.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.7/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:10.511Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.7",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for failed console authentication attempts.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.6/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:10.542Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.6",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for detecting changes to CloudTrail's configurations.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.5/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:10.63Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.5",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established changes made to Identity and Access Management (IAM) policies.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.4/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:11.788Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.4",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.4 Ensure a log metric filter and alarm exist for IAM policy changes"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for root login attempts.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.3/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:09.83Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.3",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.3 Ensure a log metric filter and alarm exist for usage of \"root\" account"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for console logins that are not protected by multi-factor authentication (MFA).",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.2/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:12.172Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.2",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.2 Ensure a log metric filter and alarm exist for Management Console sign-in without MFA"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is possible to have more than 1 VPC within an account, in addition it is also possible to create a peer connection between 2 VPCs enabling network traffic to route between VPCs. It is recommended that a metric filter and alarm be established for changes made to VPCs.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.14/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:09.392Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.14",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.14 Ensure a log metric filter and alarm exist for VPC changes"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. Routing tables are used to route network traffic between subnets and to network gateways. It is recommended that a metric filter and alarm be established for changes to route tables.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.13/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:10.315Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.13",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.13 Ensure a log metric filter and alarm exist for route table changes"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. Network gateways are required to send/receive traffic to a destination outside of a VPC. It is recommended that a metric filter and alarm be established for changes to network gateways.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.12/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:12.267Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.12",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.12 Ensure a log metric filter and alarm exist for changes to network gateways"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. NACLs are used as a stateless packet filter to control ingress and egress traffic for subnets within a VPC. It is recommended that a metric filter and alarm be established for changes made to NACLs.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.11/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:12.297Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.11",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. Security Groups are a stateful packet filter that controls ingress and egress traffic within a VPC. It is recommended that a metric filter and alarm be established changes to Security Groups.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.10/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:13.084Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.10",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.10 Ensure a log metric filter and alarm exist for security group changes"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. It is recommended that a metric filter and alarm be established for unauthorized API calls.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-3.1/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:12.445Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3.1",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "3.1 Ensure a log metric filter and alarm exist for unauthorized API calls"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "bb9c730ecc5ac84bc4a02ab37c3ecadecf0db9692405a3fdeec8d07584bb8425"
+      },
+      "name": "CIS AWS Foundations Benchmark v1.2.0"
+    },
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "This AWS control checks whether the Config service is enabled in the account for the local region and is recording all resources.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub Foundational Security Best Practices documentation.\nhttps://docs.aws.amazon.com/console/securityhub/Config.1/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "startTime": "2021-08-09T11:21:11.282Z",
+              "status": "failed"
+            }
+          ],
+          "id": "Config.1",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Config.1 AWS Config should be enabled"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "This AWS control checks whether your S3 buckets allow public read access by evaluating the Block Public Access settings, the bucket policy, and the bucket access control list (ACL).",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub Foundational Security Best Practices documentation.\nhttps://docs.aws.amazon.com/console/securityhub/S3.2/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsS3Bucket, Id: arn:aws:s3:::example-bucket-123456789123-us-east-1, Partition: aws, Region: us-east-1]",
+              "startTime": "2021-07-02T16:02:48.476Z",
+              "status": "passed"
+            }
+          ],
+          "id": "S3.2",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000213"
+            ],
+            "nist": [
+              "AC-21",
+              "AC-3",
+              "SC-7",
+              "SC-7(11)",
+              "SC-7(16)",
+              "SC-7(21)",
+              "SC-7(3)",
+              "SC-7(4)",
+              "SC-7(9)"
+            ]
+          },
+          "controlType": "technical",
+          "title": "S3.2 S3 buckets should prohibit public read access"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "bb9c730ecc5ac84bc4a02ab37c3ecadecf0db9692405a3fdeec8d07584bb8425"
+      },
+      "name": "AWS Foundational Security Best Practices v1.0.0"
+    }
+  ],
+  "components": [
+    {
+      "baselineRefs": [
+        "CIS AWS Foundations Benchmark v1.2.0",
+        "AWS Foundational Security Best Practices v1.0.0"
+      ],
+      "name": "123456789123",
+      "type": "cloudAccount"
+    }
+  ],
+  "generator": {
+    "name": "asff-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-14T01:06:49.523004Z",
+  "tool": {
+    "format": "JSON",
+    "name": "AWS Security Finding Format"
+  }
+}

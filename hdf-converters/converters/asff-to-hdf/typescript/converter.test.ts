@@ -170,4 +170,119 @@ describe('asff product special-cases', () => {
     expectValidResults(hdf);
   });
 
+
+  // ASFF findings vary wildly by producer: Trivy, Prowler and Security Hub each
+  // populate a different subset, and third-party integrations populate less
+  // still. These assert how a finding stripped of its optional fields degrades —
+  // real fixtures never reach these paths because real producers fill them in.
+  describe('degrades gracefully on sparse findings', () => {
+    const sparse = (extra: Record<string, unknown> = {}) =>
+      JSON.stringify([{ Id: 'finding-1', ...extra }]);
+
+    it('falls back to the ASFF product name when the ProductArn carries none', async () => {
+      const hdf = JSON.parse(await convertAsffToHdf(sparse())) as HDFResults;
+      expect(hdf.baselines[0]!.name).toBe('AWS Security Finding Format');
+    });
+
+    it('keys the requirement off Id when there is no GeneratorId', async () => {
+      const hdf = JSON.parse(await convertAsffToHdf(sparse())) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.id).toBe('finding-1');
+    });
+
+    it('takes the last GeneratorId segment as the requirement id', async () => {
+      const hdf = JSON.parse(
+        await convertAsffToHdf(sparse({ GeneratorId: 'some/path/rule-42' })),
+      ) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.id).toBe('rule-42');
+    });
+
+    it('names the baseline from the ProductArn company and product', async () => {
+      const hdf = JSON.parse(
+        await convertAsffToHdf(
+          sparse({ ProductArn: 'arn:aws:securityhub:us-east-1::product/acme/scanner' }),
+        ),
+      ) as HDFResults;
+      expect(hdf.baselines[0]!.name).toBe('acme - scanner');
+    });
+
+    it('falls back to the default NIST controls when nothing maps', async () => {
+      const hdf = JSON.parse(await convertAsffToHdf(sparse())) as HDFResults;
+      const tags = hdf.baselines[0]!.requirements[0]!.tags ?? {};
+      // A finding with no AWS Config rule and no compliance mapping still needs
+      // controls; SA-11/RA-5 is the documented default, not an invented mapping.
+      expect(tags['nist']).toEqual(['SA-11', 'RA-5']);
+    });
+
+    it('omits message when the finding carries no remediation text', async () => {
+      const hdf = JSON.parse(await convertAsffToHdf(sparse())) as HDFResults;
+      // message is optional in HDF and the Go converter omits it; an empty
+      // string here would diverge from Go (hdf-libs-ppis).
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.message).toBeUndefined();
+    });
+
+    it('accepts a lone unwrapped finding object, not just Findings/array payloads', async () => {
+      // Some ASFF producers emit a single finding with no Findings wrapper. The
+      // Go parseFindings ladder accepts the same three shapes.
+      const hdf = JSON.parse(
+        await convertAsffToHdf(JSON.stringify({ Id: 'lone-1', GeneratorId: 'x/rule-9' })),
+      ) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.id).toBe('rule-9');
+    });
+  });
+
+
+  // Each ASFF producer populates a different subset of the optional fields.
+  describe('producer-specific optional fields', () => {
+    const one = (extra: Record<string, unknown>) => JSON.stringify([{ Id: 'f1', ...extra }]);
+
+    it('derives impact from Severity.Normalized when no Label is present', async () => {
+      const hdf = JSON.parse(await convertAsffToHdf(one({ Severity: { Normalized: 70 } }))) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBeGreaterThan(0);
+    });
+
+    it('uses the Prowler ProviderName as the baseline name', async () => {
+      const hdf = JSON.parse(
+        await convertAsffToHdf(
+          one({
+            ProductArn: 'arn:aws:securityhub:us-east-1::product/prowler/prowler',
+            ProductFields: { ProviderName: 'AWS' },
+          }),
+        ),
+      ) as HDFResults;
+      expect(hdf.baselines[0]!.name).toBe('AWS');
+    });
+
+    it('falls back to ProductFields.RuleId when Security Hub omits ControlId', async () => {
+      const hdf = JSON.parse(
+        await convertAsffToHdf(
+          one({
+            ProductArn: 'arn:aws:securityhub:us-east-1::product/aws/securityhub',
+            ProductFields: { RuleId: '1.5', StandardsControlArn: 'arn:x:y:z/cis-aws/v/1.2.0/1.5' },
+          }),
+        ),
+      ) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.id).toBe('1.5');
+    });
+
+    it('carries the finding SourceUrl into the requirement refs', async () => {
+      const hdf = JSON.parse(
+        await convertAsffToHdf(one({ SourceUrl: 'https://example.test/finding/1' })),
+      ) as HDFResults;
+      const refs = hdf.baselines[0]!.requirements[0]!.refs ?? [];
+      expect(JSON.stringify(refs)).toContain('https://example.test/finding/1');
+    });
+
+    it('carries the compliance StatusReason into the result message', async () => {
+      const hdf = JSON.parse(
+        await convertAsffToHdf(
+          one({ Resources: [{ Type: 'AwsAccount', Id: 'acct-1' }], Compliance: { Status: 'FAILED', StatusReasons: [{ ReasonCode: 'CONFIG_EVALUATES_NONCOMPLIANT' }] } }),
+        ),
+      ) as HDFResults;
+      const res = hdf.baselines[0]!.requirements[0]!.results[0]!;
+      // StatusReasons feed the message; codeDesc carries the resources.
+      expect(res.message).toContain('CONFIG_EVALUATES_NONCOMPLIANT');
+      expect(res.codeDesc).toContain('acct-1');
+    });
+  });
+
 });

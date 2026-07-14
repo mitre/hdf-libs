@@ -1,0 +1,127 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": " ",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Root user in the account was last accessed 1 day ago",
+              "startTime": "2021-05-17T23:07:02Z",
+              "status": "failed"
+            }
+          ],
+          "id": "check11",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "[check11] Avoid the use of the root account (Scored)"
+        },
+        {
+          "descriptions": [
+            {
+              "data": " ",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "User name1 has Password enabled but MFA disabled",
+              "startTime": "2021-05-17T23:07:02Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "User name2 has Password enabled but MFA disabled",
+              "startTime": "2021-05-17T23:07:02Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "User name3 has Password enabled but MFA disabled",
+              "startTime": "2021-05-17T23:07:03Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "User name4 has Password enabled but MFA disabled",
+              "startTime": "2021-05-17T23:07:03Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "User name5 has Password enabled but MFA disabled",
+              "startTime": "2021-05-17T23:07:03Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "User name6 has Password enabled but MFA disabled",
+              "startTime": "2021-05-17T23:07:03Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "User name7 has Password enabled but MFA disabled",
+              "startTime": "2021-05-17T23:07:03Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "User name8 has Password enabled but MFA disabled",
+              "startTime": "2021-05-17T23:07:03Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "User name9 has Password enabled but MFA disabled",
+              "startTime": "2021-05-17T23:07:04Z",
+              "status": "failed"
+            }
+          ],
+          "id": "check12",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "[check12] Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password (Scored)"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "28ffff27eeecb815a4f03b8f0384e0b9712482e20315686e32f2a5fde0e3697a"
+      },
+      "name": "Prowler"
+    }
+  ],
+  "components": [
+    {
+      "baselineRefs": [
+        "Prowler"
+      ],
+      "name": "123456789123",
+      "type": "cloudAccount"
+    }
+  ],
+  "generator": {
+    "name": "asff-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-14T01:06:49.52251Z",
+  "tool": {
+    "format": "JSON",
+    "name": "AWS Security Finding Format"
+  }
+}

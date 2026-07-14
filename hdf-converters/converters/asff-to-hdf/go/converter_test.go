@@ -335,3 +335,13 @@ func TestConvertAsff_Trivy(t *testing.T) {
 	require.NoError(t, err)
 	assert.Truef(t, validators.ValidateResults(out).Valid, "%s", validators.ValidateResults(out).Error())
 }
+
+// TestSnapshots asserts whole-document output against frozen goldens. The
+// TypeScript test asserts the SAME goldens, which is what keeps the two
+// implementations from drifting apart. Version is "1.0.0" to match the TS
+// converter's default, so generator.version is asserted rather than normalized.
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "asff-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertAsffToHDF(input, "1.0.0")
+	})
+}
