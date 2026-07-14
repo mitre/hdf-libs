@@ -28,7 +28,10 @@ const sharedGoDir = join(root, 'hdf-converters', 'shared', 'go');
 // `g` flag + whole-file scan so a call wrapped across lines
 // (e.g. `time.Parse(\n  time.RFC3339, ...)`) is still detected — \s* spans newlines.
 // Matches both time.Parse(...) and time.ParseInLocation(...) on an RFC3339 layout.
-const FORBIDDEN = /time\.Parse(InLocation)?\(\s*time\.RFC3339/g;
+// `(Nano)?` is spelled out for readers only — the layout constant is matched
+// unanchored, and RFC3339 is a prefix of RFC3339Nano, so RFC3339Nano is caught
+// with or without it.
+const FORBIDDEN = /time\.Parse(InLocation)?\(\s*time\.RFC3339(Nano)?/g;
 
 // Recursively collect non-test .go files under a directory (missing dir -> none).
 function goFilesUnder(dir) {
