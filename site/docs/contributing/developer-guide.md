@@ -58,6 +58,81 @@ This found a real bug: Go was not threading document timestamps to
 
 ---
 
+## Ground-Truth Anchors
+
+Differential (golden) parity proves the TypeScript and Go implementations
+**agree**; it cannot prove either is **correct**. When both misread a format the
+same way, their goldens match, the suite stays green, and the defect is
+invisible — and the standard "make the two sides agree" fix actively *canonizes*
+a shared misreading into a golden that then defends it. This is not hypothetical:
+in `nhia`, neither XCCDF converter traversed nested `<Group>` elements, dropping
+~99% of rules against real SCAP Security Guide content. Parity could never have
+surfaced it.
+
+Every committed golden is generated *from converter output* (`go test -update`),
+so a golden can only catch a *change* from current behavior — never confirm that
+behavior is *correct*.
+
+### The anchor pattern
+
+A ground-truth **anchor** asserts the converter reproduces an item count derived
+**independently from the source document** — not from converter output. It is the
+one assertion whose expected value does not come from the code under test.
+
+Helpers live in `hdf-converters/shared/{go/anchor.go,typescript/anchor.ts}`:
+
+- `CountXMLElements(input, localName)` — count XML start-elements by local name.
+- `CountJSONItemsUnderKey(input, key)` — count array items held under an object
+  key at any depth (handles nested containers).
+- `AssertRequirementCount(result, want, msg)` — assert emitted requirements equal
+  `want`, across both output shapes (HDFResults `baselines[].requirements` and
+  HDFBaseline top-level `requirements`).
+- `AssertOverrideCount(result, want, msg)` — the amendment analogue for VEX
+  importers, which emit `overrides[]` rather than requirements.
+
+**The independence rule (load-bearing).** The count MUST NOT reuse the
+converter's own parser or typed structs — reusing the converter's traversal would
+let the same bug corrupt the ground-truth count. Use the generic shared counters,
+or a small local count that parses the raw source generically.
+
+**Emission unit, confirmed per converter.** Each anchor asserts `emitted ==
+count(source emission unit)`, confirmed against a real fixture. Where the
+converter groups, dedups, or filters (one requirement per *distinct* rule, per
+*actionable* VEX status, per the busiest ZAP site, per CSV finding row), the
+anchor counts that same distinct/filtered unit — not the raw array length — so it
+matches exactly. If no clean source-derived count matches the golden, do not write
+a meaningless anchor: a passing-but-vacuous anchor is worse than none. Every
+anchor fixture must contain ≥1 source unit (`want != 0`) or it proves nothing.
+
+### Mask discipline
+
+The importer snapshot harness blanks a small set of volatile keys before
+comparison (`shared/go/testing.go` `volatileKeys` / `shared/typescript/snapshot.ts`
+`VOLATILE_KEYS`). **Every masked key needs a stated reason it cannot be derived
+from the input.** A masked key that *can* be input-derived is a hidden bug, not
+volatility — inside a mask, "volatile" and "wrong" are indistinguishable (`u6j3`:
+an oscal-sar golden froze a conversion timestamp that the mask then hid).
+
+- `timestamp` — document write/conversion time (volatile).
+- `startTime` — conversion-time fallback for importers whose source carries no
+  scan time (volatile for those; input-derived for those that do — a per-converter
+  refinement is tracked as a follow-up).
+- `resultsChecksum` is **not** masked: it is `sha256(input)`, deterministic and
+  identical across Go/TS, so asserting it catches real checksum divergence.
+
+### Audit results
+
+- **Scalar-for-repeatable audit: clean.** A sweep of the dual converters for
+  spec-repeatable elements modeled as a single (non-slice) field — the `nhia` /
+  `i86q` class — found every repeatable element correctly modeled as a slice and
+  every nested container (Groups, Controls, Parts) traversed recursively. Only
+  anchors catch this class regardless of code inspection.
+- **Zero-golden importers closed.** `ckl-to-hdf` and `cklb-to-hdf` had no
+  whole-output golden at all and are now in the snapshot harness. `hdf-passthrough`
+  (an identity converter) remains golden-less — low risk, tracked as a follow-up.
+
+---
+
 ## Go Nil-Slice JSON Serialization
 
 ### The Problem
