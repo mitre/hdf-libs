@@ -27,6 +27,10 @@ import {
   parseOscalDocument,
   toKebabCase,
 } from './shared.js';
+import {
+  assertRequirementCount,
+  countJsonItemsUnderKey,
+} from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults, HDFBaseline } from '@mitre/hdf-schema';
 import type { HDFSystem } from '@mitre/hdf-schema';
@@ -183,6 +187,22 @@ describe('convertOscalCatalogToHdf', () => {
         expect(reqIDs.has(rid)).toBe(true);
       }
     }
+  });
+
+  // Ground-truth anchor for the CATALOG dispatch path only. oscal-to-hdf handles
+  // several OSCAL document types with different emission units; the catalog path
+  // emits exactly one requirement per control, including nested controls[] at any
+  // depth. The count is derived independently of the converter (a generic JSON
+  // walk over "controls" arrays — see shared/typescript/anchor.ts), so a silent
+  // under-extraction fails even when Go and TS agree. Do NOT anchor the
+  // SSP/SAR/POA&M/component paths this way — their emission units differ.
+  it('emits one requirement per control (nested controls[] at any depth)', async () => {
+    const input = loadFixture('catalog-moderate-resolved.json');
+    assertRequirementCount(
+      await convertOscalCatalogToHdf(input),
+      countJsonItemsUnderKey(input, 'controls'),
+      'catalog-moderate-resolved.json: one requirement per control (nested controls[] at any depth)',
+    );
   });
 });
 

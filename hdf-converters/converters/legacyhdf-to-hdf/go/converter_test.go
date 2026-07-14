@@ -7,11 +7,34 @@ import (
 	"runtime"
 	"testing"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// countProfileControls counts control OBJECTS under every profiles[].controls[]
+// array in raw v1 HDF, walking generic JSON independent of the converter's
+// typed structs. It deliberately skips groups[].controls[] (those hold bare
+// control-ID strings, not control objects, and would double-count), so on a
+// single-profile document the result equals the emission unit: one requirement
+// per source control. Overlay documents flatten/dedupe on conversion, so this
+// raw count only anchors single-profile fixtures.
+func countProfileControls(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Profiles []struct {
+			Controls []map[string]interface{} `json:"controls"`
+		} `json:"profiles"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "count profile controls: invalid JSON")
+	n := 0
+	for i := range doc.Profiles {
+		n += len(doc.Profiles[i].Controls)
+	}
+	return n
+}
 
 // getFixturesDir returns the path to the fixtures directory
 func getFixturesDir() string {
@@ -1120,4 +1143,26 @@ func TestConvertV1ToV2_VerificationMethodNotFabricated(t *testing.T) {
 		assert.Nil(t, req.VerificationMethod,
 			"requirement %q: legacyhdf must not invent verificationMethod absent from v1 source", req.ID)
 	}
+}
+
+// ── Ground-truth anchor (bead: input-derived requirement count) ──────────────
+//
+// Golden parity proves Go and TS AGREE; it can't prove either is CORRECT. This
+// anchors the emitted requirement count to a count derived INDEPENDENTLY from
+// the source document. For a single-profile v1 HDF file no overlay flattening
+// occurs, so the converter must emit exactly one requirement per source control
+// (profiles[0].controls[]). ubi9-scan is single-profile (452 controls), making
+// the raw source count an exact ground truth.
+func TestConvertV1ToV2_RequirementCountAnchor(t *testing.T) {
+	inputPath := sharedOrLocalInputPath(t, "ubi9-scan.json")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	var v1 HDFV1Results
+	require.NoError(t, json.Unmarshal(input, &v1))
+	require.Len(t, v1.Profiles, 1, "anchor requires a single-profile fixture (no overlay flattening)")
+
+	v2 := ConvertV1ToV2(&v1)
+	shared.AssertRequirementCount(t, v2, countProfileControls(t, input),
+		"ubi9-scan.json: one requirement per profiles[0].controls[] (single profile, no overlay flatten)")
 }

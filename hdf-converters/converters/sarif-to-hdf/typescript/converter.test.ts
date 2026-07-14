@@ -4,6 +4,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { convertSarifToHdf } from './converter.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = join(__dirname, '..', 'fixtures');
@@ -11,6 +12,36 @@ const fixturesDir = join(__dirname, '..', 'fixtures');
 function loadFixture(type: 'input' | 'expected', filename: string): string {
   return readFileSync(join(fixturesDir, type, filename), 'utf-8');
 }
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+// Golden parity proves Go and TS AGREE, not that either is CORRECT. This anchor
+// asserts the converter emits exactly the requirement count predicted by a
+// source-derived count computed INDEPENDENTLY of the converter's own parser and
+// types. sarif emits one requirement per DISTINCT rule referenced by results:
+// the set of result.ruleId (falling back to result.rule.id when ruleId is
+// absent) across every runs[].results[].
+function countDistinctSarifRules(input: string): number {
+  const doc = JSON.parse(input) as {
+    runs?: Array<{ results?: Array<{ ruleId?: string; rule?: { id?: string } }> }>;
+  };
+  const distinct = (doc.runs ?? []).reduce((set, run) => {
+    for (const r of run.results ?? []) set.add(r.ruleId ?? r.rule?.id ?? '');
+    return set;
+  }, new Set<string>());
+  return distinct.size;
+}
+
+describe('sarif-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per distinct rule (spotbugs)', async () => {
+    const input = loadFixture('input', 'spotbugs.sarif');
+    const result = await convertSarifToHdf(input);
+    assertRequirementCount(
+      result,
+      countDistinctSarifRules(input),
+      'spotbugs.sarif: one requirement per distinct result ruleId (fallback rule.id)',
+    );
+  });
+});
 
 // --- Backward compatibility tests ---
 

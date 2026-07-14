@@ -40,6 +40,23 @@ func TestConvertNessusToHDF_Sample(t *testing.T) {
 	shared.WriteOutput(t, "nessus-to-hdf", "sample.json", result)
 }
 
+// Ground-truth anchor (input-derived count; see shared/go/anchor.go). Golden
+// parity proves Go and TS agree, not that either is correct. Nessus emits one
+// requirement per <ReportItem>; assert that count derived INDEPENDENTLY from the
+// source, so a silent under-extraction fails even when both languages agree.
+func TestConvertNessusToHDF_ReportItemAnchor(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	want := shared.CountXMLElements(t, input, "ReportItem")
+	shared.AssertRequirementCount(t, result, want,
+		"sample.nessus: one requirement per <ReportItem>")
+}
+
 func TestConvertNessusToHDF_Tool(t *testing.T) {
 	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
 	inputData, err := os.ReadFile(inputPath)

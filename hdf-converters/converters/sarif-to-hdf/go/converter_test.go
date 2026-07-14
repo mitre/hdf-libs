@@ -1374,6 +1374,57 @@ func TestConvertSarifToHDF_DockleFixture(t *testing.T) {
 	assert.True(t, hasCheck, "Dockle rules with help should have check description")
 }
 
+// --- Ground-truth anchor (input-derived count; see shared/go/anchor.go) ---
+// Golden parity proves Go and TS AGREE, not that either is CORRECT. This anchor
+// asserts the converter emits exactly the requirement count predicted by a
+// source-derived count computed INDEPENDENTLY of the converter's own parser and
+// types. sarif emits one requirement per DISTINCT rule referenced by results:
+// the set of result.ruleId (falling back to result.rule.id when ruleId is
+// absent) across every runs[].results[]. If the converter silently drops or
+// merges rules, this fails even when the Go and TS goldens match.
+
+// countDistinctSarifRules unmarshals raw SARIF into a minimal local struct —
+// deliberately NOT the converter's structs — and returns the number of distinct
+// rule identifiers among all results.
+func countDistinctSarifRules(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Runs []struct {
+			Results []struct {
+				RuleID string `json:"ruleId"`
+				Rule   struct {
+					ID string `json:"id"`
+				} `json:"rule"`
+			} `json:"results"`
+		} `json:"runs"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "failed to parse SARIF for anchor count")
+
+	distinct := make(map[string]struct{})
+	for _, run := range doc.Runs {
+		for _, r := range run.Results {
+			id := r.RuleID
+			if id == "" {
+				id = r.Rule.ID
+			}
+			distinct[id] = struct{}{}
+		}
+	}
+	return len(distinct)
+}
+
+func TestConvertSarifToHDF_SpotBugsAnchor(t *testing.T) {
+	input, err := os.ReadFile(fixturePath("spotbugs.sarif"))
+	require.NoError(t, err, "Failed to read spotbugs.sarif fixture")
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	want := countDistinctSarifRules(t, input)
+	shared.AssertRequirementCount(t, result, want,
+		"spotbugs.sarif: one requirement per distinct result ruleId (fallback rule.id)")
+}
+
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "sarif-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertSarifToHDF(input, "1.0.0")

@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
@@ -184,6 +185,24 @@ func TestConvertCatalogToHDF_ValidatesAgainstSchema(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, baseline.Name, roundtrip.Name)
 	assert.Equal(t, len(baseline.Requirements), len(roundtrip.Requirements))
+}
+
+// Ground-truth anchor for the CATALOG dispatch path only. oscal-to-hdf handles
+// several OSCAL document types with different emission units; the catalog path
+// emits exactly one requirement per control, including nested controls[] at any
+// depth. The count is derived independently of the converter (a generic JSON
+// walk over "controls" arrays — see shared/go/anchor.go), so a silent
+// under-extraction fails even when Go and TS agree. Do NOT anchor the
+// SSP/SAR/POA&M/component paths this way — their emission units differ.
+func TestConvertCatalogToHDF_ControlsAnchor(t *testing.T) {
+	input, err := os.ReadFile("../fixtures/input/catalog-moderate-resolved.json")
+	require.NoError(t, err)
+
+	baseline, err := ConvertCatalogToHDF(input, "1.0.0-test")
+	require.NoError(t, err)
+
+	shared.AssertRequirementCount(t, baseline, shared.CountJSONItemsUnderKey(t, input, "controls"),
+		"catalog-moderate-resolved.json: one requirement per control (nested controls[] at any depth)")
 }
 
 func TestCatalogBaselineName(t *testing.T) {

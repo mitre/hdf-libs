@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertNessusToHdf } from './index.js';
+import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -16,6 +17,21 @@ function findReqAcrossBaselines(result: Awaited<ReturnType<typeof convertNessusT
 }
 
 describe('Nessus to HDF Converter', async () => {
+  // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+  // Golden parity proves Go and TS agree, not that either is correct. Nessus
+  // emits one requirement per <ReportItem>; assert that count derived
+  // INDEPENDENTLY from the source, catching a silent under-extraction even when
+  // both languages agree.
+  it('emits one requirement per <ReportItem> (sample.nessus)', async () => {
+    const input = readFileSync(join(FIXTURES_DIR, 'input', 'sample.nessus'), 'utf-8');
+    const result = await convertNessusToHdf(input);
+    assertRequirementCount(
+      result,
+      countXmlElements(input, 'ReportItem'),
+      'sample.nessus: one requirement per <ReportItem>',
+    );
+  });
+
   describe('convertNessusToHdf', async () => {
     it('should convert real Nessus scan to HDF format', async () => {
       const nessusXml = readFileSync(

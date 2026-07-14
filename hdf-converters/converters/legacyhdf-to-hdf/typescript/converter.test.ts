@@ -4,7 +4,22 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { inspec } from '@mitre/hdf-fixtures';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import { convertV1ToV2, isHDFV1, HDFV1Results } from './converter.js';
+
+// Count control OBJECTS under every profiles[].controls[] array in raw v1 HDF,
+// independent of the converter's typed model. Skips groups[].controls[] (those
+// hold bare control-ID strings, which would double-count), so on a single-
+// profile document this equals the emission unit: one requirement per source
+// control. Overlay documents flatten/dedupe on conversion, so this raw count
+// only anchors single-profile fixtures.
+function countProfileControls(raw: string): number {
+  const doc = JSON.parse(raw) as { profiles?: Array<{ controls?: unknown[] }> };
+  return (doc.profiles ?? []).reduce(
+    (sum, p) => sum + (Array.isArray(p.controls) ? p.controls.length : 0),
+    0,
+  );
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -727,6 +742,21 @@ describe('HDF v1.0 to v2.0 Converter', () => {
           r.refs.some((ref) => (ref as { ref?: unknown }).ref === 'DPMS Target Red Hat Enterprise Linux 9'),
       );
       expect(sawDpms).toBe(true);
+    });
+
+    // Ground-truth anchor: golden parity proves Go and TS AGREE but not that
+    // either is CORRECT. This ties the emitted requirement count to a count
+    // derived independently from the source. ubi9-scan is single-profile, so no
+    // overlay flattening occurs and the converter must emit exactly one
+    // requirement per profiles[0].controls[] entry.
+    it('emits one requirement per source control (input-derived anchor)', () => {
+      expect(v1.profiles).toHaveLength(1);
+      const v2 = convertV1ToV2(v1);
+      assertRequirementCount(
+        v2,
+        countProfileControls(raw),
+        'ubi9-scan.json: one requirement per profiles[0].controls[] (single profile, no overlay flatten)',
+      );
     });
   });
 
