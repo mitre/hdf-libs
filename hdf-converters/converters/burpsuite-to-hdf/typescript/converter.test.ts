@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { convertBurpsuiteToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -414,5 +415,24 @@ describe('BurpSuite to HDF Converter', () => {
       const req = findRequirement(bl, '555');
       expect(req!.impact).toBe(0.3); // default fallback
     });
+  });
+});
+
+// Ground-truth anchor (see shared/typescript/anchor.ts). burpsuite groups issues
+// by <type> — one requirement per distinct issue type — counted independently.
+describe('burpsuite-to-hdf ground-truth anchor', () => {
+  function countDistinctBurpTypes(input: string): number {
+    const types = new Set<string>();
+    for (const m of input.matchAll(/<type>([^<]*)<\/type>/g)) types.add(m[1]);
+    return types.size;
+  }
+
+  it('emits one requirement per distinct <issue> <type>', async () => {
+    const input = loadFixture('input/zero.webappsecurity.com.xml');
+    assertRequirementCount(
+      await convertBurpsuiteToHdf(input),
+      countDistinctBurpTypes(input),
+      'zero.webappsecurity.com.xml: one requirement per distinct <issue> <type>',
+    );
   });
 });

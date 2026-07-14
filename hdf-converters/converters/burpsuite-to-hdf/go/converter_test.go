@@ -1,6 +1,7 @@
 package burpsuite
 
 import (
+	"encoding/xml"
 	"os"
 	"path/filepath"
 	"testing"
@@ -476,4 +477,30 @@ func TestConvertBurpsuiteToHDF_VerificationMethod(t *testing.T) {
 		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
 			"requirement %q should be marked automated", req.ID)
 	}
+}
+
+// --- Ground-truth anchor (see shared/go/anchor.go) ---
+// burpsuite groups issues by <type> (one requirement per distinct issue type),
+// so count distinct <type> values independently of the converter's parser.
+func countDistinctBurpTypes(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Issues []struct {
+			Type string `xml:"type"`
+		} `xml:"issue"`
+	}
+	require.NoError(t, xml.Unmarshal(input, &doc))
+	seen := map[string]struct{}{}
+	for _, i := range doc.Issues {
+		seen[i.Type] = struct{}{}
+	}
+	return len(seen)
+}
+
+func TestConvertBurpsuiteToHDF_DistinctTypeAnchor(t *testing.T) {
+	input := loadFixture(t, "input/zero.webappsecurity.com.xml")
+	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countDistinctBurpTypes(t, input),
+		"zero.webappsecurity.com.xml: one requirement per distinct <issue> <type>")
 }

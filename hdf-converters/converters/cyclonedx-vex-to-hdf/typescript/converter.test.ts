@@ -8,6 +8,7 @@ import {
   ResultStatus,
 } from '@mitre/hdf-schema';
 import { expectValidAmendments } from '../../../test/helpers/expectValidHdf.js';
+import { assertOverrideCount } from '../../../shared/typescript/anchor.js';
 import {
   affectedPackageFromComponent,
   affectedPackagesForVuln,
@@ -308,5 +309,29 @@ describe('helpers', () => {
 
   it('affectedPackagesForVuln returns empty list when there are no affects', () => {
     expect(affectedPackagesForVuln({ id: 'CVE-X' }, new Map())).toEqual([]);
+  });
+});
+
+// Ground-truth anchor (see shared/typescript/anchor.ts). cyclonedx-vex emits one
+// override per vulnerability with an actionable analysis state (every state
+// except exploitable/in_triage). Committed fixtures are single-vulnerability
+// status variants (want=1); a multi-vuln fixture would strengthen this (2t2k).
+describe('cyclonedx-vex-to-hdf ground-truth anchor', () => {
+  function countActionableVulns(input: string): number {
+    const doc = JSON.parse(input) as {
+      vulnerabilities?: Array<{ analysis?: { state?: string } }>;
+    };
+    return (doc.vulnerabilities ?? []).filter(
+      (v) => v.analysis && v.analysis.state !== 'exploitable' && v.analysis.state !== 'in_triage',
+    ).length;
+  }
+
+  it('emits one override per actionable VEX statement (case1-vex-fixed)', async () => {
+    const input = loadInput('case1-vex-fixed.json');
+    assertOverrideCount(
+      await convertCyclonedxVexToHdf(input, TEST_VERSION),
+      countActionableVulns(input),
+      'case1-vex-fixed.json: one override per actionable VEX statement',
+    );
   });
 });

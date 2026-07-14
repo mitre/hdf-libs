@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -163,4 +164,40 @@ func TestAffectedPackageFromComponent_DropsNameOnlyAndEmptyComponents(t *testing
 	assert.Nil(t, affectedPackageFromComponent(Component{BOMRef: "bom-ref-1"}),
 		"a bom-ref alone isn't a portable identifier — drop")
 	assert.Nil(t, affectedPackageFromComponent(Component{}))
+}
+
+// --- Ground-truth anchor (see shared/go/anchor.go) ---
+// cyclonedx-vex emits one override per vulnerability with an actionable analysis
+// state — every state except exploitable/in_triage (and analysis must be
+// present). Count actionable statements independently of the converter. The
+// committed fixtures are single-vulnerability status variants (want=1); a
+// multi-vulnerability fixture would strengthen this (bead hdf-libs-2t2k).
+func countCdxVexActionableVulns(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Vulnerabilities []struct {
+			Analysis *struct {
+				State string `json:"state"`
+			} `json:"analysis"`
+		} `json:"vulnerabilities"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc))
+	n := 0
+	for _, v := range doc.Vulnerabilities {
+		if v.Analysis == nil {
+			continue
+		}
+		if v.Analysis.State != "exploitable" && v.Analysis.State != "in_triage" {
+			n++
+		}
+	}
+	return n
+}
+
+func TestConvertCycloneDXVEX_OverrideAnchor(t *testing.T) {
+	input := loadInput(t, "case1-vex-fixed.json")
+	result, err := ConvertCycloneDXVEXToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertOverrideCount(t, result, countCdxVexActionableVulns(t, input),
+		"case1-vex-fixed.json: one override per actionable VEX statement")
 }
