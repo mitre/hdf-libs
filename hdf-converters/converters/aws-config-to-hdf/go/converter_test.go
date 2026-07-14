@@ -86,6 +86,23 @@ func TestConvertAWSConfigToHDF_MultiRule(t *testing.T) {
 	assert.True(t, ruleIDs["config-rule-jkl012"])
 }
 
+// Ground-truth anchor: the converter emits exactly one requirement per
+// ConfigRules[] entry. The expected count is derived independently of the
+// converter's structs by generically counting the source "ConfigRules" array
+// (shared/go/anchor.go), so a silent under-extraction fails even when Go and TS
+// goldens agree.
+func TestConvertAWSConfigToHDF_ConfigRulesAnchor(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "aws-config-to-hdf", "fixtures", "input", "multi-rule.json")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertAWSConfigToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "ConfigRules"),
+		"multi-rule.json: one requirement per ConfigRules[]")
+}
+
 func TestConverterContract(t *testing.T) {
 	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
 		ConverterName:  "aws-config-to-hdf",

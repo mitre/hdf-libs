@@ -1,6 +1,7 @@
 package jfrogxray
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -368,4 +369,40 @@ func TestConvertJfrogXray_VerificationMethod(t *testing.T) {
 		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
 			"requirement %q: JFrog Xray is an automated vulnerability scanner", req.ID)
 	}
+}
+
+// countDistinctEntryIDs derives the ground-truth requirement count directly from
+// the raw JSON, independent of the converter's structs: JFrog Xray groups
+// data[] entries by their effective ID (the entry's id, or its summary when id
+// is empty) and emits one requirement per group. A plain data[] count would
+// over-count merged duplicates, so the grouping is re-derived here rather than
+// reusing the converter's traversal.
+func countDistinctEntryIDs(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Data []struct {
+			ID      string `json:"id"`
+			Summary string `json:"summary"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "anchor: invalid jfrog-xray JSON")
+	seen := map[string]bool{}
+	for _, e := range doc.Data {
+		key := e.ID
+		if key == "" {
+			key = "summary:" + e.Summary
+		}
+		seen[key] = true
+	}
+	return len(seen)
+}
+
+// Ground-truth anchor: one requirement per distinct effective entry ID. Catches
+// a silent under-extraction that TS/Go golden parity cannot see.
+func TestConvertJfrogXray_EntryAnchor(t *testing.T) {
+	input := loadFixture(t, "input/jfrog_xray_sample.json")
+	result, err := ConvertJfrogXrayToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countDistinctEntryIDs(t, input),
+		"jfrog_xray_sample.json: one requirement per distinct data[] entry ID")
 }

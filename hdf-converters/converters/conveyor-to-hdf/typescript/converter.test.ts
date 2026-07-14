@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { convertConveyorToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -18,6 +19,29 @@ runConverterContractTests({
   converterName: 'conveyor-to-hdf',
   convertFn: convertConveyorToHdf,
   minimalFixture: 'sample-results.json',
+});
+
+// Parses raw Conveyor JSON generically — deliberately NOT the converter's parser
+// — and returns the number of entries in the api_response.results map. The
+// converter emits one requirement per result (distributed across per-scanner
+// baselines), so this map size is the ground truth. results is a JSON object
+// keyed by result id, not an array.
+function countConveyorResults(input: string): number {
+  const doc = JSON.parse(input) as { api_response?: { results?: Record<string, unknown> } };
+  return Object.keys(doc.api_response?.results ?? {}).length;
+}
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per api_response.results entry.
+describe('conveyor-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per api_response.results entry (sample-results)', async () => {
+    const input = loadFixture('sample-results.json');
+    assertRequirementCount(
+      await convertConveyorToHdf(input),
+      countConveyorResults(input),
+      'sample-results.json: one requirement per api_response.results entry',
+    );
+  });
 });
 
 describe('timestamp parse fallback', () => {

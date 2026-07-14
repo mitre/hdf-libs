@@ -5,6 +5,10 @@ import { describe, it, expect } from 'vitest';
 import { convertDeptrackToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import {
+  assertRequirementCount,
+  countJsonItemsUnderKey,
+} from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -18,6 +22,20 @@ runConverterContractTests({
   converterName: 'deptrack-to-hdf',
   convertFn: convertDeptrackToHdf,
   minimalFixture: 'fpf-default.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per top-level findings[] entry, counted independently of the
+// converter's parser so a silent under-extraction fails even when Go/TS agree.
+describe('deptrack-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per findings[]', async () => {
+    const input = loadFixture('fpf-default.json');
+    assertRequirementCount(
+      await convertDeptrackToHdf(input),
+      countJsonItemsUnderKey(input, 'findings'),
+      'fpf-default.json: one requirement per findings[]',
+    );
+  });
 });
 
 describe('timestamp parse fallback', () => {

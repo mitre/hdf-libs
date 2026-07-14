@@ -1,6 +1,7 @@
 package ionchannel
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -380,5 +381,63 @@ func TestConvertIonChannel_VerificationMethod(t *testing.T) {
 		require.NotNil(t, req.VerificationMethod, "requirement %q missing verificationMethod", req.ID)
 		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
 			"requirement %q: ionchannel is an automated SBOM/dependency scanner", req.ID)
+	}
+}
+
+// countDistinctFlattenedDeps derives the ground-truth requirement count directly
+// from the raw JSON, independent of the converter's structs: it recursively
+// flattens the "dependency" scan summary's dependency tree and counts each
+// distinct org/name exactly once — mirroring the emission unit (one requirement
+// per deduped, flattened dependency). A generic CountJSONItemsUnderKey would
+// over-count when the same package appears in two subtrees, so the anchor
+// re-derives the dedup here rather than reusing the converter's traversal.
+func countDistinctFlattenedDeps(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		ScanSummaries []struct {
+			Name    string `json:"name"`
+			Results struct {
+				Data struct {
+					Dependencies []json.RawMessage `json:"dependencies"`
+				} `json:"data"`
+			} `json:"results"`
+		} `json:"scan_summaries"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "anchor: invalid ionchannel JSON")
+
+	seen := map[string]bool{}
+	var walk func(raw json.RawMessage)
+	walk = func(raw json.RawMessage) {
+		var node struct {
+			Org          string            `json:"org"`
+			Name         string            `json:"name"`
+			Dependencies []json.RawMessage `json:"dependencies"`
+		}
+		require.NoError(t, json.Unmarshal(raw, &node), "anchor: invalid dependency node")
+		seen[node.Org+"/"+node.Name] = true
+		for _, sub := range node.Dependencies {
+			walk(sub)
+		}
+	}
+	for _, scan := range doc.ScanSummaries {
+		if scan.Name == "dependency" {
+			for _, dep := range scan.Results.Data.Dependencies {
+				walk(dep)
+			}
+		}
+	}
+	return len(seen)
+}
+
+// Ground-truth anchor: one requirement per distinct dependency in the flattened
+// "dependency" scan tree. Catches a silent under-extraction that TS/Go golden
+// parity cannot see.
+func TestConvertIonChannel_DependencyAnchor(t *testing.T) {
+	for _, name := range []string{"input/minimal.json", "input/edge-cases.json"} {
+		input := loadFixture(t, name)
+		result, err := ConvertIonChannelToHDF(input, testVersion)
+		require.NoError(t, err)
+		shared.AssertRequirementCount(t, result, countDistinctFlattenedDeps(t, input),
+			name+": one requirement per distinct flattened dependency")
 	}
 }

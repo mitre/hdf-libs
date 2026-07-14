@@ -5,6 +5,10 @@ import { describe, it, expect } from 'vitest';
 import { convertJunitToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import {
+  assertRequirementCount,
+  countXmlElements,
+} from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
 
@@ -26,6 +30,19 @@ runConverterContractTests({
   converterName: 'junit-to-hdf',
   convertFn: convertJunitToHdf,
   minimalFixture: 'surefire-error.xml',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+// JUnit emits one requirement per <testcase> element across every <testsuite>.
+describe('junit-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per <testcase>', async () => {
+    const input = loadFixture('testsuites-mixed.xml');
+    assertRequirementCount(
+      await convertJunitToHdf(input),
+      countXmlElements(input, 'testcase'),
+      'testsuites-mixed.xml: one requirement per <testcase>',
+    );
+  });
 });
 
 describe('junit to HDF converter', async () => {

@@ -344,6 +344,18 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+// Ground-truth anchor: the converter emits one requirement per top-level
+// findings[] entry. The source count is derived independently of the converter's
+// parser (shared/go/anchor.go), so a silent under-extraction fails even when
+// Go/TS golden parity agrees.
+func TestConvertDeptrack_FindingsAnchor(t *testing.T) {
+	input := loadFixture(t, "input/fpf-default.json")
+	result, err := ConvertDeptrackToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "findings"),
+		"fpf-default.json: one requirement per findings[]")
+}
+
 func TestConvertDeptrack_VerificationMethod(t *testing.T) {
 	input := loadFixture(t, "input/fpf-default.json")
 	result, err := ConvertDeptrackToHDF(input, testVersion)

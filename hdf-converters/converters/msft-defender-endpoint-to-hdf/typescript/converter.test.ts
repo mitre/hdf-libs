@@ -4,6 +4,10 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertMsftDefenderEndpointToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import {
+  assertRequirementCount,
+  countJsonItemsUnderKey,
+} from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
@@ -18,6 +22,21 @@ runConverterContractTests({
   converterName: 'msft-defender-endpoint-to-hdf',
   convertFn: convertMsftDefenderEndpointToHdf,
   minimalFixture: 'minimal.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+// Each Graph Security API alert maps to exactly one requirement — no grouping —
+// so the source count is the length of value[]. "value" is the sole array under
+// that key at any depth in this format, so countJsonItemsUnderKey is unambiguous.
+describe('msft-defender-endpoint-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per value[] alert (sample)', async () => {
+    const input = loadFixture('sample.json');
+    assertRequirementCount(
+      await convertMsftDefenderEndpointToHdf(input),
+      countJsonItemsUnderKey(input, 'value'),
+      'sample.json: one requirement per value[] alert',
+    );
+  });
 });
 
 describe('msft-defender-endpoint to HDF converter', async () => {

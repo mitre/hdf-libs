@@ -292,6 +292,19 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+// Ground-truth anchor: the converter emits one requirement per FVDL
+// <Description> element (each carrying a classID; vulnerabilities are grouped
+// into these). The <Description> count is derived from the raw XML independently
+// of the converter's parser (shared/go/anchor.go), so a silent under-extraction
+// fails even when Go/TS golden parity agrees.
+func TestConvertFortifyToHDF_DescriptionAnchor(t *testing.T) {
+	input := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, shared.CountXMLElements(t, input, "Description"),
+		"fortify_webgoat_results.fvdl: one requirement per FVDL <Description>")
+}
+
 func TestConvertFortifyToHDF_VerificationMethod(t *testing.T) {
 	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
 	result, err := ConvertFortifyToHDF(inputData, converterVersion)

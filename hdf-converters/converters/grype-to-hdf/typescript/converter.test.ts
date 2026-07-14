@@ -5,6 +5,10 @@ import {convertGrypeToHdf} from './converter';
 import {runConverterContractTests} from '../../../shared/typescript/converter-contract.js';
 import {expectValidResults} from '../../../test/helpers/expectValidHdf.js';
 import {parseJSON} from '@mitre/hdf-utilities';
+import {
+  assertRequirementCount,
+  countJsonItemsUnderKey,
+} from '../../../shared/typescript/anchor.js';
 import type {HDFResults} from '@mitre/hdf-schema';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -17,6 +21,20 @@ runConverterContractTests({
   converterName: 'grype-to-hdf',
   convertFn: convertGrypeToHdf,
   minimalFixture: 'amazon.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+// Grype emits one requirement per matches[] entry (plus ignoredMatches[], which
+// anchore_grype.json has none of).
+describe('grype-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per matches[]', async () => {
+    const input = loadFixture('anchore_grype.json');
+    assertRequirementCount(
+      await convertGrypeToHdf(input),
+      countJsonItemsUnderKey(input, 'matches'),
+      'anchore_grype.json: one requirement per matches[] (no ignoredMatches)',
+    );
+  });
 });
 
 describe('timestamp parse fallback', () => {

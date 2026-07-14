@@ -5,6 +5,10 @@ import {describe, expect, it} from 'vitest';
 import {convertGitlabToHdf} from './converter';
 import {runConverterContractTests} from '../../../shared/typescript/converter-contract.js';
 import {expectValidResults} from '../../../test/helpers/expectValidHdf.js';
+import {
+  assertRequirementCount,
+  countJsonItemsUnderKey,
+} from '../../../shared/typescript/anchor.js';
 import {parseJSON} from '@mitre/hdf-utilities';
 import type {HDFResults} from '@mitre/hdf-schema';
 
@@ -19,6 +23,21 @@ runConverterContractTests({
   converterName: 'gitlab-to-hdf',
   convertFn: convertGitlabToHdf,
   minimalFixture: 'minimal-dast.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per top-level vulnerabilities[] entry, counted independently
+// of the converter's parser so a silent under-extraction fails even when Go/TS
+// agree.
+describe('gitlab-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per vulnerabilities[]', async () => {
+    const input = loadFixture('multi-vuln.json');
+    assertRequirementCount(
+      await convertGitlabToHdf(input),
+      countJsonItemsUnderKey(input, 'vulnerabilities'),
+      'multi-vuln.json: one requirement per vulnerabilities[]',
+    );
+  });
 });
 
 describe('timestamp parse fallback', () => {

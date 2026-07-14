@@ -4,6 +4,10 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertMsftSecureScoreToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import {
+  assertRequirementCount,
+  countJsonItemsUnderKey,
+} from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
@@ -18,6 +22,23 @@ runConverterContractTests({
   converterName: 'msft-secure-score-to-hdf',
   convertFn: convertMsftSecureScoreToHdf,
   minimalFixture: 'minimal.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+// Each secureScore.value[].controlScores[] entry becomes exactly one requirement
+// — no grouping — so the source count is the total controlScores length across
+// all secureScore entries. "controlScores" is the sole array under that key at
+// any depth here, so countJsonItemsUnderKey is unambiguous (unlike "value",
+// which appears under both secureScore and profiles).
+describe('msft-secure-score-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per controlScores[] entry (combined)', async () => {
+    const input = loadFixture('combined.json');
+    assertRequirementCount(
+      await convertMsftSecureScoreToHdf(input),
+      countJsonItemsUnderKey(input, 'controlScores'),
+      'combined.json: one requirement per secureScore.value[].controlScores[] entry',
+    );
+  });
 });
 
 describe('timestamp parse fallback', () => {

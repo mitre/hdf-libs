@@ -550,3 +550,17 @@ func TestConvertGrypeToHDF_VerificationMethod(t *testing.T) {
 		}
 	}
 }
+
+// Ground-truth anchor: Grype emits one requirement per matches[] entry (plus
+// ignoredMatches[], which anchore_grype.json has none of). The count is derived
+// generically from the raw JSON, independent of the converter's structs, so a
+// silent under-extraction fails even where TS/Go golden parity would agree.
+func TestConvertGrypeToHDF_MatchesAnchor(t *testing.T) {
+	input := loadFixture(t, "input/anchore_grype.json")
+	result, err := ConvertGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "matches"),
+		"anchore_grype.json: one requirement per matches[] (no ignoredMatches)")
+}

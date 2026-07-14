@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertMsftDefenderDevopsToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
@@ -10,10 +11,39 @@ function loadFixture(name: string): string {
   return readFileSync(join(__dirname, '..', 'fixtures', name), 'utf-8');
 }
 
+// Count, per SARIF run, the distinct rule identifiers (result.ruleId, falling
+// back to result.rule.id) among that run's results, then sum across runs. MSDO
+// delegates to the SARIF converter, which emits one requirement per distinct
+// rule PER run (each run becomes its own baseline), so the emission unit is the
+// per-run distinct-rule count summed over runs — not a global distinct count.
+// Parsed generically, without the converter's parser. minimal.sarif has no
+// empty-results runs, so no placeholder skews the count.
+function countPerRunDistinctRules(input: string): number {
+  const doc = JSON.parse(input) as {
+    runs?: Array<{ results?: Array<{ ruleId?: string; rule?: { id?: string } }> }>;
+  };
+  return (doc.runs ?? []).reduce((sum, run) => {
+    const distinct = new Set((run.results ?? []).map((r) => r.ruleId ?? r.rule?.id));
+    return sum + distinct.size;
+  }, 0);
+}
+
 runConverterContractTests({
   converterName: 'msft-defender-devops-to-hdf',
   convertFn: convertMsftDefenderDevopsToHdf,
   minimalFixture: 'minimal.sarif',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+describe('msft-defender-devops-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per distinct rule per run (minimal)', async () => {
+    const input = loadFixture('input/minimal.sarif');
+    assertRequirementCount(
+      await convertMsftDefenderDevopsToHdf(input),
+      countPerRunDistinctRules(input),
+      'minimal.sarif: one requirement per distinct rule per run',
+    );
+  });
 });
 
 describe('msft-defender-devops-to-hdf', () => {

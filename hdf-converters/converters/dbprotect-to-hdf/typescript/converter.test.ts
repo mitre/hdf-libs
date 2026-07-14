@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { convertDbprotectToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -18,6 +19,39 @@ runConverterContractTests({
   converterName: 'dbprotect-to-hdf',
   convertFn: convertDbprotectToHdf,
   minimalFixture: 'sample-check-results.xml',
+});
+
+// Scans the raw Cognos XML generically — deliberately NOT the converter's parser
+// — and returns the number of distinct "Check ID" values across all data rows.
+// The "Check ID" column is located by its position among <metadata><item>
+// elements, then the value at that index is read from each <data><row>. The
+// converter emits one requirement per distinct Check ID (rows sharing an id are
+// grouped), so the distinct count is the ground truth.
+function countDistinctCheckIds(input: string): number {
+  const meta = input.slice(input.indexOf('<metadata'), input.indexOf('</metadata>'));
+  const names = [...meta.matchAll(/<item\b[^>]*\bname="([^"]*)"/g)].map((m) => m[1]);
+  const idx = names.indexOf('Check ID');
+  if (idx < 0) throw new Error('fixture lacks a Check ID column');
+
+  const distinct = new Set<string>();
+  for (const rowMatch of input.matchAll(/<row>([\s\S]*?)<\/row>/g)) {
+    const values = [...rowMatch[1].matchAll(/<value>([\s\S]*?)<\/value>/g)].map((m) => m[1].trim());
+    if (idx < values.length) distinct.add(values[idx]);
+  }
+  return distinct.size;
+}
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per distinct Check ID.
+describe('dbprotect-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per distinct Check ID (check-results)', async () => {
+    const input = loadFixture('sample-check-results.xml');
+    assertRequirementCount(
+      await convertDbprotectToHdf(input),
+      countDistinctCheckIds(input),
+      'sample-check-results.xml: one requirement per distinct Check ID',
+    );
+  });
 });
 
 describe('dbprotect to HDF converter', () => {

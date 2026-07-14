@@ -324,6 +324,21 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+// Ground-truth anchor: one requirement per secureScore.value[].controlScores[]
+// entry, summed across all secureScore entries, counted independently of the
+// converter (shared/go/anchor.go). Each control score becomes exactly one
+// requirement — no grouping. "controlScores" is the sole array under that key at
+// any depth in this format, so CountJSONItemsUnderKey is unambiguous (unlike
+// "value", which appears under both secureScore and profiles). Guards against
+// silent under-extraction that TS/Go golden parity cannot detect.
+func TestConvert_ControlScoreAnchor(t *testing.T) {
+	input := loadFixture(t, "input/combined.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "controlScores"),
+		"combined.json: one requirement per secureScore.value[].controlScores[] entry")
+}
+
 func TestConvertMsftSecureScore_ControlType(t *testing.T) {
 	input := loadFixture(t, "input/combined.json")
 	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)

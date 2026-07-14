@@ -1,8 +1,10 @@
 package dbprotect
 
 import (
+	"encoding/xml"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -122,6 +124,59 @@ func TestConvertDbprotect_CheckResults_RequirementCount(t *testing.T) {
 
 	// 8 rows with 6 unique Check IDs: 2986 (2 rows), 2903, 2841, 2801 (2 rows), 2942, 2976
 	assert.Len(t, result.Baselines[0].Requirements, 6)
+}
+
+// countDistinctCheckIDs parses the raw Cognos XML generically — deliberately NOT
+// the converter's structs — and returns the number of distinct "Check ID"
+// values across all data rows. It locates the "Check ID" column by its position
+// in <metadata><item> and reads the value at that index in each <data><row>.
+// The converter emits one requirement per distinct Check ID (rows sharing an id
+// are grouped), so the distinct count — not the raw row count — is the ground
+// truth.
+func countDistinctCheckIDs(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Metadata struct {
+			Items []struct {
+				Name string `xml:"name,attr"`
+			} `xml:"item"`
+		} `xml:"metadata"`
+		Data struct {
+			Rows []struct {
+				Values []string `xml:"value"`
+			} `xml:"row"`
+		} `xml:"data"`
+	}
+	require.NoError(t, xml.Unmarshal(input, &doc), "failed to parse DBProtect XML for anchor count")
+
+	idx := -1
+	for i, item := range doc.Metadata.Items {
+		if item.Name == "Check ID" {
+			idx = i
+			break
+		}
+	}
+	require.GreaterOrEqual(t, idx, 0, "fixture lacks a Check ID column")
+
+	distinct := make(map[string]struct{})
+	for _, row := range doc.Data.Rows {
+		if idx < len(row.Values) {
+			distinct[strings.TrimSpace(row.Values[idx])] = struct{}{}
+		}
+	}
+	return len(distinct)
+}
+
+// Ground-truth anchor: one requirement per distinct Check ID. Counted
+// independently of the converter so a silent under-extraction fails even when Go
+// and TS goldens agree.
+func TestConvertDbprotect_CheckResults_DistinctCheckIDAnchor(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	shared.AssertRequirementCount(t, result, countDistinctCheckIDs(t, input),
+		"sample-check-results.xml: one requirement per distinct Check ID")
 }
 
 func TestConvertDbprotect_CheckResults_GroupedResults(t *testing.T) {

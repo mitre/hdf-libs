@@ -6,6 +6,10 @@ import { setCurrentNistRevision, resetNistRevision, setNistStrict } from '@mitre
 import { convertAwsConfigToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import {
+  assertRequirementCount,
+  countJsonItemsUnderKey,
+} from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -19,6 +23,19 @@ runConverterContractTests({
   converterName: 'aws-config-to-hdf',
   convertFn: convertAwsConfigToHdf,
   minimalFixture: 'minimal.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per ConfigRules[] entry, counted generically from the source.
+describe('aws-config-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per ConfigRules[] (multi-rule)', async () => {
+    const input = loadFixture('multi-rule.json');
+    assertRequirementCount(
+      await convertAwsConfigToHdf(input),
+      countJsonItemsUnderKey(input, 'ConfigRules'),
+      'multi-rule.json: one requirement per ConfigRules[]',
+    );
+  });
 });
 
 describe('timestamp parse fallback', () => {

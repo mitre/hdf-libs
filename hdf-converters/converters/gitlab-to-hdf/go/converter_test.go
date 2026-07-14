@@ -326,6 +326,18 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+// Ground-truth anchor: the converter emits one requirement per top-level
+// vulnerabilities[] entry. The source count is derived independently of the
+// converter's parser (shared/go/anchor.go), so a silent under-extraction fails
+// even when Go/TS golden parity agrees.
+func TestConvertGitlabToHDF_VulnerabilitiesAnchor(t *testing.T) {
+	input := loadFixture(t, "input/multi-vuln.json")
+	result, err := ConvertGitlabToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "vulnerabilities"),
+		"multi-vuln.json: one requirement per vulnerabilities[]")
+}
+
 func TestConvertGitlabToHDF_ControlType(t *testing.T) {
 	input := loadFixture(t, "input/multi-vuln.json")
 	result, err := ConvertGitlabToHDF(input, testVersion)

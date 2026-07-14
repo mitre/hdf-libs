@@ -6,6 +6,7 @@ import { convertIonchannelToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { DEFAULT_MAX_INPUT_SIZE } from '../../../shared/typescript/converterutil.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -15,10 +16,53 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+// Derive the ground-truth requirement count directly from the raw JSON,
+// independent of the converter: recursively flatten the "dependency" scan tree
+// and count each distinct org/name once — mirroring the emission unit (one
+// requirement per deduped, flattened dependency). A generic key count would
+// over-count when a package appears in two subtrees, so the dedup is re-derived
+// here rather than reusing the converter's traversal.
+function countDistinctFlattenedDeps(input: string): number {
+  const doc = JSON.parse(input) as {
+    scan_summaries?: Array<{
+      name?: string;
+      results?: { data?: { dependencies?: unknown[] } };
+    }>;
+  };
+  const seen = new Set<string>();
+  const walk = (node: unknown): void => {
+    if (node === null || typeof node !== 'object') return;
+    const dep = node as { org?: unknown; name?: unknown; dependencies?: unknown[] };
+    seen.add(`${String(dep.org)}/${String(dep.name)}`);
+    for (const sub of dep.dependencies ?? []) walk(sub);
+  };
+  for (const scan of doc.scan_summaries ?? []) {
+    if (scan.name === 'dependency') {
+      for (const dep of scan.results?.data?.dependencies ?? []) walk(dep);
+    }
+  }
+  return seen.size;
+}
+
 runConverterContractTests({
   converterName: 'ionchannel-to-hdf',
   convertFn: convertIonchannelToHdf,
   minimalFixture: 'minimal.json',
+});
+
+// Ground-truth anchor: one requirement per distinct flattened dependency.
+describe('ionchannel-to-hdf ground-truth anchor', () => {
+  it.each(['minimal.json', 'edge-cases.json'])(
+    'emits one requirement per distinct flattened dependency (%s)',
+    async (name) => {
+      const input = loadFixture(name);
+      assertRequirementCount(
+        await convertIonchannelToHdf(input),
+        countDistinctFlattenedDeps(input),
+        `${name}: one requirement per distinct flattened dependency`,
+      );
+    },
+  );
 });
 
 describe('ionchannel to HDF converter', async () => {

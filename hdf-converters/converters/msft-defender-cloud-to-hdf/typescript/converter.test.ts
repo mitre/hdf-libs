@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertMsftDefenderCloudToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
@@ -14,10 +15,31 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+// Count distinct value[].name GUIDs in the raw Azure export, generically (no
+// converter parser). The converter's emission unit is one requirement per
+// DISTINCT assessment name — it groups value[] entries by name — so a plain
+// array-length count would over-count if two entries shared a name.
+function countDistinctAssessmentNames(input: string): number {
+  const doc = JSON.parse(input) as { value?: Array<{ name?: string }> };
+  return new Set((doc.value ?? []).map((a) => a.name)).size;
+}
+
 runConverterContractTests({
   converterName: 'msft-defender-cloud-to-hdf',
   convertFn: convertMsftDefenderCloudToHdf,
   minimalFixture: 'minimal.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
+describe('msft-defender-cloud-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per distinct value[].name (sample)', async () => {
+    const input = loadFixture('sample.json');
+    assertRequirementCount(
+      await convertMsftDefenderCloudToHdf(input),
+      countDistinctAssessmentNames(input),
+      'sample.json: one requirement per distinct value[].name assessment',
+    );
+  });
 });
 
 describe('Microsoft Defender for Cloud to HDF converter', async () => {

@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { convertJfrogXrayToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -14,10 +15,38 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+// Derive the ground-truth requirement count directly from the raw JSON,
+// independent of the converter: JFrog Xray groups data[] entries by their
+// effective ID (the entry's id, or its summary when id is empty) and emits one
+// requirement per group. A plain data[] count would over-count merged
+// duplicates, so the grouping is re-derived here.
+function countDistinctEntryIds(input: string): number {
+  const doc = JSON.parse(input) as {
+    data?: Array<{ id?: string; summary?: string }>;
+  };
+  const seen = new Set<string>();
+  for (const e of doc.data ?? []) {
+    seen.add(e.id && e.id !== '' ? e.id : `summary:${e.summary ?? ''}`);
+  }
+  return seen.size;
+}
+
 runConverterContractTests({
   converterName: 'jfrog-xray-to-hdf',
   convertFn: convertJfrogXrayToHdf,
   minimalFixture: 'jfrog_xray_sample.json',
+});
+
+// Ground-truth anchor: one requirement per distinct effective entry ID.
+describe('jfrog-xray-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per distinct data[] entry ID', async () => {
+    const input = loadFixture('jfrog_xray_sample.json');
+    assertRequirementCount(
+      await convertJfrogXrayToHdf(input),
+      countDistinctEntryIds(input),
+      'jfrog_xray_sample.json: one requirement per distinct data[] entry ID',
+    );
+  });
 });
 
 describe('jfrog-xray to HDF converter', async () => {

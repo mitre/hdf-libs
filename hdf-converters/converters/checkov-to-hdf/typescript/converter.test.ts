@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { convertCheckovToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -18,6 +19,39 @@ runConverterContractTests({
   converterName: 'checkov-to-hdf',
   convertFn: convertCheckovToHdf,
   minimalFixture: 'minimal.json',
+});
+
+// Parses raw checkov JSON generically — deliberately NOT the converter's parser
+// — and returns the number of distinct check_id values across every framework's
+// passed/failed/skipped checks. The converter groups checks by check_id (one
+// requirement per group), so the distinct count is the ground truth.
+function countDistinctCheckIds(input: string): number {
+  type Check = { check_id?: string };
+  type Report = {
+    results?: { passed_checks?: Check[]; failed_checks?: Check[]; skipped_checks?: Check[] };
+  };
+  const parsed = JSON.parse(input) as Report | Report[];
+  const reports = Array.isArray(parsed) ? parsed : [parsed];
+  const distinct = new Set<string>();
+  for (const r of reports) {
+    for (const key of ['passed_checks', 'failed_checks', 'skipped_checks'] as const) {
+      for (const c of r.results?.[key] ?? []) distinct.add(c.check_id ?? '');
+    }
+  }
+  return distinct.size;
+}
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per distinct check_id.
+describe('checkov-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per distinct check_id (multi-framework)', async () => {
+    const input = loadFixture('multi-framework.json');
+    assertRequirementCount(
+      await convertCheckovToHdf(input),
+      countDistinctCheckIds(input),
+      'multi-framework.json: one requirement per distinct check_id',
+    );
+  });
 });
 
 describe('checkov to HDF converter', async () => {

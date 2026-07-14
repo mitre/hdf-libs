@@ -4,6 +4,10 @@ import { describe, it, expect } from 'vitest';
 import { convertFortifyToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import {
+  assertRequirementCount,
+  countXmlElements,
+} from '../../../shared/typescript/anchor.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -28,6 +32,21 @@ runConverterContractTests({
   converterName: 'fortify-to-hdf',
   convertFn: convertFortifyToHdf,
   minimalFixture: 'fortify_webgoat_results.fvdl',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per FVDL <Description> element, counted from the raw XML
+// independently of the converter's parser so a silent under-extraction fails
+// even when Go/TS agree.
+describe('fortify-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per FVDL <Description>', async () => {
+    const input = loadFixture('input/fortify_webgoat_results.fvdl');
+    assertRequirementCount(
+      await convertFortifyToHdf(input),
+      countXmlElements(input, 'Description'),
+      'fortify_webgoat_results.fvdl: one requirement per FVDL <Description>',
+    );
+  });
 });
 
 describe('Fortify to HDF Converter', () => {

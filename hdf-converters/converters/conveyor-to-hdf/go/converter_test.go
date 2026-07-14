@@ -1,6 +1,7 @@
 package conveyor
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -374,6 +375,35 @@ func TestConvertConveyor_EmptyResultsSynthesizesPlaceholder(t *testing.T) {
 	codeDesc := req.Results[0].CodeDesc
 	assert.Contains(t, codeDesc, "Conveyor")
 	assert.Contains(t, codeDesc, "Inspection of file: submissions/empty.zip")
+}
+
+// countConveyorResults parses raw Conveyor JSON generically — deliberately NOT
+// the converter's structs — and returns the number of entries in the
+// api_response.results map. The converter emits one requirement per result
+// (distributed across per-scanner baselines), so this map size is the ground
+// truth. results is a JSON object keyed by result id, not an array, so
+// CountJSONItemsUnderKey does not apply.
+func countConveyorResults(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		APIResponse struct {
+			Results map[string]json.RawMessage `json:"results"`
+		} `json:"api_response"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "failed to parse Conveyor for anchor count")
+	return len(doc.APIResponse.Results)
+}
+
+// Ground-truth anchor: one requirement per api_response.results entry. Counted
+// independently of the converter so a silent under-extraction fails even when Go
+// and TS goldens agree.
+func TestConvertConveyor_ResultsAnchor(t *testing.T) {
+	input := loadFixture(t, "input/sample-results.json")
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	shared.AssertRequirementCount(t, result, countConveyorResults(t, input),
+		"sample-results.json: one requirement per api_response.results entry")
 }
 
 func TestConvertConveyor_VerificationMethod(t *testing.T) {

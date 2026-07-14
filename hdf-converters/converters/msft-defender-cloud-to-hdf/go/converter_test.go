@@ -395,6 +395,37 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+// countDistinctAssessmentNames counts distinct value[].name GUIDs in the raw
+// Azure assessments export, generically (no converter structs). The converter's
+// emission unit is one requirement per DISTINCT assessment name — it groups
+// value[] entries by name — so a plain array-length count would over-count if
+// two entries shared a name. Counting distinct names captures the true unit.
+func countDistinctAssessmentNames(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Value []struct {
+			Name string `json:"name"`
+		} `json:"value"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "count distinct assessment names: invalid JSON")
+	seen := map[string]struct{}{}
+	for _, a := range doc.Value {
+		seen[a.Name] = struct{}{}
+	}
+	return len(seen)
+}
+
+// Ground-truth anchor: one requirement per distinct value[].name in the raw
+// export, counted independently of the converter (see shared/go/anchor.go).
+// Guards against silent under-extraction that TS/Go golden parity cannot detect.
+func TestConvert_AssessmentAnchor(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderCloudToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countDistinctAssessmentNames(t, input),
+		"sample.json: one requirement per distinct value[].name assessment")
+}
+
 func TestConvertMsftDefenderCloud_VerificationMethod(t *testing.T) {
 	input := loadFixture(t, "input/sample.json")
 	result, err := ConvertMsftDefenderCloudToHDF(input, testVersion)

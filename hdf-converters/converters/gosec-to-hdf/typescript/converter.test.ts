@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { convertGosecToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -14,10 +15,36 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+// countDistinctGosecRules parses raw gosec JSON generically — NOT via the
+// converter's parser — and returns the number of distinct rule_id values.
+// gosec's emission unit is the distinct rule (issues sharing a rule_id collapse
+// into one requirement with many results), so a plain Issues count would
+// overshoot.
+function countDistinctGosecRules(input: string): number {
+  const doc = JSON.parse(input) as { Issues?: Array<{ rule_id?: string }> };
+  const distinct = new Set((doc.Issues ?? []).map((i) => i.rule_id));
+  return distinct.size;
+}
+
 runConverterContractTests({
   converterName: 'gosec-to-hdf',
   convertFn: convertGosecToHdf,
   minimalFixture: 'ethereum.json',
+});
+
+// Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
+// one requirement per DISTINCT rule_id, counted independently of the converter's
+// parser so a silent under-extraction fails even when Go/TS agree. ethereum.json's
+// 173 issues collapse to 5 rules.
+describe('gosec-to-hdf ground-truth anchor', () => {
+  it('emits one requirement per distinct rule_id', async () => {
+    const input = loadFixture('ethereum.json');
+    assertRequirementCount(
+      await convertGosecToHdf(input),
+      countDistinctGosecRules(input),
+      'ethereum.json: one requirement per distinct rule_id',
+    );
+  });
 });
 
 describe('gosec to HDF converter', async () => {

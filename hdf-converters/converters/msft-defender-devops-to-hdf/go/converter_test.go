@@ -1,6 +1,7 @@
 package msftdefenderdevops
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -286,6 +287,56 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "msft-defender-devops-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertMsftDefenderDevopsToHDF(input, "1.0.0")
 	})
+}
+
+// countPerRunDistinctRules counts, per SARIF run, the distinct rule identifiers
+// (result.ruleId, falling back to result.rule.id) among that run's results,
+// then sums across runs. MSDO delegates to the SARIF converter, which emits one
+// requirement per distinct rule PER run (each run becomes its own baseline), so
+// the emission unit is the per-run distinct-rule count summed over runs — not a
+// global distinct count. Parsed with a minimal local struct, deliberately NOT
+// the converter's structs, so the same bug cannot corrupt the ground truth.
+// Fixture must have no empty-results runs (those synthesize a placeholder that
+// no source rule predicts); minimal.sarif satisfies this.
+func countPerRunDistinctRules(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Runs []struct {
+			Results []struct {
+				RuleID string `json:"ruleId"`
+				Rule   struct {
+					ID string `json:"id"`
+				} `json:"rule"`
+			} `json:"results"`
+		} `json:"runs"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "failed to parse SARIF for anchor count")
+
+	total := 0
+	for _, run := range doc.Runs {
+		distinct := make(map[string]struct{})
+		for _, r := range run.Results {
+			id := r.RuleID
+			if id == "" {
+				id = r.Rule.ID
+			}
+			distinct[id] = struct{}{}
+		}
+		total += len(distinct)
+	}
+	return total
+}
+
+// Ground-truth anchor: one requirement per distinct rule per run (see
+// shared/go/anchor.go). Guards against silent under-extraction that TS/Go
+// golden parity cannot detect. minimal.sarif has no empty-results runs, so
+// every requirement is predicted by a source rule.
+func TestConvert_RuleAnchor(t *testing.T) {
+	input := loadFixture(t, "input/minimal.sarif")
+	result, err := ConvertMsftDefenderDevopsToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countPerRunDistinctRules(t, input),
+		"minimal.sarif: one requirement per distinct rule per run")
 }
 
 func TestConvert_ControlType(t *testing.T) {

@@ -486,3 +486,15 @@ func TestConvertJUnitToHDF_VerificationMethod(t *testing.T) {
 			"requirement %q: JUnit reports come from automated CI test runs", req.ID)
 	}
 }
+
+// Ground-truth anchor: JUnit emits one requirement per <testcase> element across
+// every <testsuite>. The count is derived by a generic XML token walk of the raw
+// input (shared/go/anchor.go), independent of the converter's structs, so a
+// silent under-extraction fails even where TS/Go golden parity would agree.
+func TestConvertJUnitToHDF_TestcaseAnchor(t *testing.T) {
+	input := loadFixture(t, "testsuites-mixed.xml")
+	result, err := ConvertJUnitToHDF(input, converterVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, shared.CountXMLElements(t, input, "testcase"),
+		"testsuites-mixed.xml: one requirement per <testcase>")
+}

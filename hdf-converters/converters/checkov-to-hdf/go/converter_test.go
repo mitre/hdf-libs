@@ -1,6 +1,7 @@
 package checkov
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -378,6 +379,60 @@ func TestConvertCheckovToHDF_MultiFramework(t *testing.T) {
 	assert.True(t, ids["CKV_TF_1"], "expected terraform check CKV_TF_1")
 	// From dockerfile
 	assert.True(t, ids["CKV_DOCKER_7"], "expected dockerfile check CKV_DOCKER_7")
+}
+
+// countDistinctCheckIDs parses raw checkov JSON generically — deliberately NOT
+// the converter's structs — and returns the number of distinct check_id values
+// across every framework's passed/failed/skipped checks. The converter groups
+// checks by check_id (one requirement per group), so the distinct count, not the
+// raw check count, is the ground truth.
+func countDistinctCheckIDs(t *testing.T, input []byte) int {
+	t.Helper()
+	type check struct {
+		CheckID string `json:"check_id"`
+	}
+	type report struct {
+		Results struct {
+			Passed  []check `json:"passed_checks"`
+			Failed  []check `json:"failed_checks"`
+			Skipped []check `json:"skipped_checks"`
+		} `json:"results"`
+	}
+	trimmed := input
+	var reports []report
+	if len(trimmed) > 0 && trimmed[0] == '[' {
+		require.NoError(t, json.Unmarshal(trimmed, &reports), "failed to parse checkov array for anchor count")
+	} else {
+		var single report
+		require.NoError(t, json.Unmarshal(trimmed, &single), "failed to parse checkov object for anchor count")
+		reports = []report{single}
+	}
+
+	distinct := make(map[string]struct{})
+	for _, r := range reports {
+		for _, c := range r.Results.Passed {
+			distinct[c.CheckID] = struct{}{}
+		}
+		for _, c := range r.Results.Failed {
+			distinct[c.CheckID] = struct{}{}
+		}
+		for _, c := range r.Results.Skipped {
+			distinct[c.CheckID] = struct{}{}
+		}
+	}
+	return len(distinct)
+}
+
+// Ground-truth anchor: one requirement per distinct check_id (checks sharing a
+// check_id are grouped). Counted independently of the converter so a silent
+// under-extraction fails even when Go and TS goldens agree.
+func TestConvertCheckovToHDF_DistinctCheckIDAnchor(t *testing.T) {
+	input := loadFixture(t, "input/multi-framework.json")
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	shared.AssertRequirementCount(t, result, countDistinctCheckIDs(t, input),
+		"multi-framework.json: one requirement per distinct check_id")
 }
 
 func TestConvertCheckovToHDF_MultiFrameworkToolFormat(t *testing.T) {

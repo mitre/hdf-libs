@@ -1,6 +1,7 @@
 package gosec
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -612,6 +613,38 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "gosec-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertGosecToHDF(input, "1.0.0")
 	})
+}
+
+// countDistinctGosecRules unmarshals raw gosec JSON into a minimal local struct
+// — deliberately NOT the converter's structs — and returns the number of
+// distinct rule_id values across all Issues. gosec's emission unit is the
+// distinct rule (issues sharing a rule_id collapse into one requirement with
+// many results), so a plain Issues count would overshoot.
+func countDistinctGosecRules(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Issues []struct {
+			RuleID string `json:"rule_id"`
+		} `json:"Issues"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "failed to parse gosec JSON for anchor count")
+	distinct := make(map[string]struct{})
+	for _, i := range doc.Issues {
+		distinct[i.RuleID] = struct{}{}
+	}
+	return len(distinct)
+}
+
+// Ground-truth anchor: the converter emits one requirement per DISTINCT rule_id.
+// The distinct count is derived independently of the converter's parser, so a
+// silent under-extraction (e.g. dropping a rule group) fails even when Go/TS
+// golden parity agrees. ethereum.json's 173 issues collapse to 5 rules.
+func TestConvertGosecToHDF_DistinctRuleAnchor(t *testing.T) {
+	input := loadFixture(t, "input/ethereum.json")
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, countDistinctGosecRules(t, input),
+		"ethereum.json: one requirement per distinct rule_id")
 }
 
 func TestConvertGosecToHDF_ControlType(t *testing.T) {

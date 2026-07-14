@@ -389,6 +389,20 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+// Ground-truth anchor: one requirement per value[] alert, counted independently
+// of the converter (shared/go/anchor.go). Each Graph Security API alert maps to
+// exactly one requirement — no grouping — so the source count is the length of
+// the value[] array. "value" is the sole array under that key at any depth in
+// this format, so CountJSONItemsUnderKey is unambiguous. Guards against silent
+// under-extraction that TS/Go golden parity cannot detect.
+func TestConvert_AlertAnchor(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "value"),
+		"sample.json: one requirement per value[] alert")
+}
+
 func TestConvert_ControlType(t *testing.T) {
 	input := loadFixture(t, "input/sample.json")
 	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
