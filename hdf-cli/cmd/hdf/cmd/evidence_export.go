@@ -42,7 +42,7 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 		return fmt.Errorf("unsupported export format %q (supported: oscal)", format)
 	}
 
-	data, err := os.ReadFile(pkgPath) // #nosec G304 -- CLI reads user-provided path
+	data, err := readInputFile(pkgPath) // size-gated read boundary (honors --max-size)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
 	}

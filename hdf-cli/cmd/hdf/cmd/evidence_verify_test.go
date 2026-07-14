@@ -61,3 +61,13 @@ func TestEvidenceVerify_NoPlanRef(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, stderr, "no planRef")
 }
+
+// The evidence package is read through the size-gated boundary (readInputFile),
+// so --max-size is honored instead of an unbounded os.ReadFile.
+func TestEvidenceVerify_RejectsOversizeInput(t *testing.T) {
+	pkg := filepath.Join(t.TempDir(), "big.json")
+	require.NoError(t, os.WriteFile(pkg, make([]byte, 2*1024*1024), 0o600)) // 2 MB
+	_, _, err := executeCommand("evidence", "verify", pkg, "--max-size", "1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "too large")
+}

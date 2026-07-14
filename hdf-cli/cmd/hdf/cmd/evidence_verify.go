@@ -68,7 +68,7 @@ type verifyCounts struct {
 }
 
 func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
-	data, err := os.ReadFile(pkgPath) //nolint:gosec // CLI reads user-provided path
+	data, err := readInputFile(pkgPath) // size-gated read boundary (honors --max-size)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
 	}

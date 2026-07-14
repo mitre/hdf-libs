@@ -930,3 +930,12 @@ func TestEvidenceBuildVerifyRoundTrip(t *testing.T) {
 	assert.Contains(t, stdout, "sha256 match")
 	assert.Contains(t, stdout, "2/2 checksums valid")
 }
+
+// evidence export reads the package through the size-gated boundary, honoring --max-size.
+func TestEvidenceExport_RejectsOversizeInput(t *testing.T) {
+	pkg := filepath.Join(t.TempDir(), "big.json")
+	require.NoError(t, os.WriteFile(pkg, make([]byte, 2*1024*1024), 0o600))
+	_, _, err := executeCommand("evidence", "export", pkg, "--format", "oscal", "--max-size", "1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "too large")
+}
