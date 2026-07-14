@@ -77,3 +77,24 @@ export function assertRequirementCount(result: unknown, want: number, msg: strin
   ).toBeGreaterThan(0);
   expect(totalRequirements(result), msg).toBe(want);
 }
+
+/**
+ * Count the amendment overrides a VEX importer emitted (top-level overrides[]).
+ * VEX importers produce HDF Amendments, not requirements.
+ */
+function totalOverrides(result: unknown): number {
+  const doc = (typeof result === 'string' ? JSON.parse(result) : result) as { overrides?: unknown[] };
+  return doc.overrides?.length ?? 0;
+}
+
+/**
+ * Amendment-output analogue of assertRequirementCount for VEX importers: assert
+ * overrides[] length equals a source-derived count.
+ */
+export function assertOverrideCount(result: unknown, want: number, msg: string): void {
+  expect(
+    want,
+    `anchor proves nothing with want=0 — use a fixture with >=1 source unit: ${msg}`,
+  ).toBeGreaterThan(0);
+  expect(totalOverrides(result), msg).toBe(want);
+}

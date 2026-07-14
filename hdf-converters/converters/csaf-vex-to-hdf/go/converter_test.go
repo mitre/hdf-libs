@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -126,4 +127,45 @@ func TestConvertCSAFVEX_PublisherNamespaceBuildsAdvisoryURI(t *testing.T) {
 	require.NotEmpty(t, result.Overrides[0].Evidence)
 	assert.Contains(t, result.Overrides[0].Evidence[0].Data, "github.com/secvisogram",
 		"first evidence entry is the advisory URI built from publisher.namespace + tracking.id")
+}
+
+// --- Ground-truth anchor (see shared/go/anchor.go) ---
+// csaf-vex emits one override per actionable status bucket (known_not_affected,
+// and fixed/first_fixed) on each CVE-bearing vulnerability. Count those buckets
+// independently from the source and assert the emitted override count matches.
+func countCsafActionableBuckets(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Vulnerabilities []struct {
+			CVE           string `json:"cve"`
+			ProductStatus *struct {
+				KnownNotAffected []string `json:"known_not_affected"`
+				Fixed            []string `json:"fixed"`
+				FirstFixed       []string `json:"first_fixed"`
+			} `json:"product_status"`
+		} `json:"vulnerabilities"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc))
+	n := 0
+	for _, v := range doc.Vulnerabilities {
+		if v.CVE == "" || v.ProductStatus == nil {
+			continue
+		}
+		if len(v.ProductStatus.KnownNotAffected) > 0 {
+			n++
+		}
+		if len(v.ProductStatus.Fixed) > 0 || len(v.ProductStatus.FirstFixed) > 0 {
+			n++
+		}
+	}
+	return n
+}
+
+func TestConvertCSAFVEX_OverrideAnchor(t *testing.T) {
+	t.Parallel()
+	input := loadInput(t, "sec-vex-2022-0001.json")
+	result, err := ConvertCSAFVEXToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertOverrideCount(t, result, countCsafActionableBuckets(t, input),
+		"sec-vex-2022-0001.json: one override per actionable status bucket")
 }

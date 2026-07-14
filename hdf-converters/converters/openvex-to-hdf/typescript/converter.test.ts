@@ -9,6 +9,7 @@ import {
   ResultStatus,
 } from '@mitre/hdf-schema';
 import { expectValidAmendments } from '../../../test/helpers/expectValidHdf.js';
+import { assertOverrideCount } from '../../../shared/typescript/anchor.js';
 import { convertOpenVexToHdf } from './converter.js';
 
 const TEST_VERSION = 'test';
@@ -127,5 +128,26 @@ describe('convertOpenVexToHdf — edge cases', () => {
     const input = loadInput('spring-boot-log4j.openvex.json');
     const result = await convertOpenVexToHdf(input, TEST_VERSION);
     expect(result.appliedBy?.type).toBe(IdentityType.Email);
+  });
+});
+
+// Ground-truth anchor (see shared/typescript/anchor.ts). openvex emits one
+// override per statement whose status is actionable — every status except
+// 'affected' and 'under_investigation' — counted independently from the source.
+describe('openvex-to-hdf ground-truth anchor', () => {
+  function countActionableStatements(input: string): number {
+    const doc = JSON.parse(input) as { statements?: Array<{ status?: string }> };
+    return (doc.statements ?? []).filter(
+      (s) => s.status !== 'affected' && s.status !== 'under_investigation',
+    ).length;
+  }
+
+  it('emits one override per actionable statement (multi-status)', async () => {
+    const input = loadInput('multi-status.openvex.json');
+    assertOverrideCount(
+      await convertOpenVexToHdf(input, TEST_VERSION),
+      countActionableStatements(input),
+      'multi-status.openvex.json: one override per actionable statement',
+    );
   });
 });

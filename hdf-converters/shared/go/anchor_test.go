@@ -37,3 +37,9 @@ func TestAssertRequirementCount(t *testing.T) {
 	baseline := map[string]interface{}{"requirements": []interface{}{struct{}{}, struct{}{}}}
 	AssertRequirementCount(t, baseline, 2, "happy path")
 }
+
+func TestAssertOverrideCount(t *testing.T) {
+	amendments := map[string]interface{}{"overrides": []interface{}{struct{}{}, struct{}{}, struct{}{}}}
+	assert.Equal(t, 3, TotalOverrides(t, amendments))
+	AssertOverrideCount(t, amendments, 3, "override count")
+}

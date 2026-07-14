@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -138,4 +139,34 @@ func TestConvertOpenVEXToHDF_AuthorWithEmailGetsEmailIdentity(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result.AppliedBy)
 	assert.Equal(t, hdf.Email, result.AppliedBy.Type)
+}
+
+// --- Ground-truth anchor (see shared/go/anchor.go) ---
+// openvex emits one override per statement whose status is actionable — every
+// status except 'affected' and 'under_investigation' (informational only).
+// Count actionable statements from the source and assert the override count.
+func countOpenVEXActionableStatements(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Statements []struct {
+			Status string `json:"status"`
+		} `json:"statements"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc))
+	n := 0
+	for _, s := range doc.Statements {
+		if s.Status != "affected" && s.Status != "under_investigation" {
+			n++
+		}
+	}
+	return n
+}
+
+func TestConvertOpenVEXToHDF_OverrideAnchor(t *testing.T) {
+	t.Parallel()
+	input := loadInput(t, "multi-status.openvex.json")
+	result, err := ConvertOpenVEXToHDF(input, testVersion)
+	require.NoError(t, err)
+	shared.AssertOverrideCount(t, result, countOpenVEXActionableStatements(t, input),
+		"multi-status.openvex.json: one override per actionable statement")
 }

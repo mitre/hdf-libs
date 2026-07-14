@@ -8,6 +8,7 @@ import {
   ResultStatus,
 } from '@mitre/hdf-schema';
 import { expectValidAmendments } from '../../../test/helpers/expectValidHdf.js';
+import { assertOverrideCount } from '../../../shared/typescript/anchor.js';
 import { convertCsafVexToHdf } from './converter.js';
 
 const TEST_VERSION = 'test';
@@ -424,5 +425,36 @@ describe('convertCsafVexToHdf — edge cases', () => {
 
   it('rejects invalid JSON', async () => {
     await expect(convertCsafVexToHdf('not json', TEST_VERSION)).rejects.toThrow();
+  });
+});
+
+// Ground-truth anchor (see shared/typescript/anchor.ts). csaf-vex emits one
+// override per actionable status bucket (known_not_affected, fixed/first_fixed)
+// on each CVE-bearing vulnerability — counted independently from the source.
+describe('csaf-vex-to-hdf ground-truth anchor', () => {
+  function countActionableBuckets(input: string): number {
+    const doc = JSON.parse(input) as {
+      vulnerabilities?: Array<{
+        cve?: string;
+        product_status?: { known_not_affected?: string[]; fixed?: string[]; first_fixed?: string[] };
+      }>;
+    };
+    let n = 0;
+    for (const v of doc.vulnerabilities ?? []) {
+      if (!v.cve || !v.product_status) continue;
+      if ((v.product_status.known_not_affected?.length ?? 0) > 0) n += 1;
+      if ((v.product_status.fixed?.length ?? 0) > 0 || (v.product_status.first_fixed?.length ?? 0) > 0)
+        n += 1;
+    }
+    return n;
+  }
+
+  it('emits one override per actionable status bucket (sec-vex)', async () => {
+    const input = loadInput('sec-vex-2022-0001.json');
+    assertOverrideCount(
+      await convertCsafVexToHdf(input, TEST_VERSION),
+      countActionableBuckets(input),
+      'sec-vex-2022-0001.json: one override per actionable status bucket',
+    );
   });
 });

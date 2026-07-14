@@ -105,3 +105,24 @@ func AssertRequirementCount(t *testing.T, result interface{}, want int, msg stri
 	require.NotZero(t, want, "anchor proves nothing with want=0 — use a fixture with >=1 source unit: %s", msg)
 	require.Equal(t, want, TotalRequirements(t, result), msg)
 }
+
+// TotalOverrides counts the amendment overrides a VEX importer emitted (top-level
+// overrides[]). VEX importers produce HDF Amendments, not requirements.
+func TotalOverrides(t *testing.T, result interface{}) int {
+	t.Helper()
+	data, err := json.Marshal(result)
+	require.NoError(t, err, "marshal amendments for anchor count")
+	var doc struct {
+		Overrides []json.RawMessage `json:"overrides"`
+	}
+	require.NoError(t, json.Unmarshal(data, &doc), "unmarshal amendments for anchor count")
+	return len(doc.Overrides)
+}
+
+// AssertOverrideCount is the amendment-output analogue of AssertRequirementCount
+// for VEX importers: assert overrides[] length equals a source-derived count.
+func AssertOverrideCount(t *testing.T, result interface{}, want int, msg string) {
+	t.Helper()
+	require.NotZero(t, want, "anchor proves nothing with want=0 — use a fixture with >=1 source unit: %s", msg)
+	require.Equal(t, want, TotalOverrides(t, result), msg)
+}

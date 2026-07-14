@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { countXmlElements, countJsonItemsUnderKey, assertRequirementCount } from './anchor.js';
+import {
+  countXmlElements,
+  countJsonItemsUnderKey,
+  assertRequirementCount,
+  assertOverrideCount,
+} from './anchor.js';
 
 describe('anchor: countXmlElements', () => {
   it('counts opening tags, ignoring closing, namespaced, and substring tags', () => {
@@ -51,5 +56,16 @@ describe('anchor: assertRequirementCount', () => {
 
   it('throws on a count mismatch', () => {
     expect(() => assertRequirementCount({ requirements: [{}] }, 2, 'x')).toThrow();
+  });
+});
+
+describe('anchor: assertOverrideCount', () => {
+  it('passes on matching overrides[] count (string or object)', () => {
+    assertOverrideCount(JSON.stringify({ overrides: [{}, {}, {}] }), 3, 'string input');
+    assertOverrideCount({ overrides: [{}, {}] }, 2, 'object input');
+  });
+
+  it('throws on a count mismatch', () => {
+    expect(() => assertOverrideCount({ overrides: [{}] }, 2, 'x')).toThrow();
   });
 });
