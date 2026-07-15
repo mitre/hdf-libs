@@ -79,16 +79,22 @@ A ground-truth **anchor** asserts the converter reproduces an item count derived
 **independently from the source document** — not from converter output. It is the
 one assertion whose expected value does not come from the code under test.
 
-Helpers live in `hdf-converters/shared/{go/anchor.go,typescript/anchor.ts}`:
+Helpers live in `hdf-converters/shared/{go/anchor.go,typescript/anchor.ts}`. The
+Go helpers are `PascalCase` and take `t *testing.T` as their first argument; the
+TypeScript helpers mirror them in `camelCase` without `t`. Both languages provide:
 
-- `CountXMLElements(input, localName)` — count XML start-elements by local name.
-- `CountJSONItemsUnderKey(input, key)` — count array items held under an object
-  key at any depth (handles nested containers).
-- `AssertRequirementCount(result, want, msg)` — assert emitted requirements equal
-  `want`, across both output shapes (HDFResults `baselines[].requirements` and
-  HDFBaseline top-level `requirements`).
-- `AssertOverrideCount(result, want, msg)` — the amendment analogue for VEX
-  importers, which emit `overrides[]` rather than requirements.
+- **Count XML elements** (`CountXMLElements` / `countXmlElements`) — count XML
+  start-elements by local name.
+- **Count JSON items under a key** (`CountJSONItemsUnderKey` /
+  `countJsonItemsUnderKey`) — count array items held under an object key at any
+  depth (handles nested containers).
+- **Assert requirement count** (`AssertRequirementCount` /
+  `assertRequirementCount`) — assert emitted requirements equal `want`, across
+  both output shapes (HDFResults `baselines[].requirements` and HDFBaseline
+  top-level `requirements`).
+- **Assert override count** (`AssertOverrideCount` / `assertOverrideCount`) — the
+  amendment analogue for VEX importers, which emit `overrides[]` rather than
+  requirements.
 
 **The independence rule (load-bearing).** The count MUST NOT reuse the
 converter's own parser or typed structs — reusing the converter's traversal would

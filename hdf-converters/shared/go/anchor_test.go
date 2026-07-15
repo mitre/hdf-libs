@@ -15,6 +15,14 @@ func TestCountXMLElements(t *testing.T) {
 	assert.Equal(t, 2, CountXMLElements(t, rr, "rule-result"), "hyphenated element names")
 }
 
+// A non-UTF-8 encoding declaration (e.g. veracode.xml is ISO-8859-1) must not
+// error the decoder — the CharsetReader passes bytes through since we only count
+// ASCII element names.
+func TestCountXMLElements_NonUTF8Encoding(t *testing.T) {
+	in := []byte(`<?xml version="1.0" encoding="ISO-8859-1"?><a><Rule/><Rule/></a>`)
+	assert.Equal(t, 2, CountXMLElements(t, in, "Rule"))
+}
+
 func TestCountJSONItemsUnderKey(t *testing.T) {
 	j := []byte(`{"groups":[{"controls":[{"id":"a","controls":[{"id":"a.1"}]},{"id":"b"}]}]}`)
 	assert.Equal(t, 3, CountJSONItemsUnderKey(t, j, "controls"), "counts nested controls at any depth: a, b, a.1")

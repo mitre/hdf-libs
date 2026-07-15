@@ -27,6 +27,10 @@ func CountXMLElements(t *testing.T, input []byte, localName string) int {
 	t.Helper()
 	dec := xml.NewDecoder(bytes.NewReader(input))
 	dec.Strict = false
+	// Pass bytes through unchanged for non-UTF-8 encoding declarations (e.g.
+	// ISO-8859-1, as in veracode.xml). Go's decoder otherwise errors on the
+	// declaration; we only count element names (ASCII), never decode text.
+	dec.CharsetReader = func(_ string, r io.Reader) (io.Reader, error) { return r, nil }
 	n := 0
 	for {
 		tok, err := dec.Token()
