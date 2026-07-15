@@ -53,7 +53,7 @@
               "status": "failed"
             }
           ],
-          "id": "redhat-enterprise-linux-7-stig-baseline",
+          "id": "this-is-a-test/redhat-enterprise-linux-7-stig-baseline",
           "impact": 0,
           "tags": {
             "cci": [
@@ -88,7 +88,7 @@
     "name": "asff-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-14T01:06:49.521394Z",
+  "timestamp": "2026-07-15T02:58:09.96803Z",
   "tool": {
     "format": "JSON",
     "name": "AWS Security Finding Format"

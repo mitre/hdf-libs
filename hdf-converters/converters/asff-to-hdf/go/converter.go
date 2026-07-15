@@ -40,6 +40,32 @@ type asffFinding struct {
 	Resources      []asffResource    `json:"Resources"`
 	Compliance     asffCompliance    `json:"Compliance"`
 	Workflow       asffWorkflow      `json:"Workflow"`
+	// Vulnerabilities is a standard ASFF field any producer may populate (AWS
+	// Inspector, third-party scanners). Mapped generically so its CVE/CVSS/fix
+	// data survives regardless of whether the producer is specially handled.
+	Vulnerabilities []asffVulnerability `json:"Vulnerabilities"`
+}
+
+type asffVulnerability struct {
+	ID                 string            `json:"Id"`
+	Cvss               []asffCvss        `json:"Cvss"`
+	VulnerablePackages []asffVulnPackage `json:"VulnerablePackages"`
+	ReferenceUrls      []string          `json:"ReferenceUrls"`
+	FixAvailable       string            `json:"FixAvailable"`
+	ExploitAvailable   string            `json:"ExploitAvailable"`
+	EpssScore          *float64          `json:"EpssScore"`
+}
+
+type asffCvss struct {
+	Version   string   `json:"Version"`
+	BaseScore *float64 `json:"BaseScore"`
+	Source    string   `json:"Source"`
+}
+
+type asffVulnPackage struct {
+	Name           string `json:"Name"`
+	Version        string `json:"Version"`
+	FixedInVersion string `json:"FixedInVersion"`
 }
 
 type asffSeverity struct {
@@ -296,8 +322,21 @@ func buildRequirement(id string, group []asffFinding) hdf.EvaluatedRequirement {
 		Results:      results,
 		ControlType:  shared.DeriveControlTypeFromTags(nist),
 	}
+	var refs []hdf.Reference
 	if primary.SourceURL != "" {
-		req.Refs = []hdf.Reference{{URL: hdfutil.Ptr(primary.SourceURL)}}
+		refs = append(refs, hdf.Reference{URL: hdfutil.Ptr(primary.SourceURL)})
+	}
+	seen := map[string]bool{}
+	for _, v := range primary.Vulnerabilities {
+		for _, u := range v.ReferenceUrls {
+			if u != "" && !seen[u] {
+				seen[u] = true
+				refs = append(refs, hdf.Reference{URL: hdfutil.Ptr(u)})
+			}
+		}
+	}
+	if len(refs) > 0 {
+		req.Refs = refs
 	}
 	return req
 }
@@ -319,11 +358,52 @@ func buildResult(f asffFinding) hdf.RequirementResult {
 			message = m
 		}
 	}
+	// A finding may carry structured vulnerability data (Inspector and other
+	// scanners). Fold a summary into the message so CVE/CVSS/fix data survives —
+	// it is otherwise dropped entirely.
+	if v := vulnerabilitySummary(f); v != "" {
+		if message != "" {
+			message += "\n" + v
+		} else {
+			message = v
+		}
+	}
 	res := hdf.RequirementResult{Status: status, CodeDesc: codeDesc, StartTime: start}
 	if message != "" {
 		res.Message = hdfutil.Ptr(message)
 	}
 	return res
+}
+
+// vulnerabilitySummary renders a finding's ASFF Vulnerabilities[] as a compact
+// text block: CVE id, CVSS base score, EPSS, exploit/fix availability, and the
+// affected packages. Generic — applies to any producer that emits the field.
+func vulnerabilitySummary(f asffFinding) string {
+	var lines []string
+	for _, v := range f.Vulnerabilities {
+		parts := []string{v.ID}
+		if len(v.Cvss) > 0 && v.Cvss[0].BaseScore != nil {
+			parts = append(parts, fmt.Sprintf("CVSS %s %.1f", v.Cvss[0].Version, *v.Cvss[0].BaseScore))
+		}
+		if v.EpssScore != nil {
+			parts = append(parts, fmt.Sprintf("EPSS %.4f", *v.EpssScore))
+		}
+		if v.ExploitAvailable != "" {
+			parts = append(parts, "exploit "+strings.ToLower(v.ExploitAvailable))
+		}
+		if v.FixAvailable != "" {
+			parts = append(parts, "fix "+strings.ToLower(v.FixAvailable))
+		}
+		for _, p := range v.VulnerablePackages {
+			pkg := p.Name + "@" + p.Version
+			if p.FixedInVersion != "" {
+				pkg += " (fixed in " + p.FixedInVersion + ")"
+			}
+			parts = append(parts, pkg)
+		}
+		lines = append(lines, strings.Join(parts, "; "))
+	}
+	return strings.Join(lines, "\n")
 }
 
 // trivyMessage summarizes the installed vs patched package for a Trivy CVE finding.
@@ -444,9 +524,16 @@ func controlID(f asffFinding) string {
 		}
 		return f.GeneratorID + "/" + f.ID
 	}
-	if f.GeneratorID != "" {
-		segs := strings.Split(f.GeneratorID, "/")
-		return segs[len(segs)-1]
+	// Unrecognized producer. A compliance/control finding aggregates per-resource
+	// under one requirement, so group it by its generator-derived control ref.
+	// A per-instance finding (a vulnerability, a threat) has no such aggregation —
+	// key it by the ASFF-unique finding Id so distinct findings never collapse.
+	// GeneratorId is NOT guaranteed unique per finding: every Inspector finding
+	// shares "AWSInspector", so keying on it lumped every CVE into one requirement.
+	if f.Compliance.Status != "" && f.GeneratorID != "" {
+		if segs := strings.Split(f.GeneratorID, "/"); segs[len(segs)-1] != "" {
+			return segs[len(segs)-1]
+		}
 	}
 	return f.ID
 }

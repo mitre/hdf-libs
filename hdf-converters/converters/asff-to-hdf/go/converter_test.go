@@ -215,9 +215,22 @@ func TestBaselineName_NonSecurityHubAndEmpty(t *testing.T) {
 }
 
 func TestControlID_Fallbacks(t *testing.T) {
-	gd := asffFinding{ProductArn: "arn:aws:securityhub:us-east-1::product/aws/guardduty", GeneratorID: "foo/bar/GD.1"}
-	assert.Equal(t, "GD.1", controlID(gd))
-	assert.Equal(t, "theid", controlID(asffFinding{ID: "theid"}))
+	// A compliance/control finding from an unrecognized producer groups by its
+	// generator-derived control ref, so many resource evaluations aggregate.
+	compliance := asffFinding{
+		ProductArn:  "arn:aws:securityhub:us-east-1::product/aws/guardduty",
+		GeneratorID: "foo/bar/GD.1",
+		Compliance:  asffCompliance{Status: "FAILED"},
+	}
+	assert.Equal(t, "GD.1", controlID(compliance))
+
+	// A per-instance finding (no compliance status) keys by the unique finding Id,
+	// so distinct findings never collapse — even when they share a GeneratorId, as
+	// every Inspector finding does ("AWSInspector").
+	insp1 := asffFinding{ProductArn: "arn:aws:securityhub:us-east-1::product/aws/inspector", GeneratorID: "AWSInspector", ID: "finding-1"}
+	insp2 := asffFinding{ProductArn: "arn:aws:securityhub:us-east-1::product/aws/inspector", GeneratorID: "AWSInspector", ID: "finding-2"}
+	assert.Equal(t, "finding-1", controlID(insp1))
+	assert.NotEqual(t, controlID(insp1), controlID(insp2), "shared GeneratorId must not collapse distinct findings")
 }
 
 func TestImpact_Fallbacks(t *testing.T) {
@@ -344,4 +357,38 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "asff-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertAsffToHDF(input, "1.0.0")
 	})
+}
+
+// A producer we have no special case for — a detection engine that does not yet
+// exist — must still convert correctly from standard ASFF fields alone: distinct
+// per-instance findings never collapse (even sharing a GeneratorId), their
+// Vulnerabilities[] data survives, and compliance findings still group by control.
+func TestUnknownProducer_GenericPath(t *testing.T) {
+	result, err := ConvertAsffToHDF(loadFixture(t, "unknown-producer.json"), "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 3, "two distinct CVE findings + one control; the CVEs must not collapse")
+
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range reqs {
+		byID[r.ID] = r
+	}
+	// The two per-instance findings share GeneratorId "AcmeScanner" but are keyed
+	// by their unique finding Ids.
+	v1, ok := byID["acme/future-scanner/finding/0001"]
+	require.True(t, ok, "first CVE finding keyed by its Id, not the shared GeneratorId")
+	require.NotEmpty(t, v1.Results)
+	require.NotNil(t, v1.Results[0].Message)
+	assert.Contains(t, *v1.Results[0].Message, "CVE-2099-0001")
+	assert.Contains(t, *v1.Results[0].Message, "CVSS 3.1 8.1")
+	assert.Contains(t, *v1.Results[0].Message, "libexample@1.2.3 (fixed in 1.2.4)")
+	require.Len(t, v1.Refs, 1)
+	assert.Equal(t, "https://example.test/CVE-2099-0001", *v1.Refs[0].URL)
+
+	_, hasSecond := byID["acme/future-scanner/finding/0002"]
+	assert.True(t, hasSecond, "the second CVE is its own requirement")
+	// The compliance finding still groups by its control ref.
+	_, hasControl := byID["ACME.1"]
+	assert.True(t, hasControl, "a compliance finding groups by control ref")
 }

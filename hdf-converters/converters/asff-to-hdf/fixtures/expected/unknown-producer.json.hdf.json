@@ -1,0 +1,127 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "A vulnerability was detected in libexample.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsEc2Instance, Id: arn:aws:ec2:us-east-1:123456789012:instance/i-0example0example0, Region: us-east-1]",
+              "message": "CVE-2099-0001; CVSS 3.1 8.1; EPSS 0.4212; exploit yes; fix yes; libexample@1.2.3 (fixed in 1.2.4)",
+              "startTime": "2026-01-02T03:04:05Z",
+              "status": "failed"
+            }
+          ],
+          "id": "acme/future-scanner/finding/0001",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "refs": [
+            {
+              "url": "https://example.test/CVE-2099-0001"
+            }
+          ],
+          "title": "CVE-2099-0001 - libexample"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "A second, distinct vulnerability.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsEc2Instance, Id: arn:aws:ec2:us-east-1:123456789012:instance/i-0example0example0, Region: us-east-1]",
+              "message": "CVE-2099-0002; CVSS 3.1 5.4; fix no; libother@2.0.0",
+              "startTime": "2026-01-02T03:04:05Z",
+              "status": "failed"
+            }
+          ],
+          "id": "acme/future-scanner/finding/0002",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "refs": [
+            {
+              "url": "https://example.test/CVE-2099-0002"
+            }
+          ],
+          "title": "CVE-2099-0002 - libother"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "A compliance-style control the scanner also emits.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsS3Bucket, Id: arn:aws:s3:::example-bucket, Region: us-east-1]",
+              "startTime": "2026-01-02T03:04:05Z",
+              "status": "failed"
+            }
+          ],
+          "id": "ACME.1",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Resources should be encrypted at rest"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "b9bdf62c4ac81174a0443f21dbd08276ffd4ab3dd09237ea8357e7482228fdcd"
+      },
+      "name": "acme - future-scanner"
+    }
+  ],
+  "components": [
+    {
+      "baselineRefs": [
+        "acme - future-scanner"
+      ],
+      "name": "123456789012",
+      "type": "cloudAccount"
+    }
+  ],
+  "generator": {
+    "name": "asff-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-15T02:58:09.970633Z",
+  "tool": {
+    "format": "JSON",
+    "name": "AWS Security Finding Format"
+  }
+}

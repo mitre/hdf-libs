@@ -1,0 +1,61 @@
+{
+  "Findings": [
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "acme/future-scanner/finding/0001",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/acme/future-scanner",
+      "GeneratorId": "AcmeScanner",
+      "AwsAccountId": "123456789012",
+      "Types": ["Software and Configuration Checks/Vulnerabilities/CVE"],
+      "CreatedAt": "2026-01-02T03:04:05.000Z",
+      "UpdatedAt": "2026-01-02T03:04:05.000Z",
+      "Title": "CVE-2099-0001 - libexample",
+      "Description": "A vulnerability was detected in libexample.",
+      "Severity": { "Label": "HIGH", "Normalized": 70 },
+      "Resources": [{ "Type": "AwsEc2Instance", "Id": "arn:aws:ec2:us-east-1:123456789012:instance/i-0example0example0", "Region": "us-east-1" }],
+      "Vulnerabilities": [{
+        "Id": "CVE-2099-0001",
+        "Cvss": [{ "Version": "3.1", "BaseScore": 8.1, "Source": "NVD" }],
+        "EpssScore": 0.4212,
+        "ExploitAvailable": "YES",
+        "FixAvailable": "YES",
+        "ReferenceUrls": ["https://example.test/CVE-2099-0001"],
+        "VulnerablePackages": [{ "Name": "libexample", "Version": "1.2.3", "FixedInVersion": "1.2.4" }]
+      }]
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "acme/future-scanner/finding/0002",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/acme/future-scanner",
+      "GeneratorId": "AcmeScanner",
+      "AwsAccountId": "123456789012",
+      "CreatedAt": "2026-01-02T03:04:05.000Z",
+      "UpdatedAt": "2026-01-02T03:04:05.000Z",
+      "Title": "CVE-2099-0002 - libother",
+      "Description": "A second, distinct vulnerability.",
+      "Severity": { "Label": "MEDIUM", "Normalized": 40 },
+      "Resources": [{ "Type": "AwsEc2Instance", "Id": "arn:aws:ec2:us-east-1:123456789012:instance/i-0example0example0", "Region": "us-east-1" }],
+      "Vulnerabilities": [{
+        "Id": "CVE-2099-0002",
+        "Cvss": [{ "Version": "3.1", "BaseScore": 5.4, "Source": "NVD" }],
+        "FixAvailable": "NO",
+        "ReferenceUrls": ["https://example.test/CVE-2099-0002"],
+        "VulnerablePackages": [{ "Name": "libother", "Version": "2.0.0" }]
+      }]
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "acme/future-scanner/finding/0003",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/acme/future-scanner",
+      "GeneratorId": "check/ACME.1",
+      "AwsAccountId": "123456789012",
+      "CreatedAt": "2026-01-02T03:04:05.000Z",
+      "UpdatedAt": "2026-01-02T03:04:05.000Z",
+      "Title": "Resources should be encrypted at rest",
+      "Description": "A compliance-style control the scanner also emits.",
+      "Severity": { "Label": "MEDIUM", "Normalized": 40 },
+      "Compliance": { "Status": "FAILED" },
+      "Resources": [{ "Type": "AwsS3Bucket", "Id": "arn:aws:s3:::example-bucket", "Region": "us-east-1" }]
+    }
+  ]
+}

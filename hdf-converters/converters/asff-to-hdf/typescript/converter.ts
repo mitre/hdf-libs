@@ -61,6 +61,19 @@ export interface AsffFinding {
   Resources?: { Type?: string; Id?: string; Partition?: string; Region?: string; Details?: { Other?: Record<string, string> } }[];
   Compliance?: { Status?: string; StatusReasons?: { ReasonCode?: string; Description?: string }[] };
   Workflow?: { Status?: string };
+  // Standard ASFF field any producer may populate (Inspector, third-party
+  // scanners); mapped generically so CVE/CVSS/fix data survives.
+  Vulnerabilities?: AsffVulnerability[];
+}
+
+export interface AsffVulnerability {
+  Id?: string;
+  Cvss?: { Version?: string; BaseScore?: number; Source?: string }[];
+  VulnerablePackages?: { Name?: string; Version?: string; FixedInVersion?: string }[];
+  ReferenceUrls?: string[];
+  FixAvailable?: string;
+  ExploitAvailable?: string;
+  EpssScore?: number;
 }
 
 export type Product = 'securityHub' | 'prowler' | 'trivy' | 'default';
@@ -244,9 +257,15 @@ function controlId(f: AsffFinding): string {
     case 'trivy':
       return `${f.GeneratorId ?? ''}/${trivyCVE(f) || f.Id || ''}`;
   }
-  if (f.GeneratorId) {
+  // Unrecognized producer. A compliance/control finding aggregates per-resource
+  // under one requirement, so group it by its generator-derived control ref.
+  // A per-instance finding (a vulnerability, a threat) has no such aggregation —
+  // key it by the ASFF-unique finding Id so distinct findings never collapse.
+  // GeneratorId is NOT guaranteed unique per finding: every Inspector finding
+  // shares "AWSInspector", so keying on it lumped every CVE into one requirement.
+  if (f.Compliance?.Status && f.GeneratorId) {
     const segs = f.GeneratorId.split('/');
-    return segs[segs.length - 1]!;
+    if (segs[segs.length - 1]) return segs[segs.length - 1]!;
   }
   return f.Id ?? '';
 }
@@ -326,7 +345,36 @@ function buildResult(f: AsffFinding): RequirementResult {
       break;
     }
   }
+  // A finding may carry structured vulnerability data (Inspector and other
+  // scanners). Fold a summary into the message so CVE/CVSS/fix data survives —
+  // it is otherwise dropped entirely.
+  const vuln = vulnerabilitySummary(f);
+  if (vuln) message = message ? `${message}\n${vuln}` : vuln;
   return createResult(status, message || undefined, { codeDesc, startTime: start });
+}
+
+/**
+ * Renders a finding's ASFF Vulnerabilities[] as a compact text block: CVE id,
+ * CVSS base score, EPSS, exploit/fix availability, and affected packages.
+ * Generic — applies to any producer that emits the field.
+ */
+function vulnerabilitySummary(f: AsffFinding): string {
+  return (f.Vulnerabilities ?? [])
+    .map((v) => {
+      const parts: string[] = [v.Id ?? ''];
+      const cvss = v.Cvss?.[0];
+      if (cvss && typeof cvss.BaseScore === 'number') parts.push(`CVSS ${cvss.Version ?? ''} ${cvss.BaseScore.toFixed(1)}`);
+      if (typeof v.EpssScore === 'number') parts.push(`EPSS ${v.EpssScore.toFixed(4)}`);
+      if (v.ExploitAvailable) parts.push(`exploit ${v.ExploitAvailable.toLowerCase()}`);
+      if (v.FixAvailable) parts.push(`fix ${v.FixAvailable.toLowerCase()}`);
+      for (const p of v.VulnerablePackages ?? []) {
+        let pkg = `${p.Name ?? ''}@${p.Version ?? ''}`;
+        if (p.FixedInVersion) pkg += ` (fixed in ${p.FixedInVersion})`;
+        parts.push(pkg);
+      }
+      return parts.join('; ');
+    })
+    .join('\n');
 }
 
 /** Summarizes the installed vs patched package for a Trivy CVE finding. */
@@ -362,9 +410,18 @@ function buildRequirement(id: string, group: AsffFinding[]): EvaluatedRequiremen
   if (controlType !== undefined) {
     req.controlType = controlType;
   }
-  if (primary.SourceUrl) {
-    req.refs = [{ url: primary.SourceUrl }];
+  const refs: { url: string }[] = [];
+  if (primary.SourceUrl) refs.push({ url: primary.SourceUrl });
+  const seen = new Set<string>();
+  for (const v of primary.Vulnerabilities ?? []) {
+    for (const u of v.ReferenceUrls ?? []) {
+      if (u && !seen.has(u)) {
+        seen.add(u);
+        refs.push({ url: u });
+      }
+    }
   }
+  if (refs.length > 0) req.refs = refs;
   return req;
 }
 

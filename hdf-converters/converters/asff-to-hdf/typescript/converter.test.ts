@@ -94,7 +94,8 @@ describe('asff-to-hdf converter', () => {
     const input = '{"Id":"b","ProductArn":"arn:aws:securityhub:us-east-1::product/aws/guardduty","GeneratorId":"x/y/z"}';
     const hdf = JSON.parse(await convertAsffToHdf(input, '0.1.0')) as HDFResults;
     expect(hdf.baselines).toHaveLength(1);
-    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('z');
+    // No compliance status -> per-instance finding keyed by its unique Id.
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('b');
   });
 
   it('synthesizes a passed placeholder for empty findings', async () => {
@@ -189,11 +190,17 @@ describe('asff product special-cases', () => {
       expect(hdf.baselines[0]!.requirements[0]!.id).toBe('finding-1');
     });
 
-    it('takes the last GeneratorId segment as the requirement id', async () => {
-      const hdf = JSON.parse(
+    it('keys a per-instance finding by its Id, and a compliance finding by its control ref', async () => {
+      // No compliance status -> keyed by the unique finding Id (never collapses).
+      const inst = JSON.parse(
         await convertAsffToHdf(sparse({ GeneratorId: 'some/path/rule-42' })),
       ) as HDFResults;
-      expect(hdf.baselines[0]!.requirements[0]!.id).toBe('rule-42');
+      expect(inst.baselines[0]!.requirements[0]!.id).toBe('finding-1');
+      // With a compliance status it is a control finding -> groups by generator ref.
+      const ctrl = JSON.parse(
+        await convertAsffToHdf(sparse({ GeneratorId: 'some/path/rule-42', Compliance: { Status: 'FAILED' } })),
+      ) as HDFResults;
+      expect(ctrl.baselines[0]!.requirements[0]!.id).toBe('rule-42');
     });
 
     it('names the baseline from the ProductArn company and product', async () => {
@@ -226,7 +233,7 @@ describe('asff product special-cases', () => {
       const hdf = JSON.parse(
         await convertAsffToHdf(JSON.stringify({ Id: 'lone-1', GeneratorId: 'x/rule-9' })),
       ) as HDFResults;
-      expect(hdf.baselines[0]!.requirements[0]!.id).toBe('rule-9');
+      expect(hdf.baselines[0]!.requirements[0]!.id).toBe('lone-1');
     });
   });
 
@@ -283,6 +290,50 @@ describe('asff product special-cases', () => {
       expect(res.message).toContain('CONFIG_EVALUATES_NONCOMPLIANT');
       expect(res.codeDesc).toContain('acct-1');
     });
+  });
+
+
+  // A producer we have no special case for — a detection engine that does not yet
+  // exist — must still convert correctly from standard ASFF fields alone: distinct
+  // per-instance findings never collapse (even sharing a GeneratorId), their
+  // Vulnerabilities[] data survives, and compliance findings still group by control.
+  describe('unknown producer — generic path conformance', () => {
+    it('never collapses distinct findings, preserves vuln data, groups compliance by control', async () => {
+      const hdf = JSON.parse(await convertAsffToHdf(loadFixture('unknown-producer.json'), '1.0.0')) as HDFResults;
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs).toHaveLength(3); // 2 distinct CVEs + 1 control; the CVEs must not collapse
+      const byId = new Map(reqs.map((r) => [r.id, r]));
+
+      const v1 = byId.get('acme/future-scanner/finding/0001')!;
+      expect(v1).toBeDefined(); // keyed by finding Id, not the shared GeneratorId
+      const msg = v1.results[0]!.message ?? '';
+      expect(msg).toContain('CVE-2099-0001');
+      expect(msg).toContain('CVSS 3.1 8.1');
+      expect(msg).toContain('libexample@1.2.3 (fixed in 1.2.4)');
+      expect(v1.refs).toEqual([{ url: 'https://example.test/CVE-2099-0001' }]);
+
+      expect(byId.has('acme/future-scanner/finding/0002')).toBe(true); // second CVE, own requirement
+      expect(byId.has('ACME.1')).toBe(true); // compliance finding groups by control ref
+    });
+  });
+
+
+  // The vulnerability summary degrades on sparse Vulnerabilities[] entries and
+  // dedupes reference URLs — a producer may populate very little.
+  it('summarizes a sparse vulnerability and dedupes reference URLs', async () => {
+    const input = JSON.stringify([{
+      Id: 'sparse-1',
+      ProductArn: 'arn:aws:securityhub:us-east-1::product/acme/future-scanner',
+      Vulnerabilities: [
+        {},
+        { Id: 'CVE-2099-9999', ReferenceUrls: ['https://example.test/dup', 'https://example.test/dup'] },
+      ],
+    }]);
+    const hdf = JSON.parse(await convertAsffToHdf(input, '1.0.0')) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]!;
+    expect(req.results[0]!.message).toContain('CVE-2099-9999');
+    // the duplicate URL appears once
+    expect(req.refs).toEqual([{ url: 'https://example.test/dup' }]);
   });
 
 });
