@@ -323,6 +323,148 @@ func TestApplyNamePrefix(t *testing.T) {
 	assert.Equal(t, "p-2", comps[3]["name"])
 }
 
+// ---- add-component multi-file batch tests (whlr.1) ----
+
+// Multiple positional BOM files are each fanned out via the shared builder and
+// accumulated into ONE system-document write; --component-name-prefix namespaces
+// every subject across the whole batch (a single batch-level pass), and formats
+// are detected per file when --from is omitted.
+func TestSystemAddComponent_MultiFile_FansOutAll(t *testing.T) {
+	sysFile := createBaseSystem(t)                   // 1 component: juice-shop
+	sbom := bomFixturePath(t, "cyclonedx-sbom.json") // 1 subject: juice-shop
+	ai := bomFixturePath(t, "spdx-ai-model-1.json")  // 3 subjects: word-model, line-model, IAMdataset
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "add-component", sbom, ai, "--system", sysFile, "--component-name-prefix", "build42-"})
+	require.NoError(t, cmd.Execute())
+
+	// 1 base + 1 (sbom) + 3 (spdx-ai) = 5, all present after a single write.
+	require.Len(t, readSystemComponents(t, sysFile), 5)
+	for _, name := range []string{"build42-juice-shop", "build42-word-model", "build42-line-model", "build42-IAMdataset"} {
+		findComponentByName(t, sysFile, name) // fatals if missing
+	}
+}
+
+// --component-name (singular) names exactly one component, so it is invalid when
+// more than one file is given (the batch expects >1 component).
+func TestSystemAddComponent_MultiFile_RejectsComponentName(t *testing.T) {
+	sysFile := createBaseSystem(t)
+	sbom := bomFixturePath(t, "cyclonedx-sbom.json")
+	ai := bomFixturePath(t, "spdx-ai-model-1.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "add-component", sbom, ai, "--system", sysFile, "--component-name", "X"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "multiple files")
+}
+
+// ---- add-component multi-file all-or-nothing tests (whlr.2) ----
+
+// A batch containing any un-ingestible file writes NOTHING — the system document
+// is left byte-for-byte unchanged, and even the good file's component is not added.
+func TestSystemAddComponent_MultiFile_AllOrNothing_BadFileWritesNothing(t *testing.T) {
+	sysFile := createBaseSystem(t) // 1 component: juice-shop
+	before, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+
+	good := bomFixturePath(t, "cyclonedx-sbom.json")
+	bad := filepath.Join(t.TempDir(), "bad.json")
+	require.NoError(t, os.WriteFile(bad, []byte(`{"not":"a recognized bom"}`), 0o600))
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "add-component", good, bad, "--system", sysFile})
+	require.Error(t, cmd.Execute())
+
+	after, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	assert.Equal(t, before, after, "a batch with any bad file must write nothing")
+	require.Len(t, readSystemComponents(t, sysFile), 1) // base only; the good file was NOT ingested
+}
+
+// Every failing file is reported, not just the first (process-all, report-all —
+// NOT fail-fast on the first bad file).
+func TestSystemAddComponent_MultiFile_AllOrNothing_ReportsAllFailures(t *testing.T) {
+	sysFile := createBaseSystem(t)
+	dir := t.TempDir()
+	bad1 := filepath.Join(dir, "bad1.json")
+	bad2 := filepath.Join(dir, "bad2.json")
+	require.NoError(t, os.WriteFile(bad1, []byte(`{"not":"a bom"}`), 0o600))
+	require.NoError(t, os.WriteFile(bad2, []byte("not even json"), 0o600))
+
+	_, stderr, err := executeCommand("system", "add-component", bad1, bad2, "--system", sysFile)
+	require.Error(t, err)
+	assert.Contains(t, stderr, "bad1.json", "first bad file must be reported")
+	assert.Contains(t, stderr, "bad2.json", "second bad file must also be reported (report-all, not fail-fast)")
+	require.Len(t, readSystemComponents(t, sysFile), 1) // nothing written
+}
+
+// ---- add-component multi-file --from semantics tests (whlr.3) ----
+
+// In multi-file mode --from is a SINGLE uniform assertion applied to every file:
+// if any file's detected format disagrees, the batch errors and writes nothing.
+func TestSystemAddComponent_MultiFile_From_UniformAssertionErrorsOnDisagreement(t *testing.T) {
+	sysFile := createBaseSystem(t)
+	before, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	cdx := bomFixturePath(t, "cyclonedx-sbom.json")
+	ai := bomFixturePath(t, "spdx-ai-model-1.json") // detected as spdx-3-ai, not cyclonedx
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "add-component", cdx, ai, "--system", sysFile, "--from", "cyclonedx"})
+	require.Error(t, cmd.Execute())
+
+	after, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	assert.Equal(t, before, after, "a --from that disagrees with any file writes nothing")
+}
+
+// A uniform --from that matches every file ingests them all.
+func TestSystemAddComponent_MultiFile_From_UniformAssertionMatchingSucceeds(t *testing.T) {
+	sysFile := createBaseSystem(t)
+	cdx := bomFixturePath(t, "cyclonedx-sbom.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "add-component", cdx, cdx, "--system", sysFile, "--from", "cyclonedx"})
+	require.NoError(t, cmd.Execute())
+	require.Len(t, readSystemComponents(t, sysFile), 3) // 1 base + 2 (both cyclonedx)
+}
+
+// --from is a single value, NEVER a positional/CSV list mapped to file order: a
+// comma-joined value is treated as one (unknown) alias, not split per file.
+func TestSystemAddComponent_MultiFile_From_NoPositionalCSV(t *testing.T) {
+	sysFile := createBaseSystem(t)
+	cdx := bomFixturePath(t, "cyclonedx-sbom.json")
+	ai := bomFixturePath(t, "spdx-ai-model-1.json")
+
+	_, stderr, err := executeCommand("system", "add-component", cdx, ai, "--system", sysFile, "--from", "cyclonedx,spdx-ai")
+	require.Error(t, err)
+	// A CSV --from is treated as one (unknown) alias, never split per file.
+	assert.Contains(t, stderr, "unknown --from format")
+	require.Len(t, readSystemComponents(t, sysFile), 1) // nothing written
+}
+
+// A URL cannot be read to derive component metadata, and --component-name (the
+// single-file escape hatch for URLs) is invalid with multiple files. Rather than
+// leave the user with the unsatisfiable "--component-name is required" error, a
+// URL among multiple args is rejected early with a clear URL-specific message.
+func TestSystemAddComponent_MultiFile_RejectsURL(t *testing.T) {
+	sysFile := createBaseSystem(t)
+	before, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "add-component", bomFixturePath(t, "cyclonedx-sbom.json"),
+		"https://artifacts.example.com/auth.cdx.json", "--system", sysFile})
+	execErr := cmd.Execute()
+	require.Error(t, execErr)
+	assert.Contains(t, execErr.Error(), "URL", "a URL in multi-file mode must be rejected with a clear URL-specific message")
+
+	after, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	assert.Equal(t, before, after, "nothing written")
+}
+
 // ---- update-component --from format-assertion tests ----
 
 // Targeted update replaces the named component's boms[] entry from a

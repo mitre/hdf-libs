@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **`hdf system add-component` accepts multiple BOM files in one invocation.** Pass N positional BOM files (shell globs expand for free) to add them all in a single system-document write — e.g. a build pipeline adding its SBOM + AI-BOM together. `--component-name-prefix` numbers unnamed subjects continuously across the whole batch; `--component-name` (which names a single component) is rejected in multi-file mode. The batch is **all-or-nothing** (validate-all-then-commit): every file is validated and built first, and if any fails, all failures are reported and nothing is written — deliberately stricter than `hdf validate`'s continue-and-report, because `add-component` mutates and appends. `--from`, when given, is a single uniform format assertion checked against every file (never a positional/CSV list). Single-file behavior is unchanged. (ADR-0005, hdf-libs-whlr)
+
 ## [3.4.0] - 2026-07-13
 
 ### Breaking Changes — Schema

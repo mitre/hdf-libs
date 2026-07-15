@@ -24,10 +24,11 @@ func newSystemAddComponentCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "add-component <bom|url> --system <doc> [flags]",
+		Use:   "add-component <bom|url>... --system <doc> [flags]",
 		Short: "Add one or more components to a system document from a BOM",
 		Long: `Add component(s) to an existing HDF system document by importing metadata
-from a BOM. The BOM is a positional file path or URL. A single-subject BOM
+from a BOM. Each BOM is a positional file path (or a single URL); pass several
+files to add them all in one system-document write. A single-subject BOM
 (CycloneDX/SPDX SBOM, CycloneDX ML-BOM) adds one component; a multi-subject
 SPDX-3 AI/Dataset document adds one correctly-typed component per subject
 (aiModel per model, dataset per dataset). Omit --from to auto-detect; pass
@@ -39,15 +40,17 @@ force-parsed).
 Naming: components default to their intrinsic BOM names. Use --component-name to
 name a single-component input; use --component-name-prefix to namespace a
 multi-subject input (the prefix is prepended to each subject name; unnamed
-subjects are numbered). The two flags are mutually exclusive.
+subjects are numbered). The two flags are mutually exclusive. With multiple
+files, --component-name is rejected (it names a single component) and
+--component-name-prefix numbers unnamed subjects continuously across the batch.
 
 Examples:
   hdf system add-component sbom.cdx.json --system system.json --component-name AuthService
   hdf system add-component model.cdx.json --system system.json --from cyclonedx-mlbom
   hdf system add-component ai.spdx.json --system system.json --from spdx-ai --component-name-prefix build42-`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.MinimumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runSystemAddComponent(systemFile, args[0], fromFormat, componentName, componentNamePrefix, outputPath, embed, generateComponentID)
+			return runSystemAddComponent(systemFile, args, fromFormat, componentName, componentNamePrefix, outputPath, embed, generateComponentID)
 		},
 	}
 
@@ -138,21 +141,27 @@ func loadComponentBOM(fromFile, fromFormat string) (data []byte, doc map[string]
 	return data, doc, format, nil
 }
 
-func runSystemAddComponent(systemFile, fromFile, fromFormat, componentName, componentNamePrefix, outputPath string, embed, generateComponentID bool) error {
+func runSystemAddComponent(systemFile string, files []string, fromFormat, componentName, componentNamePrefix, outputPath string, embed, generateComponentID bool) error {
 	if componentName != "" && componentNamePrefix != "" {
 		return fmt.Errorf("--component-name and --component-name-prefix are mutually exclusive")
+	}
+	if len(files) > 1 && componentName != "" {
+		return fmt.Errorf("--component-name names a single component and is invalid with multiple files; use --component-name-prefix")
+	}
+	if len(files) > 1 {
+		for _, f := range files {
+			if isURL(f) {
+				return fmt.Errorf("URL inputs are not supported with multiple files (%q): a URL cannot be read to derive component metadata; add URL-referenced components one at a time (single-file, with --component-name)", f)
+			}
+		}
 	}
 
 	sysDoc, err := loadSystemDoc(systemFile)
 	if err != nil {
 		return err
 	}
-	data, bomDoc, bomFormat, err := loadComponentBOM(fromFile, fromFormat)
-	if err != nil {
-		return err
-	}
 
-	newComps, err := buildAddComponents(data, bomDoc, bomFormat, fromFile, componentName, componentNamePrefix, embed)
+	newComps, err := buildAddComponentsMultiFile(files, fromFormat, componentName, componentNamePrefix, embed)
 	if err != nil {
 		return err
 	}
@@ -212,6 +221,49 @@ func buildAddComponents(data []byte, bomDoc map[string]interface{}, bomFormat, f
 		applyNamePrefix(comps, componentNamePrefix)
 	}
 	return comps, nil
+}
+
+// buildAddComponentsMultiFile loads and fans out each input file via the shared
+// builder, accumulating the resulting components. A single file keeps the exact
+// single-file contract (buildAddComponents applies --component-name /
+// --component-name-prefix and their single-vs-multi guards). Multiple files are
+// accumulated raw and named ONCE at the batch level: --component-name is rejected
+// by the caller, and --component-name-prefix numbers unnamed subjects continuously
+// across the whole batch via a single applyNamePrefix pass over the accumulated
+// set — never per file, which would restart the nameless counter and collide.
+func buildAddComponentsMultiFile(files []string, fromFormat, componentName, componentNamePrefix string, embed bool) ([]map[string]interface{}, error) {
+	if len(files) == 1 {
+		data, bomDoc, bomFormat, err := loadComponentBOM(files[0], fromFormat)
+		if err != nil {
+			return nil, err
+		}
+		return buildAddComponents(data, bomDoc, bomFormat, files[0], componentName, componentNamePrefix, embed)
+	}
+
+	// Validate-all-then-commit: build every file first via the shared bulk runner
+	// (process-all + per-file report + exit status, reused from `hdf validate`), and
+	// only after every file succeeds does the caller write the system doc once. If
+	// any file fails, runBulk reports each failure and returns non-nil, so the
+	// caller writes nothing — the batch is all-or-nothing (ADR-0005 §Decision 4).
+	var all []map[string]interface{}
+	if err := runBulk(files, "add-component (one or more files failed)", "ingested", func(fromFile string) error {
+		data, bomDoc, bomFormat, err := loadComponentBOM(fromFile, fromFormat)
+		if err != nil {
+			return err
+		}
+		comps, err := buildAddComponents(data, bomDoc, bomFormat, fromFile, "", "", embed)
+		if err != nil {
+			return err
+		}
+		all = append(all, comps...)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	if componentNamePrefix != "" {
+		applyNamePrefix(all, componentNamePrefix)
+	}
+	return all, nil
 }
 
 func runSystemUpdateComponent(systemFile, fromFile, fromFormat, componentName, outputPath string, embed, addNew bool) error {
