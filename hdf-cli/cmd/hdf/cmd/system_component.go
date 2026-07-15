@@ -148,6 +148,13 @@ func runSystemAddComponent(systemFile string, files []string, fromFormat, compon
 	if len(files) > 1 && componentName != "" {
 		return fmt.Errorf("--component-name names a single component and is invalid with multiple files; use --component-name-prefix")
 	}
+	if len(files) > 1 {
+		for _, f := range files {
+			if isURL(f) {
+				return fmt.Errorf("URL inputs are not supported with multiple files (%q): a URL cannot be read to derive component metadata; add URL-referenced components one at a time (single-file, with --component-name)", f)
+			}
+		}
+	}
 
 	sysDoc, err := loadSystemDoc(systemFile)
 	if err != nil {

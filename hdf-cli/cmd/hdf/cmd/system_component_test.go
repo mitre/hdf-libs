@@ -444,6 +444,27 @@ func TestSystemAddComponent_MultiFile_From_NoPositionalCSV(t *testing.T) {
 	require.Len(t, readSystemComponents(t, sysFile), 1) // nothing written
 }
 
+// A URL cannot be read to derive component metadata, and --component-name (the
+// single-file escape hatch for URLs) is invalid with multiple files. Rather than
+// leave the user with the unsatisfiable "--component-name is required" error, a
+// URL among multiple args is rejected early with a clear URL-specific message.
+func TestSystemAddComponent_MultiFile_RejectsURL(t *testing.T) {
+	sysFile := createBaseSystem(t)
+	before, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "add-component", bomFixturePath(t, "cyclonedx-sbom.json"),
+		"https://artifacts.example.com/auth.cdx.json", "--system", sysFile})
+	execErr := cmd.Execute()
+	require.Error(t, execErr)
+	assert.Contains(t, execErr.Error(), "URL", "a URL in multi-file mode must be rejected with a clear URL-specific message")
+
+	after, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	assert.Equal(t, before, after, "nothing written")
+}
+
 // ---- update-component --from format-assertion tests ----
 
 // Targeted update replaces the named component's boms[] entry from a
