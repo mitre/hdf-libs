@@ -363,9 +363,10 @@ func TestConvertPrisma_NoFindings(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// Prisma Cloud export carries no scan time.
 	shared.RunSnapshotTests(t, "prisma-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertPrismaToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 func TestConvertPrisma_ControlType(t *testing.T) {

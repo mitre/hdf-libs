@@ -284,9 +284,10 @@ func TestRepoNameFromURI(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// delegates to the SARIF path, which carries no scan time.
 	shared.RunSnapshotTests(t, "msft-defender-devops-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertMsftDefenderDevopsToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 // countPerRunDistinctRules counts, per SARIF run, the distinct rule identifiers

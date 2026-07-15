@@ -492,9 +492,10 @@ func TestEmptyFixtureSynthesizesPlaceholder(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// grype output carries no scan time (zero-time sentinel).
 	shared.RunSnapshotTests(t, "grype-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertGrypeToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 func TestConvertGrypeToHDF_ControlType(t *testing.T) {

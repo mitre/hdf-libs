@@ -390,9 +390,10 @@ func TestConvert_JSONRoundTrip(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// Defender for Cloud export carries no scan time.
 	shared.RunSnapshotTests(t, "msft-defender-cloud-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertMsftDefenderCloudToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 // countDistinctAssessmentNames counts distinct value[].name GUIDs in the raw

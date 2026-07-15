@@ -26,7 +26,8 @@ function findReq(reqs: EvaluatedRequirement[], id: string): EvaluatedRequirement
   return r;
 }
 
-runSnapshotTests('cklb-to-hdf', convertCklbToHdf);
+// STIG checklist (.cklb) carries no scan time.
+runSnapshotTests('cklb-to-hdf', convertCklbToHdf, ['*']);
 
 // Ground-truth anchors (input-derived counts; see shared/typescript/anchor.ts).
 describe('cklb-to-hdf ground-truth anchors', () => {

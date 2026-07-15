@@ -184,9 +184,10 @@ func TestConvertCKLBToHDF_RulesAnchor(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// STIG checklist (.cklb) carries no scan time.
 	shared.RunSnapshotTests(t, "cklb-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertCKLBToHDF(input, converterVersion)
-	})
+	}, "*")
 }
 
 // Status, parsing, and field-mapping helpers are unit-tested in the shared

@@ -247,9 +247,10 @@ func TestConverterContract(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// Nikto JSON carries no scan time (zero-time).
 	shared.RunSnapshotTests(t, "nikto-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertNiktoToHDF(input, "unknown")
-	})
+	}, "*")
 }
 
 func TestConvertNikto_ControlType(t *testing.T) {

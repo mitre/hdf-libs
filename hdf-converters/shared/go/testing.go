@@ -108,8 +108,18 @@ type ConvertFn func(input []byte) (interface{}, error)
 // To update snapshots after intentional changes:
 //
 //	go test -run TestSnapshots -update
-func RunSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn) {
+func RunSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, maskStartTime ...string) {
 	t.Helper()
+
+	// syntheticStartTime lists the input-fixture names whose startTime the
+	// converter synthesizes (source carries no scan time), so it must be masked;
+	// the sentinel "*" masks every fixture. Fixtures NOT listed have startTime
+	// asserted against the input-derived value — a masked-but-derivable startTime
+	// is a hidden wrong-time bug (the u6j3 axis).
+	syntheticStartTime := make(map[string]bool, len(maskStartTime))
+	for _, name := range maskStartTime {
+		syntheticStartTime[name] = true
+	}
 
 	convertersDir := GetConvertersDir()
 	expectedDir := filepath.Join(convertersDir, converterName, "fixtures", "expected")
@@ -160,10 +170,14 @@ func RunSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn) {
 			expectedJSON, err := os.ReadFile(expectedPath)
 			require.NoError(t, err, "Failed to read expected fixture: %s", expectedPath)
 
-			// Normalize volatile fields (timestamps change on every run)
-			// before comparison so snapshots are stable in CI.
-			normalizedExpected := normalizeVolatileFields(expectedJSON)
-			normalizedActual := normalizeVolatileFields(actualJSON)
+			// timestamp (doc conversion time) is always volatile; startTime is
+			// masked only for fixtures whose source carries no scan time.
+			mask := map[string]bool{"timestamp": true}
+			if syntheticStartTime["*"] || syntheticStartTime[inputName] {
+				mask["startTime"] = true
+			}
+			normalizedExpected := normalizeVolatileFields(expectedJSON, mask)
+			normalizedActual := normalizeVolatileFields(actualJSON, mask)
 
 			require.JSONEq(t, string(normalizedExpected), string(normalizedActual),
 				"Snapshot mismatch for %s.\nRun with -update to accept new output.", inputName)
@@ -185,7 +199,7 @@ func RunSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn) {
 
 // RunSnapshotTestsRaw is like RunSnapshotTests but for converters that return
 // raw bytes (e.g., XCCDF auto-detect, OSCAL auto-detect).
-func RunSnapshotTestsRaw(t *testing.T, converterName string, convertFn func(input []byte) ([]byte, error)) {
+func RunSnapshotTestsRaw(t *testing.T, converterName string, convertFn func(input []byte) ([]byte, error), maskStartTime ...string) {
 	t.Helper()
 	RunSnapshotTests(t, converterName, func(input []byte) (interface{}, error) {
 		output, err := convertFn(input)
@@ -197,17 +211,17 @@ func RunSnapshotTestsRaw(t *testing.T, converterName string, convertFn func(inpu
 			return nil, err
 		}
 		return parsed, nil
-	})
+	}, maskStartTime...)
 }
 
-// normalizeVolatileFields zeroes out fields that genuinely change between runs
-// so snapshot tests are deterministic. Operates on raw JSON bytes.
-func normalizeVolatileFields(data []byte) []byte {
+// normalizeVolatileFields zeroes out the keys in mask so snapshot tests are
+// deterministic. Operates on raw JSON bytes.
+func normalizeVolatileFields(data []byte, mask map[string]bool) []byte {
 	var doc interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return data // not valid JSON, return as-is
 	}
-	normalizeValue(doc)
+	normalizeValue(doc, mask)
 	out, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
 		return data
@@ -215,39 +229,27 @@ func normalizeVolatileFields(data []byte) []byte {
 	return out
 }
 
-// volatileKeys are keys whose values genuinely cannot be derived from the input
-// and so must be blanked before comparison. Every entry needs a stated reason it
-// is not input-derivable — a masked key that CAN be derived from the input is a
-// hidden bug, not volatility (the u6j3 oscal-sar failure mode). Kept in lockstep
-// with VOLATILE_KEYS in shared/typescript/snapshot.ts.
-//
-//   - timestamp: the document write/conversion time.
-//   - startTime: falls back to conversion time for importers whose source
-//     carries no scan time. (For importers whose source DOES carry a scan time
-//     it is input-derived and should not be masked — tracked as a follow-up to
-//     make startTime masking per-converter.)
-//
-// resultsChecksum is intentionally NOT masked: it is sha256(input), fully
-// deterministic and identical across Go/TS, so asserting it catches real
-// output/checksum divergence.
-var volatileKeys = map[string]bool{
-	"timestamp": true,
-	"startTime": true,
-}
-
-func normalizeValue(v interface{}) {
+// Masking discipline (kept in lockstep with shared/typescript/snapshot.ts):
+//   - timestamp (the document write/conversion time) is ALWAYS masked.
+//   - startTime is masked PER-FIXTURE via RunSnapshotTests' maskStartTime arg —
+//     only for fixtures whose source carries no scan time. A fixture whose source
+//     DOES carry a scan time asserts startTime against the input-derived value.
+//   - resultsChecksum is intentionally NOT masked: it is sha256(input), fully
+//     deterministic and identical across Go/TS, so asserting it catches real
+//     output/checksum divergence.
+func normalizeValue(v interface{}, mask map[string]bool) {
 	switch val := v.(type) {
 	case map[string]interface{}:
 		for k, child := range val {
-			if volatileKeys[k] {
+			if mask[k] {
 				val[k] = "(normalized)"
 			} else {
-				normalizeValue(child)
+				normalizeValue(child, mask)
 			}
 		}
 	case []interface{}:
 		for _, item := range val {
-			normalizeValue(item)
+			normalizeValue(item, mask)
 		}
 	}
 }

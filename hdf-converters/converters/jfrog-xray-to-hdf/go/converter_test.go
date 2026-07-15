@@ -330,9 +330,10 @@ func TestGetImpact(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// JFrog Xray export carries no scan time.
 	shared.RunSnapshotTests(t, "jfrog-xray-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertJfrogXrayToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 func TestConvertJfrogXrayToHDF_ControlType(t *testing.T) {

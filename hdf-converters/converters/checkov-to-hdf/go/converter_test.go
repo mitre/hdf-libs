@@ -484,9 +484,10 @@ func TestConvertCheckovToHDF_SARIFRouting(t *testing.T) {
 // ---- Snapshot tests ----
 
 func TestSnapshots(t *testing.T) {
+	// Checkov JSON carries no per-finding scan time; startTime is the conversion-time fallback.
 	shared.RunSnapshotTests(t, "checkov-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertCheckovToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 func TestConvertCheckovToHDF_VerificationMethod(t *testing.T) {

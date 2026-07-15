@@ -471,9 +471,12 @@ func TestConvertCycloneDX_ComponentBomsVulnOnly(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// vex.json carries no metadata.timestamp, so its startTime is synthesized
+	// (conversion time); mask only it. The SBOM fixtures derive startTime from
+	// metadata.timestamp and are asserted.
 	shared.RunSnapshotTests(t, "cyclonedx-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertCycloneDXToHDF(input, "1.0.0")
-	})
+	}, "vex.json")
 }
 
 // Ground-truth anchor: the converter emits one requirement per BOM

@@ -1426,9 +1426,10 @@ func TestConvertSarifToHDF_SpotBugsAnchor(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// SARIF fixtures carry no run start time; conversion-time fallback.
 	shared.RunSnapshotTests(t, "sarif-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertSarifToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 func TestConvertSarifToHDF_ControlType(t *testing.T) {

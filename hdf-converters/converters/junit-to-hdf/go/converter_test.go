@@ -434,9 +434,10 @@ func TestConvertJUnitToHDF_EntityExpansion(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// JUnit fixtures carry no suite timestamp; conversion-time fallback.
 	shared.RunSnapshotTests(t, "junit-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertJUnitToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 func TestConvertJUnitToHDF_EmptyFindings(t *testing.T) {

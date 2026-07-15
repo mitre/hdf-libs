@@ -653,9 +653,10 @@ func TestConvertSonarqubeToHDF_ProjectRuleAnchor(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// SonarQube issues carry no scan time; conversion-time fallback.
 	shared.RunSnapshotTests(t, "sonarqube-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertSonarqubeToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 func TestConvert_SQ26Format(t *testing.T) {

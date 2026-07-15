@@ -610,9 +610,10 @@ func TestConvertGosecToHDF_NativeJSONNotRoutedToSARIF(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// gosec output carries no per-finding timestamp.
 	shared.RunSnapshotTests(t, "gosec-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertGosecToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 // countDistinctGosecRules unmarshals raw gosec JSON into a minimal local struct

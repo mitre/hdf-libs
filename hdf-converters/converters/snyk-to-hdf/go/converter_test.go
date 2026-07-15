@@ -444,9 +444,10 @@ func TestConvertSnyk_DistinctVulnIDAnchor(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// Snyk output carries no scan time.
 	shared.RunSnapshotTests(t, "snyk-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertSnykToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 func TestConvertSnyk_VerificationMethod(t *testing.T) {

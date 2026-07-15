@@ -3,4 +3,5 @@ import { convertGosecToHdf } from './converter.js';
 
 // Asserts the SAME fixtures/expected/*.hdf.json goldens the Go snapshot test
 // asserts, under the same normalization — this is the TS<->Go parity guarantee.
-runSnapshotTests('gosec-to-hdf', convertGosecToHdf);
+// gosec output carries no per-finding timestamp.
+runSnapshotTests('gosec-to-hdf', convertGosecToHdf, ['*']);

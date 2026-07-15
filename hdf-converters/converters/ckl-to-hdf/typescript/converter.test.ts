@@ -47,7 +47,8 @@ const MINIMAL_CKL = `<?xml version="1.0" encoding="UTF-8"?>
   </STIGS>
 </CHECKLIST>`;
 
-runSnapshotTests('ckl-to-hdf', convertCklToHdf);
+// STIG checklist (.ckl) carries no scan time.
+runSnapshotTests('ckl-to-hdf', convertCklToHdf, ['*']);
 
 // Ground-truth anchors (input-derived counts; see shared/typescript/anchor.ts).
 describe('ckl-to-hdf ground-truth anchors', () => {

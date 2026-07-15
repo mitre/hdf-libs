@@ -320,9 +320,12 @@ func TestConvertTrufflehogToHDF_ControlType(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// ndjson-input carries no git commit timestamp, so its startTime is synthesized;
+	// mask only it. The JSON fixtures derive startTime from the commit time and are
+	// asserted.
 	shared.RunSnapshotTests(t, "trufflehog-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertTrufflehogToHDF(input, "1.0.0")
-	})
+	}, "ndjson-input.ndjson")
 }
 
 // countDistinctTrufflehogGroups parses raw TruffleHog output generically — NOT

@@ -339,9 +339,12 @@ func TestGetImpact(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// fpf-no-vulnerabilities has zero findings, so its startTime is the synthesized
+	// no-findings placeholder time (not input-derived); mask only that fixture. The
+	// findings fixtures derive startTime from meta.timestamp and are asserted.
 	shared.RunSnapshotTests(t, "deptrack-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertDeptrackToHDF(input, "1.0.0")
-	})
+	}, "fpf-no-vulnerabilities.json")
 }
 
 // Ground-truth anchor: the converter emits one requirement per top-level

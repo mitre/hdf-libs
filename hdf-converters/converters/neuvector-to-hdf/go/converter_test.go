@@ -431,9 +431,10 @@ func TestConvertNeuVector_FullFixtureHeimdall2(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
+	// NeuVector scan JSON carries no scan time.
 	shared.RunSnapshotTests(t, "neuvector-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertNeuVectorToHDF(input, "1.0.0")
-	})
+	}, "*")
 }
 
 func TestConvertNeuVector_ControlType(t *testing.T) {
