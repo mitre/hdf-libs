@@ -2,7 +2,7 @@
 
 ## Inputs
 
-All five inputs are **verbatim copies** of the official CycloneDX
+All six inputs are **verbatim copies** of the official CycloneDX
 bom-examples repository:
 https://github.com/CycloneDX/bom-examples/tree/master/VEX
 
@@ -20,6 +20,14 @@ https://github.com/CycloneDX/bom-examples/tree/master/VEX
 - `cyclonedx-vex-example.json` — the spec repo's flagship example with
   the publisher metadata, tooling, and multiple references populated.
   Exercises richer envelope handling.
+- `case12-vex-multi-vuln.json` — VEX Use Case 12
+  (`Use-Cases/Case-12/vex.json`): one product with THREE vulnerabilities in
+  mixed states — CVE-2020-25649 `not_affected` (code_not_reachable),
+  CVE-2020-14195 `not_affected` (protected_by_mitigating_control), and
+  CVE-2020-35491 `exploitable`. The two not_affected statements each import as
+  a falsePositive override; the exploitable one produces none. Makes the
+  override-count anchor meaningful (3 vulns → 2 overrides) rather than the
+  vacuous 1==1 a single-vulnerability fixture allows (bead hdf-libs-2t2k).
 
 These are the canonical CycloneDX VEX examples used by the
 specification's documentation, so fixture provenance is route #1

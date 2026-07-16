@@ -1,0 +1,72 @@
+{
+  "appliedBy": {
+    "identifier": "cyclonedx-vex-import",
+    "type": "system"
+  },
+  "description": "Imported CycloneDX VEX",
+  "generator": {
+    "name": "cyclonedx-vex-to-hdf",
+    "version": "1.0.0"
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "8b3b3c606f9894a37ae10a2c9680922ab9315a37edcbceaf5582ce4a7a43c572"
+  },
+  "name": "CycloneDX VEX statements",
+  "overrides": [
+    {
+      "affectedPackages": [
+        {
+          "ecosystem": "generic",
+          "name": "Acme Product",
+          "version": "2.2.0"
+        }
+      ],
+      "appliedAt": "2022-01-13T00:00:00Z",
+      "appliedBy": {
+        "identifier": "cyclonedx-vex-import",
+        "type": "system"
+      },
+      "evidence": [
+        {
+          "data": "https://nvd.nist.gov/vuln/detail/CVE-2020-25649",
+          "description": "NVD",
+          "type": "url"
+        }
+      ],
+      "expiresAt": "2023-01-13T00:00:00Z",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "reason": "Automated dataflow analysis and manual code review indicates that the vulnerable code is not reachable, either directly or indirectly.",
+      "requirementId": "CVE-2020-25649",
+      "status": "passed",
+      "type": "falsePositive"
+    },
+    {
+      "affectedPackages": [
+        {
+          "ecosystem": "generic",
+          "name": "Acme Product",
+          "version": "2.2.0"
+        }
+      ],
+      "appliedAt": "2022-01-13T00:00:00Z",
+      "appliedBy": {
+        "identifier": "cyclonedx-vex-import",
+        "type": "system"
+      },
+      "evidence": [
+        {
+          "data": "https://nvd.nist.gov/vuln/detail/CVE-2020-14195",
+          "description": "NVD",
+          "type": "url"
+        }
+      ],
+      "expiresAt": "2023-01-13T00:00:00Z",
+      "justification": "inline_mitigations_already_exist",
+      "reason": "Vulnerability is not exploitable due to existing mitigating controls that prevent user-controlled input from being passed to JNDI.",
+      "requirementId": "CVE-2020-14195",
+      "status": "passed",
+      "type": "falsePositive"
+    }
+  ]
+}

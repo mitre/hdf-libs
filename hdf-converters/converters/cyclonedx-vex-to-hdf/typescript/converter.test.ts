@@ -313,25 +313,38 @@ describe('helpers', () => {
 });
 
 // Ground-truth anchor (see shared/typescript/anchor.ts). cyclonedx-vex emits one
-// override per vulnerability with an actionable analysis state (every state
-// except exploitable/in_triage). Committed fixtures are single-vulnerability
-// status variants (want=1); a multi-vuln fixture would strengthen this (2t2k).
+// override per vulnerability whose analysis.state is actionable: the not_affected
+// family (-> falsePositive) and the fixed family (-> POA&M). affected/exploitable
+// and under_investigation/in_triage states produce no override. The classifier is
+// an allowlist defined independently of the converter (a genuine ground truth),
+// so unknown or non-actionable states never inflate the count.
 describe('cyclonedx-vex-to-hdf ground-truth anchor', () => {
+  const ACTIONABLE_STATES = new Set([
+    'not_affected', 'known_not_affected', 'false_positive',
+    'fixed', 'first_fixed', 'resolved', 'resolved_with_pedigree',
+  ]);
+
   function countActionableVulns(input: string): number {
     const doc = JSON.parse(input) as {
-      vulnerabilities?: Array<{ analysis?: { state?: string } }>;
+      vulnerabilities?: Array<{ id?: string; analysis?: { state?: string } }>;
     };
     return (doc.vulnerabilities ?? []).filter(
-      (v) => v.analysis && v.analysis.state !== 'exploitable' && v.analysis.state !== 'in_triage',
+      (v) => v.id && v.analysis && ACTIONABLE_STATES.has((v.analysis.state ?? '').trim().toLowerCase()),
     ).length;
   }
 
-  it('emits one override per actionable VEX statement (case1-vex-fixed)', async () => {
-    const input = loadInput('case1-vex-fixed.json');
+  it('emits one override per actionable VEX statement (case-12 multi-vuln)', async () => {
+    // Case-12 (official CycloneDX bom-examples): 3 vulnerabilities in mixed
+    // states — two not_affected (each -> falsePositive) and one exploitable
+    // (no override). Catches a dropped, duplicated, or off-by-one override that
+    // a single-vulnerability fixture (a vacuous 1==1) cannot.
+    const input = loadInput('case12-vex-multi-vuln.json');
+    const want = countActionableVulns(input);
+    expect(want, 'sanity: Case-12 has 3 vulns but exactly 2 actionable statements').toBe(2);
     assertOverrideCount(
       await convertCyclonedxVexToHdf(input, TEST_VERSION),
-      countActionableVulns(input),
-      'case1-vex-fixed.json: one override per actionable VEX statement',
+      want,
+      'case12-vex-multi-vuln.json: one override per actionable VEX statement (3 vulns -> 2 overrides)',
     );
   });
 });
