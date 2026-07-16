@@ -59,6 +59,25 @@ func TestConvertHDFToCKL_RoundTrip(t *testing.T) {
 	assert.Contains(t, v.CCIs, "CCI-002605", "V-251545 should carry CCI-002605")
 }
 
+// TestConvertHDFToCKL_OutputCountAnchor is the export-side ground-truth anchor:
+// hdf-to-ckl emits one <VULN> per HDF requirement, so the emitted VULN count must
+// equal the requirement count derived independently from the HDF input (a raw
+// JSON walk, not the converter's parser). InspecMultilayered sums to 1603
+// baseline requirements across its 5 baselines — a meaningful anchor, not a
+// vacuous 1==1.
+func TestConvertHDFToCKL_OutputCountAnchor(t *testing.T) {
+	input := fixtures.Results.InspecMultilayered
+	want := shared.CountHDFResultRequirements(t, input)
+	require.Greater(t, want, 1, "fixture must have multiple requirements for a meaningful anchor")
+
+	out, err := ConvertHDFToCKL(input)
+	require.NoError(t, err, "hdf-to-ckl should succeed")
+
+	got := shared.CountXMLElements(t, out, "VULN")
+	require.Equal(t, want, got,
+		"emitted <VULN> count must equal the HDF requirement count (one VULN per requirement)")
+}
+
 // TestConvertHDFToCKL_Synthesis converts arbitrary HDF (no checklist
 // extensions) and asserts required checklist fields are synthesized.
 func TestConvertHDFToCKL_Synthesis(t *testing.T) {

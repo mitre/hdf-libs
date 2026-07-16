@@ -6,6 +6,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"io"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -108,6 +110,76 @@ func AssertRequirementCount(t *testing.T, result interface{}, want int, msg stri
 	t.Helper()
 	require.NotZero(t, want, "anchor proves nothing with want=0 — use a fixture with >=1 source unit: %s", msg)
 	require.Equal(t, want, TotalRequirements(t, result), msg)
+}
+
+// CountHDFResultRequirements counts the requirements in a raw HDF Results
+// document — the sum of baselines[].requirements lengths. This is the export-side
+// ground truth (one output record per baseline requirement); unlike
+// CountJSONItemsUnderKey it does NOT double-count the "requirements" key where it
+// recurs at other depths (e.g. groups). Independent of any converter's parser.
+func CountHDFResultRequirements(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Baselines []struct {
+			Requirements []json.RawMessage `json:"requirements"`
+		} `json:"baselines"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "unmarshal HDF results for anchor count")
+	n := 0
+	for i := range doc.Baselines {
+		n += len(doc.Baselines[i].Requirements)
+	}
+	return n
+}
+
+// CountNDJSONRecords counts the non-empty newline-delimited JSON records in
+// exporter output (one event/finding per line). Counts the emitted records
+// generically — no converter parser involved.
+func CountNDJSONRecords(t *testing.T, output []byte) int {
+	t.Helper()
+	n := 0
+	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+		if strings.TrimSpace(line) != "" {
+			n++
+		}
+	}
+	return n
+}
+
+// CountHDFOverrides counts the overrides in a raw HDF Amendments document
+// (top-level overrides[]). The export-side ground truth for amendment exporters.
+func CountHDFOverrides(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Overrides []json.RawMessage `json:"overrides"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "unmarshal HDF amendments for anchor count")
+	return len(doc.Overrides)
+}
+
+// cveShaped matches the CVE id form the VEX exporters key on (mirrors their
+// ^CVE-\d{4}-\d{4,}$ pattern, defined here independently of any converter).
+var cveShaped = regexp.MustCompile(`^CVE-\d{4}-\d{4,}$`)
+
+// CountDistinctCVEOverrides counts the distinct CVE-shaped requirementIds among a
+// raw HDF Amendments document's overrides — the export-side ground truth for the
+// VEX exporters, which drop non-CVE overrides and emit one record per CVE.
+// Independent of any converter's parser.
+func CountDistinctCVEOverrides(t *testing.T, input []byte) int {
+	t.Helper()
+	var doc struct {
+		Overrides []struct {
+			RequirementID string `json:"requirementId"`
+		} `json:"overrides"`
+	}
+	require.NoError(t, json.Unmarshal(input, &doc), "unmarshal HDF amendments for anchor count")
+	seen := map[string]bool{}
+	for _, o := range doc.Overrides {
+		if cveShaped.MatchString(o.RequirementID) {
+			seen[o.RequirementID] = true
+		}
+	}
+	return len(seen)
 }
 
 // TotalOverrides counts the amendment overrides a VEX importer emitted (top-level

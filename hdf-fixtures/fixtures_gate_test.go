@@ -51,6 +51,7 @@ func TestEveryFixtureValidatesAgainstItsSchema(t *testing.T) {
 			schema: validators.TypeAmendments,
 			fixtures: map[string][]byte{
 				"uc-01-fixed-amendments.json": Amendments.UC01Fixed,
+				"multi-cve-amendments.json":   Amendments.MultiCVE,
 			},
 		},
 	}

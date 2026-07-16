@@ -79,6 +79,51 @@ export function assertRequirementCount(result: unknown, want: number, msg: strin
 }
 
 /**
+ * Count the requirements in a raw HDF Results document — the sum of
+ * baselines[].requirements lengths. Export-side ground truth (one output record
+ * per baseline requirement); unlike countJsonItemsUnderKey it does NOT
+ * double-count the "requirements" key where it recurs at other depths.
+ */
+export function countHdfResultRequirements(input: string): number {
+  const doc = JSON.parse(input) as { baselines?: Array<{ requirements?: unknown[] }> };
+  return (doc.baselines ?? []).reduce((sum, b) => sum + (b.requirements?.length ?? 0), 0);
+}
+
+/**
+ * Count the non-empty newline-delimited JSON records in exporter output (one
+ * event/finding per line). Counts emitted records generically — no parser.
+ */
+export function countNdjsonRecords(output: string): number {
+  return output.trim().split('\n').filter((l) => l.trim() !== '').length;
+}
+
+/**
+ * Count the overrides in a raw HDF Amendments document (top-level overrides[]).
+ * Export-side ground truth for amendment exporters.
+ */
+export function countHdfOverrides(input: string): number {
+  const doc = JSON.parse(input) as { overrides?: unknown[] };
+  return doc.overrides?.length ?? 0;
+}
+
+/** Matches the CVE id form the VEX exporters key on (^CVE-\d{4}-\d{4,}$). */
+const CVE_SHAPED = /^CVE-\d{4}-\d{4,}$/;
+
+/**
+ * Count the distinct CVE-shaped requirementIds among a raw HDF Amendments
+ * document's overrides — export-side ground truth for the VEX exporters, which
+ * drop non-CVE overrides and emit one record per CVE. Independent of any parser.
+ */
+export function countDistinctCveOverrides(input: string): number {
+  const doc = JSON.parse(input) as { overrides?: Array<{ requirementId?: string }> };
+  const seen = new Set<string>();
+  for (const o of doc.overrides ?? []) {
+    if (o.requirementId && CVE_SHAPED.test(o.requirementId)) seen.add(o.requirementId);
+  }
+  return seen.size;
+}
+
+/**
  * Count the amendment overrides a VEX importer emitted (top-level overrides[]).
  * VEX importers produce HDF Amendments, not requirements.
  */

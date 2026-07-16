@@ -52,11 +52,16 @@ var Baseline = struct {
 //go:embed amendments/uc-01-fixed-amendments.json
 var amendmentsUC01Fixed []byte
 
+//go:embed amendments/multi-cve-amendments.json
+var amendmentsMultiCVE []byte
+
 // Amendments exposes embedded HDF Amendments documents.
 var Amendments = struct {
 	UC01Fixed []byte
+	MultiCVE  []byte
 }{
 	UC01Fixed: amendmentsUC01Fixed,
+	MultiCVE:  amendmentsMultiCVE,
 }
 
 // ── InSpec runner output (non-HDF) ───────────────────────────────────────

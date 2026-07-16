@@ -66,6 +66,7 @@ CLAUDE.md's fixture-integrity rule).
 | File | Source | Consumers |
 |------|--------|-----------|
 | `uc-01-fixed-amendments.json` | HDF form of the CSAF spec example `2022-evd-uc-01-f-001.json` — produced by `csaf-vex-to-hdf` from that upstream VEX advisory. An open POA&M (vendor claims fixed, milestone still pending). | hdf-to-csaf-vex converter (TS + Go, incl. its golden) + hdf-to-oscal-poam converter (TS + Go golden). Moved from `hdf-converters/converters/hdf-to-csaf-vex/fixtures/input/`. |
+| `multi-cve-amendments.json` | HDF form of the CSAF advisory `sec-vex-2022-0001.json` — produced by `csaf-vex-to-hdf` from that upstream VEX advisory. Three overrides across three distinct CVE-shaped requirementIds (the Log4Shell family: CVE-2021-44228/45046/45105), all falsePositive. A multi-override amendments doc for meaningful export-side output-count anchors (bead hdf-libs-j0ok). | hdf-to-oscal-poam, hdf-to-csaf-vex, hdf-to-cyclonedx-vex, hdf-to-openvex output-count anchors (TS + Go). |
 
 ### `inspec/` — InSpec runner output (NOT HDF)
 

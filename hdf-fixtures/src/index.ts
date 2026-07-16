@@ -51,6 +51,7 @@ export const baseline = {
 // HDF Amendments documents.
 export const amendments = {
   uc01Fixed: fixture('amendments', 'uc-01-fixed-amendments.json'),
+  multiCve: fixture('amendments', 'multi-cve-amendments.json'),
 } as const;
 
 // InSpec runner output — NOT HDF. Kept here for cross-language parser
