@@ -144,7 +144,7 @@ interface CsafDocument {
 
 export async function convertCsafVexToHdf(
   input: string,
-  converterVersion: string,
+  converterVersion = '1.0.0',
 ): Promise<HDFAmendments> {
   validateInputSize(input, 'csaf-vex-to-hdf');
   const doc = parseJSON<CsafDocument>(input);

@@ -1,6 +1,7 @@
 package oscal
 
 import (
+	"sort"
 	"strings"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -248,13 +249,16 @@ func sspComponentToHDFComponent(sc *SystemComponent, componentControls map[strin
 		comp.Description = &sc.Description
 	}
 
-	// Add control IDs as baseline refs (NIST notation)
+	// Add control IDs as baseline refs (NIST notation). Sort for a stable,
+	// language-agnostic order — Go map iteration is randomized, so without this
+	// the refs shuffle every run and never match the TS output.
 	if controls, ok := componentControls[sc.UUID]; ok {
 		var refs []string
 		for controlID := range controls {
 			refs = append(refs, ControlIDToNistTag(controlID))
 		}
 		if len(refs) > 0 {
+			sort.Strings(refs)
 			comp.BaselineRefs = refs
 		}
 	}

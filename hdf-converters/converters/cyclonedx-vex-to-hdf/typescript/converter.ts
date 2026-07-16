@@ -105,7 +105,7 @@ interface BOM {
 
 export async function convertCyclonedxVexToHdf(
   input: string,
-  converterVersion: string,
+  converterVersion = '1.0.0',
 ): Promise<HDFAmendments> {
   validateInputSize(input, 'cyclonedx-vex-to-hdf');
   const bom = parseJSON<BOM>(input);

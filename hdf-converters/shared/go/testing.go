@@ -110,6 +110,24 @@ type ConvertFn func(input []byte) (interface{}, error)
 //	go test -run TestSnapshots -update
 func RunSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, maskStartTime ...string) {
 	t.Helper()
+	runSnapshotTests(t, converterName, convertFn, nil, maskStartTime)
+}
+
+// SnapshotInputResolver supplies input bytes for a fixture whose source lives
+// outside fixtures/input/ (e.g. a shared @mitre/hdf-fixtures fixture); it returns
+// (nil, false) to fall back to fixtures/input/<inputName>. This keeps the harness
+// decoupled from the fixtures package — the converter provides the mapping.
+type SnapshotInputResolver func(inputName string) ([]byte, bool)
+
+// RunSnapshotTestsWithInput is RunSnapshotTests with a resolver for fixtures whose
+// input lives outside fixtures/input/ (e.g. shared @mitre/hdf-fixtures fixtures).
+func RunSnapshotTestsWithInput(t *testing.T, converterName string, convertFn ConvertFn, resolveInput SnapshotInputResolver, maskStartTime ...string) {
+	t.Helper()
+	runSnapshotTests(t, converterName, convertFn, resolveInput, maskStartTime)
+}
+
+func runSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, resolveInput SnapshotInputResolver, maskStartTime []string) {
+	t.Helper()
 
 	// syntheticStartTime lists the input-fixture names whose startTime the
 	// converter synthesizes (source carries no scan time), so it must be masked;
@@ -147,11 +165,18 @@ func RunSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, m
 		asserted++
 
 		t.Run(inputName, func(t *testing.T) {
-			inputPath := filepath.Join(inputDir, inputName)
 			expectedPath := filepath.Join(expectedDir, expectedName)
 
-			inputData, err := os.ReadFile(inputPath)
-			require.NoError(t, err, "golden %s has no matching input fixture %s", expectedName, inputPath)
+			var inputData []byte
+			resolved := false
+			if resolveInput != nil {
+				inputData, resolved = resolveInput(inputName)
+			}
+			if !resolved {
+				var err error
+				inputData, err = os.ReadFile(filepath.Join(inputDir, inputName))
+				require.NoError(t, err, "golden %s has no matching input fixture %s", expectedName, inputName)
+			}
 
 			result, err := convertFn(inputData)
 			require.NoError(t, err, "Converter failed for %s", inputName)

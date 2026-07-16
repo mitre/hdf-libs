@@ -1,7 +1,7 @@
 {
   "generator": {
     "name": "oscal-component-to-hdf",
-    "version": "dev"
+    "version": "1.0.0"
   },
   "integrity": {
     "algorithm": "sha256",

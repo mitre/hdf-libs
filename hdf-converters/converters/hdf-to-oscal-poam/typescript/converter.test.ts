@@ -204,7 +204,8 @@ describe('convertHdfToOscalPoam', () => {
     const rem = risk.remediations[0];
     const remProp = (n: string): string | undefined =>
       rem.props.find((p: { name: string; value: string }) => p.name === n)?.value;
-    expect(remProp('estimated-completion')).toContain('2099-06-30');
+    // The estimated completion rides on the remediation task's within-date-range end.
+    expect(rem.tasks[0].timing['within-date-range'].end).toContain('2099-06-30');
     expect(remProp('milestone-status')).toBe('pending');
   });
 

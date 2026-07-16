@@ -136,8 +136,8 @@ func ConvertCycloneDXVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAm
 	}
 
 	name := "CycloneDX VEX statements"
-	publisher := publisherIdentity(&bom)
-	if publisher != nil && publisher.Identifier != "" {
+	publisher := publisherIdentityOrDefault(&bom)
+	if publisher.Identifier != "" && publisher.Identifier != "cyclonedx-vex-import" {
 		name = fmt.Sprintf("CycloneDX VEX statements from %s", publisher.Identifier)
 	}
 	description := "Imported CycloneDX VEX"

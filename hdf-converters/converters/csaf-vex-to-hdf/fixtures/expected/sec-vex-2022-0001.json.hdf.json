@@ -7,7 +7,7 @@
   "description": "Imported VEX advisory SEC-VEX-2022-0001",
   "generator": {
     "name": "csaf-vex-to-hdf",
-    "version": "dev"
+    "version": "1.0.0"
   },
   "integrity": {
     "algorithm": "sha256",

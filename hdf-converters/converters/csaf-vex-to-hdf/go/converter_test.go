@@ -169,3 +169,11 @@ func TestConvertCSAFVEX_OverrideAnchor(t *testing.T) {
 	shared.AssertOverrideCount(t, result, countCsafActionableBuckets(t, input),
 		"sec-vex-2022-0001.json: one override per actionable status bucket")
 }
+
+// TestSnapshots asserts every fixtures/expected/<input>.hdf.json golden reproduces
+// whole-output, enforcing TS<->Go structural parity on the amendment document.
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "csaf-vex-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertCSAFVEXToHDF(input, "1.0.0")
+	})
+}

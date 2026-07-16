@@ -541,6 +541,34 @@ function convertSupports(supports: unknown[]): Record<string, string>[] | undefi
 }
 
 /**
+ * Convert v1.0 attributes to v2.0 Input objects. V1 attributes are
+ * {name, options: {...}}; InSpec nests value/type/required/sensitive/description
+ * under `options`. Mirrors convertAttributes in the Go converter (omit fields
+ * absent from options so both languages produce identical output).
+ */
+function convertAttributes(attrs: unknown[]): Record<string, unknown>[] {
+  const inputs: Record<string, unknown>[] = [];
+  for (const attr of attrs) {
+    if (attr === null || typeof attr !== 'object') continue;
+    const a = attr as Record<string, unknown>;
+    const name = typeof a.name === 'string' ? a.name : '';
+    if (!name) continue;
+    const input: Record<string, unknown> = { name };
+    const options = a.options;
+    if (options !== null && typeof options === 'object') {
+      const o = options as Record<string, unknown>;
+      if ('value' in o) input.value = o.value;
+      if (typeof o.description === 'string') input.description = o.description;
+      if (typeof o.sensitive === 'boolean') input.sensitive = o.sensitive;
+      if (typeof o.required === 'boolean') input.required = o.required;
+      if (typeof o.type === 'string') input.type = o.type;
+    }
+    inputs.push(input);
+  }
+  return inputs;
+}
+
+/**
  * Convert v1.0 profile to v2.0 baseline.
  * Transforms field names and nested structures.
  */
@@ -563,7 +591,7 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
     const supports = convertSupports(v1Profile.supports);
     if (supports) v2Baseline.supports = supports;
   }
-  if (v1Profile.attributes?.length) v2Baseline.inputs = v1Profile.attributes;
+  if (v1Profile.attributes?.length) v2Baseline.inputs = convertAttributes(v1Profile.attributes);
   if (v1Profile.status !== undefined) v2Baseline.status = v1Profile.status;
 
   // Transform sha256 to integrity object

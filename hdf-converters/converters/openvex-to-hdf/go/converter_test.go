@@ -170,3 +170,13 @@ func TestConvertOpenVEXToHDF_OverrideAnchor(t *testing.T) {
 	shared.AssertOverrideCount(t, result, countOpenVEXActionableStatements(t, input),
 		"multi-status.openvex.json: one override per actionable statement")
 }
+
+// TestSnapshots asserts every fixtures/expected/<input>.hdf.json golden reproduces
+// whole-output, enforcing TS<->Go structural parity on the amendment document. The
+// only volatile field is the doc-level timestamp (always masked); overrides carry
+// no synthesized startTime.
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "openvex-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertOpenVEXToHDF(input, "1.0.0")
+	})
+}

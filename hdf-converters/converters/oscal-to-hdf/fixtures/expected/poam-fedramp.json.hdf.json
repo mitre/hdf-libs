@@ -5,7 +5,7 @@
   },
   "generator": {
     "name": "oscal-poam-to-hdf",
-    "version": "dev"
+    "version": "1.0.0"
   },
   "integrity": {
     "algorithm": "sha256",
@@ -19,11 +19,16 @@
         "identifier": "72bf37e1-9f76-4261-886f-8e297599f365",
         "type": "simple"
       },
-      "expiresAt": "2027-05-11T19:22:46.052624761Z",
+      "expiresAt": "2023-07-30T00:00:00Z",
       "milestones": [
         {
-          "description": "CSP's Remediation Plan: A description of the CSP's intended approach to remediating the identified risk.",
-          "estimatedCompletion": "2026-08-11T19:22:46.052665066Z",
+          "description": "[Example]Milestone 1: Optional description",
+          "estimatedCompletion": "2023-07-02T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "description": "[Example]Milestone 2: Optional description",
+          "estimatedCompletion": "2023-07-07T00:00:00Z",
           "status": "pending"
         }
       ],
@@ -38,11 +43,16 @@
         "identifier": "72bf37e1-9f76-4261-886f-8e297599f365",
         "type": "simple"
       },
-      "expiresAt": "2027-05-11T19:22:46.052667511Z",
+      "expiresAt": "2023-05-31T00:00:00Z",
       "milestones": [
         {
-          "description": "CSP's Remediation Plan: A description of the CSP's intended approach to remediating the identified risk.",
-          "estimatedCompletion": "2026-08-11T19:22:46.052667741Z",
+          "description": "[Example]Milestone 1: Optional description",
+          "estimatedCompletion": "2023-07-02T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "description": "[Example]Milestone 2: Optional description",
+          "estimatedCompletion": "2023-07-07T00:00:00Z",
           "status": "pending"
         }
       ],

@@ -142,15 +142,26 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride) (oscal.POAMItem, []osc
 		riskProps = append(riskProps, oscal.Property{Name: "impact-override", Value: strconv.FormatFloat(override.Impact.Value, 'f', -1, 64)})
 	}
 
-	// Build remediations from milestones, carrying the deadline and status.
+	// Build remediations from milestones. Each milestone becomes a planned
+	// remediation task whose within-date-range end carries the estimated
+	// completion — the structure the forward converter reads back.
 	var remediations []oscal.Remediation
 	for _, ms := range override.Milestones {
 		var msProps []oscal.Property
-		if !ms.EstimatedCompletion.IsZero() {
-			msProps = append(msProps, oscal.Property{Name: "estimated-completion", Value: ms.EstimatedCompletion.UTC().Format(time.RFC3339)})
-		}
 		if ms.Status != "" {
 			msProps = append(msProps, oscal.Property{Name: "milestone-status", Value: string(ms.Status)})
+		}
+		var tasks []oscal.Task
+		if !ms.EstimatedCompletion.IsZero() {
+			eta := ms.EstimatedCompletion.UTC().Format(time.RFC3339)
+			tasks = []oscal.Task{{
+				UUID:  oscal.GenerateUUID(),
+				Type:  "milestone",
+				Title: ms.Description,
+				Timing: &oscal.Timing{
+					WithinDateRange: &oscal.DateRange{Start: eta, End: eta},
+				},
+			}}
 		}
 		rem := oscal.Remediation{
 			UUID:        oscal.GenerateUUID(),
@@ -158,6 +169,7 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride) (oscal.POAMItem, []osc
 			Title:       ms.Description,
 			Description: ms.Description,
 			Props:       msProps,
+			Tasks:       tasks,
 		}
 		remediations = append(remediations, rem)
 	}
@@ -178,6 +190,13 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride) (oscal.POAMItem, []osc
 		}
 	}
 
+	// The override's enforceable expiry maps to the risk deadline — the field
+	// the forward converter reads to reconstruct expiresAt.
+	var deadline string
+	if !override.ExpiresAt.IsZero() {
+		deadline = override.ExpiresAt.UTC().Format(time.RFC3339)
+	}
+
 	risk := oscal.Risk{
 		UUID:  riskUUID,
 		Title: override.RequirementID,
@@ -185,6 +204,7 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride) (oscal.POAMItem, []osc
 		Description:  override.Reason,
 		Statement:    override.Reason,
 		Status:       riskStatus,
+		Deadline:     deadline,
 		Props:        riskProps,
 		Remediations: remediations,
 		RiskLog:      riskLog,

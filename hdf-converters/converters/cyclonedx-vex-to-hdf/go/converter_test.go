@@ -201,3 +201,11 @@ func TestConvertCycloneDXVEX_OverrideAnchor(t *testing.T) {
 	shared.AssertOverrideCount(t, result, countCdxVexActionableVulns(t, input),
 		"case1-vex-fixed.json: one override per actionable VEX statement")
 }
+
+// TestSnapshots asserts every fixtures/expected/<input>.hdf.json golden reproduces
+// whole-output, enforcing TS<->Go structural parity on the amendment document.
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "cyclonedx-vex-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertCycloneDXVEXToHDF(input, "1.0.0")
+	})
+}

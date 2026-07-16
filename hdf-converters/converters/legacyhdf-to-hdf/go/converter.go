@@ -342,7 +342,8 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 }
 
 // convertAttributes converts v1.0 attributes to v2.0 Input structs.
-// V1 attributes are generic maps with "name" and "options" (containing "default").
+// V1 attributes are generic maps of the form {"name": ..., "options": {...}};
+// InSpec nests value/type/required/sensitive/description under "options".
 func convertAttributes(attrs []map[string]interface{}) []hdf.Input {
 	inputs := make([]hdf.Input, 0, len(attrs))
 	for _, attr := range attrs {
@@ -353,28 +354,24 @@ func convertAttributes(attrs []map[string]interface{}) []hdf.Input {
 		input := hdf.Input{
 			Name: name,
 		}
-		// Extract default value from options
-		if options, ok := attr["options"].(map[string]interface{}); ok {
-			if val, exists := options["default"]; exists {
+		options, _ := attr["options"].(map[string]interface{})
+		if options != nil {
+			if val, exists := options["value"]; exists {
 				input.Value = val
 			}
-		}
-		// Extract description if present
-		if desc, ok := attr["description"].(string); ok {
-			input.Description = &desc
-		}
-		// Extract sensitive flag if present
-		if sensitive, ok := attr["sensitive"].(bool); ok {
-			input.Sensitive = &sensitive
-		}
-		// Extract required flag if present
-		if required, ok := attr["required"].(bool); ok {
-			input.Required = &required
-		}
-		// Extract type if present
-		if t, ok := attr["type"].(string); ok {
-			inputType := hdf.InputType(t)
-			input.Type = &inputType
+			if desc, ok := options["description"].(string); ok {
+				input.Description = &desc
+			}
+			if sensitive, ok := options["sensitive"].(bool); ok {
+				input.Sensitive = &sensitive
+			}
+			if required, ok := options["required"].(bool); ok {
+				input.Required = &required
+			}
+			if t, ok := options["type"].(string); ok {
+				inputType := hdf.InputType(t)
+				input.Type = &inputType
+			}
 		}
 		inputs = append(inputs, input)
 	}

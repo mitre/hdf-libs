@@ -1,4 +1,5 @@
 export { detectOscalDocumentType } from './detect.js';
+export { convertOscalToHdf } from './convert.js';
 export { convertOscalCatalogToHdf } from './converter-catalog.js';
 export { convertOscalProfileToHdf } from './converter-profile.js';
 export { convertOscalComponentToHdf } from './converter-component.js';

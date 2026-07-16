@@ -151,19 +151,26 @@ function overrideToPOAMItem(override: StandaloneOverride): { item: POAMItem; ite
     riskProps.push({ name: 'impact-override', value: String(override.impact.value) });
   }
 
-  // Build remediations from milestones, carrying the deadline and status.
+  // Build remediations from milestones. Each milestone becomes a planned
+  // remediation task whose within-date-range end carries the estimated
+  // completion — the structure the forward converter reads back.
   const remediations: RiskResponse[] = [];
   if (override.milestones) {
     for (const ms of override.milestones) {
       const msProps: Property[] = [];
-      if (ms.estimatedCompletion) {
-        const d = toDate(ms.estimatedCompletion);
-        if (d) {
-          msProps.push({ name: 'estimated-completion', value: formatTimestampSeconds(d) });
-        }
-      }
       if (ms.status) {
         msProps.push({ name: 'milestone-status', value: String(ms.status) });
+      }
+      let tasks: RiskResponse['tasks'];
+      const d = ms.estimatedCompletion ? toDate(ms.estimatedCompletion) : undefined;
+      if (d) {
+        const eta = formatTimestampSeconds(d);
+        tasks = [{
+          uuid: crypto.randomUUID(),
+          type: 'milestone',
+          title: ms.description,
+          timing: { 'within-date-range': { start: eta, end: eta } },
+        } as unknown as NonNullable<RiskResponse['tasks']>[number]];
       }
       remediations.push({
         uuid: crypto.randomUUID(),
@@ -171,6 +178,7 @@ function overrideToPOAMItem(override: StandaloneOverride): { item: POAMItem; ite
         title: ms.description,
         description: ms.description,
         props: msProps.length > 0 ? msProps : undefined,
+        tasks,
       });
     }
   }
@@ -192,12 +200,17 @@ function overrideToPOAMItem(override: StandaloneOverride): { item: POAMItem; ite
     } as unknown as RiskLog;
   }
 
+  // The override's enforceable expiry maps to the risk deadline — the field the
+  // forward converter reads to reconstruct expiresAt.
+  const deadline = expiresDate && expiresDate.getTime() > 0 ? formatTimestampSeconds(expiresDate) : undefined;
+
   const risk = {
     uuid: riskUUID,
     title: override.requirementId,
     description: override.reason,
     statement: override.reason,
     status: riskStatus,
+    deadline,
     props: riskProps,
     remediations: remediations.length > 0 ? remediations : undefined,
     'risk-log': riskLog,

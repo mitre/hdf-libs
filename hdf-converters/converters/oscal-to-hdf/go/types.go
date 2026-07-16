@@ -685,6 +685,7 @@ type Risk struct {
 	Statement         string             `json:"statement,omitempty"`
 	Props             []Property         `json:"props,omitempty"`
 	Status            string             `json:"status"`
+	Deadline          string             `json:"deadline,omitempty"`
 	Characterizations []Characterization `json:"characterizations,omitempty"`
 	Remediations      []Remediation      `json:"remediations,omitempty"`
 	RiskLog           *RiskLog           `json:"risk-log,omitempty"`
@@ -722,6 +723,7 @@ type Remediation struct {
 	Title       string     `json:"title"`
 	Description string     `json:"description"`
 	Props       []Property `json:"props,omitempty"`
+	Tasks       []Task     `json:"tasks,omitempty"`
 }
 
 // RiskLog tracks risk status changes over time.

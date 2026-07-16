@@ -270,7 +270,9 @@ function sspComponentToHDFComponent(
     comp.description = sc.description;
   }
 
-  // Add control IDs as baseline refs (NIST notation)
+  // Add control IDs as baseline refs (NIST notation). Sort for a stable,
+  // language-agnostic order that matches the Go converter (whose map iteration
+  // is randomized).
   const controls = componentControls.get(sc.uuid);
   if (controls && controls.size > 0) {
     const refs: string[] = [];
@@ -278,6 +280,7 @@ function sspComponentToHDFComponent(
       refs.push(controlIdToNistTag(controlId));
     }
     if (refs.length > 0) {
+      refs.sort();
       comp.baselineRefs = refs;
     }
   }

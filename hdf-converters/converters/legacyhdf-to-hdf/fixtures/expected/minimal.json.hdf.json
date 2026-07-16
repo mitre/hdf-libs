@@ -1,0 +1,55 @@
+{
+  "baselines": [
+    {
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "abc123"
+      },
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Test description",
+              "label": "default"
+            }
+          ],
+          "effectiveStatus": "passed",
+          "results": [
+            {
+              "codeDesc": "Test should pass",
+              "runTime": 0.1,
+              "startTime": "2024-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "severity": "medium",
+          "sourceLocation": {
+            "line": 1,
+            "ref": "test.rb"
+          },
+          "id": "test-1",
+          "impact": 0.5,
+          "tags": {},
+          "code": "control 'test-1' do\nend",
+          "title": "Test Control"
+        }
+      ],
+      "name": "test-profile",
+      "version": "1.0.0"
+    }
+  ],
+  "components": [
+    {
+      "name": "test-system",
+      "type": "host",
+      "osName": "test-system",
+      "osVersion": "1.0"
+    }
+  ],
+  "statistics": {
+    "duration": 0.1
+  },
+  "tool": {
+    "name": "Heimdall Data Format v1"
+  }
+}

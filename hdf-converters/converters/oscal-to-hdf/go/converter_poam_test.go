@@ -63,6 +63,87 @@ func TestConvertPOAMToHDF_FedRAMPFixture(t *testing.T) {
 	assert.Equal(t, hdf.Sha256, *amendments.Integrity.Algorithm)
 }
 
+// poamDocWithDeadline builds a minimal valid POA&M whose single item resolves a
+// deadline from its related risk. Callers mutate the returned map before
+// marshaling to exercise specific paths.
+func poamDocWithDeadline() map[string]interface{} {
+	return map[string]interface{}{
+		"plan-of-action-and-milestones": map[string]interface{}{
+			"uuid": "123",
+			"metadata": map[string]interface{}{
+				"title": "POAM", "version": "1", "oscal-version": "1.1.2",
+				"last-modified": "2024-01-01T00:00:00Z",
+			},
+			"risks": []interface{}{map[string]interface{}{
+				"uuid": "r-1", "title": "R", "status": "open",
+				"deadline": "2025-01-01T00:00:00Z",
+			}},
+			"poam-items": []interface{}{map[string]interface{}{
+				"uuid": "item-1", "title": "Finding",
+				"related-risks": []interface{}{map[string]interface{}{"risk-uuid": "r-1"}},
+			}},
+		},
+	}
+}
+
+func TestConvertPOAMToHDF_FailsLoudWithoutDeadline(t *testing.T) {
+	doc := poamDocWithDeadline()
+	// Remove the deadline so no time commitment is derivable.
+	poam := doc["plan-of-action-and-milestones"].(map[string]interface{})
+	poam["risks"].([]interface{})[0].(map[string]interface{})["deadline"] = ""
+	input, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	_, err = ConvertPOAMToHDF(input, "1.0.0")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "requires a time commitment")
+}
+
+func TestConvertPOAMToHDF_FailsLoudInvalidLastModified(t *testing.T) {
+	doc := poamDocWithDeadline()
+	poam := doc["plan-of-action-and-milestones"].(map[string]interface{})
+	poam["metadata"].(map[string]interface{})["last-modified"] = "not-a-date"
+	input, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	_, err = ConvertPOAMToHDF(input, "1.0.0")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "metadata.last-modified")
+}
+
+func TestConvertPOAMToHDF_ExtractsRealDates(t *testing.T) {
+	doc := poamDocWithDeadline()
+	poam := doc["plan-of-action-and-milestones"].(map[string]interface{})
+	risk := poam["risks"].([]interface{})[0].(map[string]interface{})
+	risk["remediations"] = []interface{}{
+		map[string]interface{}{
+			"lifecycle": "planned", "title": "Fix", "description": "Apply patch",
+			"tasks": []interface{}{map[string]interface{}{
+				"uuid": "t1", "type": "milestone", "title": "Patch step",
+				"timing": map[string]interface{}{
+					"within-date-range": map[string]interface{}{
+						"start": "2024-06-01T00:00:00Z", "end": "2024-06-15T00:00:00Z",
+					},
+				},
+			}},
+		},
+		map[string]interface{}{"lifecycle": "completed", "title": "Done", "description": "Already fixed"},
+	}
+	input, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	amendments, err := ConvertPOAMToHDF(input, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, amendments.Overrides, 1)
+
+	override := amendments.Overrides[0]
+	assert.Equal(t, "2025-01-01T00:00:00Z", override.ExpiresAt.UTC().Format("2006-01-02T15:04:05Z"))
+	assert.Equal(t, "2024-01-01T00:00:00Z", override.AppliedAt.UTC().Format("2006-01-02T15:04:05Z"))
+	require.Len(t, override.Milestones, 1, "only the planned remediation's task becomes a milestone")
+	assert.Equal(t, "Patch step", override.Milestones[0].Description)
+	assert.Equal(t, "2024-06-15T00:00:00Z", override.Milestones[0].EstimatedCompletion.UTC().Format("2006-01-02T15:04:05Z"))
+}
+
 func TestConvertPOAMToHDF_AmendmentsNameFromMetadata(t *testing.T) {
 	input, err := os.ReadFile("../fixtures/input/poam-fedramp.json")
 	require.NoError(t, err)

@@ -1,6 +1,7 @@
 package oscal
 
 import (
+	"fmt"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -17,17 +18,15 @@ func ConvertPOAMToHDF(input []byte, converterVersion string) (*hdf.HDFAmendments
 		return nil, err
 	}
 
-	// Capture the clock once at the public entry point so every default date
-	// derived during this conversion is anchored to the same instant. Tests
-	// inject a fixed clock by calling poamToHDFAmendments directly.
-	return poamToHDFAmendments(doc.PlanOfActionAndMilestones, input, converterVersion, time.Now())
+	return poamToHDFAmendments(doc.PlanOfActionAndMilestones, input, converterVersion)
 }
 
 // poamToHDFAmendments converts a parsed PlanOfActionAndMilestones to HDFAmendments.
-// The now argument anchors any default dates derived during conversion (missing
-// metadata.last-modified, missing per-item deadlines, defaulted milestones), so
-// tests can produce deterministic output.
-func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, converterVersion string, now time.Time) (*hdf.HDFAmendments, error) {
+// Every emitted date is extracted from the OSCAL source — the override deadline
+// from risk.deadline, milestone ETAs from remediation task timing, appliedAt
+// from metadata.last-modified. Conversion FAILS LOUD rather than fabricating a
+// missing deadline: a POA&M with no time commitment defeats its purpose.
+func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, converterVersion string) (*hdf.HDFAmendments, error) {
 	integrity := shared.InputIntegrity(rawInput)
 	meta := ExtractMetadata(poam.Metadata)
 
@@ -38,7 +37,10 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 	limitedPOAMItems := shared.LimitSliceWithWarning(poam.POAMItems, 0, "POA&M item")
 	overrides := make([]hdf.StandaloneOverride, 0, len(limitedPOAMItems))
 	for i := range limitedPOAMItems {
-		override := poamItemToOverride(&limitedPOAMItems[i], riskMap, poam, now)
+		override, err := poamItemToOverride(&limitedPOAMItems[i], riskMap, poam)
+		if err != nil {
+			return nil, err
+		}
 		overrides = append(overrides, override)
 	}
 
@@ -77,22 +79,34 @@ func buildRiskMap(risks []Risk) map[string]*Risk {
 	return m
 }
 
-// poamItemToOverride converts a single POAMItem to a StandaloneOverride.
-// now anchors any defaulted dates (appliedAt, expiresAt, milestone ETAs).
-func poamItemToOverride(item *POAMItem, riskMap map[string]*Risk, poam *PlanOfActionAndMilestones, now time.Time) hdf.StandaloneOverride {
+// poamItemToOverride converts a single POAMItem to a StandaloneOverride. Every
+// date is sourced from the OSCAL document; a missing appliedAt or deadline is a
+// hard error (fail loud) rather than a fabricated wall-clock value.
+func poamItemToOverride(item *POAMItem, riskMap map[string]*Risk, poam *PlanOfActionAndMilestones) (hdf.StandaloneOverride, error) {
+	requirementID := extractRequirementIDFromPOAMItem(item, riskMap)
+
+	appliedAt, err := poamItemAppliedAt(poam)
+	if err != nil {
+		return hdf.StandaloneOverride{}, fmt.Errorf("poam-item %q: %w", requirementID, err)
+	}
+	expiresAt, err := poamItemExpiresAt(item, riskMap)
+	if err != nil {
+		return hdf.StandaloneOverride{}, fmt.Errorf("poam-item %q: %w", requirementID, err)
+	}
+
 	status := poamItemStatus(item, riskMap)
 	override := hdf.StandaloneOverride{
 		Type:          hdf.Poam,
-		RequirementID: extractRequirementIDFromPOAMItem(item, riskMap),
+		RequirementID: requirementID,
 		Reason:        poamItemReason(item),
 		Status:        &status,
 		AppliedBy:     poamItemAppliedBy(poam),
-		AppliedAt:     poamItemAppliedAt(poam, now),
-		ExpiresAt:     poamItemExpiresAt(item, riskMap, now),
-		Milestones:    extractMilestones(item, riskMap, now),
+		AppliedAt:     appliedAt,
+		ExpiresAt:     expiresAt,
+		Milestones:    extractMilestones(item, riskMap),
 	}
 
-	return override
+	return override, nil
 }
 
 // extractRequirementIDFromPOAMItem extracts a requirement ID from a poam-item.
@@ -181,44 +195,39 @@ func poamItemAppliedBy(poam *PlanOfActionAndMilestones) hdf.Identity {
 	}
 }
 
-// poamItemAppliedAt returns the timestamp for the POA&M item, using the
-// document's last-modified date. Falls back to now when the metadata is absent.
-func poamItemAppliedAt(poam *PlanOfActionAndMilestones, now time.Time) time.Time {
-	if poam.Metadata.LastModified != "" {
-		if t := hdfutil.ParseTimestamp(poam.Metadata.LastModified); !t.IsZero() {
-			return t
-		}
+// poamItemAppliedAt returns the appliedAt timestamp from the document's
+// metadata.last-modified. OSCAL requires last-modified, so its absence is a
+// malformed document — fail loud rather than stamp a wall-clock time.
+func poamItemAppliedAt(poam *PlanOfActionAndMilestones) (time.Time, error) {
+	if t := hdfutil.ParseTimestamp(poam.Metadata.LastModified); !t.IsZero() {
+		return t, nil
 	}
-	return now
+	return time.Time{}, fmt.Errorf("no usable metadata.last-modified for appliedAt")
 }
 
-// poamItemExpiresAt determines the expiration date for a POA&M override.
-// It looks at risk deadlines and remediation task timings; falls back to
-// one year from now when none are available.
-func poamItemExpiresAt(item *POAMItem, riskMap map[string]*Risk, now time.Time) time.Time {
-	// Check related risks for deadline (stored in JSON but not in our Risk struct)
-	// Fall back to remediation task end dates
+// poamItemExpiresAt returns the override deadline from the related risk's
+// `deadline`. This is the enforceable time commitment of the POA&M; if no
+// related risk carries a usable deadline the conversion fails loud rather than
+// invent one (a POA&M without a deadline is meaningless).
+func poamItemExpiresAt(item *POAMItem, riskMap map[string]*Risk) (time.Time, error) {
 	for _, rr := range item.RelatedRisks {
-		if risk, ok := riskMap[rr.RiskUUID]; ok {
-			// Check remediation tasks for milestone end dates
-			for _, rem := range risk.Remediations {
-				if rem.Lifecycle == "planned" {
-					// Use the remediation as a signal; in real OSCAL the deadline
-					// is at the risk level, but our struct doesn't capture it.
-					// Return a reasonable default.
-					_ = rem
-				}
-			}
+		risk, ok := riskMap[rr.RiskUUID]
+		if !ok {
+			continue
+		}
+		if t := hdfutil.ParseTimestamp(risk.Deadline); !t.IsZero() {
+			return t, nil
 		}
 	}
-
-	// Default: 1 year from now (POA&Ms should be reviewed periodically)
-	return now.AddDate(1, 0, 0)
+	return time.Time{}, fmt.Errorf("no related risk carries a usable deadline; a POA&M requires a time commitment")
 }
 
-// extractMilestones extracts milestone information from related risks'
-// remediation tasks. now anchors any defaulted milestone ETAs.
-func extractMilestones(item *POAMItem, riskMap map[string]*Risk, now time.Time) []hdf.Milestone {
+// extractMilestones builds milestones from the planned remediation tasks of the
+// item's related risks. Each task's within-date-range end is its estimated
+// completion. Tasks without a usable end date are skipped (the milestones array
+// is optional) — never fabricated — since Milestone.estimatedCompletion is
+// required and must reflect real source data.
+func extractMilestones(item *POAMItem, riskMap map[string]*Risk) []hdf.Milestone {
 	var milestones []hdf.Milestone
 
 	for _, rr := range item.RelatedRisks {
@@ -231,20 +240,34 @@ func extractMilestones(item *POAMItem, riskMap map[string]*Risk, now time.Time) 
 			if rem.Lifecycle != "planned" {
 				continue
 			}
-
-			// In OSCAL, remediation tasks contain milestones as nested Task objects.
-			// We don't have direct access to tasks on Remediation in our types,
-			// so we create a milestone from the remediation itself.
-			milestone := hdf.Milestone{
-				Description:         rem.Title + ": " + rem.Description,
-				EstimatedCompletion: now.AddDate(0, 3, 0), // default 3 months
-				Status:              hdf.Pending,
+			for i := range rem.Tasks {
+				task := &rem.Tasks[i]
+				if task.Timing == nil || task.Timing.WithinDateRange == nil {
+					continue
+				}
+				eta := hdfutil.ParseTimestamp(task.Timing.WithinDateRange.End)
+				if eta.IsZero() {
+					continue
+				}
+				milestones = append(milestones, hdf.Milestone{
+					Description:         milestoneDescription(task),
+					EstimatedCompletion: eta,
+					Status:              hdf.Pending,
+				})
 			}
-			milestones = append(milestones, milestone)
 		}
 	}
 
 	return milestones
+}
+
+// milestoneDescription renders a milestone label from an OSCAL task: its title,
+// with the description appended when present.
+func milestoneDescription(task *Task) string {
+	if task.Description != "" {
+		return task.Title + ": " + task.Description
+	}
+	return task.Title
 }
 
 // extractAppliedBy builds an Identity from metadata responsible-parties.

@@ -1856,7 +1856,32 @@ describe('convertOscalPoamToHdf edge cases', () => {
     ).rejects.toThrow('not a plan-of-action-and-milestones');
   });
 
-  it('should handle POAM item with no related-risks', async () => {
+  // A POA&M override requires a real deadline (risk.deadline) — the converter
+  // fails loud without one. This wraps a single poam-item with a deadline-bearing
+  // related risk so edge-case tests can exercise non-date behavior. Extra
+  // metadata / top-level keys and extra risk fields can be merged in.
+  function poamDocWithDeadline(
+    poamItem: Record<string, unknown>,
+    opts: { metadata?: Record<string, unknown>; top?: Record<string, unknown>; risk?: Record<string, unknown> } = {},
+  ): string {
+    return JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+          ...opts.metadata,
+        },
+        risks: [{ uuid: 'r-deadline', title: 'R', status: 'open', deadline: '2025-01-01T00:00:00Z', ...opts.risk }],
+        'poam-items': [{ 'related-risks': [{ 'risk-uuid': 'r-deadline' }], ...poamItem }],
+        ...opts.top,
+      },
+    });
+  }
+
+  it('should fail loud on a POAM item with no derivable deadline', async () => {
     const doc = JSON.stringify({
       'plan-of-action-and-milestones': {
         uuid: '123',
@@ -1865,38 +1890,19 @@ describe('convertOscalPoamToHdf edge cases', () => {
           version: '1',
           'oscal-version': '1.1.2',
           'last-modified': '2024-01-01T00:00:00Z',
-          'responsible-parties': [{ 'role-id': 'prepared-by', 'party-uuids': ['user-1'] }],
         },
-        'poam-items': [{
-          uuid: 'item-1',
-          title: 'Finding 1',
-          description: 'A finding',
-        }],
+        'poam-items': [{ uuid: 'item-1', title: 'Finding 1', description: 'A finding' }],
       },
     });
-    const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HDFAmendments;
-    expect(amendments.overrides).toHaveLength(1);
-    expect(amendments.overrides[0]!.status).toBe('failed');
+    await expect(convertOscalPoamToHdf(doc)).rejects.toThrow('requires a time commitment');
   });
 
   it('should extract requirement ID from POAM-ID prop', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-        },
-        'poam-items': [{
-          uuid: 'item-1',
-          title: 'Finding 1',
-          description: 'Desc',
-          props: [{ name: 'POAM-ID', value: 'V-12345' }],
-        }],
-      },
+    const doc = poamDocWithDeadline({
+      uuid: 'item-1',
+      title: 'Finding 1',
+      description: 'Desc',
+      props: [{ name: 'POAM-ID', value: 'V-12345' }],
     });
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
@@ -1904,171 +1910,84 @@ describe('convertOscalPoamToHdf edge cases', () => {
   });
 
   it('should fall back to title for requirement ID', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-        },
-        'poam-items': [{
-          uuid: 'item-1',
-          title: 'AC-1 Finding',
-        }],
-      },
-    });
+    const doc = poamDocWithDeadline({ uuid: 'item-1', title: 'AC-1 Finding' });
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.requirementId).toBe('AC-1 Finding');
   });
 
   it('should fall back to unknown for requirement ID', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-        },
-        'poam-items': [{ uuid: 'item-1' }],
-      },
-    });
+    const doc = poamDocWithDeadline({ uuid: 'item-1' });
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.requirementId).toBe('unknown');
   });
 
   it('should extract control ID from risk impacted-control-id', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-        },
-        risks: [{
-          uuid: 'risk-1',
-          title: 'Risk',
-          status: 'open',
-          props: [{ name: 'impacted-control-id', value: 'ac-2' }],
-        }],
-        'poam-items': [{
-          uuid: 'item-1',
-          title: 'Finding',
-          'related-risks': [{ 'risk-uuid': 'risk-1' }],
-        }],
-      },
-    });
+    const doc = poamDocWithDeadline(
+      { uuid: 'item-1', title: 'Finding' },
+      { risk: { props: [{ name: 'impacted-control-id', value: 'ac-2' }] } },
+    );
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.requirementId).toBe('AC-2');
   });
 
   it('should map risk status to override status', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-        },
-        risks: [{
-          uuid: 'risk-1',
-          title: 'Risk',
-          status: 'closed',
-        }],
-        'poam-items': [{
-          uuid: 'item-1',
-          title: 'Finding',
-          'related-risks': [{ 'risk-uuid': 'risk-1' }],
-        }],
-      },
-    });
+    const doc = poamDocWithDeadline({ uuid: 'item-1', title: 'Finding' }, { risk: { status: 'closed' } });
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.status).toBe('passed');
   });
 
-  it('should extract milestones from risk remediations', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-        },
-        risks: [{
-          uuid: 'risk-1',
-          title: 'Risk',
-          status: 'open',
+  it('should extract milestones from planned remediation tasks', async () => {
+    const doc = poamDocWithDeadline(
+      { uuid: 'item-1', title: 'Finding' },
+      {
+        risk: {
           remediations: [
-            { lifecycle: 'planned', title: 'Fix', description: 'Apply patch' },
+            {
+              lifecycle: 'planned',
+              title: 'Fix',
+              description: 'Apply patch',
+              tasks: [
+                {
+                  uuid: 't1',
+                  type: 'milestone',
+                  title: 'Patch step',
+                  timing: { 'within-date-range': { start: '2024-06-01T00:00:00Z', end: '2024-06-15T00:00:00Z' } },
+                },
+              ],
+            },
             { lifecycle: 'completed', title: 'Done', description: 'Already fixed' },
           ],
-        }],
-        'poam-items': [{
-          uuid: 'item-1',
-          title: 'Finding',
-          'related-risks': [{ 'risk-uuid': 'risk-1' }],
-        }],
+        },
       },
-    });
+    );
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     const milestones = amendments.overrides[0]!.milestones ?? [];
-    // Only planned lifecycle should be included
+    // Only the planned remediation's task, dated from its within-date-range end.
     expect(milestones).toHaveLength(1);
-    expect(milestones[0]!.description).toContain('Fix');
-    expect(milestones[0]!.description).toContain('Apply patch');
+    expect(milestones[0]!.description).toBe('Patch step');
+    expect(milestones[0]!.estimatedCompletion).toBe('2024-06-15T00:00:00Z');
   });
 
   it('should extract appliedBy from prepared-by responsible-party', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-          'responsible-parties': [
-            { 'role-id': 'prepared-by', 'party-uuids': ['user-abc'] },
-          ],
-        },
-        'poam-items': [{ uuid: 'item-1', title: 'F' }],
-      },
-    });
+    const doc = poamDocWithDeadline(
+      { uuid: 'item-1', title: 'F' },
+      { metadata: { 'responsible-parties': [{ 'role-id': 'prepared-by', 'party-uuids': ['user-abc'] }] } },
+    );
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.appliedBy?.identifier).toBe('user-abc');
   });
 
   it('should fall back to first responsible party', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-          'responsible-parties': [
-            { 'role-id': 'other-role', 'party-uuids': ['user-xyz'] },
-          ],
-        },
-        'poam-items': [{ uuid: 'item-1', title: 'F' }],
-      },
-    });
+    const doc = poamDocWithDeadline(
+      { uuid: 'item-1', title: 'F' },
+      { metadata: { 'responsible-parties': [{ 'role-id': 'other-role', 'party-uuids': ['user-xyz'] }] } },
+    );
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     // poamItemAppliedBy uses prepared-by first, then first party
@@ -2076,119 +1995,40 @@ describe('convertOscalPoamToHdf edge cases', () => {
   });
 
   it('should fall back to system appliedBy when no responsible-parties', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-        },
-        'poam-items': [{ uuid: 'item-1', title: 'F' }],
-      },
-    });
+    const doc = poamDocWithDeadline({ uuid: 'item-1', title: 'F' });
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.appliedBy?.identifier).toBe('oscal-poam-converter');
   });
 
   it('should use item description as reason, falling back to title', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-        },
-        'poam-items': [{ uuid: 'item-1', title: 'My Title' }],
-      },
-    });
+    const doc = poamDocWithDeadline({ uuid: 'item-1', title: 'My Title' });
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.reason).toBe('My Title');
   });
 
   it('should fall back to default reason', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-        },
-        'poam-items': [{ uuid: 'item-1' }],
-      },
-    });
+    const doc = poamDocWithDeadline({ uuid: 'item-1' });
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.reason).toBe('POA&M item');
   });
 
-  it('should handle poamItemAppliedAt with invalid date', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': 'not-a-date',
-        },
-        'poam-items': [{ uuid: 'item-1', title: 'F' }],
-      },
-    });
-    const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HDFAmendments;
-    // Should still produce output (falls back to new Date())
-    expect(amendments.overrides[0]!.appliedAt).toBeTruthy();
+  it('should fail loud on an invalid metadata.last-modified', async () => {
+    const doc = poamDocWithDeadline({ uuid: 'item-1', title: 'F' }, { metadata: { 'last-modified': 'not-a-date' } });
+    await expect(convertOscalPoamToHdf(doc)).rejects.toThrow('metadata.last-modified');
   });
 
   it('should extract systemRef from import-ssp', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-        },
-        'import-ssp': { href: 'ssp-ref.json' },
-        'poam-items': [{ uuid: 'item-1', title: 'F' }],
-      },
-    });
+    const doc = poamDocWithDeadline({ uuid: 'item-1', title: 'F' }, { top: { 'import-ssp': { href: 'ssp-ref.json' } } });
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.systemRef).toBe('ssp-ref.json');
   });
 
   it('should handle risk with unrecognized status', async () => {
-    const doc = JSON.stringify({
-      'plan-of-action-and-milestones': {
-        uuid: '123',
-        metadata: {
-          title: 'POAM',
-          version: '1',
-          'oscal-version': '1.1.2',
-          'last-modified': '2024-01-01T00:00:00Z',
-        },
-        risks: [{
-          uuid: 'risk-1',
-          title: 'Risk',
-          status: 'investigating',
-        }],
-        'poam-items': [{
-          uuid: 'item-1',
-          title: 'Finding',
-          'related-risks': [{ 'risk-uuid': 'risk-1' }],
-        }],
-      },
-    });
+    const doc = poamDocWithDeadline({ uuid: 'item-1', title: 'Finding' }, { risk: { status: 'investigating' } });
     const output = await convertOscalPoamToHdf(doc);
     const amendments = JSON.parse(output) as HDFAmendments;
     // oscalStatusToHdf returns undefined for 'investigating', so falls through to default 'failed'

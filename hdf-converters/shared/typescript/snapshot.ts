@@ -72,10 +72,18 @@ function toDocument(result: unknown): unknown {
  * mis-named goldens and empty golden sets are hard failures — matching the Go
  * harness.
  */
+/**
+ * Supplies input content for a fixture whose source lives outside fixtures/input/
+ * (e.g. a shared @mitre/hdf-fixtures fixture); returns undefined to fall back to
+ * fixtures/input/<inputName>. Keeps the harness decoupled from the fixtures package.
+ */
+export type SnapshotInputResolver = (inputName: string) => string | undefined;
+
 export function runSnapshotTests(
   converterName: string,
   convertFn: SnapshotConvertFn,
   maskStartTime: string[] = [],
+  resolveInput?: SnapshotInputResolver,
 ): void {
   const expectedDir = join(convertersDir(), converterName, 'fixtures', 'expected');
   const inputDir = join(convertersDir(), converterName, 'fixtures', 'input');
@@ -96,7 +104,7 @@ export function runSnapshotTests(
       it(inputName, async () => {
         const mask = new Set(ALWAYS_MASK);
         if (synthetic.has('*') || synthetic.has(inputName)) mask.add('startTime');
-        const input = readFileSync(join(inputDir, inputName), 'utf-8');
+        const input = resolveInput?.(inputName) ?? readFileSync(join(inputDir, inputName), 'utf-8');
         const actual = normalizeVolatileFields(toDocument(await convertFn(input)), mask);
         const expectedDoc = normalizeVolatileFields(
           JSON.parse(readFileSync(join(expectedDir, golden), 'utf-8')),

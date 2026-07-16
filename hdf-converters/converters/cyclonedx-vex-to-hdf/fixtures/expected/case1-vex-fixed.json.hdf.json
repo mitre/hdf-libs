@@ -1,12 +1,16 @@
 {
+  "appliedBy": {
+    "identifier": "cyclonedx-vex-import",
+    "type": "system"
+  },
   "description": "Imported CycloneDX VEX",
   "generator": {
     "name": "cyclonedx-vex-to-hdf",
-    "version": "dev"
+    "version": "1.0.0"
   },
   "integrity": {
     "algorithm": "sha256",
-    "checksum": "e237c1ad4961d811912e79c676bdd66248ec686b036a5271b4828cb5ac922595"
+    "checksum": "9e59f6a2eba1196b1bb8a13a05e013833fc76690ebacc0e167a6e0a85fec7d94"
   },
   "name": "CycloneDX VEX statements",
   "overrides": [
@@ -14,8 +18,8 @@
       "affectedPackages": [
         {
           "ecosystem": "generic",
-          "name": "ABC",
-          "version": "4.2"
+          "name": "DEF",
+          "version": "1.1"
         }
       ],
       "appliedAt": "2022-03-03T00:00:00Z",
@@ -31,11 +35,17 @@
         }
       ],
       "expiresAt": "2023-03-03T00:00:00Z",
-      "justification": "component_not_present",
-      "reason": "This version of Product ABC is not affected by the vulnerability. Class with vulnerable code was removed before shipping.",
+      "milestones": [
+        {
+          "description": "vendor reports fix; apply and re-scan to verify",
+          "estimatedCompletion": "2023-03-03T00:00:00Z",
+          "status": "pending"
+        }
+      ],
+      "reason": "This version of Product DEF has been fixed.",
       "requirementId": "CVE-2021-44228",
-      "status": "passed",
-      "type": "falsePositive"
+      "status": "failed",
+      "type": "poam"
     }
   ]
 }

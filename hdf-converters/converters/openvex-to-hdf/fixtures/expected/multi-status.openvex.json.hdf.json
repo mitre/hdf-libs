@@ -7,7 +7,7 @@
   "description": "Imported VEX statements from https://example.com/vex/multi-status-fixture",
   "generator": {
     "name": "openvex-to-hdf",
-    "version": "dev"
+    "version": "1.0.0"
   },
   "integrity": {
     "algorithm": "sha256",

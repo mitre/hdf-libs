@@ -7,7 +7,7 @@
   "description": "Imported VEX statements from https://openvex.dev/docs/public/vex-2e67563e128250cbcb3e98930df948dd053e43271d70...",
   "generator": {
     "name": "openvex-to-hdf",
-    "version": "dev"
+    "version": "1.0.0"
   },
   "integrity": {
     "algorithm": "sha256",
@@ -24,7 +24,7 @@
           "version": "2.6.0-M3"
         }
       ],
-      "appliedAt": "2023-01-16T19:07:16.853479631-06:00",
+      "appliedAt": "2023-01-17T01:07:16.853Z",
       "appliedBy": {
         "description": "Project Release Bot",
         "identifier": "Spring Builds \u003cspring-builds@users.noreply.github.com\u003e",
@@ -37,7 +37,7 @@
           "type": "url"
         }
       ],
-      "expiresAt": "2024-01-16T19:07:16.853479631-06:00",
+      "expiresAt": "2024-01-17T01:07:16.853Z",
       "justification": "vulnerable_code_not_in_execute_path",
       "reason": "Spring Boot users are only affected by this vulnerability if they have switched the default logging system to Log4J2.",
       "requirementId": "CVE-2021-44228",

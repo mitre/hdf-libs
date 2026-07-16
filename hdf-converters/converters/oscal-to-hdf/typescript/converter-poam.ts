@@ -103,14 +103,15 @@ function poamItemToOverride(
   riskMap: Map<string, IdentifiedRisk>,
   poam: PlanOfActionAndMilestonesPOAM,
 ): StandaloneOverride {
+  const requirementId = extractRequirementIdFromPOAMItem(item, riskMap);
   return {
     type: OverrideType.Poam,
-    requirementId: extractRequirementIdFromPOAMItem(item, riskMap),
+    requirementId,
     reason: poamItemReason(item),
     status: poamItemStatus(item, riskMap),
     appliedBy: poamItemAppliedBy(poam),
-    appliedAt: poamItemAppliedAt(poam),
-    expiresAt: poamItemExpiresAt(),
+    appliedAt: poamItemAppliedAt(poam, requirementId),
+    expiresAt: poamItemExpiresAt(item, riskMap, requirementId),
     milestones: extractMilestones(item, riskMap) as any,
   };
 }
@@ -199,25 +200,40 @@ function poamItemAppliedBy(
   };
 }
 
-function poamItemAppliedAt(poam: PlanOfActionAndMilestonesPOAM): Date {
-  if (poam.metadata['last-modified']) {
-    // Generator types this as Date, but it is a string at runtime (parsed
-    // without a Date reviver); coerce so parseTimestamp applies UTC handling.
-    const t = parseTimestamp(String(poam.metadata['last-modified']));
-    if (t) {
-      return t;
-    }
+// Returns appliedAt from the document's metadata.last-modified. OSCAL requires
+// last-modified, so its absence is a malformed document — fail loud rather than
+// stamp a wall-clock time. (Types say Date, but it is a string at runtime.)
+function poamItemAppliedAt(poam: PlanOfActionAndMilestonesPOAM, requirementId: string): Date {
+  const t = poam.metadata['last-modified'] && parseTimestamp(String(poam.metadata['last-modified']));
+  if (t) return t;
+  throw new Error(`poam-item "${requirementId}": no usable metadata.last-modified for appliedAt`);
+}
+
+// Returns the override deadline from the related risk's `deadline` — the
+// enforceable time commitment of the POA&M. Fails loud when no related risk
+// carries a usable deadline rather than inventing one.
+function poamItemExpiresAt(
+  item: POAMItem,
+  riskMap: Map<string, IdentifiedRisk>,
+  requirementId: string,
+): Date {
+  for (const rr of item['related-risks'] ?? []) {
+    const riskUuid = rr['risk-uuid'];
+    if (!riskUuid) continue;
+    const risk = riskMap.get(riskUuid);
+    if (!risk?.deadline) continue;
+    const t = parseTimestamp(String(risk.deadline));
+    if (t) return t;
   }
-  return new Date();
+  throw new Error(
+    `poam-item "${requirementId}": no related risk carries a usable deadline; a POA&M requires a time commitment`,
+  );
 }
 
-function poamItemExpiresAt(): Date {
-  // Default: 1 year from now
-  const d = new Date();
-  d.setFullYear(d.getFullYear() + 1);
-  return d;
-}
-
+// Builds milestones from the planned remediation tasks of the item's related
+// risks. Each task's within-date-range end is its estimated completion; tasks
+// without a usable end date are skipped (the array is optional) — never
+// fabricated — since estimatedCompletion is required and must reflect real data.
 function extractMilestones(
   item: POAMItem,
   riskMap: Map<string, IdentifiedRisk>,
@@ -233,14 +249,17 @@ function extractMilestones(
     for (const rem of risk.remediations ?? []) {
       if (rem.lifecycle !== 'planned') continue;
 
-      const estimatedCompletion = new Date();
-      estimatedCompletion.setMonth(estimatedCompletion.getMonth() + 3);
+      for (const task of rem.tasks ?? []) {
+        const end = task.timing?.['within-date-range']?.end;
+        const estimatedCompletion = end && parseTimestamp(String(end));
+        if (!estimatedCompletion) continue;
 
-      milestones.push({
-        description: rem.title + ': ' + rem.description,
-        estimatedCompletion,
-        status: 'pending' as any,
-      });
+        milestones.push({
+          description: task.description ? `${task.title}: ${task.description}` : task.title,
+          estimatedCompletion,
+          status: 'pending' as any,
+        });
+      }
     }
   }
 

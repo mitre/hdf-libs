@@ -7,7 +7,7 @@
   "description": "Imported VEX advisory 2022-EVD-UC-01-NA-001",
   "generator": {
     "name": "csaf-vex-to-hdf",
-    "version": "dev"
+    "version": "1.0.0"
   },
   "integrity": {
     "algorithm": "sha256",

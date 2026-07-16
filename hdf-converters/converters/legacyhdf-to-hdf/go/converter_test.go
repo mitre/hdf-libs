@@ -73,6 +73,38 @@ func sharedOrLocalInputPath(t *testing.T, name string) string {
 	return tmpFile
 }
 
+// sharedLegacyInput supplies input bytes for the golden fixtures whose source
+// lives in @mitre/hdf-fixtures; local fixtures (minimal.json) fall through to
+// fixtures/input/ via the (nil,false) return.
+func sharedLegacyInput(inputName string) ([]byte, bool) {
+	switch inputName {
+	case "ubi9-scan.json":
+		return fixtures.Inspec.Ubi9Scan, true
+	case "container-scan.json":
+		return fixtures.Inspec.ContainerScan, true
+	case "three-layer-overlay.json":
+		return fixtures.Inspec.ThreeLayerOverlay, true
+	case "wrapper.json":
+		return fixtures.Inspec.Wrapper, true
+	default:
+		return nil, false
+	}
+}
+
+// TestSnapshots asserts the converter reproduces every fixtures/expected/
+// golden under the shared TS↔Go snapshot harness. startTime is input-derived
+// (v1 carries start_time) and deterministic, so nothing is masked beyond the
+// always-masked document timestamp.
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTestsWithInput(t, "legacyhdf-to-hdf", func(input []byte) (interface{}, error) {
+		var v1 HDFV1Results
+		if err := json.Unmarshal(input, &v1); err != nil {
+			return nil, err
+		}
+		return ConvertV1ToV2(&v1), nil
+	}, sharedLegacyInput)
+}
+
 func TestConvertV1ToV2_Minimal(t *testing.T) {
 	inputPath := sharedOrLocalInputPath(t, "minimal.json")
 

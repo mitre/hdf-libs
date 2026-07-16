@@ -520,7 +520,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
           copyright: 'Copyright 2024',
           copyright_email: 'test@example.com',
           supports: [{ platform: 'ubuntu' }],
-          attributes: [{ name: 'attr1', options: {} }],
+          attributes: [{ name: 'attr1', options: { type: 'String', value: 'v1' } }],
           status: 'loaded',
           sha256: 'abc123',
           parent_profile: 'parent-profile',
@@ -544,7 +544,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(baseline.copyright).toBe('Copyright 2024');
       expect(baseline.copyrightEmail).toBe('test@example.com');
       expect(baseline.supports).toEqual([{ platform: 'ubuntu' }]);
-      expect(baseline.inputs).toEqual([{ name: 'attr1', options: {} }]);
+      expect(baseline.inputs).toEqual([{ name: 'attr1', type: 'String', value: 'v1' }]);
       expect(baseline.status).toBe('loaded');
       expect(baseline.integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
       expect(baseline.parentBaseline).toBe('parent-profile');
@@ -1374,17 +1374,13 @@ describe('HDF v1.0 to v2.0 Converter', () => {
   });
 });
 
-// Pins Go↔TS parity for the three-layer-overlay fixture (bead hdf-libs-rf06):
-// the committed snapshot is generated from the Go converter, so asserting the
-// TS output equals it byte-for-byte locks both languages to identical output.
-describe('three-layer-overlay parity snapshot', () => {
-  it('TS output equals the committed (Go-generated) snapshot and is schema-valid', () => {
+// Go↔TS byte-for-byte parity on the overlay-flattening output is now owned by
+// snapshot.test.ts (the shared harness). This test retains the orthogonal
+// schema-validation coverage the harness does not provide: the flattened
+// overlay result must validate against hdf-results.
+describe('three-layer-overlay overlay output', () => {
+  it('is schema-valid after overlay flattening', () => {
     const v1 = JSON.parse(readFileSync(inputFixturePath('three-layer-overlay.json'), 'utf-8')) as HDFV1Results;
-    const v2 = convertV1ToV2(v1);
-    expectValidResults(v2);
-    const expected = JSON.parse(
-      readFileSync(join(FIXTURES_DIR, 'expected', 'three-layer-overlay.json'), 'utf-8'),
-    );
-    expect(v2).toEqual(expected);
+    expectValidResults(convertV1ToV2(v1));
   });
 });

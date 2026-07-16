@@ -76,7 +76,7 @@ interface OpenVexDocument {
 
 export async function convertOpenVexToHdf(
   input: string,
-  converterVersion: string,
+  converterVersion = '1.0.0',
 ): Promise<HDFAmendments> {
   validateInputSize(input, 'openvex-to-hdf');
   const doc = parseJSON<OpenVexDocument>(input);

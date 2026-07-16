@@ -326,7 +326,10 @@ func TestConvertHDFToOSCALPOAM_FieldCoverage(t *testing.T) {
 	assert.Equal(t, "0.3", prop(risk.Props, "impact-override"))
 	require.NotEmpty(t, risk.Remediations)
 	rem := risk.Remediations[0]
-	assert.Contains(t, prop(rem.Props, "estimated-completion"), "2099-06-30")
+	require.NotEmpty(t, rem.Tasks, "milestone should emit a remediation task")
+	require.NotNil(t, rem.Tasks[0].Timing)
+	require.NotNil(t, rem.Tasks[0].Timing.WithinDateRange)
+	assert.Contains(t, rem.Tasks[0].Timing.WithinDateRange.End, "2099-06-30")
 	assert.Equal(t, "pending", prop(rem.Props, "milestone-status"))
 }
 

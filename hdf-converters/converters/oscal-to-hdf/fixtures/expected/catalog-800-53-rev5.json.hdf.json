@@ -1,7 +1,7 @@
 {
   "generator": {
     "name": "oscal-catalog-to-hdf",
-    "version": "dev"
+    "version": "1.0.0"
   },
   "groups": [
     {
@@ -9325,7 +9325,6 @@
         ],
         "sort-id": "cm-08"
       },
-      "controlType": "operational",
       "title": "System Component Inventory"
     },
     {
