@@ -157,7 +157,7 @@ func CountHDFOverrides(t *testing.T, input []byte) int {
 	return len(doc.Overrides)
 }
 
-// cveShaped matches the CVE id form the VEX exporters key on (mirrors their
+// cveShaped matches the CVE-id shape the VEX exporters key on (mirrors their
 // ^CVE-\d{4}-\d{4,}$ pattern, defined here independently of any converter).
 var cveShaped = regexp.MustCompile(`^CVE-\d{4}-\d{4,}$`)
 

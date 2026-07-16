@@ -106,7 +106,7 @@ export function countHdfOverrides(input: string): number {
   return doc.overrides?.length ?? 0;
 }
 
-/** Matches the CVE id form the VEX exporters key on (^CVE-\d{4}-\d{4,}$). */
+/** Matches the CVE-id shape the VEX exporters key on (^CVE-\d{4}-\d{4,}$). */
 const CVE_SHAPED = /^CVE-\d{4}-\d{4,}$/;
 
 /**
