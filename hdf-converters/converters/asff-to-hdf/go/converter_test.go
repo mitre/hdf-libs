@@ -354,9 +354,12 @@ func TestConvertAsff_Trivy(t *testing.T) {
 // implementations from drifting apart. Version is "1.0.0" to match the TS
 // converter's default, so generator.version is asserted rather than normalized.
 func TestSnapshots(t *testing.T) {
+	// empty.json has zero findings, so the converter synthesizes a placeholder
+	// result whose startTime is the conversion time (non-deterministic) — mask it.
+	// Every real-finding fixture asserts startTime against its input-derived value.
 	shared.RunSnapshotTests(t, "asff-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertAsffToHDF(input, "1.0.0")
-	})
+	}, "empty.json")
 }
 
 // A producer we have no special case for — a detection engine that does not yet
