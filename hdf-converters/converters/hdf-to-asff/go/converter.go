@@ -37,6 +37,9 @@ const (
 	// AwsAccountId and Region with the caller's registered Security Hub product.
 	placeholderRegion    = "us-east-1"
 	placeholderAccountID = "000000000000"
+	// defaultPartition matches the arn:aws:... ProductArn; the push path overrides
+	// it (with Region) for aws-cn / aws-us-gov targets.
+	defaultPartition = "aws"
 
 	// ASFF field length caps (AWS Security Hub, string constraints).
 	maxTitle       = 256
@@ -209,7 +212,12 @@ func severity(req map[string]interface{}) map[string]interface{} {
 // components have no clean AWS resource-type analog, so a generic "Other"
 // resource carries the component identity in Details.Other.
 func resources(component map[string]interface{}, id string) []interface{} {
-	res := map[string]interface{}{"Type": "Other", "Id": id}
+	res := map[string]interface{}{
+		"Type":      "Other",
+		"Id":        id,
+		"Partition": defaultPartition,
+		"Region":    placeholderRegion,
+	}
 	if component != nil {
 		details := map[string]interface{}{}
 		exportmap.SetIf(details, "Name", exportmap.GetStr(component, "name"))

@@ -43,7 +43,7 @@ ASFF requires `ProductArn`, `AwsAccountId`, and a `Region` that HDF has no nativ
 
 - **`AwsAccountId`** is recovered from a `cloudAccount` component when present — the clean reverse of `asff-to-hdf`'s `AwsAccountId → cloudAccount component` mapping. Absent that, a placeholder (`000000000000`) is emitted.
 - **`ProductArn`** is a placeholder self-managed product ARN built from the recovered account.
-- **`Region`** is a placeholder (`us-east-1`); Security Hub ignores it on `BatchImportFindings` and auto-populates it on import.
+- **`Region`** is a placeholder (`us-east-1`), emitted in the `ProductArn` and on each `Resource` (alongside `Partition: aws`); Security Hub ignores it on `BatchImportFindings` and auto-populates it on import.
 
 These placeholders make the offline converter output structurally valid. When findings are pushed to a live Security Hub (a separate capability), the push path overrides `ProductArn`, `AwsAccountId`, and `Region` with the caller's registered product integration.
 

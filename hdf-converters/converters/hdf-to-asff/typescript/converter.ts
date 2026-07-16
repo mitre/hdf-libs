@@ -35,6 +35,9 @@ import {impactToSeverity, parseTimestamp} from '@mitre/hdf-utilities';
 const ASFF_SCHEMA_VERSION = '2018-10-08';
 const PLACEHOLDER_REGION = 'us-east-1';
 const PLACEHOLDER_ACCOUNT_ID = '000000000000';
+// Matches the arn:aws:... ProductArn; the push path overrides it (with Region)
+// for aws-cn / aws-us-gov targets.
+const DEFAULT_PARTITION = 'aws';
 const MAX_TITLE = 256;
 const MAX_DESCRIPTION = 1024;
 const EPOCH_SENTINEL = '1970-01-01T00:00:00Z';
@@ -167,7 +170,7 @@ function severity(req: Obj): Obj {
 }
 
 function resources(component: Obj | undefined, id: string): Obj[] {
-  const res: Obj = {Type: 'Other', Id: id};
+  const res: Obj = {Type: 'Other', Id: id, Partition: DEFAULT_PARTITION, Region: PLACEHOLDER_REGION};
   if (component) {
     const details: Obj = {};
     setIf(details, 'Name', getStr(component, 'name'));

@@ -82,7 +82,7 @@ func TestConvert_AccountRecoveredFromComponent(t *testing.T) {
 	// AwsAccountId rather than the placeholder.
 	f := convert(t, "cloudaccount.json")[0]
 	assert.NotEqual(t, placeholderAccountID, f["AwsAccountId"])
-	assert.Equal(t, f["AwsAccountId"], "123456789123")
+	assert.Equal(t, "123456789123", f["AwsAccountId"])
 }
 
 func TestConvert_AccountPlaceholderWhenNoCloudAccount(t *testing.T) {
