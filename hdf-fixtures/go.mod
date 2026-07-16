@@ -2,7 +2,7 @@ module github.com/mitre/hdf-libs/hdf-fixtures
 
 go 1.26.5
 
-require github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.4.0
+require github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.4.1
 
 require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect

@@ -2,11 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [3.4.1] - 2026-07-16
 
-### Added
+### Added — Converters
+
+- **`asff-to-hdf`: AWS Security Finding Format → HDF** (`hdf convert --from asff`). Converts ASFF findings — AWS Security Hub controls, plus Prowler (NDJSON) and Aqua Trivy product cases — into HDF, one baseline per product/standard, with auto-detect. Ships the **`aws-securityhub` fetcher** (`hdf fetch aws-securityhub`: paged `GetFindings`, `--check` credential verification, and a `--filter-json` `AwsSecurityFindingFilters` passthrough) and a substring-tolerant awsconfig NIST resolver for Security Hub's decorated `securityhub-<canonical>-<hash>` rule names. Dual Go + TS at byte-identical output parity. (#147, closes #143)
+- **`hdf-to-asff`: HDF Results → AWS Security Finding Format** (`hdf convert --to asff`). Reverse exporter emitting the `{"Findings":[…]}` envelope that Security Hub `BatchImportFindings` accepts, one finding per requirement, deliberately lossy and standard-compliant — HDF structure ASFF cannot hold is dropped, not encoded into `Types[]` — and round-trips back through `asff-to-hdf`. `AwsAccountId` is recovered from a `cloudAccount` component. Dual Go + TS at byte-identical output parity; see the ASFF interoperability guide. (#154)
+
+### Added — CLI
 
 - **`hdf system add-component` accepts multiple BOM files in one invocation.** Pass N positional BOM files (shell globs expand for free) to add them all in a single system-document write — e.g. a build pipeline adding its SBOM + AI-BOM together. `--component-name-prefix` numbers unnamed subjects continuously across the whole batch; `--component-name` (which names a single component) is rejected in multi-file mode. The batch is **all-or-nothing** (validate-all-then-commit): every file is validated and built first, and if any fails, all failures are reported and nothing is written — deliberately stricter than `hdf validate`'s continue-and-report, because `add-component` mutates and appends. `--from`, when given, is a single uniform format assertion checked against every file (never a positional/CSV list). Single-file behavior is unchanged. (ADR-0005, hdf-libs-whlr)
+
+### Fixes
+
+- **`createResult` omits an empty `message`** — TS converters no longer emit a spurious `"message": ""` that Go's `omitempty` drops, restoring TS/Go parity; eight workaround converters collapse back to the shared helper. (#148)
+- **`xccdf-results-to-hdf`: deterministic check selection** — a rule carrying multiple `<check>` elements now prefers the automated OVAL check over OCIL/SCE instead of letting document order decide, so `check_id` is stable. (#148, refs hdf-libs-i86q)
+- **`checklist` (CKLB): `active` / `has_path` / `mode` are preserved across the HDF round-trip.** (#148)
+- **`cyclonedx`: `boms[].document` key order is canonicalized** for Go/TS parity. (#148)
+- **CLI: `evidence export` / `verify` read packages through the size-gated input boundary**, rejecting oversized inputs consistently. (#148)
+- **Cross-language importer parity fixes** (surfaced by wiring oscal / legacyhdf / VEX into the shared snapshot harness): `legacyhdf` now flattens InSpec `options.value`/`type` (previously dropped every input value/type); `oscal` SSP `baselineRefs` ordering is deterministic; `oscal` POA&M extracts `risk.deadline` / task timing and fails loud when no deadline is derivable (previously fabricated dates from wall-clock `now()`); VEX importers emit the `1.0.0` `generator.version` default their Go twins already had. (#153)
+- **Pre-release review fixes:** `asff-to-hdf` severity mapping delegates to the shared `hdf-utilities` table (removing a duplicated Go table), and `parseFindings` rejects valid-but-scalar JSON and treats `{"Findings":null}` as empty (Go/TS parity); a dead severity-remap branch was removed from `hdf-to-asff`; the `hdf-cli` README `go install` note and the workspace converter count were corrected.
+
+### Internal
+
+- **Test-strategy hardening:** input-derived ground-truth anchors were added to the structurally-rich importers (xccdf, ckl/cklb, nessus, oscal, sarif, legacyhdf, cyclonedx-vex) so a shared Go/TS misreading cannot stay green (#149, #153), and `startTime` golden-masking was made per-converter/fixture so importers that carry a real scan time assert it — which surfaced and fixed a nessus Go/TS serialization divergence (#152).
+
+### Compatibility
+
+- Patch release: **no schema changes** — the schema `$id` URLs remain at v3.4.0, and all v3.4.0 documents and consumers are unaffected. The changes are two new converters plus converter-output and importer-parity fixes.
 
 ## [3.4.0] - 2026-07-13
 
