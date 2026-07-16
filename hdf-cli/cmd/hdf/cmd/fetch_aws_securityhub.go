@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	securitytypes "github.com/aws/aws-sdk-go-v2/service/securityhub/types"
 	"github.com/spf13/cobra"
 
 	securityhubfetcher "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/aws-securityhub/go"
@@ -16,6 +17,7 @@ func newFetchAWSSecurityHubCmd() *cobra.Command {
 		profile    string
 		format     string
 		outputPath string
+		filterJSON string
 		check      bool
 	)
 
@@ -46,6 +48,10 @@ Output defaults to stdout when no output path is given.`,
   # Save raw ASFF JSON instead of HDF
   hdf fetch aws-securityhub --region us-east-1 --format raw asff.json
 
+  # Narrow the pull with a raw Security Hub filter (e.g. only FAILED findings)
+  #   filter.json: {"ComplianceStatus":[{"Value":"FAILED","Comparison":"EQUALS"}]}
+  hdf fetch aws-securityhub --region us-east-1 --filter-json filter.json output.json
+
   # Verify credentials only (no findings download)
   hdf fetch aws-securityhub --region us-east-1 --check`,
 		Args: cobra.MaximumNArgs(1),
@@ -57,11 +63,28 @@ Output defaults to stdout when no output path is given.`,
 				return err
 			}
 
+			// A raw AwsSecurityFindingFilters JSON document, passed straight to
+			// GetFindings. The CLI does not model individual filter fields — the
+			// SDK filter surface is large and this covers all of it for the rare
+			// case a caller needs to narrow the pull.
+			var filters *securitytypes.AwsSecurityFindingFilters
+			if filterJSON != "" {
+				data, err := os.ReadFile(filterJSON) //nolint:gosec // operator-supplied path
+				if err != nil {
+					return fmt.Errorf("failed to read --filter-json file: %w", err)
+				}
+				filters = &securitytypes.AwsSecurityFindingFilters{}
+				if err := json.Unmarshal(data, filters); err != nil {
+					return fmt.Errorf("invalid --filter-json (expected an ASFF AwsSecurityFindingFilters object): %w", err)
+				}
+			}
+
 			f, err := securityhubfetcher.NewAWSSecurityHubFetcher(cmd.Context(),
 				securityhubfetcher.AWSSecurityHubParams{
 					Region:  region,
 					Profile: profile,
 					TLS:     fetchTLSOptions(cmd),
+					Filters: filters,
 				})
 			if err != nil {
 				return fmt.Errorf("failed to initialize AWS Security Hub fetcher: %w", err)
@@ -104,6 +127,7 @@ Output defaults to stdout when no output path is given.`,
 	cmd.Flags().StringVarP(&region, "region", "r", "", "AWS region (required)")
 	cmd.Flags().StringVarP(&profile, "profile", "p", "", "AWS CLI named profile (from ~/.aws/credentials or ~/.aws/config)")
 	cmd.Flags().StringVar(&format, "format", "hdf", "Output format: hdf (convert to HDF) or raw (native ASFF JSON)")
+	cmd.Flags().StringVar(&filterJSON, "filter-json", "", "Path to a JSON file with an ASFF AwsSecurityFindingFilters object, passed to GetFindings")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file path (default: stdout)")
 	cmd.Flags().BoolVar(&check, "check", false, "Verify credentials only; skip findings download")
 	addNoValidateFlag(cmd)

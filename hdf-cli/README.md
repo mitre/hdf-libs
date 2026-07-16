@@ -563,11 +563,12 @@ USAGE
   hdf fetch aws-securityhub [output] [flags]
 
 FLAGS
-  -r, --region string     (required) AWS region (e.g., us-east-1)
-  -p, --profile string    AWS CLI named profile
-      --format string     Output format: hdf or raw (default "hdf")
-  -o, --output string     Output file path (default: stdout)
-      --check             Verify credentials only; skip findings download
+  -r, --region string       (required) AWS region (e.g., us-east-1)
+  -p, --profile string      AWS CLI named profile
+      --format string       Output format: hdf or raw (default "hdf")
+      --filter-json string  Path to a JSON file with an ASFF AwsSecurityFindingFilters object
+  -o, --output string       Output file path (default: stdout)
+      --check               Verify credentials only; skip findings download
 
 EXAMPLES
   # Fetch all findings in a region
@@ -579,9 +580,65 @@ EXAMPLES
   # Save raw ASFF JSON instead of HDF
   hdf fetch aws-securityhub --region us-east-1 --format raw asff.json
 
+  # Narrow the pull with a Security Hub filter (see "Filtering findings" below)
+  hdf fetch aws-securityhub --region us-east-1 --filter-json failed-only.json output.json
+
   # Verify credentials only -- exits 0 on success, non-zero on auth failure
   hdf fetch aws-securityhub --region us-east-1 --check
 ```
+
+##### Filtering findings
+
+By default the fetch pulls every active finding, which on a busy account is a
+lot. `--filter-json` narrows it: point it at a file containing a Security Hub
+[`AwsSecurityFindingFilters`](https://docs.aws.amazon.com/securityhub/1.0/APIReference/API_AwsSecurityFindingFilters.html)
+object, which is passed straight to the [`GetFindings`](https://docs.aws.amazon.com/securityhub/1.0/APIReference/API_GetFindings.html)
+API. Each field is an array of matchers; **multiple values on one field OR
+together, and different fields AND together**. String matchers take a
+[`Comparison`](https://docs.aws.amazon.com/securityhub/1.0/APIReference/API_StringFilter.html)
+(`EQUALS`, `NOT_EQUALS`, `PREFIX`, `PREFIX_NOT_EQUALS`, `CONTAINS`, `NOT_CONTAINS`)
+and **values are case-sensitive**.
+
+Only failed compliance findings (the common "what needs remediation" pull):
+
+```json
+{ "ComplianceStatus": [{ "Value": "FAILED", "Comparison": "EQUALS" }] }
+```
+
+Only critical and high severity (OR within the field):
+
+```json
+{ "SeverityLabel": [
+    { "Value": "CRITICAL", "Comparison": "EQUALS" },
+    { "Value": "HIGH", "Comparison": "EQUALS" }
+] }
+```
+
+Active findings that are not resolved (AND across fields):
+
+```json
+{ "RecordState":    [{ "Value": "ACTIVE",   "Comparison": "EQUALS" }],
+  "WorkflowStatus": [{ "Value": "RESOLVED", "Comparison": "NOT_EQUALS" }] }
+```
+
+Findings updated in the last 7 days — the continuous-monitoring incremental pull
+(date fields take a `DateRange` in `DAYS` instead of a `Comparison`):
+
+```json
+{ "UpdatedAt": [{ "DateRange": { "Unit": "DAYS", "Value": 7 } }] }
+```
+
+Combined — failed criticals from the last 30 days:
+
+```json
+{ "ComplianceStatus": [{ "Value": "FAILED",   "Comparison": "EQUALS" }],
+  "SeverityLabel":    [{ "Value": "CRITICAL", "Comparison": "EQUALS" }],
+  "UpdatedAt":        [{ "DateRange": { "Unit": "DAYS", "Value": 30 } }] }
+```
+
+The [`AwsSecurityFindingFilters` reference](https://docs.aws.amazon.com/securityhub/1.0/APIReference/API_AwsSecurityFindingFilters.html)
+lists every filterable field (product, account, standard, resource type, and
+more) — `--filter-json` accepts any of them.
 
 #### fetch gitlab
 
