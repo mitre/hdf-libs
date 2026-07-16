@@ -28,10 +28,13 @@ Currently in tree:
 | `sonarqube` | ✓ | — | fetch |
 | `splunk` | ✓ | — | fetch |
 
-`aws-securityhub` is the first fetcher to ship both Go and TS sides
-together; its TS contract takes a caller-supplied
-`@aws-sdk/client-securityhub` `SecurityHubClient` (auth-agnostic — the
-library never sees credentials).
+`aws-securityhub` is the first fetcher implemented in both Go and TS.
+The Go side is what `hdf-cli` drives; the TS side is in-tree (used by its
+own tests) but is **not yet exported to npm consumers** — the
+`@mitre/hdf-converters` package `exports` do not include a `fetchers/*`
+entrypoint, so publishing it requires an `exports`/build change first.
+Its TS contract takes a caller-supplied `@aws-sdk/client-securityhub`
+`SecurityHubClient` (auth-agnostic — the library never sees credentials).
 
 ## Go fetcher convention — two constructors
 

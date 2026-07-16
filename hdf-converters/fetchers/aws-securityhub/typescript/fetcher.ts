@@ -21,9 +21,9 @@ const DEFAULT_PAGE_SIZE = 100;
 export interface FetchOptions {
   /** Optional ASFF finding filter — pass-through to GetFindings. */
   filters?: AwsSecurityFindingFilters;
-  /** Cap pagination loop iterations. Defaults to 10_000. */
+  /** Cap pagination loop iterations. Values <= 0 or non-integers use the default (10_000). */
   maxPages?: number;
-  /** Override the default page size (max 100 per the API). */
+  /** Override the default page size. Must be an integer in 1..100 (the API max). */
   pageSize?: number;
   /** Optional converter version string written into the HDF Generator field. */
   converterVersion?: string;
@@ -55,8 +55,19 @@ export async function fetchAWSSecurityHubToHdf(
   client: SecurityHubClient,
   opts: FetchOptions = {},
 ): Promise<HDFResults> {
-  const maxPages = opts.maxPages ?? DEFAULT_MAX_PAGES;
+  // Mirror the Go fetcher: a non-positive/non-integer maxPages falls back to the
+  // default rather than throwing a confusing "page limit (0)" on the first loop.
+  const maxPages =
+    Number.isInteger(opts.maxPages) && (opts.maxPages as number) > 0
+      ? (opts.maxPages as number)
+      : DEFAULT_MAX_PAGES;
+
   const pageSize = opts.pageSize ?? DEFAULT_PAGE_SIZE;
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+    throw new Error(
+      `aws-securityhub: pageSize must be an integer in 1..100 (the GetFindings API max), got ${pageSize}`,
+    );
+  }
 
   const findings: AwsSecurityFinding[] = [];
   let nextToken: string | undefined;

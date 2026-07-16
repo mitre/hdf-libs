@@ -231,6 +231,34 @@ describe('fetchAWSSecurityHubToHdf', () => {
     });
     await expect(fetchAWSSecurityHubToHdf(m.client)).rejects.toThrow(/access denied/i);
   });
+
+  it('rejects a pageSize above the API maximum before any request', async () => {
+    const m = makeClient({ pages: [{ Findings: [] }] });
+    await expect(
+      fetchAWSSecurityHubToHdf(m.client, { pageSize: 500 }),
+    ).rejects.toThrow(/pageSize must be an integer in 1\.\.100/);
+    expect(m.getFindingsCalls).toBe(0);
+  });
+
+  it('rejects a non-positive / non-integer pageSize', async () => {
+    const m = makeClient({ pages: [{ Findings: [] }] });
+    await expect(
+      fetchAWSSecurityHubToHdf(m.client, { pageSize: 0 }),
+    ).rejects.toThrow(/pageSize/);
+    await expect(
+      fetchAWSSecurityHubToHdf(m.client, { pageSize: 2.5 }),
+    ).rejects.toThrow(/pageSize/);
+    expect(m.getFindingsCalls).toBe(0);
+  });
+
+  it('coerces a non-positive maxPages to the default instead of erroring', async () => {
+    // maxPages: 0 must NOT surface the confusing "page limit (0)" error; it
+    // falls back to the default, matching the Go fetcher.
+    const m = makeClient({ pages: [{ Findings: [minimalFinding('f1')] }] });
+    const hdf = await fetchAWSSecurityHubToHdf(m.client, { maxPages: 0 });
+    expect(hdf.baselines.length).toBeGreaterThan(0);
+    expect(m.getFindingsCalls).toBe(1);
+  });
 });
 
 // ---- auth-agnostic invariant ----
