@@ -1,0 +1,177 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "This AWS control checks whether your S3 buckets allow public read access by evaluating the Block Public Access settings, the bucket policy, and the bucket access control list (ACL).",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub Foundational Security Best Practices documentation.\nhttps://docs.aws.amazon.com/console/securityhub/S3.2/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsS3Bucket, Id: arn:aws:s3:::example-bucket-123456789123-us-east-1, Partition: aws, Region: us-east-1]",
+              "startTime": "2021-07-02T16:02:48.476Z",
+              "status": "passed"
+            }
+          ],
+          "id": "S3.2",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000213"
+            ],
+            "nist": [
+              "AC-21",
+              "AC-3",
+              "SC-7",
+              "SC-7(11)",
+              "SC-7(16)",
+              "SC-7(21)",
+              "SC-7(3)",
+              "SC-7(4)",
+              "SC-7(9)"
+            ]
+          },
+          "controlType": "technical",
+          "title": "S3.2 S3 buckets should prohibit public read access"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "This AWS control checks whether the Config service is enabled in the account for the local region and is recording all resources.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub Foundational Security Best Practices documentation.\nhttps://docs.aws.amazon.com/console/securityhub/Config.1/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "startTime": "2021-08-09T11:21:11.282Z",
+              "status": "failed"
+            }
+          ],
+          "id": "Config.1",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Config.1 AWS Config should be enabled"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "5361180a27eeb01af12b98e1d9c2ac0a747604b78e088b6a60fbefbceb931eaf"
+      },
+      "name": "AWS Foundational Security Best Practices v1.0.0"
+    },
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "The \"root\" account has unrestricted access to all resources in the AWS account. It is highly recommended that the use of this account be avoided.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-1.1/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "message": "ReasonCode: CLOUDTRAIL_MULTI_REGION_NOT_PRESENT\nDescription: Multi region CloudTrail with the required configuration does not exist in the account",
+              "startTime": "2021-08-09T11:28:16.331Z",
+              "status": "failed"
+            }
+          ],
+          "id": "1.1",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "1.1 Avoid the use of the \"root\" account"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "AWS Config is a web service that performs configuration management of supported AWS resources within your account and delivers log files to you. The recorded information includes the configuration item (AWS resource), relationships between configuration items (AWS resources), and any configuration changes between resources. It is recommended to enable AWS Config in all regions.",
+              "label": "default"
+            },
+            {
+              "data": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.\nhttps://docs.aws.amazon.com/console/securityhub/standards-cis-2.5/remediation",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resources: [Type: AwsAccount, Id: AWS::::Account:123456789123, Partition: aws, Region: us-east-1]",
+              "startTime": "2021-08-09T11:28:15.499Z",
+              "status": "failed"
+            }
+          ],
+          "id": "2.5",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "2.5 Ensure AWS Config is enabled"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "5361180a27eeb01af12b98e1d9c2ac0a747604b78e088b6a60fbefbceb931eaf"
+      },
+      "name": "CIS AWS Foundations Benchmark v1.2.0"
+    }
+  ],
+  "components": [
+    {
+      "baselineRefs": [
+        "AWS Foundational Security Best Practices v1.0.0",
+        "CIS AWS Foundations Benchmark v1.2.0"
+      ],
+      "name": "123456789123",
+      "type": "cloudAccount"
+    }
+  ],
+  "generator": {
+    "name": "asff-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-14T01:06:49.521966Z",
+  "tool": {
+    "format": "JSON",
+    "name": "AWS Security Finding Format"
+  }
+}

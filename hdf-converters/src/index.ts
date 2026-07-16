@@ -76,6 +76,9 @@ export { convertHdfToSplunk } from '../converters/hdf-to-splunk/typescript/index
 // HDF to OCSF (Findings) converter
 export { convertHdfToOcsf } from '../converters/hdf-to-ocsf/typescript/index.js';
 
+// HDF to ASFF (AWS Security Finding Format) converter
+export { convertHdfToAsff } from '../converters/hdf-to-asff/typescript/index.js';
+
 // Splunk to HDF converter
 export { convertSplunkToHdf } from '../converters/splunk-to-hdf/typescript/index.js';
 

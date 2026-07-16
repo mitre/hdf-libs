@@ -8,6 +8,7 @@ import {
   convertCklbToHdf,
   convertHdfToCkl,
   convertHdfToCklb,
+  convertHdfToAsff,
   convertSnykToHdf,
   convertGrypeToHdf,
   convertNessusToHdf,
@@ -106,6 +107,11 @@ describe('Main exports', () => {
   it('should export convertHdfToCkl from main index', () => {
     expect(convertHdfToCkl).toBeDefined();
     expect(typeof convertHdfToCkl).toBe('function');
+  });
+
+  it('should export convertHdfToAsff from main index', () => {
+    expect(convertHdfToAsff).toBeDefined();
+    expect(typeof convertHdfToAsff).toBe('function');
   });
 
   it('should export convertHdfToCklb from main index', () => {
