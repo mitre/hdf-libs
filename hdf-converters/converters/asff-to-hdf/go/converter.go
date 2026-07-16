@@ -222,10 +222,17 @@ func ConvertAsffToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 // `{ "Findings": [...] }` envelope, a bare array, or a single finding object.
 func parseFindings(input []byte) ([]asffFinding, error) {
 	var wrapper struct {
-		Findings []asffFinding `json:"Findings"`
+		Findings json.RawMessage `json:"Findings"`
 	}
+	// A present "Findings" key is authoritative, even when null or empty — decode
+	// its contents (null -> no findings) rather than falling through to the
+	// single-object attempt, which would turn {"Findings":null} into one empty
+	// finding and diverge from the TypeScript side.
 	if err := json.Unmarshal(input, &wrapper); err == nil && wrapper.Findings != nil {
-		return wrapper.Findings, nil
+		var fs []asffFinding
+		if err := json.Unmarshal(wrapper.Findings, &fs); err == nil {
+			return fs, nil
+		}
 	}
 	var arr []asffFinding
 	if err := json.Unmarshal(input, &arr); err == nil {
@@ -441,21 +448,12 @@ func mapComplianceStatus(status string) hdf.ResultStatus {
 	}
 }
 
+// severityLabelToImpact maps an ASFF severity label to a 0.0–1.0 impact via the
+// canonical shared table. asff uses a 0.0 default for unrecognized labels — the
+// Go helper takes the default explicitly (the shared TS severityToImpact hardcodes
+// 0.5, which is why the TS peer keeps its own 0.0-default variant).
 func severityLabelToImpact(label string) float64 {
-	switch strings.ToUpper(label) {
-	case "CRITICAL":
-		return 0.9
-	case "HIGH":
-		return 0.7
-	case "MEDIUM":
-		return 0.5
-	case "LOW":
-		return 0.3
-	case "INFORMATIONAL":
-		return 0.0
-	default:
-		return 0.0
-	}
+	return hdfutil.SeverityToImpact(label, 0.0)
 }
 
 // findingImpact derives a 0.0–1.0 impact. Suppressed findings are forced to 0.

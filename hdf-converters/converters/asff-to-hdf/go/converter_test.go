@@ -181,6 +181,18 @@ func TestSeverityLabelToImpact(t *testing.T) {
 	}
 }
 
+func TestParseFindings_NullFindingsEnvelope(t *testing.T) {
+	// A present-but-null Findings key is an empty envelope, matching the TS side —
+	// NOT one empty finding from the single-object fallback.
+	fs, err := parseFindings([]byte(`{"Findings": null}`))
+	require.NoError(t, err)
+	assert.Empty(t, fs)
+
+	fs, err = parseFindings([]byte(`{"Findings": []}`))
+	require.NoError(t, err)
+	assert.Empty(t, fs)
+}
+
 func TestSuppressedWorkflowForcesZeroImpact(t *testing.T) {
 	f := asffFinding{
 		Severity: asffSeverity{Label: "CRITICAL"},

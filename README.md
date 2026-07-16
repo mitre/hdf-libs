@@ -27,7 +27,7 @@ All libraries are available for both TypeScript (npm) and Go. See [Installation]
 | Package | Description |
 |---------|-------------|
 | [`hdf-schema`](./hdf-schema/README.md) | JSON schemas and generated TypeScript/Go types for all 7 HDF document types |
-| [`hdf-converters`](./hdf-converters/README.md) | 39 security tool format converters (Nessus, XCCDF, OSCAL, SARIF, Grype, etc.) |
+| [`hdf-converters`](./hdf-converters/README.md) | 40+ security tool format converters (Nessus, XCCDF, OSCAL, SARIF, Grype, etc.) |
 | [`hdf-validators`](./hdf-validators/README.md) | Schema validation for all 7 HDF document types with embedded schemas |
 | [`hdf-parsers`](./hdf-parsers/README.md) | Parse and flatten HDF documents |
 | [`hdf-mappings`](./hdf-mappings/README.md) | CCI, NIST 800-53, CWE, OWASP, and tool-specific control mappings |
@@ -81,7 +81,7 @@ Install only the packages you need. Each package is published independently to n
 | Package | npm | Go |
 |---------|-----|----|
 | **Schema** — HDF document types and JSON schemas | `npm install @mitre/hdf-schema` | `go get github.com/mitre/hdf-libs/hdf-schema/dist/go/v3` |
-| **Converters** — 39 security tool format converters | `npm install @mitre/hdf-converters` | `go get github.com/mitre/hdf-libs/hdf-converters/v3` |
+| **Converters** — 40+ security tool format converters | `npm install @mitre/hdf-converters` | `go get github.com/mitre/hdf-libs/hdf-converters/v3` |
 | **Validators** — schema validation with embedded schemas | `npm install @mitre/hdf-validators` | `go get github.com/mitre/hdf-libs/hdf-validators/go/v3` |
 | **Parsers** — parse and flatten HDF documents | `npm install @mitre/hdf-parsers` | `go get github.com/mitre/hdf-libs/hdf-parsers/go/v3` |
 | **Mappings** — CCI, NIST, CWE, OWASP control mappings | `npm install @mitre/hdf-mappings` | `go get github.com/mitre/hdf-libs/hdf-mappings/go/v3` |

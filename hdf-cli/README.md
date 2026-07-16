@@ -73,7 +73,7 @@ go build -o hdf ./cmd/hdf
 
 The binary is written to `hdf-cli/hdf`. Add it to your PATH or invoke it directly.
 
-> You can also install from the Go module proxy: `go install github.com/mitre/hdf-libs/hdf-cli/v3/cmd/hdf@latest`
+> `go install …@latest` is not supported: the CLI's `go.mod` uses local `replace` directives, so it's distributed as pre-built release binaries (goreleaser) or built from source as above.
 
 ## Terminology
 

@@ -109,7 +109,12 @@ function parseFindings(input: string): AsffFinding[] {
     // fall through to NDJSON
   }
   const lines = input.trim().split('\n').filter((l) => l.trim().length > 0);
-  const out = lines.map((l) => parseJSON<AsffFinding>(l.trim()));
+  // Keep only object-shaped lines: valid-but-scalar JSON (e.g. `42`, `null`,
+  // `"x"`) parses without throwing and must NOT be accepted as a finding — Go
+  // rejects it too, so filtering to objects keeps the two languages in parity.
+  const out = lines
+    .map((l) => parseJSON<unknown>(l.trim()))
+    .filter((x): x is AsffFinding => x !== null && typeof x === 'object' && !Array.isArray(x));
   if (out.length > 0) {
     return out;
   }

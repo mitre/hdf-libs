@@ -200,9 +200,6 @@ func severity(req map[string]interface{}) map[string]interface{} {
 	normalized := 0
 	if impact, ok := req["impact"].(float64); ok {
 		label = strings.ToUpper(hdfutil.ImpactToSeverity(impact))
-		if label == "NONE" {
-			label = "INFORMATIONAL"
-		}
 		normalized = int(impact * 100)
 	}
 	return map[string]interface{}{"Label": label, "Normalized": normalized}

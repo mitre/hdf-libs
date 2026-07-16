@@ -163,7 +163,6 @@ function severity(req: Obj): Obj {
   let normalized = 0;
   if (typeof req.impact === 'number') {
     label = impactToSeverity(req.impact).toUpperCase();
-    if (label === 'NONE') label = 'INFORMATIONAL';
     normalized = Math.trunc(req.impact * 100);
   }
   return {Label: label, Normalized: normalized};

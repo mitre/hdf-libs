@@ -36,6 +36,12 @@ describe('asff-to-hdf converter', () => {
     await expect(convertAsffToHdf('not valid json')).rejects.toThrow();
   });
 
+  it('throws on valid-but-scalar JSON rather than accepting it as a finding', async () => {
+    // `42` / `null` / `"x"` parse cleanly but are not findings — must error like Go.
+    await expect(convertAsffToHdf('42')).rejects.toThrow(/invalid ASFF JSON/);
+    await expect(convertAsffToHdf('null')).rejects.toThrow(/invalid ASFF JSON/);
+  });
+
   it('splits one baseline per Security Hub standard', async () => {
     const hdf = JSON.parse(await convertAsffToHdf(loadFixture('minimal.json'), '0.1.0')) as HDFResults;
 
