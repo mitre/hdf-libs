@@ -1,0 +1,514 @@
+{
+  "Findings": [
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "alpine:3.17 (alpine 3.17.10)/CVE-2025-15467",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aquasecurity/aquasecurity",
+      "GeneratorId": "Trivy/CVE-2025-15467",
+      "AwsAccountId": "123456789012",
+      "Types": [
+        "Software and Configuration Checks/Vulnerabilities/CVE"
+      ],
+      "CreatedAt": "2026-07-20T21:27:34.642265-04:00",
+      "UpdatedAt": "2026-07-20T21:27:34.642273-04:00",
+      "Severity": {
+        "Label": "HIGH"
+      },
+      "Title": "Trivy found a vulnerability to CVE-2025-15467 in container alpine:3.17 (alpine 3.17.10), related to libcrypto3",
+      "Description": "Issue summary: Parsing CMS AuthEnvelopedData or EnvelopedData message with\nmaliciously crafted AEAD parameters can trigger a stack buffer overflow.\n\nImpact summary: A stack buffer overflow may lead to a crash, causing Denial\nof Service, or potentially remote code execution.\n\nWhen parsing CMS (Auth)EnvelopedData structures that use AEAD ciphers such as\nAES-GCM, the IV (Initialization Vector) encoded in the ASN.1 parameters is\ncopied into a fixed-size stack buffer without verifying that its length fits\nthe de ..",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "More information on this vulnerability is provided in the hyperlink",
+          "Url": "https://avd.aquasec.com/nvd/cve-2025-15467"
+        }
+      },
+      "ProductFields": {
+        "Product Name": "Trivy"
+      },
+      "Resources": [
+        {
+          "Type": "Container",
+          "Id": "alpine:3.17 (alpine 3.17.10)",
+          "Partition": "aws",
+          "Region": "us-east-1",
+          "Details": {
+            "Container": {
+              "ImageName": "alpine:3.17 (alpine 3.17.10)"
+            },
+            "Other": {
+              "CVE ID": "CVE-2025-15467",
+              "CVE Title": "openssl: OpenSSL: Remote code execution or Denial of Service via oversized Initialization Vector in CMS parsing",
+              "PkgName": "libcrypto3",
+              "Installed Package": "3.0.15-r0",
+              "Patched Package": "3.0.19-r0",
+              "NvdCvssScoreV3": "0",
+              "NvdCvssVectorV3": "",
+              "NvdCvssScoreV2": "0",
+              "NvdCvssVectorV2": ""
+            }
+          }
+        }
+      ],
+      "RecordState": "ACTIVE"
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "alpine:3.17 (alpine 3.17.10)/CVE-2025-69421",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aquasecurity/aquasecurity",
+      "GeneratorId": "Trivy/CVE-2025-69421",
+      "AwsAccountId": "123456789012",
+      "Types": [
+        "Software and Configuration Checks/Vulnerabilities/CVE"
+      ],
+      "CreatedAt": "2026-07-20T21:27:34.642394-04:00",
+      "UpdatedAt": "2026-07-20T21:27:34.642398-04:00",
+      "Severity": {
+        "Label": "HIGH"
+      },
+      "Title": "Trivy found a vulnerability to CVE-2025-69421 in container alpine:3.17 (alpine 3.17.10), related to libcrypto3",
+      "Description": "Issue summary: Processing a malformed PKCS#12 file can trigger a NULL pointer\ndereference in the PKCS12_item_decrypt_d2i_ex() function.\n\nImpact summary: A NULL pointer dereference can trigger a crash which leads to\nDenial of Service for an application processing PKCS#12 files.\n\nThe PKCS12_item_decrypt_d2i_ex() function does not check whether the oct\nparameter is NULL before dereferencing it. When called from\nPKCS12_unpack_p7encdata() with a malformed PKCS#12 file, this parameter can\nbe NULL, causing a crash ..",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "More information on this vulnerability is provided in the hyperlink",
+          "Url": "https://avd.aquasec.com/nvd/cve-2025-69421"
+        }
+      },
+      "ProductFields": {
+        "Product Name": "Trivy"
+      },
+      "Resources": [
+        {
+          "Type": "Container",
+          "Id": "alpine:3.17 (alpine 3.17.10)",
+          "Partition": "aws",
+          "Region": "us-east-1",
+          "Details": {
+            "Container": {
+              "ImageName": "alpine:3.17 (alpine 3.17.10)"
+            },
+            "Other": {
+              "CVE ID": "CVE-2025-69421",
+              "CVE Title": "openssl: OpenSSL: Denial of Service via malformed PKCS#12 file processing",
+              "PkgName": "libcrypto3",
+              "Installed Package": "3.0.15-r0",
+              "Patched Package": "3.0.19-r0",
+              "NvdCvssScoreV3": "7.5",
+              "NvdCvssVectorV3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "NvdCvssScoreV2": "0",
+              "NvdCvssVectorV2": ""
+            }
+          }
+        }
+      ],
+      "RecordState": "ACTIVE"
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "alpine:3.17 (alpine 3.17.10)/CVE-2025-69419",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aquasecurity/aquasecurity",
+      "GeneratorId": "Trivy/CVE-2025-69419",
+      "AwsAccountId": "123456789012",
+      "Types": [
+        "Software and Configuration Checks/Vulnerabilities/CVE"
+      ],
+      "CreatedAt": "2026-07-20T21:27:34.642485-04:00",
+      "UpdatedAt": "2026-07-20T21:27:34.642488-04:00",
+      "Severity": {
+        "Label": "MEDIUM"
+      },
+      "Title": "Trivy found a vulnerability to CVE-2025-69419 in container alpine:3.17 (alpine 3.17.10), related to libcrypto3",
+      "Description": "Issue summary: Calling PKCS12_get_friendlyname() function on a maliciously\ncrafted PKCS#12 file with a BMPString (UTF-16BE) friendly name containing\nnon-ASCII BMP code point can trigger a one byte write before the allocated\nbuffer.\n\nImpact summary: The out-of-bounds write can cause a memory corruption\nwhich can have various consequences including a Denial of Service.\n\nThe OPENSSL_uni2utf8() function performs a two-pass conversion of a PKCS#12\nBMPString (UTF-16BE) to UTF-8. In the second pass, when emitting  ..",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "More information on this vulnerability is provided in the hyperlink",
+          "Url": "https://avd.aquasec.com/nvd/cve-2025-69419"
+        }
+      },
+      "ProductFields": {
+        "Product Name": "Trivy"
+      },
+      "Resources": [
+        {
+          "Type": "Container",
+          "Id": "alpine:3.17 (alpine 3.17.10)",
+          "Partition": "aws",
+          "Region": "us-east-1",
+          "Details": {
+            "Container": {
+              "ImageName": "alpine:3.17 (alpine 3.17.10)"
+            },
+            "Other": {
+              "CVE ID": "CVE-2025-69419",
+              "CVE Title": "openssl: OpenSSL: Arbitrary code execution due to out-of-bounds write in PKCS#12 processing",
+              "PkgName": "libcrypto3",
+              "Installed Package": "3.0.15-r0",
+              "Patched Package": "3.0.19-r0",
+              "NvdCvssScoreV3": "0",
+              "NvdCvssVectorV3": "",
+              "NvdCvssScoreV2": "0",
+              "NvdCvssVectorV2": ""
+            }
+          }
+        }
+      ],
+      "RecordState": "ACTIVE"
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "alpine:3.17 (alpine 3.17.10)/CVE-2025-9230",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aquasecurity/aquasecurity",
+      "GeneratorId": "Trivy/CVE-2025-9230",
+      "AwsAccountId": "123456789012",
+      "Types": [
+        "Software and Configuration Checks/Vulnerabilities/CVE"
+      ],
+      "CreatedAt": "2026-07-20T21:27:34.642564-04:00",
+      "UpdatedAt": "2026-07-20T21:27:34.642567-04:00",
+      "Severity": {
+        "Label": "MEDIUM"
+      },
+      "Title": "Trivy found a vulnerability to CVE-2025-9230 in container alpine:3.17 (alpine 3.17.10), related to libcrypto3",
+      "Description": "Issue summary: An application trying to decrypt CMS messages encrypted using\npassword based encryption can trigger an out-of-bounds read and write.\n\nImpact summary: This out-of-bounds read may trigger a crash which leads to\nDenial of Service for an application. The out-of-bounds write can cause\na memory corruption which can have various consequences including\na Denial of Service or Execution of attacker-supplied code.\n\nAlthough the consequences of a successful exploit of this vulnerability\ncould be severe,  ..",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "More information on this vulnerability is provided in the hyperlink",
+          "Url": "https://avd.aquasec.com/nvd/cve-2025-9230"
+        }
+      },
+      "ProductFields": {
+        "Product Name": "Trivy"
+      },
+      "Resources": [
+        {
+          "Type": "Container",
+          "Id": "alpine:3.17 (alpine 3.17.10)",
+          "Partition": "aws",
+          "Region": "us-east-1",
+          "Details": {
+            "Container": {
+              "ImageName": "alpine:3.17 (alpine 3.17.10)"
+            },
+            "Other": {
+              "CVE ID": "CVE-2025-9230",
+              "CVE Title": "openssl: Out-of-bounds read & write in RFC 3211 KEK Unwrap",
+              "PkgName": "libcrypto3",
+              "Installed Package": "3.0.15-r0",
+              "Patched Package": "3.0.19-r0",
+              "NvdCvssScoreV3": "0",
+              "NvdCvssVectorV3": "",
+              "NvdCvssScoreV2": "0",
+              "NvdCvssVectorV2": ""
+            }
+          }
+        }
+      ],
+      "RecordState": "ACTIVE"
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "alpine:3.17 (alpine 3.17.10)/CVE-2024-13176",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aquasecurity/aquasecurity",
+      "GeneratorId": "Trivy/CVE-2024-13176",
+      "AwsAccountId": "123456789012",
+      "Types": [
+        "Software and Configuration Checks/Vulnerabilities/CVE"
+      ],
+      "CreatedAt": "2026-07-20T21:27:34.64264-04:00",
+      "UpdatedAt": "2026-07-20T21:27:34.642642-04:00",
+      "Severity": {
+        "Label": "LOW"
+      },
+      "Title": "Trivy found a vulnerability to CVE-2024-13176 in container alpine:3.17 (alpine 3.17.10), related to libcrypto3",
+      "Description": "Issue summary: A timing side-channel which could potentially allow recovering\nthe private key exists in the ECDSA signature computation.\n\nImpact summary: A timing side-channel in ECDSA signature computations\ncould allow recovering the private key by an attacker. However, measuring\nthe timing would require either local access to the signing application or\na very fast network connection with low latency.\n\nThere is a timing signal of around 300 nanoseconds when the top word of\nthe inverted ECDSA nonce value is ..",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "More information on this vulnerability is provided in the hyperlink",
+          "Url": "https://avd.aquasec.com/nvd/cve-2024-13176"
+        }
+      },
+      "ProductFields": {
+        "Product Name": "Trivy"
+      },
+      "Resources": [
+        {
+          "Type": "Container",
+          "Id": "alpine:3.17 (alpine 3.17.10)",
+          "Partition": "aws",
+          "Region": "us-east-1",
+          "Details": {
+            "Container": {
+              "ImageName": "alpine:3.17 (alpine 3.17.10)"
+            },
+            "Other": {
+              "CVE ID": "CVE-2024-13176",
+              "CVE Title": "openssl: Timing side-channel in ECDSA signature computation",
+              "PkgName": "libcrypto3",
+              "Installed Package": "3.0.15-r0",
+              "Patched Package": "3.0.19-r0",
+              "NvdCvssScoreV3": "0",
+              "NvdCvssVectorV3": "",
+              "NvdCvssScoreV2": "0",
+              "NvdCvssVectorV2": ""
+            }
+          }
+        }
+      ],
+      "RecordState": "ACTIVE"
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "alpine:3.17 (alpine 3.17.10)/CVE-2024-9143",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aquasecurity/aquasecurity",
+      "GeneratorId": "Trivy/CVE-2024-9143",
+      "AwsAccountId": "123456789012",
+      "Types": [
+        "Software and Configuration Checks/Vulnerabilities/CVE"
+      ],
+      "CreatedAt": "2026-07-20T21:27:34.642723-04:00",
+      "UpdatedAt": "2026-07-20T21:27:34.642726-04:00",
+      "Severity": {
+        "Label": "LOW"
+      },
+      "Title": "Trivy found a vulnerability to CVE-2024-9143 in container alpine:3.17 (alpine 3.17.10), related to libcrypto3",
+      "Description": "Issue summary: Use of the low-level GF(2^m) elliptic curve APIs with untrusted\nexplicit values for the field polynomial can lead to out-of-bounds memory reads\nor writes.\n\nImpact summary: Out of bound memory writes can lead to an application crash or\neven a possibility of a remote code execution, however, in all the protocols\ninvolving Elliptic Curve Cryptography that we&#39;re aware of, either only &#34;named\ncurves&#34; are supported, or, if explicit curve parameters are supported, they\nspecify an X9.62 encoding of bi ..",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "More information on this vulnerability is provided in the hyperlink",
+          "Url": "https://avd.aquasec.com/nvd/cve-2024-9143"
+        }
+      },
+      "ProductFields": {
+        "Product Name": "Trivy"
+      },
+      "Resources": [
+        {
+          "Type": "Container",
+          "Id": "alpine:3.17 (alpine 3.17.10)",
+          "Partition": "aws",
+          "Region": "us-east-1",
+          "Details": {
+            "Container": {
+              "ImageName": "alpine:3.17 (alpine 3.17.10)"
+            },
+            "Other": {
+              "CVE ID": "CVE-2024-9143",
+              "CVE Title": "openssl: Low-level invalid GF(2^m) parameters lead to OOB memory access",
+              "PkgName": "libcrypto3",
+              "Installed Package": "3.0.15-r0",
+              "Patched Package": "3.0.15-r1",
+              "NvdCvssScoreV3": "0",
+              "NvdCvssVectorV3": "",
+              "NvdCvssScoreV2": "0",
+              "NvdCvssVectorV2": ""
+            }
+          }
+        }
+      ],
+      "RecordState": "ACTIVE"
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "alpine:3.17 (alpine 3.17.10)/CVE-2025-68160",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aquasecurity/aquasecurity",
+      "GeneratorId": "Trivy/CVE-2025-68160",
+      "AwsAccountId": "123456789012",
+      "Types": [
+        "Software and Configuration Checks/Vulnerabilities/CVE"
+      ],
+      "CreatedAt": "2026-07-20T21:27:34.642802-04:00",
+      "UpdatedAt": "2026-07-20T21:27:34.642805-04:00",
+      "Severity": {
+        "Label": "LOW"
+      },
+      "Title": "Trivy found a vulnerability to CVE-2025-68160 in container alpine:3.17 (alpine 3.17.10), related to libcrypto3",
+      "Description": "Issue summary: Writing large, newline-free data into a BIO chain using the\nline-buffering filter where the next BIO performs short writes can trigger\na heap-based out-of-bounds write.\n\nImpact summary: This out-of-bounds write can cause memory corruption which\ntypically results in a crash, leading to Denial of Service for an application.\n\nThe line-buffering BIO filter (BIO_f_linebuffer) is not used by default in\nTLS/SSL data paths. In OpenSSL command-line applications, it is typically\nonly pushed onto stdout ..",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "More information on this vulnerability is provided in the hyperlink",
+          "Url": "https://avd.aquasec.com/nvd/cve-2025-68160"
+        }
+      },
+      "ProductFields": {
+        "Product Name": "Trivy"
+      },
+      "Resources": [
+        {
+          "Type": "Container",
+          "Id": "alpine:3.17 (alpine 3.17.10)",
+          "Partition": "aws",
+          "Region": "us-east-1",
+          "Details": {
+            "Container": {
+              "ImageName": "alpine:3.17 (alpine 3.17.10)"
+            },
+            "Other": {
+              "CVE ID": "CVE-2025-68160",
+              "CVE Title": "openssl: OpenSSL: Denial of Service due to out-of-bounds write in BIO filter",
+              "PkgName": "libcrypto3",
+              "Installed Package": "3.0.15-r0",
+              "Patched Package": "3.0.19-r0",
+              "NvdCvssScoreV3": "0",
+              "NvdCvssVectorV3": "",
+              "NvdCvssScoreV2": "0",
+              "NvdCvssVectorV2": ""
+            }
+          }
+        }
+      ],
+      "RecordState": "ACTIVE"
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "alpine:3.17 (alpine 3.17.10)/CVE-2025-69418",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aquasecurity/aquasecurity",
+      "GeneratorId": "Trivy/CVE-2025-69418",
+      "AwsAccountId": "123456789012",
+      "Types": [
+        "Software and Configuration Checks/Vulnerabilities/CVE"
+      ],
+      "CreatedAt": "2026-07-20T21:27:34.642885-04:00",
+      "UpdatedAt": "2026-07-20T21:27:34.642888-04:00",
+      "Severity": {
+        "Label": "LOW"
+      },
+      "Title": "Trivy found a vulnerability to CVE-2025-69418 in container alpine:3.17 (alpine 3.17.10), related to libcrypto3",
+      "Description": "Issue summary: When using the low-level OCB API directly with AES-NI or&lt;br&gt;other hardware-accelerated code paths, inputs whose length is not a multiple&lt;br&gt;of 16 bytes can leave the final partial block unencrypted and unauthenticated.&lt;br&gt;&lt;br&gt;Impact summary: The trailing 1-15 bytes of a message may be exposed in&lt;br&gt;cleartext on encryption and are not covered by the authentication tag,&lt;br&gt;allowing an attacker to read or tamper with those bytes without detection.&lt;br&gt;&lt;br&gt;The low-level OCB encrypt and decrypt rou ..",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "More information on this vulnerability is provided in the hyperlink",
+          "Url": "https://avd.aquasec.com/nvd/cve-2025-69418"
+        }
+      },
+      "ProductFields": {
+        "Product Name": "Trivy"
+      },
+      "Resources": [
+        {
+          "Type": "Container",
+          "Id": "alpine:3.17 (alpine 3.17.10)",
+          "Partition": "aws",
+          "Region": "us-east-1",
+          "Details": {
+            "Container": {
+              "ImageName": "alpine:3.17 (alpine 3.17.10)"
+            },
+            "Other": {
+              "CVE ID": "CVE-2025-69418",
+              "CVE Title": "openssl: OpenSSL: Information disclosure and data tampering via specific low-level OCB encryption/decryption calls",
+              "PkgName": "libcrypto3",
+              "Installed Package": "3.0.15-r0",
+              "Patched Package": "3.0.19-r0",
+              "NvdCvssScoreV3": "0",
+              "NvdCvssVectorV3": "",
+              "NvdCvssScoreV2": "0",
+              "NvdCvssVectorV2": ""
+            }
+          }
+        }
+      ],
+      "RecordState": "ACTIVE"
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "alpine:3.17 (alpine 3.17.10)/CVE-2025-69420",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aquasecurity/aquasecurity",
+      "GeneratorId": "Trivy/CVE-2025-69420",
+      "AwsAccountId": "123456789012",
+      "Types": [
+        "Software and Configuration Checks/Vulnerabilities/CVE"
+      ],
+      "CreatedAt": "2026-07-20T21:27:34.642972-04:00",
+      "UpdatedAt": "2026-07-20T21:27:34.642975-04:00",
+      "Severity": {
+        "Label": "LOW"
+      },
+      "Title": "Trivy found a vulnerability to CVE-2025-69420 in container alpine:3.17 (alpine 3.17.10), related to libcrypto3",
+      "Description": "Issue summary: A type confusion vulnerability exists in the TimeStamp Response\nverification code where an ASN1_TYPE union member is accessed without first\nvalidating the type, causing an invalid or NULL pointer dereference when\nprocessing a malformed TimeStamp Response file.\n\nImpact summary: An application calling TS_RESP_verify_response() with a\nmalformed TimeStamp Response can be caused to dereference an invalid or\nNULL pointer when reading, resulting in a Denial of Service.\n\nThe functions ossl_ess_get_si ..",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "More information on this vulnerability is provided in the hyperlink",
+          "Url": "https://avd.aquasec.com/nvd/cve-2025-69420"
+        }
+      },
+      "ProductFields": {
+        "Product Name": "Trivy"
+      },
+      "Resources": [
+        {
+          "Type": "Container",
+          "Id": "alpine:3.17 (alpine 3.17.10)",
+          "Partition": "aws",
+          "Region": "us-east-1",
+          "Details": {
+            "Container": {
+              "ImageName": "alpine:3.17 (alpine 3.17.10)"
+            },
+            "Other": {
+              "CVE ID": "CVE-2025-69420",
+              "CVE Title": "openssl: OpenSSL: Denial of Service via malformed TimeStamp Response",
+              "PkgName": "libcrypto3",
+              "Installed Package": "3.0.15-r0",
+              "Patched Package": "3.0.19-r0",
+              "NvdCvssScoreV3": "0",
+              "NvdCvssVectorV3": "",
+              "NvdCvssScoreV2": "0",
+              "NvdCvssVectorV2": ""
+            }
+          }
+        }
+      ],
+      "RecordState": "ACTIVE"
+    },
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "alpine:3.17 (alpine 3.17.10)/CVE-2025-9232",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aquasecurity/aquasecurity",
+      "GeneratorId": "Trivy/CVE-2025-9232",
+      "AwsAccountId": "123456789012",
+      "Types": [
+        "Software and Configuration Checks/Vulnerabilities/CVE"
+      ],
+      "CreatedAt": "2026-07-20T21:27:34.643049-04:00",
+      "UpdatedAt": "2026-07-20T21:27:34.643054-04:00",
+      "Severity": {
+        "Label": "LOW"
+      },
+      "Title": "Trivy found a vulnerability to CVE-2025-9232 in container alpine:3.17 (alpine 3.17.10), related to libcrypto3",
+      "Description": "Issue summary: An application using the OpenSSL HTTP client API functions may\ntrigger an out-of-bounds read if the &#39;no_proxy&#39; environment variable is set and\nthe host portion of the authority component of the HTTP URL is an IPv6 address.\n\nImpact summary: An out-of-bounds read can trigger a crash which leads to\nDenial of Service for an application.\n\nThe OpenSSL HTTP client API functions can be used directly by applications\nbut they are also used by the OCSP client functions and CMP (Certificate\nManagement Pr ..",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "More information on this vulnerability is provided in the hyperlink",
+          "Url": "https://avd.aquasec.com/nvd/cve-2025-9232"
+        }
+      },
+      "ProductFields": {
+        "Product Name": "Trivy"
+      },
+      "Resources": [
+        {
+          "Type": "Container",
+          "Id": "alpine:3.17 (alpine 3.17.10)",
+          "Partition": "aws",
+          "Region": "us-east-1",
+          "Details": {
+            "Container": {
+              "ImageName": "alpine:3.17 (alpine 3.17.10)"
+            },
+            "Other": {
+              "CVE ID": "CVE-2025-9232",
+              "CVE Title": "openssl: Out-of-bounds read in HTTP client no_proxy handling",
+              "PkgName": "libcrypto3",
+              "Installed Package": "3.0.15-r0",
+              "Patched Package": "3.0.19-r0",
+              "NvdCvssScoreV3": "0",
+              "NvdCvssVectorV3": "",
+              "NvdCvssScoreV2": "0",
+              "NvdCvssVectorV2": ""
+            }
+          }
+        }
+      ],
+      "RecordState": "ACTIVE"
+    }
+  ]
+}
