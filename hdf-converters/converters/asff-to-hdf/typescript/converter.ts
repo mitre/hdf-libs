@@ -383,14 +383,42 @@ function vulnerabilitySummary(f: AsffFinding): string {
 }
 
 /** Summarizes the installed vs patched package for a Trivy CVE finding. */
+// trivyMessage summarizes a Trivy finding's product-specific detail for the
+// result message, dispatching on the finding shape Trivy's ASFF template emits:
+// a CVE reports the installed vs patched package, a misconfiguration reports the
+// remediation message and file location, and a secret reports the file it was
+// found in. Details.Other keys are the discriminator — 'CVE ID' for
+// vulnerabilities, 'Message' for misconfigurations, a lone 'Filename' for secrets.
 function trivyMessage(f: AsffFinding): string {
   const o = f.Resources?.[0]?.Details?.Other;
-  if (!o || !o['CVE ID']) return '';
-  const patched = o['Patched Package'];
-  const patchMsg = patched
-    ? `The package has been patched since version(s): ${patched}.`
-    : 'There is no patched version of the package.';
-  return `For package ${o['PkgName']}, the current version that is installed is ${o['Installed Package']}.  ${patchMsg}`;
+  if (!o) return '';
+  if (o['CVE ID']) {
+    const patched = o['Patched Package'];
+    const patchMsg = patched
+      ? `The package has been patched since version(s): ${patched}.`
+      : 'There is no patched version of the package.';
+    return `For package ${o['PkgName']}, the current version that is installed is ${o['Installed Package']}.  ${patchMsg}`;
+  }
+  if (o['Message']) {
+    const loc = trivyLocation(o);
+    return loc ? `${o['Message']} (${loc})` : o['Message'];
+  }
+  if (o['Filename']) {
+    return `Secret detected in ${o['Filename']}.`;
+  }
+  return '';
+}
+
+// trivyLocation renders 'file:startLine-endLine' from a misconfiguration
+// finding, omitting line numbers Trivy reports as 0 (whole-file findings).
+export function trivyLocation(o: Record<string, string>): string {
+  let loc = o['Filename'] ?? '';
+  const sl = o['StartLine'];
+  if (!sl || sl === '0') return loc;
+  loc += `:${sl}`;
+  const el = o['EndLine'];
+  if (el && el !== '0' && el !== sl) loc += `-${el}`;
+  return loc;
 }
 
 function buildRequirement(id: string, group: AsffFinding[]): EvaluatedRequirement {
