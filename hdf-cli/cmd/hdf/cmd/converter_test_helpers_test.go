@@ -64,6 +64,11 @@ type converterTestCase struct {
 	// InvalidInput is the input bytes used for the invalid-input test.
 	// Defaults to "not valid json" if empty.
 	InvalidInput string
+	// AcceptsEmptyInput inverts the Convert_EmptyInput subtest: when true, empty
+	// input must convert successfully (a valid zero-findings signal) rather than
+	// error. Set for converters of exit-code-first tools (e.g. TruffleHog) that
+	// emit no report on a clean run; see EmptyInputAccepting. Defaults to false.
+	AcceptsEmptyInput bool
 }
 
 // runStandardConverterTests runs the 4 standard tests that every converter must pass:
@@ -112,6 +117,12 @@ func runStandardConverterTests(t *testing.T, tc converterTestCase) {
 		require.NoError(t, err)
 
 		output, err := converter.Convert([]byte(""))
+		if tc.AcceptsEmptyInput {
+			require.NoError(t, err, "empty input should convert as zero findings")
+			require.NotEmpty(t, output)
+			assertHDFOutput(t, output)
+			return
+		}
 		assert.Error(t, err)
 		assert.Nil(t, output)
 	})

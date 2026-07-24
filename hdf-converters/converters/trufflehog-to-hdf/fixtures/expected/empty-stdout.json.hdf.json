@@ -1,0 +1,42 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "TruffleHog scanned the target source and reported zero findings.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "TruffleHog scanned the target source and reported zero findings.",
+              "startTime": "2026-07-24T05:46:35.510707Z",
+              "status": "passed"
+            }
+          ],
+          "id": "trufflehog-no-findings",
+          "impact": 0,
+          "tags": {},
+          "title": "No findings reported"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "name": "TruffleHog Scan",
+      "title": "TruffleHog Scan (trufflehog)"
+    }
+  ],
+  "generator": {
+    "name": "trufflehog-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-24T05:46:35.510709Z",
+  "tool": {
+    "format": "JSON",
+    "name": "TruffleHog"
+  }
+}

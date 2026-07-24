@@ -134,13 +134,25 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		}
 	}
 
-	// Read input
+	// Read input. Empty input is allowed through the read boundary so the convert
+	// path can honor converters that treat "no bytes" as a valid zero-findings
+	// signal (e.g. exit-code-first scanners that emit no report on a clean run).
+	// The empty-input policy is enforced below, once the resolved converter is
+	// known — every other read boundary still rejects empty via readInputFile.
 	printDebug("Reading input from %s", inputPath)
-	data, err := readInputFile(inputPath)
+	data, err := readInputFileAllowEmpty(inputPath)
 	if err != nil {
 		return err
 	}
 	printDebug("Read %d bytes", len(data))
+
+	// Empty input carries no bytes to fingerprint, so it is only meaningful with
+	// an explicit --from whose converter opts into empty input. Without --from,
+	// keep the standard "no input provided" error rather than a confusing
+	// auto-detect failure.
+	if len(data) == 0 && fromFormat == "" {
+		return fmt.Errorf("no input provided")
+	}
 
 	// Auto-detect source format if --from not provided
 	if fromFormat == "" {
@@ -182,6 +194,17 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		return buildConverterNotFoundError(fromFormat, toFormat)
 	}
 	printDebug("Using converter: %s", converter.Name())
+
+	// Enforce the empty-input policy now that the converter is known: empty input
+	// is only valid for converters that explicitly accept it (EmptyInputAccepting,
+	// e.g. exit-code-first scanners). Everything else keeps the standard error.
+	if len(data) == 0 {
+		e, ok := converter.(EmptyInputAccepting)
+		if !ok || !e.AcceptsEmptyInput() {
+			return fmt.Errorf("no input provided")
+		}
+		printDebug("Empty input accepted by %s converter as zero findings", converter.Name())
+	}
 
 	// Run conversion with version handling
 	output, err := runVersionedConvert(converter, data, fromVersion, toVersion)

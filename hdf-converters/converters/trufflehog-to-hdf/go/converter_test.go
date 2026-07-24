@@ -30,6 +30,8 @@ func TestConverterContract(t *testing.T) {
 		ConverterName:  "trufflehog-to-hdf",
 		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertTrufflehogToHDF(input, testVersion) },
 		MinimalFixture: "minimal.json",
+		// TruffleHog emits no report on a clean scan; empty input is zero findings.
+		AcceptsEmptyInput: true,
 	})
 }
 
@@ -47,6 +49,32 @@ func TestConvertTrufflehogToHDF_EmptyFindings(t *testing.T) {
 	assert.Equal(t, hdf.Passed, req.Results[0].Status)
 	assert.Contains(t, req.Results[0].CodeDesc, "TruffleHog")
 	assert.Contains(t, req.Results[0].CodeDesc, "scanned")
+}
+
+// TruffleHog is exit-code-first: a clean scan emits no report at all (empty
+// stdout), not an empty array. Empty and whitespace-only input must therefore
+// produce the same zero-findings placeholder as "[]". See card hdf-libs-iow3.
+func TestConvertTrufflehogToHDF_EmptyOrWhitespaceInput(t *testing.T) {
+	for name, input := range map[string][]byte{
+		"empty (0 bytes)":           {},
+		"whitespace-only":           []byte("  \n\t "),
+		"empty array":               []byte("[]"),
+		"empty-stdout.json fixture": loadFixture(t, "input/empty-stdout.json"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			result, err := ConvertTrufflehogToHDF(input, testVersion)
+			require.NoError(t, err, "clean-scan input should convert as zero findings")
+
+			require.Len(t, result.Baselines, 1)
+			require.Len(t, result.Baselines[0].Requirements, 1)
+
+			req := result.Baselines[0].Requirements[0]
+			assert.Equal(t, "trufflehog-no-findings", req.ID)
+			require.Len(t, req.Results, 1)
+			assert.Equal(t, hdf.Passed, req.Results[0].Status)
+			assert.Contains(t, req.Results[0].CodeDesc, "reported zero findings")
+		})
+	}
 }
 
 // ---- Minimal fixture: single object ----
@@ -321,11 +349,12 @@ func TestConvertTrufflehogToHDF_ControlType(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	// ndjson-input carries no git commit timestamp, so its startTime is synthesized;
-	// mask only it. The JSON fixtures derive startTime from the commit time and are
-	// asserted.
+	// mask only it. empty-stdout.json is a clean-scan (zero-findings) input whose
+	// placeholder requirement carries a synthesized startTime; mask it too. The
+	// other JSON fixtures derive startTime from the commit time and are asserted.
 	shared.RunSnapshotTests(t, "trufflehog-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertTrufflehogToHDF(input, "1.0.0")
-	}, "ndjson-input.ndjson")
+	}, "ndjson-input.ndjson", "empty-stdout.json")
 }
 
 // countDistinctTrufflehogGroups parses raw TruffleHog output generically — NOT
