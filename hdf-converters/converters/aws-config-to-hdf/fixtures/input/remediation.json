@@ -1,0 +1,62 @@
+{
+  "ConfigRules": [
+    {
+      "ConfigRuleId": "config-rule-rem001",
+      "ConfigRuleName": "s3-bucket-public-read-prohibited",
+      "ConfigRuleArn": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-rem001",
+      "Description": "Checks whether your Amazon S3 buckets allow public read access.",
+      "Source": {
+        "Owner": "AWS",
+        "SourceIdentifier": "S3_BUCKET_PUBLIC_READ_PROHIBITED"
+      },
+      "InputParameters": "{}",
+      "Remediation": {
+        "TargetType": "SSM_DOCUMENT",
+        "TargetId": "AWS-DisableS3BucketPublicReadWrite",
+        "TargetVersion": "1",
+        "Automatic": true
+      },
+      "EvaluationResults": [
+        {
+          "EvaluationResultIdentifier": {
+            "EvaluationResultQualifier": {
+              "ConfigRuleName": "s3-bucket-public-read-prohibited",
+              "ResourceType": "AWS::S3::Bucket",
+              "ResourceId": "example-public-bucket"
+            }
+          },
+          "ComplianceType": "NON_COMPLIANT",
+          "Annotation": "Rule does not pass rule compliance",
+          "ConfigRuleInvokedTime": "2021-04-09T14:39:21Z",
+          "ResultRecordedTime": "2021-04-09T14:39:51.614Z"
+        }
+      ]
+    },
+    {
+      "ConfigRuleId": "config-rule-rem002",
+      "ConfigRuleName": "access-keys-rotated",
+      "ConfigRuleArn": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-rem002",
+      "Description": "Checks whether the active access keys are rotated within maxAccessKeyAge.",
+      "Source": {
+        "Owner": "AWS",
+        "SourceIdentifier": "ACCESS_KEYS_ROTATED"
+      },
+      "InputParameters": "{\"maxAccessKeyAge\":\"90\"}",
+      "EvaluationResults": [
+        {
+          "EvaluationResultIdentifier": {
+            "EvaluationResultQualifier": {
+              "ConfigRuleName": "access-keys-rotated",
+              "ResourceType": "AWS::IAM::User",
+              "ResourceId": "AIDAQ4IUA7UMXLY36QZXA"
+            }
+          },
+          "ComplianceType": "NON_COMPLIANT",
+          "Annotation": "Rule does not pass rule compliance",
+          "ConfigRuleInvokedTime": "2021-04-09T14:39:21Z",
+          "ResultRecordedTime": "2021-04-09T14:39:51.614Z"
+        }
+      ]
+    }
+  ]
+}
