@@ -355,7 +355,7 @@ func TestNISTControlsBySubstring(t *testing.T) {
 	})
 }
 
-// TestRev4CollapsedControlsExpanded guards the fix for GH #164: Rev-4 rows once
+// TestRev4CollapsedControlsExpanded guards Rev-4 rows that once
 // carried collapsed NIST sub-parts (e.g. IA-5(1)(a)(d)(e)) that split('|') left
 // as single unreachable tokens. They must now resolve to sibling controls.
 func TestRev4CollapsedControlsExpanded(t *testing.T) {

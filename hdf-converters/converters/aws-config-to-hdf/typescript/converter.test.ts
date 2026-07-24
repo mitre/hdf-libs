@@ -346,7 +346,7 @@ describe('AWS Config to HDF converter', async () => {
   });
 });
 
-// GH #165: a rule with an attached remediation configuration gets a `fix`
+// A rule with an attached remediation configuration gets a `fix`
 // description built from the SSM Automation document; a rule without one does not.
 describe('aws-config-to-hdf remediation fix description', () => {
   it('emits a fix description only for rules with remediation', async () => {

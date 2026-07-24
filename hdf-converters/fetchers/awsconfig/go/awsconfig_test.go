@@ -809,7 +809,7 @@ func (c *contextCapturingClient) DescribeRemediationConfigurations(
 	return &configservice.DescribeRemediationConfigurationsOutput{}, nil
 }
 
-// ---- remediation tests (GH #165 / hdf-libs-dwa1) ----
+// ---- remediation tests ----
 
 func TestAWSConfigFetcher_Fetch_Remediation(t *testing.T) {
 	userRule := types.ConfigRule{
