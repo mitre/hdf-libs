@@ -141,6 +141,17 @@ Beads close when their fix is **merged**, not when the release ships — do this
 
 Then present a one-line-per-card summary of what remains open, grouped by whether it is a **release-blocking bug** vs. **patchable / enhancement / future** — this is the "what's left before we can cut the release" view. Only genuine correctness regressions in *this release's* surface should block; pre-existing narrow bugs and hardening/enhancement cards are candidates for a fast-follow patch series, at the user's call.
 
+### Phase 1.6 — Suppression & deferral review (retire what's no longer needed)
+
+The repo carries several **deliberate-suppression / "don't-bump" mechanisms**, each valid when added but each with a *condition under which it should be revisited* — and nothing else tracks those conditions, so they silently rot (a pinned "patched" version becomes the new vulnerable floor; a suppressed advisory that now has a fix stays suppressed; an ignore rule outlives the incompatibility that motivated it). The release is the periodic checkpoint. Walk each system and either confirm it's still needed or retire/refresh it — this phase runs for **every** release, patch included.
+
+1. **`pnpm-workspace.yaml` `overrides`** (forced transitive versions for the security gate). Re-run `pnpm audit --prod --audit-level=moderate` and `pnpm audit --dev --audit-level=high`; for each pinned override confirm it's still the advisory's *current* patched floor (an escalated advisory turns the pin itself into the vulnerable floor). Bump stale pins, verifying the target version actually exists on the registry. Full procedure: `site/docs/contributing/developer-guide.md` → Dependency Audit Overrides.
+2. **`pnpm-workspace.yaml` `auditConfig.ignoreGhsas`** (suppressed advisories). For each GHSA, check whether a patched version now exists; if so, drop the suppression and take the fix instead.
+3. **`.github/dependabot.yml` `ignore` rules** (held bumps). For each rule, check whether its blocking condition still holds (e.g. a `typescript` major hold is gated on typescript-eslint adding support — `typescript-eslint#10940`). Lift the rule once the condition clears so the bump can flow.
+4. **Spot-check code-level suppressions** *(lighter touch — these track the code, so only sweep when the diff touched them)*: `//nolint` (Go) and `/* c8 ignore */` (TS) directives added since `BASE` — confirm each still describes a genuinely-unreachable or justified case, not a masked new gap.
+
+Retirements are their own small commits/PRs (they change behavior — a dropped override or lifted ignore can surface a real advisory or bump), not folded into the version-bump commit. Anything that can't be retired yet: leave it, and note the still-blocking condition so the next release re-checks it.
+
 ### Phase 2 — Mechanical version sweep *(minor/major only)*
 
 > **Patch:** edit only the workspace `package.json` versions and `go.mod` requires (rows 1–2 and 4 below). Leave schema `$id` URLs at `OLD_VERSION` — the schema didn't change — and skip Phases 2.5–4 entirely.
@@ -268,6 +279,7 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 
 - [ ] Phase 1 swarm review run (incl. docs/README-accuracy dimension); critical/high findings resolved or waived; deferrals filed as beads
 - [ ] Phase 1.5 pre-release bead reconciliation: every delivered open/in_progress bead verified against the code and closed citing its PR; remaining-open cards triaged as blocking-bug vs. patchable
+- [ ] Phase 1.6 suppression review: pnpm overrides re-validated against current advisory floors; `ignoreGhsas` checked for now-available fixes; dependabot `ignore` rules checked against their still-blocking conditions; retirements filed as their own commits
 - [ ] 10 `package.json` files at NEW
 - [ ] 5 `go.mod` files: every `hdf-libs/<x>/v3 vNEW` (no stragglers)
 - [ ] *(minor/major)* 7 schema `$id` URLs at NEW
