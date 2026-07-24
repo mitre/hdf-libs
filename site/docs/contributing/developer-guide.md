@@ -363,3 +363,35 @@ diff primitives. Also `packageurl-go` for PURL matching.
 `packageurl-js` for PURLs. Build custom format-agnostic parser (~100-200 lines)
 normalizing CycloneDX `components[]` and SPDX `packages[]` into a common model.
 The diff algorithm is format-agnostic once components are extracted.
+
+---
+
+## Dependency Audit Overrides
+
+The security gate (`pnpm security`) fails on prod advisories at moderate+ and dev
+advisories at high+. Because most advisories are in **transitive** dev
+dependencies we don't control (eslint, vitepress, nodemon, …), we force patched
+versions via the `overrides:` block in `pnpm-workspace.yaml` rather than waiting
+for every upstream to re-release.
+
+**These overrides go stale, and stale overrides fail the gate.** An advisory's
+patched-version floor gets raised (a new GHSA supersedes an old one, or the
+range widens), and the version we pinned as "patched" becomes the new vulnerable
+floor. The next unrelated commit then trips the pre-commit gate on a failure that
+has nothing to do with its change.
+
+**Re-validate the overrides on each dependabot cycle** (when a batch of dep PRs
+lands), not reactively when a commit trips over them:
+
+1. `pnpm audit --prod --audit-level=moderate` and `pnpm audit --dev --audit-level=high`.
+2. For each flagged package already in the `overrides:` block, bump its pin to the
+   advisory's current patched floor. **Verify the target version actually exists**
+   on the registry (`npm view <pkg>@<version> version`) — advisories state
+   `>=X.Y.Z` semantically, but the real next release may skip that exact version
+   (e.g. `shell-quote` had no `1.8.5`; the fix shipped in `1.10.0`).
+3. `pnpm install`, re-run both audits to confirm exit 0, then `pnpm build` + the
+   affected package's tests (a bumped override can pull in a breaking transitive
+   major — `fast-uri` feeds ajv's validation path, for instance).
+4. Advisories with no viable fix are suppressed by GHSA id under
+   `auditConfig.ignoreGhsas` — use sparingly and only when there's genuinely no
+   patched version.

@@ -3,6 +3,11 @@ packages:
   - 'site'
 allowBuilds:
   esbuild: true
+# Forced patched versions for transitive advisories (see the security gate).
+# These GO STALE: when an advisory's patched floor rises, the version pinned here
+# becomes the new vulnerable floor and the gate fails on the next unrelated commit.
+# Re-validate on each dependabot cycle — do NOT just react when a commit trips it.
+# Full procedure: site/docs/contributing/developer-guide.md → Dependency Audit Overrides.
 overrides:
   "minimatch@<3.1.4": "3.1.4"
   "minimatch@>=9.0.0 <9.0.7": "9.0.7"
