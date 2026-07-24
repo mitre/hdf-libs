@@ -212,7 +212,7 @@ function buildResult(r: EvaluationResult): RequirementResult {
  * returned zero in-scope resources. The HDF schema requires `results` to have
  * minItems >= 1; this honestly signals to auditors that the rule's check ran
  * but had no scope in this account/region rather than vacuously claiming
- * "passed". See issue #80 bug 2.
+ * "passed".
  */
 function buildNotApplicableResult(rule: ConfigRule): RequirementResult {
   const codeDesc = `AWS Config rule ${rule.ConfigRuleName} evaluated zero in-scope resources in this account/region.`;
@@ -236,7 +236,7 @@ function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
   }
 
   const title = `${getAccountId(rule.ConfigRuleArn)} - ${rule.ConfigRuleName}`;
-  // Issue #80 bug 2: a Config rule that was deployed and active but evaluated
+  // A Config rule that was deployed and active but evaluated
   // zero in-scope resources (e.g. rds-cluster-multi-az-enabled in an account
   // with no RDS clusters) returns an empty EvaluationResults from
   // GetComplianceDetailsByConfigRule. The HDF schema requires `results` to

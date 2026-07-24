@@ -202,7 +202,7 @@ func TestConvertAWSConfigToHDF_EmptyRules(t *testing.T) {
 }
 
 // TestConvertAWSConfigToHDF_RuleWithEmptyEvaluationResults exercises the
-// live-AWS bug surfaced in issue #80 (bug 2): a Config rule that was deployed
+// live-AWS bug where a Config rule that was deployed
 // and active but evaluated zero in-scope resources (e.g.
 // rds-cluster-multi-az-enabled in an account with no RDS clusters) must still
 // produce a schema-valid requirement. The schema requires Results to have

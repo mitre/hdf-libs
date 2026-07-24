@@ -165,7 +165,7 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 		reqResults = append(reqResults, buildResult(r))
 	}
 	if len(reqResults) == 0 {
-		// Issue #80 bug 2: a Config rule that was deployed and active but
+		// A Config rule that was deployed and active but
 		// evaluated zero in-scope resources (e.g. rds-cluster-multi-az-enabled
 		// in an account with no RDS clusters) returns an empty
 		// EvaluationResults from GetComplianceDetailsByConfigRule. The HDF
@@ -205,7 +205,7 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 // whose live evaluation returned zero in-scope resources. The HDF schema
 // requires Results.minItems >= 1; emitting this synthesized result honestly
 // signals to auditors that the rule's check ran but had no scope in this
-// account/region rather than vacuously claiming "passed". See issue #80 bug 2.
+// account/region rather than vacuously claiming "passed".
 func buildNotApplicableResult(rule ConfigRule) hdf.RequirementResult {
 	return hdf.RequirementResult{
 		Status:    hdf.NotApplicable,

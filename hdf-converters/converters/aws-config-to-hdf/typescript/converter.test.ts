@@ -318,7 +318,7 @@ describe('AWS Config to HDF converter', async () => {
       expect(req.id).toBe('config-rule-xyz');
     });
 
-    // Issue #80 bug 2: a Config rule that was deployed and active but
+    // A Config rule that was deployed and active but
     // evaluated zero in-scope resources (e.g. rds-cluster-multi-az-enabled in
     // an account with no RDS clusters) must still produce a schema-valid
     // requirement. The schema requires `results` to have minItems >= 1;
