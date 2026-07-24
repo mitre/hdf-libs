@@ -78,9 +78,8 @@ describe('trufflehog to HDF converter', async () => {
       expect(req.results[0]!.codeDesc).toContain('scanned');
     });
 
-    // TruffleHog is exit-code-first: a clean scan emits no report at all (empty
-    // stdout), not an empty array. Empty and whitespace-only input must produce
-    // the same zero-findings placeholder as '[]'. See card hdf-libs-iow3.
+    // A clean TruffleHog scan emits empty stdout, not []; empty/whitespace-only
+    // input must produce the same zero-findings placeholder as [].
     it.each([
       ['empty (0 chars)', ''],
       ['whitespace-only', '  \n\t '],

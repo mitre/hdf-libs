@@ -262,11 +262,8 @@ function buildRequirement(reqID: string, findings: TrufflehogFinding[]): Evaluat
 export async function convertTrufflehogToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'trufflehog');
 
-  // TruffleHog is exit-code-first: a clean scan emits no report at all (empty
-  // stdout), which is a valid "zero findings" signal rather than an error. Treat
-  // empty or whitespace-only input as zero findings — the same outcome as an
-  // explicit empty array ([]) — and let the no-findings synthesis below produce
-  // the placeholder requirement. See card hdf-libs-iow3.
+  // A clean TruffleHog scan emits empty stdout (exit-code-first), not []. Treat
+  // empty/whitespace-only input as zero findings, like an explicit [].
   const findings = !input || input.trim().length === 0 ? [] : parseFindings(input);
 
   const resultsChecksum = await inputChecksum(input);

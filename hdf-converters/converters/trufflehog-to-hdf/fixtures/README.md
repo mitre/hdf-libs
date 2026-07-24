@@ -10,8 +10,7 @@ stdout and exits 0; the human-readable "finished scanning" summary goes to
 stderr. There is no "empty report" — a clean run produces zero bytes. The
 converter therefore treats empty, whitespace-only, and `[]` input alike as a
 valid **zero-findings** signal, synthesizing a single passed
-`trufflehog-no-findings` requirement rather than erroring. See card
-`hdf-libs-iow3`.
+`trufflehog-no-findings` requirement rather than erroring.
 
 ## input/
 

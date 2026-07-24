@@ -51,9 +51,8 @@ func TestConvertTrufflehogToHDF_EmptyFindings(t *testing.T) {
 	assert.Contains(t, req.Results[0].CodeDesc, "scanned")
 }
 
-// TruffleHog is exit-code-first: a clean scan emits no report at all (empty
-// stdout), not an empty array. Empty and whitespace-only input must therefore
-// produce the same zero-findings placeholder as "[]". See card hdf-libs-iow3.
+// A clean TruffleHog scan emits empty stdout, not []; empty/whitespace-only
+// input must produce the same zero-findings placeholder as [].
 func TestConvertTrufflehogToHDF_EmptyOrWhitespaceInput(t *testing.T) {
 	for name, input := range map[string][]byte{
 		"empty (0 bytes)":           {},

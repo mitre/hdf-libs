@@ -67,10 +67,8 @@ func TestTrufflehogConverter_Convert_EmptyArray(t *testing.T) {
 	assert.Contains(t, string(output), "trufflehog-no-findings")
 }
 
-// A clean TruffleHog scan emits no report at all (empty stdout), which reaches
-// the CLI as a 0-byte input file. With an explicit --from trufflehog, that must
-// convert to a valid zero-findings HDF document rather than erroring at the
-// input boundary. See card hdf-libs-iow3.
+// A clean TruffleHog scan reaches the CLI as a 0-byte file; with --from
+// trufflehog it must convert to a zero-findings HDF document, not error.
 func TestTrufflehogConverter_Convert_EmptyFile_ExplicitFrom(t *testing.T) {
 	empty := converterFixturePath(t, "trufflehog-to-hdf", "input/empty-stdout.json")
 	stdout, stderr, err := executeCommand("convert", "--from", "trufflehog", empty)

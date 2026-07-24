@@ -308,11 +308,8 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		return nil, fmt.Errorf("trufflehog: %w", err)
 	}
 
-	// TruffleHog is exit-code-first: a clean scan emits no report at all (empty
-	// stdout), which is a valid "zero findings" signal rather than an error.
-	// Treat empty or whitespace-only input as zero findings — the same outcome
-	// as an explicit empty array ([]) — and let the no-findings synthesis below
-	// produce the placeholder requirement. See card hdf-libs-iow3.
+	// A clean TruffleHog scan emits empty stdout (exit-code-first), not []. Treat
+	// empty/whitespace-only input as zero findings, like an explicit [].
 	var findings []TrufflehogFinding
 	if len(bytes.TrimSpace(input)) > 0 {
 		var err error
