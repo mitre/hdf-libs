@@ -1,6 +1,8 @@
 package awsconfig
 
 import (
+	"slices"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -351,4 +353,22 @@ func TestNISTControlsBySubstring(t *testing.T) {
 			t.Errorf("expected nil for empty name, got %v", got)
 		}
 	})
+}
+
+// TestRev4CollapsedControlsExpanded guards the fix for GH #164: Rev-4 rows once
+// carried collapsed NIST sub-parts (e.g. IA-5(1)(a)(d)(e)) that split('|') left
+// as single unreachable tokens. They must now resolve to sibling controls.
+func TestRev4CollapsedControlsExpanded(t *testing.T) {
+	controls := NISTControlsByIdentifierForRevision("IAM_PASSWORD_POLICY", 4)
+	for _, want := range []string{"IA-5(1)", "IA-5(a)", "IA-5(d)", "IA-5(e)"} {
+		if !slices.Contains(controls, want) {
+			t.Errorf("expected expanded sibling %q in %v", want, controls)
+		}
+	}
+	// No token may retain more than one parenthetical group (a collapsed form).
+	for _, c := range controls {
+		if strings.Count(c, "(") > 1 {
+			t.Errorf("collapsed token survived expansion: %q", c)
+		}
+	}
 }
