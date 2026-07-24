@@ -392,6 +392,8 @@ func TestTrivyLocation(t *testing.T) {
 	assert.Equal(t, "Dockerfile", trivyLocation(map[string]string{"Filename": "Dockerfile", "StartLine": "0", "EndLine": "0"}))
 	assert.Equal(t, "main.tf:12", trivyLocation(map[string]string{"Filename": "main.tf", "StartLine": "12", "EndLine": "12"}))
 	assert.Equal(t, "main.tf:12-18", trivyLocation(map[string]string{"Filename": "main.tf", "StartLine": "12", "EndLine": "18"}))
+	// A line number with no filename is meaningless — return empty, not ":12".
+	assert.Equal(t, "", trivyLocation(map[string]string{"StartLine": "12"}))
 }
 
 // TestSnapshots asserts whole-document output against frozen goldens. The

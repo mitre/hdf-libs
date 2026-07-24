@@ -448,12 +448,15 @@ func trivyMessage(f asffFinding) string {
 // trivyLocation renders "file:startLine-endLine" from a misconfiguration
 // finding, omitting line numbers Trivy reports as 0 (whole-file findings).
 func trivyLocation(o map[string]string) string {
-	loc := o["Filename"]
+	file := o["Filename"]
+	if file == "" {
+		return ""
+	}
 	sl := o["StartLine"]
 	if sl == "" || sl == "0" {
-		return loc
+		return file
 	}
-	loc += ":" + sl
+	loc := file + ":" + sl
 	if el := o["EndLine"]; el != "" && el != "0" && el != sl {
 		loc += "-" + el
 	}

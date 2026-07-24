@@ -382,7 +382,6 @@ function vulnerabilitySummary(f: AsffFinding): string {
     .join('\n');
 }
 
-/** Summarizes the installed vs patched package for a Trivy CVE finding. */
 // trivyMessage summarizes a Trivy finding's product-specific detail for the
 // result message, dispatching on the finding shape Trivy's ASFF template emits:
 // a CVE reports the installed vs patched package, a misconfiguration reports the
@@ -412,10 +411,11 @@ function trivyMessage(f: AsffFinding): string {
 // trivyLocation renders 'file:startLine-endLine' from a misconfiguration
 // finding, omitting line numbers Trivy reports as 0 (whole-file findings).
 export function trivyLocation(o: Record<string, string>): string {
-  let loc = o['Filename'] ?? '';
+  const file = o['Filename'] ?? '';
+  if (!file) return '';
   const sl = o['StartLine'];
-  if (!sl || sl === '0') return loc;
-  loc += `:${sl}`;
+  if (!sl || sl === '0') return file;
+  let loc = `${file}:${sl}`;
   const el = o['EndLine'];
   if (el && el !== '0' && el !== sl) loc += `-${el}`;
   return loc;

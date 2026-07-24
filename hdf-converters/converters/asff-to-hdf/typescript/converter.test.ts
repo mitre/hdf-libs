@@ -138,6 +138,8 @@ describe('asff mapping helpers', () => {
     expect(trivyLocation({ Filename: 'Dockerfile', StartLine: '0', EndLine: '0' })).toBe('Dockerfile');
     expect(trivyLocation({ Filename: 'main.tf', StartLine: '12', EndLine: '12' })).toBe('main.tf:12');
     expect(trivyLocation({ Filename: 'main.tf', StartLine: '12', EndLine: '18' })).toBe('main.tf:12-18');
+    // A line number with no filename is meaningless — return empty, not ':12'.
+    expect(trivyLocation({ StartLine: '12' })).toBe('');
   });
 
   it('forces suppressed findings to zero impact', () => {
