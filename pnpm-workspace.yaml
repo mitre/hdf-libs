@@ -3,13 +3,18 @@ packages:
   - 'site'
 allowBuilds:
   esbuild: true
+# Forced patched versions for transitive advisories (see the security gate).
+# These GO STALE: when an advisory's patched floor rises, the version pinned here
+# becomes the new vulnerable floor and the gate fails on the next unrelated commit.
+# Re-validate on each dependabot cycle — do NOT just react when a commit trips it.
+# Full procedure: site/docs/contributing/developer-guide.md → Dependency Audit Overrides.
 overrides:
   "minimatch@<3.1.4": "3.1.4"
   "minimatch@>=9.0.0 <9.0.7": "9.0.7"
   "minimatch@>=10.0.0 <10.2.3": "10.2.3"
   "rollup@>=4.0.0 <4.59.0": "4.59.0"
   "esbuild@<0.25.0": "0.25.0"
-  "shell-quote@<1.8.4": "1.8.4"
+  "shell-quote@<1.8.5": "1.10.0"
   "underscore@<1.13.8": "1.13.8"
   "lodash@>=4.0.0 <4.18.0": "4.18.1"
   "ajv@>=6.0.0 <6.14.0": "6.14.0"
@@ -19,14 +24,15 @@ overrides:
   "picomatch@<2.3.2": "2.3.2"
   "picomatch@>=4.0.0 <4.0.4": "4.0.4"
   "yaml@>=2.0.0 <2.8.3": "2.8.3"
-  "brace-expansion@<1.1.13": "1.1.13"
-  "brace-expansion@>=5.0.0 <5.0.6": "5.0.6"
-  "fast-uri@<3.1.2": "3.1.2"
+  "brace-expansion@<1.1.16": "1.1.16"
+  "brace-expansion@>=5.0.0 <5.0.7": "5.0.7"
+  "fast-uri@<3.1.4": "3.1.4"
   "fast-xml-builder@<1.1.9": "1.1.9"
   "follow-redirects@<1.16.0": "1.16.0"
-  "postcss@<8.5.10": "8.5.10"
+  "postcss@<8.5.18": "8.5.18"
   "fflate@0.8.3": "0.8.2"
 auditConfig:
   ignoreGhsas:
-    - "GHSA-gv7w-rqvm-qjhr"
+    # GHSA-fx2h-pf6j-xcff — vite (transitive under vitepress 1.x); clears when
+    # vitepress moves to 2.x (tracked: hdf-libs-34nl).
     - "GHSA-fx2h-pf6j-xcff"

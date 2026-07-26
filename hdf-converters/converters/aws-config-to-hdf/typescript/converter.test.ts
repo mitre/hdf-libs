@@ -3,7 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { setCurrentNistRevision, resetNistRevision, setNistStrict } from '@mitre/hdf-mappings';
-import { convertAwsConfigToHdf } from './converter.js';
+import { convertAwsConfigToHdf, buildFixText } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import {
@@ -318,7 +318,7 @@ describe('AWS Config to HDF converter', async () => {
       expect(req.id).toBe('config-rule-xyz');
     });
 
-    // Issue #80 bug 2: a Config rule that was deployed and active but
+    // A Config rule that was deployed and active but
     // evaluated zero in-scope resources (e.g. rds-cluster-multi-az-enabled in
     // an account with no RDS clusters) must still produce a schema-valid
     // requirement. The schema requires `results` to have minItems >= 1;
@@ -343,5 +343,48 @@ describe('AWS Config to HDF converter', async () => {
       expect(req.results![0]!.codeDesc).toMatch(/zero/i);
       expect(req.results![0]!.startTime).toBeTruthy();
     });
+  });
+});
+
+// A rule with an attached remediation configuration gets a `fix`
+// description built from the SSM Automation document; a rule without one does not.
+describe('aws-config-to-hdf remediation fix description', () => {
+  it('emits a fix description only for rules with remediation', async () => {
+    const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('remediation.json'))) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+    const byId = (id: string) => reqs.find((r) => r.id === id)!;
+
+    const fixOf = (id: string) =>
+      byId(id).descriptions?.find((d) => d.label === 'fix')?.data;
+
+    // Rule with remediation → fix description surfacing the SSM doc.
+    const fix = fixOf('config-rule-rem001');
+    expect(fix).toBeDefined();
+    expect(fix).toContain('AWS-DisableS3BucketPublicReadWrite');
+    expect(fix).toContain('SSM Automation document');
+    expect(fix).toContain('automatically on non-compliance');
+
+    // Rule without remediation → no fix description.
+    expect(fixOf('config-rule-rem002')).toBeUndefined();
+
+    expectValidResults(hdf);
+  });
+});
+
+describe('buildFixText', () => {
+  type Rule = Parameters<typeof buildFixText>[0];
+  it('is empty without a remediation or target id', () => {
+    expect(buildFixText({} as Rule)).toBe('');
+    expect(buildFixText({ Remediation: { TargetType: 'SSM_DOCUMENT', TargetId: '' } } as Rule)).toBe('');
+  });
+  it('renders SSM, versioned, on-demand', () => {
+    expect(buildFixText({ Remediation: { TargetType: 'SSM_DOCUMENT', TargetId: 'Doc', TargetVersion: '2' } } as Rule))
+      .toBe('Remediate via SSM Automation document Doc (version 2), applied on demand.');
+  });
+  it('falls back on empty and non-SSM target types', () => {
+    expect(buildFixText({ Remediation: { TargetId: 'Doc', Automatic: true } } as Rule))
+      .toBe('Remediate via automation document Doc, applied automatically on non-compliance.');
+    expect(buildFixText({ Remediation: { TargetType: 'LAMBDA', TargetId: 'Doc' } } as Rule))
+      .toBe('Remediate via LAMBDA document Doc, applied on demand.');
   });
 });

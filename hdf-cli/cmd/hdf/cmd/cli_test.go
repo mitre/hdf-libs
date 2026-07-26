@@ -385,7 +385,7 @@ func TestNoFollowSymlinksFlag(t *testing.T) {
 
 	t.Run("follow symlink (default)", func(t *testing.T) {
 		noFollowSymlinks = false
-		if _, err := readFromFile(symlinkPath); err != nil {
+		if _, err := readFromFile(symlinkPath, false); err != nil {
 			t.Errorf("unexpected error when following symlink: %v", err)
 		}
 	})
@@ -394,7 +394,7 @@ func TestNoFollowSymlinksFlag(t *testing.T) {
 		noFollowSymlinks = true
 		defer func() { noFollowSymlinks = false }()
 
-		_, err := readFromFile(symlinkPath)
+		_, err := readFromFile(symlinkPath, false)
 		if err == nil {
 			t.Error("expected error when refusing to follow symlink, got nil")
 		}

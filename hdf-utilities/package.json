@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-utilities",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "description": "Utility functions for HDF libraries (JSON parsing, validation helpers)",
   "publishConfig": {
     "access": "public"

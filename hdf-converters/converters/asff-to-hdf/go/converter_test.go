@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -359,6 +360,40 @@ func TestConvertAsff_Trivy(t *testing.T) {
 	out, err := json.Marshal(result)
 	require.NoError(t, err)
 	assert.Truef(t, validators.ValidateResults(out).Valid, "%s", validators.ValidateResults(out).Error())
+}
+
+func TestConvertAsff_TrivyMisconfigAndSecret(t *testing.T) {
+	result, err := ConvertAsffToHDF(loadFixture(t, "trivy_config_secret_sample.json"), converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	var messages []string
+	for _, req := range result.Baselines[0].Requirements {
+		require.Len(t, req.Results, 1)
+		assert.Equal(t, hdf.Failed, req.Results[0].Status, "req %s", req.ID)
+		if req.Results[0].Message != nil {
+			messages = append(messages, *req.Results[0].Message)
+		}
+	}
+	joined := strings.Join(messages, "\n")
+
+	// Misconfiguration: the remediation message and file location are surfaced
+	// (previously dropped — the finding still converted but lost its detail).
+	assert.Contains(t, joined, "Specify at least 1 USER command in Dockerfile with non-root user as argument (Dockerfile)")
+	// Secret: the file the secret was found in is surfaced.
+	assert.Contains(t, joined, "Secret detected in config.yaml.")
+
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	assert.Truef(t, validators.ValidateResults(out).Valid, "%s", validators.ValidateResults(out).Error())
+}
+
+func TestTrivyLocation(t *testing.T) {
+	assert.Equal(t, "Dockerfile", trivyLocation(map[string]string{"Filename": "Dockerfile", "StartLine": "0", "EndLine": "0"}))
+	assert.Equal(t, "main.tf:12", trivyLocation(map[string]string{"Filename": "main.tf", "StartLine": "12", "EndLine": "12"}))
+	assert.Equal(t, "main.tf:12-18", trivyLocation(map[string]string{"Filename": "main.tf", "StartLine": "12", "EndLine": "18"}))
+	// A line number with no filename is meaningless — return empty, not ":12".
+	assert.Equal(t, "", trivyLocation(map[string]string{"StartLine": "12"}))
 }
 
 // TestSnapshots asserts whole-document output against frozen goldens. The

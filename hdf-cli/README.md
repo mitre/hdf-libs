@@ -535,6 +535,10 @@ Fetch AWS Config compliance evaluation results and convert to HDF.
 
 Credentials are resolved via the standard AWS credential chain: environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`), shared credentials file (`~/.aws/credentials`), or IAM instance role.
 
+**Service-linked rules are excluded.** Config rules owned by an AWS service (`CreatedBy` set — Security Hub, conformance packs, Organizations) can't be read via the Config API by a customer principal, so they're skipped (a `WARNING: skipped N service-linked rule(s)` is printed to stderr). Fetch their findings through the owning service instead — e.g. `hdf fetch aws-securityhub` for Security Hub controls.
+
+**Remediation surfaces as a `fix` description.** A customer-managed rule with an attached remediation configuration (SSM Automation document) gains a `fix` description in its HDF requirement describing the remediation.
+
 ```
 USAGE
   hdf fetch aws-config [output] [flags]
@@ -543,12 +547,13 @@ FLAGS
   -r, --region string     (required) AWS region (e.g., us-east-1)
   -p, --profile string    AWS CLI named profile
       --format string     Output format: hdf or raw (default "hdf")
+      --no-validate       Skip schema validation of converter output before writing
   -o, --output string     Output file path (default: stdout)
 
 EXAMPLES
   hdf fetch aws-config --region us-east-1 output.json
   hdf fetch aws-config --region us-east-1 --profile my-audit-account output.json
-  hdf fetch aws-config --region us-east-1 --format raw | jq '.rules | length'
+  hdf fetch aws-config --region us-east-1 --format raw | jq '.ConfigRules | length'
   hdf fetch aws-config --region us-east-1 | jq '.baselines[0].requirements | length'
 ```
 
@@ -567,6 +572,7 @@ FLAGS
   -p, --profile string      AWS CLI named profile
       --format string       Output format: hdf or raw (default "hdf")
       --filter-json string  Path to a JSON file with an ASFF AwsSecurityFindingFilters object
+      --no-validate         Skip schema validation of converter output before writing
   -o, --output string       Output file path (default: stdout)
       --check               Verify credentials only; skip findings download
 
@@ -692,13 +698,15 @@ USAGE
   hdf fetch sonarqube [output] [flags]
 
 FLAGS
-  -u, --url string             (required) SonarQube server URL
-  -k, --project-key string    (required) SonarQube project key
-      --branch string          Branch name
-      --pull-request string    Pull request ID
-      --organization string    SonarCloud organization key
-      --format string          Output format: hdf or raw (default "hdf")
-  -o, --output string          Output file path (default: stdout)
+  -u, --url string                (required) SonarQube server URL
+      --project-key string        (required) SonarQube project key
+      --branch string             Branch name
+      --pull-request string       Pull request ID
+      --organization string       SonarCloud organization key
+      --sonarqube-version string  SonarQube server version (auto-detected if omitted; affects auth method)
+      --format string             Output format: hdf or raw (default "hdf")
+      --no-validate               Skip schema validation of converter output before writing
+  -o, --output string             Output file path (default: stdout)
 
 NOTE
   --branch and --pull-request are mutually exclusive.
@@ -726,6 +734,7 @@ FLAGS
   -u, --url string       (required) Splunk server URL
   -i, --index string     (required) Splunk index name
   -g, --guid string      (required) Evaluation GUID to fetch
+      --no-validate      Skip schema validation of converter output before writing
   -o, --output string    Output file path (default: stdout)
 
 EXAMPLES

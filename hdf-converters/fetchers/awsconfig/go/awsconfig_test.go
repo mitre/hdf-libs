@@ -28,6 +28,28 @@ type mockConfigClient struct {
 	// Counts calls for pagination verification.
 	describeCalls   int
 	complianceCalls map[string]int
+	// Remediation lookups; keyed by rule name.
+	remediations       map[string]types.RemediationConfiguration
+	remediationErr     error
+	remediationBatches [][]string // captures each batch's requested rule names
+}
+
+func (m *mockConfigClient) DescribeRemediationConfigurations(
+	_ context.Context,
+	in *configservice.DescribeRemediationConfigurationsInput,
+	_ ...func(*configservice.Options),
+) (*configservice.DescribeRemediationConfigurationsOutput, error) {
+	m.remediationBatches = append(m.remediationBatches, in.ConfigRuleNames)
+	if m.remediationErr != nil {
+		return nil, m.remediationErr
+	}
+	var rcs []types.RemediationConfiguration
+	for _, name := range in.ConfigRuleNames {
+		if rc, ok := m.remediations[name]; ok {
+			rcs = append(rcs, rc)
+		}
+	}
+	return &configservice.DescribeRemediationConfigurationsOutput{RemediationConfigurations: rcs}, nil
 }
 
 func (m *mockConfigClient) DescribeConfigRules(
@@ -761,4 +783,118 @@ func TestAWSConfigFetcher_FetchAndConvert(t *testing.T) {
 	req := hdfResult.Baselines[0].Requirements[0]
 	assert.Equal(t, "config-rule-7hytm9", req.ID)
 	assert.Equal(t, hdfResult.Generator.Name, "aws-config-to-hdf")
+}
+
+func (m *infiniteMockClient) DescribeRemediationConfigurations(
+	_ context.Context,
+	_ *configservice.DescribeRemediationConfigurationsInput,
+	_ ...func(*configservice.Options),
+) (*configservice.DescribeRemediationConfigurationsOutput, error) {
+	return &configservice.DescribeRemediationConfigurationsOutput{}, nil
+}
+
+func (m *oneRuleInfiniteResultsClient) DescribeRemediationConfigurations(
+	_ context.Context,
+	_ *configservice.DescribeRemediationConfigurationsInput,
+	_ ...func(*configservice.Options),
+) (*configservice.DescribeRemediationConfigurationsOutput, error) {
+	return &configservice.DescribeRemediationConfigurationsOutput{}, nil
+}
+
+func (c *contextCapturingClient) DescribeRemediationConfigurations(
+	_ context.Context,
+	_ *configservice.DescribeRemediationConfigurationsInput,
+	_ ...func(*configservice.Options),
+) (*configservice.DescribeRemediationConfigurationsOutput, error) {
+	return &configservice.DescribeRemediationConfigurationsOutput{}, nil
+}
+
+// ---- remediation tests ----
+
+func TestAWSConfigFetcher_Fetch_Remediation(t *testing.T) {
+	userRule := types.ConfigRule{
+		ConfigRuleId:   aws.String("cr-user"),
+		ConfigRuleName: aws.String("s3-bucket-public-read-prohibited"),
+		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-user"),
+		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("S3_BUCKET_PUBLIC_READ_PROHIBITED")},
+	}
+	userRuleNoRem := types.ConfigRule{
+		ConfigRuleId:   aws.String("cr-user2"),
+		ConfigRuleName: aws.String("access-keys-rotated"),
+		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-user2"),
+		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
+	}
+	// Service-linked rule (CreatedBy set) — must be excluded from the remediation
+	// query so it can't poison the batch with "not supported".
+	serviceLinked := types.ConfigRule{
+		ConfigRuleId:   aws.String("cr-sh"),
+		ConfigRuleName: aws.String("securityhub-access-keys-rotated-cce23527"),
+		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-sh"),
+		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
+		CreatedBy:      aws.String("securityhub.amazonaws.com"),
+	}
+
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{
+			{ConfigRules: []types.ConfigRule{userRule, userRuleNoRem, serviceLinked}},
+		},
+		remediations: map[string]types.RemediationConfiguration{
+			"s3-bucket-public-read-prohibited": {
+				ConfigRuleName: aws.String("s3-bucket-public-read-prohibited"),
+				TargetType:     types.RemediationTargetTypeSsmDocument,
+				TargetId:       aws.String("AWS-DisableS3BucketPublicReadWrite"),
+				TargetVersion:  aws.String("1"),
+				Automatic:      true,
+			},
+		},
+	}
+
+	f := NewAWSConfigFetcherWithClient(mock)
+	out, err := f.Fetch(context.Background())
+	require.NoError(t, err)
+	file := mustUnmarshal(t, out)
+
+	byName := map[string]awsconfigconv.ConfigRule{}
+	for _, r := range file.ConfigRules {
+		byName[r.ConfigRuleName] = r
+	}
+
+	// Service-linked rule → excluded from output entirely (unreadable via Config).
+	require.Len(t, file.ConfigRules, 2, "service-linked rule must not appear in output")
+	_, present := byName["securityhub-access-keys-rotated-cce23527"]
+	assert.False(t, present, "service-linked rule must be excluded from output")
+	for _, batch := range mock.remediationBatches {
+		assert.NotContains(t, batch, "securityhub-access-keys-rotated-cce23527",
+			"service-linked rules must be excluded from the remediation query")
+	}
+	// Never queried for compliance either (that call rejects service-linked rules
+	// and was the pre-existing hard-fail this exclusion fixes).
+	assert.Zero(t, mock.complianceCalls["securityhub-access-keys-rotated-cce23527"],
+		"service-linked rules must not be queried for compliance")
+
+	// Rule with a remediation → populated, fields carried from the SDK shape.
+	rem := byName["s3-bucket-public-read-prohibited"].Remediation
+	require.NotNil(t, rem, "rule with remediation should carry it")
+	assert.Equal(t, "SSM_DOCUMENT", rem.TargetType)
+	assert.Equal(t, "AWS-DisableS3BucketPublicReadWrite", rem.TargetID)
+	assert.Equal(t, "1", rem.TargetVersion)
+	assert.True(t, rem.Automatic)
+
+	// Customer rule without a remediation → nil.
+	assert.Nil(t, byName["access-keys-rotated"].Remediation)
+}
+
+func TestAWSConfigFetcher_Fetch_RemediationErrorIsNonFatal(t *testing.T) {
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{
+			{ConfigRules: []types.ConfigRule{testRule}},
+		},
+		remediationErr: fmt.Errorf("throttled"),
+	}
+	f := NewAWSConfigFetcherWithClient(mock)
+	out, err := f.Fetch(context.Background())
+	require.NoError(t, err, "a remediation API error must not fail the fetch")
+	file := mustUnmarshal(t, out)
+	require.Len(t, file.ConfigRules, 1)
+	assert.Nil(t, file.ConfigRules[0].Remediation, "no remediation on API error")
 }

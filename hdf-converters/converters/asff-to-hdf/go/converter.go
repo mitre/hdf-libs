@@ -413,21 +413,54 @@ func vulnerabilitySummary(f asffFinding) string {
 	return strings.Join(lines, "\n")
 }
 
-// trivyMessage summarizes the installed vs patched package for a Trivy CVE finding.
+// trivyMessage summarizes a Trivy finding's product-specific detail for the
+// result message, dispatching on the finding shape Trivy's ASFF template emits:
+// a CVE reports the installed vs patched package, a misconfiguration reports the
+// remediation message and file location, and a secret reports the file it was
+// found in. Details.Other keys are the discriminator — "CVE ID" for
+// vulnerabilities, "Message" for misconfigurations, a lone "Filename" for
+// secrets.
 func trivyMessage(f asffFinding) string {
 	if len(f.Resources) == 0 || f.Resources[0].Details == nil {
 		return ""
 	}
 	o := f.Resources[0].Details.Other
-	if o["CVE ID"] == "" {
+	switch {
+	case o["CVE ID"] != "":
+		patchMsg := "There is no patched version of the package."
+		if p := o["Patched Package"]; p != "" {
+			patchMsg = fmt.Sprintf("The package has been patched since version(s): %s.", p)
+		}
+		return fmt.Sprintf("For package %s, the current version that is installed is %s.  %s",
+			o["PkgName"], o["Installed Package"], patchMsg)
+	case o["Message"] != "":
+		msg := o["Message"]
+		if loc := trivyLocation(o); loc != "" {
+			msg += fmt.Sprintf(" (%s)", loc)
+		}
+		return msg
+	case o["Filename"] != "":
+		return fmt.Sprintf("Secret detected in %s.", o["Filename"])
+	}
+	return ""
+}
+
+// trivyLocation renders "file:startLine-endLine" from a misconfiguration
+// finding, omitting line numbers Trivy reports as 0 (whole-file findings).
+func trivyLocation(o map[string]string) string {
+	file := o["Filename"]
+	if file == "" {
 		return ""
 	}
-	patchMsg := "There is no patched version of the package."
-	if p := o["Patched Package"]; p != "" {
-		patchMsg = fmt.Sprintf("The package has been patched since version(s): %s.", p)
+	sl := o["StartLine"]
+	if sl == "" || sl == "0" {
+		return file
 	}
-	return fmt.Sprintf("For package %s, the current version that is installed is %s.  %s",
-		o["PkgName"], o["Installed Package"], patchMsg)
+	loc := file + ":" + sl
+	if el := o["EndLine"]; el != "" && el != "0" && el != sl {
+		loc += "-" + el
+	}
+	return loc
 }
 
 // mapComplianceStatus maps ASFF Compliance.Status to an HDF result status.

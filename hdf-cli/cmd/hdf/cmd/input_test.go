@@ -8,7 +8,7 @@ import (
 )
 
 func TestReadFromFile_NotFound(t *testing.T) {
-	_, err := readFromFile("/nonexistent/path/to/file.json")
+	_, err := readFromFile("/nonexistent/path/to/file.json", false)
 	if err == nil {
 		t.Error("expected error for nonexistent file")
 	}
@@ -17,7 +17,7 @@ func TestReadFromFile_NotFound(t *testing.T) {
 func TestReadFromFile_IsDirectory(t *testing.T) {
 	// Use temp directory
 	tmpDir := t.TempDir()
-	_, err := readFromFile(tmpDir)
+	_, err := readFromFile(tmpDir, false)
 	if err == nil {
 		t.Error("expected error for directory")
 	}
@@ -34,7 +34,7 @@ func TestReadFromFile_EmptyFile(t *testing.T) {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
 
-	_, err := readFromFile(tmpFile)
+	_, err := readFromFile(tmpFile, false)
 	if err == nil {
 		t.Error("expected error for empty file")
 	}
@@ -49,7 +49,7 @@ func TestReadFromFile_ValidFile(t *testing.T) {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
 
-	data, err := readFromFile(tmpFile)
+	data, err := readFromFile(tmpFile, false)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-validators",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "description": "JSON Schema validation for HDF documents (Results and Baselines)",
   "publishConfig": {
     "access": "public"

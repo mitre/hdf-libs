@@ -19,6 +19,8 @@ runConverterContractTests({
   converterName: 'trufflehog-to-hdf',
   convertFn: convertTrufflehogToHdf,
   minimalFixture: 'minimal.json',
+  // TruffleHog emits no report on a clean scan; empty input is zero findings.
+  acceptsEmptyInput: true,
 });
 
 // countDistinctTrufflehogGroups parses raw TruffleHog output generically — NOT
@@ -74,6 +76,26 @@ describe('trufflehog to HDF converter', async () => {
       expect(req.results[0]!.status).toBe('passed');
       expect(req.results[0]!.codeDesc).toContain('TruffleHog');
       expect(req.results[0]!.codeDesc).toContain('scanned');
+    });
+
+    // A clean TruffleHog scan emits empty stdout, not []; empty/whitespace-only
+    // input must produce the same zero-findings placeholder as [].
+    it.each([
+      ['empty (0 chars)', ''],
+      ['whitespace-only', '  \n\t '],
+      ['empty array', '[]'],
+      ['empty-stdout.json fixture', loadFixture('empty-stdout.json')],
+    ])('treats %s input as zero findings', async (_name, input) => {
+      const output = await convertTrufflehogToHdf(input);
+      const hdf = JSON.parse(output) as HDFResults;
+
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('trufflehog-no-findings');
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('reported zero findings');
     });
   });
 

@@ -72,7 +72,8 @@ describe('AWS Config Mapping Functions', () => {
 
     it('should handle complex NIST IDs', () => {
       const nistId = getAwsConfigNistControlByIdentifier('IAM_PASSWORD_POLICY', 4);
-      expect(nistId).toBe('AC-2(1)|AC-2(f)|AC-2(j)|IA-2|IA-5(1)(a)(d)(e)|IA-5(4)');
+      // Rev-4 collapsed sub-parts IA-5(1)(a)(d)(e) are expanded to siblings.
+      expect(nistId).toBe('AC-2(1)|AC-2(f)|AC-2(j)|IA-2|IA-5(1)|IA-5(a)|IA-5(d)|IA-5(e)|IA-5(4)');
     });
   });
 
@@ -231,5 +232,22 @@ describe('getAwsConfigNistControlsBySubstring', () => {
 
   it('returns [] for an empty name', () => {
     expect(getAwsConfigNistControlsBySubstring('')).toEqual([]);
+  });
+});
+
+// Guards Rev-4 rows that once carried collapsed NIST sub-parts
+// (e.g. IA-5(1)(a)(d)(e)) that split('|') left as single unreachable tokens.
+describe('Rev-4 collapsed control expansion', () => {
+  it('expands collapsed sub-parts into sibling controls', () => {
+    const raw = getAwsConfigNistControlByIdentifier('IAM_PASSWORD_POLICY', 4);
+    expect(raw).toBeDefined();
+    const controls = raw!.split('|');
+    for (const want of ['IA-5(1)', 'IA-5(a)', 'IA-5(d)', 'IA-5(e)']) {
+      expect(controls).toContain(want);
+    }
+    // No token may retain more than one parenthetical group (a collapsed form).
+    for (const c of controls) {
+      expect((c.match(/\(/g) ?? []).length).toBeLessThanOrEqual(1);
+    }
   });
 });

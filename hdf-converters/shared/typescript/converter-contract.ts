@@ -21,6 +21,14 @@ export interface ConverterContractSpec {
   convertFn: (input: string) => string | Promise<string>;
   /** Path relative to fixtures/input/, e.g. 'minimal.json' */
   minimalFixture: string;
+  /**
+   * Inverts the empty-input contract: when true, empty input must convert
+   * successfully (a valid "zero findings" signal) rather than throw. Set this
+   * for converters of exit-code-first tools that emit no report on a clean run
+   * (e.g. TruffleHog). Defaults to false — every other converter must still
+   * reject empty input.
+   */
+  acceptsEmptyInput?: boolean;
 }
 
 /**
@@ -28,9 +36,17 @@ export interface ConverterContractSpec {
  */
 export function runConverterContractTests(spec: ConverterContractSpec): void {
   describe(`${spec.converterName} contract`, () => {
-    it('rejects empty input', async () => {
-      await expect(Promise.resolve(spec.convertFn(''))).rejects.toThrow();
-    });
+    if (spec.acceptsEmptyInput) {
+      it('accepts empty input as zero findings', async () => {
+        const output = await Promise.resolve(spec.convertFn(''));
+        expect(output).toBeTruthy();
+        expect(() => JSON.parse(output)).not.toThrow();
+      });
+    } else {
+      it('rejects empty input', async () => {
+        await expect(Promise.resolve(spec.convertFn(''))).rejects.toThrow();
+      });
+    }
 
     it('rejects invalid input', async () => {
       await expect(Promise.resolve(spec.convertFn('not valid json'))).rejects.toThrow();

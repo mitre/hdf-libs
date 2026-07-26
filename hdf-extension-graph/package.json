@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-extension-graph",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "description": "Bidirectional extension graph processing for HDF profile/baseline hierarchies",
   "publishConfig": {
     "access": "public"

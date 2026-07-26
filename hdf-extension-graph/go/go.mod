@@ -4,14 +4,14 @@ go 1.26.5
 
 require (
 	github.com/mitre/hdf-libs/hdf-fixtures v0.0.0-00010101000000-000000000000
-	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.4.1
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.4.1
+	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.4.2
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.4.2
 	github.com/stretchr/testify v1.11.1
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.4.1 // indirect
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.4.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect

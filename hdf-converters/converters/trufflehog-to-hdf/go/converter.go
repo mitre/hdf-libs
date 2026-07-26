@@ -304,16 +304,19 @@ func firstSourceName(findings []TrufflehogFinding) string {
 // ConvertTrufflehogToHDF converts TruffleHog output to HDF format.
 // Accepts JSON array, single JSON object, or NDJSON input.
 func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("trufflehog: empty input")
-	}
 	if err := shared.ValidateJSONSize(input, "trufflehog", 0); err != nil {
 		return nil, fmt.Errorf("trufflehog: %w", err)
 	}
 
-	findings, err := parseFindings(input)
-	if err != nil {
-		return nil, err
+	// A clean TruffleHog scan emits empty stdout (exit-code-first), not []. Treat
+	// empty/whitespace-only input as zero findings, like an explicit [].
+	var findings []TrufflehogFinding
+	if len(bytes.TrimSpace(input)) > 0 {
+		var err error
+		findings, err = parseFindings(input)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	checksum := shared.InputChecksum(input)

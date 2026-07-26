@@ -40,6 +40,41 @@ type OutputVersionSetter interface {
 	SetOutputVersion(version string)
 }
 
+// EmptyInputAccepting is an optional interface a converter implements when empty
+// input is a valid signal rather than an error — e.g. exit-code-first scanners
+// (TruffleHog) that emit no report on a clean run. The convert command consults
+// it before applying the standard "no input provided" guard. This is
+// deliberately format-agnostic: any converter can opt in, and the CLI hardcodes
+// no format name. Empty input carries no bytes to fingerprint, so it is only
+// honored alongside an explicit --from.
+type EmptyInputAccepting interface {
+	AcceptsEmptyInput() bool
+}
+
+// converterOptions collects optional behaviors set at registration time.
+type converterOptions struct {
+	acceptsEmpty bool
+}
+
+// ConverterOption customizes a converter registration.
+type ConverterOption func(*converterOptions)
+
+// WithEmptyInputOK marks a converter as accepting empty input as a valid
+// zero-findings signal (see EmptyInputAccepting). Pass it to the register*
+// helpers for converters of exit-code-first tools.
+func WithEmptyInputOK() ConverterOption {
+	return func(o *converterOptions) { o.acceptsEmpty = true }
+}
+
+// applyConverterOptions folds a set of options into a converterOptions value.
+func applyConverterOptions(opts []ConverterOption) converterOptions {
+	var o converterOptions
+	for _, opt := range opts {
+		opt(&o)
+	}
+	return o
+}
+
 // FormatPair represents a source-to-destination format conversion.
 type FormatPair struct {
 	Source string
@@ -100,13 +135,20 @@ type HDFResultsConvertFn func(input []byte, converterVersion string) (*hdf.HDFRe
 // serialization and error wrapping. This eliminates ~30 lines of boilerplate
 // per converter that previously required a dedicated struct and file.
 type hdfResultsConverter struct {
-	displayName string
-	errPrefix   string
-	convertFn   HDFResultsConvertFn
+	displayName  string
+	errPrefix    string
+	convertFn    HDFResultsConvertFn
+	acceptsEmpty bool
 }
 
 func (c *hdfResultsConverter) Name() string {
 	return c.displayName
+}
+
+// AcceptsEmptyInput reports whether this converter treats empty input as a valid
+// zero-findings signal. Implements EmptyInputAccepting.
+func (c *hdfResultsConverter) AcceptsEmptyInput() bool {
+	return c.acceptsEmpty
 }
 
 func (c *hdfResultsConverter) Convert(input []byte) ([]byte, error) {
@@ -126,22 +168,27 @@ func (c *hdfResultsConverter) Convert(input []byte) ([]byte, error) {
 // registerHDFConverter registers a standard HDF Results converter under one
 // source format name. The dest is always "hdf". Use registerHDFConverterMulti
 // for converters that accept multiple source format names (e.g., xccdf + arf).
-func registerHDFConverter(source, displayName, errPrefix string, fn HDFResultsConvertFn) {
+// Optional ConverterOption values (e.g. WithEmptyInputOK) tune its behavior.
+func registerHDFConverter(source, displayName, errPrefix string, fn HDFResultsConvertFn, opts ...ConverterOption) {
+	o := applyConverterOptions(opts)
 	RegisterConverter(source, "hdf", &hdfResultsConverter{
-		displayName: displayName,
-		errPrefix:   errPrefix,
-		convertFn:   fn,
+		displayName:  displayName,
+		errPrefix:    errPrefix,
+		convertFn:    fn,
+		acceptsEmpty: o.acceptsEmpty,
 	})
 }
 
 // registerHDFConverterMulti registers a standard HDF Results converter under
 // multiple source format names, sharing a single converter instance.
-// The dest is always "hdf".
-func registerHDFConverterMulti(sources []string, displayName, errPrefix string, fn HDFResultsConvertFn) {
+// The dest is always "hdf". Optional ConverterOption values tune its behavior.
+func registerHDFConverterMulti(sources []string, displayName, errPrefix string, fn HDFResultsConvertFn, opts ...ConverterOption) {
+	o := applyConverterOptions(opts)
 	c := &hdfResultsConverter{
-		displayName: displayName,
-		errPrefix:   errPrefix,
-		convertFn:   fn,
+		displayName:  displayName,
+		errPrefix:    errPrefix,
+		convertFn:    fn,
+		acceptsEmpty: o.acceptsEmpty,
 	}
 	for _, src := range sources {
 		RegisterConverter(src, "hdf", c)

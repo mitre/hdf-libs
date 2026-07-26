@@ -260,12 +260,11 @@ function buildRequirement(reqID: string, findings: TrufflehogFinding[]): Evaluat
  * @returns HDF JSON string
  */
 export async function convertTrufflehogToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
-  if (!input || input.trim().length === 0) {
-    throw new Error('trufflehog: empty input');
-  }
   validateInputSize(input, 'trufflehog');
 
-  const findings = parseFindings(input);
+  // A clean TruffleHog scan emits empty stdout (exit-code-first), not []. Treat
+  // empty/whitespace-only input as zero findings, like an explicit [].
+  const findings = !input || input.trim().length === 0 ? [] : parseFindings(input);
 
   const resultsChecksum = await inputChecksum(input);
   const limitedFindings = limitArrayWithWarning(findings, 'finding');

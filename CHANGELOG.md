@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.2] - 2026-07-24
+
+### Notable behavior change
+
+- **`hdf fetch aws-config` now excludes service-linked Config rules.** Rules owned by an AWS service (`CreatedBy` set — AWS Security Hub, conformance packs, Organizations) cannot be read via the Config API by a customer principal, and the previous fetcher **crashed** on any account that had them (a Security-Hub-enabled account, commonly). They are now skipped entirely — no compliance query, no output row — with a `WARNING: skipped N service-linked rule(s)` on stderr. Fetch their findings through the owning service instead (e.g. `hdf fetch aws-securityhub` for Security Hub controls). Consumers who previously saw these rows crash rather than convert; there is no loss of working behavior.
+
+### Added
+
+- **`aws-config-to-hdf`: remediation `fix` descriptions.** A customer-managed Config rule with an attached remediation configuration (SSM Automation document) now gains a `fix` description in its HDF requirement, and the `aws-config` fetcher pulls `DescribeRemediationConfigurations` to populate it. Dual Go + TS. (#167)
+- **`trufflehog-to-hdf` accepts empty clean-scan output.** TruffleHog emits no report (empty stdout) on a clean scan; the converter now treats empty/whitespace-only input as zero findings. The CLI empty-input carve-out is generalized via an `EmptyInputAccepting` capability — empty stays an error for every other converter, honored only with an explicit `--from`. (#173, Refs hdf-libs-iow3)
+
+### Fixes
+
+- **`asff-to-hdf`: Trivy misconfiguration and secret findings are enriched.** `trivyMessage` now dispatches on finding shape so a Trivy misconfiguration surfaces its remediation message and file location and a secret surfaces its file, instead of only enriching CVE findings. Dual Go + TS at byte-identical parity. (#160)
+- **`hdf-mappings` (AWS Config NIST): collapsed Rev-4 sub-parts are expanded.** Rev-4 rows carried collapsed NIST tokens (e.g. `IA-5(1)(a)(d)(e)`) that `split('|')` left as single unreachable tokens; they now resolve to sibling controls. Also benefits the Security Hub path, which resolves decorated rule names through this table. (#167)
+
+### Internal
+
+- Dependabot holds TypeScript major bumps until typescript-eslint supports them; a release **suppression-review** step (Phase 1.6) periodically retires stale audit overrides, dead `ignoreGhsas` suppressions, and outdated ignore rules. Audit override for `postcss` refreshed past an escalated advisory. (#169)
+
+### Compatibility
+
+- Patch release: **no schema changes** — schema `$id` URLs remain at v3.4.0. Aside from the `aws-config` service-linked-rule exclusion noted above, changes are additive converter/fetcher enrichment and fixes.
+
 ## [3.4.1] - 2026-07-16
 
 ### Added — Converters
