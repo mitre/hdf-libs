@@ -1,0 +1,271 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "0 was the number of detected binary files in a repo, which was required to be less than or equal to 0",
+              "label": "default"
+            },
+            {
+              "data": "(lte $ 0)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(lte $ 0)",
+              "message": "0 was the number of detected binary files in a repo, which was required to be less than or equal to 0",
+              "startTime": "2026-07-26T01:37:03.242Z",
+              "status": "passed"
+            }
+          ],
+          "id": "mitre/binary",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SI-7",
+              "SR-4"
+            ]
+          },
+          "controlType": "technical",
+          "title": "mitre/binary",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "1 day was span of time that has elapsed since last activity in repo, which was required to be less than or equal to 364 days",
+              "label": "default"
+            },
+            {
+              "data": "(lte $ P364D)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(lte $ P364D)",
+              "message": "1 day was span of time that has elapsed since last activity in repo, which was required to be less than or equal to 364 days",
+              "startTime": "2026-07-26T01:37:03.242Z",
+              "status": "passed"
+            }
+          ],
+          "id": "mitre/activity",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SR-3",
+              "SR-4"
+            ]
+          },
+          "controlType": "management",
+          "title": "mitre/activity",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "0.015748031496062992 was the percent of churn frequencies of each commit in the repository greater than 3, which was required to be less than or equal to 0.02",
+              "label": "default"
+            },
+            {
+              "data": "(lte (divz (count (filter (gt 3) $)) (count $)) 0.02)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(lte (divz (count (filter (gt 3) $)) (count $)) 0.02)",
+              "message": "0.015748031496062992 was the percent of churn frequencies of each commit in the repository greater than 3, which was required to be less than or equal to 0.02",
+              "startTime": "2026-07-26T01:37:03.242Z",
+              "status": "passed"
+            }
+          ],
+          "id": "mitre/churn",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SI-7",
+              "SR-4"
+            ]
+          },
+          "controlType": "technical",
+          "title": "mitre/churn",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "0 was the number of the repository's dependencies flagged as typos, which was required to be less than or equal to 0",
+              "label": "default"
+            },
+            {
+              "data": "(lte (count (filter (eq #t) $)) 0)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(lte (count (filter (eq #t) $)) 0)",
+              "message": "0 was the number of the repository's dependencies flagged as typos, which was required to be less than or equal to 0",
+              "startTime": "2026-07-26T01:37:03.242Z",
+              "status": "passed"
+            }
+          ],
+          "id": "mitre/typo",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SR-11",
+              "SR-4"
+            ]
+          },
+          "controlType": "management",
+          "title": "mitre/typo",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Expected the number of entropy calculations of each commit in the repository greater than 8 to be equal to 0 but it was 1",
+              "label": "default"
+            },
+            {
+              "data": "(eq 0 (count (filter (gt 8) $)))",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(eq 0 (count (filter (gt 8) $)))",
+              "message": "Expected the number of entropy calculations of each commit in the repository greater than 8 to be equal to 0 but it was 1",
+              "startTime": "2026-07-26T01:37:03.242Z",
+              "status": "failed"
+            }
+          ],
+          "id": "mitre/entropy",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SI-7",
+              "SR-4"
+            ]
+          },
+          "controlType": "technical",
+          "title": "mitre/entropy",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Expected the number of the repository's contributors flagged as affiliated to be less than or equal to 0 but it was 6",
+              "label": "default"
+            },
+            {
+              "data": "(lte (count (filter (eq #t) $)) 0)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(lte (count (filter (eq #t) $)) 0)",
+              "message": "Expected the number of the repository's contributors flagged as affiliated to be less than or equal to 0 but it was 6\nConcerns:\n- Contributor alice (alice@users.noreply.github.com) wrote and/or committed 92 commits\n- Contributor Bob Builder (bob@example.com) wrote and/or committed 83 commits\n- Contributor alice (alice@users.noreply.github.com) wrote and/or committed 74 commits\n- Contributor Carol Dev (carol@example.com) wrote and/or committed 2 commits\n- Contributor dependabot[bot] (dependabot[bot]@users.noreply.github.com) wrote and/or committed 45 commits\n- Contributor Copilot (copilot@users.noreply.github.com) wrote and/or committed 1 commit",
+              "startTime": "2026-07-26T01:37:03.242Z",
+              "status": "failed"
+            }
+          ],
+          "id": "mitre/affiliation",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SR-6"
+            ]
+          },
+          "controlType": "management",
+          "title": "mitre/affiliation",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "unknown error",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "",
+              "message": "unknown error",
+              "startTime": "2026-07-26T01:37:03.242Z",
+              "status": "error"
+            }
+          ],
+          "id": "mitre/review",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-15"
+            ]
+          },
+          "controlType": "management",
+          "title": "mitre/review",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "unknown error",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "",
+              "message": "unknown error",
+              "startTime": "2026-07-26T01:37:03.242Z",
+              "status": "error"
+            }
+          ],
+          "id": "mitre/fuzz",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "mitre/fuzz",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "b6a892fba31850d61faa27e3d4dbaade6a58ef493955b7a3f2e6fd75eb4b77b5"
+      },
+      "name": "Hipcheck Scan",
+      "summary": "Hipcheck recommendation: Pass (risk score 0.33, policy '(gt 0.5 $)').",
+      "title": "Hipcheck analysis of asff-to-hdf @ feat/aws-config-hdf-enrichment"
+    }
+  ],
+  "components": [
+    {
+      "name": "asff-to-hdf",
+      "type": "repository"
+    }
+  ],
+  "generator": {
+    "name": "hipcheck-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-26T03:05:58.376406Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Hipcheck",
+    "version": "3.15.0"
+  }
+}

@@ -24,6 +24,7 @@ Currently in tree:
 |---|---|---|---|
 | `awsconfig` | ✓ | — | fetch |
 | `aws-securityhub` | ✓ | ✓ | fetch, verify |
+| `defectdojo` | ✓ | ✓ | fetch, verify |
 | `gitlab` | ✓ | — | fetch |
 | `sonarqube` | ✓ | — | fetch |
 | `splunk` | ✓ | — | fetch |

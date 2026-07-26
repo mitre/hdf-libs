@@ -5,6 +5,7 @@ import {
   awsConfigMappedRevisions,
   getCurrentNistRevision,
   isNistStrict,
+  DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import { deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import {
@@ -223,8 +224,11 @@ function buildNotApplicableResult(rule: ConfigRule): RequirementResult {
 }
 
 function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
-  const nist = buildNistTags(rule.Source.SourceIdentifier, rule.ConfigRuleName);
-  const tags: Record<string, unknown> = nist.length > 0 ? { nist } : {};
+  // A managed or custom rule the mapping tables don't cover still evaluates a
+  // configuration setting — fall back to CM-6 rather than emitting no NIST context.
+  const rawNist = buildNistTags(rule.Source.SourceIdentifier, rule.ConfigRuleName);
+  const nist = rawNist.length > 0 ? rawNist : DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS;
+  const tags: Record<string, unknown> = { nist };
 
   const descriptions: Description[] = [
     { label: 'default', data: rule.Description },

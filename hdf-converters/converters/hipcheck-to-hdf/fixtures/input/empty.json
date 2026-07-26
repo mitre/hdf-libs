@@ -1,0 +1,16 @@
+{
+  "repo_name": "empty-example",
+  "repo_owner": null,
+  "repo_head": "0000000000000000000000000000000000000000",
+  "hipcheck_version": "3.15.0",
+  "analyzed_at": "2026-07-25T22:38:44.586772-04:00",
+  "passing": [],
+  "failing": [],
+  "errored": [],
+  "recommendation": {
+    "kind": "Pass",
+    "reason": null,
+    "risk_score": 0.0,
+    "risk_policy": "(gt 0.5 $)"
+  }
+}

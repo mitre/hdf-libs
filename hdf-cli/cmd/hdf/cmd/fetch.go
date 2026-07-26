@@ -93,6 +93,7 @@ Examples:
 
 	cmd.AddCommand(newFetchAWSConfigCmd())
 	cmd.AddCommand(newFetchAWSSecurityHubCmd())
+	cmd.AddCommand(newFetchDefectDojoCmd())
 	cmd.AddCommand(newFetchGitlabCmd())
 	cmd.AddCommand(newFetchSonarqubeCmd())
 	cmd.AddCommand(newFetchSplunkCmd())

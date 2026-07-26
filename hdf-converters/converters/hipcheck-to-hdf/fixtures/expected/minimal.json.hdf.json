@@ -1,0 +1,62 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "10 days was span of time that has elapsed since last activity in repo, which was required to be less than or equal to 364 days",
+              "label": "default"
+            },
+            {
+              "data": "(lte $ P364D)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(lte $ P364D)",
+              "message": "10 days was span of time that has elapsed since last activity in repo, which was required to be less than or equal to 364 days",
+              "startTime": "2026-07-26T02:38:44.586Z",
+              "status": "passed"
+            }
+          ],
+          "id": "mitre/activity",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SR-3",
+              "SR-4"
+            ]
+          },
+          "controlType": "management",
+          "title": "mitre/activity",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "6c0b22770a7095dbdaa5b437c9457cc10d0bbd1870553de2717f6008e57d027c"
+      },
+      "name": "Hipcheck Scan",
+      "summary": "Hipcheck recommendation: Pass (risk score 0.1, policy '(gt 0.5 $)').",
+      "title": "Hipcheck analysis of example-org/minimal-example @ v1.0.0"
+    }
+  ],
+  "components": [
+    {
+      "name": "example-org/minimal-example",
+      "type": "repository"
+    }
+  ],
+  "generator": {
+    "name": "hipcheck-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-26T03:05:58.375884Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Hipcheck",
+    "version": "3.15.0"
+  }
+}

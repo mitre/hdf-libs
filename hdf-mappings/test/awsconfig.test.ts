@@ -72,8 +72,9 @@ describe('AWS Config Mapping Functions', () => {
 
     it('should handle complex NIST IDs', () => {
       const nistId = getAwsConfigNistControlByIdentifier('IAM_PASSWORD_POLICY', 4);
-      // Rev-4 collapsed sub-parts IA-5(1)(a)(d)(e) are expanded to siblings.
-      expect(nistId).toBe('AC-2(1)|AC-2(f)|AC-2(j)|IA-2|IA-5(1)|IA-5(a)|IA-5(d)|IA-5(e)|IA-5(4)');
+      // Rev-4 collapsed sub-parts IA-5(1)(a)(d)(e) are expanded to siblings, then the
+      // generator sorts controls lexically (IA-5(4) precedes IA-5(a)).
+      expect(nistId).toBe('AC-2(1)|AC-2(f)|AC-2(j)|IA-2|IA-5(1)|IA-5(4)|IA-5(a)|IA-5(d)|IA-5(e)');
     });
   });
 
@@ -184,11 +185,10 @@ describe('AWS Config Mapping Functions', () => {
     });
 
     it('returns only Rev 4 for a Rev4-only rule', () => {
+      // emr-kerberos-enabled is in the Config Rev4 docs but neither the Config Rev5
+      // docs nor the Security Hub NIST r5 standard.
       expect(
-        awsConfigMappedRevisions(
-          'SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK',
-          'secretsmanager-scheduled-rotation-success-check'
-        )
+        awsConfigMappedRevisions('EMR_KERBEROS_ENABLED', 'emr-kerberos-enabled')
       ).toEqual([4]);
     });
 

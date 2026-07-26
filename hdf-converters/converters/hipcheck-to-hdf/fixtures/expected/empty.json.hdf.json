@@ -1,0 +1,50 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Hipcheck analyzed empty-example and reported zero analyses.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Hipcheck analyzed empty-example and reported zero analyses.",
+              "startTime": "2026-07-26T02:38:44.586Z",
+              "status": "passed"
+            }
+          ],
+          "id": "hipcheck-no-findings",
+          "impact": 0,
+          "tags": {},
+          "title": "No findings reported"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "527c0ea61bcfe6ff8fe3b14296cb72e78c8fd887b4cc400fe34848bc25093fe4"
+      },
+      "name": "Hipcheck Scan",
+      "summary": "Hipcheck recommendation: Pass (risk score 0, policy '(gt 0.5 $)').",
+      "title": "Hipcheck analysis of empty-example @ 0000000000000000000000000000000000000000"
+    }
+  ],
+  "components": [
+    {
+      "name": "empty-example",
+      "type": "repository"
+    }
+  ],
+  "generator": {
+    "name": "hipcheck-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-26T03:05:58.37446Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Hipcheck",
+    "version": "3.15.0"
+  }
+}

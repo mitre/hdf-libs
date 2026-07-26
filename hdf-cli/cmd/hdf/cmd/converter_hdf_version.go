@@ -8,7 +8,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/hdfversion"
 )
 
-// hdfVersionConverter handles HDF version transforms (e.g. hdf@1 → hdf@2).
+// hdfVersionConverter handles HDF version transforms (e.g. hdf@2 → hdf@3).
 // It auto-detects the input version when not specified and transforms to
 // the target version.
 type hdfVersionConverter struct {
@@ -24,7 +24,7 @@ func (c *hdfVersionConverter) Name() string {
 	}
 	to := c.toVersion
 	if to == "" {
-		to = "2"
+		to = hdfversion.ModernVersion
 	}
 	return fmt.Sprintf("HDF v%s to HDF v%s", from, to)
 }
@@ -44,7 +44,7 @@ func (c *hdfVersionConverter) Convert(input []byte) ([]byte, error) {
 
 	toVer := c.toVersion
 	if toVer == "" {
-		toVer = "2" // default target is latest
+		toVer = hdfversion.ModernVersion // default target is latest
 	}
 
 	if fromVer == toVer {
@@ -73,7 +73,7 @@ func (c *hdfVersionConverter) SetInputVersion(v string) {
 
 // SupportedVersions returns the HDF versions this converter handles.
 func (c *hdfVersionConverter) SupportedVersions() []string {
-	return []string{"2", "1"}
+	return []string{hdfversion.ModernVersion, hdfversion.LegacyVersion}
 }
 
 // SetOutputVersion sets the target HDF version for the transform.
@@ -83,21 +83,22 @@ func (c *hdfVersionConverter) SetOutputVersion(v string) {
 
 func init() {
 	// Register hdf→hdf converter for explicit version transforms
-	// (e.g. --from hdf@1 --to hdf@2, or --from hdf@1 --to hdf).
+	// (e.g. --from hdf@2 --to hdf@3, or --from hdf@2 --to hdf).
 	RegisterConverter("hdf", "hdf", &hdfVersionConverter{
-		toVersion: "2", // default target is latest
+		toVersion: hdfversion.ModernVersion, // default target is latest
 	})
 }
 
 // PostProcessToVersion applies HDF version downgrade to converter output.
-// Used when --to hdf@1 is combined with a non-HDF source format.
-// Returns the input unchanged if toVersion is empty or "2" (current default).
+// Used when --to hdf@2 is combined with a non-HDF source format (the converter
+// output is always modern v3). Returns the input unchanged when toVersion is
+// empty or the modern version.
 func PostProcessToVersion(output []byte, toVersion string) ([]byte, error) {
-	if toVersion == "" || toVersion == "2" {
+	if toVersion == "" || toVersion == hdfversion.ModernVersion {
 		return output, nil
 	}
 
-	result, err := hdfversion.TransformHDF(output, "2", toVersion)
+	result, err := hdfversion.TransformHDF(output, hdfversion.ModernVersion, toVersion)
 	if err != nil {
 		return nil, fmt.Errorf("HDF version post-processing failed: %w", err)
 	}

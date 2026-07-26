@@ -175,5 +175,8 @@ export const DEFAULT_REMEDIATION_NIST_TAGS: string[] = ['SI-2', 'RA-5'];
 /** Dependency/inventory management tools (CM-8). */
 export const DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS: string[] = ['CM-8'];
 
+/** Configuration-compliance checks with no specific mapping (CM-6: Configuration Settings). */
+export const DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS: string[] = ['CM-6'];
+
 // Re-export types
 export type { NISTDescriptions } from './types.js';

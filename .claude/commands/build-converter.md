@@ -178,7 +178,7 @@ Also read the heimdall2 converter source to understand what input format it actu
 
 **If the source tool has no static export format** (the heimdall2 converter calls a live API directly), this converter requires two modes:
 1. **File mode** — define a static JSON format that mirrors the API response, document how users produce it (e.g. `aws configservice describe-config-rules`), implement the converter against that format
-2. **Live fetch mode** — implement a fetcher in `hdf-cli/internal/fetchers/<name>.go` that calls the API, marshals to the same static format, and hands bytes to the existing converter
+2. **Live fetch mode** — implement a fetcher (via the `/build-fetcher` skill) in `hdf-converters/fetchers/<name>/` that calls the API, marshals to the same static format, and hands bytes to the existing converter
 
 See "Step 5b — Live Fetch Mode" below for details.
 
@@ -1112,98 +1112,9 @@ For HDF-from converters (hdf → something), the `Convert` signature is the same
 
 ## Step 5b — Live Fetch Mode (API-pull converters only)
 
-Skip this step if the source tool exports a static file. Only needed for: aws-config, sonarqube, ionchannel, msft-secure-score, splunk.
+If the source is a live API rather than a static export file (aws-config, sonarqube, splunk, gitlab, aws-securityhub, and similar), the fetcher is built with the **`/build-fetcher`** skill — not here. Fetchers now live in `hdf-converters/fetchers/<tool>/{go,typescript}/` (next to their converter), are dual-language, and follow the two-constructor Go convention + auth-agnostic TS contract documented in `hdf-converters/fetchers/README.md`.
 
-### Fetcher location
-
-```
-hdf-cli/
-  internal/
-    fetchers/
-      <name>.go        # Fetcher implementation
-      <name>_test.go   # Tests using httptest.Server (no live credentials)
-```
-
-### Fetcher interface
-
-```go
-// Each fetcher implements this — takes its own params struct, returns
-// the same bytes the file-based converter already accepts.
-type Fetcher interface {
-    Fetch(ctx context.Context) ([]byte, error)
-}
-```
-
-### CLI integration
-
-In `converter_<snake>.go`, add a `--live` flag and fetcher-specific flags. At runtime:
-- If `--live` → instantiate fetcher, call `Fetch()`, get bytes
-- Else → read input file, get bytes
-- Either way → pass bytes to existing `Convert*()` function
-
-```go
-// Rough shape — adapt flags to the specific API
-var liveCmd = &cobra.Command{
-    Use:   "<source> to hdf [input] output",
-    RunE: func(cmd *cobra.Command, args []string) error {
-        var data []byte
-        if live, _ := cmd.Flags().GetBool("live"); live {
-            f := fetchers.NewXxxFetcher(/* flags */)
-            var err error
-            data, err = f.Fetch(cmd.Context())
-            if err != nil { return err }
-        } else {
-            var err error
-            data, err = os.ReadFile(args[0])
-            if err != nil { return err }
-        }
-        // ... convert and write output
-    },
-}
-```
-
-### Mocking API calls in tests
-
-**Never** require live credentials or a running service in tests. Use `httptest.NewServer`:
-
-```go
-func TestFetcher_Fetch(t *testing.T) {
-    srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // assert r.URL.Path, r.Header, query params as needed
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusOK)
-        _, _ = w.Write([]byte(`{ /* canned API response */ }`))
-    }))
-    defer srv.Close()
-
-    f := NewXxxFetcher(XxxParams{URL: srv.URL, Token: "test-token", /* ... */})
-    data, err := f.Fetch(context.Background())
-    require.NoError(t, err)
-    // assert data parses correctly
-}
-```
-
-For AWS (which uses the SDK rather than raw HTTP), use the AWS SDK's built-in mock transport or implement a `ConfigServiceClient` interface and inject a stub.
-
-### Dependencies
-
-- SonarQube, IonChannel, Splunk: standard `net/http` only, no new deps
-- AWS Config: `github.com/aws/aws-sdk-go-v2/service/configservice` (already approved — binary size increase accepted)
-- MS Secure Score: `golang.org/x/oauth2` for token exchange + standard `net/http` for Graph API (avoid full Azure SDK)
-
-### Security Review (mandatory for every fetcher)
-
-After implementing a fetcher and its tests, **task a security agent** to review it before considering the work done. The review prompt should cover:
-
-1. **Credential handling** — are secrets accepted as CLI flags (visible in `ps`, shell history, CI logs)? Prefer `--profile` (AWS), env vars, or token files over raw flag values. The AWS CLI itself does not accept `--secret-access-key` as a flag.
-2. **Input validation** — are API endpoint URLs or region strings validated before being interpolated into HTTP requests? Unvalidated strings passed to SDK endpoint constructors are an SSRF vector (see GHSA-3jcv-796g-cpjg / CVE-2026-22611).
-3. **Pagination safety** — are both pagination loops capped at a maximum page count? Uncapped loops can exhaust memory or loop forever on malformed continuation tokens.
-4. **Context cancellation** — is `ctx.Err()` checked at the top of each pagination loop iteration, not just propagated via the next API call?
-5. **Timeout** — does `Fetch()` apply a default deadline when the caller has not set one? A missing deadline blocks indefinitely on a hung endpoint.
-6. **Error messages** — do errors inadvertently include credential values?
-7. **TLS** — is TLS enforced? Document it in a comment if the SDK handles it automatically.
-
-The AWS Config fetcher (`hdf-cli/internal/fetchers/awsconfig.go`) is the reference implementation for all of the above patterns.
+Build the converter first (this skill); then build the fetcher that feeds it (`/build-fetcher`).
 
 ---
 
@@ -1304,7 +1215,7 @@ cat output.json | head -40
 
 **API-pull converters additionally (aws-config, sonarqube, ionchannel, msft-secure-score, splunk):**
 - [ ] Static format definition verified against real API documentation or heimdall2 source — not invented
-- [ ] Fetcher implemented (`hdf-cli/internal/fetchers/<name>.go`)
+- [ ] Fetcher implemented via `/build-fetcher` (`hdf-converters/fetchers/<name>/`)
 - [ ] Fetcher tests use `httptest.Server` (or SDK interface injection for AWS) — no live credentials required
 - [ ] Security agent review completed covering: credential handling, input validation, pagination caps, context cancellation, default timeout, error message safety
 - [ ] All security findings addressed before marking done

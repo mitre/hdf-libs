@@ -164,7 +164,12 @@
           },
           "id": "config-rule-jkl012",
           "impact": 0.5,
-          "tags": {},
+          "tags": {
+            "nist": [
+              "CM-6"
+            ]
+          },
+          "controlType": "operational",
           "title": "123456789012 - custom-org-rule",
           "verificationMethod": "automated"
         }

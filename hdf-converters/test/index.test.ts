@@ -11,6 +11,7 @@ import {
   convertHdfToAsff,
   convertSnykToHdf,
   convertGrypeToHdf,
+  convertDefectDojoToHdf,
   convertNessusToHdf,
   convertSonarqubeToHdf,
   convertAwsConfigToHdf,
@@ -24,6 +25,7 @@ import {
   convertHdfToXml,
   convertGitlabToHdf,
   convertTrufflehogToHdf,
+  convertHipcheckToHdf,
   convertBurpsuiteToHdf,
   convertDbprotectToHdf,
   convertTwistlockToHdf,
@@ -129,6 +131,11 @@ describe('Main exports', () => {
     expect(typeof convertGrypeToHdf).toBe('function');
   });
 
+  it('should export convertDefectDojoToHdf from main index', () => {
+    expect(convertDefectDojoToHdf).toBeDefined();
+    expect(typeof convertDefectDojoToHdf).toBe('function');
+  });
+
   it('should export convertNessusToHdf from main index', () => {
     expect(convertNessusToHdf).toBeDefined();
     expect(typeof convertNessusToHdf).toBe('function');
@@ -192,6 +199,11 @@ describe('Main exports', () => {
   it('should export convertTrufflehogToHdf from main index', () => {
     expect(convertTrufflehogToHdf).toBeDefined();
     expect(typeof convertTrufflehogToHdf).toBe('function');
+  });
+
+  it('should export convertHipcheckToHdf from main index', () => {
+    expect(convertHipcheckToHdf).toBeDefined();
+    expect(typeof convertHipcheckToHdf).toBe('function');
   });
 
   it('should export convertJfrogXrayToHdf from main index', () => {

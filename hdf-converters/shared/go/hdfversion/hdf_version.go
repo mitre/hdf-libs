@@ -12,6 +12,22 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
+// HDF schema version identifiers. The taxonomy: v1 is raw InSpec exec-json
+// (not a distinct HDF schema — see NormalizeVersion); v2 is the legacy Heimdall
+// schema (the profiles/platform shape the heimdall2 app loads); v3 is the
+// modern hdf-libs schema (baselines/components).
+//
+// NOTE: the legacyhdf package still names its structs HDFV1Results/V1Control etc.
+// Those "V1" names predate this taxonomy fix and represent the v2 (legacy) shape;
+// renaming them is a separate follow-up. Within this file the transform function
+// names and version strings use the corrected numbering (2 = legacy, 3 = modern).
+const (
+	// LegacyVersion is the legacy Heimdall HDF schema (profiles/platform).
+	LegacyVersion = "2"
+	// ModernVersion is the current hdf-libs schema (baselines/components).
+	ModernVersion = "3"
+)
+
 // HDFVersionTransform converts HDF data from one schema version to another.
 type HDFVersionTransform func(input []byte) ([]byte, error)
 
@@ -19,8 +35,24 @@ type HDFVersionTransform func(input []byte) ([]byte, error)
 // Adding a new schema version means registering the upgrade and downgrade
 // transforms here — the router logic in TransformHDF does not change.
 var hdfTransforms = map[[2]string]HDFVersionTransform{
-	{"1", "2"}: upgradeV1ToV2,
-	{"2", "1"}: downgradeV2ToV1,
+	{LegacyVersion, ModernVersion}: upgradeV2ToV3,
+	{ModernVersion, LegacyVersion}: downgradeV3ToV2,
+}
+
+// NoV1Warning is emitted when a user references HDF v1. There is no distinct
+// HDF v1 schema: v1 is raw InSpec exec-json, which shares the v2 (legacy
+// Heimdall) shape. Ingest raw InSpec with `--from inspec`.
+const NoV1Warning = "note: there is no HDF v1 schema — v1 is raw InSpec output, which shares the v2 (legacy Heimdall) shape; using v2. To ingest raw InSpec, use --from inspec."
+
+// NormalizeVersion canonicalizes a user-supplied HDF version token. "1" has no
+// distinct schema, so it maps to v2 (legacy) and returns NoV1Warning; "2" and
+// "3" (and "") pass through with no warning. Callers should apply this only when
+// the format is hdf, and print the returned warning (if any) once.
+func NormalizeVersion(v string) (canonical, warning string) {
+	if v == "1" {
+		return LegacyVersion, NoV1Warning
+	}
+	return v, ""
 }
 
 // TransformHDF converts HDF data between schema versions using the registered
@@ -40,40 +72,43 @@ func TransformHDF(input []byte, fromVersion, toVersion string) ([]byte, error) {
 	return transform(input)
 }
 
-// upgradeV1ToV2 converts HDF v1.0 (InSpec exec-json) to HDF v2.0.
-// Delegates to the existing legacyhdf converter.
-func upgradeV1ToV2(input []byte) ([]byte, error) {
+// upgradeV2ToV3 converts the legacy Heimdall HDF schema (v2, the InSpec
+// exec-json profiles/platform shape) to modern HDF (v3). Delegates to the
+// existing legacyhdf converter (whose type/function names still use the older
+// "V1"/"V2" spelling — see the package NOTE above).
+func upgradeV2ToV3(input []byte) ([]byte, error) {
 	if !legacyhdf.IsHDFV1(input) {
-		return nil, fmt.Errorf("input is not valid HDF v1.0 format")
+		return nil, fmt.Errorf("input is not the legacy HDF (v2) shape")
 	}
 
-	var v1 legacyhdf.HDFV1Results
-	if err := json.Unmarshal(input, &v1); err != nil {
-		return nil, fmt.Errorf("failed to parse HDF v1.0: %w", err)
+	var legacy legacyhdf.HDFV1Results
+	if err := json.Unmarshal(input, &legacy); err != nil {
+		return nil, fmt.Errorf("failed to parse legacy HDF (v2): %w", err)
 	}
 
-	v2 := legacyhdf.ConvertV1ToV2(&v1)
-	return json.MarshalIndent(v2, "", "  ")
+	modern := legacyhdf.ConvertV1ToV2(&legacy)
+	return json.MarshalIndent(modern, "", "  ")
 }
 
-// downgradeV2ToV1 converts HDF v2.0 to HDF v1.0 (InSpec exec-json).
-// This is a lossy transformation — v2 fields without v1 equivalents are dropped.
+// downgradeV3ToV2 converts modern HDF (v3) to the legacy Heimdall schema (v2,
+// the InSpec exec-json shape). This is a lossy transformation — v3 fields
+// without a v2 equivalent are dropped.
 //
 // Lossy fields: dataSource, generator, labels, amendments, checksum metadata,
 // multiple components (only first is used), component type/labels/ipAddress,
 // effectiveStatus, evidence, poams, statusOverrides.
-func downgradeV2ToV1(input []byte) ([]byte, error) {
-	var v2 hdf.HDFResults
-	if err := json.Unmarshal(input, &v2); err != nil {
-		return nil, fmt.Errorf("failed to parse HDF v2.0: %w", err)
+func downgradeV3ToV2(input []byte) ([]byte, error) {
+	var modern hdf.HDFResults
+	if err := json.Unmarshal(input, &modern); err != nil {
+		return nil, fmt.Errorf("failed to parse modern HDF (v3): %w", err)
 	}
 
-	v1 := convertV2ToV1(&v2)
-	return json.MarshalIndent(v1, "", "  ")
+	legacy := convertV3ToV2(&modern)
+	return json.MarshalIndent(legacy, "", "  ")
 }
 
-// convertV2ToV1 maps HDF v2 structure back to v1 structure.
-func convertV2ToV1(v2 *hdf.HDFResults) *legacyhdf.HDFV1Results {
+// convertV3ToV2 maps the modern HDF (v3) structure back to the legacy (v2) shape.
+func convertV3ToV2(v2 *hdf.HDFResults) *legacyhdf.HDFV1Results {
 	v1 := &legacyhdf.HDFV1Results{}
 
 	// Map components → platform (use first component)
@@ -101,14 +136,14 @@ func convertV2ToV1(v2 *hdf.HDFResults) *legacyhdf.HDFV1Results {
 	// Map baselines → profiles
 	v1.Profiles = make([]legacyhdf.V1Profile, len(v2.Baselines))
 	for i, baseline := range v2.Baselines {
-		v1.Profiles[i] = convertBaselineToV1Profile(baseline)
+		v1.Profiles[i] = convertBaselineToV2Profile(baseline)
 	}
 
 	return v1
 }
 
-// convertBaselineToV1Profile maps an EvaluatedBaseline back to a V1Profile.
-func convertBaselineToV1Profile(b hdf.EvaluatedBaseline) legacyhdf.V1Profile {
+// convertBaselineToV2Profile maps an EvaluatedBaseline back to a V1Profile.
+func convertBaselineToV2Profile(b hdf.EvaluatedBaseline) legacyhdf.V1Profile {
 	p := legacyhdf.V1Profile{
 		Name:    b.Name,
 		Version: b.Version,
@@ -144,20 +179,20 @@ func convertBaselineToV1Profile(b hdf.EvaluatedBaseline) legacyhdf.V1Profile {
 	// Map dependencies
 	p.Depends = make([]legacyhdf.V1Dependency, len(b.Depends))
 	for i, d := range b.Depends {
-		p.Depends[i] = convertDependencyToV1(d)
+		p.Depends[i] = convertDependencyToV2(d)
 	}
 
 	// Map requirements → controls
 	p.Controls = make([]legacyhdf.V1Control, len(b.Requirements))
 	for i, r := range b.Requirements {
-		p.Controls[i] = convertRequirementToV1Control(r)
+		p.Controls[i] = convertRequirementToV2Control(r)
 	}
 
 	return p
 }
 
-// convertDependencyToV1 maps a Dependency to V1Dependency.
-func convertDependencyToV1(d hdf.Dependency) legacyhdf.V1Dependency {
+// convertDependencyToV2 maps a Dependency to V1Dependency.
+func convertDependencyToV2(d hdf.Dependency) legacyhdf.V1Dependency {
 	return legacyhdf.V1Dependency{
 		Name: d.Name,
 		URL:  d.URL,
@@ -166,8 +201,8 @@ func convertDependencyToV1(d hdf.Dependency) legacyhdf.V1Dependency {
 	}
 }
 
-// convertRequirementToV1Control maps an EvaluatedRequirement to a V1Control.
-func convertRequirementToV1Control(r hdf.EvaluatedRequirement) legacyhdf.V1Control {
+// convertRequirementToV2Control maps an EvaluatedRequirement to a V1Control.
+func convertRequirementToV2Control(r hdf.EvaluatedRequirement) legacyhdf.V1Control {
 	c := legacyhdf.V1Control{
 		ID:     r.ID,
 		Title:  r.Title,
@@ -216,16 +251,16 @@ func convertRequirementToV1Control(r hdf.EvaluatedRequirement) legacyhdf.V1Contr
 	// Map results
 	c.Results = make([]legacyhdf.V1Result, len(r.Results))
 	for i, res := range r.Results {
-		c.Results[i] = convertResultToV1(res)
+		c.Results[i] = convertResultToV2(res)
 	}
 
 	return c
 }
 
-// convertResultToV1 maps a RequirementResult to a V1Result.
-func convertResultToV1(r hdf.RequirementResult) legacyhdf.V1Result {
+// convertResultToV2 maps a RequirementResult to a V1Result.
+func convertResultToV2(r hdf.RequirementResult) legacyhdf.V1Result {
 	v1r := legacyhdf.V1Result{
-		Status:  v1StatusString(r.Status),
+		Status:  v2StatusString(r.Status),
 		Message: r.Message,
 	}
 
@@ -253,8 +288,8 @@ func convertResultToV1(r hdf.RequirementResult) legacyhdf.V1Result {
 	return v1r
 }
 
-// v1StatusString converts a v2 ResultStatus enum back to v1's snake_case string.
-func v1StatusString(s hdf.ResultStatus) string {
+// v2StatusString converts a v2 ResultStatus enum back to v1's snake_case string.
+func v2StatusString(s hdf.ResultStatus) string {
 	switch s {
 	case hdf.Passed:
 		return "passed"
@@ -271,26 +306,27 @@ func v1StatusString(s hdf.ResultStatus) string {
 	}
 }
 
-// DetectHDFVersion determines if the input is HDF v1 or v2 by checking
-// structural markers. Returns "1" or "2", or an error if unrecognizable.
+// DetectHDFVersion determines the HDF schema version from structural markers.
+// Returns the legacy Heimdall version ("2", profiles/platform) or the modern
+// version ("3", baselines/components), or an error if unrecognizable.
 func DetectHDFVersion(input []byte) (string, error) {
 	var obj map[string]any
 	if err := json.Unmarshal(input, &obj); err != nil {
 		return "", fmt.Errorf("invalid JSON: %w", err)
 	}
 
-	// v1 has profiles + platform
+	// Legacy Heimdall schema (v2) has profiles + platform.
 	_, hasProfiles := obj["profiles"]
 	_, hasPlatform := obj["platform"]
 	if hasProfiles && hasPlatform {
-		return "1", nil
+		return LegacyVersion, nil
 	}
 
-	// v2 has baselines + components
+	// Modern schema (v3) has baselines + components.
 	_, hasBaselines := obj["baselines"]
 	_, hasComponents := obj["components"]
 	if hasBaselines && hasComponents {
-		return "2", nil
+		return ModernVersion, nil
 	}
 
 	return "", fmt.Errorf("cannot determine HDF version: missing expected structural fields")

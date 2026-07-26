@@ -128,6 +128,34 @@ func TestConvertAsff_SecurityHubSample_IsSchemaValid(t *testing.T) {
 	assert.Truef(t, v.Valid, "converter output must pass HDF schema validation: %s", v.Error())
 }
 
+func TestConvertAsff_UnmappedConfigRuleFallsBackToCM6(t *testing.T) {
+	// A Security Hub finding backed by a Config rule the mapping tables don't cover
+	// (synthetic name so it stays unmapped) floors to CM-6 — the configuration-settings
+	// control — matching aws-config-to-hdf, not the SA-11/RA-5 static-analysis default.
+	input := []byte(`{"Findings":[{
+		"SchemaVersion":"2018-10-08",
+		"Id":"arn:aws:securityhub:us-east-1:123456789123:subscription/aws-foundational-security-best-practices/v/1.0.0/EXAMPLE.1/finding/abc",
+		"ProductArn":"arn:aws:securityhub:us-east-1::product/aws/securityhub",
+		"GeneratorId":"aws-foundational-security-best-practices/v/1.0.0/EXAMPLE.1",
+		"AwsAccountId":"123456789123",
+		"Types":["Software and Configuration Checks"],
+		"Severity":{"Label":"HIGH","Normalized":70},
+		"Title":"EXAMPLE.1 An unmapped config rule",
+		"Description":"A Security Hub control backed by a Config rule we do not map.",
+		"Resources":[{"Type":"AwsS3Bucket","Id":"arn:aws:s3:::some-bucket","Region":"us-east-1"}],
+		"ProductFields":{"RelatedAWSResources:0/name":"zzz-nonexistent-config-rule","RelatedAWSResources:0/type":"AWS::Config::ConfigRule","StandardsArn":"arn:aws:securityhub:::standards/aws-foundational-security-best-practices/v/1.0.0"},
+		"Compliance":{"Status":"FAILED"},
+		"RecordState":"ACTIVE"
+	}]}`)
+	result, err := ConvertAsffToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	nistRaw, ok := result.Baselines[0].Requirements[0].Tags["nist"].([]interface{})
+	require.True(t, ok, "an unmapped config-rule finding should still carry a nist tag")
+	assert.Equal(t, []interface{}{"CM-6"}, nistRaw)
+}
+
 func TestConvertAsff_EmptyFindings_SynthesizesPassedPlaceholder(t *testing.T) {
 	result, err := ConvertAsffToHDF(loadFixture(t, "empty.json"), converterVersion)
 	require.NoError(t, err)

@@ -1,0 +1,89 @@
+{
+  "repo_name": "asff-to-hdf",
+  "repo_owner": null,
+  "repo_head": "feat/aws-config-hdf-enrichment",
+  "hipcheck_version": "3.15.0",
+  "analyzed_at": "2026-07-25T21:37:03.242321-04:00",
+  "passing": [
+    {
+      "analysis": "Analysis",
+      "name": "mitre/binary",
+      "passed": true,
+      "policy_expr": "(lte $ 0)",
+      "final_value": "0",
+      "message": "0 was the number of detected binary files in a repo, which was required to be less than or equal to 0"
+    },
+    {
+      "analysis": "Analysis",
+      "name": "mitre/activity",
+      "passed": true,
+      "policy_expr": "(lte $ P364D)",
+      "final_value": "1 day",
+      "message": "1 day was span of time that has elapsed since last activity in repo, which was required to be less than or equal to 364 days"
+    },
+    {
+      "analysis": "Analysis",
+      "name": "mitre/churn",
+      "passed": true,
+      "policy_expr": "(lte (divz (count (filter (gt 3) $)) (count $)) 0.02)",
+      "final_value": "0.015748031496062992",
+      "message": "0.015748031496062992 was the percent of churn frequencies of each commit in the repository greater than 3, which was required to be less than or equal to 0.02"
+    },
+    {
+      "analysis": "Analysis",
+      "name": "mitre/typo",
+      "passed": true,
+      "policy_expr": "(lte (count (filter (eq #t) $)) 0)",
+      "final_value": "0",
+      "message": "0 was the number of the repository's dependencies flagged as typos, which was required to be less than or equal to 0"
+    }
+  ],
+  "failing": [
+    {
+      "analysis": "Analysis",
+      "name": "mitre/entropy",
+      "passed": false,
+      "policy_expr": "(eq 0 (count (filter (gt 8) $)))",
+      "final_value": "1",
+      "message": "Expected the number of entropy calculations of each commit in the repository greater than 8 to be equal to 0 but it was 1"
+    },
+    {
+      "analysis": "Analysis",
+      "name": "mitre/affiliation",
+      "passed": false,
+      "policy_expr": "(lte (count (filter (eq #t) $)) 0)",
+      "final_value": "6",
+      "message": "Expected the number of the repository's contributors flagged as affiliated to be less than or equal to 0 but it was 6",
+      "concerns": [
+        "Contributor alice (alice@users.noreply.github.com) wrote and/or committed 92 commits",
+        "Contributor Bob Builder (bob@example.com) wrote and/or committed 83 commits",
+        "Contributor alice (alice@users.noreply.github.com) wrote and/or committed 74 commits",
+        "Contributor Carol Dev (carol@example.com) wrote and/or committed 2 commits",
+        "Contributor dependabot[bot] (dependabot[bot]@users.noreply.github.com) wrote and/or committed 45 commits",
+        "Contributor Copilot (copilot@users.noreply.github.com) wrote and/or committed 1 commit"
+      ]
+    }
+  ],
+  "errored": [
+    {
+      "analysis": "mitre/review",
+      "name": "mitre/review",
+      "error": {
+        "msg": "unknown error"
+      }
+    },
+    {
+      "analysis": "mitre/fuzz",
+      "name": "mitre/fuzz",
+      "error": {
+        "msg": "unknown error"
+      }
+    }
+  ],
+  "recommendation": {
+    "kind": "Pass",
+    "reason": null,
+    "risk_score": 0.33,
+    "risk_policy": "(gt 0.5 $)"
+  }
+}

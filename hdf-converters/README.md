@@ -23,11 +23,13 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | CycloneDX (SBOM) | `convertCyclonedxToHdf` | JSON |
 | CycloneDX VEX (→ HDF Amendments) | `convertCyclonedxVexToHdf` | JSON |
 | DBProtect | `convertDbprotectToHdf` | XML |
+| DefectDojo | `convertDefectDojoToHdf` | JSON |
 | Dependency-Track | `convertDeptrackToHdf` | JSON |
 | Fortify | `convertFortifyToHdf` | XML |
 | GitLab Security Report | `convertGitlabToHdf` | JSON |
 | Gosec | `convertGosecToHdf` | JSON |
 | Grype | `convertGrypeToHdf` | JSON |
+| Hipcheck | `convertHipcheckToHdf` | JSON |
 | Ion Channel | `convertIonchannelToHdf` | JSON |
 | JFrog Xray | `convertJfrogXrayToHdf` | JSON |
 | JUnit | `convertJunitToHdf` | XML |
