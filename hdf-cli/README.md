@@ -23,6 +23,7 @@ HDF (Heimdall Data Format) is a standardized JSON format for security assessment
   - [fetch](#fetch) -- Fetch from live APIs
     - [fetch aws-config](#fetch-aws-config) -- AWS Config compliance data
     - [fetch aws-securityhub](#fetch-aws-securityhub) -- AWS Security Hub ASFF findings
+    - [fetch defectdojo](#fetch-defectdojo) -- DefectDojo findings
     - [fetch gitlab](#fetch-gitlab) -- GitLab CI/CD security artifacts
     - [fetch sonarqube](#fetch-sonarqube) -- SonarQube issues
     - [fetch splunk](#fetch-splunk) -- Splunk HDF events
@@ -646,6 +647,38 @@ The [`AwsSecurityFindingFilters` reference](https://docs.aws.amazon.com/security
 lists every filterable field (product, account, standard, resource type, and
 more) — `--filter-json` accepts any of them.
 
+#### fetch defectdojo
+
+Fetch findings from a DefectDojo instance and convert to HDF.
+
+Token must be set via the `DEFECTDOJO_API_TOKEN` environment variable.
+
+Findings are grouped into HDF baselines by their underlying scanner (test_type),
+and risk-accepted findings carry a full HDF status override (who accepted the
+risk, when, why, and when it expires) reconstructed from the finding's inline
+risk-acceptance provenance.
+
+```
+USAGE
+  hdf fetch defectdojo [output] [flags]
+
+FLAGS
+  -u, --url string            (required) DefectDojo instance URL
+      --product-name string   Filter findings to a product by name
+      --engagement string     Filter findings to an engagement by id
+      --test string           Filter findings to a single test by id
+      --format string         Output format: hdf or raw (default "hdf")
+      --check                 Verify credentials only; skip findings download
+      --no-validate           Skip schema validation of converter output before writing
+  -o, --output string         Output file path (default: stdout)
+
+EXAMPLES
+  export DEFECTDOJO_API_TOKEN=<your-token>
+  hdf fetch defectdojo --url https://defectdojo.example.com -o output.json
+  hdf fetch defectdojo --url https://defectdojo.example.com --product-name "My App" -o output.json
+  hdf fetch defectdojo --url https://defectdojo.example.com --check
+```
+
 #### fetch gitlab
 
 Fetch a GitLab CI/CD security scan artifact (SAST, DAST, secret detection, etc.) and convert to HDF.
@@ -787,6 +820,7 @@ These flags apply to all commands.
 | `cyclonedx` | | CycloneDX SBOM (JSON) — VEX-bearing BOMs auto-route to cyclonedx-vex |
 | `cyclonedx-vex` | | CycloneDX BOM with VEX analysis statements → HDF Amendments (JSON) |
 | `dbprotect` | | DbProtect database scanner (XML) |
+| `defectdojo` | | DefectDojo findings export via API (JSON) |
 | `deptrack` | `dependency-track` | Dependency-Track vulnerability audit (JSON) |
 | `fortify` | | Micro Focus Fortify SAST (FVDL XML) |
 | `gitlab` | `gitlab-sast`, `gitlab-dast` | GitLab CI/CD security scan reports (JSON) |
@@ -851,6 +885,7 @@ The `fetch` commands connect to live APIs. Credentials are **never** accepted as
 | Service | Environment Variable | Config File Fallback |
 |---------|---------------------|---------------------|
 | AWS Config | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` | `~/.aws/credentials` (via AWS SDK credential chain) |
+| DefectDojo | `DEFECTDOJO_API_TOKEN` | None |
 | GitLab | `GITLAB_TOKEN` or `GLAB_TOKEN` | glab CLI config (`glab auth login`) |
 | SonarQube | `SONARQUBE_TOKEN` | None |
 | Splunk | `SPLUNK_TOKEN` | None |
