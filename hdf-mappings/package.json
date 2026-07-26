@@ -20,6 +20,8 @@
   "scripts": {
     "build": "tsdown",
     "clean": "rimraf dist",
+    "mappings:awsconfig": "node scripts/generate-awsconfig-mappings.mjs",
+    "mappings:awsconfig:check": "node scripts/generate-awsconfig-mappings.mjs --check",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
     "test:go": "cd go && go test ./...",

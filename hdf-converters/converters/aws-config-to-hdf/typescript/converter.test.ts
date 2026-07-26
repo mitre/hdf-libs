@@ -52,6 +52,43 @@ describe('timestamp parse fallback', () => {
   });
 });
 
+describe('unmapped rule NIST fallback', () => {
+  it('falls back to CM-6 for a rule the mapping tables do not cover', async () => {
+    // Synthetic managed-style identifier so the test stays stable as AWS's real
+    // catalog gains coverage; it must still carry the CM-6 configuration-settings
+    // floor rather than no tags.
+    const input = JSON.stringify({
+      ConfigRules: [
+        {
+          ConfigRuleName: 'example-unmapped-rule',
+          ConfigRuleArn: 'arn:aws:config:us-east-1:123456789012:config-rule/unmapped',
+          Description: 'A managed rule with no NIST mapping.',
+          Source: { Owner: 'AWS', SourceIdentifier: 'EXAMPLE_UNMAPPED_RULE' },
+          EvaluationResults: [
+            {
+              EvaluationResultIdentifier: {
+                EvaluationResultQualifier: {
+                  ConfigRuleName: 'example-unmapped-rule',
+                  ResourceType: 'AWS::S3::Bucket',
+                  ResourceId: 'some-bucket',
+                },
+              },
+              ComplianceType: 'COMPLIANT',
+              ResultRecordedTime: '2024-02-19T00:00:05Z',
+              ConfigRuleInvokedTime: '2024-02-19T00:00:05Z',
+            },
+          ],
+        },
+      ],
+    });
+    const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HDFResults;
+    const req = hdf.baselines[0].requirements[0];
+    expect(req.tags?.nist).toEqual(['CM-6']);
+    // CM-6 (Configuration Settings) is an operational control.
+    expect(req.controlType).toBe('operational');
+  });
+});
+
 // api-gw-ssl-enabled is mapped only at Rev 5; cloudtrail-enabled at both.
 const REV_MIX_INPUT = JSON.stringify({
   ConfigRules: [

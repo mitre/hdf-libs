@@ -155,10 +155,12 @@ func buildBaseline(rules []ConfigRule, resultsChecksum *hdf.Checksum) hdf.Evalua
 // buildRequirement creates one HDF requirement for a single AWS Config rule.
 func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 	nistControls := buildNISTTags(rule.Source.SourceIdentifier, rule.ConfigRuleName)
-	tags := map[string]interface{}{}
-	if len(nistControls) > 0 {
-		tags["nist"] = nistControls
+	if len(nistControls) == 0 {
+		// A managed or custom rule the mapping tables don't cover still evaluates a
+		// configuration setting — fall back to CM-6 rather than emitting no NIST context.
+		nistControls = shared.DefaultConfigManagementNIST
 	}
+	tags := map[string]interface{}{"nist": nistControls}
 
 	reqResults := make([]hdf.RequirementResult, 0, len(rule.EvaluationResults))
 	for _, r := range rule.EvaluationResults {

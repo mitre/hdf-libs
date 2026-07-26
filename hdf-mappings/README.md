@@ -207,6 +207,25 @@ const nistId2 = getAwsConfigNistControlByName('secretsmanager-scheduled-rotation
 if (awsConfigIdentifierExists('SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK')) { /* ... */ }
 ```
 
+#### Coverage tiers and semantics
+
+The AWS Config→NIST table is regenerated (via `scripts/generate-awsconfig-mappings.mjs`) from
+three tiers, in precedence order:
+
+1. **config-pack** — AWS Config's "Operational Best Practices for NIST 800-53" docs (Rev 4 + Rev 5).
+2. **security-hub** — AWS Security Hub's NIST 800-53 r5 standard control pages (Rev 5).
+3. **derived** — for a managed rule the authoritative tiers miss but whose name matches a strong
+   theme (encryption-at-rest, in-transit/TLS, logging/audit, public-access), the controls that
+   ≥75% of AWS's *own* same-theme mapped rules carry. Nothing is invented — controls are reused
+   from AWS's authoritative mappings. Rules matching no theme stay unmapped, and the
+   `aws-config-to-hdf` converter floors them to **CM-6** (Configuration Settings) at conversion time.
+
+> **Interpretation.** These NIST tags are *candidate control associations for triage*, not evidence
+> that a control is assessed or satisfied. A passed Config / Security Hub rule is evidence *toward*
+> the tagged controls, not proof they are met — one rule rarely satisfies a control in full, and the
+> derived and CM-6 tiers are coarse by design. Do not roll "rule passed" up to "tagged controls
+> satisfied" in SSP / eMASS / ATO exports.
+
 ## Go API
 
 Each mapping is also available as a Go package:
@@ -261,7 +280,7 @@ mapping   = awsconfig.GetByRuleName("secretsmanager-scheduled-rotation-success-c
 | Nessus→NIST | heimdall2 mapping tables |
 | Nikto→NIST | heimdall2 mapping tables |
 | ScoutSuite→NIST | heimdall2 mapping tables |
-| AWS Config→NIST | heimdall2 mapping tables |
+| AWS Config→NIST | AWS Config OBP for NIST 800-53 docs + Security Hub NIST r5 standard + derived (see Coverage tiers) |
 
 ## License
 

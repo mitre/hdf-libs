@@ -51,6 +51,34 @@ func TestConvertAWSConfigToHDF_Minimal(t *testing.T) {
 	assert.NotEmpty(t, nistSlice)
 }
 
+func TestConvertAWSConfigToHDF_UnmappedRuleFallsBackToCM6(t *testing.T) {
+	// A managed-style rule the mapping tables don't cover (synthetic identifier so
+	// the test stays stable as AWS's real catalog gains coverage). It must still
+	// convert, carrying the CM-6 configuration-settings floor rather than no tags.
+	input := []byte(`{"ConfigRules":[{
+		"ConfigRuleName":"example-unmapped-rule",
+		"ConfigRuleArn":"arn:aws:config:us-east-1:123456789012:config-rule/config-rule-unmapped",
+		"Description":"A managed rule with no NIST mapping.",
+		"Source":{"Owner":"AWS","SourceIdentifier":"EXAMPLE_UNMAPPED_RULE"},
+		"EvaluationResults":[{
+			"EvaluationResultIdentifier":{"EvaluationResultQualifier":{"ConfigRuleName":"example-unmapped-rule","ResourceType":"AWS::S3::Bucket","ResourceId":"some-bucket"}},
+			"ComplianceType":"COMPLIANT",
+			"ConfigRuleInvokedTime":"2021-04-09T14:39:21Z",
+			"ResultRecordedTime":"2021-04-09T14:39:51.614Z"
+		}]
+	}]}`)
+	result, err := ConvertAWSConfigToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	nist, ok := req.Tags["nist"].([]string)
+	require.True(t, ok, "an unmapped rule should still carry a nist tag")
+	assert.Equal(t, []string{"CM-6"}, nist, "unmapped Config rule falls back to CM-6")
+	require.NotNil(t, req.ControlType)
+	assert.Equal(t, hdf.Operational, *req.ControlType, "CM-6 (Configuration Settings) is an operational control")
+}
+
 func TestConvertAWSConfigToHDF_Remediation(t *testing.T) {
 	inputPath := filepath.Join(shared.GetConvertersDir(), "aws-config-to-hdf", "fixtures", "input", "remediation.json")
 	inputData, err := os.ReadFile(inputPath)

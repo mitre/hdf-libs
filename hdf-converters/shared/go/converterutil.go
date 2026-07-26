@@ -60,6 +60,12 @@ var DefaultRemediationNIST = []string{"SI-2", "RA-5"}
 // dependency/inventory management tools (CM-8: System Component Inventory).
 var DefaultComponentManagementNIST = []string{"CM-8"}
 
+// DefaultConfigManagementNIST is the canonical NIST 800-53 fallback for
+// configuration-compliance checks with no specific mapping (CM-6: Configuration
+// Settings). Every AWS Config managed rule evaluates a resource setting, so CM-6
+// is the honest baseline for a rule the mapping tables don't cover.
+var DefaultConfigManagementNIST = []string{"CM-6"}
+
 // BuildNISTCCITags creates a tags map with NIST and optional CCI string slices
 // converted to []interface{} for JSON serialization. If cci is empty, the "cci"
 // key is omitted.

@@ -269,9 +269,10 @@ func TestMappedRevisions(t *testing.T) {
 	if got := MappedRevisions("API_GW_SSL_ENABLED", "api-gw-ssl-enabled"); len(got) != 1 || got[0] != 5 {
 		t.Errorf("expected [5] for api-gw-ssl-enabled, got %v", got)
 	}
-	// secretsmanager-scheduled-rotation-success-check exists only in Rev 4.
-	if got := MappedRevisions("SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK", "secretsmanager-scheduled-rotation-success-check"); len(got) != 1 || got[0] != 4 {
-		t.Errorf("expected [4] for secretsmanager rule, got %v", got)
+	// emr-kerberos-enabled exists only in Rev 4 (not in the Config Rev5 docs or the
+	// Security Hub NIST r5 standard).
+	if got := MappedRevisions("EMR_KERBEROS_ENABLED", "emr-kerberos-enabled"); len(got) != 1 || got[0] != 4 {
+		t.Errorf("expected [4] for emr-kerberos-enabled, got %v", got)
 	}
 	// An unknown rule maps at no revision.
 	if got := MappedRevisions("NOPE", "no-such-rule"); len(got) != 0 {

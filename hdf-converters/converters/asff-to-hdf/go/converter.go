@@ -660,13 +660,24 @@ func nistTags(group []asffFinding) []string {
 		}
 	}
 	if len(out) == 0 {
+		// A Config-rule-backed finding whose rule we can't map is still a configuration
+		// -settings check → CM-6, matching the aws-config-to-hdf floor so the same Security
+		// Hub signal tags consistently across both converters. Generic ASFF scanner findings
+		// keep the static-analysis default.
+		if len(group) > 0 && isConfigRuleFinding(group[0]) {
+			return shared.DefaultConfigManagementNIST
+		}
 		return shared.DefaultStaticAnalysisNIST
 	}
 	return out
 }
 
+func isConfigRuleFinding(f asffFinding) bool {
+	return f.ProductFields["RelatedAWSResources:0/type"] == "AWS::Config::ConfigRule"
+}
+
 func configRuleNIST(f asffFinding) []string {
-	if f.ProductFields["RelatedAWSResources:0/type"] != "AWS::Config::ConfigRule" {
+	if !isConfigRuleFinding(f) {
 		return nil
 	}
 	name := f.ProductFields["RelatedAWSResources:0/name"]

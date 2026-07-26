@@ -76,6 +76,36 @@ describe('asff-to-hdf converter', () => {
     }
   });
 
+  it('floors an unmapped Security Hub config-rule finding to CM-6, not SA-11/RA-5', async () => {
+    // Synthetic rule name so it stays unmapped; a Config-rule-backed finding we can't
+    // map is still a configuration-settings check → CM-6, matching aws-config-to-hdf.
+    const input = JSON.stringify({
+      Findings: [
+        {
+          SchemaVersion: '2018-10-08',
+          Id: 'arn:aws:securityhub:us-east-1:123456789123:subscription/aws-foundational-security-best-practices/v/1.0.0/EXAMPLE.1/finding/abc',
+          ProductArn: 'arn:aws:securityhub:us-east-1::product/aws/securityhub',
+          GeneratorId: 'aws-foundational-security-best-practices/v/1.0.0/EXAMPLE.1',
+          AwsAccountId: '123456789123',
+          Types: ['Software and Configuration Checks'],
+          Severity: { Label: 'HIGH', Normalized: 70 },
+          Title: 'EXAMPLE.1 An unmapped config rule',
+          Description: 'A Security Hub control backed by a Config rule we do not map.',
+          Resources: [{ Type: 'AwsS3Bucket', Id: 'arn:aws:s3:::some-bucket', Region: 'us-east-1' }],
+          ProductFields: {
+            'RelatedAWSResources:0/name': 'zzz-nonexistent-config-rule',
+            'RelatedAWSResources:0/type': 'AWS::Config::ConfigRule',
+            StandardsArn: 'arn:aws:securityhub:::standards/aws-foundational-security-best-practices/v/1.0.0',
+          },
+          Compliance: { Status: 'FAILED' },
+          RecordState: 'ACTIVE',
+        },
+      ],
+    });
+    const hdf = JSON.parse(await convertAsffToHdf(input)) as HDFResults;
+    expect(hdf.baselines[0]!.requirements[0]!.tags?.nist).toEqual(['CM-6']);
+  });
+
   it('emits one CloudAccount component per AWS account', async () => {
     const hdf = JSON.parse(await convertAsffToHdf(loadFixture('minimal.json'), '0.1.0')) as HDFResults;
     expect(hdf.components).toHaveLength(1);
