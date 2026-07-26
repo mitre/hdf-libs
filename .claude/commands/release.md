@@ -224,13 +224,14 @@ For removed/deprecated fields, the same walk applies in reverse: remove the row,
 ### Phase 5 — CHANGELOG
 
 1. Open `CHANGELOG.md`. Insert a new `## [NEW_VERSION] - YYYY-MM-DD` block at the top (rename the existing `## [Unreleased]` block if the changes are already drafted there).
-2. Sections to fill in (skip empty ones):
+2. **Actively derive the breaking changes — do not leave them implied by the version bump.** A minor bump signals *"the schema changed"* but never explains *what broke*; that explanation is this section's job, and consumers cannot infer it from a version number. Walk the diff since `BASE` and enumerate every change that could break a downstream consumer, **excluding genuinely new/additive features** (a new optional field or new converter is a New Feature, not a breaking change). Concretely, treat as breaking and explain each in plain English (what changed, why, and the migration): schema field renames or removals; enum value removals; tightened/added validation (previously-valid docs now rejected); changed defaults; renamed/re-numbered CLI flags, arguments, or version identifiers; changed output shape or semantics of an existing command; and any consumer-visible behavior change (even one shipping in a patch). If the walk finds none, state "No breaking changes" explicitly rather than omitting the section. Sources for the walk: `git diff BASE..HEAD -- hdf-schema/src/schemas/`, the Phase 1 crosspr behavior-change note, and CLI help/output deltas.
+3. Sections to fill in (skip empty ones, but never skip Breaking Changes silently — see step 2):
    - **New Features**
-   - **Breaking Changes / Notable behavior changes** (call out field renames, enum removals, schema-validation tightening — *and* any consumer-visible behavior change shipping in a patch, prominently).
+   - **Breaking Changes / Notable behavior changes** (each item explained, not just named: field renames, enum removals, schema-validation tightening, changed defaults, renamed/re-numbered CLI flags or version identifiers, changed command output/semantics — *and* any consumer-visible behavior change shipping in a patch, prominently).
    - **Architecture Changes** (for minor/major, note the schema `$id` bump explicitly: *"Schema version bumped from vOLD to vNEW across all `$id`/`$ref` URLs"*).
    - **Compatibility** (state backward-compat posture; "v(OLD-1).x documents validate cleanly under vNEW" is the typical line for additive minors).
    - **Internal consumer notes** if quicktype-generated Go names changed (constant-name collisions etc.)
-3. **Do not touch any earlier `## [vX]` entry.** Those are factual history.
+4. **Do not touch any earlier `## [vX]` entry.** Those are factual history.
 
 ### Phase 6 — Build / lint / test gate
 
@@ -289,6 +290,7 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] *(minor/major)* `site/docs/contributing/developer-guide.md` `$ref` URI pattern at NEW
 - [ ] *(minor/major)* `hdf-cli/README.md` archive example at NEW
 - [ ] *(minor/major)* `hdf-schema/README.md` new "What's new in vNEW" section added
+- [ ] Breaking changes actively derived from the `BASE..HEAD` diff (excluding new/additive features) and each explained in the CHANGELOG's Breaking Changes section — or "No breaking changes" stated explicitly (never left implied by the version bump)
 - [ ] `CHANGELOG.md` has a new `## [NEW] - YYYY-MM-DD` entry; historical entries untouched
 - [ ] `pnpm check` (build + lint + test + security) all green
 - [ ] `git status` shows no `go.work.sum`, `node_modules/`, `dist/`, or unrelated files staged
