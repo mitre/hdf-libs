@@ -13,6 +13,7 @@ import {
   nistToCci,
   getAwsConfigNistControlsBySubstring,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
+  DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {
   buildNoFindingsRequirement,
@@ -295,11 +296,22 @@ function nistTags(group: AsffFinding[]): string[] {
       }
     }
   }
-  return out.length > 0 ? out : DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
+  if (out.length > 0) return out;
+  // A Config-rule-backed finding whose rule we can't map is still a configuration-settings
+  // check → CM-6, matching the aws-config-to-hdf floor so the same Security Hub signal tags
+  // consistently across both converters. Generic ASFF scanner findings keep the default.
+  if (group.length > 0 && isConfigRuleFinding(group[0]!)) {
+    return DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS;
+  }
+  return DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
+}
+
+function isConfigRuleFinding(f: AsffFinding): boolean {
+  return f.ProductFields?.['RelatedAWSResources:0/type'] === 'AWS::Config::ConfigRule';
 }
 
 function configRuleNist(f: AsffFinding): string[] {
-  if (f.ProductFields?.['RelatedAWSResources:0/type'] !== 'AWS::Config::ConfigRule') {
+  if (!isConfigRuleFinding(f)) {
     return [];
   }
   const name = f.ProductFields?.['RelatedAWSResources:0/name'];

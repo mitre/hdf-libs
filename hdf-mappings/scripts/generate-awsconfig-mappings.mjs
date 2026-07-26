@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // Regenerates the AWS Config -> NIST 800-53 mapping (awsconfig-mappings.json) from
 // authoritative AWS sources. This is the "repeatable refresh" for the mapping: run
-// it, review the printed diff, commit. Output is written byte-identically to both
-// the Go and TS copies. Deterministically sorted, so future diffs stay clean.
+// it, review the printed summary plus `git diff`, commit. Output is written
+// byte-identically to both the Go and TS copies. Deterministically sorted, so
+// future diffs stay clean.
 //
 //   node scripts/generate-awsconfig-mappings.mjs [--check]
 //
-//     (no flag)  rewrite both mapping files and print the diff vs the committed data
-//     --check    print the diff only; exit 1 if the files would change (CI drift gate)
+//     (no flag)  rewrite both mapping files and print a row-count + added/removed summary
+//     --check    report drift only; exit 1 if regenerating would change EITHER copy (CI gate)
 //
 // Provenance / tiers (a row's mapping comes from exactly one, in precedence order):
 //   1. config-pack   — AWS Config "Operational Best Practices for NIST 800-53" docs
@@ -54,13 +55,19 @@ const CONFIG_TOC = 'https://docs.aws.amazon.com/config/latest/developerguide/toc
 // (an "encrypted-in-transit" rule is transmission protection, not at-rest). A control
 // joins a theme's core when >= DERIVE_THRESHOLD of the theme's Rev5-mapped rules carry it.
 const DERIVED_THEMES = [
-  ['encryption/at-rest', /encrypt|kms|cmk/, /transit|ssl|tls|https/],
+  ['encryption/at-rest', /encrypt|kms|cmk/, /transit|ssl|tls|https|traffic|protocol-encrypted/],
   ['in-transit/TLS', /ssl|tls|https|in-transit/, null],
   ['logging/audit', /logging|logs|audit|cloudtrail|flow-log/, null],
   ['public-access', /public|publicly|internet/, null],
 ];
 const DERIVE_THRESHOLD = 0.75;
-const themeMatches = (rule, include, exclude) => include.test(rule) && !(exclude && exclude.test(rule));
+// Rules naming a non-security config attribute never take a security theme: a tag check
+// (`*-tagged`) or a certificate-transparency-log check asserts nothing about the theme's
+// controls, so they fall through to the CM-6 floor instead of inheriting an encryption/
+// audit core. Applied to both the derivation basis and residual matching.
+const THEME_GLOBAL_EXCLUDE = /tag(?:ged)?$|transparent-logging/;
+const themeMatches = (rule, include, exclude) =>
+  !THEME_GLOBAL_EXCLUDE.test(rule) && include.test(rule) && !(exclude && exclude.test(rule));
 
 async function fetchText(url) {
   const res = await fetch(url);
@@ -276,12 +283,14 @@ async function main() {
   rows.sort((a, b) => a.Rev - b.Rev || (a.AwsConfigRuleName < b.AwsConfigRuleName ? -1 : a.AwsConfigRuleName > b.AwsConfigRuleName ? 1 : 0));
   const json = JSON.stringify(rows, null, 2) + '\n';
 
-  const before = readFileSync(OUT_FILES[0], 'utf-8');
-  if (before === json) {
-    console.log('awsconfig-mappings.json is up to date.');
+  // Compare EVERY output copy, not just the first — a drifted or hand-edited TS copy
+  // must still be caught (and rewritten) even when the Go copy already matches.
+  const current = OUT_FILES.map((f) => readFileSync(f, 'utf-8'));
+  if (current.every((c) => c === json)) {
+    console.log(`awsconfig-mappings.json is up to date (${OUT_FILES.length} copies).`);
     return;
   }
-  const b = JSON.parse(before);
+  const b = JSON.parse(current[0]);
   const oldNames = new Set(b.map((r) => `${r.Rev}:${r.AwsConfigRuleName}`));
   const newNames = new Set(rows.map((r) => `${r.Rev}:${r.AwsConfigRuleName}`));
   const added = [...newNames].filter((n) => !oldNames.has(n));
