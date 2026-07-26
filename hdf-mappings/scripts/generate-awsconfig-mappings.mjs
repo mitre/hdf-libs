@@ -12,12 +12,14 @@
 // Provenance / tiers (a row's mapping comes from exactly one, in precedence order):
 //   1. config-pack   — AWS Config "Operational Best Practices for NIST 800-53" docs
 //   2. security-hub   — Security Hub NIST 800-53 r5 standard control pages (Rev 5 only)
-//   3. derived        — [STAGE 3] heuristic family-level alignment for the residual
-// The authoritative tiers are regenerated from AWS; the derived tier is a small
-// hand-curated input file. Provenance is tracked at the INPUT level, not as a
-// runtime field, so the emitted shape is unchanged from what consumers already read.
-// No cross-source unioning: config-pack wins where both cover a rule, so every row's
-// control set is one AWS publication verbatim (never a combination neither source ships).
+//   3. derived        — strong-theme heuristic for the residual: a rule's name matches a
+//                       theme (encryption/TLS/logging/public-access) and inherits that
+//                       theme's NIST core, computed from how AWS mapped same-theme rules
+// Tiers 1-2 are authoritative; tier 3 never invents controls — it reuses the core AWS
+// already assigned to same-theme rules, at a >=75% confidence bar. Rules matching no
+// strong theme are left unmapped (the aws-config-to-hdf converter floors them to CM-6).
+// Config-pack/security-hub take precedence over derived; no cross-source unioning within
+// the authoritative tiers, so every authoritative row is one AWS publication verbatim.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -40,6 +42,25 @@ const CONFIG_DOCS = {
 // and "Related requirements" (the NIST controls). This is Rev 5 only.
 const SECURITY_HUB_BASE = 'https://docs.aws.amazon.com/securityhub/latest/userguide/';
 const SECURITY_HUB_TOC = SECURITY_HUB_BASE + 'toc-contents.json';
+
+// The full managed-rule catalog (from the Config docs "List of Managed Rules") drives
+// the derived tier: a rule the two authoritative tiers miss but whose name matches a
+// strong theme inherits that theme's NIST core. Rev 5 only.
+const CONFIG_TOC = 'https://docs.aws.amazon.com/config/latest/developerguide/toc-contents.json';
+
+// tier 3 strong themes: [name, include pattern, exclude pattern] over the rule name.
+// Kept intentionally narrow — only themes where authoritatively-mapped rules share a
+// stable NIST core. The exclude keeps at-rest encryption distinct from in-transit
+// (an "encrypted-in-transit" rule is transmission protection, not at-rest). A control
+// joins a theme's core when >= DERIVE_THRESHOLD of the theme's Rev5-mapped rules carry it.
+const DERIVED_THEMES = [
+  ['encryption/at-rest', /encrypt|kms|cmk/, /transit|ssl|tls|https/],
+  ['in-transit/TLS', /ssl|tls|https|in-transit/, null],
+  ['logging/audit', /logging|logs|audit|cloudtrail|flow-log/, null],
+  ['public-access', /public|publicly|internet/, null],
+];
+const DERIVE_THRESHOLD = 0.75;
+const themeMatches = (rule, include, exclude) => include.test(rule) && !(exclude && exclude.test(rule));
 
 async function fetchText(url) {
   const res = await fetch(url);
@@ -151,6 +172,49 @@ async function fetchSecurityHubRules() {
   return { rules: merged, pageCount: list.length };
 }
 
+// --- tier 3: derived (strong-theme heuristic) ---
+
+// Enumerate the managed-rule catalog from the Config docs "List of Managed Rules" subtree.
+async function fetchManagedRuleCatalog() {
+  const toc = JSON.parse(await fetchText(CONFIG_TOC));
+  let section;
+  (function find(node) {
+    if (Array.isArray(node)) node.forEach(find);
+    else if (node && typeof node === 'object') {
+      if (node.title === 'List of Managed Rules') section = node;
+      Object.values(node).forEach(find);
+    }
+  })(toc);
+  const rules = new Set();
+  (function collect(node) {
+    if (Array.isArray(node)) node.forEach(collect);
+    else if (node && typeof node === 'object') {
+      if (typeof node.href === 'string' && /^[a-z0-9-]+\.html$/.test(node.href)) rules.add(node.href.replace(/\.html$/, ''));
+      Object.values(node).forEach(collect);
+    }
+  })(section ?? {});
+  return rules;
+}
+
+// Derive each strong theme's NIST core empirically: the controls carried by at least
+// DERIVE_THRESHOLD of the Rev5 authoritatively-mapped rules whose name matches the theme.
+// The core is thus never invented — it is exactly what AWS assigned to same-theme rules.
+function deriveThemeCores(authoritativeRows) {
+  const rev5 = new Map();
+  for (const r of authoritativeRows) {
+    if (r.Rev === 5) rev5.set(r.AwsConfigRuleName, r['NIST-ID'].split('|'));
+  }
+  const cores = new Map();
+  for (const [theme, include, exclude] of DERIVED_THEMES) {
+    const themeRules = [...rev5].filter(([name]) => themeMatches(name, include, exclude));
+    const counts = new Map();
+    for (const [, controls] of themeRules) for (const c of controls) counts.set(c, (counts.get(c) ?? 0) + 1);
+    const core = new Set([...counts].filter(([, k]) => k >= DERIVE_THRESHOLD * themeRules.length).map(([c]) => c));
+    cores.set(theme, core);
+  }
+  return cores;
+}
+
 async function main() {
   const check = process.argv.includes('--check');
 
@@ -188,7 +252,26 @@ async function main() {
     shAdded += 1;
   }
   console.log(`  security hub: ${pageCount} pages, ${shRules.size} rules mapped, ${shAdded} new (rest already covered by config-pack).`);
-  // TODO Stage 3: merge the hand-curated heuristic tier (awsconfig-heuristic.json).
+
+  // tier 3: derived. A managed rule the authoritative tiers miss but whose name matches a
+  // strong theme inherits that theme's empirically-derived NIST core (union across matched
+  // themes). Rules matching no strong theme stay unmapped — the aws-config-to-hdf converter
+  // applies the CM-6 configuration-settings floor to those at conversion time.
+  const catalog = await fetchManagedRuleCatalog();
+  const cores = deriveThemeCores(rows);
+  let derivedAdded = 0;
+  for (const rule of [...catalog].sort()) {
+    if (seen.has(`5:${rule}`)) continue;
+    const controls = new Set();
+    for (const [theme, include, exclude] of DERIVED_THEMES) {
+      if (themeMatches(rule, include, exclude)) for (const c of cores.get(theme)) controls.add(c);
+    }
+    if (controls.size === 0) continue;
+    rows.push(rowFor(rule, controls, 5));
+    seen.add(`5:${rule}`);
+    derivedAdded += 1;
+  }
+  console.log(`  derived: catalog ${catalog.size} rules, ${derivedAdded} residual rules matched a strong theme (rest fall to the CM-6 converter floor).`);
 
   rows.sort((a, b) => a.Rev - b.Rev || (a.AwsConfigRuleName < b.AwsConfigRuleName ? -1 : a.AwsConfigRuleName > b.AwsConfigRuleName ? 1 : 0));
   const json = JSON.stringify(rows, null, 2) + '\n';

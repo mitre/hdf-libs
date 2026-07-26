@@ -660,6 +660,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "ACM_CERTIFICATE_TRANSPARENT_LOGGING_ENABLED",
+    "AwsConfigRuleName": "acm-certificate-transparent-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "ACM_PCA_ROOT_CA_DISABLED",
     "AwsConfigRuleName": "acm-pca-root-ca-disabled",
     "NIST-ID": "CA-9(1)|CM-2",
@@ -732,15 +738,111 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "APIGATEWAY_DOMAIN_NAME_TLS_CHECK",
+    "AwsConfigRuleName": "apigateway-domain-name-tls-check",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "APIGATEWAY_STAGE_ACCESS_LOGS_ENABLED",
+    "AwsConfigRuleName": "apigateway-stage-access-logs-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "APIGATEWAYV2_INTEGRATION_PRIVATE_HTTPS_ENABLED",
+    "AwsConfigRuleName": "apigatewayv2-integration-private-https-enabled",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "APPMESH_VIRTUAL_GATEWAY_BACKEND_DEFAULTS_TLS",
+    "AwsConfigRuleName": "appmesh-virtual-gateway-backend-defaults-tls",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "APPMESH_VIRTUAL_GATEWAY_LOGGING_FILE_PATH_EXISTS",
+    "AwsConfigRuleName": "appmesh-virtual-gateway-logging-file-path-exists",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "APPMESH_VIRTUAL_NODE_BACKEND_DEFAULTS_TLS_ON",
+    "AwsConfigRuleName": "appmesh-virtual-node-backend-defaults-tls-on",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "APPMESH_VIRTUAL_NODE_LOGGING_FILE_PATH_EXISTS",
+    "AwsConfigRuleName": "appmesh-virtual-node-logging-file-path-exists",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "APPMESH_VIRTUAL_NODE_SERVICE_BACKENDS_TLS_ENFORCED",
+    "AwsConfigRuleName": "appmesh-virtual-node-service-backends-tls-enforced",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "APPRUNNER_SERVICE_NO_PUBLIC_ACCESS",
+    "AwsConfigRuleName": "apprunner-service-no-public-access",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "APPSYNC_AUTHORIZATION_CHECK",
     "AwsConfigRuleName": "appsync-authorization-check",
     "NIST-ID": "AC-2(1)|AC-3|AC-3(15)|AC-3(7)|AC-6",
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "APPSYNC_CACHE_CT_ENCRYPTION_AT_REST",
+    "AwsConfigRuleName": "appsync-cache-ct-encryption-at-rest",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "APPSYNC_CACHE_CT_ENCRYPTION_IN_TRANSIT",
+    "AwsConfigRuleName": "appsync-cache-ct-encryption-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "APPSYNC_CACHE_ENCRYPTION_AT_REST",
+    "AwsConfigRuleName": "appsync-cache-encryption-at-rest",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "APPSYNC_LOGGING_ENABLED",
+    "AwsConfigRuleName": "appsync-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "ATHENA_WORKGROUP_ENCRYPTED_AT_REST",
     "AwsConfigRuleName": "athena-workgroup-encrypted-at-rest",
     "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ATHENA_WORKGROUP_LOGGING_ENABLED",
+    "AwsConfigRuleName": "athena-workgroup-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "AUDITMANAGER_ASSESSMENT_TAGGED",
+    "AwsConfigRuleName": "auditmanager-assessment-tagged",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "AURORA_GLOBAL_DATABASE_ENCRYPTION_AT_REST",
+    "AwsConfigRuleName": "aurora-global-database-encryption-at-rest",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
     "Rev": 5
   },
   {
@@ -813,6 +915,12 @@
     "AwsConfigRuleSourceIdentifier": "BEDROCK_AGENTCORE_MEMORY_ENCRYPTION_ENABLED",
     "AwsConfigRuleName": "bedrock-agentcore-memory-encryption-enabled",
     "NIST-ID": "AU-9|CA-9(1)|CM-3(6)|SC-12(2)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "BEDROCK_DATA_SOURCE_ENCRYPTION_ENABLED",
+    "AwsConfigRuleName": "bedrock-data-source-encryption-enabled",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
     "Rev": 5
   },
   {
@@ -906,6 +1014,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "CLOUDFRONT_SSL_POLICY_CHECK",
+    "AwsConfigRuleName": "cloudfront-ssl-policy-check",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "CLOUDFRONT_TRAFFIC_TO_ORIGIN_ENCRYPTED",
     "AwsConfigRuleName": "cloudfront-traffic-to-origin-encrypted",
     "NIST-ID": "AC-17(2)|AC-4|IA-5(1)|SC-12(3)|SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)|SI-7(6)",
@@ -918,15 +1032,51 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "CLOUDTRAIL_ALL_READ_S3_DATA_EVENT_CHECK",
+    "AwsConfigRuleName": "cloudtrail-all-read-s3-data-event-check",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CLOUDTRAIL_ALL_WRITE_S3_DATA_EVENT_CHECK",
+    "AwsConfigRuleName": "cloudtrail-all-write-s3-data-event-check",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "CLOUD_TRAIL_ENABLED",
     "AwsConfigRuleName": "cloudtrail-enabled",
     "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-14(1)|AU-2|AU-3|AU-6(3)|AU-6(4)|AU-9|CA-7|SA-8(22)|SC-7(9)|SI-3(8)|SI-4(20)|SI-7(8)",
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "CLOUDTRAIL_EVENT_DATA_STORE_MULTI_REGION",
+    "AwsConfigRuleName": "cloudtrail-event-data-store-multi-region",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CLOUDTRAIL_S3_BUCKET_ACCESS_LOGGING",
+    "AwsConfigRuleName": "cloudtrail-s3-bucket-access-logging",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CLOUDTRAIL_S3_BUCKET_PUBLIC_ACCESS_PROHIBITED",
+    "AwsConfigRuleName": "cloudtrail-s3-bucket-public-access-prohibited",
+    "NIST-ID": "AC-21|AC-3|AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "CLOUDTRAIL_S3_DATAEVENTS_ENABLED",
     "AwsConfigRuleName": "cloudtrail-s3-dataevents-enabled",
     "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-3(8)|SI-4(20)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CLOUDTRAIL_SECURITY_TRAIL_ENABLED",
+    "AwsConfigRuleName": "cloudtrail-security-trail-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
     "Rev": 5
   },
   {
@@ -939,6 +1089,12 @@
     "AwsConfigRuleSourceIdentifier": "CLOUDWATCH_ALARM_ACTION_ENABLED_CHECK",
     "AwsConfigRuleName": "cloudwatch-alarm-action-enabled-check",
     "NIST-ID": "AU-6(1)|AU-6(5)|CA-7|SI-2|SI-4(12)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CLOUDWATCH_LOG_GROUP_ENCRYPTED",
+    "AwsConfigRuleName": "cloudwatch-log-group-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
     "Rev": 5
   },
   {
@@ -984,6 +1140,18 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "CODEBUILD_REPORT_GROUP_ENCRYPTED_AT_REST",
+    "AwsConfigRuleName": "codebuild-report-group-encrypted-at-rest",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CONNECT_INSTANCE_LOGGING_ENABLED",
+    "AwsConfigRuleName": "connect-instance-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "CUSTOM_EVENTBUS_POLICY_ATTACHED",
     "AwsConfigRuleName": "custom-eventbus-policy-attached",
     "NIST-ID": "AC-2|AC-2(1)|AC-3|AC-3(15)|AC-3(7)|AC-5|AC-6|AC-6(3)",
@@ -993,6 +1161,18 @@
     "AwsConfigRuleSourceIdentifier": "CW_LOGGROUP_RETENTION_PERIOD_CHECK",
     "AwsConfigRuleName": "cw-loggroup-retention-period-check",
     "NIST-ID": "AU-10|AU-11|AU-6(3)|AU-6(4)|CA-7|SI-12",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "DATASYNC_LOCATION_OBJECT_STORAGE_USING_HTTPS",
+    "AwsConfigRuleName": "datasync-location-object-storage-using-https",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "DATASYNC_TASK_LOGGING_ENABLED",
+    "AwsConfigRuleName": "datasync-task-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
     "Rev": 5
   },
   {
@@ -1086,6 +1266,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "DOCDB_CLUSTER_ENCRYPTED_IN_TRANSIT",
+    "AwsConfigRuleName": "docdb-cluster-encrypted-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "DOCDB_CLUSTER_SNAPSHOT_PUBLIC_PROHIBITED",
     "AwsConfigRuleName": "docdb-cluster-snapshot-public-prohibited",
     "NIST-ID": "AC-21|AC-3|AC-3(7)|AC-4|AC-4(21)|AC-6|SC-7|SC-7(11)|SC-7(16)|SC-7(20)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
@@ -1128,6 +1314,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "DYNAMODB_TABLE_ENCRYPTION_ENABLED",
+    "AwsConfigRuleName": "dynamodb-table-encryption-enabled",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "DYNAMODB_THROUGHPUT_LIMIT_CHECK",
     "AwsConfigRuleName": "dynamodb-throughput-limit-check",
     "NIST-ID": "CA-7|SI-2",
@@ -1149,6 +1341,12 @@
     "AwsConfigRuleSourceIdentifier": "EBS_RESOURCES_PROTECTED_BY_BACKUP_PLAN",
     "AwsConfigRuleName": "ebs-resources-protected-by-backup-plan",
     "NIST-ID": "CP-10|CP-6|CP-6(1)|CP-6(2)|CP-9|SC-5(2)|SI-12|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EBS_SNAPSHOT_BLOCK_PUBLIC_ACCESS",
+    "AwsConfigRuleName": "ebs-snapshot-block-public-access",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
     "Rev": 5
   },
   {
@@ -1212,6 +1410,18 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "EC2_LAUNCH_TEMPLATES_EBS_VOLUME_ENCRYPTED",
+    "AwsConfigRuleName": "ec2-launch-templates-ebs-volume-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EC2_LAUNCHTEMPLATE_EBS_ENCRYPTED",
+    "AwsConfigRuleName": "ec2-launchtemplate-ebs-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "EC2_MANAGEDINSTANCE_ASSOCIATION_COMPLIANCE_STATUS_CHECK",
     "AwsConfigRuleName": "ec2-managedinstance-association-compliance-status-check",
     "NIST-ID": "CA-9(1)|CM-2|CM-2(2)|CM-8|CM-8(1)|CM-8(3)|SI-2(3)",
@@ -1230,6 +1440,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "EC2_SPOT_FLEET_REQUEST_CT_ENCRYPTION_AT_REST",
+    "AwsConfigRuleName": "ec2-spot-fleet-request-ct-encryption-at-rest",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "EC2_STOPPED_INSTANCE",
     "AwsConfigRuleName": "ec2-stopped-instance",
     "NIST-ID": "CA-9(1)|CM-2|CM-2(2)",
@@ -1245,6 +1461,12 @@
     "AwsConfigRuleSourceIdentifier": "EC2_VOLUME_INUSE_CHECK",
     "AwsConfigRuleName": "ec2-volume-inuse-check",
     "NIST-ID": "CA-9(1)|CM-2|CM-2(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EC2_VPN_CONNECTION_LOGGING_ENABLED",
+    "AwsConfigRuleName": "ec2-vpn-connection-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
     "Rev": 5
   },
   {
@@ -1302,6 +1524,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "ECS_TASK_DEFINITION_EFS_ENCRYPTION_ENABLED",
+    "AwsConfigRuleName": "ecs-task-definition-efs-encryption-enabled",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "ECS_TASK_DEFINITION_LOG_CONFIGURATION",
     "AwsConfigRuleName": "ecs-task-definition-log-configuration",
     "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
@@ -1344,6 +1572,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "EFS_FILESYSTEM_CT_ENCRYPTED",
+    "AwsConfigRuleName": "efs-filesystem-ct-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "EFS_IN_BACKUP_PLAN",
     "AwsConfigRuleName": "efs-in-backup-plan",
     "NIST-ID": "CP-10|CP-6|CP-6(1)|CP-6(2)|CP-9|SC-5(2)|SI-12|SI-13(5)",
@@ -1368,6 +1602,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "EKS_CLUSTER_LOGGING_ENABLED",
+    "AwsConfigRuleName": "eks-cluster-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "EKS_CLUSTER_SECRETS_ENCRYPTED",
     "AwsConfigRuleName": "eks-cluster-secrets-encrypted",
     "NIST-ID": "SC-12|SC-13|SC-28|SC-8",
@@ -1383,6 +1623,18 @@
     "AwsConfigRuleSourceIdentifier": "EKS_ENDPOINT_NO_PUBLIC_ACCESS",
     "AwsConfigRuleName": "eks-endpoint-no-public-access",
     "NIST-ID": "AC-21|AC-3|AC-3(7)|AC-4|AC-4(21)|AC-6|SC-7|SC-7(11)|SC-7(16)|SC-7(20)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EKS_SECRETS_ENCRYPTED",
+    "AwsConfigRuleName": "eks-secrets-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELASTIC_BEANSTALK_LOGS_TO_CLOUDWATCH",
+    "AwsConfigRuleName": "elastic-beanstalk-logs-to-cloudwatch",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
     "Rev": 5
   },
   {
@@ -1470,6 +1722,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "ELB_CUSTOM_SECURITY_POLICY_SSL_CHECK",
+    "AwsConfigRuleName": "elb-custom-security-policy-ssl-check",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "ELB_DELETION_PROTECTION_ENABLED",
     "AwsConfigRuleName": "elb-deletion-protection-enabled",
     "NIST-ID": "CA-9(1)|CM-2|CM-2(2)|CM-3|SC-5(2)",
@@ -1500,6 +1758,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "ELBV2_LISTENER_ENCRYPTION_IN_TRANSIT",
+    "AwsConfigRuleName": "elbv2-listener-encryption-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "ELBV2_MULTIPLE_AZ",
     "AwsConfigRuleName": "elbv2-multiple-az",
     "NIST-ID": "CP-10|CP-6(2)|SC-36|SC-5(2)|SI-13(5)",
@@ -1509,6 +1773,18 @@
     "AwsConfigRuleSourceIdentifier": "ELBV2_PREDEFINED_SECURITY_POLICY_SSL_CHECK",
     "AwsConfigRuleName": "elbv2-predefined-security-policy-ssl-check",
     "NIST-ID": "AC-17(2)|AC-4|IA-5(1)|SC-12(3)|SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELBV2_TARGETGROUP_HEALTHCHECK_PROTOCOL_ENCRYPTED",
+    "AwsConfigRuleName": "elbv2-targetgroup-healthcheck-protocol-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELBV2_TARGETGROUP_PROTOCOL_ENCRYPTED",
+    "AwsConfigRuleName": "elbv2-targetgroup-protocol-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
     "Rev": 5
   },
   {
@@ -1560,15 +1836,39 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "FSX_WINDOWS_AUDIT_LOG_CONFIGURED",
+    "AwsConfigRuleName": "fsx-windows-audit-log-configured",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "GLOBAL_ENDPOINT_EVENT_REPLICATION_ENABLED",
     "AwsConfigRuleName": "global-endpoint-event-replication-enabled",
     "NIST-ID": "CP-10|CP-6(2)|SC-36|SC-5(2)|SI-13(5)",
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "GLUE_JOB_LOGGING_ENABLED",
+    "AwsConfigRuleName": "glue-job-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "GLUE_ML_TRANSFORM_ENCRYPTED_AT_REST",
+    "AwsConfigRuleName": "glue-ml-transform-encrypted-at-rest",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "GLUE_SPARK_JOB_SUPPORTED_VERSION",
     "AwsConfigRuleName": "glue-spark-job-supported-version",
     "NIST-ID": "CA-9(1)|CM-2|SI-2|SI-2(2)|SI-2(4)|SI-2(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "GUARDDUTY_EKS_PROTECTION_AUDIT_ENABLED",
+    "AwsConfigRuleName": "guardduty-eks-protection-audit-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
     "Rev": 5
   },
   {
@@ -1644,6 +1944,24 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "IMAGEBUILDER_IMAGERECIPE_EBS_VOLUMES_ENCRYPTED",
+    "AwsConfigRuleName": "imagebuilder-imagerecipe-ebs-volumes-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "INTERNET_GATEWAY_AUTHORIZED_VPC_ONLY",
+    "AwsConfigRuleName": "internet-gateway-authorized-vpc-only",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "IOT_SCHEDULED_AUDIT_TAGGED",
+    "AwsConfigRuleName": "iot-scheduled-audit-tagged",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "KINESIS_FIREHOSE_DELIVERY_STREAM_ENCRYPTED",
     "AwsConfigRuleName": "kinesis-firehose-delivery-stream-encrypted",
     "NIST-ID": "AC-3|AU-3|SC-12|SC-13|SC-28",
@@ -1659,6 +1977,18 @@
     "AwsConfigRuleSourceIdentifier": "KMS_CMK_NOT_SCHEDULED_FOR_DELETION",
     "AwsConfigRuleName": "kms-cmk-not-scheduled-for-deletion",
     "NIST-ID": "SC-12|SC-12(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "KMS_KEY_POLICY_NO_PUBLIC_ACCESS",
+    "AwsConfigRuleName": "kms-key-policy-no-public-access",
+    "NIST-ID": "AC-21|AC-3|CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "KMS_KEY_TAGGED",
+    "AwsConfigRuleName": "kms-key-tagged",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
     "Rev": 5
   },
   {
@@ -1698,6 +2028,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "LIGHTSAIL_BUCKET_ALLOW_PUBLIC_OVERRIDES_DISABLED",
+    "AwsConfigRuleName": "lightsail-bucket-allow-public-overrides-disabled",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "MACIE_AUTO_SENSITIVE_DATA_DISCOVERY_CHECK",
     "AwsConfigRuleName": "macie-auto-sensitive-data-discovery-check",
     "NIST-ID": "CA-7|CA-9(1)|RA-5|SA-8(19)|SI-4",
@@ -1728,15 +2064,45 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "MQ_BROKER_GENERAL_LOGGING_ENABLED",
+    "AwsConfigRuleName": "mq-broker-general-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "MQ_CLOUDWATCH_AUDIT_LOG_ENABLED",
     "AwsConfigRuleName": "mq-cloudwatch-audit-log-enabled",
     "NIST-ID": "AU-12|AU-2|AU-3|SI-4",
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "MQ_CLOUDWATCH_AUDIT_LOGGING_ENABLED",
+    "AwsConfigRuleName": "mq-cloudwatch-audit-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "MQ_NO_PUBLIC_ACCESS",
+    "AwsConfigRuleName": "mq-no-public-access",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "MQ_RABBIT_DEPLOYMENT_MODE",
     "AwsConfigRuleName": "mq-rabbit-deployment-mode",
     "NIST-ID": "CP-10|CP-6(2)|SC-36|SC-5(2)|SI-13",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "MSK_CLUSTER_PUBLIC_ACCESS_DISABLED",
+    "AwsConfigRuleName": "msk-cluster-public-access-disabled",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "MSK_CONNECT_CONNECTOR_LOGGING_ENABLED",
+    "AwsConfigRuleName": "msk-connect-connector-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
     "Rev": 5
   },
   {
@@ -1866,6 +2232,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "NLB_LOGGING_ENABLED",
+    "AwsConfigRuleName": "nlb-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "NO_UNRESTRICTED_ROUTE_TO_IGW",
     "AwsConfigRuleName": "no-unrestricted-route-to-igw",
     "NIST-ID": "CM-7|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(4)",
@@ -1935,6 +2307,12 @@
     "AwsConfigRuleSourceIdentifier": "RDS_AURORA_MYSQL_AUDIT_LOGGING_ENABLED",
     "AwsConfigRuleName": "rds-aurora-mysql-audit-logging-enabled",
     "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-3(8)|SI-4(20)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_AURORA_POSTGRESQL_LOGS_TO_CLOUDWATCH",
+    "AwsConfigRuleName": "rds-aurora-postgresql-logs-to-cloudwatch",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
     "Rev": 5
   },
   {
@@ -2016,9 +2394,39 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "RDS_MARIADB_INSTANCE_ENCRYPTED_IN_TRANSIT",
+    "AwsConfigRuleName": "rds-mariadb-instance-encrypted-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "RDS_MULTI_AZ_SUPPORT",
     "AwsConfigRuleName": "rds-multi-az-support",
     "NIST-ID": "CP-10|CP-6(2)|SC-36|SC-5(2)|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_MYSQL_INSTANCE_ENCRYPTED_IN_TRANSIT",
+    "AwsConfigRuleName": "rds-mysql-instance-encrypted-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_POSTGRES_INSTANCE_ENCRYPTED_IN_TRANSIT",
+    "AwsConfigRuleName": "rds-postgres-instance-encrypted-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_POSTGRESQL_LOGS_TO_CLOUDWATCH",
+    "AwsConfigRuleName": "rds-postgresql-logs-to-cloudwatch",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_PROXY_TLS_ENCRYPTION",
+    "AwsConfigRuleName": "rds-proxy-tls-encryption",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
     "Rev": 5
   },
   {
@@ -2046,9 +2454,21 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "RDS_SQLSERVER_ENCRYPTED_IN_TRANSIT",
+    "AwsConfigRuleName": "rds-sqlserver-encrypted-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "RDS_STORAGE_ENCRYPTED",
     "AwsConfigRuleName": "rds-storage-encrypted",
     "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_AUDIT_LOGGING_ENABLED",
+    "AwsConfigRuleName": "redshift-audit-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
     "Rev": 5
   },
   {
@@ -2106,6 +2526,24 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_SERVERLESS_PUBLISH_LOGS_TO_CLOUDWATCH",
+    "AwsConfigRuleName": "redshift-serverless-publish-logs-to-cloudwatch",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_SERVERLESS_WORKGROUP_ENCRYPTED_IN_TRANSIT",
+    "AwsConfigRuleName": "redshift-serverless-workgroup-encrypted-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_SERVERLESS_WORKGROUP_NO_PUBLIC_ACCESS",
+    "AwsConfigRuleName": "redshift-serverless-workgroup-no-public-access",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "RESTRICTED_INCOMING_TRAFFIC",
     "AwsConfigRuleName": "restricted-common-ports",
     "NIST-ID": "CA-9(1)|CM-2|CM-2(2)|CM-7|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(4)|SC-7(5)",
@@ -2136,9 +2574,21 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "RUM_APP_MONITOR_CLOUDWATCH_LOGS_ENABLED",
+    "AwsConfigRuleName": "rum-app-monitor-cloudwatch-logs-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "S3_ACCESS_POINT_PUBLIC_ACCESS_BLOCKS",
     "AwsConfigRuleName": "s3-access-point-public-access-blocks",
     "NIST-ID": "AC-21|AC-3|AC-3(7)|AC-4|AC-4(21)|AC-6|SC-7|SC-7(11)|SC-7(16)|SC-7(20)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCKS",
+    "AwsConfigRuleName": "s3-account-level-public-access-blocks",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
     "Rev": 5
   },
   {
@@ -2238,6 +2688,18 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_DATA_QUALITY_JOB_ENCRYPT_IN_TRANSIT",
+    "AwsConfigRuleName": "sagemaker-data-quality-job-encrypt-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_ENDPOINT_CONFIG_KMS_KEY_REQUIRED",
+    "AwsConfigRuleName": "sagemaker-endpoint-config-kms-key-required",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "SAGEMAKER_ENDPOINT_CONFIG_PROD_INSTANCE_COUNT",
     "AwsConfigRuleName": "sagemaker-endpoint-config-prod-instance-count",
     "NIST-ID": "CP-10|SA-13|SC-36|SC-5",
@@ -2250,9 +2712,51 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_FEATUREGROUP_ENCRYPTION_AT_REST",
+    "AwsConfigRuleName": "sagemaker-featuregroup-encryption-at-rest",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "SAGEMAKER_FEATUREGROUP_ONLINE_STORE_ENCRYPTION",
     "AwsConfigRuleName": "sagemaker-featuregroup-online-store-encryption",
     "NIST-ID": "AU-9|CA-9(1)|CM-3(6)|SC-12(2)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_INF_EXPERIMENT_DATA_STORAGE_KMS_ENCRYPTED",
+    "AwsConfigRuleName": "sagemaker-inf-experiment-data-storage-kms-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_INF_EXPERIMENT_INSTANCE_STORAGE_KMS_ENCRYPTED",
+    "AwsConfigRuleName": "sagemaker-inf-experiment-instance-storage-kms-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_MODEL_BIAS_JOB_ENCRYPT_IN_TRANSIT",
+    "AwsConfigRuleName": "sagemaker-model-bias-job-encrypt-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_MODEL_EXPLAINABILITY_JOB_ENCRYPT_IN_TRANSIT",
+    "AwsConfigRuleName": "sagemaker-model-explainability-job-encrypt-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_MODEL_QUALITY_JOB_ENCRYPT_IN_TRANSIT",
+    "AwsConfigRuleName": "sagemaker-model-quality-job-encrypt-in-transit",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_MONITORING_SCHEDULE_TRAFFIC_ENCRYPTION",
+    "AwsConfigRuleName": "sagemaker-monitoring-schedule-traffic-encryption",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
     "Rev": 5
   },
   {
@@ -2271,6 +2775,12 @@
     "AwsConfigRuleSourceIdentifier": "SAGEMAKER_NOTEBOOK_INSTANCE_ROOT_ACCESS_CHECK",
     "AwsConfigRuleName": "sagemaker-notebook-instance-root-access-check",
     "NIST-ID": "AC-2(1)|AC-3(15)|AC-3(7)|AC-6|AC-6(10)|AC-6(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_NOTEBOOK_INSTANCE_STORAGE_VOL_KMS_ENCRYPTED",
+    "AwsConfigRuleName": "sagemaker-notebook-instance-storage-vol-kms-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
     "Rev": 5
   },
   {
@@ -2328,6 +2838,12 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "SES_SENDING_TLS_REQUIRED",
+    "AwsConfigRuleName": "ses-sending-tls-required",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "SNS_ENCRYPTED_KMS",
     "AwsConfigRuleName": "sns-encrypted-kms",
     "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
@@ -2340,15 +2856,51 @@
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "SNS_TOPIC_NO_PUBLIC_ACCESS",
+    "AwsConfigRuleName": "sns-topic-no-public-access",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SQS_QUEUE_NO_PUBLIC_ACCESS",
+    "AwsConfigRuleName": "sqs-queue-no-public-access",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SSM_AUTOMATION_BLOCK_PUBLIC_SHARING",
+    "AwsConfigRuleName": "ssm-automation-block-public-sharing",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SSM_AUTOMATION_LOGGING_ENABLED",
+    "AwsConfigRuleName": "ssm-automation-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "SSM_DOCUMENT_NOT_PUBLIC",
     "AwsConfigRuleName": "ssm-document-not-public",
     "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
     "Rev": 5
   },
   {
+    "AwsConfigRuleSourceIdentifier": "STEP_FUNCTIONS_STATE_MACHINE_LOGGING_ENABLED",
+    "AwsConfigRuleName": "step-functions-state-machine-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
     "AwsConfigRuleSourceIdentifier": "SUBNET_AUTO_ASSIGN_PUBLIC_IP_DISABLED",
     "AwsConfigRuleName": "subnet-auto-assign-public-ip-disabled",
     "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "TRANSFER_CONNECTOR_AS2_ENCRYPTION_ALGORITHM_CHECK",
+    "AwsConfigRuleName": "transfer-connector-as2-encryption-algorithm-check",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
     "Rev": 5
   },
   {
@@ -2451,6 +3003,18 @@
     "AwsConfigRuleSourceIdentifier": "WAFV2_WEBACL_NOT_EMPTY",
     "AwsConfigRuleName": "wafv2-webacl-not-empty",
     "NIST-ID": "CA-9(1)|CM-2",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "WORKSPACES_ROOT_VOLUME_ENCRYPTION_ENABLED",
+    "AwsConfigRuleName": "workspaces-root-volume-encryption-enabled",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "WORKSPACES_USER_VOLUME_ENCRYPTION_ENABLED",
+    "AwsConfigRuleName": "workspaces-user-volume-encryption-enabled",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
     "Rev": 5
   }
 ]
