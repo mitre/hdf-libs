@@ -40,6 +40,9 @@ export { convertSnykToHdf } from '../converters/snyk-to-hdf/typescript/index.js'
 // Grype to HDF converter
 export { convertGrypeToHdf } from '../converters/grype-to-hdf/typescript/index.js';
 
+// DefectDojo to HDF converter
+export { convertDefectDojoToHdf } from '../converters/defectdojo-to-hdf/typescript/index.js';
+
 // Nessus to HDF converter
 export { convertNessusToHdf } from '../converters/nessus-to-hdf/typescript/index.js';
 

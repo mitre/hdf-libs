@@ -11,6 +11,7 @@ import {
   convertHdfToAsff,
   convertSnykToHdf,
   convertGrypeToHdf,
+  convertDefectDojoToHdf,
   convertNessusToHdf,
   convertSonarqubeToHdf,
   convertAwsConfigToHdf,
@@ -127,6 +128,11 @@ describe('Main exports', () => {
   it('should export convertGrypeToHdf from main index', () => {
     expect(convertGrypeToHdf).toBeDefined();
     expect(typeof convertGrypeToHdf).toBe('function');
+  });
+
+  it('should export convertDefectDojoToHdf from main index', () => {
+    expect(convertDefectDojoToHdf).toBeDefined();
+    expect(typeof convertDefectDojoToHdf).toBe('function');
   });
 
   it('should export convertNessusToHdf from main index', () => {

@@ -23,6 +23,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | CycloneDX (SBOM) | `convertCyclonedxToHdf` | JSON |
 | CycloneDX VEX (→ HDF Amendments) | `convertCyclonedxVexToHdf` | JSON |
 | DBProtect | `convertDbprotectToHdf` | XML |
+| DefectDojo | `convertDefectDojoToHdf` | JSON |
 | Dependency-Track | `convertDeptrackToHdf` | JSON |
 | Fortify | `convertFortifyToHdf` | XML |
 | GitLab Security Report | `convertGitlabToHdf` | JSON |
