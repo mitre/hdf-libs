@@ -65,12 +65,15 @@ interface Report {
   recommendation?: Recommendation;
 }
 
-/** "owner/name" when an owner is present, else the bare repo name. */
+/** "owner/name" when both are present, else whichever is non-empty (never a
+ * bare "owner/" or "/name"). */
 function repoIdent(r: Report): string {
-  if (r.repo_owner) {
-    return `${r.repo_owner}/${r.repo_name ?? ''}`;
+  const owner = r.repo_owner ?? '';
+  const name = r.repo_name ?? '';
+  if (owner && name) {
+    return `${owner}/${name}`;
   }
-  return r.repo_name ?? '';
+  return name || owner;
 }
 
 /** Build NIST/CCI tags for an analysis name via the hipcheck mapping. */

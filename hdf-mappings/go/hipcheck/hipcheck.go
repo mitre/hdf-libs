@@ -39,8 +39,7 @@ func load() map[string]*Mapping {
 			return
 		}
 		for i := range list {
-			m := list[i]
-			byAnalysis[m.Analysis] = &m
+			byAnalysis[list[i].Analysis] = &list[i]
 		}
 	})
 	return byAnalysis

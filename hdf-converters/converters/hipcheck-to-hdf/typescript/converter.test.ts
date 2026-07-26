@@ -90,6 +90,23 @@ describe('hipcheck to HDF converter', () => {
     });
   });
 
+  it('never emits a trailing-slash repo identifier when repo_name is empty', async () => {
+    const input = JSON.stringify({
+      repo_name: '',
+      repo_owner: 'acme',
+      repo_head: 'v1',
+      hipcheck_version: '3.15.0',
+      analyzed_at: '2026-07-25T22:38:44.586772-04:00',
+      passing: [],
+      failing: [],
+      errored: [],
+      recommendation: { kind: 'Pass', reason: null, risk_score: 0, risk_policy: '(gt 0.5 $)' },
+    });
+    const hdf = JSON.parse(await convertHipcheckToHdf(input)) as HDFResults;
+    expect(hdf.baselines[0]!.title).toBe('Hipcheck analysis of acme @ v1');
+    expect(hdf.components![0]!.name).toBe('acme'); // not "acme/"
+  });
+
   describe('empty fixture (no analyses)', () => {
     it('synthesizes a passed no-findings placeholder', async () => {
       const hdf = await convert('empty.json');

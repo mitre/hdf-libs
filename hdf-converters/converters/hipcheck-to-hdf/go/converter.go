@@ -134,12 +134,20 @@ func ConvertHipcheckToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	}), nil
 }
 
-// repoIdent returns "owner/name" when an owner is present, else the repo name.
+// repoIdent returns "owner/name" when both are present, else whichever is
+// non-empty (never a bare "owner/" or "/name").
 func repoIdent(r Report) string {
-	if r.RepoOwner != nil && *r.RepoOwner != "" {
-		return *r.RepoOwner + "/" + r.RepoName
+	owner := ""
+	if r.RepoOwner != nil {
+		owner = *r.RepoOwner
 	}
-	return r.RepoName
+	if owner != "" && r.RepoName != "" {
+		return owner + "/" + r.RepoName
+	}
+	if r.RepoName != "" {
+		return r.RepoName
+	}
+	return owner
 }
 
 // analysisTags builds NIST/CCI tags for an analysis name via the hipcheck mapping.

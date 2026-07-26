@@ -259,6 +259,17 @@ func TestInvestigateReason_Variants(t *testing.T) {
 	assert.Equal(t, "", investigateReason(json.RawMessage(`{"FailedAnalyses":[]}`)))
 }
 
+func TestRepoIdent_Variants(t *testing.T) {
+	owner := "acme"
+	empty := ""
+	assert.Equal(t, "acme/widget", repoIdent(Report{RepoOwner: &owner, RepoName: "widget"}))
+	assert.Equal(t, "widget", repoIdent(Report{RepoOwner: nil, RepoName: "widget"}))
+	// owner present but no name must NOT yield a trailing-slash "acme/"
+	assert.Equal(t, "acme", repoIdent(Report{RepoOwner: &owner, RepoName: ""}))
+	assert.Equal(t, "widget", repoIdent(Report{RepoOwner: &empty, RepoName: "widget"}))
+	assert.Equal(t, "", repoIdent(Report{RepoOwner: nil, RepoName: ""}))
+}
+
 func TestFlattenError_EmptyMsg(t *testing.T) {
 	assert.Equal(t, "unknown error", flattenError(&ErrorReport{}))
 }
