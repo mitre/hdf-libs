@@ -110,3 +110,13 @@ export {
 } from './awsconfig/index.js';
 
 export type { AwsConfigNistMapping, AwsConfigNistMappings } from './awsconfig/types.js';
+
+// Hipcheck exports
+export {
+  getHipcheckNistControls,
+  hipcheckAnalysisExists,
+  getAllHipcheckAnalyses,
+  getAllHipcheckMappings,
+} from './hipcheck/index.js';
+
+export type { HipcheckNistMapping, HipcheckNistMappings } from './hipcheck/types.js';

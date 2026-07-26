@@ -20,6 +20,7 @@ and `tags.cci` fields in HDF output.
 | Nikto | NIST SP 800-53 | Test ID string (`'1'`) |
 | ScoutSuite | NIST SP 800-53 | Rule name string |
 | AWS Config | NIST SP 800-53 | Rule identifier or rule name |
+| Hipcheck | NIST SP 800-53 Rev 5 | Analysis name (`binary`, `mitre/binary`) |
 
 Go equivalents are available in `go/` subdirectories (see below).
 
@@ -226,6 +227,36 @@ three tiers, in precedence order:
 > derived and CM-6 tiers are coarse by design. Do not roll "rule passed" up to "tagged controls
 > satisfied" in SSP / eMASS / ATO exports.
 
+### Hipcheck
+
+Maps MITRE Hipcheck analysis names to NIST 800-53 Rev 5 controls. Lookups accept
+the bare analysis name (`binary`) or Hipcheck's published, publisher-prefixed
+form (`mitre/binary`). `NIST-ID` is a `|`-delimited list.
+
+```typescript
+import {
+  getHipcheckNistControls,
+  hipcheckAnalysisExists,
+  getAllHipcheckAnalyses,
+} from '@mitre/hdf-mappings';
+
+const controls = getHipcheckNistControls('mitre/binary');
+// Returns: ['SI-7', 'SR-4']
+
+if (hipcheckAnalysisExists('typo')) { /* ... */ }
+
+const analyses = getAllHipcheckAnalyses();
+// Returns the 9 mapped Hipcheck analysis names, sorted
+```
+
+> **Provenance.** Hipcheck publishes no analysis-to-controls crosswalk, so this
+> table is a hand-curated, NIST-RMF-reviewed mapping — each row carries a
+> `Rationale`. It is the single source of truth in
+> `scripts/generate-hipcheck-mappings.mjs`, which writes both the Go and TS
+> copies byte-identically (`--check` gates drift in CI). As with the other
+> mappings, these are candidate control associations for triage, not evidence a
+> control is assessed or satisfied.
+
 ## Go API
 
 Each mapping is also available as a Go package:
@@ -237,6 +268,7 @@ hdf-mappings/go/
   owasp/      — OWASP→NIST lookups (NISTControls)
   nessus/     — Nessus plugin→NIST lookups (NISTControls, with family+pluginID)
   nikto/      — Nikto test→NIST lookups (NISTControls)
+  hipcheck/   — Hipcheck analysis→NIST lookups (NISTControls, Exists, AllAnalyses)
   scoutsuite/ — ScoutSuite rule→NIST lookups (NISTControls)
   awsconfig/  — AWS Config→NIST lookups (NISTControls, GetByRuleName, GetByIdentifier)
 ```
