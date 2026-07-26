@@ -11,11 +11,13 @@
 //
 // Provenance / tiers (a row's mapping comes from exactly one, in precedence order):
 //   1. config-pack   — AWS Config "Operational Best Practices for NIST 800-53" docs
-//   2. security-hub   — [STAGE 2] Security Hub NIST 800-53 standard control mappings
+//   2. security-hub   — Security Hub NIST 800-53 r5 standard control pages (Rev 5 only)
 //   3. derived        — [STAGE 3] heuristic family-level alignment for the residual
 // The authoritative tiers are regenerated from AWS; the derived tier is a small
 // hand-curated input file. Provenance is tracked at the INPUT level, not as a
 // runtime field, so the emitted shape is unchanged from what consumers already read.
+// No cross-source unioning: config-pack wins where both cover a rule, so every row's
+// control set is one AWS publication verbatim (never a combination neither source ships).
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -32,6 +34,12 @@ const CONFIG_DOCS = {
   5: 'https://docs.aws.amazon.com/config/latest/developerguide/operational-best-practices-for-nist-800-53_rev_5.html',
   4: 'https://docs.aws.amazon.com/config/latest/developerguide/operational-best-practices-for-nist-800-53_rev_4.html',
 };
+
+// Security Hub publishes its NIST 800-53 r5 standard as per-service control pages
+// (<service>-controls.html), each control listing its backing managed Config rule
+// and "Related requirements" (the NIST controls). This is Rev 5 only.
+const SECURITY_HUB_BASE = 'https://docs.aws.amazon.com/securityhub/latest/userguide/';
+const SECURITY_HUB_TOC = SECURITY_HUB_BASE + 'toc-contents.json';
 
 async function fetchText(url) {
   const res = await fetch(url);
@@ -79,28 +87,107 @@ function sourceIdFor(ruleName, existing) {
   return existing.get(ruleName) ?? ruleName.toUpperCase().replace(/-/g, '_');
 }
 
+// --- tier 2: Security Hub NIST 800-53 r5 standard ---
+
+// Parse one <service>-controls.html page into ruleName -> Set(control). Each control
+// is an <h2 id="service-N"> section carrying an "AWS Config rule" link and a
+// "Related requirements" list; keep only the NIST.800-53.r5 tokens (pages mix in
+// PCI/CIS). A section may have a rule but no NIST reqs (skip) or vice versa.
+function parseSecurityHubDocs(html) {
+  const map = new Map();
+  const sections = html.split(/<h2[^>]*id="([^"]+)"/);
+  for (let i = 1; i < sections.length; i += 2) {
+    const id = sections[i];
+    const body = sections[i + 1];
+    if (id.endsWith('-remediation')) continue;
+    const ruleMatch = body.match(/AWS Config rule:<\/b>[\s\S]*?\/config\/latest\/developerguide\/([a-z0-9-]+)\.html/);
+    const reqsMatch = body.match(/Related requirements:<\/b>([\s\S]*?)<\/p>/);
+    if (!ruleMatch || !reqsMatch) continue;
+    const rule = ruleMatch[1];
+    for (const [, control] of reqsMatch[1].matchAll(/NIST\.800-53\.r5\s+([A-Z]{2,}-\d+(?:\([^)]*\))?)/g)) {
+      for (const raw of expandCollapsed(control)) {
+        if (!map.has(rule)) map.set(rule, new Set());
+        map.get(rule).add(canonicalizeControl(raw));
+      }
+    }
+  }
+  return map;
+}
+
+// Fetch every Security Hub control page (enumerated from the docs TOC) and merge into
+// ruleName -> Set(control). Within Security Hub a rule may back several controls; unioning
+// their NIST sets is still single-source. Warns (does not fail) on any unreachable page.
+async function fetchSecurityHubRules() {
+  const toc = JSON.parse(await fetchText(SECURITY_HUB_TOC));
+  const pages = new Set();
+  (function walk(node) {
+    if (Array.isArray(node)) node.forEach(walk);
+    else if (node && typeof node === 'object') {
+      if (typeof node.href === 'string' && /-controls\.html$/.test(node.href)) pages.add(node.href);
+      Object.values(node).forEach(walk);
+    }
+  })(toc);
+
+  const merged = new Map();
+  let failed = 0;
+  const list = [...pages];
+  const CONCURRENCY = 12;
+  for (let i = 0; i < list.length; i += CONCURRENCY) {
+    const batch = await Promise.all(
+      list.slice(i, i + CONCURRENCY).map((p) =>
+        fetchText(SECURITY_HUB_BASE + p)
+          .then(parseSecurityHubDocs)
+          .catch(() => { failed += 1; return new Map(); })
+      )
+    );
+    for (const m of batch) {
+      for (const [rule, controls] of m) {
+        if (!merged.has(rule)) merged.set(rule, new Set());
+        for (const c of controls) merged.get(rule).add(c);
+      }
+    }
+  }
+  if (failed) console.warn(`  warning: ${failed}/${list.length} Security Hub pages were unreachable — coverage may be incomplete.`);
+  return { rules: merged, pageCount: list.length };
+}
+
 async function main() {
   const check = process.argv.includes('--check');
 
   const committed = JSON.parse(readFileSync(OUT_FILES[0], 'utf-8'));
   const knownSourceId = new Map(committed.map((r) => [r.AwsConfigRuleName, r.AwsConfigRuleSourceIdentifier]));
 
+  // Lexical (code-unit) sort — matches Go sort.Strings byte order for the ASCII
+  // control IDs, so the two mapping copies and both converters stay in lockstep.
+  const rowFor = (rule, controls, rev) => ({
+    AwsConfigRuleSourceIdentifier: sourceIdFor(rule, knownSourceId),
+    AwsConfigRuleName: rule,
+    'NIST-ID': [...controls].sort().join('|'),
+    Rev: rev,
+  });
+
   const rows = [];
+  const seen = new Set(); // `${rev}:${rule}` already emitted
   for (const rev of [5, 4]) {
     const byRule = parseConfigDocs(await fetchText(CONFIG_DOCS[rev]));
     for (const [rule, controls] of byRule) {
-      // Lexical (code-unit) sort — matches Go sort.Strings byte order for the ASCII
-      // control IDs, so the two mapping copies and both converters stay in lockstep.
-      const nist = [...controls].sort();
-      rows.push({
-        AwsConfigRuleSourceIdentifier: sourceIdFor(rule, knownSourceId),
-        AwsConfigRuleName: rule,
-        'NIST-ID': nist.join('|'),
-        Rev: rev,
-      });
+      rows.push(rowFor(rule, controls, rev));
+      seen.add(`${rev}:${rule}`);
     }
-    // TODO Stage 2: merge Security Hub NIST-standard rows for this rev.
   }
+
+  // tier 2: Security Hub NIST 800-53 r5 standard. Config-pack takes precedence — only
+  // rules absent at Rev 5 are added, each keeping its Security Hub control set verbatim.
+  // No cross-source unioning: every row's controls come from exactly one AWS publication.
+  const { rules: shRules, pageCount } = await fetchSecurityHubRules();
+  let shAdded = 0;
+  for (const [rule, controls] of shRules) {
+    if (seen.has(`5:${rule}`)) continue;
+    rows.push(rowFor(rule, controls, 5));
+    seen.add(`5:${rule}`);
+    shAdded += 1;
+  }
+  console.log(`  security hub: ${pageCount} pages, ${shRules.size} rules mapped, ${shAdded} new (rest already covered by config-pack).`);
   // TODO Stage 3: merge the hand-curated heuristic tier (awsconfig-heuristic.json).
 
   rows.sort((a, b) => a.Rev - b.Rev || (a.AwsConfigRuleName < b.AwsConfigRuleName ? -1 : a.AwsConfigRuleName > b.AwsConfigRuleName ? 1 : 0));

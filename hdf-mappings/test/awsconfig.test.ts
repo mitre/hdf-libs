@@ -185,11 +185,10 @@ describe('AWS Config Mapping Functions', () => {
     });
 
     it('returns only Rev 4 for a Rev4-only rule', () => {
+      // emr-kerberos-enabled is in the Config Rev4 docs but neither the Config Rev5
+      // docs nor the Security Hub NIST r5 standard.
       expect(
-        awsConfigMappedRevisions(
-          'SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK',
-          'secretsmanager-scheduled-rotation-success-check'
-        )
+        awsConfigMappedRevisions('EMR_KERBEROS_ENABLED', 'emr-kerberos-enabled')
       ).toEqual([4]);
     });
 
