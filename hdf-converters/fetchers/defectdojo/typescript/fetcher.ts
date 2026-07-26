@@ -36,13 +36,26 @@ function firstPath(options: DefectDojoFetchOptions): string {
   return `/api/v2/findings/?${q.toString()}`;
 }
 
-/** Reduce a DefectDojo `next` link (a full URL) to a path the transport can resolve. */
+/**
+ * Reduce a DefectDojo `next` link to a host-relative path the transport resolves
+ * against its own base. An absolute URL is reduced to path+query (its origin is
+ * dropped, so a server-supplied off-host link cannot redirect the request). A
+ * scheme-relative value (`//host/...`) resolves off-host in many fetch
+ * implementations, so it is rejected rather than forwarded (SSRF / token
+ * exfiltration guard — parity with the Go fetcher's same-host check).
+ */
 function nextPath(next: string): string {
+  if (next.startsWith('//')) {
+    throw new Error('defectdojo: refusing scheme-relative pagination link');
+  }
   try {
     const u = new URL(next);
     return u.pathname + u.search;
   } catch {
-    return next; // already a path
+    if (!next.startsWith('/')) {
+      throw new Error('defectdojo: unexpected pagination link form');
+    }
+    return next; // host-relative path
   }
 }
 

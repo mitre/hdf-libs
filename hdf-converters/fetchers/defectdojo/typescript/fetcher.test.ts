@@ -55,4 +55,14 @@ describe('defectdojo fetcher (TS)', () => {
     await expect(fetchDefectDojoToHdf(authFetch)).rejects.toThrow();
     await expect(verifyDefectDojoCredentials(authFetch)).rejects.toThrow();
   });
+
+  it('refuses a scheme-relative pagination link (SSRF guard)', async () => {
+    // A malicious/misconfigured server hands back an off-host next link.
+    const authFetch: AuthFetch = async () =>
+      new Response(
+        JSON.stringify({next: '//evil.example/api/v2/findings/?offset=100', results: []}),
+        {status: 200},
+      );
+    await expect(fetchDefectDojoToHdf(authFetch)).rejects.toThrow(/scheme-relative/);
+  });
 });
