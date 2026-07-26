@@ -24,82 +24,85 @@ func legacyhdfFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func TestTransformHDF_V1ToV2(t *testing.T) {
-	v1Input := legacyhdfFixture(t, "minimal.json")
+// Version identifiers: v2 = legacy Heimdall schema (profiles/platform),
+// v3 = modern hdf-libs schema (baselines/components). There is no HDF v1
+// transform (v1 = raw InSpec; see NormalizeVersion).
 
-	output, err := TransformHDF(v1Input, "1", "2")
+func TestTransformHDF_LegacyToModern(t *testing.T) {
+	legacyInput := legacyhdfFixture(t, "minimal.json")
+
+	output, err := TransformHDF(legacyInput, LegacyVersion, ModernVersion)
 	require.NoError(t, err)
 	require.NotEmpty(t, output)
 
-	// Output should be valid JSON with v2 structure (baselines, components)
-	var v2 map[string]any
-	require.NoError(t, json.Unmarshal(output, &v2))
-	assert.Contains(t, v2, "baselines", "v2 output should have baselines")
-	assert.Contains(t, v2, "components", "v2 output should have components")
-	// Should NOT have v1 fields
-	assert.NotContains(t, v2, "profiles", "v2 output should not have profiles")
-	assert.NotContains(t, v2, "platform", "v2 output should not have platform")
+	// Output should be valid JSON with modern (v3) structure.
+	var modern map[string]any
+	require.NoError(t, json.Unmarshal(output, &modern))
+	assert.Contains(t, modern, "baselines", "modern output should have baselines")
+	assert.Contains(t, modern, "components", "modern output should have components")
+	// Should NOT have legacy fields.
+	assert.NotContains(t, modern, "profiles", "modern output should not have profiles")
+	assert.NotContains(t, modern, "platform", "modern output should not have platform")
 }
 
-func TestTransformHDF_V2ToV1(t *testing.T) {
-	// First get a v2 document by upgrading a v1
-	v1Input := legacyhdfFixture(t, "minimal.json")
-	v2Output, err := TransformHDF(v1Input, "1", "2")
+func TestTransformHDF_ModernToLegacy(t *testing.T) {
+	// First get a modern document by upgrading a legacy one.
+	legacyInput := legacyhdfFixture(t, "minimal.json")
+	modernOutput, err := TransformHDF(legacyInput, LegacyVersion, ModernVersion)
 	require.NoError(t, err)
 
-	// Now downgrade back to v1
-	v1Output, err := TransformHDF(v2Output, "2", "1")
+	// Now downgrade back to the legacy shape.
+	legacyOutput, err := TransformHDF(modernOutput, ModernVersion, LegacyVersion)
 	require.NoError(t, err)
-	require.NotEmpty(t, v1Output)
+	require.NotEmpty(t, legacyOutput)
 
-	// Output should have v1 structure (profiles, platform)
-	var v1 map[string]any
-	require.NoError(t, json.Unmarshal(v1Output, &v1))
-	assert.Contains(t, v1, "profiles", "v1 output should have profiles")
-	assert.Contains(t, v1, "platform", "v1 output should have platform")
-	assert.Contains(t, v1, "statistics", "v1 output should have statistics")
-	// Should NOT have v2 fields
-	assert.NotContains(t, v1, "baselines", "v1 output should not have baselines")
-	assert.NotContains(t, v1, "components", "v1 output should not have components")
+	// Output should have legacy (v2) structure.
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(legacyOutput, &legacy))
+	assert.Contains(t, legacy, "profiles", "legacy output should have profiles")
+	assert.Contains(t, legacy, "platform", "legacy output should have platform")
+	assert.Contains(t, legacy, "statistics", "legacy output should have statistics")
+	// Should NOT have modern fields.
+	assert.NotContains(t, legacy, "baselines", "legacy output should not have baselines")
+	assert.NotContains(t, legacy, "components", "legacy output should not have components")
 }
 
 func TestTransformHDF_SameVersion(t *testing.T) {
-	v1Input := legacyhdfFixture(t, "minimal.json")
+	legacyInput := legacyhdfFixture(t, "minimal.json")
 
-	// Same version should return input unchanged
-	output, err := TransformHDF(v1Input, "1", "1")
+	// Same version should return input unchanged.
+	output, err := TransformHDF(legacyInput, LegacyVersion, LegacyVersion)
 	require.NoError(t, err)
-	assert.JSONEq(t, string(v1Input), string(output))
+	assert.JSONEq(t, string(legacyInput), string(output))
 }
 
 func TestTransformHDF_UnknownTransform(t *testing.T) {
-	_, err := TransformHDF([]byte(`{}`), "3", "2")
+	// "1" is not a transform key — raw InSpec is not a distinct schema version.
+	_, err := TransformHDF([]byte(`{}`), "1", ModernVersion)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no HDF transform")
 }
 
 func TestTransformHDF_InvalidJSON(t *testing.T) {
-	_, err := TransformHDF([]byte(`not json`), "1", "2")
+	_, err := TransformHDF([]byte(`not json`), LegacyVersion, ModernVersion)
 	require.Error(t, err)
 }
 
 func TestTransformHDF_RoundTrip(t *testing.T) {
-	v1Input := legacyhdfFixture(t, "minimal.json")
+	legacyInput := legacyhdfFixture(t, "minimal.json")
 
-	// v1 → v2 → v1 should preserve core fields
-	v2, err := TransformHDF(v1Input, "1", "2")
+	// legacy → modern → legacy should preserve core fields.
+	modern, err := TransformHDF(legacyInput, LegacyVersion, ModernVersion)
 	require.NoError(t, err)
 
-	v1Again, err := TransformHDF(v2, "2", "1")
+	legacyAgain, err := TransformHDF(modern, ModernVersion, LegacyVersion)
 	require.NoError(t, err)
 
-	// Parse both for comparison
 	var original map[string]any
 	var roundTripped map[string]any
-	require.NoError(t, json.Unmarshal(v1Input, &original))
-	require.NoError(t, json.Unmarshal(v1Again, &roundTripped))
+	require.NoError(t, json.Unmarshal(legacyInput, &original))
+	require.NoError(t, json.Unmarshal(legacyAgain, &roundTripped))
 
-	// Core structural fields should survive round-trip
 	origProfiles, _ := original["profiles"].([]any)
 	rtProfiles, _ := roundTripped["profiles"].([]any)
 	assert.Equal(t, len(origProfiles), len(rtProfiles), "profile count should survive round-trip")
@@ -112,8 +115,8 @@ func TestDetectHDFVersion(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"v1 with profiles+platform", `{"version":"3.4.5","profiles":[],"platform":{"name":"test"}}`, "1", false},
-		{"v2 with baselines+components", `{"baselines":[],"components":[]}`, "2", false},
+		{"legacy (v2) with profiles+platform", `{"version":"3.4.5","profiles":[],"platform":{"name":"test"}}`, LegacyVersion, false},
+		{"modern (v3) with baselines+components", `{"baselines":[],"components":[]}`, ModernVersion, false},
 		{"ambiguous", `{"version":"1.0"}`, "", true},
 		{"invalid json", `not json`, "", true},
 	}
@@ -127,5 +130,19 @@ func TestDetectHDFVersion(t *testing.T) {
 				assert.Equal(t, tt.want, got)
 			}
 		})
+	}
+}
+
+func TestNormalizeVersion(t *testing.T) {
+	// "1" has no distinct schema → maps to legacy (v2) with a warning.
+	got, warn := NormalizeVersion("1")
+	assert.Equal(t, LegacyVersion, got)
+	assert.NotEmpty(t, warn, "hdf@1 should warn")
+
+	// "2", "3", and "" pass through with no warning.
+	for _, v := range []string{LegacyVersion, ModernVersion, ""} {
+		got, warn := NormalizeVersion(v)
+		assert.Equal(t, v, got)
+		assert.Empty(t, warn, "hdf@%s should not warn", v)
 	}
 }
