@@ -1,0 +1,271 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "32 days was span of time that has elapsed since last activity in repo, which was required to be less than or equal to 364 days",
+              "label": "default"
+            },
+            {
+              "data": "(lte $ P364D)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(lte $ P364D)",
+              "message": "32 days was span of time that has elapsed since last activity in repo, which was required to be less than or equal to 364 days",
+              "startTime": "2026-07-26T02:38:44.586Z",
+              "status": "passed"
+            }
+          ],
+          "id": "mitre/activity",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SR-3",
+              "SR-4"
+            ]
+          },
+          "controlType": "management",
+          "title": "mitre/activity",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "0 was the number of the repository's dependencies flagged as typos, which was required to be less than or equal to 0",
+              "label": "default"
+            },
+            {
+              "data": "(lte (count (filter (eq #t) $)) 0)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(lte (count (filter (eq #t) $)) 0)",
+              "message": "0 was the number of the repository's dependencies flagged as typos, which was required to be less than or equal to 0",
+              "startTime": "2026-07-26T02:38:44.586Z",
+              "status": "passed"
+            }
+          ],
+          "id": "mitre/typo",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SR-11",
+              "SR-4"
+            ]
+          },
+          "controlType": "management",
+          "title": "mitre/typo",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "0.0014914243102162564 was the percent of churn frequencies of each commit in the repository greater than 3, which was required to be less than or equal to 0.02",
+              "label": "default"
+            },
+            {
+              "data": "(lte (divz (count (filter (gt 3) $)) (count $)) 0.02)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(lte (divz (count (filter (gt 3) $)) (count $)) 0.02)",
+              "message": "0.0014914243102162564 was the percent of churn frequencies of each commit in the repository greater than 3, which was required to be less than or equal to 0.02",
+              "startTime": "2026-07-26T02:38:44.586Z",
+              "status": "passed"
+            }
+          ],
+          "id": "mitre/churn",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SI-7",
+              "SR-4"
+            ]
+          },
+          "controlType": "technical",
+          "title": "mitre/churn",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Expected the number of detected binary files in a repo to be less than or equal to 0 but it was 2",
+              "label": "default"
+            },
+            {
+              "data": "(lte $ 0)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(lte $ 0)",
+              "message": "Expected the number of detected binary files in a repo to be less than or equal to 0 but it was 2\nConcerns:\n- Found binary file at 'test/files/invalidTypeForClient.exe'\n- Found binary file at 'node_modules/@esbuild/darwin-arm64/bin/esbuild'",
+              "startTime": "2026-07-26T02:38:44.586Z",
+              "status": "failed"
+            }
+          ],
+          "id": "mitre/binary",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SI-7",
+              "SR-4"
+            ]
+          },
+          "controlType": "technical",
+          "title": "mitre/binary",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Expected the number of entropy calculations of each commit in the repository greater than 8 to be equal to 0 but it was 15",
+              "label": "default"
+            },
+            {
+              "data": "(eq 0 (count (filter (gt 8) $)))",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(eq 0 (count (filter (gt 8) $)))",
+              "message": "Expected the number of entropy calculations of each commit in the repository greater than 8 to be equal to 0 but it was 15\nConcerns:\n- Commit hash: 8eba82fc558f4df119d248254c068cfc1861f555, Entropy: 18.019786369055044\n- Commit hash: bffa158b5c961d6e19b127150e91ec64924db73c, Entropy: 18.019707578363867\n- Commit hash: 7964226faf6fb3b575cd3b3ce520aad5dc144cac, Entropy: 16.046898446431197\n- Commit hash: c8fab404d960e9b38e3eb2e948de3e7efd0dcff9, Entropy: 15.872184377182311\n- Commit hash: 78bb6c5410a04e3ed1f481692e2d21a5c07d0417, Entropy: 11.287893177923623\n- Commit hash: 721c9bf0d9b15d9d0c13c1e7c937405e215f72cd, Entropy: 11.272486000145095\n- Commit hash: fc2866167aa8a78812951b88d3ebdfef6cfd2af2, Entropy: 10.67961915749248",
+              "startTime": "2026-07-26T02:38:44.586Z",
+              "status": "failed"
+            }
+          ],
+          "id": "mitre/entropy",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SI-7",
+              "SR-4"
+            ]
+          },
+          "controlType": "technical",
+          "title": "mitre/entropy",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Expected 'Does the target repo do fuzzing?' to be equal to true but it was false",
+              "label": "default"
+            },
+            {
+              "data": "(eq #t $)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "(eq #t $)",
+              "message": "Expected 'Does the target repo do fuzzing?' to be equal to true but it was false",
+              "startTime": "2026-07-26T02:38:44.586Z",
+              "status": "failed"
+            }
+          ],
+          "id": "mitre/fuzz",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "mitre/fuzz",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "unknown error",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "",
+              "message": "unknown error",
+              "startTime": "2026-07-26T02:38:44.586Z",
+              "status": "error"
+            }
+          ],
+          "id": "mitre/review",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-15"
+            ]
+          },
+          "controlType": "management",
+          "title": "mitre/review",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "unknown error",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "",
+              "message": "unknown error",
+              "startTime": "2026-07-26T02:38:44.586Z",
+              "status": "error"
+            }
+          ],
+          "id": "mitre/affiliation",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SR-6"
+            ]
+          },
+          "controlType": "management",
+          "title": "mitre/affiliation",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "17bd9d4395da4e95dc448f2f27149c6432e8504d775998b729d7b0111f708b02"
+      },
+      "name": "Hipcheck Scan",
+      "summary": "Hipcheck recommendation: Investigate (risk score 0.42, policy '(gt 0.5 $)'). Investigation forced by failed analyses: mitre/binary.",
+      "title": "Hipcheck analysis of juice-shop/juice-shop @ v20.1.1"
+    }
+  ],
+  "components": [
+    {
+      "name": "juice-shop/juice-shop",
+      "type": "repository"
+    }
+  ],
+  "generator": {
+    "name": "hipcheck-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-07-26T03:05:58.377Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Hipcheck",
+    "version": "3.15.0"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "repo_name": "minimal-example",
+  "repo_owner": "example-org",
+  "repo_head": "v1.0.0",
+  "hipcheck_version": "3.15.0",
+  "analyzed_at": "2026-07-25T22:38:44.586772-04:00",
+  "passing": [
+    {
+      "analysis": "Analysis",
+      "name": "mitre/activity",
+      "passed": true,
+      "policy_expr": "(lte $ P364D)",
+      "final_value": "10 days",
+      "message": "10 days was span of time that has elapsed since last activity in repo, which was required to be less than or equal to 364 days"
+    }
+  ],
+  "failing": [],
+  "errored": [],
+  "recommendation": {
+    "kind": "Pass",
+    "reason": null,
+    "risk_score": 0.1,
+    "risk_policy": "(gt 0.5 $)"
+  }
+}

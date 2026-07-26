@@ -91,6 +91,9 @@ export { convertGitlabToHdf } from '../converters/gitlab-to-hdf/typescript/index
 // TruffleHog to HDF converter
 export { convertTrufflehogToHdf } from '../converters/trufflehog-to-hdf/typescript/index.js';
 
+// Hipcheck to HDF converter
+export { convertHipcheckToHdf } from '../converters/hipcheck-to-hdf/typescript/index.js';
+
 // BurpSuite to HDF converter
 export { convertBurpsuiteToHdf } from '../converters/burpsuite-to-hdf/typescript/index.js';
 
