@@ -21,6 +21,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { resolveTypeName, renderEnumValues, anchorId } from './schema-render.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMAS_DIR = path.resolve(__dirname, '../hdf-schema/dist/schemas');
@@ -227,6 +228,18 @@ function renderSchemaPage(schema, name, urlPrefix) {
   const isHistorical = urlPrefix !== '';
   const meta = SCHEMA_META[name] || { title: name, description: '' };
   const version = idVersion(schema.$id);
+
+  // Type names that have a heading on this page (local defs + embedded-primitive
+  // inner defs). resolveTypeName links a $ref only when its target is in here,
+  // so a cross-page/unknown ref degrades to plain code instead of a dead anchor.
+  const knownTypes = new Set();
+  for (const [key, defn] of Object.entries(schema.$defs || {})) {
+    if (key.startsWith('https://')) {
+      for (const inner of Object.keys(defn.$defs || {})) knownTypes.add(inner);
+    } else {
+      knownTypes.add(key);
+    }
+  }
   const downloadUrl = isHistorical
     ? `/schemas/${name}/${version}/index.json`
     : `/schemas/${name}.schema.json`;
@@ -255,7 +268,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
     lines.push('|-------|------|----------|-------------|');
     const required = new Set(schema.required || []);
     for (const [field, prop] of Object.entries(schema.properties)) {
-      const type = resolveTypeName(prop);
+      const type = resolveTypeName(prop, knownTypes);
       const req = required.has(field) ? '**yes**' : 'no';
       const desc = (prop.description || '').replace(/\n/g, ' ').replace(/\|/g, '\\|');
       lines.push(`| \`${field}\` | ${type} | ${req} | ${desc} |`);
@@ -288,7 +301,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
     lines.push('## Types');
     lines.push('');
     for (const [typeName, defn] of Object.entries(localDefs)) {
-      lines.push(`### ${typeName.replace(/_/g, '\\_')}`);
+      lines.push(`### ${typeName.replace(/_/g, '\\_')} {#${anchorId(typeName)}}`);
       lines.push('');
       if (defn.description) {
         lines.push(defn.description);
@@ -301,7 +314,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
         lines.push('| Field | Type | Required | Description |');
         lines.push('|-------|------|----------|-------------|');
         for (const [field, prop] of Object.entries(props)) {
-          const type = resolveTypeName(prop);
+          const type = resolveTypeName(prop, knownTypes);
           const isReq = req.has(field) ? '**yes**' : 'no';
           const desc = (prop.description || '').replace(/\n/g, ' ').replace(/\|/g, '\\|');
           lines.push(`| \`${field}\` | ${type} | ${isReq} | ${desc} |`);
@@ -338,7 +351,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
       const innerDefs = embedded.$defs || {};
       if (Object.keys(innerDefs).length > 0) {
         for (const [typeName, defn] of Object.entries(innerDefs)) {
-          lines.push(`#### ${typeName.replace(/_/g, '\\_')}`);
+          lines.push(`#### ${typeName.replace(/_/g, '\\_')} {#${anchorId(typeName)}}`);
           lines.push('');
           if (defn.description) {
             lines.push(defn.description);
@@ -351,7 +364,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
             lines.push('| Field | Type | Required | Description |');
             lines.push('|-------|------|----------|-------------|');
             for (const [field, prop] of Object.entries(props)) {
-              const type = resolveTypeName(prop);
+              const type = resolveTypeName(prop, knownTypes);
               const isReq = req.has(field) ? '**yes**' : 'no';
               const desc = (prop.description || '').replace(/\n/g, ' ').replace(/\|/g, '\\|');
               lines.push(`| \`${field}\` | ${type} | ${isReq} | ${desc} |`);
@@ -388,47 +401,6 @@ function semverCompareDesc(a, b) {
   if (maja !== majb) return majb - maja;
   if (mina !== minb) return minb - mina;
   return patb - pata;
-}
-
-// Render an enum def's allowed values. Named enum defs (e.g. Content_Type) are
-// $ref'd by fields and carry no object properties, so without this they render
-// as just a heading + description — hiding that they're enums and which values
-// are legal. Inline enums (declared directly on a field) already show values via
-// resolveTypeName; this covers the named-def case.
-function renderEnumValues(defn, lines) {
-  if (!defn || !Array.isArray(defn.enum)) return;
-  const base = defn.type ? `\`${defn.type}\`` : '`string`';
-  lines.push(`**Enum** (${base}) — allowed values:`);
-  lines.push('');
-  for (const value of defn.enum) {
-    lines.push(`- \`"${value}"\``);
-  }
-  lines.push('');
-}
-
-function resolveTypeName(prop) {
-  if (!prop) return 'any';
-  if (prop.$ref) {
-    const ref = prop.$ref;
-    if (ref.startsWith('#/$defs/')) return `\`${ref.replace('#/$defs/', '')}\``;
-    const parts = ref.split('/');
-    const typePart = parts[parts.length - 1];
-    return `\`${typePart}\``;
-  }
-  if (prop.const) return `\`"${prop.const}"\``;
-  if (prop.enum) return prop.enum.map(v => `\`"${v}"\``).join(' \\| ');
-  if (prop.type === 'array') {
-    const itemType = prop.items ? resolveTypeName(prop.items) : 'any';
-    return `${itemType}[]`;
-  }
-  if (prop.type === 'object' && prop.additionalProperties) {
-    const valType = resolveTypeName(prop.additionalProperties);
-    return `Map<string, ${valType}>`;
-  }
-  if (prop.oneOf) return prop.oneOf.map(resolveTypeName).join(' \\| ');
-  if (prop.anyOf) return prop.anyOf.map(resolveTypeName).join(' \\| ');
-  if (prop.type) return `\`${prop.type}\`${prop.format ? ` (${prop.format})` : ''}`;
-  return 'any';
 }
 
 function collectProperties(defn) {

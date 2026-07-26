@@ -6,7 +6,8 @@
     "generate": "node generate-schema-docs.mjs",
     "dev": "pnpm generate && vitepress dev",
     "build": "pnpm generate && vitepress build",
-    "preview": "vitepress preview"
+    "preview": "vitepress preview",
+    "test:ts": "node --test"
   },
   "dependencies": {
     "@mitre/hdf-schema": "workspace:^"
