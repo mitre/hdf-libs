@@ -294,6 +294,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
         lines.push(defn.description);
         lines.push('');
       }
+      renderEnumValues(defn, lines);
       const props = collectProperties(defn);
       if (Object.keys(props).length > 0) {
         const req = collectRequired(defn);
@@ -343,6 +344,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
             lines.push(defn.description);
             lines.push('');
           }
+          renderEnumValues(defn, lines);
           const props = collectProperties(defn);
           if (Object.keys(props).length > 0) {
             const req = collectRequired(defn);
@@ -386,6 +388,22 @@ function semverCompareDesc(a, b) {
   if (maja !== majb) return majb - maja;
   if (mina !== minb) return minb - mina;
   return patb - pata;
+}
+
+// Render an enum def's allowed values. Named enum defs (e.g. Content_Type) are
+// $ref'd by fields and carry no object properties, so without this they render
+// as just a heading + description — hiding that they're enums and which values
+// are legal. Inline enums (declared directly on a field) already show values via
+// resolveTypeName; this covers the named-def case.
+function renderEnumValues(defn, lines) {
+  if (!defn || !Array.isArray(defn.enum)) return;
+  const base = defn.type ? `\`${defn.type}\`` : '`string`';
+  lines.push(`**Enum** (${base}) — allowed values:`);
+  lines.push('');
+  for (const value of defn.enum) {
+    lines.push(`- \`"${value}"\``);
+  }
+  lines.push('');
 }
 
 function resolveTypeName(prop) {
