@@ -115,39 +115,43 @@ func (r *HDFRequirementChangeEvent) Marshal() ([]byte, error) {
 
 // The top level value containing all assessment results.
 type HDFResults struct {
-	// Information on the baselines that were evaluated, including findings.                                          
-	Baselines                                                                                  []EvaluatedBaseline    `json:"baselines"`
-	// The components that were assessed. Each component describes a system element (host,                            
-	// container, cloud resource, application, etc.) with optional identity, SBOM, and external                       
-	// references.                                                                                                    
-	Components                                                                                 []Component            `json:"components,omitempty"`
-	// Reserved for tool-specific data not defined in the HDF standard. Use this to preserve                          
-	// original tool output, auxiliary data, or custom metadata.                                                      
-	Extensions                                                                                 map[string]interface{} `json:"extensions,omitempty"`
-	// Information about the tool that generated this file.                                                           
-	Generator                                                                                  *Generator             `json:"generator,omitempty"`
-	// Unique identifier for this assessment run.                                                                     
-	ID                                                                                         *string                `json:"id,omitempty"`
-	// Cryptographic integrity information for verifying this file.                                                   
-	Integrity                                                                                  *Integrity             `json:"integrity,omitempty"`
-	// Reference to an hdf-plan document describing the assessment plan that produced these                           
-	// results. May be a relative path, absolute URI, or fragment identifier.                                         
-	PlanRef                                                                                    *string                `json:"planRef,omitempty"`
-	// Optional reference to automated remediation resources (Ansible playbooks, Terraform                            
-	// scripts, etc.) for fixing failing requirements found in this assessment.                                       
-	Remediation                                                                                *Remediation           `json:"remediation,omitempty"`
-	// Information about the test execution environment where the security tool was run.                              
-	// Distinct from targets (what is being tested).                                                                  
-	Runner                                                                                     *Runner                `json:"runner,omitempty"`
-	// Statistics for the assessment run, including duration and result counts.                                       
-	Statistics                                                                                 *Statistics            `json:"statistics,omitempty"`
-	// Reference to an hdf-system document describing the system under assessment. May be a                           
-	// relative path, absolute URI, or fragment identifier.                                                           
-	SystemRef                                                                                  *string                `json:"systemRef,omitempty"`
-	// When this assessment was executed.                                                                             
-	Timestamp                                                                                  *time.Time             `json:"timestamp,omitempty"`
-	// The security tool that produced the assessment data in this file.                                              
-	Tool                                                                                       *Tool                  `json:"tool,omitempty"`
+	// Information on the baselines that were evaluated, including findings.                                           
+	Baselines                                                                                   []EvaluatedBaseline    `json:"baselines"`
+	// The components that were assessed. Each component describes a system element (host,                             
+	// container, cloud resource, application, etc.) with optional identity, SBOM, and external                        
+	// references.                                                                                                     
+	Components                                                                                  []Component            `json:"components,omitempty"`
+	// Present ONLY on reconciled result sets: lineage recording the seed snapshot and event                           
+	// watermark this document was reassembled from (ADR-0005). Documents produced directly by a                       
+	// scan omit this field. When present, generator names the reconciling tool.                                       
+	Derivation                                                                                  *Derivation            `json:"derivation,omitempty"`
+	// Reserved for tool-specific data not defined in the HDF standard. Use this to preserve                           
+	// original tool output, auxiliary data, or custom metadata.                                                       
+	Extensions                                                                                  map[string]interface{} `json:"extensions,omitempty"`
+	// Information about the tool that generated this file.                                                            
+	Generator                                                                                   *Generator             `json:"generator,omitempty"`
+	// Unique identifier for this assessment run.                                                                      
+	ID                                                                                          *string                `json:"id,omitempty"`
+	// Cryptographic integrity information for verifying this file.                                                    
+	Integrity                                                                                   *Integrity             `json:"integrity,omitempty"`
+	// Reference to an hdf-plan document describing the assessment plan that produced these                            
+	// results. May be a relative path, absolute URI, or fragment identifier.                                          
+	PlanRef                                                                                     *string                `json:"planRef,omitempty"`
+	// Optional reference to automated remediation resources (Ansible playbooks, Terraform                             
+	// scripts, etc.) for fixing failing requirements found in this assessment.                                        
+	Remediation                                                                                 *Remediation           `json:"remediation,omitempty"`
+	// Information about the test execution environment where the security tool was run.                               
+	// Distinct from targets (what is being tested).                                                                   
+	Runner                                                                                      *Runner                `json:"runner,omitempty"`
+	// Statistics for the assessment run, including duration and result counts.                                        
+	Statistics                                                                                  *Statistics            `json:"statistics,omitempty"`
+	// Reference to an hdf-system document describing the system under assessment. May be a                            
+	// relative path, absolute URI, or fragment identifier.                                                            
+	SystemRef                                                                                   *string                `json:"systemRef,omitempty"`
+	// When this assessment was executed.                                                                              
+	Timestamp                                                                                   *time.Time             `json:"timestamp,omitempty"`
+	// The security tool that produced the assessment data in this file.                                               
+	Tool                                                                                        *Tool                  `json:"tool,omitempty"`
 }
 
 // Information on a baseline that was evaluated, including any findings.
@@ -1091,6 +1095,37 @@ type InputOverride struct {
 	Justification                                                                              *string     `json:"justification,omitempty"`
 	// The overridden value. Should match the type of the original input.                                  
 	Value                                                                                      interface{} `json:"value"`
+}
+
+// Derived-document lineage for a reconciled result set (an hdf-results produced by
+// applyChangeEvents rather than a scanner). Records exactly which seed and event horizon the
+// document represents so it can never masquerade as primary scan evidence. Conceptually PROV
+// qualified derivation: derived entity, used entity (seed), activity (event application),
+// generation time (asOf).
+type Derivation struct {
+	// The posture-as-of time of this reconciled view (RFC 3339, trimmed UTC) — the analog of           
+	// PROV's generatedAtTime.                                                                          
+	AsOf                                                                                      time.Time `json:"asOf"`
+	// Number of change events applied to the seed to produce this document.                            
+	EventsApplied                                                                             int64     `json:"eventsApplied"`
+	// The authoritative snapshot this document was reassembled from, pinned by content.                
+	Seed                                                                                      Seed      `json:"seed"`
+	// URI of the event-stream producer context whose events were applied (matches the events'          
+	// envelope source).                                                                                
+	Source                                                                                    string    `json:"source"`
+	// The event watermark: the highest per-key sequence number applied. Downstream precedence          
+	// rule: a full-scan document supersedes the reconciled view as of its scan time; between           
+	// scans, the reconciled document with the highest throughSequence is the current posture.          
+	ThroughSequence                                                                           int64     `json:"throughSequence"`
+}
+
+// The authoritative snapshot this document was reassembled from, pinned by content.
+type Seed struct {
+	// Checksum of the seed snapshot, REQUIRED: the derivation pins an immutable snapshot by         
+	// content, not just location.                                                                   
+	Checksum                                                                                Checksum `json:"checksum"`
+	// URI to the seed snapshot document (relative path or absolute URL).                            
+	URI                                                                                     string   `json:"uri"`
 }
 
 // Information about the tool that generated this HDF file.

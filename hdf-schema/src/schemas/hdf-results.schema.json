@@ -65,6 +65,10 @@
       "format": "uri-reference",
       "description": "Reference to an hdf-plan document describing the assessment plan that produced these results. May be a relative path, absolute URI, or fragment identifier."
     },
+    "derivation": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Derivation",
+      "description": "Present ONLY on reconciled result sets: lineage recording the seed snapshot and event watermark this document was reassembled from (ADR-0005). Documents produced directly by a scan omit this field. When present, generator names the reconciling tool."
+    },
     "extensions": {
       "type": "object",
       "additionalProperties": true,

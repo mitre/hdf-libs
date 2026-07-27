@@ -511,6 +511,78 @@
           ],
           "description": "The minimal resolved-posture projection — the same field set the per-requirement effectiveChecksum hashes (status and impact; the governing disposition is carried by the full requirement payload).",
           "title": "Effective Projection"
+        },
+        "Derivation": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "seed",
+            "source",
+            "throughSequence",
+            "eventsApplied",
+            "asOf"
+          ],
+          "properties": {
+            "seed": {
+              "type": "object",
+              "unevaluatedProperties": false,
+              "required": [
+                "uri",
+                "checksum"
+              ],
+              "properties": {
+                "uri": {
+                  "type": "string",
+                  "format": "uri-reference",
+                  "description": "URI to the seed snapshot document (relative path or absolute URL)."
+                },
+                "checksum": {
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+                  "description": "Checksum of the seed snapshot, REQUIRED: the derivation pins an immutable snapshot by content, not just location."
+                }
+              },
+              "$comment": "Location + expected-hash reference (the SRI/OCI/SPDX pattern). Shares its core shape with hdf-evidence-package's Content_Reference and ADR-0006's proposed External_Reference; consolidation onto one reference primitive is tracked by bead hdf-libs-avp2.",
+              "description": "The authoritative snapshot this document was reassembled from, pinned by content."
+            },
+            "source": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI of the event-stream producer context whose events were applied (matches the events' envelope source)."
+            },
+            "throughSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "The event watermark: the highest per-key sequence number applied. Downstream precedence rule: a full-scan document supersedes the reconciled view as of its scan time; between scans, the reconciled document with the highest throughSequence is the current posture."
+            },
+            "eventsApplied": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of change events applied to the seed to produce this document."
+            },
+            "asOf": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The posture-as-of time of this reconciled view (RFC 3339, trimmed UTC) — the analog of PROV's generatedAtTime."
+            }
+          },
+          "examples": [
+            {
+              "$comment": "A reconciled result set: reassembled from the pinned seed scan plus 3 change events through watermark 414. The document's generator names the reconciler, never the scanner.",
+              "seed": {
+                "uri": "apptier-seed-scan.hdf.json",
+                "checksum": {
+                  "algorithm": "sha256",
+                  "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                }
+              },
+              "source": "inspec://web01/rhel9-stig",
+              "throughSequence": 414,
+              "eventsApplied": 3,
+              "asOf": "2026-07-24T10:15:00Z"
+            }
+          ],
+          "description": "Derived-document lineage for a reconciled result set (an hdf-results produced by applyChangeEvents rather than a scanner). Records exactly which seed and event horizon the document represents so it can never masquerade as primary scan evidence. Conceptually PROV qualified derivation: derived entity, used entity (seed), activity (event application), generation time (asOf).",
+          "title": "Derivation"
         }
       }
     },
@@ -1642,6 +1714,10 @@
           "type": "string",
           "format": "uri-reference",
           "description": "Reference to an hdf-plan document describing the assessment plan that produced these results. May be a relative path, absolute URI, or fragment identifier."
+        },
+        "derivation": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Derivation",
+          "description": "Present ONLY on reconciled result sets: lineage recording the seed snapshot and event watermark this document was reassembled from (ADR-0005). Documents produced directly by a scan omit this field. When present, generator names the reconciling tool."
         },
         "extensions": {
           "type": "object",
