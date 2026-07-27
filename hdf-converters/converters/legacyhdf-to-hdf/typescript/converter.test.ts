@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import Ajv from 'ajv';
 import { describe, it, expect } from 'vitest';
 import { inspec } from '@mitre/hdf-fixtures';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
@@ -1451,6 +1452,22 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
     const joined = warnings.join('\n');
     expect(joined).toContain('V-003-poam');
     expect(joined).toContain('POA&M');
+  });
+
+  it('produces a document that validates against the InSpec exec-json schema', () => {
+    // Authoritative guard: validate the whole downgrade output against the InSpec
+    // exec-json schema Heimdall's parser enforces (vendored in Go testdata), rather
+    // than trusting per-field presence assertions that can drift from the contract.
+    const v2 = JSON.parse(readFileSync(fixture, 'utf-8')) as HDFV2Results;
+    const { hdf } = convertV2ToV1(v2);
+
+    const schemaPath = join(__dirname, '..', '..', '..', 'shared', 'go', 'hdfversion', 'testdata', 'exec-json.schema.json');
+    const schema = JSON.parse(readFileSync(schemaPath, 'utf-8'));
+    const validate = new Ajv({ strict: false, allErrors: true }).compile(schema);
+
+    const ok = validate(hdf);
+    expect(validate.errors ?? []).toEqual([]);
+    expect(ok).toBe(true);
   });
 
   it('falls back to the rollup status + generator version and reconstructs optional profile fields', () => {

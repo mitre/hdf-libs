@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 func convertersDir() string {
@@ -186,6 +187,33 @@ func TestDowngradeV3ToV2_FlattensAmendments(t *testing.T) {
 	joined := strings.Join(warnings, "\n")
 	assert.Contains(t, joined, "V-003-poam")
 	assert.Contains(t, joined, "POA&M")
+}
+
+// TestDowngradeV3ToV2_ValidatesAgainstInspecSchema is the authoritative regression
+// guard: the downgrade output must validate against the InSpec exec-json schema
+// Heimdall's parser enforces (vendored in testdata). Field-presence assertions can
+// drift from the real contract; validating the whole document against the schema
+// cannot.
+func TestDowngradeV3ToV2_ValidatesAgainstInspecSchema(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	testdata := filepath.Join(filepath.Dir(thisFile), "testdata")
+	input, err := os.ReadFile(filepath.Join(testdata, "modern_with_amendments.json"))
+	require.NoError(t, err)
+
+	out, _, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	schemaPath, err := filepath.Abs(filepath.Join(testdata, "exec-json.schema.json"))
+	require.NoError(t, err)
+
+	result, err := gojsonschema.Validate(
+		gojsonschema.NewReferenceLoader("file://"+schemaPath),
+		gojsonschema.NewBytesLoader(out),
+	)
+	require.NoError(t, err)
+	for _, e := range result.Errors() {
+		t.Errorf("downgraded document violates InSpec exec-json schema: %s", e)
+	}
 }
 
 func TestDetectHDFVersion(t *testing.T) {
