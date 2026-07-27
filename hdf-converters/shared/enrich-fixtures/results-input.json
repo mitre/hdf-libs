@@ -1,0 +1,39 @@
+{
+  "generator": { "name": "hdf-converters", "version": "0.0.0" },
+  "tool": { "name": "Test Scanner", "format": "JSON" },
+  "baselines": [
+    {
+      "name": "Vulnerability Scan",
+      "checksum": { "algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+      "requirements": [
+        {
+          "id": "CVE-2012-0158",
+          "title": "MSCOMCTL.OCX RCE",
+          "descriptions": [{ "label": "default", "data": "Buffer overflow in MSCOMCTL.OCX." }],
+          "impact": 0.9,
+          "tags": {},
+          "results": [{ "status": "failed", "codeDesc": "detected on host", "startTime": "2025-01-01T00:00:00Z" }]
+        },
+        {
+          "id": "CVE-2009-4324",
+          "title": "Adobe Reader use-after-free",
+          "descriptions": [{ "label": "default", "data": "Use-after-free in Adobe Reader/Acrobat." }],
+          "impact": 0.9,
+          "tags": {},
+          "results": [{ "status": "failed", "codeDesc": "detected on host", "startTime": "2025-01-01T00:00:00Z" }]
+        },
+        {
+          "id": "SV-999999",
+          "title": "Unrelated compliance check",
+          "descriptions": [{ "label": "default", "data": "A finding with no STIX correlation." }],
+          "impact": 0.5,
+          "tags": {},
+          "results": [{ "status": "passed", "codeDesc": "compliant", "startTime": "2025-01-01T00:00:00Z" }]
+        }
+      ]
+    }
+  ],
+  "components": [],
+  "statistics": {},
+  "timestamp": "2025-01-01T00:00:00Z"
+}
