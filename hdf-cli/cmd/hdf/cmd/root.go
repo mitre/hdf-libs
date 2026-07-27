@@ -124,6 +124,7 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.AddCommand(NewConvertCmd())
 	cmd.AddCommand(NewDiffCmd())
 	cmd.AddCommand(NewAmendCmd())
+	cmd.AddCommand(NewEnrichCmd())
 	cmd.AddCommand(NewEvidenceCmd())
 	cmd.AddCommand(NewSystemCmd())
 	cmd.AddCommand(NewPlanCmd())
