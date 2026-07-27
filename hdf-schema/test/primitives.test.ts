@@ -274,6 +274,70 @@ describe('Primitive Schema Validation', () => {
       });
     });
 
+    describe('External_Reference', () => {
+      const validate = ajv.compile({
+        ...schemaRef(commonSchema, 'External_Reference'),
+      });
+
+      it('should validate a by-identity ref (sourceName + externalId)', () => {
+        expect(validate({ sourceName: 'cve', externalId: 'CVE-2021-44228' })).toBe(true);
+      });
+
+      it('should validate id AND href together (anyOf, not oneOf)', () => {
+        expect(
+          validate({
+            sourceName: 'mitre-att&ck',
+            externalId: 'T1059',
+            href: 'https://attack.mitre.org/techniques/T1059/',
+          }),
+        ).toBe(true);
+      });
+
+      it('should reject a ref with no sourceName', () => {
+        expect(validate({ externalId: 'CVE-2021-44228' })).toBe(false);
+      });
+
+      it('should reject sourceName with none of externalId/href/description', () => {
+        expect(validate({ sourceName: 'cve' })).toBe(false);
+      });
+
+      it('should reject an unknown property (unevaluatedProperties: false is enforced here)', () => {
+        expect(validate({ sourceName: 'cve', externalId: 'X', bogus: 'nope' })).toBe(false);
+      });
+
+      // Phase 1b — enrichment envelope: document (lossless payload) + open kind.
+      it('should validate an embedded document + kind (the enrichment envelope)', () => {
+        expect(
+          validate({
+            sourceName: 'stix',
+            externalId: 'threat-actor--9b7e',
+            kind: 'threat-intel',
+            document: { type: 'threat-actor', id: 'threat-actor--9b7e', name: 'APT-X', spec_version: '2.1' },
+          }),
+        ).toBe(true);
+      });
+
+      it('should validate document composed with href + externalId (envelope + pointer)', () => {
+        expect(
+          validate({
+            sourceName: 'stix',
+            externalId: 'vulnerability--1',
+            href: 'https://cti.example.org/bundles/log4shell.json#vulnerability--1',
+            kind: 'threat-intel',
+            document: { type: 'vulnerability', id: 'vulnerability--1', name: 'CVE-2021-44228' },
+          }),
+        ).toBe(true);
+      });
+
+      it('should validate an open kind value outside the starter vocabulary', () => {
+        expect(validate({ sourceName: 'acme-feed', externalId: 'x1', kind: 'x-vendor-custom' })).toBe(true);
+      });
+
+      it('should reject an embedded document with no sourceName', () => {
+        expect(validate({ kind: 'threat-intel', document: { type: 'x' } })).toBe(false);
+      });
+    });
+
     describe('Source_Location', () => {
       const validate = ajv.compile({
         ...schemaRef(commonSchema, 'Source_Location'),

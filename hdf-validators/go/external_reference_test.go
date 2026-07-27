@@ -127,3 +127,56 @@ func TestExternalReferences_StandaloneOverride(t *testing.T) {
 		assert.False(t, ValidateAmendments(amendmentsWithExtRefs(badRef)).Valid)
 	})
 }
+
+// --- Phase 1b: enrichment envelope (document + open kind) + inline
+// Status_Override carrier for the E:A riskAdjustment. ---
+
+func TestExternalReferences_EnvelopeDocumentKind(t *testing.T) {
+	t.Run("embedded document + kind validates", func(t *testing.T) {
+		r := ValidateResults(resultsWithExtRefs(`[{ "sourceName": "stix", "externalId": "threat-actor--9b7e", "kind": "threat-intel", "document": { "type": "threat-actor", "id": "threat-actor--9b7e", "name": "APT-X", "spec_version": "2.1" } }]`))
+		assert.True(t, r.Valid, r.Error())
+	})
+	t.Run("document composed with href + externalId validates", func(t *testing.T) {
+		r := ValidateResults(resultsWithExtRefs(`[{ "sourceName": "stix", "externalId": "vulnerability--1", "href": "https://cti.example.org/bundles/log4shell.json#vulnerability--1", "kind": "threat-intel", "document": { "type": "vulnerability", "id": "vulnerability--1", "name": "CVE-2021-44228" } }]`))
+		assert.True(t, r.Valid, r.Error())
+	})
+	t.Run("open kind value not in the starter vocabulary validates", func(t *testing.T) {
+		r := ValidateResults(resultsWithExtRefs(`[{ "sourceName": "acme-feed", "externalId": "x1", "kind": "x-vendor-custom" }]`))
+		assert.True(t, r.Valid, r.Error())
+	})
+	t.Run("embedded document with no sourceName is rejected", func(t *testing.T) {
+		r := ValidateResults(resultsWithExtRefs(`[{ "kind": "threat-intel", "document": { "type": "x" } }]`))
+		assert.False(t, r.Valid, "a ref with a document but no sourceName must be rejected")
+	})
+}
+
+// resultsWithInlineOverride wraps externalReferences into a Status_Override on
+// Evaluated_Requirement.overrides[] — the carrier the enrich pass writes.
+func resultsWithInlineOverride(refs string) []byte {
+	return []byte(`{
+		"baselines": [{
+			"name": "B", "checksum": { "algorithm": "sha256", "value": "abc" },
+			"requirements": [{
+				"id": "CVE-2021-44228", "descriptions": [{ "label": "default", "data": "d" }], "impact": 0.5, "tags": {},
+				"results": [{ "status": "failed", "codeDesc": "x", "startTime": "2025-01-01T00:00:00Z" }],
+				"statusOverrides": [{
+					"type": "riskAdjustment", "reason": "exploited in the wild (STIX)",
+					"impact": { "value": 0.9 },
+					"appliedBy": { "type": "email", "identifier": "a@b.gov" },
+					"appliedAt": "2026-04-14T10:00:00Z", "expiresAt": "2026-10-14T00:00:00Z",
+					"externalReferences": ` + refs + `
+				}]
+			}]
+		}],
+		"components": [], "statistics": {}
+	}`)
+}
+
+func TestExternalReferences_InlineStatusOverride(t *testing.T) {
+	t.Run("inline Status_Override accepts valid ref", func(t *testing.T) {
+		assert.True(t, ValidateResults(resultsWithInlineOverride(validRef)).Valid)
+	})
+	t.Run("inline Status_Override rejects malformed ref", func(t *testing.T) {
+		assert.False(t, ValidateResults(resultsWithInlineOverride(badRef)).Valid)
+	})
+}

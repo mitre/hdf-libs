@@ -55,6 +55,16 @@
           "type": "string",
           "format": "date-time",
           "description": "When this reference was attached (RFC 3339 / trimmed-UTC per HDF timestamp convention)."
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Open token classifying the referenced/embedded payload, turning a bare reference into an enrichment envelope. Deliberately open (like `sourceName`/`rel`), not a closed enum. Documented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory' (vendor/security advisory). Use the `x-` prefix for custom kinds."
+        },
+        "document": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim. Composes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed. HDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
         }
       },
       "unevaluatedProperties": false,
@@ -81,6 +91,21 @@
           "checksum": { "algorithm": "sha256", "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
           "addedBy": { "type": "email", "identifier": "analyst@agency.gov" },
           "addedAt": "2026-07-26T00:00:00Z"
+        },
+        {
+          "$comment": "Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields.",
+          "sourceName": "stix",
+          "externalId": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+          "href": "https://cti.example.org/bundles/log4shell.json#vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+          "rel": "investigate",
+          "kind": "threat-intel",
+          "document": {
+            "type": "vulnerability",
+            "spec_version": "2.1",
+            "id": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+            "name": "CVE-2021-44228",
+            "external_references": [{ "source_name": "cve", "external_id": "CVE-2021-44228" }]
+          }
         }
       ]
     },

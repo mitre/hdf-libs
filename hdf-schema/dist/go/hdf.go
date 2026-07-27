@@ -234,38 +234,51 @@ type Dependency struct {
 // interconvertible. A reference is inert context: it overrides nothing, so it carries only
 // lightweight optional `addedBy`/`addedAt` attribution, never override machinery.
 type ExternalReference struct {
-	// When this reference was attached (RFC 3339 / trimmed-UTC per HDF timestamp convention).             
-	AddedAt                                                                                     *time.Time `json:"addedAt,omitempty"`
-	// Who attached this reference. Lightweight, flat attribution — a reference overrides                  
-	// nothing, so it has no chaining/superseding/disposition.                                             
-	AddedBy                                                                                     *Identity  `json:"addedBy,omitempty"`
-	// Integrity hash of the referenced artifact. Reuses the HDF `Checksum` primitive (not STIX            
-	// `hashes`). Meaningful only with a retrievable `href`.                                               
-	Checksum                                                                                    *Checksum  `json:"checksum,omitempty"`
-	// Human-readable description of what is referenced. Satisfies the at-least-one rule on its            
-	// own when neither id nor href is available.                                                          
-	Description                                                                                 *string    `json:"description,omitempty"`
-	// Identifier of the artifact within `sourceName` (e.g., 'CVE-2021-44228' for source 'cve',            
-	// 'T1059' for 'mitre-att&ck'). Cite by id without needing a URL. Together with `sourceName`           
-	// this is a URN.                                                                                      
-	ExternalID                                                                                  *string    `json:"externalId,omitempty"`
-	// Location of the artifact. `uri-reference` (not `uri`) so a bare internal                            
-	// `#fragment`/`#uuid` reference is expressible alongside absolute URLs.                               
-	// `checksum`/`mediaType` apply only to a retrievable `href`.                                          
-	Href                                                                                        *string    `json:"href,omitempty"`
-	// IANA media type of the referenced artifact when retrievable (RFC 6838), e.g.,                       
-	// 'application/json'. Meaningful only with `href`.                                                    
-	MediaType                                                                                   *string    `json:"mediaType,omitempty"`
-	// Open relationship token describing how this reference relates to the referencing object.            
-	// Deliberately open (cf. OSCAL `rel` allow-other, RFC 8288 extension relations). Documented           
-	// starter vocabulary: 'reference' (generic), 'definition' (defines the concept), 'evidence'           
-	// (supporting evidence), 'investigate' (a live pivot to investigate), 'canonical' (the                
-	// authoritative source).                                                                              
-	Rel                                                                                         *string    `json:"rel,omitempty"`
-	// Name of the external system/source being referenced (e.g., 'cve', 'mitre-att&ck', 'stix',           
-	// 'taxii', or any vendor label). Open string — not a closed enum. Use the `x-` prefix                 
-	// convention for custom/experimental sources, mirroring `bomType`.                                    
-	SourceName                                                                                  string     `json:"sourceName"`
+	// When this reference was attached (RFC 3339 / trimmed-UTC per HDF timestamp convention).                         
+	AddedAt                                                                                     *time.Time             `json:"addedAt,omitempty"`
+	// Who attached this reference. Lightweight, flat attribution — a reference overrides                              
+	// nothing, so it has no chaining/superseding/disposition.                                                         
+	AddedBy                                                                                     *Identity              `json:"addedBy,omitempty"`
+	// Integrity hash of the referenced artifact. Reuses the HDF `Checksum` primitive (not STIX                        
+	// `hashes`). Meaningful only with a retrievable `href`.                                                           
+	Checksum                                                                                    *Checksum              `json:"checksum,omitempty"`
+	// Human-readable description of what is referenced. Satisfies the at-least-one rule on its                        
+	// own when neither id nor href is available.                                                                      
+	Description                                                                                 *string                `json:"description,omitempty"`
+	// Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS                          
+	// record, advisory, or annotation payload — preserved verbatim. Composes with                                     
+	// `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to                        
+	// the source): a single entry can both point and embed. HDF stays payload-agnostic — the                          
+	// content is carried untouched, never normalized into HDF fields — so this does not                               
+	// duplicate the source ontology (e.g. STIX rides here unchanged).                                                 
+	Document                                                                                    map[string]interface{} `json:"document,omitempty"`
+	// Identifier of the artifact within `sourceName` (e.g., 'CVE-2021-44228' for source 'cve',                        
+	// 'T1059' for 'mitre-att&ck'). Cite by id without needing a URL. Together with `sourceName`                       
+	// this is a URN.                                                                                                  
+	ExternalID                                                                                  *string                `json:"externalId,omitempty"`
+	// Location of the artifact. `uri-reference` (not `uri`) so a bare internal                                        
+	// `#fragment`/`#uuid` reference is expressible alongside absolute URLs.                                           
+	// `checksum`/`mediaType` apply only to a retrievable `href`.                                                      
+	Href                                                                                        *string                `json:"href,omitempty"`
+	// Open token classifying the referenced/embedded payload, turning a bare reference into an                        
+	// enrichment envelope. Deliberately open (like `sourceName`/`rel`), not a closed enum.                            
+	// Documented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human                            
+	// triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory'                                   
+	// (vendor/security advisory). Use the `x-` prefix for custom kinds.                                               
+	Kind                                                                                        *string                `json:"kind,omitempty"`
+	// IANA media type of the referenced artifact when retrievable (RFC 6838), e.g.,                                   
+	// 'application/json'. Meaningful only with `href`.                                                                
+	MediaType                                                                                   *string                `json:"mediaType,omitempty"`
+	// Open relationship token describing how this reference relates to the referencing object.                        
+	// Deliberately open (cf. OSCAL `rel` allow-other, RFC 8288 extension relations). Documented                       
+	// starter vocabulary: 'reference' (generic), 'definition' (defines the concept), 'evidence'                       
+	// (supporting evidence), 'investigate' (a live pivot to investigate), 'canonical' (the                            
+	// authoritative source).                                                                                          
+	Rel                                                                                         *string                `json:"rel,omitempty"`
+	// Name of the external system/source being referenced (e.g., 'cve', 'mitre-att&ck', 'stix',                       
+	// 'taxii', or any vendor label). Open string — not a closed enum. Use the `x-` prefix                             
+	// convention for custom/experimental sources, mirroring `bomType`.                                                
+	SourceName                                                                                  string                 `json:"sourceName"`
 }
 
 // Represents an identity that performed an action, such as capturing evidence or applying an
@@ -735,44 +748,49 @@ type SourceLocation struct {
 // status or impact must be set. Overrides change the effectiveStatus or impact of the requirement.
 // All overrides must have an expiration date to enforce periodic review.
 type StatusOverride struct {
-	// Timestamp when this override was applied. ISO 8601 format.                                               
-	AppliedAt                                                                                   time.Time       `json:"appliedAt"`
-	// Identity of who applied this override. For simple cases, use type 'simple' with just an                  
-	// identifier.                                                                                              
-	AppliedBy                                                                                   Identity        `json:"appliedBy"`
-	// Structured CVSS scoring data backing this override. Captures the rubric (which                           
-	// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify                
-	// a riskAdjustment. For other override types this is optional context.                                     
-	Cvss                                                                                        *Cvss           `json:"cvss,omitempty"`
-	// Supporting evidence for this override, such as screenshots demonstrating manual                          
-	// verification for attestations.                                                                           
-	Evidence                                                                                    []Evidence      `json:"evidence,omitempty"`
-	// Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no                         
-	// permanent overrides allowed. ISO 8601 format.                                                            
-	ExpiresAt                                                                                   time.Time       `json:"expiresAt"`
-	// Override to the requirement's impact score. At least one of status or impact must be set.                
-	Impact                                                                                      *ImpactOverride `json:"impact,omitempty"`
-	// Structured controlled-vocabulary classification for why this override applies.                           
-	// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive                
-	// and attestation overrides where the structured category enables filtering and lossless                   
-	// round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the                        
-	// precedent vocabulary and rationale.                                                                      
-	Justification                                                                               *Justification  `json:"justification,omitempty"`
-	// SHA-256 checksum of the previous amendment in chronological order. Creates a                             
-	// tamper-evident chain of amendments (similar to blockchain). Null for the first amendment                 
-	// on a requirement.                                                                                        
-	PreviousChecksum                                                                            *Checksum       `json:"previousChecksum,omitempty"`
-	// Explanation for why this override was applied.                                                           
-	Reason                                                                                      string          `json:"reason"`
-	// Optional digital signature for enhanced trust and non-repudiation. Supports hardware                     
-	// security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing                       
-	// methods.                                                                                                 
-	Signature                                                                                   *Signature      `json:"signature,omitempty"`
-	// The new status this override sets for the requirement. Optional when only impact is being                
-	// overridden.                                                                                              
-	Status                                                                                      *ResultStatus   `json:"status,omitempty"`
-	// The type of override applied to this requirement.                                                        
-	Type                                                                                        OverrideType    `json:"type"`
+	// Timestamp when this override was applied. ISO 8601 format.                                                   
+	AppliedAt                                                                                   time.Time           `json:"appliedAt"`
+	// Identity of who applied this override. For simple cases, use type 'simple' with just an                      
+	// identifier.                                                                                                  
+	AppliedBy                                                                                   Identity            `json:"appliedBy"`
+	// Structured CVSS scoring data backing this override. Captures the rubric (which                               
+	// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify                    
+	// a riskAdjustment. For other override types this is optional context.                                         
+	Cvss                                                                                        *Cvss               `json:"cvss,omitempty"`
+	// Supporting evidence for this override, such as screenshots demonstrating manual                              
+	// verification for attestations.                                                                               
+	Evidence                                                                                    []Evidence          `json:"evidence,omitempty"`
+	// Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no                             
+	// permanent overrides allowed. ISO 8601 format.                                                                
+	ExpiresAt                                                                                   time.Time           `json:"expiresAt"`
+	// Optional references to the external artifacts behind this override (e.g. the STIX                            
+	// bundle/object or CTI feed motivating an E:A riskAdjustment). Inert context distinct from                     
+	// `evidence`; see External_Reference. Symmetric with Standalone_Override.externalReferences                    
+	// for the inline (results-embedded) override carrier.                                                          
+	ExternalReferences                                                                          []ExternalReference `json:"externalReferences,omitempty"`
+	// Override to the requirement's impact score. At least one of status or impact must be set.                    
+	Impact                                                                                      *ImpactOverride     `json:"impact,omitempty"`
+	// Structured controlled-vocabulary classification for why this override applies.                               
+	// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive                    
+	// and attestation overrides where the structured category enables filtering and lossless                       
+	// round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the                            
+	// precedent vocabulary and rationale.                                                                          
+	Justification                                                                               *Justification      `json:"justification,omitempty"`
+	// SHA-256 checksum of the previous amendment in chronological order. Creates a                                 
+	// tamper-evident chain of amendments (similar to blockchain). Null for the first amendment                     
+	// on a requirement.                                                                                            
+	PreviousChecksum                                                                            *Checksum           `json:"previousChecksum,omitempty"`
+	// Explanation for why this override was applied.                                                               
+	Reason                                                                                      string              `json:"reason"`
+	// Optional digital signature for enhanced trust and non-repudiation. Supports hardware                         
+	// security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing                           
+	// methods.                                                                                                     
+	Signature                                                                                   *Signature          `json:"signature,omitempty"`
+	// The new status this override sets for the requirement. Optional when only impact is being                    
+	// overridden.                                                                                                  
+	Status                                                                                      *ResultStatus       `json:"status,omitempty"`
+	// The type of override applied to this requirement.                                                            
+	Type                                                                                        OverrideType        `json:"type"`
 }
 
 // An override to the requirement's impact score. The prior impact is the original result value or

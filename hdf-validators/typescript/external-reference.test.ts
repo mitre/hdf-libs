@@ -66,6 +66,51 @@ describe('External_Reference validation (HDF Results)', () => {
   });
 });
 
+// Enrichment envelope (Phase 1b): a reference may embed a lossless copy of the
+// referent in `document` and classify the payload with an open `kind`.
+describe('External_Reference enrichment envelope (document + kind)', () => {
+  it('accepts an embedded document + kind', () => {
+    const r = validateResults(
+      resultsWithExtRefs([
+        {
+          sourceName: 'stix',
+          externalId: 'threat-actor--9b7e',
+          kind: 'threat-intel',
+          document: { type: 'threat-actor', id: 'threat-actor--9b7e', name: 'APT-X', spec_version: '2.1' },
+        },
+      ]),
+    );
+    expect(r.valid, r.getErrorMessage?.() ?? '').toBe(true);
+  });
+
+  it('accepts document composed with href + externalId (envelope + pointer together)', () => {
+    const r = validateResults(
+      resultsWithExtRefs([
+        {
+          sourceName: 'stix',
+          externalId: 'vulnerability--1',
+          href: 'https://cti.example.org/bundles/log4shell.json#vulnerability--1',
+          kind: 'threat-intel',
+          document: { type: 'vulnerability', id: 'vulnerability--1', name: 'CVE-2021-44228' },
+        },
+      ]),
+    );
+    expect(r.valid, r.getErrorMessage?.() ?? '').toBe(true);
+  });
+
+  it('accepts an open kind value not in the starter vocabulary', () => {
+    const r = validateResults(
+      resultsWithExtRefs([{ sourceName: 'acme-feed', externalId: 'x1', kind: 'x-vendor-custom' }]),
+    );
+    expect(r.valid).toBe(true);
+  });
+
+  it('still rejects an embedded document with no sourceName', () => {
+    const r = validateResults(resultsWithExtRefs([{ kind: 'threat-intel', document: { type: 'x' } }]));
+    expect(r.valid).toBe(false);
+  });
+});
+
 // DRY-inheritance carriers: externalReferences reaches baseline root + baseline
 // requirement (via Baseline_Metadata / Requirement_Core), Evaluated_Baseline +
 // Evaluated_Requirement, and Standalone_Override — and enforces the rule there.
@@ -94,6 +139,25 @@ describe('External_Reference on inherited carriers', () => {
       externalReferences: refs,
     }],
   });
+  // Inline Status_Override on Evaluated_Requirement.overrides[] — the carrier the
+  // enrich pass's E:A riskAdjustment writes; gains externalReferences[] in 1b.
+  const resultsInlineOverride = (refs: unknown) => ({
+    baselines: [{
+      name: 'B', checksum: { algorithm: 'sha256', value: 'abc' },
+      requirements: [{
+        id: 'CVE-2021-44228', descriptions: [{ label: 'default', data: 'd' }], impact: 0.5, tags: {},
+        results: [{ status: 'failed', codeDesc: 'x', startTime: '2025-01-01T00:00:00Z' }],
+        statusOverrides: [{
+          type: 'riskAdjustment', reason: 'exploited in the wild (STIX)',
+          impact: { value: 0.9 },
+          appliedBy: { type: 'email', identifier: 'a@b.gov' },
+          appliedAt: '2026-04-14T10:00:00Z', expiresAt: '2026-10-14T00:00:00Z',
+          externalReferences: refs,
+        }],
+      }],
+    }],
+    components: [], statistics: {},
+  });
 
   it('baseline root + Requirement_Core accept valid, reject malformed', () => {
     expect(validateBaseline(baseline(validRef, validRef)).valid).toBe(true);
@@ -108,5 +172,9 @@ describe('External_Reference on inherited carriers', () => {
   it('Standalone_Override accepts valid, rejects malformed', () => {
     expect(validateAmendments(amendments(validRef)).valid).toBe(true);
     expect(validateAmendments(amendments(badRef)).valid).toBe(false);
+  });
+  it('inline Status_Override accepts valid, rejects malformed', () => {
+    expect(validateResults(resultsInlineOverride(validRef)).valid).toBe(true);
+    expect(validateResults(resultsInlineOverride(badRef)).valid).toBe(false);
   });
 });
