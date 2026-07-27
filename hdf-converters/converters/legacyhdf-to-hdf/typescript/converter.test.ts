@@ -1422,6 +1422,10 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
     expect(risk.impact).toBeCloseTo(0.3, 9);
     expect(risk.results?.[0]!.resource_class).toBe('file');
     expect(risk.results?.[0]!.resource_id).toBe('/etc/audit/auditd.conf');
+    // refs carried into the v2 refs slot; cwe/severity mirrored into tags for Heimdall.
+    expect(risk.refs).toBeDefined();
+    expect(risk.tags?.cweid).toEqual(['CWE-79']);
+    expect(risk.tags?.severity).toBe('medium');
 
     // Part B: the non-representable POA&M is surfaced as a warning, not dropped silently.
     const joined = warnings.join('\n');

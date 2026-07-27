@@ -67,6 +67,9 @@
           "effectiveStatus": "failed",
           "effectiveImpact": 0.3,
           "disposition": "riskAdjustment",
+          "refs": [{"url": "https://example.com/advisory/CVE-2026-0001"}],
+          "cwe": ["CWE-79"],
+          "cvss": [{"version": "3.1", "baseScore": 5.4, "baseSeverity": "medium"}],
           "statusOverrides": [
             {
               "type": "riskAdjustment",

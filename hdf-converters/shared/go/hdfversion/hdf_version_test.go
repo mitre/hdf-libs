@@ -158,6 +158,11 @@ func TestDowngradeV3ToV2_FlattensAmendments(t *testing.T) {
 	riskResult := risk["results"].([]any)[0].(map[string]any)
 	assert.Equal(t, "file", riskResult["resource_class"])
 	assert.Equal(t, "/etc/audit/auditd.conf", riskResult["resource_id"])
+	// refs carried into the v2 refs slot; cwe/severity mirrored into tags for Heimdall.
+	assert.NotEmpty(t, risk["refs"], "advisory refs are carried")
+	riskTags := risk["tags"].(map[string]any)
+	assert.Equal(t, []any{"CWE-79"}, riskTags["cweid"])
+	assert.Equal(t, "medium", riskTags["severity"])
 
 	// Part B: the non-representable POA&M is surfaced as a warning, not dropped silently.
 	joined := strings.Join(warnings, "\n")
@@ -202,4 +207,15 @@ func TestNormalizeVersion(t *testing.T) {
 		assert.Equal(t, v, got)
 		assert.Empty(t, warn, "hdf@%s should not warn", v)
 	}
+
+	// A leading "v" is accepted and stripped (users write "v3"/"v2").
+	for _, v := range []string{"v2", "v3"} {
+		got, warn := NormalizeVersion(v)
+		assert.Equal(t, strings.TrimPrefix(v, "v"), got)
+		assert.Empty(t, warn, "%s should normalize without warning", v)
+	}
+	// "v1" strips to "1" → legacy (v2) with the no-v1 warning.
+	got, warn = NormalizeVersion("v1")
+	assert.Equal(t, LegacyVersion, got)
+	assert.NotEmpty(t, warn, "v1 should warn like 1")
 }

@@ -6,6 +6,7 @@ package hdfversion
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
@@ -46,11 +47,13 @@ var hdfTransforms = map[[2]string]HDFVersionTransform{
 // Heimdall) shape. Ingest raw InSpec with `--from inspec`.
 const NoV1Warning = "note: there is no HDF v1 schema — v1 is raw InSpec output, which shares the v2 (legacy Heimdall) shape; using v2. To ingest raw InSpec, use --from inspec."
 
-// NormalizeVersion canonicalizes a user-supplied HDF version token. "1" has no
-// distinct schema, so it maps to v2 (legacy) and returns NoV1Warning; "2" and
-// "3" (and "") pass through with no warning. Callers should apply this only when
-// the format is hdf, and print the returned warning (if any) once.
+// NormalizeVersion canonicalizes a user-supplied HDF version token. A leading "v"
+// is accepted and stripped (users naturally write "v3"/"v2"). "1" has no distinct
+// schema, so it maps to v2 (legacy) and returns NoV1Warning; "2" and "3" (and "")
+// pass through with no warning. Callers should apply this only when the format is
+// hdf, and print the returned warning (if any) once.
 func NormalizeVersion(v string) (canonical, warning string) {
+	v = strings.TrimPrefix(v, "v")
 	if v == "1" {
 		return LegacyVersion, NoV1Warning
 	}
@@ -100,9 +103,12 @@ func upgradeV2ToV3(input []byte) ([]byte, []string, error) {
 // results[].status verdict is preserved. Amendments with no v2 equivalent (poam,
 // operationalRequirement) cannot be represented and are named in the warnings.
 //
+// Structured vulnerability fields (cwe, cvss severity) are mirrored into tags so
+// they survive and display in Heimdall; refs are carried into the v2 refs slot.
 // Lossy fields with no v2 carrier: dataSource, generator (except version), labels,
 // root amendments, checksum metadata, components beyond the first, evidence,
-// poam/operationalRequirement state, result resource_params, requirement refs.
+// poam/operationalRequirement state, result resource_params, and the remaining
+// structured vuln data (cvss score/vector, epss, kev, affectedPackages).
 func downgradeV3ToV2(input []byte) ([]byte, []string, error) {
 	var modern hdf.HDFResults
 	if err := json.Unmarshal(input, &modern); err != nil {
@@ -284,6 +290,32 @@ func convertRequirementToV2Control(r hdf.EvaluatedRequirement) (legacyhdf.V1Cont
 		c.SourceLocation = &sl
 	}
 
+	// Carry advisory references — v2 has the slot, and the base downgrade omitted it.
+	if len(r.Refs) > 0 {
+		refs := make([]interface{}, len(r.Refs))
+		for i, ref := range r.Refs {
+			refs[i] = ref
+		}
+		c.Refs = refs
+	}
+
+	// Mirror structured vulnerability fields (modern-only typed fields with no other v2
+	// carrier) into tags so they survive the downgrade and display in Heimdall, which
+	// reads tags.cweid / tags.severity. Never overwrite an existing tag.
+	if len(r.Cwe) > 0 || len(r.Cvss) > 0 {
+		if c.Tags == nil {
+			c.Tags = map[string]interface{}{}
+		}
+		if _, ok := c.Tags["cweid"]; !ok && len(r.Cwe) > 0 {
+			c.Tags["cweid"] = r.Cwe
+		}
+		if _, ok := c.Tags["severity"]; !ok {
+			if sev := firstCVSSSeverity(r.Cvss); sev != "" {
+				c.Tags["severity"] = sev
+			}
+		}
+	}
+
 	// Control-level status carries the EFFECTIVE (post-amendment) outcome so Heimdall
 	// shows the attested result; the raw per-result verdict is preserved below. Falls
 	// back to the worst-wins rollup when no effectiveStatus is present.
@@ -304,6 +336,16 @@ func convertRequirementToV2Control(r hdf.EvaluatedRequirement) (legacyhdf.V1Cont
 	}
 
 	return c, warnings
+}
+
+// firstCVSSSeverity returns the base severity of the first CVSS entry that has one.
+func firstCVSSSeverity(cvss []hdf.Cvss) string {
+	for _, c := range cvss {
+		if c.BaseSeverity != nil && *c.BaseSeverity != "" {
+			return string(*c.BaseSeverity)
+		}
+	}
+	return ""
 }
 
 // effectiveOrRollup returns the v1 status string for a requirement's effective

@@ -166,6 +166,8 @@ export interface V2Requirement {
   disposition?: string;
   statusOverrides?: V2StatusOverride[];
   poams?: V2Poam[];
+  cwe?: string[];
+  cvss?: Array<{baseSeverity?: string}>;
   [key: string]: unknown;
 }
 
@@ -718,6 +720,14 @@ function effectiveOrRollupV1(req: V2Requirement): string {
   return denormalizeStatus(req.effectiveStatus ?? rollupStatus(req.results ?? []));
 }
 
+/** Base severity of the first CVSS entry that has one. */
+function firstCvssSeverity(cvss?: Array<{baseSeverity?: string}>): string | undefined {
+  for (const c of cvss ?? []) {
+    if (c.baseSeverity) return c.baseSeverity;
+  }
+  return undefined;
+}
+
 /** The most-recently-applied status-bearing override (the one driving effectiveStatus). */
 function governingOverride(req: V2Requirement): V2StatusOverride | undefined {
   let gov: V2StatusOverride | undefined;
@@ -790,8 +800,19 @@ function convertRequirementToV1Control(req: V2Requirement): {control: V1Control;
     const def = req.descriptions.find((d) => d.label === 'default');
     if (def) c.desc = def.data;
   }
-  if (req.tags !== undefined) c.tags = req.tags;
   if (req.sourceLocation !== undefined) c.source_location = req.sourceLocation;
+
+  // Carry advisory references — v2 has the slot, and the base downgrade omitted it.
+  if (req.refs !== undefined) c.refs = req.refs;
+
+  // Mirror structured vulnerability fields (modern-only typed fields with no other v2
+  // carrier) into tags so they survive and display in Heimdall (tags.cweid / tags.severity).
+  // Never overwrite an existing tag.
+  const tags: Record<string, unknown> = req.tags ? { ...req.tags } : {};
+  const sev = firstCvssSeverity(req.cvss);
+  if (req.cwe && req.cwe.length > 0 && tags.cweid === undefined) tags.cweid = req.cwe;
+  if (sev && tags.severity === undefined) tags.severity = sev;
+  if (Object.keys(tags).length > 0) c.tags = tags;
 
   // Control-level status carries the effective (attested) outcome; raw per-result verdict preserved above.
   c.status = effectiveOrRollupV1(req);
