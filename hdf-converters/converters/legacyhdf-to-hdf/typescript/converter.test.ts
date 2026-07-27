@@ -6,6 +6,7 @@ import { inspec } from '@mitre/hdf-fixtures';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import { convertV1ToV2, convertV2ToV1, isHDFV1, HDFV1Results, HDFV2Results } from './converter.js';
+import { createMinimalBaseline, createRequirement, createResult, createDescription } from '@mitre/hdf-schema/helpers';
 
 // Count control OBJECTS under every profiles[].controls[] array in raw v1 HDF,
 // independent of the converter's typed model. Skips groups[].controls[] (those
@@ -1434,61 +1435,58 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
   });
 
   it('falls back to the rollup status + generator version and reconstructs optional profile fields', () => {
-    const v2: HDFV2Results = {
-      baselines: [
+    // No effectiveStatus/overrides → control status is the worst-wins rollup; the
+    // create* helpers supply the standard skeleton (only `code` isn't modeled).
+    const rollup = {
+      ...createRequirement(
+        'V-100',
+        'Rollup control',
+        [createDescription('default', 'default text'), createDescription('check', 'check text')],
+        0.5,
+        [
+          createResult('passed', undefined, { codeDesc: 'ok', startTime: '2026-01-01T00:00:00Z' }),
+          createResult('failed', undefined, { codeDesc: 'bad', startTime: '2026-01-01T00:00:00Z' }),
+        ],
+        { tags: { nist: ['AC-1'] }, sourceLocation: { ref: 'controls/test.rb', line: 5 } },
+      ),
+      code: 'describe file(...) do ... end',
+    };
+    // operationalRequirement (no v2 equivalent) + no title — built inline since the
+    // helpers require a title and don't model amendment fields.
+    const opreqReq = {
+      id: 'V-101-opreq',
+      impact: 0.9,
+      effectiveStatus: 'failed',
+      statusOverrides: [
         {
-          name: 'B',
-          version: '1.0',
-          title: 'T',
-          maintainer: 'M',
-          summary: 'S',
-          license: 'L',
-          copyright: 'C',
-          copyrightEmail: 'e@x.com',
-          groups: [{ id: 'g1', title: 'G', requirements: ['V-100'] }],
-          depends: [{ name: 'dep' }],
-          requirements: [
-            // No effectiveStatus and no overrides → control status is the worst-wins rollup.
-            // Carries code/descriptions/tags/sourceLocation so those pass through.
-            {
-              id: 'V-100',
-              title: 'Rollup control',
-              impact: 0.5,
-              code: 'describe file(...) do ... end',
-              descriptions: [
-                { label: 'default', data: 'default text' },
-                { label: 'check', data: 'check text' },
-              ],
-              tags: { nist: ['AC-1'] },
-              sourceLocation: { ref: 'controls/test.rb', line: 5 },
-              results: [
-                { status: 'passed', codeDesc: 'ok', startTime: '2026-01-01T00:00:00Z' },
-                { status: 'failed', codeDesc: 'bad', startTime: '2026-01-01T00:00:00Z' },
-              ],
-            },
-            // operationalRequirement (no v2 equivalent) + no title, exercising those branches.
-            {
-              id: 'V-101-opreq',
-              impact: 0.9,
-              effectiveStatus: 'failed',
-              statusOverrides: [
-                {
-                  type: 'operationalRequirement',
-                  reason: 'Accepted operational risk documented in the ATO',
-                  appliedBy: { type: 'username', identifier: 'ao' },
-                  appliedAt: '2026-01-05T00:00:00Z',
-                  expiresAt: '2099-12-31T00:00:00Z',
-                },
-              ],
-              results: [{ status: 'failed', codeDesc: 'x', startTime: '2026-01-01T00:00:00Z' }],
-            },
-          ],
+          type: 'operationalRequirement',
+          reason: 'Accepted operational risk documented in the ATO',
+          appliedBy: { type: 'username', identifier: 'ao' },
+          appliedAt: '2026-01-05T00:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
         },
       ],
+      results: [createResult('failed', undefined, { codeDesc: 'x', startTime: '2026-01-01T00:00:00Z' })],
+    };
+    const baseline = {
+      ...createMinimalBaseline('B', [rollup, opreqReq], {
+        version: '1.0',
+        title: 'T',
+        summary: 'S',
+        groups: [{ id: 'g1', title: 'G', requirements: ['V-100'] }],
+      }),
+      maintainer: 'M',
+      license: 'L',
+      copyright: 'C',
+      copyrightEmail: 'e@x.com',
+      depends: [{ name: 'dep' }],
+    };
+    const v2 = {
+      baselines: [baseline],
       statistics: {},
       components: [{ name: 'host', osVersion: '9.3' }],
       generator: { name: 'gen', version: '2.2.2' }, // no tool → generator version used
-    };
+    } as unknown as HDFV2Results;
     const { hdf, warnings } = convertV2ToV1(v2);
     expect(hdf.version).toBe('2.2.2');
     expect(hdf.platform.name).toBe('host');
