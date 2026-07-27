@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.3] - 2026-07-26
+
+### Added
+
+- **`hipcheck-to-hdf` converter.** Converts MITRE Hipcheck supply-chain analysis reports to HDF, backed by a new `hipcheck` NIST 800-53 Rev 5 mapping (analysis name → controls). Dual Go + TS. (#178)
+- **`defectdojo-to-hdf` converter and live fetcher.** Converts DefectDojo findings to HDF and adds `hdf fetch defectdojo` to pull them from a DefectDojo instance (token auth, `--check` credential verification). Handles an empty result set gracefully (produces the no-findings HDF rather than erroring). Dual Go + TS. (#177)
+- **AWS Config NIST-mapping coverage expansion.** A new checked-in generator (`hdf-mappings/scripts/generate-awsconfig-mappings.mjs`) rebuilds the AWS Config→NIST 800-53 table from authoritative AWS sources — AWS Config "Operational Best Practices" docs plus AWS Security Hub's NIST 800-53 r5 standard — and a derived strong-theme tier fills the residual, lifting Rev 5 catalog coverage from ~37% to ~47%. The three tiers (config-pack / security-hub / derived) are documented in the `hdf-mappings` README, with the caveat that these tags are candidate control associations for triage, not assessed-control evidence. (#175)
+
+### Notable behavior changes
+
+- **`aws-config-to-hdf`: unmapped Config rules now carry `nist: ["CM-6"]`.** A managed or custom Config rule with no entry in the mapping tables previously emitted no `nist` tag (`tags: {}`); it now floors to CM-6 (Configuration Settings) — an honest baseline, since every Config rule evaluates a configuration setting — and consequently derives an `operational` `controlType` where before it derived none. Mapped rules are unchanged. (#175)
+- **`asff-to-hdf`: unmapped Security Hub Config-rule findings now floor to `nist: ["CM-6"]`.** They previously received the static-analysis default (`SA-11`, `RA-5`); they now match the `aws-config-to-hdf` floor, so the same Security Hub signal tags consistently across both converters. Generic ASFF scanner findings keep the `SA-11`/`RA-5` default. (#175)
+- **HDF version-identifier taxonomy corrected.** `hdf convert --to hdf@N` and related version specifiers now number the legacy Heimdall/InSpec-ExecJSON shape as **hdf@2** and the modern hdf-libs schema as **hdf@3**. **hdf@1** is not a distinct schema (it is raw InSpec exec-json); it is accepted with a warning and mapped to hdf@2. Ingest raw InSpec with `--from inspec`. (#176)
+
+### Internal
+
+- Pre-release swarm review resolved cross-library duplication in the two new converters (shared severity→impact, CWE→NIST, and HDF-results builders reused instead of hand-rolled) and refreshed stale CLI/spec documentation. The `brace-expansion` audit override was advanced to `>=5.0.8` for GHSA-mh99-v99m-4gvg.
+
+### Compatibility
+
+- Patch release: **no schema changes** — schema `$id` URLs remain at v3.4.0 and v3.x HDF documents validate unchanged. The behavior changes above affect converter *output tags* and CLI version-specifier semantics, not the schema.
+
 ## [3.4.2] - 2026-07-24
 
 ### Notable behavior change
