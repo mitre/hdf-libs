@@ -127,6 +127,25 @@ export interface V2Result {
   [key: string]: unknown;
 }
 
+export interface V2StatusOverride {
+  type: string;
+  status?: string;
+  impact?: {value: number};
+  reason?: string;
+  appliedBy?: {type?: string; identifier?: string};
+  appliedAt?: string;
+  expiresAt?: string;
+  [key: string]: unknown;
+}
+
+export interface V2Poam {
+  type: string;
+  explanation?: string;
+  appliedBy?: {type?: string; identifier?: string};
+  appliedAt?: string;
+  [key: string]: unknown;
+}
+
 export interface V2Requirement {
   id: string;
   title?: string;
@@ -143,6 +162,10 @@ export interface V2Requirement {
   waiverData?: Record<string, unknown>;
   results?: V2Result[];
   effectiveStatus?: string;
+  effectiveImpact?: number;
+  disposition?: string;
+  statusOverrides?: V2StatusOverride[];
+  poams?: V2Poam[];
   [key: string]: unknown;
 }
 
@@ -658,6 +681,189 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
  * // v2 = { baselines: [...], components: [{...}], statistics: {...} }
  * ```
  */
+// ===== V3 → V2 downgrade (modern → legacy Heimdall shape) =====
+//
+// Peer of the Go transform in hdf-converters/shared/go/hdfversion/hdf_version.go
+// (downgradeV3ToV2). Status-changing amendments (waiver/attestation/falsePositive/
+// inherited) are flattened into the control status with a waiver_data breadcrumb so
+// Heimdall shows the attested outcome; the raw results[].status verdict is preserved.
+// poam/operationalRequirement have no v2 equivalent and are returned as warnings.
+// There is no TypeScript CLI path for this transform (the CLI is Go-only) — it exists
+// to keep the two languages in parity so the amendment-flattening logic cannot drift.
+
+/** Reverse of normalizeStatus: modern camelCase status → legacy snake_case. */
+function denormalizeStatus(status: string): string {
+  const map: Record<string, string> = {
+    passed: 'passed',
+    failed: 'failed',
+    error: 'error',
+    notApplicable: 'not_applicable',
+    notReviewed: 'not_reviewed',
+  };
+  return map[status] ?? 'not_reviewed';
+}
+
+/** Worst-wins rollup (error > failed > passed > notApplicable > notReviewed). */
+function rollupStatus(results: V2Result[]): string {
+  const rank: Record<string, number> = {error: 4, failed: 3, passed: 2, notApplicable: 1, notReviewed: 0};
+  let worst = 'notReviewed';
+  for (const r of results) {
+    if ((rank[r.status] ?? 0) > (rank[worst] ?? 0)) worst = r.status;
+  }
+  return worst;
+}
+
+/** Effective (post-amendment) status as a legacy status string, else the rollup. */
+function effectiveOrRollupV1(req: V2Requirement): string {
+  return denormalizeStatus(req.effectiveStatus ?? rollupStatus(req.results ?? []));
+}
+
+/** The most-recently-applied status-bearing override (the one driving effectiveStatus). */
+function governingOverride(req: V2Requirement): V2StatusOverride | undefined {
+  let gov: V2StatusOverride | undefined;
+  for (const o of req.statusOverrides ?? []) {
+    if (o.status === undefined) continue;
+    if (gov === undefined || (o.appliedAt ?? '') > (gov.appliedAt ?? '')) gov = o;
+  }
+  return gov;
+}
+
+/** Render the governing override (and any non-representable amendment) as a v1 waiver_data breadcrumb. */
+function buildWaiverData(req: V2Requirement): Record<string, unknown> | undefined {
+  const wd: Record<string, unknown> = {};
+  const gov = governingOverride(req);
+  if (gov) {
+    wd.skipped_due_to_waiver = true;
+    wd.override_type = gov.type;
+    wd.message = gov.reason;
+    wd.expiration_date = gov.expiresAt;
+    wd.applied_by = gov.appliedBy?.identifier;
+  }
+  const notRepresentable: string[] = [];
+  for (const p of req.poams ?? []) notRepresentable.push(`poam:${p.type}`);
+  for (const o of req.statusOverrides ?? []) {
+    if (o.type === 'operationalRequirement') notRepresentable.push('operationalRequirement');
+  }
+  if (notRepresentable.length > 0) wd.not_representable_in_v2 = notRepresentable;
+  return Object.keys(wd).length > 0 ? wd : undefined;
+}
+
+/** Amendments with no v2 equivalent: POA&Ms and operationalRequirement both leave a finding open. */
+function nonRepresentableWarnings(req: V2Requirement): string[] {
+  const w: string[] = [];
+  for (const p of req.poams ?? []) {
+    w.push(`control "${req.id}": POA&M (${p.type}) has no HDF v2 equivalent — its open/remediation-tracked state is not represented (breadcrumb in waiver_data)`);
+  }
+  for (const o of req.statusOverrides ?? []) {
+    if (o.type === 'operationalRequirement') {
+      w.push(`control "${req.id}": operationalRequirement amendment has no HDF v2 equivalent — its accepted-open-risk state is not represented (breadcrumb in waiver_data)`);
+    }
+  }
+  return w;
+}
+
+function convertResultToV1(r: V2Result): V1Result {
+  const v1: V1Result = {status: denormalizeStatus(r.status)};
+  if (r.codeDesc !== undefined) v1.code_desc = r.codeDesc;
+  if (r.runTime !== undefined) v1.run_time = r.runTime;
+  if (r.startTime !== undefined) v1.start_time = r.startTime;
+  if (r.message !== undefined) v1.message = r.message;
+  if (r.exception !== undefined) v1.exception = r.exception;
+  if (r.backtrace !== undefined) v1.backtrace = r.backtrace;
+  // resource type → resource_class; resource_params has no v3 equivalent.
+  if (r.resource !== undefined) v1.resource_class = r.resource;
+  if (r.resourceId !== undefined) v1.resource_id = r.resourceId;
+  return v1;
+}
+
+function convertRequirementToV1Control(req: V2Requirement): {control: V1Control; warnings: string[]} {
+  const c: V1Control = {
+    id: req.id,
+    // riskAdjustment (any impact override) re-scores the displayed impact.
+    impact: req.effectiveImpact ?? req.impact,
+    results: (req.results ?? []).map(convertResultToV1),
+  };
+  if (req.title !== undefined) c.title = req.title;
+  if (req.code !== undefined) c.code = req.code;
+  if (req.descriptions !== undefined) {
+    c.descriptions = req.descriptions;
+    const def = req.descriptions.find((d) => d.label === 'default');
+    if (def) c.desc = def.data;
+  }
+  if (req.tags !== undefined) c.tags = req.tags;
+  if (req.sourceLocation !== undefined) c.source_location = req.sourceLocation;
+
+  // Control-level status carries the effective (attested) outcome; raw per-result verdict preserved above.
+  c.status = effectiveOrRollupV1(req);
+  const wd = buildWaiverData(req);
+  if (wd) c.waiver_data = wd;
+
+  return {control: c, warnings: nonRepresentableWarnings(req)};
+}
+
+function convertBaselineToV1Profile(b: V2Baseline): {profile: V1Profile; warnings: string[]} {
+  const p: V1Profile = {name: b.name};
+  if (b.version !== undefined) p.version = b.version;
+  if (b.title !== undefined) p.title = b.title;
+  if (b.maintainer !== undefined) p.maintainer = b.maintainer;
+  if (b.summary !== undefined) p.summary = b.summary;
+  if (b.license !== undefined) p.license = b.license;
+  if (b.copyright !== undefined) p.copyright = b.copyright;
+  if (b.copyrightEmail !== undefined) p.copyright_email = b.copyrightEmail;
+  if (b.groups !== undefined) {
+    p.groups = b.groups.map((g) => ({id: g.id, title: g.title, controls: g.requirements}));
+  }
+  if (b.depends !== undefined) p.depends = b.depends;
+  const warnings: string[] = [];
+  p.controls = (b.requirements ?? []).map((r) => {
+    const {control, warnings: w} = convertRequirementToV1Control(r);
+    warnings.push(...w);
+    return control;
+  });
+  return {profile: p, warnings};
+}
+
+/** Reconstruct the legacy top-level version: source tool → generator → sentinel. */
+function downgradeV1Version(v2: HDFV2Results): string {
+  if (v2.tool?.version) return v2.tool.version;
+  const gen = v2.generator as {version?: string} | undefined;
+  if (gen?.version) return gen.version;
+  return '0.0.0';
+}
+
+/**
+ * Convert modern HDF (v2 in this file's legacy naming; v3 in the schema taxonomy)
+ * back to the legacy Heimdall shape, flattening amendments. Returns the legacy
+ * document and warnings for amendments that could not be represented in v2. This is
+ * the TypeScript peer of the Go `downgradeV3ToV2`; keep the two in sync.
+ */
+export function convertV2ToV1(v2Data: HDFV2Results): {hdf: HDFV1Results; warnings: string[]} {
+  const warnings: string[] = [];
+
+  const platform: V1Platform = {name: ''};
+  const components = v2Data.components as Array<{name?: string; osVersion?: string}> | undefined;
+  const t = components?.[0];
+  if (t) {
+    platform.name = t.name ?? '';
+    if (t.osVersion !== undefined) platform.release = t.osVersion;
+    if (t.name) platform.target_id = t.name;
+  }
+
+  const profiles = (v2Data.baselines ?? []).map((b) => {
+    const {profile, warnings: w} = convertBaselineToV1Profile(b);
+    warnings.push(...w);
+    return profile;
+  });
+
+  const hdf: HDFV1Results = {
+    version: downgradeV1Version(v2Data),
+    platform,
+    profiles,
+    statistics: v2Data.statistics ?? {},
+  };
+  return {hdf, warnings};
+}
+
 export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
   validateInputSize(JSON.stringify(v1Data), 'legacyhdf-to-hdf');
   const v2: HDFV2Results = {

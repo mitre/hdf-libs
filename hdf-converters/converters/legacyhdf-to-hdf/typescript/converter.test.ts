@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { inspec } from '@mitre/hdf-fixtures';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
-import { convertV1ToV2, isHDFV1, HDFV1Results } from './converter.js';
+import { convertV1ToV2, convertV2ToV1, isHDFV1, HDFV1Results, HDFV2Results } from './converter.js';
 
 // Count control OBJECTS under every profiles[].controls[] array in raw v1 HDF,
 // independent of the converter's typed model. Skips groups[].controls[] (those
@@ -1382,5 +1382,165 @@ describe('three-layer-overlay overlay output', () => {
   it('is schema-valid after overlay flattening', () => {
     const v1 = JSON.parse(readFileSync(inputFixturePath('three-layer-overlay.json'), 'utf-8')) as HDFV1Results;
     expectValidResults(convertV1ToV2(v1));
+  });
+});
+
+// Parity peer of the Go TestDowngradeV3ToV2_FlattensAmendments
+// (hdf-converters/shared/go/hdfversion/hdf_version_test.go). Reads the SAME fixture
+// and asserts the same flatten, so the amendment-flattening logic cannot drift
+// between the two languages even though the CLI transform is Go-only.
+describe('convertV2ToV1 downgrade (Go parity)', () => {
+  const fixture = join(__dirname, '..', '..', '..', 'shared', 'go', 'hdfversion', 'testdata', 'modern_with_amendments.json');
+
+  it('flattens amendments into the legacy shape, matching the Go transform', () => {
+    const v2 = JSON.parse(readFileSync(fixture, 'utf-8')) as HDFV2Results;
+    const { hdf, warnings } = convertV2ToV1(v2);
+
+    expect(hdf.version).toBe('5.22.65'); // gap C: version reconstructed from the source tool
+
+    const controls = hdf.profiles[0]!.controls ?? [];
+    const byId = Object.fromEntries(controls.map((c) => [c.id, c]));
+
+    // Waiver: control status flattened to effective (passed); raw result preserved (failed); breadcrumb present.
+    const waiver = byId['V-001-waiver']!;
+    expect(waiver.status).toBe('passed');
+    expect(waiver.waiver_data?.override_type).toBe('waiver');
+    expect(waiver.waiver_data?.skipped_due_to_waiver).toBe(true);
+    expect(waiver.results?.[0]!.status).toBe('failed');
+
+    // False positive: flattened, breadcrumb records the disposition type.
+    expect(byId['V-002-fp']!.status).toBe('passed');
+    expect(byId['V-002-fp']!.waiver_data?.override_type).toBe('falsePositive');
+
+    // POA&M: not representable — control stays failed, breadcrumb + warning.
+    const poam = byId['V-003-poam']!;
+    expect(poam.status).toBe('failed');
+    expect(poam.waiver_data).toHaveProperty('not_representable_in_v2');
+
+    // riskAdjustment: effective (re-scored) impact + carried resource fields.
+    const risk = byId['V-004-risk']!;
+    expect(risk.impact).toBeCloseTo(0.3, 9);
+    expect(risk.results?.[0]!.resource_class).toBe('file');
+    expect(risk.results?.[0]!.resource_id).toBe('/etc/audit/auditd.conf');
+
+    // Part B: the non-representable POA&M is surfaced as a warning, not dropped silently.
+    const joined = warnings.join('\n');
+    expect(joined).toContain('V-003-poam');
+    expect(joined).toContain('POA&M');
+  });
+
+  it('falls back to the rollup status + generator version and reconstructs optional profile fields', () => {
+    const v2: HDFV2Results = {
+      baselines: [
+        {
+          name: 'B',
+          version: '1.0',
+          title: 'T',
+          maintainer: 'M',
+          summary: 'S',
+          license: 'L',
+          copyright: 'C',
+          copyrightEmail: 'e@x.com',
+          groups: [{ id: 'g1', title: 'G', requirements: ['V-100'] }],
+          depends: [{ name: 'dep' }],
+          requirements: [
+            // No effectiveStatus and no overrides → control status is the worst-wins rollup.
+            // Carries code/descriptions/tags/sourceLocation so those pass through.
+            {
+              id: 'V-100',
+              title: 'Rollup control',
+              impact: 0.5,
+              code: 'describe file(...) do ... end',
+              descriptions: [
+                { label: 'default', data: 'default text' },
+                { label: 'check', data: 'check text' },
+              ],
+              tags: { nist: ['AC-1'] },
+              sourceLocation: { ref: 'controls/test.rb', line: 5 },
+              results: [
+                { status: 'passed', codeDesc: 'ok', startTime: '2026-01-01T00:00:00Z' },
+                { status: 'failed', codeDesc: 'bad', startTime: '2026-01-01T00:00:00Z' },
+              ],
+            },
+            // operationalRequirement (no v2 equivalent) + no title, exercising those branches.
+            {
+              id: 'V-101-opreq',
+              impact: 0.9,
+              effectiveStatus: 'failed',
+              statusOverrides: [
+                {
+                  type: 'operationalRequirement',
+                  reason: 'Accepted operational risk documented in the ATO',
+                  appliedBy: { type: 'username', identifier: 'ao' },
+                  appliedAt: '2026-01-05T00:00:00Z',
+                  expiresAt: '2099-12-31T00:00:00Z',
+                },
+              ],
+              results: [{ status: 'failed', codeDesc: 'x', startTime: '2026-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+      statistics: {},
+      components: [{ name: 'host', osVersion: '9.3' }],
+      generator: { name: 'gen', version: '2.2.2' }, // no tool → generator version used
+    };
+    const { hdf, warnings } = convertV2ToV1(v2);
+    expect(hdf.version).toBe('2.2.2');
+    expect(hdf.platform.name).toBe('host');
+    expect(hdf.platform.release).toBe('9.3');
+    const p = hdf.profiles[0]!;
+    expect(p.version).toBe('1.0');
+    expect(p.maintainer).toBe('M');
+    expect(p.groups?.[0]!.controls).toEqual(['V-100']);
+    const ctrl = p.controls![0]!;
+    expect(ctrl.status).toBe('failed'); // rollup: failed wins over passed
+    expect(ctrl.waiver_data).toBeUndefined();
+    expect(ctrl.code).toBe('describe file(...) do ... end');
+    expect(ctrl.desc).toBe('default text'); // default description extracted
+    expect(ctrl.descriptions).toHaveLength(2);
+    expect(ctrl.tags?.nist).toEqual(['AC-1']);
+    expect(ctrl.source_location?.line).toBe(5);
+
+    // operationalRequirement is non-representable: warned + breadcrumb, control kept.
+    const opreq = p.controls![1]!;
+    expect(opreq.title).toBeUndefined();
+    expect(opreq.waiver_data).toHaveProperty('not_representable_in_v2');
+    expect(warnings.join('\n')).toContain('operationalRequirement');
+  });
+
+  it('uses the sentinel version when neither tool nor generator version is present', () => {
+    const { hdf } = convertV2ToV1({ baselines: [], statistics: {} } as unknown as HDFV2Results);
+    expect(hdf.version).toBe('0.0.0');
+    expect(hdf.platform.name).toBe('');
+  });
+});
+
+// Upgrade edge cases: a notApplicable-only control (effectiveStatus rollup) and
+// non-string / contentless control refs (dropped rather than passed through).
+describe('convertV1ToV2 upgrade edge cases', () => {
+  it('rolls up a notApplicable-only control and drops non-string / empty refs', () => {
+    const v1: HDFV1Results = {
+      version: '1.0',
+      platform: { name: 'x' },
+      statistics: {},
+      profiles: [
+        {
+          name: 'p',
+          controls: [
+            {
+              id: 'V-NA',
+              impact: 0.5,
+              refs: [42, { url: '' }], // number ref → null; contentless object → null
+              results: [{ status: 'not_applicable', code_desc: 'na', start_time: '2026-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+    };
+    const v2 = convertV1ToV2(v1);
+    const req = v2.baselines[0]!.requirements![0]!;
+    expect(req.effectiveStatus).toBe('notApplicable');
+    expect(req.refs ?? []).toHaveLength(0);
   });
 });
