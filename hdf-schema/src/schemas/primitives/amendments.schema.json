@@ -67,6 +67,13 @@
       "then": { "not": { "anyOf": [{ "required": ["status"] }, { "required": ["impact"] }] } },
       "else": { "anyOf": [{ "required": ["status"] }, { "required": ["impact"] }] },
       "properties": {
+        "externalReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/External_Reference"
+          },
+          "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object, advisory, or CTI feed that motivated it). Inert context distinct from `evidence`; see External_Reference."
+        },
         "type": {
           "$ref": "#/$defs/Override_Type",
           "description": "The type of amendment."

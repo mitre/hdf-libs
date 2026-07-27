@@ -111,6 +111,10 @@ type HDFResults struct {
 	// Reserved for tool-specific data not defined in the HDF standard. Use this to preserve                          
 	// original tool output, auxiliary data, or custom metadata.                                                      
 	Extensions                                                                                 map[string]interface{} `json:"extensions,omitempty"`
+	// Optional references to external artifacts (CTI/STIX, BOMs, advisories, runbooks, or any                        
+	// URI-addressable artifact) relevant to this assessment as a whole. Inert context; see                           
+	// External_Reference.                                                                                            
+	ExternalReferences                                                                         []ExternalReference    `json:"externalReferences,omitempty"`
 	// Information about the tool that generated this file.                                                           
 	Generator                                                                                  *Generator             `json:"generator,omitempty"`
 	// Unique identifier for this assessment run.                                                                     
@@ -175,6 +179,10 @@ type EvaluatedBaseline struct {
 	Copyright                                                                                  *string                `json:"copyright,omitempty"`
 	// The email address or other contact information of the copyright holder(s).                                     
 	CopyrightEmail                                                                             *string                `json:"copyrightEmail,omitempty"`
+	// Optional references to external artifacts relevant to this baseline (CTI/STIX,                                 
+	// advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline                       
+	// definition. Inert context; see External_Reference.                                                             
+	ExternalReferences                                                                         []ExternalReference    `json:"externalReferences,omitempty"`
 	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                           
 	// environment, region, team. Values must be strings.                                                             
 	Labels                                                                                     map[string]string      `json:"labels,omitempty"`
@@ -215,6 +223,75 @@ type Dependency struct {
 	Supermarket                                                   *string `json:"supermarket,omitempty"`
 	// The address of the dependency.                                     
 	URL                                                           *string `json:"url,omitempty"`
+}
+
+// A generalized reference to any external artifact by identity and/or location, modeled on the STIX
+// 2.1 `external_references` common property. Purpose-agnostic: cite a CVE, an ATT&CK technique, a
+// STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated
+// HDF reference category. `sourceName` names the system; `externalId` cites by id within that
+// system; `href` locates it. `sourceName` + `externalId` is equivalently a URN
+// (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay
+// interconvertible. A reference is inert context: it overrides nothing, so it carries only
+// lightweight optional `addedBy`/`addedAt` attribution, never override machinery.
+type ExternalReference struct {
+	// When this reference was attached (RFC 3339 / trimmed-UTC per HDF timestamp convention).             
+	AddedAt                                                                                     *time.Time `json:"addedAt,omitempty"`
+	// Who attached this reference. Lightweight, flat attribution — a reference overrides                  
+	// nothing, so it has no chaining/superseding/disposition.                                             
+	AddedBy                                                                                     *Identity  `json:"addedBy,omitempty"`
+	// Integrity hash of the referenced artifact. Reuses the HDF `Checksum` primitive (not STIX            
+	// `hashes`). Meaningful only with a retrievable `href`.                                               
+	Checksum                                                                                    *Checksum  `json:"checksum,omitempty"`
+	// Human-readable description of what is referenced. Satisfies the at-least-one rule on its            
+	// own when neither id nor href is available.                                                          
+	Description                                                                                 *string    `json:"description,omitempty"`
+	// Identifier of the artifact within `sourceName` (e.g., 'CVE-2021-44228' for source 'cve',            
+	// 'T1059' for 'mitre-att&ck'). Cite by id without needing a URL. Together with `sourceName`           
+	// this is a URN.                                                                                      
+	ExternalID                                                                                  *string    `json:"externalId,omitempty"`
+	// Location of the artifact. `uri-reference` (not `uri`) so a bare internal                            
+	// `#fragment`/`#uuid` reference is expressible alongside absolute URLs.                               
+	// `checksum`/`mediaType` apply only to a retrievable `href`.                                          
+	Href                                                                                        *string    `json:"href,omitempty"`
+	// IANA media type of the referenced artifact when retrievable (RFC 6838), e.g.,                       
+	// 'application/json'. Meaningful only with `href`.                                                    
+	MediaType                                                                                   *string    `json:"mediaType,omitempty"`
+	// Open relationship token describing how this reference relates to the referencing object.            
+	// Deliberately open (cf. OSCAL `rel` allow-other, RFC 8288 extension relations). Documented           
+	// starter vocabulary: 'reference' (generic), 'definition' (defines the concept), 'evidence'           
+	// (supporting evidence), 'investigate' (a live pivot to investigate), 'canonical' (the                
+	// authoritative source).                                                                              
+	Rel                                                                                         *string    `json:"rel,omitempty"`
+	// Name of the external system/source being referenced (e.g., 'cve', 'mitre-att&ck', 'stix',           
+	// 'taxii', or any vendor label). Open string — not a closed enum. Use the `x-` prefix                 
+	// convention for custom/experimental sources, mirroring `bomType`.                                    
+	SourceName                                                                                  string     `json:"sourceName"`
+}
+
+// Represents an identity that performed an action, such as capturing evidence or applying an
+// override.
+type Identity struct {
+	// Optional description of the identity or identity system, particularly useful when type is             
+	// 'other'.                                                                                              
+	Description                                                                                 *string      `json:"description,omitempty"`
+	// The identifier value. Example: 'user@example.com', 'jdoe', 'automated-scanner-01'.                    
+	Identifier                                                                                  string       `json:"identifier"`
+	// The type of identifier. Use 'email' for email addresses, 'username' for user accounts,                
+	// 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent'              
+	// for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can                
+	// apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and                   
+	// satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF,                     
+	// 'simple' for basic string identifiers without additional classification, or 'other' for               
+	// custom identity systems.                                                                              
+	Type                                                                                        IdentityType `json:"type"`
+}
+
+// Cryptographic checksum for baseline integrity verification.
+type Checksum struct {
+	// The hash algorithm used for the checksum.              
+	Algorithm                                   HashAlgorithm `json:"algorithm"`
+	// The checksum value.                                    
+	Value                                       string        `json:"value"`
 }
 
 // Describes a group of requirements, such as those defined in a single file.
@@ -275,14 +352,6 @@ type Integrity struct {
 	Signature                                   *string        `json:"signature,omitempty"`
 	// Identifier of who signed this file.                     
 	SignedBy                                    *string        `json:"signedBy,omitempty"`
-}
-
-// Cryptographic checksum for baseline integrity verification.
-type Checksum struct {
-	// The hash algorithm used for the checksum.              
-	Algorithm                                   HashAlgorithm `json:"algorithm"`
-	// The checksum value.                                    
-	Value                                       string        `json:"value"`
 }
 
 // A requirement that has been evaluated, including any findings.
@@ -368,6 +437,11 @@ type EvaluatedRequirement struct {
 	// AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from                             
 	// family/id but should not assume a default.                                                                       
 	ControlType                                                                                 *ControlType            `json:"controlType,omitempty"`
+	// Optional references to external artifacts relevant to this requirement (CTI/STIX                                 
+	// correlation, advisories, control/definition sources, or any URI-addressable artifact).                           
+	// Applies to both baseline requirement definitions and evaluated requirements. Inert                               
+	// context; see External_Reference.                                                                                 
+	ExternalReferences                                                                          []ExternalReference     `json:"externalReferences,omitempty"`
 	// The set of references to external documents.                                                                     
 	Refs                                                                                        []Reference             `json:"refs,omitempty"`
 	// The title - is nullable.                                                                                         
@@ -512,24 +586,6 @@ type Evidence struct {
 	Size                                                                                      *float64     `json:"size,omitempty"`
 	// The type of evidence being provided.                                                                
 	Type                                                                                      EvidenceType `json:"type"`
-}
-
-// Represents an identity that performed an action, such as capturing evidence or applying an
-// override.
-type Identity struct {
-	// Optional description of the identity or identity system, particularly useful when type is             
-	// 'other'.                                                                                              
-	Description                                                                                 *string      `json:"description,omitempty"`
-	// The identifier value. Example: 'user@example.com', 'jdoe', 'automated-scanner-01'.                    
-	Identifier                                                                                  string       `json:"identifier"`
-	// The type of identifier. Use 'email' for email addresses, 'username' for user accounts,                
-	// 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent'              
-	// for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can                
-	// apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and                   
-	// satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF,                     
-	// 'simple' for basic string identifiers without additional classification, or 'other' for               
-	// custom identity systems.                                                                              
-	Type                                                                                        IdentityType `json:"type"`
 }
 
 // CISA Known Exploited Vulnerabilities (KEV) catalog status. When inKev=true, dateAdded and
@@ -1171,45 +1227,49 @@ type Tool struct {
 // Information on the set of requirements that can be assessed, including baseline metadata and
 // requirement definitions.
 type HDFBaseline struct {
-	// The set of dependencies this baseline depends on.                                                           
-	Depends                                                                                  []Dependency          `json:"depends,omitempty"`
-	// The tool that generated this file.                                                                          
-	Generator                                                                                *Generator            `json:"generator,omitempty"`
-	// A set of descriptions for the requirement groups.                                                           
-	Groups                                                                                   []RequirementGroup    `json:"groups,omitempty"`
-	// The input(s) or attribute(s) to be used in the run.                                                         
-	Inputs                                                                                   []Input               `json:"inputs,omitempty"`
-	// Cryptographic integrity information for verifying this baseline has not been tampered                       
-	// with.                                                                                                       
-	Integrity                                                                                *Integrity            `json:"integrity,omitempty"`
-	// Optional reference to automated remediation resources (Ansible playbooks, Terraform                         
-	// scripts, etc.) for implementing the security controls defined in this baseline.                             
-	Remediation                                                                              *Remediation          `json:"remediation,omitempty"`
-	// The set of requirements - contains no findings as the assessment has not yet occurred.                      
-	Requirements                                                                             []BaselineRequirement `json:"requirements"`
-	// The name - must be unique.                                                                                  
-	Name                                                                                     string                `json:"name"`
-	// The copyright holder(s).                                                                                    
-	Copyright                                                                                *string               `json:"copyright,omitempty"`
-	// The email address or other contact information of the copyright holder(s).                                  
-	CopyrightEmail                                                                           *string               `json:"copyrightEmail,omitempty"`
-	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                        
-	// environment, region, team. Values must be strings.                                                          
-	Labels                                                                                   map[string]string     `json:"labels,omitempty"`
-	// The copyright license. Example: 'Apache-2.0'.                                                               
-	License                                                                                  *string               `json:"license,omitempty"`
-	// The maintainer(s).                                                                                          
-	Maintainer                                                                               *string               `json:"maintainer,omitempty"`
-	// The status. Example: 'loaded'.                                                                              
-	Status                                                                                   *string               `json:"status,omitempty"`
-	// The summary. Example: the Security Technical Implementation Guide (STIG) header.                            
-	Summary                                                                                  *string               `json:"summary,omitempty"`
-	// The set of supported platform targets.                                                                      
-	Supports                                                                                 []SupportedPlatform   `json:"supports,omitempty"`
-	// The title - should be human readable.                                                                       
-	Title                                                                                    *string               `json:"title,omitempty"`
-	// The version of the baseline.                                                                                
-	Version                                                                                  *string               `json:"version,omitempty"`
+	// The set of dependencies this baseline depends on.                                                             
+	Depends                                                                                    []Dependency          `json:"depends,omitempty"`
+	// The tool that generated this file.                                                                            
+	Generator                                                                                  *Generator            `json:"generator,omitempty"`
+	// A set of descriptions for the requirement groups.                                                             
+	Groups                                                                                     []RequirementGroup    `json:"groups,omitempty"`
+	// The input(s) or attribute(s) to be used in the run.                                                           
+	Inputs                                                                                     []Input               `json:"inputs,omitempty"`
+	// Cryptographic integrity information for verifying this baseline has not been tampered                         
+	// with.                                                                                                         
+	Integrity                                                                                  *Integrity            `json:"integrity,omitempty"`
+	// Optional reference to automated remediation resources (Ansible playbooks, Terraform                           
+	// scripts, etc.) for implementing the security controls defined in this baseline.                               
+	Remediation                                                                                *Remediation          `json:"remediation,omitempty"`
+	// The set of requirements - contains no findings as the assessment has not yet occurred.                        
+	Requirements                                                                               []BaselineRequirement `json:"requirements"`
+	// The name - must be unique.                                                                                    
+	Name                                                                                       string                `json:"name"`
+	// The copyright holder(s).                                                                                      
+	Copyright                                                                                  *string               `json:"copyright,omitempty"`
+	// The email address or other contact information of the copyright holder(s).                                    
+	CopyrightEmail                                                                             *string               `json:"copyrightEmail,omitempty"`
+	// Optional references to external artifacts relevant to this baseline (CTI/STIX,                                
+	// advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline                      
+	// definition. Inert context; see External_Reference.                                                            
+	ExternalReferences                                                                         []ExternalReference   `json:"externalReferences,omitempty"`
+	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                          
+	// environment, region, team. Values must be strings.                                                            
+	Labels                                                                                     map[string]string     `json:"labels,omitempty"`
+	// The copyright license. Example: 'Apache-2.0'.                                                                 
+	License                                                                                    *string               `json:"license,omitempty"`
+	// The maintainer(s).                                                                                            
+	Maintainer                                                                                 *string               `json:"maintainer,omitempty"`
+	// The status. Example: 'loaded'.                                                                                
+	Status                                                                                     *string               `json:"status,omitempty"`
+	// The summary. Example: the Security Technical Implementation Guide (STIG) header.                              
+	Summary                                                                                    *string               `json:"summary,omitempty"`
+	// The set of supported platform targets.                                                                        
+	Supports                                                                                   []SupportedPlatform   `json:"supports,omitempty"`
+	// The title - should be human readable.                                                                         
+	Title                                                                                      *string               `json:"title,omitempty"`
+	// The version of the baseline.                                                                                  
+	Version                                                                                    *string               `json:"version,omitempty"`
 }
 
 // A requirement definition without assessment results.
@@ -1246,6 +1306,11 @@ type BaselineRequirement struct {
 	// AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from                             
 	// family/id but should not assume a default.                                                                       
 	ControlType                                                                                 *ControlType            `json:"controlType,omitempty"`
+	// Optional references to external artifacts relevant to this requirement (CTI/STIX                                 
+	// correlation, advisories, control/definition sources, or any URI-addressable artifact).                           
+	// Applies to both baseline requirement definitions and evaluated requirements. Inert                               
+	// context; see External_Reference.                                                                                 
+	ExternalReferences                                                                          []ExternalReference     `json:"externalReferences,omitempty"`
 	// The set of references to external documents.                                                                     
 	Refs                                                                                        []Reference             `json:"refs,omitempty"`
 	// The explicit location of the requirement within the source code.                                                 
@@ -1278,6 +1343,9 @@ type HDFComparison struct {
 	Drift                                                                                       []RequirementDiff      `json:"drift,omitempty"`
 	// Reserved for tool-specific data not defined in the HDF standard.                                                
 	Extensions                                                                                  map[string]interface{} `json:"extensions,omitempty"`
+	// Optional references to external artifacts relevant to this comparison (CTI/STIX,                                
+	// advisories, or any URI-addressable artifact). Inert context; see External_Reference.                            
+	ExternalReferences                                                                          []ExternalReference    `json:"externalReferences,omitempty"`
 	// Schema version for this comparison format.                                                                      
 	FormatVersion                                                                               FormatVersion          `json:"formatVersion"`
 	// Information about the tool that generated this comparison.                                                      
@@ -1613,6 +1681,10 @@ type HDFSystem struct {
 	DataFlows                                                                                   []DataFlow           `json:"dataFlows,omitempty"`
 	// Description of the system's purpose and mission.                                                              
 	Description                                                                                 *string              `json:"description,omitempty"`
+	// Optional references to external artifacts describing this system's threat environment or                      
+	// context (CTI/STIX, BOMs, advisories, or any URI-addressable artifact). Inert context; see                     
+	// External_Reference.                                                                                           
+	ExternalReferences                                                                          []ExternalReference  `json:"externalReferences,omitempty"`
 	// Information about the tool that generated this system document.                                               
 	Generator                                                                                   *Generator           `json:"generator,omitempty"`
 	// System identifier from an authoritative source. Example: eMASS system ID, FedRAMP package                     
@@ -1692,31 +1764,35 @@ type DataFlow struct {
 // Defines an assessment plan — what baselines to run against which targets, with resolved inputs
 // and scheduling. Maps to OSCAL Assessment Plan.
 type HDFPlan struct {
-	// The assessments to perform. Each assessment pairs a baseline with targets and resolved                     
-	// inputs.                                                                                                    
-	Assessments                                                                                 []Assessment      `json:"assessments"`
-	// Description of the plan's purpose and scope.                                                               
-	Description                                                                                 *string           `json:"description,omitempty"`
-	// Information about the tool that generated this plan.                                                       
-	Generator                                                                                   *Generator        `json:"generator,omitempty"`
-	// Cryptographic integrity information for verifying this plan document has not been                          
-	// tampered with.                                                                                             
-	Integrity                                                                                   *Integrity        `json:"integrity,omitempty"`
-	// Optional key-value labels for grouping and querying plans.                                                 
-	Labels                                                                                      map[string]string `json:"labels,omitempty"`
-	// Human-readable plan name. Example: 'Portal Monthly Assessment'.                                            
-	Name                                                                                        string            `json:"name"`
-	// Unique identifier for this plan. Optional in casual use, expected in production                            
-	// documents. Auto-generated if omitted during creation.                                                      
-	PlanID                                                                                      *string           `json:"planId,omitempty"`
-	// Optional scheduling configuration for recurring assessments.                                               
-	Schedule                                                                                    *Schedule         `json:"schedule,omitempty"`
-	// URI to the hdf-system document this plan targets. Example: 'portal-prod.hdf-system.json'.                  
-	SystemRef                                                                                   *string           `json:"systemRef,omitempty"`
-	// The type of assessment plan.                                                                               
-	Type                                                                                        *PlanType         `json:"type,omitempty"`
-	// Version of this plan document.                                                                             
-	Version                                                                                     *string           `json:"version,omitempty"`
+	// The assessments to perform. Each assessment pairs a baseline with targets and resolved                       
+	// inputs.                                                                                                      
+	Assessments                                                                                 []Assessment        `json:"assessments"`
+	// Description of the plan's purpose and scope.                                                                 
+	Description                                                                                 *string             `json:"description,omitempty"`
+	// Optional references to external artifacts relevant to this assessment plan (CTI/STIX,                        
+	// advisories, methodology docs, or any URI-addressable artifact). Inert context; see                           
+	// External_Reference.                                                                                          
+	ExternalReferences                                                                          []ExternalReference `json:"externalReferences,omitempty"`
+	// Information about the tool that generated this plan.                                                         
+	Generator                                                                                   *Generator          `json:"generator,omitempty"`
+	// Cryptographic integrity information for verifying this plan document has not been                            
+	// tampered with.                                                                                               
+	Integrity                                                                                   *Integrity          `json:"integrity,omitempty"`
+	// Optional key-value labels for grouping and querying plans.                                                   
+	Labels                                                                                      map[string]string   `json:"labels,omitempty"`
+	// Human-readable plan name. Example: 'Portal Monthly Assessment'.                                              
+	Name                                                                                        string              `json:"name"`
+	// Unique identifier for this plan. Optional in casual use, expected in production                              
+	// documents. Auto-generated if omitted during creation.                                                        
+	PlanID                                                                                      *string             `json:"planId,omitempty"`
+	// Optional scheduling configuration for recurring assessments.                                                 
+	Schedule                                                                                    *Schedule           `json:"schedule,omitempty"`
+	// URI to the hdf-system document this plan targets. Example: 'portal-prod.hdf-system.json'.                    
+	SystemRef                                                                                   *string             `json:"systemRef,omitempty"`
+	// The type of assessment plan.                                                                                 
+	Type                                                                                        *PlanType           `json:"type,omitempty"`
+	// Version of this plan document.                                                                               
+	Version                                                                                     *string             `json:"version,omitempty"`
 }
 
 // A single assessment within a plan — defines which baseline to run against which targets with what
@@ -1809,61 +1885,65 @@ type HDFAmendments struct {
 // 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment
 // status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).
 type StandaloneOverride struct {
-	// Software packages this amendment is scoped to, distinct from componentRef (which scopes                    
-	// to an HDF-internal Component by UUID). Use when the source amendment format references                     
-	// packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M                      
-	// `subjects[]`, FedRAMP component-aware amendments. Symmetric with                                           
-	// Evaluated_Requirement.affectedPackages, which scopes findings to the same package                          
-	// vocabulary. When omitted, the amendment applies system-wide (or only to componentRef when                  
-	// that is set).                                                                                              
-	AffectedPackages                                                                            []AffectedPackage `json:"affectedPackages,omitempty"`
-	// When this amendment was applied. ISO 8601 format.                                                          
-	AppliedAt                                                                                   time.Time         `json:"appliedAt"`
-	// Identity of who applied this amendment.                                                                    
-	AppliedBy                                                                                   Identity          `json:"appliedBy"`
-	// Name of the baseline containing the requirement. Required when the system has multiple                     
-	// baselines with potentially overlapping requirement IDs.                                                    
-	BaselineRef                                                                                 *string           `json:"baselineRef,omitempty"`
-	// componentId of the component this amendment is scoped to. When set, the amendment only                     
-	// applies to the specified component. When omitted, the amendment applies system-wide.                       
-	ComponentRef                                                                                *string           `json:"componentRef,omitempty"`
-	// Structured CVSS scoring data backing this override. Captures the rubric (which                             
-	// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify                  
-	// a riskAdjustment. For other override types this is optional context.                                       
-	Cvss                                                                                        *Cvss             `json:"cvss,omitempty"`
-	// Supporting evidence (screenshots, logs, URLs, documents).                                                  
-	Evidence                                                                                    []Evidence        `json:"evidence,omitempty"`
-	// When this amendment expires and must be reviewed. No permanent amendments. ISO 8601                        
-	// format.                                                                                                    
-	ExpiresAt                                                                                   time.Time         `json:"expiresAt"`
-	// Override to the requirement's impact score. At least one of status or impact must be set.                  
-	Impact                                                                                      *ImpactOverride   `json:"impact,omitempty"`
-	// componentId of the local component that provides this control. Set when the provider is                    
-	// in the same system. Omit for external or cross-system providers; the reason field                          
-	// explains the source. Primarily used with type 'inherited'.                                                 
-	InheritedFrom                                                                               *string           `json:"inheritedFrom,omitempty"`
-	// Structured controlled-vocabulary classification for why this override applies.                             
-	// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive                  
-	// and attestation overrides where the structured category enables filtering and lossless                     
-	// round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the                          
-	// precedent vocabulary and rationale.                                                                        
-	Justification                                                                               *Justification    `json:"justification,omitempty"`
-	// Remediation milestones (primarily for POA&M type amendments).                                              
-	Milestones                                                                                  []Milestone       `json:"milestones,omitempty"`
-	// Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null                   
-	// for the first amendment.                                                                                   
-	PreviousChecksum                                                                            *Checksum         `json:"previousChecksum,omitempty"`
-	// Justification for this amendment.                                                                          
-	Reason                                                                                      string            `json:"reason"`
-	// The ID of the requirement being amended. Must match a requirement ID in the referenced                     
-	// baseline.                                                                                                  
-	RequirementID                                                                               string            `json:"requirementId"`
-	// Digital signature for non-repudiation.                                                                     
-	Signature                                                                                   *Signature        `json:"signature,omitempty"`
-	// The new status this amendment sets. Optional when only impact is being overridden.                         
-	Status                                                                                      *ResultStatus     `json:"status,omitempty"`
-	// The type of amendment.                                                                                     
-	Type                                                                                        OverrideType      `json:"type"`
+	// Software packages this amendment is scoped to, distinct from componentRef (which scopes                      
+	// to an HDF-internal Component by UUID). Use when the source amendment format references                       
+	// packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M                        
+	// `subjects[]`, FedRAMP component-aware amendments. Symmetric with                                             
+	// Evaluated_Requirement.affectedPackages, which scopes findings to the same package                            
+	// vocabulary. When omitted, the amendment applies system-wide (or only to componentRef when                    
+	// that is set).                                                                                                
+	AffectedPackages                                                                            []AffectedPackage   `json:"affectedPackages,omitempty"`
+	// When this amendment was applied. ISO 8601 format.                                                            
+	AppliedAt                                                                                   time.Time           `json:"appliedAt"`
+	// Identity of who applied this amendment.                                                                      
+	AppliedBy                                                                                   Identity            `json:"appliedBy"`
+	// Name of the baseline containing the requirement. Required when the system has multiple                       
+	// baselines with potentially overlapping requirement IDs.                                                      
+	BaselineRef                                                                                 *string             `json:"baselineRef,omitempty"`
+	// componentId of the component this amendment is scoped to. When set, the amendment only                       
+	// applies to the specified component. When omitted, the amendment applies system-wide.                         
+	ComponentRef                                                                                *string             `json:"componentRef,omitempty"`
+	// Structured CVSS scoring data backing this override. Captures the rubric (which                               
+	// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify                    
+	// a riskAdjustment. For other override types this is optional context.                                         
+	Cvss                                                                                        *Cvss               `json:"cvss,omitempty"`
+	// Supporting evidence (screenshots, logs, URLs, documents).                                                    
+	Evidence                                                                                    []Evidence          `json:"evidence,omitempty"`
+	// When this amendment expires and must be reviewed. No permanent amendments. ISO 8601                          
+	// format.                                                                                                      
+	ExpiresAt                                                                                   time.Time           `json:"expiresAt"`
+	// Optional references to the external artifacts behind this override (e.g. the STIX                            
+	// bundle/object, advisory, or CTI feed that motivated it). Inert context distinct from                         
+	// `evidence`; see External_Reference.                                                                          
+	ExternalReferences                                                                          []ExternalReference `json:"externalReferences,omitempty"`
+	// Override to the requirement's impact score. At least one of status or impact must be set.                    
+	Impact                                                                                      *ImpactOverride     `json:"impact,omitempty"`
+	// componentId of the local component that provides this control. Set when the provider is                      
+	// in the same system. Omit for external or cross-system providers; the reason field                            
+	// explains the source. Primarily used with type 'inherited'.                                                   
+	InheritedFrom                                                                               *string             `json:"inheritedFrom,omitempty"`
+	// Structured controlled-vocabulary classification for why this override applies.                               
+	// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive                    
+	// and attestation overrides where the structured category enables filtering and lossless                       
+	// round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the                            
+	// precedent vocabulary and rationale.                                                                          
+	Justification                                                                               *Justification      `json:"justification,omitempty"`
+	// Remediation milestones (primarily for POA&M type amendments).                                                
+	Milestones                                                                                  []Milestone         `json:"milestones,omitempty"`
+	// Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null                     
+	// for the first amendment.                                                                                     
+	PreviousChecksum                                                                            *Checksum           `json:"previousChecksum,omitempty"`
+	// Justification for this amendment.                                                                            
+	Reason                                                                                      string              `json:"reason"`
+	// The ID of the requirement being amended. Must match a requirement ID in the referenced                       
+	// baseline.                                                                                                    
+	RequirementID                                                                               string              `json:"requirementId"`
+	// Digital signature for non-repudiation.                                                                       
+	Signature                                                                                   *Signature          `json:"signature,omitempty"`
+	// The new status this amendment sets. Optional when only impact is being overridden.                           
+	Status                                                                                      *ResultStatus       `json:"status,omitempty"`
+	// The type of amendment.                                                                                       
+	Type                                                                                        OverrideType        `json:"type"`
 }
 
 // Bundles references to all HDF documents for audit, authorization, and compliance review. Each
@@ -1880,6 +1960,10 @@ type HDFEvidencePackage struct {
 	// inside HDF. Logs in ECS/OCSF/etc. are legitimate accreditation evidence; HDF indexes them                            
 	// here rather than transcoding them.                                                                                   
 	ExternalEvidence                                                                            []ExternalEvidenceReference `json:"externalEvidence,omitempty"`
+	// Optional references to external artifacts relevant to this evidence package (CTI/STIX,                               
+	// BOMs, advisories, or any URI-addressable artifact) beyond the document references it                                 
+	// already carries. Inert context; see External_Reference.                                                              
+	ExternalReferences                                                                          []ExternalReference         `json:"externalReferences,omitempty"`
 	// Information about the tool that generated this document.                                                             
 	Generator                                                                                   *Generator                  `json:"generator,omitempty"`
 	// Cryptographic integrity information for verifying this evidence package has not been                                 
@@ -1994,6 +2078,35 @@ type ExternalEvidenceTimeRange struct {
 	Start                                                    *time.Time `json:"start,omitempty"`
 }
 
+// The type of identifier. Use 'email' for email addresses, 'username' for user accounts,
+// 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent'
+// for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can
+// apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and
+// satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF,
+// 'simple' for basic string identifiers without additional classification, or 'other' for
+// custom identity systems.
+type IdentityType string
+
+const (
+	Agent              IdentityType = "agent"
+	Email              IdentityType = "email"
+	IdentityTypeOther  IdentityType = "other"
+	IdentityTypeSystem IdentityType = "system"
+	Simple             IdentityType = "simple"
+	Username           IdentityType = "username"
+)
+
+// Supported cryptographic hash algorithms for checksums and integrity verification. blake3 covers
+// container-image and other artifact digests that use it.
+type HashAlgorithm string
+
+const (
+	Blake3 HashAlgorithm = "blake3"
+	Sha256 HashAlgorithm = "sha256"
+	Sha384 HashAlgorithm = "sha384"
+	Sha512 HashAlgorithm = "sha512"
+)
+
 // Comparison operator for evaluating the input value against observed values. Numeric:
 // eq/ne/lt/le/gt/ge. String: eq/ne/contains/matches. Collection: in/notIn.
 type ComparisonOperator string
@@ -2021,17 +2134,6 @@ const (
 	Numeric InputType = "Numeric"
 	Regexp  InputType = "Regexp"
 	String  InputType = "String"
-)
-
-// Supported cryptographic hash algorithms for checksums and integrity verification. blake3 covers
-// container-image and other artifact digests that use it.
-type HashAlgorithm string
-
-const (
-	Blake3 HashAlgorithm = "blake3"
-	Sha256 HashAlgorithm = "sha256"
-	Sha384 HashAlgorithm = "sha384"
-	Sha512 HashAlgorithm = "sha512"
 )
 
 // The packaging ecosystem the package belongs to. Use 'generic' for hardware, firmware, or
@@ -2141,24 +2243,6 @@ const (
 	NotApplicable ResultStatus = "notApplicable"
 	NotReviewed   ResultStatus = "notReviewed"
 	Passed        ResultStatus = "passed"
-)
-
-// The type of identifier. Use 'email' for email addresses, 'username' for user accounts,
-// 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent'
-// for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can
-// apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and
-// satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF,
-// 'simple' for basic string identifiers without additional classification, or 'other' for
-// custom identity systems.
-type IdentityType string
-
-const (
-	Agent              IdentityType = "agent"
-	Email              IdentityType = "email"
-	IdentityTypeOther  IdentityType = "other"
-	IdentityTypeSystem IdentityType = "system"
-	Simple             IdentityType = "simple"
-	Username           IdentityType = "username"
 )
 
 // The type of evidence being provided.
