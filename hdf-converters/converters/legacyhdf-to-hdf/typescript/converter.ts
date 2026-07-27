@@ -693,16 +693,14 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
 // There is no TypeScript CLI path for this transform (the CLI is Go-only) — it exists
 // to keep the two languages in parity so the amendment-flattening logic cannot drift.
 
-/** Reverse of normalizeStatus: modern camelCase status → legacy snake_case. */
+/**
+ * Map a modern status to a v1 InSpec exec-json result status. InSpec's
+ * ControlResultStatus enum is only passed/failed/error/skipped (what Heimdall
+ * accepts), so notApplicable/notReviewed (and anything else) collapse to skipped.
+ */
 function denormalizeStatus(status: string): string {
-  const map: Record<string, string> = {
-    passed: 'passed',
-    failed: 'failed',
-    error: 'error',
-    notApplicable: 'not_applicable',
-    notReviewed: 'not_reviewed',
-  };
-  return map[status] ?? 'not_reviewed';
+  const map: Record<string, string> = {passed: 'passed', failed: 'failed', error: 'error'};
+  return map[status] ?? 'skipped';
 }
 
 /** Worst-wins rollup (error > failed > passed > notApplicable > notReviewed). */
@@ -776,7 +774,8 @@ function convertResultToV1(r: V2Result): V1Result {
   const v1: V1Result = {status: denormalizeStatus(r.status)};
   if (r.codeDesc !== undefined) v1.code_desc = r.codeDesc;
   if (r.runTime !== undefined) v1.run_time = r.runTime;
-  if (r.startTime !== undefined) v1.start_time = r.startTime;
+  // start_time is required by the InSpec exec-json schema Heimdall loads; always present.
+  v1.start_time = r.startTime ?? '0001-01-01T00:00:00Z';
   if (r.message !== undefined) v1.message = r.message;
   if (r.exception !== undefined) v1.exception = r.exception;
   if (r.backtrace !== undefined) v1.backtrace = r.backtrace;
@@ -800,10 +799,10 @@ function convertRequirementToV1Control(req: V2Requirement): {control: V1Control;
     const def = req.descriptions.find((d) => d.label === 'default');
     if (def) c.desc = def.data;
   }
-  if (req.sourceLocation !== undefined) c.source_location = req.sourceLocation;
-
-  // Carry advisory references — v2 has the slot, and the base downgrade omitted it.
-  if (req.refs !== undefined) c.refs = req.refs;
+  // source_location, refs, and tags are all required by the InSpec exec-json schema
+  // Heimdall loads (an empty object/array is valid, but the key must be present).
+  c.source_location = req.sourceLocation ?? {};
+  c.refs = req.refs ?? [];
 
   // Mirror structured vulnerability fields (modern-only typed fields with no other v2
   // carrier) into tags so they survive and display in Heimdall (tags.cweid / tags.severity).
@@ -812,7 +811,7 @@ function convertRequirementToV1Control(req: V2Requirement): {control: V1Control;
   const sev = firstCvssSeverity(req.cvss);
   if (req.cwe && req.cwe.length > 0 && tags.cweid === undefined) tags.cweid = req.cwe;
   if (sev && tags.severity === undefined) tags.severity = sev;
-  if (Object.keys(tags).length > 0) c.tags = tags;
+  c.tags = tags;
 
   // Control-level status carries the effective (attested) outcome; raw per-result verdict preserved above.
   c.status = effectiveOrRollupV1(req);
@@ -823,7 +822,16 @@ function convertRequirementToV1Control(req: V2Requirement): {control: V1Control;
 }
 
 function convertBaselineToV1Profile(b: V2Baseline): {profile: V1Profile; warnings: string[]} {
-  const p: V1Profile = {name: b.name};
+  // supports/attributes/groups (arrays) and sha256 (string) are required by the InSpec
+  // exec-json schema Heimdall loads — always present even when the modern baseline has none.
+  const checksum = (b as { resultsChecksum?: { value?: string } }).resultsChecksum;
+  const p: V1Profile = {
+    name: b.name,
+    supports: [],
+    attributes: [],
+    groups: [],
+    sha256: checksum?.value ?? '',
+  };
   if (b.version !== undefined) p.version = b.version;
   if (b.title !== undefined) p.title = b.title;
   if (b.maintainer !== undefined) p.maintainer = b.maintainer;
@@ -861,7 +869,9 @@ function downgradeV1Version(v2: HDFV2Results): string {
 export function convertV2ToV1(v2Data: HDFV2Results): {hdf: HDFV1Results; warnings: string[]} {
   const warnings: string[] = [];
 
-  const platform: V1Platform = {name: ''};
+  // name + release are required by the InSpec exec-json schema Heimdall loads, so
+  // release is always present (empty string when no OS version is known).
+  const platform: V1Platform = {name: '', release: ''};
   const components = v2Data.components as Array<{name?: string; osVersion?: string}> | undefined;
   const t = components?.[0];
   if (t) {

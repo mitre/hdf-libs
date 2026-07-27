@@ -1399,6 +1399,25 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
 
     expect(hdf.version).toBe('5.22.65'); // gap C: version reconstructed from the source tool
 
+    // The downgraded document must satisfy the InSpec exec-json schema Heimdall loads:
+    // every required key on every element, and result statuses within InSpec's enum.
+    expect(hdf.platform).toHaveProperty('release');
+    const profile = hdf.profiles[0]!;
+    for (const k of ['attributes', 'controls', 'groups', 'name', 'sha256', 'supports']) {
+      expect(profile).toHaveProperty(k);
+    }
+    const validStatus = new Set(['passed', 'failed', 'error', 'skipped']);
+    for (const c of profile.controls ?? []) {
+      for (const k of ['id', 'impact', 'refs', 'results', 'source_location', 'tags']) {
+        expect(c).toHaveProperty(k);
+      }
+      for (const r of c.results ?? []) {
+        expect(r).toHaveProperty('code_desc');
+        expect(r).toHaveProperty('start_time');
+        expect(validStatus.has(r.status)).toBe(true);
+      }
+    }
+
     const controls = hdf.profiles[0]!.controls ?? [];
     const byId = Object.fromEntries(controls.map((c) => [c.id, c]));
 

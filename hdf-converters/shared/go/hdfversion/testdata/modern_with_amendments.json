@@ -81,7 +81,8 @@
             }
           ],
           "results": [
-            {"status": "failed", "codeDesc": "audit config check failed", "resource": "file", "resourceId": "/etc/audit/auditd.conf", "startTime": "2026-01-01T00:00:00Z"}
+            {"status": "failed", "codeDesc": "audit config check failed", "resource": "file", "resourceId": "/etc/audit/auditd.conf", "startTime": "2026-01-01T00:00:00Z"},
+            {"status": "notApplicable", "codeDesc": "not applicable on this platform", "startTime": "2026-01-01T00:00:00Z"}
           ]
         }
       ]

@@ -123,11 +123,29 @@ func TestDowngradeV3ToV2_FlattensAmendments(t *testing.T) {
 	// Incidental gap C: top-level version reconstructed from the source tool.
 	assert.Equal(t, "5.22.65", legacy["version"])
 
-	controls := legacy["profiles"].([]any)[0].(map[string]any)["controls"].([]any)
+	// The downgraded document must satisfy the InSpec exec-json schema Heimdall loads,
+	// or the whole file is rejected. Assert every required key on every element and that
+	// result statuses stay within InSpec's ControlResultStatus enum.
+	assert.Contains(t, legacy["platform"], "release", "platform.release is InSpec-required")
+	profile := legacy["profiles"].([]any)[0].(map[string]any)
+	for _, k := range []string{"attributes", "controls", "groups", "name", "sha256", "supports"} {
+		assert.Contains(t, profile, k, "InSpec-required profile field %q must be present", k)
+	}
+	controls := profile["controls"].([]any)
+	validStatus := map[string]bool{"passed": true, "failed": true, "error": true, "skipped": true}
 	byID := map[string]map[string]any{}
-	for _, c := range controls {
-		cm := c.(map[string]any)
-		byID[cm["id"].(string)] = cm
+	for _, cv := range controls {
+		c := cv.(map[string]any)
+		byID[c["id"].(string)] = c
+		for _, k := range []string{"id", "impact", "refs", "results", "source_location", "tags"} {
+			assert.Contains(t, c, k, "control %v missing InSpec-required %q", c["id"], k)
+		}
+		for _, rv := range c["results"].([]any) {
+			r := rv.(map[string]any)
+			assert.Contains(t, r, "code_desc")
+			assert.Contains(t, r, "start_time")
+			assert.Truef(t, validStatus[r["status"].(string)], "result status %q is not a valid InSpec ControlResultStatus", r["status"])
+		}
 	}
 
 	// Waiver: control status flattened to the effective outcome (passed), the raw

@@ -127,20 +127,22 @@ func convertV3ToV2(v2 *hdf.HDFResults) (*legacyhdf.HDFV1Results, []string) {
 	// upgrade path drops it, so reconstruct from the source tool / generator.
 	v1 := &legacyhdf.HDFV1Results{Version: downgradeVersion(v2)}
 
-	// Map components → platform (use first component)
+	// Map components → platform (use first component). name + release are required by
+	// the InSpec exec-json schema Heimdall loads, so release is always present (the
+	// empty string when no OS version is known).
+	release := ""
 	if len(v2.Components) > 0 {
 		t := v2.Components[0]
-		v1.Platform = legacyhdf.V1Platform{
-			Name: t.Name,
-		}
+		v1.Platform.Name = t.Name
 		if t.OSVersion != nil {
-			v1.Platform.Release = t.OSVersion
+			release = *t.OSVersion
 		}
 		if t.Name != "" {
 			targetID := t.Name
 			v1.Platform.TargetID = &targetID
 		}
 	}
+	v1.Platform.Release = &release
 
 	// Map statistics
 	if v2.Statistics != nil {
@@ -181,6 +183,17 @@ func convertBaselineToV2Profile(b hdf.EvaluatedBaseline) (legacyhdf.V1Profile, [
 		Version: b.Version,
 		Title:   b.Title,
 	}
+
+	// InSpec-required fields the modern baseline has no equivalent for: supports and
+	// attributes are always-present (possibly empty) arrays, and sha256 is a required
+	// string (use the results checksum when available). Groups is set below.
+	p.Supports = make([]map[string]interface{}, 0)
+	p.Attributes = make([]map[string]interface{}, 0)
+	sha := ""
+	if b.ResultsChecksum != nil {
+		sha = b.ResultsChecksum.Value
+	}
+	p.SHA256 = &sha
 
 	if b.Maintainer != nil {
 		p.Maintainer = b.Maintainer
@@ -261,12 +274,10 @@ func convertRequirementToV2Control(r hdf.EvaluatedRequirement) (legacyhdf.V1Cont
 		}
 	}
 
-	// Map tags
-	if r.Tags != nil {
-		c.Tags = make(map[string]interface{}, len(r.Tags))
-		for k, v := range r.Tags {
-			c.Tags[k] = v
-		}
+	// Map tags — always present ({} when empty); the InSpec schema requires the key.
+	c.Tags = make(map[string]interface{}, len(r.Tags))
+	for k, v := range r.Tags {
+		c.Tags[k] = v
 	}
 
 	// Map descriptions
@@ -278,26 +289,23 @@ func convertRequirementToV2Control(r hdf.EvaluatedRequirement) (legacyhdf.V1Cont
 		}
 	}
 
-	// Map source location
+	// Map source location — required by the InSpec schema (an empty object is valid).
+	sl := legacyhdf.V1SourceLocation{}
 	if r.SourceLocation != nil {
-		sl := legacyhdf.V1SourceLocation{
-			Ref: r.SourceLocation.Ref,
-		}
+		sl.Ref = r.SourceLocation.Ref
 		if r.SourceLocation.Line != nil {
 			line := int(*r.SourceLocation.Line)
 			sl.Line = &line
 		}
-		c.SourceLocation = &sl
 	}
+	c.SourceLocation = &sl
 
-	// Carry advisory references — v2 has the slot, and the base downgrade omitted it.
-	if len(r.Refs) > 0 {
-		refs := make([]interface{}, len(r.Refs))
-		for i, ref := range r.Refs {
-			refs[i] = ref
-		}
-		c.Refs = refs
+	// Carry advisory references into the (required) v2 refs array — empty is valid.
+	refs := make([]interface{}, len(r.Refs))
+	for i, ref := range r.Refs {
+		refs[i] = ref
 	}
+	c.Refs = refs
 
 	// Mirror structured vulnerability fields (modern-only typed fields with no other v2
 	// carrier) into tags so they survive the downgrade and display in Heimdall, which
@@ -450,11 +458,13 @@ func convertResultToV2(r hdf.RequirementResult) legacyhdf.V1Result {
 		v1r.RunTime = r.RunTime
 	}
 
-	// StartTime is time.Time in v2, *string in v1
+	// start_time is required by the InSpec exec-json schema Heimdall loads, so always
+	// present; fall back to the zero-value timestamp when the modern result has none.
+	st := "0001-01-01T00:00:00Z"
 	if !r.StartTime.IsZero() {
-		st := r.StartTime.Format(time.RFC3339)
-		v1r.StartTime = &st
+		st = r.StartTime.Format(time.RFC3339)
 	}
+	v1r.StartTime = &st
 
 	if r.Exception != nil {
 		v1r.Exception = r.Exception
@@ -475,7 +485,9 @@ func convertResultToV2(r hdf.RequirementResult) legacyhdf.V1Result {
 	return v1r
 }
 
-// v2StatusString converts a v2 ResultStatus enum back to v1's snake_case string.
+// v2StatusString maps a modern ResultStatus to a v1 InSpec exec-json result status.
+// InSpec's ControlResultStatus enum is only passed/failed/error/skipped (what
+// Heimdall accepts), so notApplicable and notReviewed both collapse to skipped.
 func v2StatusString(s hdf.ResultStatus) string {
 	switch s {
 	case hdf.Passed:
@@ -484,12 +496,8 @@ func v2StatusString(s hdf.ResultStatus) string {
 		return "failed"
 	case hdf.Error:
 		return "error"
-	case hdf.NotApplicable:
-		return "not_applicable"
-	case hdf.NotReviewed:
-		return "not_reviewed"
 	default:
-		return string(s)
+		return "skipped"
 	}
 }
 
