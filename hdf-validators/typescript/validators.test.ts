@@ -3,6 +3,7 @@ import {
   validateResults,
   validateBaseline,
   validateAmendments,
+  validateRequirementChangeEvent,
   ValidationResult,
 } from './index.js';
 
@@ -826,5 +827,48 @@ describe('CVE-ecosystem: Standalone_Override.cvss in an amendments document', ()
     const result = validateAmendments(doc);
     expect(result.valid).toBe(true);
     expect(result.errors).toEqual([]);
+  });
+});
+
+describe('HDF Requirement Change Event Validation', () => {
+  const validEvent = {
+    eventId: '0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01',
+    source: 'inspec://web01/rhel9-stig',
+    sequence: 412,
+    systemRef: 'apptier.hdf-system.json',
+    componentId: '6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60',
+    timestamp: '2026-07-22T14:03:11Z',
+    priorChecksum: {
+      algorithm: 'sha256',
+      value: '704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021',
+    },
+    requirementId: 'RHEL-09-255065',
+    state: 'fixed',
+    changeReasons: ['resultChanged'],
+    before: { effectiveStatus: 'failed', effectiveImpact: 0.5 },
+    after: {
+      id: 'RHEL-09-255065',
+      impact: 0.5,
+      tags: {},
+      descriptions: [{ label: 'default', data: 'SSH FIPS ciphers' }],
+      results: [
+        { status: 'passed', codeDesc: 'ciphers ok', startTime: '2026-07-22T14:03:11Z' },
+      ],
+    },
+  };
+
+  it('validates a well-formed change event', () => {
+    const result = validateRequirementChangeEvent(validEvent);
+    expect(result.valid, JSON.stringify(result.errors)).toBe(true);
+  });
+
+  it('rejects null after on a non-absent state', () => {
+    const result = validateRequirementChangeEvent({ ...validEvent, after: null });
+    expect(result.valid).toBe(false);
+  });
+
+  it('rejects a batch-only state', () => {
+    const result = validateRequirementChangeEvent({ ...validEvent, state: 'split' });
+    expect(result.valid).toBe(false);
   });
 });

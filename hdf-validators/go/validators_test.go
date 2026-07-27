@@ -1,10 +1,12 @@
 package hdfvalidators
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateResults_ValidDocuments(t *testing.T) {
@@ -575,5 +577,54 @@ func TestSetSchemaDir(t *testing.T) {
 
 		result := ValidateResults(validResults)
 		assert.True(t, result.Valid)
+	})
+}
+
+func TestValidateRequirementChangeEvent(t *testing.T) {
+	validEvent := []byte(`{
+		"eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
+		"source": "inspec://web01/rhel9-stig",
+		"sequence": 412,
+		"systemRef": "apptier.hdf-system.json",
+		"componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+		"timestamp": "2026-07-22T14:03:11Z",
+		"priorChecksum": { "algorithm": "sha256", "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021" },
+		"requirementId": "RHEL-09-255065",
+		"state": "fixed",
+		"changeReasons": ["resultChanged"],
+		"before": { "effectiveStatus": "failed", "effectiveImpact": 0.5 },
+		"after": {
+			"id": "RHEL-09-255065",
+			"impact": 0.5,
+			"tags": {},
+			"descriptions": [{ "label": "default", "data": "SSH FIPS ciphers" }],
+			"results": [{ "status": "passed", "codeDesc": "ciphers ok", "startTime": "2026-07-22T14:03:11Z" }]
+		}
+	}`)
+
+	t.Run("should validate a well-formed change event", func(t *testing.T) {
+		result := ValidateRequirementChangeEvent(validEvent)
+		assert.True(t, result.Valid, "Should be valid: %v", result.Errors)
+		assert.Empty(t, result.Errors)
+	})
+
+	t.Run("should reject an event with null after on a non-absent state", func(t *testing.T) {
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(validEvent, &doc))
+		doc["after"] = nil
+		data, err := json.Marshal(doc)
+		require.NoError(t, err)
+		result := ValidateRequirementChangeEvent(data)
+		assert.False(t, result.Valid, "updated/fixed events must carry a full after requirement")
+	})
+
+	t.Run("should reject a batch-only state", func(t *testing.T) {
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(validEvent, &doc))
+		doc["state"] = "split"
+		data, err := json.Marshal(doc)
+		require.NoError(t, err)
+		result := ValidateRequirementChangeEvent(data)
+		assert.False(t, result.Valid, "split is batch-only and not producer-computable")
 	})
 }

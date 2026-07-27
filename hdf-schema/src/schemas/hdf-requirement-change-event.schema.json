@@ -1,0 +1,360 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+  "title": "HDF Requirement Change Event",
+  "description": "A single continuous-monitoring wire event: one requirement's effective posture changed on one system component. The streaming increment of a systemDrift hdf-comparison — events fold into comparisons and reassemble into hdf-results, they never mutate documents in place. One event per wire document (NDJSON-friendly). The envelope (identity, ordering, hash chain) is the shared Change_Event_Envelope primitive; the payload carries the producer-computable change state, a thin before projection, and the full after requirement (the evidence a responder opens the event for). Design: ADR-0005.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "allOf": [
+    {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Change_Event_Envelope"
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "absent"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "after": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "after": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.4.0#/$defs/Evaluated_Requirement"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "new"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "before": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "before": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Effective_Projection"
+          }
+        }
+      }
+    }
+  ],
+  "required": [
+    "requirementId",
+    "state",
+    "before",
+    "after"
+  ],
+  "properties": {
+    "requirementId": {
+      "type": "string",
+      "description": "Canonical requirement identifier — the same identity as Requirement_Diff.id and the requirement's id in hdf-results. Together with the envelope's (systemRef, componentId) this forms the durable entity key. A requirement renumbering is emitted as absent + new under the two keys, never an in-place key change; batch comparison reconciles renames via its oldId/newId matching."
+    },
+    "state": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Event_Requirement_State",
+      "description": "The producer-computable subset of Requirement_State: new | absent | updated | fixed | regressed. fixed and regressed carry the direction SARIF's baselineState lacks; project down to SARIF's closed 4 values for external interop."
+    },
+    "changeReasons": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Event_Change_Reason"
+      },
+      "description": "Why the state changed. An overrideExpired flip is a different triage than resultChanged: the control did not get worse, a waiver lapsed."
+    },
+    "before": {
+      "oneOf": [
+        {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Effective_Projection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Thin projection of the prior effective posture, for at-a-glance alerting without a state-store lookup. Null exactly when state is new (no prior posture exists). The full prior state is recoverable from the consumer's materialized state; the envelope's priorChecksum covers the integrity of that recovery."
+    },
+    "after": {
+      "oneOf": [
+        {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.4.0#/$defs/Evaluated_Requirement"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The full requirement as evaluated after the change — required and non-null for every state except absent (null there: the requirement left the assessment scope). Full content is load-bearing twice over: reassembly parity (applyChangeEvents cannot reproduce changed result content from a projection) and triage (the failing results[] ARE the 'why' a responder opens the event for)."
+    }
+  },
+  "examples": [
+    {
+      "$comment": "fixed — the common remediation event: a failing SSH FIPS-cipher control was fixed and rescanned. priorChecksum is the effectiveChecksum of the prior failed posture; after carries the full passing requirement including its new effectiveChecksum (the next chain link).",
+      "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
+      "source": "inspec://web01/rhel9-stig",
+      "sequence": 412,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-22T14:03:11Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "requirementId": "RHEL-09-255065",
+      "state": "fixed",
+      "changeReasons": [
+        "resultChanged"
+      ],
+      "before": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5
+      },
+      "after": {
+        "id": "RHEL-09-255065",
+        "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
+        "impact": 0.5,
+        "tags": {
+          "severity": "medium",
+          "nist": [
+            "AC-17 (2)"
+          ]
+        },
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
+          }
+        ],
+        "results": [
+          {
+            "status": "passed",
+            "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
+            "startTime": "2026-07-22T14:03:11Z"
+          }
+        ],
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "73908440a3b44d76de559753babfea36987a618b80ee9d26adcf29cb5c7a5217"
+        }
+      }
+    },
+    {
+      "$comment": "regressed via overrideExpired — the waiver that held this control at passed lapsed, so effective posture regressed to failed with NO new scan finding. A different triage than resultChanged: renew or remediate. priorChecksum is the waived posture's checksum; the expired override remains in statusOverrides as the audit record.",
+      "eventId": "0190f6f2-3b6c-7f5e-c2d9-5a3f7b9c1e23",
+      "source": "reconciler://apptier/override-sweep",
+      "sequence": 97,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-21T00:00:05Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "d11c074ab9131807816013a71d986f1ceb2e5871a8a01dee4043391b7a6bf37b"
+      },
+      "requirementId": "SV-230365",
+      "state": "regressed",
+      "changeReasons": [
+        "overrideExpired"
+      ],
+      "before": {
+        "effectiveStatus": "passed",
+        "effectiveImpact": 0.5
+      },
+      "after": {
+        "id": "SV-230365",
+        "title": "RHEL 9 passwords must have a minimum of 15 characters",
+        "impact": 0.5,
+        "tags": {
+          "severity": "medium",
+          "nist": [
+            "IA-5 (1) (a)"
+          ]
+        },
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify pwquality.conf minlen is 15 or greater."
+          }
+        ],
+        "results": [
+          {
+            "status": "failed",
+            "codeDesc": "pwquality.conf minlen is expected to be >= 15",
+            "startTime": "2026-07-20T02:00:00Z",
+            "message": "expected 8 to be >= 15"
+          }
+        ],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Compensating control: PIV/CAC smart card authentication enforced, password login disabled",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-20T10:00:00Z",
+            "expiresAt": "2026-07-20T00:00:00Z"
+          }
+        ],
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+        }
+      }
+    },
+    {
+      "$comment": "new — a requirement entered assessment scope (chain start for this key): before is null, priorChecksum is null. The full after payload is what makes the new key materializable by applyChangeEvents.",
+      "eventId": "0190f6f2-4c7d-8a6f-d3ea-6b4a8c0d2f34",
+      "source": "inspec://web01/rhel9-stig",
+      "sequence": 1,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-22T14:03:12Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+      "priorChecksum": null,
+      "requirementId": "RHEL-09-671010",
+      "state": "new",
+      "before": null,
+      "after": {
+        "id": "RHEL-09-671010",
+        "title": "RHEL 9 must implement DoD-approved encryption in the OpenSSL package",
+        "impact": 0.7,
+        "tags": {
+          "severity": "high",
+          "nist": [
+            "SC-13"
+          ]
+        },
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify the system-wide crypto policy is FIPS."
+          }
+        ],
+        "results": [
+          {
+            "status": "passed",
+            "codeDesc": "update-crypto-policies --show is expected to eq FIPS",
+            "startTime": "2026-07-22T14:03:12Z"
+          }
+        ],
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "4171cbc81dd74dedba74d3d51bf854602c1bd870d386dad1f830df9272d95557"
+        }
+      }
+    },
+    {
+      "$comment": "absent — the requirement left assessment scope (component decommissioned or benchmark rule retired): after is null by definition; the thin before preserves the last observed posture for downstream views.",
+      "eventId": "0190f6f2-5d8e-9b7a-e4fb-7c5b9d1e3a45",
+      "source": "inspec://web01/rhel9-stig",
+      "sequence": 413,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-23T08:00:00Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "requirementId": "RHEL-09-255065",
+      "state": "absent",
+      "before": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5
+      },
+      "after": null
+    },
+    {
+      "$comment": "updated via impactChanged — a riskAdjustment override lowered effective impact while the control stayed failed: status unchanged, so neither fixed nor regressed. after carries the override and the recomputed effectiveChecksum over the adjusted posture.",
+      "eventId": "0190f6f2-6e9f-0c8b-f5ac-8d6c0e2f4b56",
+      "source": "reconciler://apptier/amend-apply",
+      "sequence": 414,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-24T10:15:00Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "requirementId": "RHEL-09-255065",
+      "state": "updated",
+      "changeReasons": [
+        "overrideAdded",
+        "impactChanged"
+      ],
+      "before": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5
+      },
+      "after": {
+        "id": "RHEL-09-255065",
+        "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
+        "impact": 0.5,
+        "tags": {
+          "severity": "medium",
+          "nist": [
+            "AC-17 (2)"
+          ]
+        },
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
+          }
+        ],
+        "results": [
+          {
+            "status": "failed",
+            "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
+            "startTime": "2026-07-22T14:03:11Z"
+          }
+        ],
+        "statusOverrides": [
+          {
+            "type": "riskAdjustment",
+            "impact": {
+              "value": 0.2
+            },
+            "reason": "Network segmentation limits exposure; management interface not internet-reachable",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "isso@agency.gov"
+            },
+            "appliedAt": "2026-07-24T10:15:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          }
+        ],
+        "effectiveImpact": 0.2,
+        "disposition": "riskAdjustment",
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "872635e1dd14903c660ae7e863c599d31f55bfa60be19394a629c63f851841c4"
+        }
+      }
+    }
+  ]
+}

@@ -21,6 +21,9 @@
 //
 //    hDFEvidencePackage, err := UnmarshalHDFEvidencePackage(bytes)
 //    bytes, err = hDFEvidencePackage.Marshal()
+//
+//    hDFRequirementChangeEvent, err := UnmarshalHDFRequirementChangeEvent(bytes)
+//    bytes, err = hDFRequirementChangeEvent.Marshal()
 
 package hdf
 
@@ -97,6 +100,16 @@ func UnmarshalHDFEvidencePackage(data []byte) (HDFEvidencePackage, error) {
 }
 
 func (r *HDFEvidencePackage) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+func UnmarshalHDFRequirementChangeEvent(data []byte) (HDFRequirementChangeEvent, error) {
+	var r HDFRequirementChangeEvent
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func (r *HDFRequirementChangeEvent) Marshal() ([]byte, error) {
 	return json.Marshal(r)
 }
 
@@ -2002,6 +2015,70 @@ type ExternalEvidenceTimeRange struct {
 	Start                                                    *time.Time `json:"start,omitempty"`
 }
 
+// A single continuous-monitoring wire event: one requirement's effective posture changed on one
+// system component. The streaming increment of a systemDrift hdf-comparison — events fold into
+// comparisons and reassemble into hdf-results, they never mutate documents in place. One event per
+// wire document (NDJSON-friendly). The envelope (identity, ordering, hash chain) is the shared
+// Change_Event_Envelope primitive; the payload carries the producer-computable change state, a thin
+// before projection, and the full after requirement (the evidence a responder opens the event for).
+// Design: ADR-0005.
+type HDFRequirementChangeEvent struct {
+	// The full requirement as evaluated after the change — required and non-null for every                           
+	// state except absent (null there: the requirement left the assessment scope). Full content                      
+	// is load-bearing twice over: reassembly parity (applyChangeEvents cannot reproduce changed                      
+	// result content from a projection) and triage (the failing results[] ARE the 'why' a                            
+	// responder opens the event for).                                                                                
+	After                                                                                       interface{}           `json:"after"`
+	// Thin projection of the prior effective posture, for at-a-glance alerting without a                             
+	// state-store lookup. Null exactly when state is new (no prior posture exists). The full                         
+	// prior state is recoverable from the consumer's materialized state; the envelope's                              
+	// priorChecksum covers the integrity of that recovery.                                                           
+	Before                                                                                      interface{}           `json:"before"`
+	// Why the state changed. An overrideExpired flip is a different triage than resultChanged:                       
+	// the control did not get worse, a waiver lapsed.                                                                
+	ChangeReasons                                                                               []EventChangeReason   `json:"changeReasons,omitempty"`
+	// Canonical requirement identifier — the same identity as Requirement_Diff.id and the                            
+	// requirement's id in hdf-results. Together with the envelope's (systemRef, componentId)                         
+	// this forms the durable entity key. A requirement renumbering is emitted as absent + new                        
+	// under the two keys, never an in-place key change; batch comparison reconciles renames via                      
+	// its oldId/newId matching.                                                                                      
+	RequirementID                                                                               string                `json:"requirementId"`
+	// The producer-computable subset of Requirement_State: new | absent | updated | fixed |                          
+	// regressed. fixed and regressed carry the direction SARIF's baselineState lacks; project                        
+	// down to SARIF's closed 4 values for external interop.                                                          
+	State                                                                                       EventRequirementState `json:"state"`
+	// componentId of the system component this event concerns.                                                       
+	ComponentID                                                                                 string                `json:"componentId"`
+	// Identity of this event occurrence, unique per source. (source, eventId) is the                                 
+	// deduplication key: consumers may treat events with identical source and eventId as                             
+	// duplicates. UUIDv7 (time-ordered) is recommended but not required.                                             
+	EventID                                                                                     string                `json:"eventId"`
+	// The effectiveChecksum of the entity state this event supersedes, forming a per-key hash                        
+	// chain: a mismatch or gap against stored state is detectable, letting a consumer mark the                       
+	// key unverified instead of serving stale posture. Null at chain start (no prior state,                          
+	// e.g. a new entity or the first event after a seed). The chain provides tamper/gap                              
+	// evidence given a trusted head; completeness is anchored out-of-band by periodic                                
+	// re-centering rescans.                                                                                          
+	PriorChecksum                                                                               interface{}           `json:"priorChecksum"`
+	// The versioned schema $id this event validates against, so events self-describe on                              
+	// heterogeneous streams. Recommended on every wire event.                                                        
+	SchemaRef                                                                                   *string               `json:"schemaRef,omitempty"`
+	// Monotonically increasing sequence number per entity key. The ONLY ordering authority for                       
+	// folding: consumers keep the greatest sequence per key regardless of arrival order or                           
+	// timestamp. Deliberately per-entity-key (event-sourcing aggregate-version practice) rather                      
+	// than per-source.                                                                                               
+	Sequence                                                                                    int64                 `json:"sequence"`
+	// URI identifying the producer context that emitted this event (for example, a scanner                           
+	// instance and profile). eventId uniqueness and sequence numbering are scoped per source.                        
+	Source                                                                                      string                `json:"source"`
+	// URI to the hdf-system document (authorization boundary) this event applies to. Resolves                        
+	// to the latest version of the evolving system document.                                                         
+	SystemRef                                                                                   string                `json:"systemRef"`
+	// Occurrence time of the observed change (RFC 3339, trimmed UTC). Display and audit                              
+	// metadata only — NEVER an ordering key; ordering is sequence's job.                                             
+	Timestamp                                                                                   time.Time             `json:"timestamp"`
+}
+
 // Comparison operator for evaluating the input value against observed values. Numeric:
 // eq/ne/lt/le/gt/ge. String: eq/ne/contains/matches. Collection: in/notIn.
 type ComparisonOperator string
@@ -2364,18 +2441,18 @@ const (
 type ChangeReason string
 
 const (
-	BaselineUpgraded ChangeReason = "baselineUpgraded"
-	ConfigChanged    ChangeReason = "configChanged"
-	ControlMapped    ChangeReason = "controlMapped"
-	ImpactChanged    ChangeReason = "impactChanged"
-	MetadataChanged  ChangeReason = "metadataChanged"
-	OverrideAdded    ChangeReason = "overrideAdded"
-	OverrideExpired  ChangeReason = "overrideExpired"
-	OverrideModified ChangeReason = "overrideModified"
-	OverrideRemoved  ChangeReason = "overrideRemoved"
-	ResultChanged    ChangeReason = "resultChanged"
-	ScannerChanged   ChangeReason = "scannerChanged"
-	TargetChanged    ChangeReason = "targetChanged"
+	BaselineUpgraded             ChangeReason = "baselineUpgraded"
+	ChangeReasonConfigChanged    ChangeReason = "configChanged"
+	ChangeReasonImpactChanged    ChangeReason = "impactChanged"
+	ChangeReasonOverrideAdded    ChangeReason = "overrideAdded"
+	ChangeReasonOverrideExpired  ChangeReason = "overrideExpired"
+	ChangeReasonOverrideModified ChangeReason = "overrideModified"
+	ChangeReasonOverrideRemoved  ChangeReason = "overrideRemoved"
+	ChangeReasonResultChanged    ChangeReason = "resultChanged"
+	ControlMapped                ChangeReason = "controlMapped"
+	MetadataChanged              ChangeReason = "metadataChanged"
+	ScannerChanged               ChangeReason = "scannerChanged"
+	TargetChanged                ChangeReason = "targetChanged"
 )
 
 // How a conflict between multiple scanner results was resolved.
@@ -2409,12 +2486,12 @@ const (
 type RequirementState string
 
 const (
-	Fixed                     RequirementState = "fixed"
 	Moved                     RequirementState = "moved"
-	Regressed                 RequirementState = "regressed"
 	RequirementStateAbsent    RequirementState = "absent"
+	RequirementStateFixed     RequirementState = "fixed"
 	RequirementStateMerged    RequirementState = "merged"
 	RequirementStateNew       RequirementState = "new"
+	RequirementStateRegressed RequirementState = "regressed"
 	RequirementStateUnchanged RequirementState = "unchanged"
 	RequirementStateUpdated   RequirementState = "updated"
 	Split                     RequirementState = "split"
@@ -2524,6 +2601,36 @@ const (
 	HdfPlan       ContentType = "hdf-plan"
 	HdfResults    ContentType = "hdf-results"
 	HdfSystem     ContentType = "hdf-system"
+)
+
+// The producer-computable subset of the comparison vocabulary's Change_Reason, value-identical with
+// the parent enum (test-enforced). Batch-only reasons (baselineUpgraded, controlMapped,
+// scannerChanged, targetChanged, metadataChanged) require cross-corpus context and are excluded.
+type EventChangeReason string
+
+const (
+	EventChangeReasonConfigChanged    EventChangeReason = "configChanged"
+	EventChangeReasonImpactChanged    EventChangeReason = "impactChanged"
+	EventChangeReasonOverrideAdded    EventChangeReason = "overrideAdded"
+	EventChangeReasonOverrideExpired  EventChangeReason = "overrideExpired"
+	EventChangeReasonOverrideModified EventChangeReason = "overrideModified"
+	EventChangeReasonOverrideRemoved  EventChangeReason = "overrideRemoved"
+	EventChangeReasonResultChanged    EventChangeReason = "resultChanged"
+)
+
+// The producer-computable subset of the comparison vocabulary's Requirement_State. Kept
+// value-identical with the parent enum (test-enforced): the batch-only states (moved, split,
+// merged) are outputs of cross-document identity resolution a per-key producer cannot compute.
+// Declared as a distinct named type (rather than a $ref intersection) so generated Go/TS types keep
+// stable, distinct enum names.
+type EventRequirementState string
+
+const (
+	EventRequirementStateAbsent    EventRequirementState = "absent"
+	EventRequirementStateFixed     EventRequirementState = "fixed"
+	EventRequirementStateNew       EventRequirementState = "new"
+	EventRequirementStateRegressed EventRequirementState = "regressed"
+	EventRequirementStateUpdated   EventRequirementState = "updated"
 )
 
 type Ref struct {

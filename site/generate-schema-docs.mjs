@@ -59,6 +59,10 @@ const SCHEMA_META = {
     title: 'HDF Comparison',
     description: 'Differential analysis of two or more assessment results.',
   },
+  'hdf-requirement-change-event': {
+    title: 'HDF Requirement Change Event',
+    description: 'A single continuous-monitoring wire event: one requirement\'s effective posture changed on one system component.',
+  },
 };
 
 const MAIN_SCHEMAS = Object.keys(SCHEMA_META);

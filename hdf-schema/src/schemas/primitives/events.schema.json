@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0",
+  "title": "HDF Change Event Primitives",
+  "description": "Shared building blocks for HDF change-event wire documents. The envelope is entity-agnostic: hdf-requirement-change-event composes it today, and any future sibling event type (e.g. component change events — hdf-comparison already models componentDiffs alongside requirementDiffs) reuses it verbatim.",
+  "$defs": {
+    "Change_Event_Envelope": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "source",
+        "sequence",
+        "systemRef",
+        "componentId",
+        "timestamp",
+        "priorChecksum"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Identity of this event occurrence, unique per source. (source, eventId) is the deduplication key: consumers may treat events with identical source and eventId as duplicates. UUIDv7 (time-ordered) is recommended but not required."
+        },
+        "source": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "URI identifying the producer context that emitted this event (for example, a scanner instance and profile). eventId uniqueness and sequence numbering are scoped per source."
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Monotonically increasing sequence number per entity key. The ONLY ordering authority for folding: consumers keep the greatest sequence per key regardless of arrival order or timestamp. Deliberately per-entity-key (event-sourcing aggregate-version practice) rather than per-source."
+        },
+        "systemRef": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "URI to the hdf-system document (authorization boundary) this event applies to. Resolves to the latest version of the evolving system document."
+        },
+        "componentId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "componentId of the system component this event concerns."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Occurrence time of the observed change (RFC 3339, trimmed UTC). Display and audit metadata only — NEVER an ordering key; ordering is sequence's job."
+        },
+        "schemaRef": {
+          "type": "string",
+          "format": "uri",
+          "description": "The versioned schema $id this event validates against, so events self-describe on heterogeneous streams. Recommended on every wire event."
+        },
+        "priorChecksum": {
+          "oneOf": [
+            {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The effectiveChecksum of the entity state this event supersedes, forming a per-key hash chain: a mismatch or gap against stored state is detectable, letting a consumer mark the key unverified instead of serving stale posture. Null at chain start (no prior state, e.g. a new entity or the first event after a seed). The chain provides tamper/gap evidence given a trusted head; completeness is anchored out-of-band by periodic re-centering rescans."
+        }
+      },
+      "examples": [
+        {
+          "$comment": "Steady-state envelope: mid-chain event from an InSpec producer. priorChecksum links to the previous effectiveChecksum for this key.",
+          "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
+          "source": "inspec://web01/rhel9-stig",
+          "sequence": 412,
+          "systemRef": "apptier.hdf-system.json",
+          "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+          "timestamp": "2026-07-22T14:03:11Z",
+          "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+          "priorChecksum": {
+            "algorithm": "sha256",
+            "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+          }
+        },
+        {
+          "$comment": "Chain-start envelope: first event for a key after seeding — priorChecksum is null (the CloudTrail null-previous-digest convention), sequence starts low.",
+          "eventId": "0190f6f2-2a5b-7e4d-b1c8-4f2e6a8b0d12",
+          "source": "inspec://web01/rhel9-stig",
+          "sequence": 1,
+          "systemRef": "apptier.hdf-system.json",
+          "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+          "timestamp": "2026-07-22T09:00:00Z",
+          "priorChecksum": null
+        }
+      ],
+      "description": "Entity-agnostic transport identity for a change event: dedup ((source, eventId)), ordering (per-key sequence), system anchor (systemRef + componentId), occurrence time, schema self-description, and the prior-state hash-chain link. Composed into each concrete event type via allOf; entity-specific keys and payload live on the event type.",
+      "title": "Change Event Envelope"
+    },
+    "Event_Requirement_State": {
+      "type": "string",
+      "enum": [
+        "new",
+        "absent",
+        "updated",
+        "fixed",
+        "regressed"
+      ],
+      "description": "The producer-computable subset of the comparison vocabulary's Requirement_State. Kept value-identical with the parent enum (test-enforced): the batch-only states (moved, split, merged) are outputs of cross-document identity resolution a per-key producer cannot compute. Declared as a distinct named type (rather than a $ref intersection) so generated Go/TS types keep stable, distinct enum names.",
+      "title": "Event Requirement State"
+    },
+    "Event_Change_Reason": {
+      "type": "string",
+      "enum": [
+        "resultChanged",
+        "overrideAdded",
+        "overrideExpired",
+        "overrideRemoved",
+        "overrideModified",
+        "impactChanged",
+        "configChanged"
+      ],
+      "description": "The producer-computable subset of the comparison vocabulary's Change_Reason, value-identical with the parent enum (test-enforced). Batch-only reasons (baselineUpgraded, controlMapped, scannerChanged, targetChanged, metadataChanged) require cross-corpus context and are excluded.",
+      "title": "Event Change Reason"
+    },
+    "Effective_Projection": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "effectiveStatus",
+        "effectiveImpact"
+      ],
+      "properties": {
+        "effectiveStatus": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0#/$defs/Result_Status",
+          "description": "The resolved effective compliance status at this point in the chain."
+        },
+        "effectiveImpact": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "The resolved effective impact score (0.0–1.0) at this point in the chain."
+        }
+      },
+      "examples": [
+        {
+          "$comment": "Prior posture of a failing SSH-cipher control before remediation.",
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.5
+        },
+        {
+          "$comment": "Prior posture of a control passing under a waiver (the projection carries the resolved status; the governing override type travels in the requirement payload, not here).",
+          "effectiveStatus": "passed",
+          "effectiveImpact": 0.5
+        }
+      ],
+      "description": "The minimal resolved-posture projection — the same field set the per-requirement effectiveChecksum hashes (status and impact; the governing disposition is carried by the full requirement payload).",
+      "title": "Effective Projection"
+    }
+  }
+}

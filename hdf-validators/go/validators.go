@@ -32,13 +32,14 @@ func SetSchemaDir(dir string) {
 	schemaDir = dir
 	// Reset sync.Once instances so schemas reload from new source
 	schemaOnce = map[SchemaType]*sync.Once{
-		TypeResults:         new(sync.Once),
-		TypeBaseline:        new(sync.Once),
-		TypeComparison:      new(sync.Once),
-		TypeSystem:          new(sync.Once),
-		TypePlan:            new(sync.Once),
-		TypeAmendments:      new(sync.Once),
-		TypeEvidencePackage: new(sync.Once),
+		TypeResults:                new(sync.Once),
+		TypeBaseline:               new(sync.Once),
+		TypeComparison:             new(sync.Once),
+		TypeSystem:                 new(sync.Once),
+		TypePlan:                   new(sync.Once),
+		TypeAmendments:             new(sync.Once),
+		TypeEvidencePackage:        new(sync.Once),
+		TypeRequirementChangeEvent: new(sync.Once),
 	}
 	schemaCache = make(map[SchemaType]*gojsonschema.Schema)
 	schemaErrors = make(map[SchemaType]error)
@@ -81,6 +82,8 @@ const (
 	TypeAmendments SchemaType = "amendments"
 	// TypeEvidencePackage is the HDF evidence-package schema.
 	TypeEvidencePackage SchemaType = "evidence-package"
+	// TypeRequirementChangeEvent is the HDF requirement-change-event schema.
+	TypeRequirementChangeEvent SchemaType = "requirement-change-event"
 )
 
 // ValidationError represents a single validation error.
@@ -118,13 +121,14 @@ func (r ValidationResult) Error() string {
 
 // schemaOnce ensures each schema is loaded exactly once (per SetSchemaDir cycle).
 var schemaOnce = map[SchemaType]*sync.Once{
-	TypeResults:         {},
-	TypeBaseline:        {},
-	TypeComparison:      {},
-	TypeSystem:          {},
-	TypePlan:            {},
-	TypeAmendments:      {},
-	TypeEvidencePackage: {},
+	TypeResults:                {},
+	TypeBaseline:               {},
+	TypeComparison:             {},
+	TypeSystem:                 {},
+	TypePlan:                   {},
+	TypeAmendments:             {},
+	TypeEvidencePackage:        {},
+	TypeRequirementChangeEvent: {},
 }
 
 // schemaCache stores compiled schemas keyed by type.
@@ -136,13 +140,14 @@ var schemaErrors = make(map[SchemaType]error)
 
 // schemaFiles maps schema types to their filenames.
 var schemaFiles = map[SchemaType]string{
-	TypeResults:         "hdf-results.schema.json",
-	TypeBaseline:        "hdf-baseline.schema.json",
-	TypeComparison:      "hdf-comparison.schema.json",
-	TypeSystem:          "hdf-system.schema.json",
-	TypePlan:            "hdf-plan.schema.json",
-	TypeAmendments:      "hdf-amendments.schema.json",
-	TypeEvidencePackage: "hdf-evidence-package.schema.json",
+	TypeResults:                "hdf-results.schema.json",
+	TypeBaseline:               "hdf-baseline.schema.json",
+	TypeComparison:             "hdf-comparison.schema.json",
+	TypeSystem:                 "hdf-system.schema.json",
+	TypePlan:                   "hdf-plan.schema.json",
+	TypeAmendments:             "hdf-amendments.schema.json",
+	TypeEvidencePackage:        "hdf-evidence-package.schema.json",
+	TypeRequirementChangeEvent: "hdf-requirement-change-event.schema.json",
 }
 
 // readSchemaData reads schema bytes from either the filesystem (if schemaDir
@@ -321,6 +326,12 @@ func ValidateBaseline(data []byte) ValidationResult {
 // ValidateComparison validates JSON data against the HDF comparison schema.
 func ValidateComparison(data []byte) ValidationResult {
 	return Validate(data, TypeComparison)
+}
+
+// ValidateRequirementChangeEvent validates JSON data against the HDF
+// requirement-change-event schema (one continuous-monitoring wire event).
+func ValidateRequirementChangeEvent(data []byte) ValidationResult {
+	return Validate(data, TypeRequirementChangeEvent)
 }
 
 // ValidateSystem validates JSON data against the HDF system schema.
