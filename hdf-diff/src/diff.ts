@@ -34,7 +34,7 @@ export interface DiffOptions {
   validateOutput?: boolean;
 }
 
-const DEFAULT_TRACKED_FIELDS = ['impact', 'severity', 'tags'];
+export const DEFAULT_TRACKED_FIELDS = ['impact', 'severity', 'tags'];
 
 interface BaselineLike {
   name: string;
@@ -320,7 +320,7 @@ function diffFleet(
  *
  * Returns shallow copies so drift entries are independent of requirementDiffs.
  */
-function extractDrift(requirementDiffs: RequirementDiff[]): RequirementDiff[] {
+export function extractDrift(requirementDiffs: RequirementDiff[]): RequirementDiff[] {
   return requirementDiffs
     .filter(r => r.state === 'unchanged' && r.changeReasons.length > 0)
     .map(r => ({ ...r }));
@@ -503,7 +503,7 @@ const CVE_ECOSYSTEM_FIELDS = new Set(['cvss', 'epss', 'kev', 'cwe', 'affectedPac
  * in addition to whatever scalar fields are in trackedFields, since these
  * structured types need richer diff than generic JSON comparison provides.
  */
-function computeFieldChanges(
+export function computeFieldChanges(
   oldReq: RequirementLike,
   newReq: RequirementLike,
   trackedFields: string[],

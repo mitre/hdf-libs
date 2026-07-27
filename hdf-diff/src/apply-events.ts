@@ -1,5 +1,9 @@
 import { sha256 } from '@mitre/hdf-utilities';
-import { computeEffectiveChecksum } from './effective-checksum.js';
+import {
+  dedupEvents,
+  groupEventChains,
+  verifyEventChain,
+} from './event-stream-common.js';
 
 /**
  * Caller-supplied identity for a reassembly run. Everything else in the
@@ -33,16 +37,6 @@ export interface ApplyResult {
 }
 
 type Doc = Record<string, unknown>;
-
-function priorValue(ev: Doc): string {
-  const prior = ev['priorChecksum'] as { value?: string } | null | undefined;
-  return prior?.value ?? '';
-}
-
-async function checksumOf(req: Doc | null, referenceTimestamp: string): Promise<string> {
-  if (!req) return '';
-  return (await computeEffectiveChecksum(req, referenceTimestamp)).value;
-}
 
 function findRequirement(
   doc: Doc,
@@ -79,34 +73,7 @@ export async function applyChangeEvents(
   const seedChecksum = await sha256(seedJson);
   const docTimestamp = (doc['timestamp'] as string | undefined) ?? '';
 
-  // Idempotency: drop duplicate (source, eventId) deliveries.
-  const seen = new Set<string>();
-  const deduped: Doc[] = [];
-  for (const ev of events) {
-    if (!ev) continue;
-    const key = `${String(ev['source'])}|${String(ev['eventId'])}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    deduped.push(ev);
-  }
-
-  // Group per entity key, ordered by sequence (eventId tie-break).
-  const byKey = new Map<string, Doc[]>();
-  for (const ev of deduped) {
-    const id = ev['requirementId'] as string;
-    const chain = byKey.get(id) ?? [];
-    chain.push(ev);
-    byKey.set(id, chain);
-  }
-  const keys = [...byKey.keys()].sort();
-  for (const key of keys) {
-    byKey.get(key)!.sort((a, b) => {
-      const seqA = a['sequence'] as number;
-      const seqB = b['sequence'] as number;
-      if (seqA !== seqB) return seqA - seqB;
-      return String(a['eventId']).localeCompare(String(b['eventId']));
-    });
-  }
+  const { byKey, keys } = groupEventChains(dedupEvents(events));
 
   const warnings: ApplyWarning[] = [];
   let maxSequence = 0;
@@ -132,31 +99,11 @@ export async function applyChangeEvents(
       }
     };
 
-    // Chain verification: best-effort walk of the per-key links, expiry
-    // anchored to each event's occurrence time. Unanchored chains (key not
-    // in seed, first event not new) defer to the application outcome.
-    const verifyLinks = inSeed || first['state'] === 'new';
-    let expected = '';
+    // Chain verification (shared with the fold): unanchored chains defer
+    // to the application outcome below.
     const located = findRequirement(doc, id);
-    if (located) {
-      const ref = first['timestamp'] as string;
-      expected = await checksumOf(located.requirements[located.index] ?? null, ref);
-    }
-    if (verifyLinks) {
-      for (const ev of chain) {
-        const prior = priorValue(ev);
-        if (ev['state'] === 'new') {
-          if (inSeed) {
-            keyWarn('newOnExisting', 'state new for a key already present in the seed');
-          } else if (prior !== '') {
-            keyWarn('chainGap', 'new-state event carries a non-null priorChecksum');
-          }
-        } else if (prior !== expected) {
-          keyWarn('chainGap', `priorChecksum "${prior}" does not match expected chain state "${expected}"`);
-        }
-        expected = await checksumOf(ev['after'] as Doc | null, ev['timestamp'] as string);
-      }
-    }
+    await verifyEventChain(chain, located ? (located.requirements[located.index] ?? null) : null, inSeed, keyWarn);
+    const verifyLinks = inSeed || first['state'] === 'new';
 
     // Apply the winner.
     const winnerSeq = winner['sequence'] as number;

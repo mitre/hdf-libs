@@ -41,6 +41,8 @@ export { changeEventFromPrevious } from './change-event.js';
 export type { KeyState, EventInputs } from './change-event.js';
 export { applyChangeEvents } from './apply-events.js';
 export type { ApplyInputs, ApplyWarning, ApplyResult } from './apply-events.js';
+export { foldChangeEventsIntoComparison } from './fold-events.js';
+export type { FoldResult } from './fold-events.js';
 
 // Summary
 export { computeSummary } from './summary.js';

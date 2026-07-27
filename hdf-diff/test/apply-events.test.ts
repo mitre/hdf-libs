@@ -213,3 +213,75 @@ describe('applyChangeEvents', () => {
     expect((results['generator'] as Req)['name']).toBe('conmon-reconciler-test');
   });
 });
+
+describe('applyChangeEvents defensive edges', () => {
+  const MINI_SEED = JSON.stringify({
+    timestamp: '2026-07-01T00:00:00Z',
+    baselines: [
+      { name: 'a', requirements: [{ id: 'R1', impact: 0.5, tags: {}, descriptions: [{ label: 'default', data: 'd' }], results: [{ status: 'failed', codeDesc: 't', startTime: '2025-01-01T00:00:00Z' }] }] },
+      { name: 'b', requirements: [] },
+    ],
+  });
+
+  function rawEvent(overrides: Record<string, unknown>): Record<string, unknown> {
+    return {
+      eventId: '0190f6f2-0000-7000-8000-000000000501',
+      source: 'inspec://edge/scan',
+      sequence: 501,
+      systemRef: 'edge.hdf-system.json',
+      componentId: '6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60',
+      requirementId: 'R-EDGE',
+      timestamp: '2026-07-02T00:00:00Z',
+      priorChecksum: null,
+      state: 'new',
+      before: null,
+      after: {
+        id: 'R-EDGE', impact: 0.5, tags: {},
+        descriptions: [{ label: 'default', data: 'd' }],
+        results: [{ status: 'passed', codeDesc: 't', startTime: '2026-07-02T00:00:00Z' }],
+      },
+      ...overrides,
+    };
+  }
+
+  it('warns multiBaseline when inserting a new key into a multi-baseline seed', async () => {
+    const { warnings, results } = await applyChangeEvents(MINI_SEED, [rawEvent({})], applyInputs());
+    expect(warnings.some((w) => w.kind === 'multiBaseline')).toBe(true);
+    const first = (results['baselines'] as Req[])[0];
+    expect((first['requirements'] as Req[]).some((r) => r['id'] === 'R-EDGE')).toBe(true);
+  });
+
+  it('throws when a new key arrives and the seed has no baselines', async () => {
+    const seed = JSON.stringify({ timestamp: '2026-07-01T00:00:00Z', baselines: [] });
+    await expect(applyChangeEvents(seed, [rawEvent({})], applyInputs())).rejects.toThrow(
+      /no baselines/,
+    );
+  });
+
+  it('throws when asOf is underivable (no events, no seed timestamp)', async () => {
+    const seed = JSON.stringify({ baselines: [] });
+    await expect(applyChangeEvents(seed, [], applyInputs())).rejects.toThrow(/cannot derive asOf/);
+  });
+
+  it('warns chainGap on a content-bearing chain for a key the seed does not carry', async () => {
+    const { warnings } = await applyChangeEvents(
+      MINI_SEED,
+      [rawEvent({ state: 'updated', before: { effectiveStatus: 'failed', effectiveImpact: 0.5 }, priorChecksum: { algorithm: 'sha256', value: 'deadbeef' } })],
+      applyInputs(),
+    );
+    const gaps = warnings.filter((w) => w.kind === 'chainGap');
+    expect(gaps).toHaveLength(1);
+    expect(gaps[0].requirementId).toBe('R-EDGE');
+    // The two-baseline seed also legitimately warns multiBaseline on insertion.
+    expect(warnings.some((w) => w.kind === 'multiBaseline')).toBe(true);
+  });
+
+  it('warns chainGap when the winning event carries no after payload', async () => {
+    const { warnings } = await applyChangeEvents(
+      MINI_SEED,
+      [rawEvent({ requirementId: 'R1', state: 'updated', after: null, before: { effectiveStatus: 'failed', effectiveImpact: 0.5 } })],
+      applyInputs(),
+    );
+    expect(warnings.some((w) => w.kind === 'chainGap')).toBe(true);
+  });
+});

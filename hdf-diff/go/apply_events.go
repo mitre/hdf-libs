@@ -76,24 +76,6 @@ func eventAfterChecksum(ev *hdf.HDFRequirementChangeEvent) string {
 	return cs.Value
 }
 
-// seedChecksumFor computes the effective checksum of a seed requirement map,
-// anchored to the given reference time. Returns "" when untypeable.
-func seedChecksumFor(reqMap map[string]interface{}, referenceTimestamp string) string {
-	raw, err := json.Marshal(reqMap)
-	if err != nil {
-		return ""
-	}
-	var typed hdf.EvaluatedRequirement
-	if err := json.Unmarshal(raw, &typed); err != nil {
-		return ""
-	}
-	cs := ComputeEffectiveChecksum(typed, referenceTimestamp)
-	if cs == nil {
-		return ""
-	}
-	return cs.Value
-}
-
 // findRequirement locates a requirement by id across all baselines,
 // returning the baseline's requirements slice, the index, and true on hit.
 func findRequirement(doc map[string]interface{}, id string) (map[string]interface{}, []interface{}, int, bool) {
@@ -134,39 +116,7 @@ func ApplyChangeEvents(seed []byte, events []*hdf.HDFRequirementChangeEvent, in 
 	seedHash := sha256.Sum256(seed)
 	docTimestamp, _ := doc["timestamp"].(string)
 
-	// Idempotency: drop duplicate (source, eventId) deliveries.
-	seen := map[string]bool{}
-	var deduped []*hdf.HDFRequirementChangeEvent
-	for _, ev := range events {
-		if ev == nil {
-			continue
-		}
-		key := ev.Source + "|" + ev.EventID
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		deduped = append(deduped, ev)
-	}
-
-	// Group per entity key, ordered by sequence (eventId tie-break for
-	// determinism under pathological duplicate sequences).
-	byKey := map[string][]*hdf.HDFRequirementChangeEvent{}
-	for _, ev := range deduped {
-		byKey[ev.RequirementID] = append(byKey[ev.RequirementID], ev)
-	}
-	keys := make([]string, 0, len(byKey))
-	for k := range byKey {
-		keys = append(keys, k)
-		sort.Slice(byKey[k], func(i, j int) bool {
-			a, b := byKey[k][i], byKey[k][j]
-			if a.Sequence != b.Sequence {
-				return a.Sequence < b.Sequence
-			}
-			return a.EventID < b.EventID
-		})
-	}
-	sort.Strings(keys)
+	byKey, keys := groupEventChains(dedupEvents(events))
 
 	result := &ApplyResult{}
 	warn := func(id, kind, message string) {
@@ -199,35 +149,16 @@ func ApplyChangeEvents(seed []byte, events []*hdf.HDFRequirementChangeEvent, in 
 
 		winner := chain[len(chain)-1]
 
-		// Chain verification: walk the per-key links from the seed posture
-		// through each event's prior checksum. Best-effort — expiry is
-		// anchored to each event's occurrence time. A chain for a key the
-		// seed does not carry is only anchored when it opens with a
-		// new-state event; otherwise the application outcome (absentUnknown
-		// or an unanchored gap) is the more useful single warning.
-		verifyLinks := inSeed || chain[0].State == hdf.EventRequirementStateNew
-		expected := ""
+		// Chain verification (shared with the fold): unanchored chains defer
+		// to the application outcome below.
+		var seedTyped *hdf.EvaluatedRequirement
 		if _, reqs, idx, ok := findRequirement(doc, id); ok {
-			if reqMap, ok := reqs[idx].(map[string]interface{}); ok {
-				ref := chain[0].Timestamp.UTC().Format(time.RFC3339Nano)
-				expected = seedChecksumFor(reqMap, ref)
+			if typed, tok := typedRequirement(reqs[idx]); tok {
+				seedTyped = &typed
 			}
 		}
-		if verifyLinks {
-			for _, ev := range chain {
-				prior := eventPriorValue(ev)
-				if ev.State == hdf.EventRequirementStateNew {
-					if inSeed {
-						keyWarn("newOnExisting", "state new for a key already present in the seed")
-					} else if prior != "" {
-						keyWarn("chainGap", "new-state event carries a non-null priorChecksum")
-					}
-				} else if prior != expected {
-					keyWarn("chainGap", fmt.Sprintf("priorChecksum %q does not match expected chain state %q", prior, expected))
-				}
-				expected = eventAfterChecksum(ev)
-			}
-		}
+		verifyEventChain(chain, seedTyped, inSeed, keyWarn)
+		verifyLinks := inSeed || chain[0].State == hdf.EventRequirementStateNew
 
 		// Apply the winner.
 		if winner.Sequence > maxSequence {
