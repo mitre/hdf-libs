@@ -59,7 +59,7 @@ func stMakeOverride(opts struct {
 		Type:      overrideType,
 		Status:    &status,
 		Reason:    reason,
-		AppliedBy: hdf.Identity{Identifier: "admin"},
+		AppliedBy: hdf.Identity{Type: hdf.Simple, Identifier: "admin"},
 		AppliedAt: appliedAt,
 		ExpiresAt: expiresAt,
 	}

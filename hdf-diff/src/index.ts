@@ -37,6 +37,8 @@ export {
   computeDisposition,
 } from './effective-checksum.js';
 export type { EffectiveChecksum } from './effective-checksum.js';
+export { changeEventFromPrevious } from './change-event.js';
+export type { KeyState, EventInputs } from './change-event.js';
 
 // Summary
 export { computeSummary } from './summary.js';
