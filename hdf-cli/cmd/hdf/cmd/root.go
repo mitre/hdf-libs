@@ -123,6 +123,7 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.AddCommand(NewQueryCmd())
 	cmd.AddCommand(NewConvertCmd())
 	cmd.AddCommand(NewDiffCmd())
+	cmd.AddCommand(NewEventsCmd())
 	cmd.AddCommand(NewAmendCmd())
 	cmd.AddCommand(NewEvidenceCmd())
 	cmd.AddCommand(NewSystemCmd())

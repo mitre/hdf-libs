@@ -13,6 +13,7 @@ HDF (Heimdall Data Format) is a standardized JSON format for security assessment
   - [list](#list) -- Summarize a document, or list items with `--detail`
   - [query](#query) -- Search and filter requirements
   - [diff](#diff) -- Compare two HDF documents
+  - [events](#events) -- Derive, fold, and apply requirement-change events
   - [convert](#convert) -- Convert between formats
   - [system](#system) -- View and manage HDF system documents
   - [plan](#plan) -- View and manage HDF assessment plans
@@ -261,6 +262,52 @@ REQ-001  Test Requirement               passed      failed      regressed
 REQ-002  Audit logging must be enabled  -           passed      new
 
 Summary: 0 fixed, 1 regressed, 1 new, 0 absent, 0 unchanged, 0 updated (2 total)
+```
+
+### events
+
+Batch operations over the HDF requirement-change-event stream (continuous monitoring): `derive` emits one NDJSON `Requirement_Change_Event` per requirement whose effective posture moved between two same-target results documents; `fold` materializes an event batch into a `systemDrift` hdf-comparison; `apply` reassembles the reconciled hdf-results (seed + events), stamped with a `derivation` block so it never masquerades as scanner output.
+
+Every invocation is stateless and deterministic: event identity is a UUIDv5 over the entity key + sequence + the next document's timestamp — identical inputs produce byte-identical events. Sequencing across repeated derive runs is the caller's job (`--start-sequence`); fold and apply read events from a file argument or stdin. Chain anomalies (gaps, duplicate keys, unknown tombstones) are warnings on stderr, never silent and never fatal.
+
+```
+USAGE
+  hdf events derive --prev <results.json> --next <results.json> [flags]
+  hdf events fold   --seed <results.json> [events.ndjson] [flags]
+  hdf events apply  --seed <results.json> [events.ndjson] [flags]
+
+DERIVE FLAGS
+      --system-ref string      System document reference for the entity key (required)
+      --component-id string    Component UUID (default: the next document's sole component)
+      --source string          Producer URI recorded in the envelope
+      --start-sequence int     Sequence assigned to the first emitted event (default 1)
+      --schema-ref string      Optional schemaRef URI stamped on every event
+  -o, --output string          Output file (default: stdout)
+
+FOLD / APPLY FLAGS
+  -o, --output string          Output file (default: stdout)
+      --seed-uri string        (apply) Seed URI for the derivation block (default: the --seed path)
+      --source string          (apply) Stream source for the derivation block (default: first event's source)
+
+EXAMPLES
+  hdf events derive --prev monday.hdf.json --next tuesday.hdf.json \
+    --system-ref prod.hdf-system.json --component-id 6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60 \
+    -o events.ndjson
+  hdf events fold --seed monday.hdf.json events.ndjson -o drift.comparison.json
+  cat events.ndjson | hdf events apply --seed monday.hdf.json -o reconciled.hdf.json
+```
+
+Example loop (real output):
+
+```console
+$ hdf events derive --prev scan-before.json --next scan-after.json \
+    --system-ref prod.hdf-system.json --component-id 6e0f2a3b-... -o events.ndjson
+$ cut -c1-80 events.ndjson | head -2
+{"after":{"descriptions":[{"data":"The system must disable root SSH login","labe
+{"after":{"descriptions":[{"data":"The audit subsystem must be active","label":"
+$ hdf events apply --seed scan-before.json events.ndjson -o reconciled.hdf.json
+$ hdf validate reconciled.hdf.json
+✓ reconciled.hdf.json is a valid HDF results file
 ```
 
 ### convert
