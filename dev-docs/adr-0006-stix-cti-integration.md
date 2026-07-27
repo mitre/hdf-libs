@@ -65,7 +65,7 @@ STIX integration is `hdf enrich <results> <source>` (positional parity with `hdf
 
 The **informational** pass changes nothing about status/impact:
 - For each STIX object, resolve its CVE (via the object's own `external_references`). If the CVE matches a finding's `requirementId`, append an `externalReferences[]` entry to **that finding** (`Evaluated_Requirement.externalReferences[]`, wired in Phase 1); otherwise — a non-CVE object (`threat-actor`, `campaign`, plain `identity`/`location`), or a CVE with no matching finding — append it to the **results root** `externalReferences[]`.
-- Each entry carries `sourceName: "stix"`, `kind: "threat-intel"`, `externalId` = the STIX id, `rel: "reference"`/`"investigate"`, and the raw object losslessly in `document`. `ValidateJSONSize` is the first operation; timestamps go through the shared parse/serialize helpers.
+- Each entry carries `sourceName: "stix"`, `kind: "threat-intel"`, `externalId` = the STIX id, `rel: "reference"`/`"investigate"`, and the raw object losslessly in `document`. `ValidateJSONSize` is the first operation. The pass is a **structural overlay** — the results doc is manipulated as generic JSON and only `externalReferences[]` is appended — so every pre-existing field, including the results' own timestamp strings, round-trips verbatim; it never re-parses or reformats timestamps (so no timestamp helper is needed, and Go↔TS stay byte-compatible on the shared golden).
 - **Never fabricate** status/impact. The informational pass authors **no** overrides at all.
 - **Partial-fidelity + passthrough** (the ADR-0001 pattern): normalize the clean envelope fields; preserve the raw STIX losslessly in `document`.
 
