@@ -5,16 +5,14 @@ import {
   buildNoFindingsRequirement,
   deriveControlTypeFromTags,
   inputChecksum,
-  serializeHdf,
+  buildHdfResults,
   validateInputSize,
 } from '../../../shared/typescript/converterutil.js';
 import type {
-  HDFResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
   Description,
-  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -243,19 +241,16 @@ export async function convertHipcheckToHdf(input: string, converterVersion = '1.
     resultsChecksum,
   }) as EvaluatedBaseline;
 
-  const tool: Tool = { name: 'Hipcheck', format: 'JSON', version: report.hipcheck_version };
-
-  const hdf: HDFResults = {
-    baselines: [baseline],
-    generator: { name: 'hipcheck-to-hdf', version: converterVersion },
-    tool,
-    timestamp: new Date(),
-  };
-
   const ident = repoIdent(report);
-  if (ident) {
-    hdf.components = [{ name: ident, type: TargetType.Repository }];
-  }
 
-  return serializeHdf(hdf);
+  return buildHdfResults({
+    generatorName: 'hipcheck-to-hdf',
+    converterVersion,
+    toolName: 'Hipcheck',
+    toolFormat: 'JSON',
+    toolVersion: report.hipcheck_version,
+    baselines: [baseline],
+    components: ident ? [{ name: ident, type: TargetType.Repository }] : undefined,
+    timestamp: new Date(),
+  });
 }

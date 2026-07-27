@@ -90,22 +90,6 @@ type ddTestType struct {
 	Name string `json:"name"`
 }
 
-// severity → impact (standard DefectDojo labels: Critical/High/Medium/Low/Info).
-var severityImpact = map[string]float64{
-	"critical": 0.9,
-	"high":     0.7,
-	"medium":   0.5,
-	"low":      0.3,
-	"info":     0.0,
-}
-
-func impactFor(severity string) float64 {
-	if v, ok := severityImpact[strings.ToLower(severity)]; ok {
-		return v
-	}
-	return 0.5
-}
-
 // deriveStatus maps DefectDojo triage state to an HDF raw status, raw-primary:
 // what the tool reported is preserved; triage decisions ride in tags (and, for
 // risk acceptance, an override). Explicit dispositions take precedence over the
@@ -336,7 +320,7 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 
 	req := hdf.EvaluatedRequirement{
 		ID:           findingID(f),
-		Impact:       impactFor(f.Severity),
+		Impact:       hdfutil.SeverityToImpact(f.Severity, 0.5),
 		Results:      []hdf.RequirementResult{result},
 		Tags:         tags,
 		Descriptions: buildDescriptions(f),

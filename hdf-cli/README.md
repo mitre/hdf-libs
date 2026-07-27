@@ -97,7 +97,7 @@ USAGE
   hdf validate <file> [flags]
 
 FLAGS
-  -t, --type string    Schema type: results or baseline (default "results")
+  -t, --type string    Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package
   -q, --quiet          Suppress output on success (exit code only)
 
 EXAMPLES
