@@ -63,17 +63,7 @@ func ComputeEffectiveStatus(req hdf.EvaluatedRequirement, referenceTimestamp str
 
 	// 2. Non-expired statusOverrides
 	if len(req.StatusOverrides) > 0 {
-		var refTime time.Time
-		if referenceTimestamp != "" {
-			parsed, err := time.Parse(time.RFC3339, referenceTimestamp)
-			if err == nil {
-				refTime = parsed
-			} else {
-				refTime = time.Now()
-			}
-		} else {
-			refTime = time.Now()
-		}
+		refTime := resolveReferenceTime(referenceTimestamp)
 
 		for _, override := range req.StatusOverrides {
 			if override.ExpiresAt.After(refTime) && override.Status != nil {

@@ -299,6 +299,10 @@
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Override_Type",
           "description": "The type of the most recent non-expired override or POAM governing this requirement. Indicates why the requirement is in its current state (e.g., waiver, falsePositive, riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or POAMs apply."
         },
+        "effectiveChecksum": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+          "description": "Checksum of this requirement's resolved effective posture, for per-control change detection in continuous monitoring. sha256 over the canonical JSON object with keys status, impact, disposition (in that order), holding the resolved effective status, resolved effective impact, and governing override type (null when nothing governs), with override expiry anchored to the document timestamp. Flips exactly when the operative status, impact, or disposition changes; stable under all other churn (result details, timestamps, tags). Optional; stamped by tooling (hdf convert, hdf amend apply)."
+        },
         "evidence": {
           "type": "array",
           "items": {
@@ -367,11 +371,15 @@
               "reason": "Compensating control: PIV/CAC smart card authentication enforced for all users, password login disabled",
               "appliedBy": { "type": "email", "identifier": "ao@agency.gov" },
               "appliedAt": "2026-01-20T10:00:00Z",
-              "expiresAt": "2026-07-20T00:00:00Z"
+              "expiresAt": "2099-12-31T00:00:00Z"
             }
           ],
           "effectiveStatus": "passed",
-          "disposition": "waiver"
+          "disposition": "waiver",
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "d11c074ab9131807816013a71d986f1ceb2e5871a8a01dee4043391b7a6bf37b"
+          }
         },
         {
           "$comment": "False positive (compliance scan) — STIG check was wrong, requirement actually passes",

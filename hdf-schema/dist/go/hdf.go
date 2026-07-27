@@ -309,6 +309,14 @@ type EvaluatedRequirement struct {
 	// riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or                         
 	// POAMs apply.                                                                                                     
 	Disposition                                                                                 *OverrideType           `json:"disposition,omitempty"`
+	// Checksum of this requirement's resolved effective posture, for per-control change                                
+	// detection in continuous monitoring. sha256 over the canonical JSON object with keys                              
+	// status, impact, disposition (in that order), holding the resolved effective status,                              
+	// resolved effective impact, and governing override type (null when nothing governs), with                         
+	// override expiry anchored to the document timestamp. Flips exactly when the operative                             
+	// status, impact, or disposition changes; stable under all other churn (result details,                            
+	// timestamps, tags). Optional; stamped by tooling (hdf convert, hdf amend apply).                                  
+	EffectiveChecksum                                                                           *Checksum               `json:"effectiveChecksum,omitempty"`
 	// The current effective impact score (0.0–1.0) after applying the most recent non-expired                          
 	// override with an impact field. Absent when no impact overrides apply; consumers should                           
 	// use the requirement's impact field in that case.                                                                 

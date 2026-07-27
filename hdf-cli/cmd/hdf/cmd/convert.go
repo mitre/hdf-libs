@@ -257,6 +257,10 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 
 	// Write output (with schema validation if target is HDF and --no-validate not set)
 	if strings.EqualFold(toFormat, "hdf") {
+		output, err = stampConvertOutput(output)
+		if err != nil {
+			return err
+		}
 		return writeValidatedHDFOutput(cmd, output, outputPath)
 	}
 	return writeConvertOutput(output, outputPath)

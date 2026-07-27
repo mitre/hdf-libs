@@ -31,6 +31,12 @@ export {
   classifyChangeReasons,
   classifyDiffStatus,
 } from './status.js';
+export {
+  computeEffectiveChecksum,
+  computeEffectiveImpact,
+  computeDisposition,
+} from './effective-checksum.js';
+export type { EffectiveChecksum } from './effective-checksum.js';
 
 // Summary
 export { computeSummary } from './summary.js';

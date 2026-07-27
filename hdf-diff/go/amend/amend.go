@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
 )
 
 // MergeAmendments applies amendments to an HDF results document.
@@ -56,6 +58,14 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 		}
 		baselineRef, _ := ov["baselineRef"].(string)
 		applyOverrideToDoc(doc, ov, reqID, baselineRef)
+	}
+
+	// Re-stamp per-requirement effective checksums: overrides change the
+	// effective posture the checksum hashes. Expiry is anchored to the
+	// document timestamp for determinism.
+	docTimestamp, _ := doc["timestamp"].(string)
+	if err := diff.StampEffectiveChecksums(doc, docTimestamp); err != nil {
+		return nil, fmt.Errorf("failed to stamp effective checksums: %w", err)
 	}
 
 	// Set previousChecksum on the merged output.
