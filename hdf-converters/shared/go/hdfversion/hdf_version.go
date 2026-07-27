@@ -29,7 +29,9 @@ const (
 )
 
 // HDFVersionTransform converts HDF data from one schema version to another.
-type HDFVersionTransform func(input []byte) ([]byte, error)
+// The returned warnings name data that could not be represented in the target
+// version (e.g. amendments with no v2 equivalent on a downgrade).
+type HDFVersionTransform func(input []byte) ([]byte, []string, error)
 
 // hdfTransforms is the registry of (fromVersion, toVersion) → transform pairs.
 // Adding a new schema version means registering the upgrade and downgrade
@@ -58,15 +60,15 @@ func NormalizeVersion(v string) (canonical, warning string) {
 // TransformHDF converts HDF data between schema versions using the registered
 // transform registry. Returns the input unchanged when fromVersion == toVersion.
 // Returns an error for unknown version pairs.
-func TransformHDF(input []byte, fromVersion, toVersion string) ([]byte, error) {
+func TransformHDF(input []byte, fromVersion, toVersion string) ([]byte, []string, error) {
 	if fromVersion == toVersion {
-		return input, nil
+		return input, nil, nil
 	}
 
 	key := [2]string{fromVersion, toVersion}
 	transform, ok := hdfTransforms[key]
 	if !ok {
-		return nil, fmt.Errorf("no HDF transform registered for %s → %s", fromVersion, toVersion)
+		return nil, nil, fmt.Errorf("no HDF transform registered for %s → %s", fromVersion, toVersion)
 	}
 
 	return transform(input)
@@ -76,40 +78,48 @@ func TransformHDF(input []byte, fromVersion, toVersion string) ([]byte, error) {
 // exec-json profiles/platform shape) to modern HDF (v3). Delegates to the
 // existing legacyhdf converter (whose type/function names still use the older
 // "V1"/"V2" spelling — see the package NOTE above).
-func upgradeV2ToV3(input []byte) ([]byte, error) {
+func upgradeV2ToV3(input []byte) ([]byte, []string, error) {
 	if !legacyhdf.IsHDFV1(input) {
-		return nil, fmt.Errorf("input is not the legacy HDF (v2) shape")
+		return nil, nil, fmt.Errorf("input is not the legacy HDF (v2) shape")
 	}
 
 	var legacy legacyhdf.HDFV1Results
 	if err := json.Unmarshal(input, &legacy); err != nil {
-		return nil, fmt.Errorf("failed to parse legacy HDF (v2): %w", err)
+		return nil, nil, fmt.Errorf("failed to parse legacy HDF (v2): %w", err)
 	}
 
 	modern := legacyhdf.ConvertV1ToV2(&legacy)
-	return json.MarshalIndent(modern, "", "  ")
+	out, err := json.MarshalIndent(modern, "", "  ")
+	return out, nil, err
 }
 
 // downgradeV3ToV2 converts modern HDF (v3) to the legacy Heimdall schema (v2,
-// the InSpec exec-json shape). This is a lossy transformation — v3 fields
-// without a v2 equivalent are dropped.
+// the InSpec exec-json shape). Status-changing amendments (waiver, attestation,
+// falsePositive, inherited) are flattened into the v2 control status with an audit
+// breadcrumb in waiver_data, so Heimdall shows the attested outcome; the raw
+// results[].status verdict is preserved. Amendments with no v2 equivalent (poam,
+// operationalRequirement) cannot be represented and are named in the warnings.
 //
-// Lossy fields: dataSource, generator, labels, amendments, checksum metadata,
-// multiple components (only first is used), component type/labels/ipAddress,
-// effectiveStatus, evidence, poams, statusOverrides.
-func downgradeV3ToV2(input []byte) ([]byte, error) {
+// Lossy fields with no v2 carrier: dataSource, generator (except version), labels,
+// root amendments, checksum metadata, components beyond the first, evidence,
+// poam/operationalRequirement state, result resource_params, requirement refs.
+func downgradeV3ToV2(input []byte) ([]byte, []string, error) {
 	var modern hdf.HDFResults
 	if err := json.Unmarshal(input, &modern); err != nil {
-		return nil, fmt.Errorf("failed to parse modern HDF (v3): %w", err)
+		return nil, nil, fmt.Errorf("failed to parse modern HDF (v3): %w", err)
 	}
 
-	legacy := convertV3ToV2(&modern)
-	return json.MarshalIndent(legacy, "", "  ")
+	legacy, warnings := convertV3ToV2(&modern)
+	out, err := json.MarshalIndent(legacy, "", "  ")
+	return out, warnings, err
 }
 
-// convertV3ToV2 maps the modern HDF (v3) structure back to the legacy (v2) shape.
-func convertV3ToV2(v2 *hdf.HDFResults) *legacyhdf.HDFV1Results {
-	v1 := &legacyhdf.HDFV1Results{}
+// convertV3ToV2 maps the modern HDF (v3) structure back to the legacy (v2) shape,
+// returning warnings for amendments that could not be represented.
+func convertV3ToV2(v2 *hdf.HDFResults) (*legacyhdf.HDFV1Results, []string) {
+	// Top-level version — Heimdall's InSpec fingerprint may key on it, and the
+	// upgrade path drops it, so reconstruct from the source tool / generator.
+	v1 := &legacyhdf.HDFV1Results{Version: downgradeVersion(v2)}
 
 	// Map components → platform (use first component)
 	if len(v2.Components) > 0 {
@@ -134,16 +144,32 @@ func convertV3ToV2(v2 *hdf.HDFResults) *legacyhdf.HDFV1Results {
 	}
 
 	// Map baselines → profiles
+	var warnings []string
 	v1.Profiles = make([]legacyhdf.V1Profile, len(v2.Baselines))
 	for i, baseline := range v2.Baselines {
-		v1.Profiles[i] = convertBaselineToV2Profile(baseline)
+		p, w := convertBaselineToV2Profile(baseline)
+		v1.Profiles[i] = p
+		warnings = append(warnings, w...)
 	}
 
-	return v1
+	return v1, warnings
 }
 
-// convertBaselineToV2Profile maps an EvaluatedBaseline back to a V1Profile.
-func convertBaselineToV2Profile(b hdf.EvaluatedBaseline) legacyhdf.V1Profile {
+// downgradeVersion reconstructs the legacy top-level version string, preferring
+// the source tool version, then the generator version, then a sentinel.
+func downgradeVersion(v3 *hdf.HDFResults) string {
+	if v3.Tool != nil && v3.Tool.Version != nil && *v3.Tool.Version != "" {
+		return *v3.Tool.Version
+	}
+	if v3.Generator != nil && v3.Generator.Version != "" {
+		return v3.Generator.Version
+	}
+	return "0.0.0"
+}
+
+// convertBaselineToV2Profile maps an EvaluatedBaseline back to a V1Profile,
+// returning warnings for any non-representable amendments on its requirements.
+func convertBaselineToV2Profile(b hdf.EvaluatedBaseline) (legacyhdf.V1Profile, []string) {
 	p := legacyhdf.V1Profile{
 		Name:    b.Name,
 		Version: b.Version,
@@ -183,12 +209,15 @@ func convertBaselineToV2Profile(b hdf.EvaluatedBaseline) legacyhdf.V1Profile {
 	}
 
 	// Map requirements → controls
+	var warnings []string
 	p.Controls = make([]legacyhdf.V1Control, len(b.Requirements))
 	for i, r := range b.Requirements {
-		p.Controls[i] = convertRequirementToV2Control(r)
+		c, w := convertRequirementToV2Control(r)
+		p.Controls[i] = c
+		warnings = append(warnings, w...)
 	}
 
-	return p
+	return p, warnings
 }
 
 // convertDependencyToV2 maps a Dependency to V1Dependency.
@@ -201,13 +230,20 @@ func convertDependencyToV2(d hdf.Dependency) legacyhdf.V1Dependency {
 	}
 }
 
-// convertRequirementToV2Control maps an EvaluatedRequirement to a V1Control.
-func convertRequirementToV2Control(r hdf.EvaluatedRequirement) legacyhdf.V1Control {
+// convertRequirementToV2Control maps an EvaluatedRequirement to a V1Control,
+// flattening status-changing amendments into the control status + waiver_data
+// and returning warnings for amendments with no v2 equivalent.
+func convertRequirementToV2Control(r hdf.EvaluatedRequirement) (legacyhdf.V1Control, []string) {
 	c := legacyhdf.V1Control{
 		ID:     r.ID,
 		Title:  r.Title,
 		Impact: r.Impact,
 		Code:   r.Code,
+	}
+
+	// riskAdjustment (and any impact override) re-scores the displayed impact.
+	if r.EffectiveImpact != nil {
+		c.Impact = *r.EffectiveImpact
 	}
 
 	// Extract default description as desc
@@ -248,13 +284,113 @@ func convertRequirementToV2Control(r hdf.EvaluatedRequirement) legacyhdf.V1Contr
 		c.SourceLocation = &sl
 	}
 
-	// Map results
+	// Control-level status carries the EFFECTIVE (post-amendment) outcome so Heimdall
+	// shows the attested result; the raw per-result verdict is preserved below. Falls
+	// back to the worst-wins rollup when no effectiveStatus is present.
+	status := effectiveOrRollup(r)
+	c.Status = &status
+
+	// Flatten a status-changing amendment (and note any non-representable ones) into
+	// the waiver_data breadcrumb so the override is recoverable in the v2 document.
+	if wd := buildWaiverData(r); wd != nil {
+		c.WaiverData = wd
+	}
+	warnings := nonRepresentableWarnings(r)
+
+	// Map results (raw verdict preserved; carry InSpec resource fields where present).
 	c.Results = make([]legacyhdf.V1Result, len(r.Results))
 	for i, res := range r.Results {
 		c.Results[i] = convertResultToV2(res)
 	}
 
-	return c
+	return c, warnings
+}
+
+// effectiveOrRollup returns the v1 status string for a requirement's effective
+// status, or the worst-wins rollup of its results when no effectiveStatus is set.
+func effectiveOrRollup(r hdf.EvaluatedRequirement) string {
+	if r.EffectiveStatus != nil {
+		return v2StatusString(*r.EffectiveStatus)
+	}
+	return v2StatusString(rollupStatus(r.Results))
+}
+
+// rollupStatus computes the worst-wins status across results
+// (error > failed > passed > notApplicable > notReviewed).
+func rollupStatus(results []hdf.RequirementResult) hdf.ResultStatus {
+	rank := map[hdf.ResultStatus]int{
+		hdf.Error: 4, hdf.Failed: 3, hdf.Passed: 2, hdf.NotApplicable: 1, hdf.NotReviewed: 0,
+	}
+	worst := hdf.NotReviewed
+	for i, res := range results {
+		if i == 0 || rank[res.Status] > rank[worst] {
+			worst = res.Status
+		}
+	}
+	return worst
+}
+
+// governingOverride returns the most-recently-applied status-bearing override,
+// which is the one that drives effectiveStatus, or nil if there is none.
+func governingOverride(r hdf.EvaluatedRequirement) *hdf.StatusOverride {
+	var gov *hdf.StatusOverride
+	for i := range r.StatusOverrides {
+		o := &r.StatusOverrides[i]
+		if o.Status == nil {
+			continue
+		}
+		if gov == nil || o.AppliedAt.After(gov.AppliedAt) {
+			gov = o
+		}
+	}
+	return gov
+}
+
+// buildWaiverData renders the governing override (and any non-representable
+// amendment) as a free-form v1 waiver_data breadcrumb, or nil when the
+// requirement carries no amendments.
+func buildWaiverData(r hdf.EvaluatedRequirement) map[string]interface{} {
+	wd := map[string]interface{}{}
+	if gov := governingOverride(r); gov != nil {
+		wd["skipped_due_to_waiver"] = true
+		wd["override_type"] = string(gov.Type)
+		wd["message"] = gov.Reason
+		wd["expiration_date"] = gov.ExpiresAt.Format(time.RFC3339)
+		wd["applied_by"] = gov.AppliedBy.Identifier
+	}
+	// Best-effort breadcrumb for amendments that have no v2 status equivalent.
+	var notRepresentable []string
+	for _, p := range r.Poams {
+		notRepresentable = append(notRepresentable, "poam:"+string(p.Type))
+	}
+	for i := range r.StatusOverrides {
+		if r.StatusOverrides[i].Type == hdf.OperationalRequirement {
+			notRepresentable = append(notRepresentable, "operationalRequirement")
+		}
+	}
+	if len(notRepresentable) > 0 {
+		wd["not_representable_in_v2"] = notRepresentable
+	}
+	if len(wd) == 0 {
+		return nil
+	}
+	return wd
+}
+
+// nonRepresentableWarnings names amendments that cannot be represented in the v2
+// (legacy) shape: POA&Ms and operationalRequirement overrides both leave a
+// finding open, which v2 has no field for.
+func nonRepresentableWarnings(r hdf.EvaluatedRequirement) []string {
+	var w []string
+	for _, p := range r.Poams {
+		w = append(w, fmt.Sprintf("control %q: POA&M (%s) has no HDF v2 equivalent — its open/remediation-tracked state is not represented (breadcrumb in waiver_data)", r.ID, p.Type))
+	}
+	for i := range r.StatusOverrides {
+		if r.StatusOverrides[i].Type == hdf.OperationalRequirement {
+			w = append(w, fmt.Sprintf("control %q: operationalRequirement amendment has no HDF v2 equivalent — its accepted-open-risk state is not represented (breadcrumb in waiver_data)", r.ID))
+		}
+	}
+	return w
 }
 
 // convertResultToV2 maps a RequirementResult to a V1Result.
@@ -283,6 +419,15 @@ func convertResultToV2(r hdf.RequirementResult) legacyhdf.V1Result {
 	}
 	if len(r.Backtrace) > 0 {
 		v1r.Backtrace = r.Backtrace
+	}
+
+	// Carry the InSpec resource fields where the modern result preserved them
+	// (resource type → resource_class; resource_params has no v3 equivalent).
+	if r.Resource != nil {
+		v1r.ResourceClass = r.Resource
+	}
+	if r.ResourceID != nil {
+		v1r.ResourceID = r.ResourceID
 	}
 
 	return v1r

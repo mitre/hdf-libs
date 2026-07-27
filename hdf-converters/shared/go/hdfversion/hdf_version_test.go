@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,7 @@ func legacyhdfFixture(t *testing.T, name string) []byte {
 func TestTransformHDF_LegacyToModern(t *testing.T) {
 	legacyInput := legacyhdfFixture(t, "minimal.json")
 
-	output, err := TransformHDF(legacyInput, LegacyVersion, ModernVersion)
+	output, _, err := TransformHDF(legacyInput, LegacyVersion, ModernVersion)
 	require.NoError(t, err)
 	require.NotEmpty(t, output)
 
@@ -48,11 +49,11 @@ func TestTransformHDF_LegacyToModern(t *testing.T) {
 func TestTransformHDF_ModernToLegacy(t *testing.T) {
 	// First get a modern document by upgrading a legacy one.
 	legacyInput := legacyhdfFixture(t, "minimal.json")
-	modernOutput, err := TransformHDF(legacyInput, LegacyVersion, ModernVersion)
+	modernOutput, _, err := TransformHDF(legacyInput, LegacyVersion, ModernVersion)
 	require.NoError(t, err)
 
 	// Now downgrade back to the legacy shape.
-	legacyOutput, err := TransformHDF(modernOutput, ModernVersion, LegacyVersion)
+	legacyOutput, _, err := TransformHDF(modernOutput, ModernVersion, LegacyVersion)
 	require.NoError(t, err)
 	require.NotEmpty(t, legacyOutput)
 
@@ -71,20 +72,20 @@ func TestTransformHDF_SameVersion(t *testing.T) {
 	legacyInput := legacyhdfFixture(t, "minimal.json")
 
 	// Same version should return input unchanged.
-	output, err := TransformHDF(legacyInput, LegacyVersion, LegacyVersion)
+	output, _, err := TransformHDF(legacyInput, LegacyVersion, LegacyVersion)
 	require.NoError(t, err)
 	assert.JSONEq(t, string(legacyInput), string(output))
 }
 
 func TestTransformHDF_UnknownTransform(t *testing.T) {
 	// "1" is not a transform key — raw InSpec is not a distinct schema version.
-	_, err := TransformHDF([]byte(`{}`), "1", ModernVersion)
+	_, _, err := TransformHDF([]byte(`{}`), "1", ModernVersion)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no HDF transform")
 }
 
 func TestTransformHDF_InvalidJSON(t *testing.T) {
-	_, err := TransformHDF([]byte(`not json`), LegacyVersion, ModernVersion)
+	_, _, err := TransformHDF([]byte(`not json`), LegacyVersion, ModernVersion)
 	require.Error(t, err)
 }
 
@@ -92,10 +93,10 @@ func TestTransformHDF_RoundTrip(t *testing.T) {
 	legacyInput := legacyhdfFixture(t, "minimal.json")
 
 	// legacy → modern → legacy should preserve core fields.
-	modern, err := TransformHDF(legacyInput, LegacyVersion, ModernVersion)
+	modern, _, err := TransformHDF(legacyInput, LegacyVersion, ModernVersion)
 	require.NoError(t, err)
 
-	legacyAgain, err := TransformHDF(modern, ModernVersion, LegacyVersion)
+	legacyAgain, _, err := TransformHDF(modern, ModernVersion, LegacyVersion)
 	require.NoError(t, err)
 
 	var original map[string]any
@@ -106,6 +107,62 @@ func TestTransformHDF_RoundTrip(t *testing.T) {
 	origProfiles, _ := original["profiles"].([]any)
 	rtProfiles, _ := roundTripped["profiles"].([]any)
 	assert.Equal(t, len(origProfiles), len(rtProfiles), "profile count should survive round-trip")
+}
+
+func TestDowngradeV3ToV2_FlattensAmendments(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	input, err := os.ReadFile(filepath.Join(filepath.Dir(thisFile), "testdata", "modern_with_amendments.json"))
+	require.NoError(t, err)
+
+	out, warnings, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(out, &legacy))
+
+	// Incidental gap C: top-level version reconstructed from the source tool.
+	assert.Equal(t, "5.22.65", legacy["version"])
+
+	controls := legacy["profiles"].([]any)[0].(map[string]any)["controls"].([]any)
+	byID := map[string]map[string]any{}
+	for _, c := range controls {
+		cm := c.(map[string]any)
+		byID[cm["id"].(string)] = cm
+	}
+
+	// Waiver: control status flattened to the effective outcome (passed), the raw
+	// result verdict preserved (failed), and an audit breadcrumb in waiver_data.
+	waiver := byID["V-001-waiver"]
+	assert.Equal(t, "passed", waiver["status"], "control status is the effective (attested) outcome")
+	wd := waiver["waiver_data"].(map[string]any)
+	assert.Equal(t, "waiver", wd["override_type"])
+	assert.Equal(t, true, wd["skipped_due_to_waiver"])
+	assert.Contains(t, wd["message"], "Compensating control")
+	rawStatus := waiver["results"].([]any)[0].(map[string]any)["status"]
+	assert.Equal(t, "failed", rawStatus, "raw per-result verdict is preserved")
+
+	// False positive: also flattened, breadcrumb records the disposition type.
+	fp := byID["V-002-fp"]
+	assert.Equal(t, "passed", fp["status"])
+	assert.Equal(t, "falsePositive", fp["waiver_data"].(map[string]any)["override_type"])
+
+	// POA&M: not representable — control stays failed, breadcrumb records it, warning names it.
+	poam := byID["V-003-poam"]
+	assert.Equal(t, "failed", poam["status"])
+	assert.Contains(t, poam["waiver_data"].(map[string]any), "not_representable_in_v2")
+
+	// riskAdjustment: the effective (re-scored) impact is what the v2 control shows.
+	risk := byID["V-004-risk"]
+	assert.InDelta(t, 0.3, risk["impact"].(float64), 1e-9)
+	// Incidental gap C: InSpec resource fields carried onto the result.
+	riskResult := risk["results"].([]any)[0].(map[string]any)
+	assert.Equal(t, "file", riskResult["resource_class"])
+	assert.Equal(t, "/etc/audit/auditd.conf", riskResult["resource_id"])
+
+	// Part B: the non-representable POA&M is surfaced as a warning, not dropped silently.
+	joined := strings.Join(warnings, "\n")
+	assert.Contains(t, joined, "V-003-poam")
+	assert.Contains(t, joined, "POA&M")
 }
 
 func TestDetectHDFVersion(t *testing.T) {
