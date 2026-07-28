@@ -405,7 +405,7 @@ function buildKev(k?: GrypeKev): Kev | undefined {
   return out;
 }
 
-function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): EvaluatedRequirement {
+function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, targetName: string, startTime: Date): EvaluatedRequirement {
   const vuln = match.vulnerability;
   const cveId = vuln.id;
   const severity = vuln.severity;
@@ -444,7 +444,7 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
     status,
     codeDesc: buildCodeDesc(match),
     message,
-    startTime: new Date('0001-01-01T00:00:00Z'), // Go zero time format
+    startTime,
   };
 
   // Get CCI mappings for NIST controls using curated mapping table
@@ -456,6 +456,7 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
   // Build requirement
   const requirement: EvaluatedRequirement = {
     id: isIgnored ? `Grype-Ignored-Match/${cveId}` : `Grype/${cveId}`,
+    title: `Grype found a vulnerability to ${cveId} in ${targetName}`,
     impact,
     results: [result],
     tags,
@@ -499,6 +500,14 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
   // Build requirements from matches
   const requirements: EvaluatedRequirement[] = [];
 
+  // Build baseline name from source.
+  const targetName = grypeData.source?.target?.userInput || 'Grype Scan';
+
+  // The scan timestamp anchors every result's start_time; a Go zero-time Date is
+  // the schema-safe fallback when Grype omits descriptor.timestamp.
+  const scanTime = grypeData.descriptor?.timestamp ? parseTimestamp(grypeData.descriptor.timestamp) : null;
+  const resultStart = scanTime ?? new Date('0001-01-01T00:00:00Z');
+
   // Process regular matches
   if (grypeData.matches && grypeData.matches.length > 0) {
     const { items: limitedMatches, truncated: truncatedMatches } = limitArray(grypeData.matches);
@@ -508,7 +517,7 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
       console.warn(`WARNING: Input truncated at ${limitedMatches.length} match items (original: ${grypeData.matches.length})`);
     }
     for (const match of limitedMatches) {
-      requirements.push(convertMatchToRequirement(match, false));
+      requirements.push(convertMatchToRequirement(match, false, targetName, resultStart));
     }
   }
 
@@ -521,12 +530,9 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
       console.warn(`WARNING: Input truncated at ${limitedIgnored.length} ignoredMatch items (original: ${grypeData.ignoredMatches.length})`);
     }
     for (const match of limitedIgnored) {
-      requirements.push(convertMatchToRequirement(match, true));
+      requirements.push(convertMatchToRequirement(match, true, targetName, resultStart));
     }
   }
-
-  // Build baseline name from source
-  const targetName = grypeData.source?.target?.userInput || 'Grype Scan';
 
   if (requirements.length === 0) {
     requirements.push(buildNoFindingsRequirement(
@@ -552,6 +558,6 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
       type: TargetType.Artifact,
       name: targetName,
     }],
-    timestamp: (grypeData.descriptor?.timestamp ? parseTimestamp(grypeData.descriptor.timestamp) : null) ?? new Date(),
+    timestamp: scanTime ?? new Date(),
   });
 }

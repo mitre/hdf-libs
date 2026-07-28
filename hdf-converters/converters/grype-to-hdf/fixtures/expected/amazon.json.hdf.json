@@ -31,7 +31,7 @@
             {
               "codeDesc": "Package: ca-certificates@2023.2.64-1.amzn2.0.1 | Type: rpm | Location: /var/lib/rpm/Packages | Match Type: exact-direct-match",
               "message": "Severity: Low vulnerability is fixed for versions 2023.2.68-1.amzn2.0.1",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -61,6 +61,7 @@
               "url": "https://groups.google.com/a/mozilla.org/g/dev-security-policy/c/XpknYMPO8dI"
             }
           ],
+          "title": "Grype found a vulnerability to ALAS-2024-2607 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -92,7 +93,7 @@
             {
               "codeDesc": "Package: krb5-libs@1.15.1-55.amzn2.2.7 | Type: rpm | Location: /var/lib/rpm/Packages | Match Type: exact-direct-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.15.1-55.amzn2.2.8",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -119,6 +120,7 @@
               "url": "https://web.mit.edu/kerberos/www/advisories/"
             }
           ],
+          "title": "Grype found a vulnerability to ALAS-2024-2595 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -150,7 +152,7 @@
             {
               "codeDesc": "Package: openssl-libs@1:1.0.2k-24.amzn2.0.12 | Type: rpm | Location: /var/lib/rpm/Packages | Match Type: exact-direct-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.0.2k-24.amzn2.0.13",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -201,6 +203,7 @@
               "url": "https://www.openssl.org/news/secadv/20240627.txt"
             }
           ],
+          "title": "Grype found a vulnerability to ALAS-2024-2604 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -241,7 +244,7 @@
             {
               "codeDesc": "Package: pip@23.0.1 | Type: python | Location: /var/lang/lib/python3.9/site-packages/pip-23.0.1.dist-info/METADATA | Match Type: exact-direct-match",
               "message": "Severity: Medium vulnerability is fixed for versions 23.3",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -283,6 +286,7 @@
               "url": "https://mail.python.org/archives/list/security-announce@python.org/thread/F4PL35U6X4VVHZ5ILJU3PWUWN7H7LZXL/"
             }
           ],
+          "title": "Grype found a vulnerability to GHSA-mq26-g339-26xf in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -322,7 +326,7 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -349,6 +353,7 @@
               "url": "https://mail.python.org/archives/list/security-announce@python.org/thread/HXJAAAALNUNGCQUS2W7WR6GFIZIHFOOK/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-7592 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -388,7 +393,7 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -436,6 +441,7 @@
               "url": "https://mail.python.org/archives/list/security-announce@python.org/thread/BMAK5BCGKYWNJOACVUSLUF6SFGBIM4VP/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-0397 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -475,7 +481,7 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -505,6 +511,7 @@
               "url": "https://github.com/python/cpython/issues/103800"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-36632 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -544,7 +551,7 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -577,6 +584,7 @@
               "url": "https://mail.python.org/archives/list/security-announce@python.org/thread/QH3BUOE2DYQBWP7NAQ7UNHPPOELKISRW/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-6923 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -616,7 +624,7 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -703,6 +711,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20230601-0003/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-27043 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -733,7 +742,7 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Unknown vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "notApplicable"
             }
           ],
@@ -775,6 +784,7 @@
               "url": "https://mail.python.org/archives/list/security-announce@python.org/thread/GNFCKVI4TCATKQLALJ5SN4L4CSPSMILU/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-8088 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -805,7 +815,7 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Unknown vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "notApplicable"
             }
           ],
@@ -844,6 +854,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20240726-0005/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-5642 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -874,7 +885,7 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Unknown vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "notApplicable"
             }
           ],
@@ -931,6 +942,7 @@
               "url": "https://www.iana.org/assignments/iana-ipv6-special-registry/iana-ipv6-special-registry.xhtml"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-4032 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -971,7 +983,7 @@
             {
               "codeDesc": "Package: setuptools@58.1.0 | Type: python | Location: /var/lang/lib/python3.9/site-packages/setuptools-58.1.0.dist-info/METADATA | Match Type: exact-direct-match",
               "message": "Severity: High vulnerability is fixed for versions 65.5.1",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -1019,6 +1031,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20240621-0006/"
             }
           ],
+          "title": "Grype found a vulnerability to GHSA-r9hx-vwmv-q579 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -1059,7 +1072,7 @@
             {
               "codeDesc": "Package: setuptools@58.1.0 | Type: python | Location: /var/lang/lib/python3.9/site-packages/setuptools-58.1.0.dist-info/METADATA | Match Type: exact-direct-match",
               "message": "Severity: High vulnerability is fixed for versions 70.0.0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -1086,6 +1099,7 @@
               "url": "https://huntr.com/bounties/d6362117-ad57-4e83-951f-b8141c6e7ca5"
             }
           ],
+          "title": "Grype found a vulnerability to GHSA-cx63-2mw6-8hw5 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -1125,7 +1139,7 @@
             {
               "codeDesc": "Package: stdlib@go1.22.4 | Type: go-module | Location: /usr/local/bin/aws-lambda-rie | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -1155,6 +1169,7 @@
               "url": "https://pkg.go.dev/vuln/GO-2024-2963"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-24791 in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         },
         {
@@ -1195,7 +1210,7 @@
             {
               "codeDesc": "Package: urllib3@1.26.18 | Type: python | Location: /var/runtime/urllib3-1.26.18.dist-info/METADATA | Match Type: exact-direct-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.26.19",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
           ],
@@ -1222,6 +1237,7 @@
               "url": "https://github.com/urllib3/urllib3/security/advisories/GHSA-34jh-p97f-mpxf"
             }
           ],
+          "title": "Grype found a vulnerability to GHSA-34jh-p97f-mpxf in cloudwatch_to_s3:latest",
           "verificationMethod": "automated"
         }
       ],
