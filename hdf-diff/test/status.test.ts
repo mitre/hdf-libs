@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   computeEffectiveStatus,
+  computeEffectiveImpact,
   classifyChangeReasons,
   classifyDiffStatus,
 } from '../src/status.js';
@@ -541,5 +542,26 @@ describe('classifyDiffStatus', () => {
 
   it('returns "regressed" when passed -> notReviewed', () => {
     expect(classifyDiffStatus('passed', 'notReviewed')).toBe('regressed');
+  });
+});
+
+describe('computeEffectiveImpact', () => {
+  const ref = '2099-01-01T00:00:00Z';
+  it('returns the non-expired impact override value', () => {
+    const req = { statusOverrides: [{ impact: { value: 0.98 }, expiresAt: '2100-01-01T00:00:00Z' }] };
+    expect(computeEffectiveImpact(req, ref)).toBe(0.98);
+  });
+  it('falls through to effectiveImpact when the override is expired', () => {
+    const req = {
+      statusOverrides: [{ impact: { value: 0.98 }, expiresAt: '2000-01-01T00:00:00Z' }],
+      effectiveImpact: 0.5,
+    };
+    expect(computeEffectiveImpact(req, ref)).toBe(0.5);
+  });
+  it('uses the effectiveImpact field when there are no overrides', () => {
+    expect(computeEffectiveImpact({ effectiveImpact: 0.3 })).toBe(0.3);
+  });
+  it('returns undefined when nothing is set', () => {
+    expect(computeEffectiveImpact({})).toBeUndefined();
   });
 });

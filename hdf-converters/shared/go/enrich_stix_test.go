@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	hdfvalidators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -231,4 +232,50 @@ func TestEnrichStix_Errors(t *testing.T) {
 		_, err := EnrichStix(results, []byte(`{"type":"something-else","objects":[]}`))
 		assert.Error(t, err)
 	})
+}
+
+func TestEnrichStix_Recompute(t *testing.T) {
+	results := enrichFixture(t, "results-with-cvss.json")
+	bundle := enrichFixture(t, "poison-ivy-exploited-stix21.json")
+	asOf, _ := time.Parse(time.RFC3339, "2099-01-01T00:00:00Z")
+
+	out, err := EnrichStix(results, bundle, EnrichOptions{Recompute: true, AsOf: asOf})
+	require.NoError(t, err)
+	doc := enrichDoc(t, out)
+
+	// CVE-2012-0158: exploited + 3.1 baseVector → inline riskAdjustment authored.
+	req := requirementByID(t, doc, "CVE-2012-0158")
+	so := reqRefsUnderKey(req, "statusOverrides")
+	require.Len(t, so, 1, "riskAdjustment authored on the exploited 3.1 finding")
+	ov := so[0].(map[string]interface{})
+	assert.Equal(t, "riskAdjustment", ov["type"])
+	assert.Equal(t, "2099-01-01T00:00:00Z", ov["appliedAt"])
+	assert.Equal(t, "2099-04-01T00:00:00Z", ov["expiresAt"], "AsOf + 90d review horizon")
+	assert.InDelta(t, 0.98, ov["impact"].(map[string]interface{})["value"], 1e-9)
+	cvss := ov["cvss"].(map[string]interface{})
+	assert.Equal(t, "3.1", cvss["version"])
+	assert.Equal(t, "E:H", cvss["threatVector"])
+	assert.InDelta(t, 9.8, cvss["computedScore"], 1e-9)
+	ovRefs := ov["externalReferences"].([]interface{})
+	require.Len(t, ovRefs, 1)
+	assert.Equal(t, "stix", ovRefs[0].(map[string]interface{})["sourceName"])
+
+	// CVE-2009-4324: exploited but NO base vector → skip (no fabrication).
+	assert.Empty(t, reqRefsUnderKey(requirementByID(t, doc, "CVE-2009-4324"), "statusOverrides"))
+	// CVE-2013-0422: exploited but 4.0 base vector → skip (deferred to ne8q.8).
+	assert.Empty(t, reqRefsUnderKey(requirementByID(t, doc, "CVE-2013-0422"), "statusOverrides"))
+
+	// Output remains schema-valid.
+	r := hdfvalidators.ValidateResults(out)
+	assert.True(t, r.Valid, r.Error())
+}
+
+func TestEnrichStix_RecomputeIsOptIn(t *testing.T) {
+	// Default (no opts / Recompute false) authors NO overrides even with exploitation present.
+	out, err := EnrichStix(enrichFixture(t, "results-with-cvss.json"), enrichFixture(t, "poison-ivy-exploited-stix21.json"))
+	require.NoError(t, err)
+	doc := enrichDoc(t, out)
+	for _, id := range []string{"CVE-2012-0158", "CVE-2009-4324", "CVE-2013-0422"} {
+		assert.Empty(t, reqRefsUnderKey(requirementByID(t, doc, id), "statusOverrides"), id)
+	}
 }

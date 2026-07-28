@@ -5,7 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -111,4 +114,42 @@ func TestEnrichCmd_ResultsPositionalMustBeResults(t *testing.T) {
 		enrichFixturePath("poison-ivy-stix21.json"),
 		enrichFixturePath("poison-ivy-stix21.json"))
 	require.Error(t, err)
+}
+
+func TestEnrichCmd_Recompute(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "out.json")
+	_, _, err := executeCommand("enrich",
+		enrichFixturePath("results-with-cvss.json"),
+		enrichFixturePath("poison-ivy-exploited-stix21.json"),
+		"--recompute", "-o", out)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(out)
+	require.NoError(t, err)
+
+	// Output is schema-valid.
+	stdout, _, verr := executeCommand("validate", out)
+	require.NoError(t, verr)
+	assert.Contains(t, stdout, "valid HDF results")
+
+	// End-to-end: the hdf-diff resolver surfaces the recomputed effectiveImpact
+	// from the authored (non-expired) inline riskAdjustment.
+	var results hdf.HDFResults
+	require.NoError(t, json.Unmarshal(data, &results))
+	var req hdf.EvaluatedRequirement
+	found := false
+	for _, b := range results.Baselines {
+		for _, r := range b.Requirements {
+			if r.ID == "CVE-2012-0158" {
+				req = r
+				found = true
+			}
+		}
+	}
+	require.True(t, found, "CVE-2012-0158 finding present")
+	require.Len(t, req.StatusOverrides, 1, "riskAdjustment authored")
+
+	eff := diff.ComputeEffectiveImpact(req, time.Now().UTC().Format(time.RFC3339))
+	require.NotNil(t, eff, "resolver surfaces effectiveImpact from the non-expired override")
+	assert.InDelta(t, 0.98, *eff, 1e-9, "E:H recompute of the 9.8 base vector → impact 0.98")
 }

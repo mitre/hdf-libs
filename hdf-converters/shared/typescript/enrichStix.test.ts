@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { validateResults } from '@mitre/hdf-validators';
 import { enrichStix } from './enrichStix.js';
+import { parseStixBundle, detectStixBundle } from './stix.js';
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), '..', 'enrich-fixtures');
 const fixture = (name: string): string => readFileSync(join(FIXTURES, name), 'utf-8');
@@ -111,5 +112,178 @@ describe('enrichStix — STIX bundle → results externalReferences[]', () => {
     expect(() => enrichStix('', bundle())).toThrow();
     expect(() => enrichStix(results(), 'not json')).toThrow();
     expect(() => enrichStix(results(), '{"type":"something-else","objects":[]}')).toThrow();
+  });
+});
+
+describe('enrichStix — opt-in E:H recompute', () => {
+  const recResults = () => fixture('results-with-cvss.json');
+  const recBundle = () => fixture('poison-ivy-exploited-stix21.json');
+  const asOf = new Date('2099-01-01T00:00:00Z');
+
+  it('authors an inline riskAdjustment for an exploited 3.1 finding', () => {
+    const doc = JSON.parse(enrichStix(recResults(), recBundle(), { recompute: true, asOf })) as Doc;
+    const req = requirementById(doc, 'CVE-2012-0158');
+    const so = (req.statusOverrides as Doc[]) ?? [];
+    expect(so).toHaveLength(1);
+    const ov = so[0];
+    expect(ov.type).toBe('riskAdjustment');
+    expect(ov.appliedAt).toBe('2099-01-01T00:00:00Z');
+    expect(ov.expiresAt).toBe('2099-04-01T00:00:00Z');
+    expect((ov.impact as Doc).value).toBeCloseTo(0.98, 9);
+    const cvss = ov.cvss as Doc;
+    expect(cvss.version).toBe('3.1');
+    expect(cvss.threatVector).toBe('E:H');
+    expect(cvss.computedScore).toBeCloseTo(9.8, 9);
+    const refs = ov.externalReferences as Doc[];
+    expect(refs).toHaveLength(1);
+    expect(refs[0].sourceName).toBe('stix');
+  });
+
+  it('skips findings with no base vector or a 4.0 base vector (guardrails)', () => {
+    const doc = JSON.parse(enrichStix(recResults(), recBundle(), { recompute: true, asOf })) as Doc;
+    expect((requirementById(doc, 'CVE-2009-4324').statusOverrides as Doc[]) ?? []).toHaveLength(0);
+    expect((requirementById(doc, 'CVE-2013-0422').statusOverrides as Doc[]) ?? []).toHaveLength(0);
+  });
+
+  it('authors nothing unless recompute is opted in', () => {
+    const doc = JSON.parse(enrichStix(recResults(), recBundle())) as Doc;
+    for (const id of ['CVE-2012-0158', 'CVE-2009-4324', 'CVE-2013-0422']) {
+      expect((requirementById(doc, id).statusOverrides as Doc[]) ?? []).toHaveLength(0);
+    }
+  });
+
+  it('recompute output is schema-valid HDF results', () => {
+    const v = validateResults(JSON.parse(enrichStix(recResults(), recBundle(), { recompute: true, asOf })));
+    expect(v.valid, v.getErrorMessage()).toBe(true);
+  });
+});
+
+describe('enrichStix — detection + error branch coverage', () => {
+  const asOf = new Date('2099-01-01T00:00:00Z');
+  const results31 = (cve: string, withBaseVector: boolean): string =>
+    JSON.stringify({
+      baselines: [
+        {
+          name: 'B',
+          checksum: { algorithm: 'sha256', value: 'abc' },
+          requirements: [
+            {
+              id: cve,
+              descriptions: [{ label: 'default', data: 'd' }],
+              impact: 0.9,
+              tags: {},
+              results: [{ status: 'failed', codeDesc: 'x', startTime: '2025-01-01T00:00:00Z' }],
+              cvss: withBaseVector
+                ? [{ version: '3.1', id: cve, baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H', baseScore: 9.8 }]
+                : [{ version: '3.1', id: cve }],
+            },
+          ],
+        },
+      ],
+      components: [],
+      statistics: {},
+    });
+  const bundleWith = (obj: Record<string, unknown>): string =>
+    JSON.stringify({
+      type: 'bundle',
+      id: 'bundle--1',
+      objects: [
+        {
+          type: 'vulnerability',
+          spec_version: '2.1',
+          id: 'vulnerability--v1',
+          name: 'CVE-2021-1',
+          external_references: [{ source_name: 'cve', external_id: 'CVE-2021-1' }],
+        },
+        obj,
+      ],
+    });
+  const overrideCount = (out: string, cve: string): number =>
+    ((requirementById(JSON.parse(out) as Doc, cve).statusOverrides as Doc[]) ?? []).length;
+
+  it('detects exploitation via a sighting (sighting_of_ref)', () => {
+    const b = bundleWith({ type: 'sighting', spec_version: '2.1', id: 'sighting--1', sighting_of_ref: 'vulnerability--v1' });
+    expect(overrideCount(enrichStix(results31('CVE-2021-1', true), b, { recompute: true, asOf }), 'CVE-2021-1')).toBe(1);
+  });
+
+  it('detects exploitation via an indicator (object_refs)', () => {
+    const b = bundleWith({ type: 'indicator', spec_version: '2.1', id: 'indicator--1', object_refs: ['vulnerability--v1'] });
+    expect(overrideCount(enrichStix(results31('CVE-2021-1', true), b, { recompute: true, asOf }), 'CVE-2021-1')).toBe(1);
+  });
+
+  it('skips recompute when a cvss entry carries no base vector', () => {
+    const b = bundleWith({ type: 'sighting', spec_version: '2.1', id: 'sighting--1', sighting_of_ref: 'vulnerability--v1' });
+    expect(overrideCount(enrichStix(results31('CVE-2021-1', false), b, { recompute: true, asOf }), 'CVE-2021-1')).toBe(0);
+  });
+
+  it('throws on unparseable results JSON', () => {
+    expect(() => enrichStix('not json at all', bundle())).toThrow(/parsing results/);
+  });
+});
+
+describe('stix helper — parse/detect branches', () => {
+  it('parseStixBundle throws when objects[] is missing', () => {
+    expect(() => parseStixBundle('{"type":"bundle"}')).toThrow(/no objects/);
+  });
+  it('parseStixBundle throws on a non-bundle type', () => {
+    expect(() => parseStixBundle('{"type":"x","objects":[]}')).toThrow(/not a STIX bundle/);
+  });
+  it('detectStixBundle returns false on invalid JSON, true on a bundle', () => {
+    expect(detectStixBundle('not json')).toBe(false);
+    expect(detectStixBundle('{"type":"bundle","objects":[]}')).toBe(true);
+  });
+});
+
+describe('enrichStix — additional branch coverage', () => {
+  const asOf = new Date('2099-01-01T00:00:00Z');
+  const resultsFor = (cve: string): string =>
+    JSON.stringify({
+      baselines: [
+        {
+          name: 'B',
+          checksum: { algorithm: 'sha256', value: 'abc' },
+          requirements: [
+            {
+              id: cve,
+              descriptions: [{ label: 'default', data: 'd' }],
+              impact: 0.9,
+              tags: {},
+              results: [{ status: 'failed', codeDesc: 'x', startTime: '2025-01-01T00:00:00Z' }],
+              cvss: [{ version: '3.1', id: cve, baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H', baseScore: 9.8 }],
+            },
+          ],
+        },
+      ],
+      components: [],
+      statistics: {},
+    });
+
+  it('omits externalId for a STIX object with no id and ignores non-targets relationships', () => {
+    const b = JSON.stringify({
+      type: 'bundle',
+      id: 'bundle--1',
+      objects: [
+        { type: 'campaign', spec_version: '2.1', name: 'no-id-campaign' },
+        { type: 'relationship', spec_version: '2.1', id: 'relationship--x', relationship_type: 'uses', source_ref: 'a', target_ref: 'b' },
+      ],
+    });
+    const out = JSON.parse(enrichStix(resultsFor('CVE-2021-1'), b, { recompute: true, asOf })) as Doc;
+    expect((requirementById(out, 'CVE-2021-1').statusOverrides as Doc[]) ?? []).toHaveLength(0);
+    const rootRef = (out.externalReferences as Doc[]).find((r) => (r.document as Doc)?.name === 'no-id-campaign');
+    expect(rootRef).toBeDefined();
+    expect(rootRef?.externalId).toBeUndefined();
+  });
+
+  it('tolerates an exploited CVE with no matching finding', () => {
+    const b = JSON.stringify({
+      type: 'bundle',
+      id: 'bundle--1',
+      objects: [
+        { type: 'vulnerability', spec_version: '2.1', id: 'vulnerability--v1', name: 'CVE-2021-1', external_references: [{ source_name: 'cve', external_id: 'CVE-2021-1' }] },
+        { type: 'sighting', spec_version: '2.1', id: 'sighting--1', sighting_of_ref: 'vulnerability--v1' },
+      ],
+    });
+    const out = enrichStix(resultsFor('CVE-9999-9'), b, { recompute: true, asOf });
+    expect((requirementById(JSON.parse(out) as Doc, 'CVE-9999-9').statusOverrides as Doc[]) ?? []).toHaveLength(0);
   });
 });

@@ -186,5 +186,5 @@ export { convertOscalSarToHdf } from '../converters/oscal-to-hdf/typescript/inde
 export { detectOscalDocumentType } from '../converters/oscal-to-hdf/typescript/index.js';
 
 // STIX enrichment: overlay a STIX 2.1 bundle onto a results doc as externalReferences[]
-export { enrichStix } from '../shared/typescript/enrichStix.js';
+export { enrichStix, type EnrichOptions } from '../shared/typescript/enrichStix.js';
 export { detectStixBundle, parseStixBundle } from '../shared/typescript/stix.js';

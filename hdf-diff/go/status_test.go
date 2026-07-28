@@ -5,6 +5,8 @@ import (
 	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Test-level status string constants to avoid goconst duplication.
@@ -870,3 +872,36 @@ func TestExtractSortedStatuses_MixedStatuses(t *testing.T) {
 
 // Note: TestExtractSortedStatuses_NilStatusSkipped removed — canonical
 // RequirementResult.Status is a value type (not pointer), so nil is not possible.
+
+func TestComputeEffectiveImpact(t *testing.T) {
+	impactOverride := func(v float64, expiresAt string) hdf.StatusOverride {
+		exp, _ := time.Parse(time.RFC3339, expiresAt)
+		return hdf.StatusOverride{Impact: &hdf.ImpactOverride{Value: v}, ExpiresAt: exp}
+	}
+	ptr := func(f float64) *float64 { return &f }
+	ref := "2099-01-01T00:00:00Z"
+
+	t.Run("non-expired impact override wins", func(t *testing.T) {
+		req := hdf.EvaluatedRequirement{StatusOverrides: []hdf.StatusOverride{impactOverride(0.98, "2100-01-01T00:00:00Z")}}
+		got := ComputeEffectiveImpact(req, ref)
+		require.NotNil(t, got)
+		assert.Equal(t, 0.98, *got)
+	})
+	t.Run("expired override falls through to effectiveImpact field", func(t *testing.T) {
+		req := hdf.EvaluatedRequirement{
+			StatusOverrides: []hdf.StatusOverride{impactOverride(0.98, "2000-01-01T00:00:00Z")},
+			EffectiveImpact: ptr(0.5),
+		}
+		got := ComputeEffectiveImpact(req, ref)
+		require.NotNil(t, got)
+		assert.Equal(t, 0.5, *got)
+	})
+	t.Run("no overrides, effectiveImpact field used", func(t *testing.T) {
+		got := ComputeEffectiveImpact(hdf.EvaluatedRequirement{EffectiveImpact: ptr(0.3)}, "")
+		require.NotNil(t, got)
+		assert.Equal(t, 0.3, *got)
+	})
+	t.Run("nothing set returns nil", func(t *testing.T) {
+		assert.Nil(t, ComputeEffectiveImpact(hdf.EvaluatedRequirement{}, ""))
+	})
+}

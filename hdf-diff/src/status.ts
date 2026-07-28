@@ -22,6 +22,7 @@ interface ResultLike {
 interface OverrideLike {
   status?: string;
   expiresAt: string;
+  impact?: { value: number };
 }
 
 /**
@@ -189,4 +190,30 @@ export function classifyDiffStatus(
   }
 
   return 'updated';
+}
+
+/**
+ * Determine the effective impact score of a requirement from its overrides,
+ * mirroring computeEffectiveStatus for the impact axis.
+ *
+ * Priority:
+ * 1. First non-expired statusOverride carrying an impact → that impact value
+ * 2. effectiveImpact field set (no non-expired impact override) → use it
+ * 3. Otherwise undefined (no impact adjustment determinable)
+ */
+export function computeEffectiveImpact(
+  requirement: Record<string, unknown>,
+  referenceTimestamp?: string,
+): number | undefined {
+  const overrides = requirement['statusOverrides'] as OverrideLike[] | undefined;
+  if (overrides && overrides.length > 0) {
+    const refTime = referenceTimestamp ? new Date(referenceTimestamp).getTime() : Date.now();
+    for (const override of overrides) {
+      const expiresAt = new Date(override.expiresAt).getTime();
+      if (expiresAt > refTime && override.impact) {
+        return override.impact.value;
+      }
+    }
+  }
+  return requirement['effectiveImpact'] as number | undefined;
 }

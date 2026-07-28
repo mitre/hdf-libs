@@ -53,12 +53,14 @@ export { stripHtml, parseTimestamp, formatTimestamp, formatTimestampSeconds, tri
 // Severity/impact mapping
 export { severityToImpact, impactToSeverity, cvssScoreToSeverity } from './severity/index.js';
 
-// CVSS vector parsing + validation
+// CVSS vector parsing + validation + score compute
 export {
   parseCvssVector,
   validateCvssVector,
+  computeCvssScore,
   type ParsedCvssVector,
   type CvssValidationResult,
+  type CvssScore,
 } from './cvss/index.js';
 
 // CPE 2.3 URI parser

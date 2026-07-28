@@ -63,18 +63,7 @@ func ComputeEffectiveStatus(req hdf.EvaluatedRequirement, referenceTimestamp str
 
 	// 2. Non-expired statusOverrides
 	if len(req.StatusOverrides) > 0 {
-		var refTime time.Time
-		if referenceTimestamp != "" {
-			parsed, err := time.Parse(time.RFC3339, referenceTimestamp)
-			if err == nil {
-				refTime = parsed
-			} else {
-				refTime = time.Now()
-			}
-		} else {
-			refTime = time.Now()
-		}
-
+		refTime := resolveRefTime(referenceTimestamp)
 		for _, override := range req.StatusOverrides {
 			if override.ExpiresAt.After(refTime) && override.Status != nil {
 				return string(*override.Status)
@@ -253,4 +242,36 @@ func stringSlicesEqual(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// resolveRefTime parses an RFC3339 reference timestamp for expiry comparison,
+// falling back to the current time when absent or unparseable. Shared by the
+// effective-status and effective-impact resolvers.
+func resolveRefTime(referenceTimestamp string) time.Time {
+	if referenceTimestamp != "" {
+		if parsed, err := time.Parse(time.RFC3339, referenceTimestamp); err == nil {
+			return parsed
+		}
+	}
+	return time.Now()
+}
+
+// ComputeEffectiveImpact determines the effective impact score of a requirement
+// from its overrides, mirroring ComputeEffectiveStatus for the impact axis.
+//
+// Priority:
+//  1. First non-expired statusOverride carrying an impact -> that impact value
+//  2. effectiveImpact field set (no non-expired impact override) -> use it
+//  3. Otherwise nil (no impact adjustment determinable)
+func ComputeEffectiveImpact(req hdf.EvaluatedRequirement, referenceTimestamp string) *float64 {
+	if len(req.StatusOverrides) > 0 {
+		refTime := resolveRefTime(referenceTimestamp)
+		for _, override := range req.StatusOverrides {
+			if override.ExpiresAt.After(refTime) && override.Impact != nil {
+				v := override.Impact.Value
+				return &v
+			}
+		}
+	}
+	return req.EffectiveImpact
 }

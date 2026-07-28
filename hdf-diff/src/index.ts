@@ -28,6 +28,7 @@ export type { DiffOptions } from './diff.js';
 // Status utilities
 export {
   computeEffectiveStatus,
+  computeEffectiveImpact,
   classifyChangeReasons,
   classifyDiffStatus,
 } from './status.js';
