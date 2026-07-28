@@ -258,3 +258,124 @@ export function validateCvssVector(
 
   return { valid: errors.length === 0, errors };
 }
+
+/** A computed CVSS score. */
+export interface CvssScore {
+  /** CVSS major.minor version the score was computed under (currently always "3.1"). */
+  version: string;
+  /** Base score (0.0–10.0). */
+  baseScore: number;
+  /**
+   * Temporal (Threat) score (0.0–10.0). Equals baseScore when no temporal
+   * metrics (E/RL/RC) are present, per the CVSS 3.1 spec.
+   */
+  temporalScore: number;
+}
+
+// CVSS 3.1 metric weights (FIRST v3.1 specification §7). Privileges Required is
+// scope-dependent, hence two tables.
+const CVSS31_AV: Record<string, number> = { N: 0.85, A: 0.62, L: 0.55, P: 0.2 };
+const CVSS31_AC: Record<string, number> = { L: 0.77, H: 0.44 };
+const CVSS31_UI: Record<string, number> = { N: 0.85, R: 0.62 };
+const CVSS31_CIA: Record<string, number> = { N: 0.0, L: 0.22, H: 0.56 };
+const CVSS31_PR_UNCHANGED: Record<string, number> = { N: 0.85, L: 0.62, H: 0.27 };
+const CVSS31_PR_CHANGED: Record<string, number> = { N: 0.85, L: 0.68, H: 0.5 };
+const CVSS31_E: Record<string, number> = { X: 1.0, H: 1.0, F: 0.97, P: 0.94, U: 0.91 };
+const CVSS31_RL: Record<string, number> = { X: 1.0, U: 1.0, W: 0.97, T: 0.96, O: 0.95 };
+const CVSS31_RC: Record<string, number> = { X: 1.0, C: 1.0, R: 0.96, U: 0.92 };
+
+/**
+ * CVSS 3.1 Roundup (spec §7.4): the smallest number, to one decimal place, that
+ * is >= the input — computed via integer math to avoid the floating-point edge
+ * cases 3.0 rounding suffered.
+ */
+function roundUp31(x: number): number {
+  const intInput = Math.round(x * 100000);
+  if (intInput % 10000 === 0) {
+    return intInput / 100000;
+  }
+  return (Math.floor(intInput / 10000) + 1) / 10;
+}
+
+function cvss31TemporalWeight(
+  table: Record<string, number>,
+  metrics: Map<string, string>,
+  key: string,
+): number {
+  const v = metrics.get(key);
+  if (v === undefined) {
+    return 1.0; // absent → X
+  }
+  const w = table[v];
+  if (w === undefined) {
+    throw new Error(`cvss: invalid 3.1 ${key} value "${v}"`);
+  }
+  return w;
+}
+
+/**
+ * Compute the CVSS 3.1 Base and Temporal (Threat) scores for a vector string.
+ *
+ * Only CVSS 3.1 is supported here — CVSS 4.0's MacroVector engine lives
+ * separately — so any other version throws rather than returning a wrong number.
+ * The peer of the Go `ComputeCvssScore` (kept byte-identical via shared fixtures).
+ *
+ * @throws if the version is not 3.1, a required base metric is missing, or any
+ *   metric value is out of the 3.1 enum.
+ */
+export function computeCvssScore(vector: string): CvssScore {
+  const { version, metrics } = parseCvssVector(vector);
+  if (version !== '3.1') {
+    throw new Error(`cvss: score compute supports only CVSS 3.1, got "${version}"`);
+  }
+  for (const k of ['AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A']) {
+    if (!metrics.has(k)) {
+      throw new Error(`cvss: missing required 3.1 base metric "${k}"`);
+    }
+  }
+
+  const scope = metrics.get('S');
+  if (scope !== 'U' && scope !== 'C') {
+    throw new Error(`cvss: invalid 3.1 Scope value "${scope ?? ''}"`);
+  }
+  const scopeChanged = scope === 'C';
+
+  const prTable = scopeChanged ? CVSS31_PR_CHANGED : CVSS31_PR_UNCHANGED;
+  const lookup = (table: Record<string, number>, metric: string): number => {
+    const key = metrics.get(metric);
+    const w = key === undefined ? undefined : table[key];
+    if (w === undefined) {
+      throw new Error(`cvss: invalid 3.1 metric value ${metric}:"${key ?? ''}"`);
+    }
+    return w;
+  };
+  const av = lookup(CVSS31_AV, 'AV');
+  const ac = lookup(CVSS31_AC, 'AC');
+  const ui = lookup(CVSS31_UI, 'UI');
+  const pr = lookup(prTable, 'PR');
+  const c = lookup(CVSS31_CIA, 'C');
+  const i = lookup(CVSS31_CIA, 'I');
+  const a = lookup(CVSS31_CIA, 'A');
+
+  const iss = 1 - (1 - c) * (1 - i) * (1 - a);
+  const impact = scopeChanged
+    ? 7.52 * (iss - 0.029) - 3.25 * Math.pow(iss - 0.02, 15)
+    : 6.42 * iss;
+  const exploitability = 8.22 * av * ac * pr * ui;
+
+  let baseScore: number;
+  if (impact <= 0) {
+    baseScore = 0.0;
+  } else if (scopeChanged) {
+    baseScore = roundUp31(Math.min(1.08 * (impact + exploitability), 10));
+  } else {
+    baseScore = roundUp31(Math.min(impact + exploitability, 10));
+  }
+
+  const e = cvss31TemporalWeight(CVSS31_E, metrics, 'E');
+  const rl = cvss31TemporalWeight(CVSS31_RL, metrics, 'RL');
+  const rc = cvss31TemporalWeight(CVSS31_RC, metrics, 'RC');
+  const temporalScore = roundUp31(baseScore * e * rl * rc);
+
+  return { version: '3.1', baseScore, temporalScore };
+}

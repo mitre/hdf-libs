@@ -2,6 +2,7 @@ package hdfutil
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -211,4 +212,146 @@ func contains(haystack []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+// CvssScore holds computed CVSS scores for a vector.
+type CvssScore struct {
+	Version       string
+	BaseScore     float64
+	TemporalScore float64
+}
+
+// CVSS 3.1 metric weights (FIRST v3.1 specification §7). Privileges Required is
+// scope-dependent, hence two tables.
+var (
+	cvss31AV          = map[string]float64{"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.2}
+	cvss31AC          = map[string]float64{"L": 0.77, "H": 0.44}
+	cvss31UI          = map[string]float64{"N": 0.85, "R": 0.62}
+	cvss31CIA         = map[string]float64{"N": 0.0, "L": 0.22, "H": 0.56}
+	cvss31PRUnchanged = map[string]float64{"N": 0.85, "L": 0.62, "H": 0.27}
+	cvss31PRChanged   = map[string]float64{"N": 0.85, "L": 0.68, "H": 0.5}
+	cvss31E           = map[string]float64{"X": 1.0, "H": 1.0, "F": 0.97, "P": 0.94, "U": 0.91}
+	cvss31RL          = map[string]float64{"X": 1.0, "U": 1.0, "W": 0.97, "T": 0.96, "O": 0.95}
+	cvss31RC          = map[string]float64{"X": 1.0, "C": 1.0, "R": 0.96, "U": 0.92}
+)
+
+// ComputeCvssScore computes the CVSS 3.1 Base and Temporal (Threat) scores for a
+// vector string. Only CVSS 3.1 is supported here — CVSS 4.0's MacroVector engine
+// lives separately — so any other version returns an error rather than a wrong
+// number. The Temporal score equals the Base score when no temporal metrics
+// (E/RL/RC) are present (all default to X = 1.0), per the spec.
+func ComputeCvssScore(vector string) (CvssScore, error) {
+	version, m := ParseCvssVector(vector)
+	if version != "3.1" {
+		return CvssScore{}, fmt.Errorf("cvss: score compute supports only CVSS 3.1, got %q", version)
+	}
+	for _, k := range []string{"AV", "AC", "PR", "UI", "S", "C", "I", "A"} {
+		if _, ok := m[k]; !ok {
+			return CvssScore{}, fmt.Errorf("cvss: missing required 3.1 base metric %q", k)
+		}
+	}
+	scopeChanged := m["S"] == "C"
+	if m["S"] != "C" && m["S"] != "U" {
+		return CvssScore{}, fmt.Errorf("cvss: invalid 3.1 Scope value %q", m["S"])
+	}
+
+	prTable := cvss31PRUnchanged
+	if scopeChanged {
+		prTable = cvss31PRChanged
+	}
+	lookup := func(table map[string]float64, key string) (float64, error) {
+		v, ok := table[m[key]]
+		if !ok {
+			return 0, fmt.Errorf("cvss: invalid 3.1 metric value %s:%q", key, m[key])
+		}
+		return v, nil
+	}
+	av, err := lookup(cvss31AV, "AV")
+	if err != nil {
+		return CvssScore{}, err
+	}
+	ac, err := lookup(cvss31AC, "AC")
+	if err != nil {
+		return CvssScore{}, err
+	}
+	ui, err := lookup(cvss31UI, "UI")
+	if err != nil {
+		return CvssScore{}, err
+	}
+	pr, err := lookup(prTable, "PR")
+	if err != nil {
+		return CvssScore{}, err
+	}
+	c, err := lookup(cvss31CIA, "C")
+	if err != nil {
+		return CvssScore{}, err
+	}
+	i, err := lookup(cvss31CIA, "I")
+	if err != nil {
+		return CvssScore{}, err
+	}
+	a, err := lookup(cvss31CIA, "A")
+	if err != nil {
+		return CvssScore{}, err
+	}
+
+	iss := 1 - (1-c)*(1-i)*(1-a)
+	var impact float64
+	if scopeChanged {
+		impact = 7.52*(iss-0.029) - 3.25*math.Pow(iss-0.02, 15)
+	} else {
+		impact = 6.42 * iss
+	}
+	exploitability := 8.22 * av * ac * pr * ui
+
+	var base float64
+	switch {
+	case impact <= 0:
+		base = 0.0
+	case scopeChanged:
+		base = roundUp31(math.Min(1.08*(impact+exploitability), 10))
+	default:
+		base = roundUp31(math.Min(impact+exploitability, 10))
+	}
+
+	e, err := cvss31TemporalWeight(cvss31E, m, "E")
+	if err != nil {
+		return CvssScore{}, err
+	}
+	rl, err := cvss31TemporalWeight(cvss31RL, m, "RL")
+	if err != nil {
+		return CvssScore{}, err
+	}
+	rc, err := cvss31TemporalWeight(cvss31RC, m, "RC")
+	if err != nil {
+		return CvssScore{}, err
+	}
+	temporal := roundUp31(base * e * rl * rc)
+
+	return CvssScore{Version: "3.1", BaseScore: base, TemporalScore: temporal}, nil
+}
+
+// cvss31TemporalWeight returns the weight for a present temporal metric, 1.0 when
+// absent (defaults to X), and errors on a present-but-invalid value (no silent
+// fabrication).
+func cvss31TemporalWeight(table map[string]float64, m map[string]string, key string) (float64, error) {
+	v, present := m[key]
+	if !present {
+		return 1.0, nil
+	}
+	if w, ok := table[v]; ok {
+		return w, nil
+	}
+	return 0, fmt.Errorf("cvss: invalid 3.1 %s value %q", key, v)
+}
+
+// roundUp31 implements the CVSS 3.1 Roundup (spec §7.4): the smallest number, to
+// one decimal place, that is >= the input — via integer math to avoid the
+// floating-point edge cases the 3.0 rounding suffered.
+func roundUp31(x float64) float64 {
+	intInput := int(math.Round(x * 100000))
+	if intInput%10000 == 0 {
+		return float64(intInput) / 100000.0
+	}
+	return (math.Floor(float64(intInput)/10000) + 1) / 10.0
 }

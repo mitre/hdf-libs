@@ -1,12 +1,72 @@
 package hdfutil
 
 import (
+	"encoding/json"
 	"math"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type cvss31Case struct {
+	Vector   string  `json:"vector"`
+	Base     float64 `json:"base"`
+	Temporal float64 `json:"temporal"`
+	Note     string  `json:"note"`
+}
+
+func loadCvss31Cases(t *testing.T) []cvss31Case {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "testdata", "cvss31-vectors.json"))
+	require.NoError(t, err)
+	var fx struct {
+		Cases []cvss31Case `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(data, &fx))
+	require.NotEmpty(t, fx.Cases)
+	return fx.Cases
+}
+
+func TestComputeCvssScore31(t *testing.T) {
+	for _, c := range loadCvss31Cases(t) {
+		c := c
+		t.Run(c.Vector, func(t *testing.T) {
+			s, err := ComputeCvssScore(c.Vector)
+			require.NoError(t, err)
+			assert.Equal(t, "3.1", s.Version)
+			assert.Equal(t, c.Base, s.BaseScore, "base")
+			assert.Equal(t, c.Temporal, s.TemporalScore, "temporal")
+		})
+	}
+}
+
+func TestComputeCvssScore_UnsupportedVersion(t *testing.T) {
+	for _, v := range []string{
+		"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+		"AV:N/AC:L/Au:N/C:C/I:C/A:C",
+		"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+	} {
+		_, err := ComputeCvssScore(v)
+		assert.Error(t, err, v)
+	}
+}
+
+func TestComputeCvssScore_InvalidVector(t *testing.T) {
+	_, err := ComputeCvssScore("CVSS:3.1/AV:N/AC:L")
+	assert.Error(t, err, "missing required base metric")
+
+	_, err = ComputeCvssScore("CVSS:3.1/AV:Z/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+	assert.ErrorContains(t, err, "AV", "out-of-enum base metric value")
+
+	_, err = ComputeCvssScore("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:Z/C:H/I:H/A:H")
+	assert.ErrorContains(t, err, "Scope", "invalid Scope value")
+
+	_, err = ComputeCvssScore("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:Z")
+	assert.ErrorContains(t, err, "E", "out-of-enum temporal value")
+}
 
 func TestCvssScoreToSeverity(t *testing.T) {
 	tests := []struct {
