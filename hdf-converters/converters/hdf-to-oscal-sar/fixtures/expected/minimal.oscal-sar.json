@@ -1,9 +1,9 @@
 {
   "assessment-results": {
-    "uuid": "9b8974dd-36f0-42f6-ad00-3b1f237dfd0c",
+    "uuid": "a7c2bd1e-c3f9-437c-8c73-56fec21edd23",
     "metadata": {
       "title": "HDF Assessment Results Export",
-      "last-modified": "2026-07-13T14:20:22Z",
+      "last-modified": "2026-07-28T00:03:42Z",
       "version": "1.0.0",
       "oscal-version": "1.1.2"
     },
@@ -12,13 +12,24 @@
     },
     "results": [
       {
-        "uuid": "53395cda-b718-4e3d-8f44-1476d5b606fb",
+        "uuid": "3ae13dd0-286d-44f2-b459-38ac135e1d1c",
         "title": "Minimal Baseline",
         "description": "Converted from HDF results",
         "start": "2025-01-15T10:00:00Z",
+        "reviewed-controls": {
+          "control-selections": [
+            {
+              "include-controls": [
+                {
+                  "control-id": "req-001"
+                }
+              ]
+            }
+          ]
+        },
         "findings": [
           {
-            "uuid": "04a72d1e-9cdc-4d25-a6db-3e381a3bd52a",
+            "uuid": "26d1c575-adf1-4d5c-ad03-13703c798c62",
             "title": "Test Requirement",
             "description": "This is a test requirement",
             "props": [
@@ -40,19 +51,19 @@
             },
             "related-observations": [
               {
-                "observation-uuid": "fa3feaa8-5dbf-4b7b-a993-cfa502508d11"
+                "observation-uuid": "0bb64fca-8c1d-45fa-8b12-e57cc2f07c33"
               }
             ],
             "related-risks": [
               {
-                "risk-uuid": "befff03b-3b58-4882-85d1-8e03edd73968"
+                "risk-uuid": "2a3afaba-1538-4cca-943e-798d2412044e"
               }
             ]
           }
         ],
         "observations": [
           {
-            "uuid": "fa3feaa8-5dbf-4b7b-a993-cfa502508d11",
+            "uuid": "0bb64fca-8c1d-45fa-8b12-e57cc2f07c33",
             "description": "[passed] Control check passed",
             "methods": [
               "TEST"
@@ -62,13 +73,21 @@
         ],
         "risks": [
           {
-            "uuid": "befff03b-3b58-4882-85d1-8e03edd73968",
+            "uuid": "2a3afaba-1538-4cca-943e-798d2412044e",
             "title": "Risk for REQ-001",
             "description": "Impact: 0.7 (high)",
             "statement": "Impact: 0.7 (high)",
             "status": "closed",
             "characterizations": [
               {
+                "origin": {
+                  "actors": [
+                    {
+                      "type": "tool",
+                      "actor-uuid": "90a02d2a-c4f3-41d3-8714-ac1c9a841b99"
+                    }
+                  ]
+                },
                 "facets": [
                   {
                     "name": "impact",

@@ -164,6 +164,11 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Asses
   const observations: Observation[] = [];
   const risks: IdentifiedRisk[] = [];
 
+  // OSCAL requires result.reviewed-controls: the set of controls assessed.
+  // Populate it from the control each requirement targets (deduped).
+  const includeControls: Array<{ 'control-id': string }> = [];
+  const seenControl = new Set<string>();
+
   for (const req of baseline.requirements) {
     const { finding, observation, risk } = requirementToFindingSet(req, timestamp);
     findings.push(finding);
@@ -173,13 +178,22 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Asses
     if (risk) {
       risks.push(risk);
     }
+    const cid = nistTagToControlId(req.id);
+    if (cid !== '' && !seenControl.has(cid)) {
+      seenControl.add(cid);
+      includeControls.push({ 'control-id': cid });
+    }
   }
+
+  // Match Go's omitempty: an empty include-controls list collapses to {}.
+  const controlSelection = includeControls.length > 0 ? { 'include-controls': includeControls } : {};
 
   const result = {
     uuid: crypto.randomUUID(),
     title,
     description,
     start: assessmentStart(baseline, timestamp),
+    'reviewed-controls': { 'control-selections': [controlSelection] },
     findings,
     observations,
     risks,
@@ -201,23 +215,28 @@ function requirementToFindingSet(
 
   // Build props from control mappings (nist/cci), source code, non-default
   // descriptions (check/fix/rationale), and v3.2 classification fields.
+  // OSCAL prop values must be non-empty strings, so skip any empty value
+  // (e.g. an empty source `code`) rather than emitting a schema-invalid value: ''.
   const props: Property[] = [];
+  const addProp = (name: string, value: string): void => {
+    if (value !== '') props.push({ name, value });
+  };
   const pushTagValues = (key: string): void => {
     const raw = req.tags?.[key];
     if (Array.isArray(raw)) {
-      for (const v of raw) if (typeof v === 'string') props.push({ name: key, value: v });
+      for (const v of raw) if (typeof v === 'string') addProp(key, v);
     }
   };
   pushTagValues('nist');
   pushTagValues('cci');
-  if (req.code) props.push({ name: 'code', value: req.code });
+  if (req.code != null) addProp('code', req.code);
   for (const label of ['check', 'fix', 'rationale']) {
     const d = req.descriptions.find((x) => x.label === label);
-    if (d) props.push({ name: label, value: d.data });
+    addProp(label, d ? d.data : '');
   }
-  if (req.controlType) props.push({ name: 'control-type', value: req.controlType });
-  if (req.verificationMethod) props.push({ name: 'verification-method', value: req.verificationMethod });
-  if (req.applicability) props.push({ name: 'applicability', value: req.applicability });
+  if (req.controlType) addProp('control-type', req.controlType);
+  if (req.verificationMethod) addProp('verification-method', req.verificationMethod);
+  if (req.applicability) addProp('applicability', req.applicability);
 
   // refs: url/uri become OSCAL links; a plain string ref becomes a prop (not a valid href).
   const links: Link[] = [];
@@ -249,7 +268,9 @@ function requirementToFindingSet(
   const finding = {
     uuid: crypto.randomUUID(),
     title,
-    description: findingDesc || '',
+    // OSCAL requires a non-empty finding description; fall back to the title
+    // when the requirement carries no description of its own.
+    description: findingDesc || title,
     props: props.length > 0 ? props : undefined,
     links: links.length > 0 ? links : undefined,
     target,
@@ -284,6 +305,11 @@ function requirementToFindingSet(
       status: riskStatusFromState(state),
       characterizations: [
         {
+          // OSCAL requires characterization.origin. This characterization is
+          // produced by the converter acting as an assessment tool.
+          origin: {
+            actors: [{ type: 'tool', 'actor-uuid': crypto.randomUUID() }],
+          },
           facets: [
             {
               name: 'impact',

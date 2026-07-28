@@ -149,6 +149,11 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string) oscal.R
 	var observations []oscal.Observation
 	var risks []oscal.Risk
 
+	// OSCAL requires result.reviewed-controls: the set of controls assessed.
+	// Populate it from the control each requirement targets (deduped).
+	var includeControls []oscal.SelectControl
+	seenControl := make(map[string]bool)
+
 	for i := range baseline.Requirements {
 		req := &baseline.Requirements[i]
 		f, obs, rsk := requirementToFindingSet(req, timestamp)
@@ -159,16 +164,33 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string) oscal.R
 		if rsk != nil {
 			risks = append(risks, *rsk)
 		}
+		if cid := oscal.NistTagToControlID(req.ID); cid != "" && !seenControl[cid] {
+			seenControl[cid] = true
+			includeControls = append(includeControls, oscal.SelectControl{ControlID: cid})
+		}
 	}
 
 	return oscal.Result{
-		UUID:         oscal.GenerateUUID(),
-		Title:        title,
-		Description:  description,
-		Start:        assessmentStart(baseline, timestamp),
-		Findings:     findings,
-		Observations: observations,
-		Risks:        risks,
+		UUID:             oscal.GenerateUUID(),
+		Title:            title,
+		Description:      description,
+		Start:            assessmentStart(baseline, timestamp),
+		ReviewedControls: reviewedControls(includeControls),
+		Findings:         findings,
+		Observations:     observations,
+		Risks:            risks,
+	}
+}
+
+// reviewedControls builds the OSCAL reviewed-controls object from the assessed
+// control IDs. OSCAL requires reviewed-controls on every result; when a baseline
+// carries no identifiable controls, an empty control-selection still satisfies
+// the schema (control-selection has no required members).
+func reviewedControls(includeControls []oscal.SelectControl) *oscal.ReviewedControls {
+	return &oscal.ReviewedControls{
+		ControlSelections: []oscal.ControlSelection{
+			{IncludeControls: includeControls},
+		},
 	}
 }
 
@@ -196,12 +218,19 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 	// Build props from control mappings (nist/cci), code, non-default
 	// descriptions (check/fix/rationale), and v3.2 classification fields.
 	var props []oscal.Property
+	// OSCAL prop values must be non-empty strings, so skip any empty value
+	// (e.g. an empty source `code`) rather than emitting a schema-invalid value: "".
+	addProp := func(name, value string) {
+		if value != "" {
+			props = append(props, oscal.Property{Name: name, Value: value})
+		}
+	}
 	pushTagValues := func(key string) {
 		if raw, ok := req.Tags[key]; ok {
 			if arr, ok := raw.([]interface{}); ok {
 				for _, v := range arr {
 					if s, ok := v.(string); ok {
-						props = append(props, oscal.Property{Name: key, Value: s})
+						addProp(key, s)
 					}
 				}
 			}
@@ -210,21 +239,19 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 	pushTagValues("nist")
 	pushTagValues("cci")
 	if req.Code != nil {
-		props = append(props, oscal.Property{Name: "code", Value: *req.Code})
+		addProp("code", *req.Code)
 	}
 	for _, label := range []string{"check", "fix", "rationale"} {
-		if d := descriptionByLabel(req.Descriptions, label); d != "" {
-			props = append(props, oscal.Property{Name: label, Value: d})
-		}
+		addProp(label, descriptionByLabel(req.Descriptions, label))
 	}
 	if req.ControlType != nil {
-		props = append(props, oscal.Property{Name: "control-type", Value: string(*req.ControlType)})
+		addProp("control-type", string(*req.ControlType))
 	}
 	if req.VerificationMethod != nil {
-		props = append(props, oscal.Property{Name: "verification-method", Value: string(*req.VerificationMethod)})
+		addProp("verification-method", string(*req.VerificationMethod))
 	}
 	if req.Applicability != nil {
-		props = append(props, oscal.Property{Name: "applicability", Value: string(*req.Applicability)})
+		addProp("applicability", string(*req.Applicability))
 	}
 
 	// refs: url/uri -> OSCAL links; a plain string ref -> prop (not a valid href).
@@ -243,6 +270,12 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 	title := req.ID
 	if req.Title != nil && *req.Title != "" {
 		title = *req.Title
+	}
+
+	// OSCAL requires a non-empty finding description; fall back to the title
+	// when the requirement carries no description of its own.
+	if findingDesc == "" {
+		findingDesc = title
 	}
 
 	finding := oscal.Finding{
@@ -294,6 +327,13 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 			Status:      riskStatusFromState(state),
 			Characterizations: []oscal.Characterization{
 				{
+					// OSCAL requires characterization.origin. This characterization
+					// is produced by the converter acting as an assessment tool.
+					Origin: &oscal.Origin{
+						Actors: []oscal.Actor{
+							{Type: "tool", ActorID: oscal.GenerateUUID()},
+						},
+					},
 					Facets: []oscal.Facet{
 						{
 							Name:   "impact",
