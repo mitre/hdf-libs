@@ -1,6 +1,7 @@
 package hdfutil
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"math"
 	"os"
@@ -280,6 +281,90 @@ func TestValidateCvssVector(t *testing.T) {
 		assert.False(t, valid)
 		assert.True(t, hasErr(errs, "E"))
 	})
+}
+
+type cvss40Case struct {
+	Vector      string  `json:"vector"`
+	MacroVector string  `json:"macroVector"`
+	Base        float64 `json:"base"`
+	Temporal    float64 `json:"temporal"`
+	Note        string  `json:"note"`
+}
+
+func loadCvss40Cases(t *testing.T) []cvss40Case {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "testdata", "cvss40-vectors.json"))
+	require.NoError(t, err)
+	var fx struct {
+		Cases []cvss40Case `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(data, &fx))
+	require.NotEmpty(t, fx.Cases)
+	return fx.Cases
+}
+
+func TestComputeCvss40Score(t *testing.T) {
+	for _, c := range loadCvss40Cases(t) {
+		c := c
+		t.Run(c.Vector, func(t *testing.T) {
+			s, err := ComputeCvss40Score(c.Vector)
+			require.NoError(t, err)
+			assert.Equal(t, "4.0", s.Version)
+			assert.Equal(t, c.Base, s.BaseScore, "base")
+			assert.Equal(t, c.Temporal, s.TemporalScore, "temporal")
+		})
+	}
+}
+
+func TestComputeCvss40Score_FirstTestVector(t *testing.T) {
+	// The card's first failing test: exact FIRST-reference score for this vector.
+	s, err := ComputeCvss40Score("CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+	require.NoError(t, err)
+	assert.Equal(t, "4.0", s.Version)
+	assert.Equal(t, 9.3, s.TemporalScore)
+}
+
+func TestComputeCvss40Score_MacroVector(t *testing.T) {
+	for _, c := range loadCvss40Cases(t) {
+		c := c
+		t.Run(c.Vector, func(t *testing.T) {
+			assert.Equal(t, c.MacroVector, Cvss40MacroVector(c.Vector))
+		})
+	}
+}
+
+func TestComputeCvss40Score_Errors(t *testing.T) {
+	cases := map[string]string{
+		"wrong version (3.1)":  "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+		"missing base metrics": "CVSS:4.0/AV:N/AC:L",
+		"invalid AV value":     "CVSS:4.0/AV:Z/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+		"invalid E value":      "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:Z",
+	}
+	for name, v := range cases {
+		v := v
+		t.Run(name, func(t *testing.T) {
+			_, err := ComputeCvss40Score(v)
+			assert.Error(t, err)
+		})
+	}
+}
+
+// TestCvss40DataParity enforces the AC that the shared MacroVector data tables
+// are byte-identical across Go (//go:embed) and TS (bundled import).
+func TestCvss40DataParity(t *testing.T) {
+	goData, err := os.ReadFile("cvss40-data.json")
+	require.NoError(t, err)
+	tsData, err := os.ReadFile(filepath.Join("..", "src", "cvss", "cvss40-data.json"))
+	require.NoError(t, err)
+	assert.Equal(t,
+		sha256.Sum256(goData), sha256.Sum256(tsData),
+		"go/cvss40-data.json and src/cvss/cvss40-data.json must be byte-identical")
+
+	var d struct {
+		Lookup map[string]float64 `json:"lookup"`
+	}
+	require.NoError(t, json.Unmarshal(goData, &d))
+	assert.Len(t, d.Lookup, 270, "FIRST MacroVector lookup has 270 entries")
 }
 
 func hasErr(errs []string, substr string) bool {

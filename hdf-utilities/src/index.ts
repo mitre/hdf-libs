@@ -58,6 +58,8 @@ export {
   parseCvssVector,
   validateCvssVector,
   computeCvssScore,
+  computeCvss40Score,
+  cvss40MacroVector,
   type ParsedCvssVector,
   type CvssValidationResult,
   type CvssScore,
