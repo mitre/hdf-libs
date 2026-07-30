@@ -1,4 +1,4 @@
-import { computeCvssScore } from '@mitre/hdf-utilities';
+import { computeCvssScore, roundImpact } from '@mitre/hdf-utilities';
 import { validateInputSize } from './converterutil.js';
 import {
   parseStixBundle,
@@ -13,7 +13,7 @@ type Doc = Record<string, unknown>;
 /** Options for the enrich pass. The empty object is the informational-only pass. */
 export interface EnrichOptions {
   /** Enable the opt-in E:H CVSS Threat recompute (Phase 5). Off by default. */
-  recompute?: boolean;
+  recomputeCvss?: boolean;
   /** appliedAt for authored overrides; expiresAt = asOf + review horizon. Default: now. */
   asOf?: Date;
   /** Review horizon in ms before an authored riskAdjustment expires. Default: 90 days. */
@@ -68,7 +68,7 @@ export function enrichStix(resultsInput: string, bundleInput: string, opts?: Enr
     if (!matched) appendExternalReference(doc, buildStixRef(obj, 'reference'));
   }
 
-  if (opts?.recompute) recomputeExploitation(bundle, reqById, opts);
+  if (opts?.recomputeCvss) recomputeExploitation(bundle, reqById, opts);
 
   return JSON.stringify(doc, null, 2);
 }
@@ -162,7 +162,7 @@ function buildRiskAdjustment(
   return {
     type: 'riskAdjustment',
     reason: `${cve} actively exploited per STIX threat intelligence (${stixObjectId(src)}); CVSS Threat recomputed with Exploit Maturity E:H.`,
-    impact: { value: score.temporalScore / 10 },
+    impact: { value: roundImpact(score.temporalScore / 10) },
     appliedBy: { type: 'other', identifier: 'hdf-enrich' },
     appliedAt: toRfc3339(appliedAt),
     expiresAt: toRfc3339(expiresAt),

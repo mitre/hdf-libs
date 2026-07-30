@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { severityToImpact, impactToSeverity, cvssScoreToSeverity } from '../src/severity/index.js';
+import {
+  severityToImpact,
+  impactToSeverity,
+  cvssScoreToSeverity,
+  roundImpact,
+} from '../src/severity/index.js';
 
 describe('Severity Utilities', () => {
   describe('severityToImpact', () => {
@@ -299,6 +304,29 @@ describe('Severity Utilities', () => {
 
     it('clamps values > 10 to "critical"', () => {
       expect(cvssScoreToSeverity(15)).toBe('critical');
+    });
+  });
+
+  describe('roundImpact', () => {
+    it('strips float-division representation noise (9.8/10 → 0.98)', () => {
+      // 9.8 / 10 stores as 0.9800000000000001 without rounding.
+      expect(roundImpact(9.8 / 10)).toBe(0.98);
+      expect(roundImpact(8.2 / 10)).toBe(0.82);
+    });
+
+    it('leaves already-clean values unchanged', () => {
+      expect(roundImpact(0.5)).toBe(0.5);
+      expect(roundImpact(0)).toBe(0);
+      expect(roundImpact(1)).toBe(1);
+    });
+
+    it('rounds to 2 decimal places', () => {
+      expect(roundImpact(0.125)).toBe(0.13);
+    });
+
+    it('is idempotent', () => {
+      const once = roundImpact(9.8 / 10);
+      expect(roundImpact(once)).toBe(once);
     });
   });
 });

@@ -121,7 +121,7 @@ func TestEnrichCmd_Recompute(t *testing.T) {
 	_, _, err := executeCommand("enrich",
 		enrichFixturePath("results-with-cvss.json"),
 		enrichFixturePath("poison-ivy-exploited-stix21.json"),
-		"--recompute", "-o", out)
+		"--recompute-cvss", "-o", out)
 	require.NoError(t, err)
 
 	data, err := os.ReadFile(out)

@@ -38,6 +38,16 @@ func SeverityToImpact(severity string, defaultVal float64) float64 {
 	return defaultVal
 }
 
+// RoundImpact rounds an HDF impact value to 2 decimal places — its canonical
+// precision — eliminating the representation noise that binary float division
+// leaves in serialized output (e.g. score/10 → 0.9800000000000001). Impact is
+// defined on 0.0–1.0 with a natural 0.01 grid (a 1-decimal CVSS score / 10), so
+// this is lossless in intent. Use it wherever impact is COMPUTED (divided or
+// otherwise arithmetically derived), not when assigned from a literal band.
+func RoundImpact(x float64) float64 {
+	return math.Round(x*100) / 100
+}
+
 // SeverityToImpactWithAliases maps severity to impact, checking custom aliases
 // first, then falling back to standard mappings. Use for tools with non-standard
 // severity labels (e.g., sonarqube BLOCKER, veracode numeric levels, grype

@@ -51,7 +51,7 @@ export { findValuesByKey, extractColumn, findRows } from './object/index.js';
 export { stripHtml, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps } from './string/index.js';
 
 // Severity/impact mapping
-export { severityToImpact, impactToSeverity, cvssScoreToSeverity } from './severity/index.js';
+export { severityToImpact, impactToSeverity, cvssScoreToSeverity, roundImpact } from './severity/index.js';
 
 // CVSS vector parsing + validation + score compute
 export {

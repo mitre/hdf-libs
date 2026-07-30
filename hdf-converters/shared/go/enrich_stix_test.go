@@ -239,7 +239,7 @@ func TestEnrichStix_Recompute(t *testing.T) {
 	bundle := enrichFixture(t, "poison-ivy-exploited-stix21.json")
 	asOf, _ := time.Parse(time.RFC3339, "2099-01-01T00:00:00Z")
 
-	out, err := EnrichStix(results, bundle, EnrichOptions{Recompute: true, AsOf: asOf})
+	out, err := EnrichStix(results, bundle, EnrichOptions{RecomputeCVSS: true, AsOf: asOf})
 	require.NoError(t, err)
 	doc := enrichDoc(t, out)
 
@@ -271,7 +271,7 @@ func TestEnrichStix_Recompute(t *testing.T) {
 }
 
 func TestEnrichStix_RecomputeIsOptIn(t *testing.T) {
-	// Default (no opts / Recompute false) authors NO overrides even with exploitation present.
+	// Default (no opts / RecomputeCVSS false) authors NO overrides even with exploitation present.
 	out, err := EnrichStix(enrichFixture(t, "results-with-cvss.json"), enrichFixture(t, "poison-ivy-exploited-stix21.json"))
 	require.NoError(t, err)
 	doc := enrichDoc(t, out)

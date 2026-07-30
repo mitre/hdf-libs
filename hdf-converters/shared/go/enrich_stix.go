@@ -11,10 +11,10 @@ import (
 // EnrichOptions controls optional behavior of the enrich pass. The zero value
 // is the informational-only pass (Phase 2 behavior).
 type EnrichOptions struct {
-	// Recompute enables the opt-in E:H CVSS Threat recompute (Phase 5): for a
+	// RecomputeCVSS enables the opt-in E:H CVSS Threat recompute (Phase 5): for a
 	// CVE-matched finding with a 3.1 base vector whose STIX object carries an
 	// exploitation signal, author an inline riskAdjustment. Off by default.
-	Recompute bool
+	RecomputeCVSS bool
 	// AsOf is the appliedAt timestamp for authored overrides; expiresAt =
 	// AsOf + ReviewHorizon. Zero → time.Now() (injected in tests for determinism).
 	AsOf time.Time
@@ -73,7 +73,7 @@ func EnrichStix(resultsInput, bundleInput []byte, opts ...EnrichOptions) ([]byte
 		}
 	}
 
-	if len(opts) > 0 && opts[0].Recompute {
+	if len(opts) > 0 && opts[0].RecomputeCVSS {
 		recomputeExploitation(bundle, reqByID, opts[0])
 	}
 
@@ -243,7 +243,7 @@ func buildRiskAdjustment(cve, baseVector string, score hdfutil.CvssScore, src ma
 	return map[string]interface{}{
 		"type":   "riskAdjustment",
 		"reason": fmt.Sprintf("%s actively exploited per STIX threat intelligence (%s); CVSS Threat recomputed with Exploit Maturity E:H.", cve, StixObjectID(src)),
-		"impact": map[string]interface{}{"value": score.TemporalScore / 10.0},
+		"impact": map[string]interface{}{"value": hdfutil.RoundImpact(score.TemporalScore / 10.0)},
 		"appliedBy": map[string]interface{}{
 			"type":       "other",
 			"identifier": "hdf-enrich",

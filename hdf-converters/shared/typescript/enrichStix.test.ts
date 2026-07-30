@@ -121,7 +121,7 @@ describe('enrichStix — opt-in E:H recompute', () => {
   const asOf = new Date('2099-01-01T00:00:00Z');
 
   it('authors an inline riskAdjustment for an exploited 3.1 finding', () => {
-    const doc = JSON.parse(enrichStix(recResults(), recBundle(), { recompute: true, asOf })) as Doc;
+    const doc = JSON.parse(enrichStix(recResults(), recBundle(), { recomputeCvss: true, asOf })) as Doc;
     const req = requirementById(doc, 'CVE-2012-0158');
     const so = (req.statusOverrides as Doc[]) ?? [];
     expect(so).toHaveLength(1);
@@ -140,7 +140,7 @@ describe('enrichStix — opt-in E:H recompute', () => {
   });
 
   it('skips findings with no base vector or a 4.0 base vector (guardrails)', () => {
-    const doc = JSON.parse(enrichStix(recResults(), recBundle(), { recompute: true, asOf })) as Doc;
+    const doc = JSON.parse(enrichStix(recResults(), recBundle(), { recomputeCvss: true, asOf })) as Doc;
     expect((requirementById(doc, 'CVE-2009-4324').statusOverrides as Doc[]) ?? []).toHaveLength(0);
     expect((requirementById(doc, 'CVE-2013-0422').statusOverrides as Doc[]) ?? []).toHaveLength(0);
   });
@@ -153,7 +153,7 @@ describe('enrichStix — opt-in E:H recompute', () => {
   });
 
   it('recompute output is schema-valid HDF results', () => {
-    const v = validateResults(JSON.parse(enrichStix(recResults(), recBundle(), { recompute: true, asOf })));
+    const v = validateResults(JSON.parse(enrichStix(recResults(), recBundle(), { recomputeCvss: true, asOf })));
     expect(v.valid, v.getErrorMessage()).toBe(true);
   });
 });
@@ -203,17 +203,17 @@ describe('enrichStix — detection + error branch coverage', () => {
 
   it('detects exploitation via a sighting (sighting_of_ref)', () => {
     const b = bundleWith({ type: 'sighting', spec_version: '2.1', id: 'sighting--1', sighting_of_ref: 'vulnerability--v1' });
-    expect(overrideCount(enrichStix(results31('CVE-2021-1', true), b, { recompute: true, asOf }), 'CVE-2021-1')).toBe(1);
+    expect(overrideCount(enrichStix(results31('CVE-2021-1', true), b, { recomputeCvss: true, asOf }), 'CVE-2021-1')).toBe(1);
   });
 
   it('detects exploitation via an indicator (object_refs)', () => {
     const b = bundleWith({ type: 'indicator', spec_version: '2.1', id: 'indicator--1', object_refs: ['vulnerability--v1'] });
-    expect(overrideCount(enrichStix(results31('CVE-2021-1', true), b, { recompute: true, asOf }), 'CVE-2021-1')).toBe(1);
+    expect(overrideCount(enrichStix(results31('CVE-2021-1', true), b, { recomputeCvss: true, asOf }), 'CVE-2021-1')).toBe(1);
   });
 
   it('skips recompute when a cvss entry carries no base vector', () => {
     const b = bundleWith({ type: 'sighting', spec_version: '2.1', id: 'sighting--1', sighting_of_ref: 'vulnerability--v1' });
-    expect(overrideCount(enrichStix(results31('CVE-2021-1', false), b, { recompute: true, asOf }), 'CVE-2021-1')).toBe(0);
+    expect(overrideCount(enrichStix(results31('CVE-2021-1', false), b, { recomputeCvss: true, asOf }), 'CVE-2021-1')).toBe(0);
   });
 
   it('throws on unparseable results JSON', () => {
@@ -267,7 +267,7 @@ describe('enrichStix — additional branch coverage', () => {
         { type: 'relationship', spec_version: '2.1', id: 'relationship--x', relationship_type: 'uses', source_ref: 'a', target_ref: 'b' },
       ],
     });
-    const out = JSON.parse(enrichStix(resultsFor('CVE-2021-1'), b, { recompute: true, asOf })) as Doc;
+    const out = JSON.parse(enrichStix(resultsFor('CVE-2021-1'), b, { recomputeCvss: true, asOf })) as Doc;
     expect((requirementById(out, 'CVE-2021-1').statusOverrides as Doc[]) ?? []).toHaveLength(0);
     const rootRef = (out.externalReferences as Doc[]).find((r) => (r.document as Doc)?.name === 'no-id-campaign');
     expect(rootRef).toBeDefined();
@@ -283,7 +283,7 @@ describe('enrichStix — additional branch coverage', () => {
         { type: 'sighting', spec_version: '2.1', id: 'sighting--1', sighting_of_ref: 'vulnerability--v1' },
       ],
     });
-    const out = enrichStix(resultsFor('CVE-9999-9'), b, { recompute: true, asOf });
+    const out = enrichStix(resultsFor('CVE-9999-9'), b, { recomputeCvss: true, asOf });
     expect((requirementById(JSON.parse(out) as Doc, 'CVE-9999-9').statusOverrides as Doc[]) ?? []).toHaveLength(0);
   });
 });

@@ -14,9 +14,9 @@ import (
 // assertion. A thin wrapper over the shared enrich pass; no logic lives here.
 func NewEnrichCmd() *cobra.Command {
 	var (
-		fromFormat string
-		outputPath string
-		recompute  bool
+		fromFormat    string
+		outputPath    string
+		recomputeCVSS bool
 	)
 
 	cmd := &cobra.Command{
@@ -26,29 +26,29 @@ func NewEnrichCmd() *cobra.Command {
 externalReferences[] to findings (matched by CVE) or to the results root.
 
 Enrichment is INFORMATIONAL by default: it adds context and never changes a
-finding's status or impact. --recompute additionally authors an auditable CVSS
-riskAdjustment on a finding whose STIX object shows active exploitation and that
-carries a CVSS 3.1 base vector (Exploit Maturity E:H recompute). The source
+finding's status or impact. --recompute-cvss additionally authors an auditable
+CVSS riskAdjustment on a finding whose STIX object shows active exploitation and
+that carries a CVSS 3.1 base vector (Exploit Maturity E:H recompute). The source
 format is auto-detected; assert it with --from. Supported sources: stix.
 
 Examples:
   hdf enrich results.json log4shell-bundle.json -o enriched.json
   hdf enrich results.json feed.json --from stix -o enriched.json
-  hdf enrich results.json bundle.json --recompute -o enriched.json  # + CVSS E:H recompute
+  hdf enrich results.json bundle.json --recompute-cvss -o enriched.json  # + CVSS E:H recompute
   hdf enrich results.json bundle.json                       # write to stdout`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runEnrich(args[0], args[1], fromFormat, outputPath, recompute)
+			return runEnrich(args[0], args[1], fromFormat, outputPath, recomputeCVSS)
 		},
 	}
 
 	cmd.Flags().StringVar(&fromFormat, "from", "", "Enrichment source format (auto-detected if omitted; e.g. stix)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
-	cmd.Flags().BoolVar(&recompute, "recompute", false, "Also author an E:H CVSS riskAdjustment on exploited, 3.1-base-vector findings")
+	cmd.Flags().BoolVar(&recomputeCVSS, "recompute-cvss", false, "Also author an E:H CVSS riskAdjustment on exploited, 3.1-base-vector findings")
 	return cmd
 }
 
-func runEnrich(resultsPath, sourcePath, fromFormat, outputPath string, recompute bool) error {
+func runEnrich(resultsPath, sourcePath, fromFormat, outputPath string, recomputeCVSS bool) error {
 	resultsData, err := os.ReadFile(resultsPath) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read results file: %w", err)
@@ -68,7 +68,7 @@ func runEnrich(resultsPath, sourcePath, fromFormat, outputPath string, recompute
 	}
 	printDebug("Enrichment source: %s", source)
 
-	enriched, err := shared.EnrichStix(resultsData, sourceData, shared.EnrichOptions{Recompute: recompute})
+	enriched, err := shared.EnrichStix(resultsData, sourceData, shared.EnrichOptions{RecomputeCVSS: recomputeCVSS})
 	if err != nil {
 		return fmt.Errorf("enrich failed: %w", err)
 	}
