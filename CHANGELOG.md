@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.4] - 2026-07-30
+
+### Fixes
+
+- **`hdf convert --to hdf@2` (v3→v2 downgrade) now produces InSpec-exec-json documents Heimdall can load.** The downgrade previously emitted a structurally minimal legacy document that Heimdall's InSpec parser rejected — it omitted fields InSpec requires to be present even when empty (`platform.release`, profile `sha256`/`supports`/`attributes`/`groups`, control `refs`/`tags`/`source_location`, result `start_time`) and emitted result statuses outside InSpec's `error`/`failed`/`passed`/`skipped` enum — and it silently dropped amendments. It now emits every InSpec-required field, maps `notApplicable`/`notReviewed` result statuses to `skipped`, flattens status-changing amendments (waiver, falsePositive, attestation) into the control status with a `waiver_data` breadcrumb, carries `riskAdjustment` into the control impact, and warns on stderr for amendments with no v2 representation (POA&M, operationalRequirement). Verified against Heimdall's `exec-json.json` schema. Go transform with a TypeScript parity peer. (#181)
+- **`grype-to-hdf`: requirements now carry a title and a real scan timestamp.** Each finding gets a title of the form `Grype found a vulnerability to <id> in <target>` (matching heimdall2's grype converter), and every result's `start_time` is anchored to the scan's `descriptor.timestamp` instead of the Go zero time — so a downgraded Grype scan sorts by its real date and shows a control title in Heimdall. Dual Go + TS. (#185)
+
+### Notable behavior changes
+
+- **The `hdf@3 → hdf@2` downgrade output changed shape.** Anyone consuming the previous v3→v2 output will see a different, now InSpec-conformant document: previously-absent InSpec-required fields are present, `notApplicable`/`notReviewed` result statuses serialize as `skipped`, and amendments are flattened into control status plus `waiver_data` (see Fixes). The prior output did not load in Heimdall at all, so this replaces broken behavior rather than changing working behavior. (#181)
+- **`grype-to-hdf` requirements gained `title` and real `start_time`** (see Fixes). A consumer pinning exact grype→HDF output will see these two fields change; every other field is unchanged. (#185)
+
+### Internal
+
+- Pre-release review fixes: aligned the TypeScript v2-downgrade peer with the Go transform (profile dependencies emit only `name`/`url`/`path`/`git`; statistics projected to `duration`; typed `resultsChecksum`), stopped an expired override from naming itself in the `waiver_data` breadcrumb (Go + TS), made the grype top-level timestamp deterministic across Go/TS, and corrected stale API references in the `hdf-generators`, `hdf-utilities`, and `hdf-validators` READMEs. Added a vendored InSpec `exec-json` schema with an in-test validation of the downgrade output. The pre-commit hook now works from git worktrees. The `qs` audit override was advanced to `>=6.15.2` (GHSA-q8mj-m7cp-5q26). Dev-dependency bumps. (#181, #182, #183, #185)
+
+### Compatibility
+
+- Patch release: **no schema changes** — schema `$id` URLs remain at v3.4.0 and all v3.x HDF documents validate unchanged. The changes above affect converter output (`grype-to-hdf` title/start_time) and the `hdf@3 → hdf@2` downgrade behavior, not the schema.
+
 ## [3.4.3] - 2026-07-26
 
 ### Added
