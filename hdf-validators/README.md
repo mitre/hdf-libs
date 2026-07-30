@@ -266,7 +266,7 @@ Validate JSON bytes against specified schema type.
 
 - **Parameters:**
   - `data` - JSON bytes to validate
-  - `schemaType` - `TypeResults` or `TypeBaseline`
+  - `schemaType` - one of `TypeResults`, `TypeBaseline`, `TypeComparison`, `TypeSystem`, `TypePlan`, `TypeAmendments`, `TypeEvidencePackage`
 - **Returns:** `ValidationResult` with validation status and errors
 
 #### `SetSchemaDir(dir string)`
