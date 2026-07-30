@@ -211,6 +211,10 @@ export interface V2Baseline {
     algorithm: string;
     value: string;
   };
+  resultsChecksum?: {
+    algorithm?: string;
+    value?: string;
+  };
   depends?: V2Dependency[];
   parentBaseline?: string;
   status?: string;
@@ -728,9 +732,15 @@ function firstCvssSeverity(cvss?: Array<{baseSeverity?: string}>): string | unde
 
 /** The most-recently-applied status-bearing override (the one driving effectiveStatus). */
 function governingOverride(req: V2Requirement): V2StatusOverride | undefined {
+  const now = Date.now();
   let gov: V2StatusOverride | undefined;
   for (const o of req.statusOverrides ?? []) {
     if (o.status === undefined) continue;
+    // An expired override must not become the waiver_data breadcrumb.
+    if (o.expiresAt) {
+      const exp = parseTimestamp(o.expiresAt);
+      if (exp && exp.getTime() <= now) continue;
+    }
     if (gov === undefined || (o.appliedAt ?? '') > (gov.appliedAt ?? '')) gov = o;
   }
   return gov;
@@ -821,10 +831,20 @@ function convertRequirementToV1Control(req: V2Requirement): {control: V1Control;
   return {control: c, warnings: nonRepresentableWarnings(req)};
 }
 
+/** Mirror the Go convertDependencyToV2: only name/url/path/git survive to the v1 profile. */
+function convertDependencyToV1(d: V2Dependency): V1Dependency {
+  const out: V1Dependency = {};
+  if (d.name !== undefined) out.name = d.name;
+  if (d.url !== undefined) out.url = d.url;
+  if (d.path !== undefined) out.path = d.path;
+  if (d.git !== undefined) out.git = d.git;
+  return out;
+}
+
 function convertBaselineToV1Profile(b: V2Baseline): {profile: V1Profile; warnings: string[]} {
   // supports/attributes/groups (arrays) and sha256 (string) are required by the InSpec
   // exec-json schema Heimdall loads — always present even when the modern baseline has none.
-  const checksum = (b as { resultsChecksum?: { value?: string } }).resultsChecksum;
+  const checksum = b.resultsChecksum;
   const p: V1Profile = {
     name: b.name,
     supports: [],
@@ -842,7 +862,7 @@ function convertBaselineToV1Profile(b: V2Baseline): {profile: V1Profile; warning
   if (b.groups !== undefined) {
     p.groups = b.groups.map((g) => ({id: g.id, title: g.title, controls: g.requirements}));
   }
-  if (b.depends !== undefined) p.depends = b.depends;
+  if (b.depends !== undefined) p.depends = b.depends.map(convertDependencyToV1);
   const warnings: string[] = [];
   p.controls = (b.requirements ?? []).map((r) => {
     const {control, warnings: w} = convertRequirementToV1Control(r);
@@ -850,6 +870,12 @@ function convertBaselineToV1Profile(b: V2Baseline): {profile: V1Profile; warning
     return control;
   });
   return {profile: p, warnings};
+}
+
+/** Project modern statistics down to the v1 shape (duration only), matching Go V1Statistics. */
+function projectV1Statistics(stats: unknown): {duration?: number} {
+  const duration = (stats as {duration?: unknown} | undefined)?.duration;
+  return typeof duration === 'number' ? {duration} : {};
 }
 
 /** Reconstruct the legacy top-level version: source tool → generator → sentinel. */
@@ -890,7 +916,8 @@ export function convertV2ToV1(v2Data: HDFV2Results): {hdf: HDFV1Results; warning
     version: downgradeV1Version(v2Data),
     platform,
     profiles,
-    statistics: v2Data.statistics ?? {},
+    // Mirror the Go V1Statistics: only the duration field survives to v1.
+    statistics: projectV1Statistics(v2Data.statistics),
   };
   return {hdf, warnings};
 }

@@ -1454,6 +1454,26 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
     expect(joined).toContain('POA&M');
   });
 
+  it('does not name an expired override in the waiver_data breadcrumb', () => {
+    const v2 = {
+      baselines: [{name: 'B', requirements: [{
+        id: 'V-EXP', title: 'Expired waiver', impact: 0.5,
+        effectiveStatus: 'failed',
+        statusOverrides: [{
+          type: 'waiver', status: 'passed', reason: 'old waiver',
+          appliedBy: {type: 'username', identifier: 'jdoe'},
+          appliedAt: '2019-01-01T00:00:00Z', expiresAt: '2020-01-01T00:00:00Z',
+        }],
+        results: [{status: 'failed', codeDesc: 'x', startTime: '2020-01-01T00:00:00Z'}],
+      }]}],
+      statistics: {},
+      components: [{name: 'h'}],
+      generator: {name: 'g', version: '1.0.0'},
+    } as unknown as HDFV2Results;
+    const {hdf} = convertV2ToV1(v2);
+    expect(hdf.profiles[0]!.controls![0]!.waiver_data?.override_type).toBeUndefined();
+  });
+
   it('produces a document that validates against the InSpec exec-json schema', () => {
     // Authoritative guard: validate the whole downgrade output against the InSpec
     // exec-json schema Heimdall's parser enforces (vendored in Go testdata), rather

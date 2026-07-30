@@ -218,6 +218,34 @@ func TestDowngradeV3ToV2_ValidatesAgainstInspecSchema(t *testing.T) {
 	}
 }
 
+func TestDowngradeV3ToV2_SkipsExpiredOverrideBreadcrumb(t *testing.T) {
+	// A requirement whose only override has already expired must not name that
+	// override in the waiver_data breadcrumb.
+	input := []byte(`{
+		"baselines": [{"name": "B", "requirements": [{
+			"id": "V-EXP", "title": "Expired waiver", "impact": 0.5,
+			"effectiveStatus": "failed",
+			"statusOverrides": [{
+				"type": "waiver", "status": "passed", "reason": "old waiver",
+				"appliedBy": {"type": "username", "identifier": "jdoe"},
+				"appliedAt": "2019-01-01T00:00:00Z", "expiresAt": "2020-01-01T00:00:00Z"
+			}],
+			"results": [{"status": "failed", "codeDesc": "x", "startTime": "2020-01-01T00:00:00Z"}]
+		}]}],
+		"components": [{"name": "h", "type": "host"}],
+		"generator": {"name": "g", "version": "1.0.0"},
+		"tool": {"name": "t", "version": "1.0.0"}
+	}`)
+	out, _, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(out, &legacy))
+	c := legacy["profiles"].([]any)[0].(map[string]any)["controls"].([]any)[0].(map[string]any)
+	wd, _ := c["waiver_data"].(map[string]any)
+	assert.NotContains(t, wd, "override_type", "an expired override must not become the waiver_data breadcrumb")
+}
+
 func TestDetectHDFVersion(t *testing.T) {
 	tests := []struct {
 		name    string

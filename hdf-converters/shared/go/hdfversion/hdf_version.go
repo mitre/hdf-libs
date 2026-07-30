@@ -383,10 +383,16 @@ func rollupStatus(results []hdf.RequirementResult) hdf.ResultStatus {
 // governingOverride returns the most-recently-applied status-bearing override,
 // which is the one that drives effectiveStatus, or nil if there is none.
 func governingOverride(r hdf.EvaluatedRequirement) *hdf.StatusOverride {
+	now := time.Now()
 	var gov *hdf.StatusOverride
 	for i := range r.StatusOverrides {
 		o := &r.StatusOverrides[i]
 		if o.Status == nil {
+			continue
+		}
+		// An expired override must not become the waiver_data breadcrumb; a
+		// zero ExpiresAt means no expiry, so it stays eligible.
+		if !o.ExpiresAt.IsZero() && !o.ExpiresAt.After(now) {
 			continue
 		}
 		if gov == nil || o.AppliedAt.After(gov.AppliedAt) {
