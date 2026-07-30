@@ -203,11 +203,13 @@ func TestDowngradeV3ToV2_ValidatesAgainstInspecSchema(t *testing.T) {
 	out, _, err := TransformHDF(input, ModernVersion, LegacyVersion)
 	require.NoError(t, err)
 
-	schemaPath, err := filepath.Abs(filepath.Join(testdata, "exec-json.schema.json"))
+	// Load the schema from bytes rather than a file:// reference loader — a Windows
+	// absolute path (D:\...) does not form a valid file URI and fails to parse.
+	schemaBytes, err := os.ReadFile(filepath.Join(testdata, "exec-json.schema.json"))
 	require.NoError(t, err)
 
 	result, err := gojsonschema.Validate(
-		gojsonschema.NewReferenceLoader("file://"+schemaPath),
+		gojsonschema.NewBytesLoader(schemaBytes),
 		gojsonschema.NewBytesLoader(out),
 	)
 	require.NoError(t, err)
