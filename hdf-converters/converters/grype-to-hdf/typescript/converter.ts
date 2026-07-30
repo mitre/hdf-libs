@@ -558,6 +558,8 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
       type: TargetType.Artifact,
       name: targetName,
     }],
-    timestamp: scanTime ?? new Date(),
+    // Match the Go peer: omit the top-level timestamp when Grype provides none,
+    // rather than fabricating a non-deterministic wall-clock value.
+    timestamp: scanTime ?? undefined,
   });
 }
