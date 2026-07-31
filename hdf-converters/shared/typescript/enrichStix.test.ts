@@ -120,7 +120,8 @@ describe('enrichStix — STIX bundle → results externalReferences[]', () => {
       id: 'bundle--1',
       objects: [
         { type: 'campaign', spec_version: '2.1', name: 'th3bug' }, // no id, has name
-        { type: 'note', spec_version: '2.1' }, // no id, no name
+        { type: 'note', spec_version: '2.1' }, // no id, no name → type-derived
+        { spec_version: '2.1', marker: 'typeless' }, // no id, no name, no type → generic
       ],
     });
     const out = enrichStix(results(), b);
@@ -134,6 +135,8 @@ describe('enrichStix — STIX bundle → results externalReferences[]', () => {
     expect(campaign?.description).toBe('th3bug');
     const note = refs.find((r) => (r.document as Doc)?.type === 'note');
     expect(note?.description).toBe('STIX note object');
+    const typeless = refs.find((r) => (r.document as Doc)?.marker === 'typeless');
+    expect(typeless?.description).toBe('STIX object');
   });
 });
 
@@ -307,5 +310,91 @@ describe('enrichStix — additional branch coverage', () => {
     });
     const out = enrichStix(resultsFor('CVE-9999-9'), b, { recomputeCvss: true, asOf });
     expect((requirementById(JSON.parse(out) as Doc, 'CVE-9999-9').statusOverrides as Doc[]) ?? []).toHaveLength(0);
+  });
+});
+
+describe('enrichStix — recompute relationship/report/existing-override/horizon branches', () => {
+  const asOf = new Date('2099-01-01T00:00:00Z');
+  const reqWith = (extra: Record<string, unknown>): string =>
+    JSON.stringify({
+      baselines: [
+        {
+          name: 'B',
+          checksum: { algorithm: 'sha256', value: 'abc' },
+          requirements: [
+            {
+              id: 'CVE-2021-1',
+              descriptions: [{ label: 'default', data: 'd' }],
+              impact: 0.9,
+              tags: {},
+              results: [{ status: 'failed', codeDesc: 'x', startTime: '2025-01-01T00:00:00Z' }],
+              cvss: [
+                { version: '3.1', id: 'CVE-2021-1', baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H', baseScore: 9.8 },
+              ],
+              ...extra,
+            },
+          ],
+        },
+      ],
+      components: [],
+      statistics: {},
+    });
+  const vuln = {
+    type: 'vulnerability',
+    spec_version: '2.1',
+    id: 'vulnerability--v1',
+    name: 'CVE-2021-1',
+    external_references: [{ source_name: 'cve', external_id: 'CVE-2021-1' }],
+  };
+  const bundleWithSignal = (signal: Record<string, unknown>): string =>
+    JSON.stringify({ type: 'bundle', id: 'bundle--1', objects: [vuln, signal] });
+
+  it('detects an "exploits" relationship, appends to a pre-existing override, and honors reviewHorizonMs', () => {
+    const results = reqWith({ statusOverrides: [{ type: 'riskAdjustment', reason: 'prior' }] });
+    const signal = {
+      type: 'relationship',
+      spec_version: '2.1',
+      id: 'relationship--1',
+      relationship_type: 'exploits',
+      source_ref: 'campaign--c',
+      target_ref: 'vulnerability--v1',
+    };
+    const out = JSON.parse(
+      enrichStix(results, bundleWithSignal(signal), { recomputeCvss: true, asOf, reviewHorizonMs: 60_000 }),
+    ) as Doc;
+    const so = requirementById(out, 'CVE-2021-1').statusOverrides as Doc[];
+    expect(so).toHaveLength(2); // prior override preserved, authored one appended
+    expect(so[1].type).toBe('riskAdjustment');
+    expect(so[1].appliedAt).toBe('2099-01-01T00:00:00Z');
+    expect(so[1].expiresAt).toBe('2099-01-01T00:01:00Z'); // asOf + 60_000ms review horizon
+  });
+
+  it('detects a "report" object_refs exploitation signal', () => {
+    const signal = { type: 'report', spec_version: '2.1', id: 'report--1', object_refs: ['vulnerability--v1'] };
+    const out = JSON.parse(
+      enrichStix(reqWith({}), bundleWithSignal(signal), { recomputeCvss: true, asOf }),
+    ) as Doc;
+    expect(requirementById(out, 'CVE-2021-1').statusOverrides as Doc[]).toHaveLength(1);
+  });
+
+  it('recomputes off a version-agnostic cvss entry (baseVector present, no id)', () => {
+    const results = reqWith({
+      cvss: [{ version: '3.1', baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H', baseScore: 9.8 }],
+    });
+    const signal = { type: 'sighting', spec_version: '2.1', id: 'sighting--1', sighting_of_ref: 'vulnerability--v1' };
+    const out = JSON.parse(
+      enrichStix(results, bundleWithSignal(signal), { recomputeCvss: true, asOf }),
+    ) as Doc;
+    expect(requirementById(out, 'CVE-2021-1').statusOverrides as Doc[]).toHaveLength(1);
+  });
+
+  it('defaults appliedAt to now when asOf is omitted', () => {
+    // Exercises the `opts.asOf ?? new Date()` default; asserts only that an
+    // override is authored with a string timestamp (no wall-clock value assertion).
+    const signal = { type: 'sighting', spec_version: '2.1', id: 'sighting--1', sighting_of_ref: 'vulnerability--v1' };
+    const out = JSON.parse(enrichStix(reqWith({}), bundleWithSignal(signal), { recomputeCvss: true })) as Doc;
+    const so = requirementById(out, 'CVE-2021-1').statusOverrides as Doc[];
+    expect(so).toHaveLength(1);
+    expect(typeof so[0].appliedAt).toBe('string');
   });
 });

@@ -211,11 +211,17 @@ function buildStixRef(obj: StixObject, rel: string): Doc {
     ref.externalId = id;
   } else {
     // No id → satisfy External_Reference's anyOf(externalId/href/description).
-    const name = typeof obj.name === 'string' && obj.name ? obj.name : undefined;
-    const type = typeof obj.type === 'string' && obj.type ? obj.type : 'object';
-    ref.description = name ?? `STIX ${type} object`;
+    ref.description = stixFallbackDescription(obj);
   }
   return ref;
+}
+
+/** Human-readable description for an id-less STIX object: its name, else a
+ *  type-derived label, else a generic one — so its reference satisfies anyOf. */
+function stixFallbackDescription(obj: StixObject): string {
+  if (typeof obj.name === 'string' && obj.name) return obj.name;
+  if (typeof obj.type === 'string' && obj.type) return `STIX ${obj.type} object`;
+  return 'STIX object';
 }
 
 /** Append a reference to a container's externalReferences[], creating it if absent. */

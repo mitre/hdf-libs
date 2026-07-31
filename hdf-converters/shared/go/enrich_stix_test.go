@@ -282,10 +282,12 @@ func TestEnrichStix_RecomputeIsOptIn(t *testing.T) {
 
 func TestEnrichStix_IdlessObjectStaysSchemaValid(t *testing.T) {
 	results := enrichFixture(t, "results-input.json")
-	// STIX objects with no id — a named campaign and a nameless note.
+	// STIX objects with no id — a named campaign, a nameless note, and a
+	// type-less object (exercises each description-fallback branch).
 	bundle := []byte(`{"type":"bundle","id":"bundle--1","objects":[` +
 		`{"type":"campaign","spec_version":"2.1","name":"th3bug"},` +
-		`{"type":"note","spec_version":"2.1"}]}`)
+		`{"type":"note","spec_version":"2.1"},` +
+		`{"spec_version":"2.1","marker":"typeless"}]}`)
 	out, err := EnrichStix(results, bundle)
 	require.NoError(t, err)
 
@@ -311,4 +313,7 @@ func TestEnrichStix_IdlessObjectStaysSchemaValid(t *testing.T) {
 	note := find("type", "note")
 	require.NotNil(t, note)
 	assert.Equal(t, "STIX note object", note["description"], "type-derived fallback when nameless")
+	typeless := find("marker", "typeless")
+	require.NotNil(t, typeless)
+	assert.Equal(t, "STIX object", typeless["description"], "generic fallback when id/name/type all absent")
 }

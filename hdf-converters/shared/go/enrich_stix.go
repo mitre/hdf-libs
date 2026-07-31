@@ -137,11 +137,10 @@ func stixFallbackDescription(obj map[string]interface{}) string {
 	if name, ok := obj["name"].(string); ok && name != "" {
 		return name
 	}
-	objType := "object"
 	if t, ok := obj["type"].(string); ok && t != "" {
-		objType = t
+		return "STIX " + t + " object"
 	}
-	return "STIX " + objType + " object"
+	return "STIX object"
 }
 
 // appendExternalReference appends a reference to a container's
