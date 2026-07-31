@@ -279,3 +279,36 @@ func TestEnrichStix_RecomputeIsOptIn(t *testing.T) {
 		assert.Empty(t, reqRefsUnderKey(requirementByID(t, doc, id), "statusOverrides"), id)
 	}
 }
+
+func TestEnrichStix_IdlessObjectStaysSchemaValid(t *testing.T) {
+	results := enrichFixture(t, "results-input.json")
+	// STIX objects with no id — a named campaign and a nameless note.
+	bundle := []byte(`{"type":"bundle","id":"bundle--1","objects":[` +
+		`{"type":"campaign","spec_version":"2.1","name":"th3bug"},` +
+		`{"type":"note","spec_version":"2.1"}]}`)
+	out, err := EnrichStix(results, bundle)
+	require.NoError(t, err)
+
+	// Every emitted reference must satisfy External_Reference's anyOf
+	// (externalId/href/description), even when the STIX object carries no id.
+	r := hdfvalidators.ValidateResults(out)
+	assert.True(t, r.Valid, r.Error())
+
+	refs := reqRefsUnderKey(enrichDoc(t, out), "externalReferences")
+	find := func(field, val string) map[string]interface{} {
+		for _, ri := range refs {
+			ref := ri.(map[string]interface{})
+			if d, ok := ref["document"].(map[string]interface{}); ok && d[field] == val {
+				return ref
+			}
+		}
+		return nil
+	}
+	campaign := find("name", "th3bug")
+	require.NotNil(t, campaign)
+	assert.Nil(t, campaign["externalId"])
+	assert.Equal(t, "th3bug", campaign["description"], "name is the description fallback")
+	note := find("type", "note")
+	require.NotNil(t, note)
+	assert.Equal(t, "STIX note object", note["description"], "type-derived fallback when nameless")
+}

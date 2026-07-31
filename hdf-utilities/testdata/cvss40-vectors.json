@@ -6,7 +6,7 @@
       "macroVector": "000100",
       "base": 10,
       "temporal": 10,
-      "note": "all-max base (macro 000000)"
+      "note": "all-max base, no safety (SC/SI/SA:H → eq4=1, macro 000100)"
     },
     {
       "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",

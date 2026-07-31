@@ -113,6 +113,28 @@ describe('enrichStix — STIX bundle → results externalReferences[]', () => {
     expect(() => enrichStix(results(), 'not json')).toThrow();
     expect(() => enrichStix(results(), '{"type":"something-else","objects":[]}')).toThrow();
   });
+
+  it('emits schema-valid references for id-less STIX objects (anyOf description fallback)', () => {
+    const b = JSON.stringify({
+      type: 'bundle',
+      id: 'bundle--1',
+      objects: [
+        { type: 'campaign', spec_version: '2.1', name: 'th3bug' }, // no id, has name
+        { type: 'note', spec_version: '2.1' }, // no id, no name
+      ],
+    });
+    const out = enrichStix(results(), b);
+    // Every emitted ref must satisfy External_Reference's anyOf even without an id.
+    const v = validateResults(JSON.parse(out));
+    expect(v.valid, v.getErrorMessage()).toBe(true);
+
+    const refs = rootRefs(JSON.parse(out) as Doc);
+    const campaign = refs.find((r) => (r.document as Doc)?.name === 'th3bug');
+    expect(campaign?.externalId).toBeUndefined();
+    expect(campaign?.description).toBe('th3bug');
+    const note = refs.find((r) => (r.document as Doc)?.type === 'note');
+    expect(note?.description).toBe('STIX note object');
+  });
 });
 
 describe('enrichStix — opt-in E:H recompute', () => {

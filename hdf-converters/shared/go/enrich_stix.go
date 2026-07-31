@@ -123,8 +123,25 @@ func buildStixRef(obj map[string]interface{}, rel string) map[string]interface{}
 	}
 	if id := StixObjectID(obj); id != "" {
 		ref["externalId"] = id
+	} else {
+		// No id → satisfy External_Reference's anyOf(externalId/href/description).
+		ref["description"] = stixFallbackDescription(obj)
 	}
 	return ref
+}
+
+// stixFallbackDescription derives a human-readable description for a STIX object
+// that carries no id, so its reference still satisfies External_Reference's
+// anyOf constraint: the object's name when present, else a type-derived label.
+func stixFallbackDescription(obj map[string]interface{}) string {
+	if name, ok := obj["name"].(string); ok && name != "" {
+		return name
+	}
+	objType := "object"
+	if t, ok := obj["type"].(string); ok && t != "" {
+		objType = t
+	}
+	return "STIX " + objType + " object"
 }
 
 // appendExternalReference appends a reference to a container's

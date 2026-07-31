@@ -207,7 +207,14 @@ function buildStixRef(obj: StixObject, rel: string): Doc {
     document: obj,
   };
   const id = stixObjectId(obj);
-  if (id) ref.externalId = id;
+  if (id) {
+    ref.externalId = id;
+  } else {
+    // No id → satisfy External_Reference's anyOf(externalId/href/description).
+    const name = typeof obj.name === 'string' && obj.name ? obj.name : undefined;
+    const type = typeof obj.type === 'string' && obj.type ? obj.type : 'object';
+    ref.description = name ?? `STIX ${type} object`;
+  }
   return ref;
 }
 
