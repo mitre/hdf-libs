@@ -268,13 +268,13 @@ Summary: 0 fixed, 1 regressed, 1 new, 0 absent, 0 unchanged, 0 updated (2 total)
 
 Batch operations over the HDF requirement-change-event stream (continuous monitoring): `derive` emits one NDJSON `Requirement_Change_Event` per requirement whose effective posture moved between two same-target results documents; `fold` materializes an event batch into a `systemDrift` hdf-comparison; `apply` reassembles the reconciled hdf-results (seed + events), stamped with a `derivation` block so it never masquerades as scanner output.
 
-Every invocation is stateless and deterministic: event identity is a UUIDv5 over the entity key + sequence + the next document's timestamp — identical inputs produce byte-identical events. Sequencing across repeated derive runs is the caller's job (`--start-sequence`); fold and apply read events from a file argument or stdin. Chain anomalies (gaps, duplicate keys, unknown tombstones) are warnings on stderr, never silent and never fatal.
+Every invocation is stateless and deterministic: event identity is a UUIDv5 over the entity key + sequence + the next document's timestamp — identical inputs produce byte-identical events. Sequencing across repeated derive runs is the caller's job (`--start-sequence`); fold and apply read events from any number of batch-file arguments or stdin, in any order — the fold contract ((source, eventId) dedup, per-key sequence as the only ordering authority) makes multi-batch delivery order-independent. Chain anomalies (gaps, duplicate keys, unknown tombstones) are warnings on stderr, never silent and never fatal.
 
 ```
 USAGE
   hdf events derive --prev <results.json> --next <results.json> [flags]
-  hdf events fold   --seed <results.json> [events.ndjson] [flags]
-  hdf events apply  --seed <results.json> [events.ndjson] [flags]
+  hdf events fold   --seed <results.json> [events.ndjson ...] [flags]
+  hdf events apply  --seed <results.json> [events.ndjson ...] [flags]
 
 DERIVE FLAGS
       --system-ref string      System document reference for the entity key (required)
@@ -294,6 +294,7 @@ EXAMPLES
     --system-ref prod.hdf-system.json --component-id 6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60 \
     -o events.ndjson
   hdf events fold --seed monday.hdf.json events.ndjson -o drift.comparison.json
+  hdf events apply --seed monday.hdf.json batch-1.ndjson batch-2.ndjson -o reconciled.hdf.json
   cat events.ndjson | hdf events apply --seed monday.hdf.json -o reconciled.hdf.json
 ```
 

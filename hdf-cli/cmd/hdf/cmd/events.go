@@ -118,17 +118,18 @@ func newEventsFoldCmd() *cobra.Command {
 	var seedPath, outputPath string
 
 	cmd := &cobra.Command{
-		Use:   "fold --seed <results.json> [events.ndjson]",
+		Use:   "fold --seed <results.json> [events.ndjson ...]",
 		Short: "Materialize a change-event batch into a systemDrift hdf-comparison",
 		Example: `  hdf events fold --seed monday.hdf.json events.ndjson -o drift.comparison.json
+  hdf events fold --seed monday.hdf.json batch-1.ndjson batch-2.ndjson
   cat events.ndjson | hdf events fold --seed monday.hdf.json`,
-		Args: cobra.MaximumNArgs(1),
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			seedData, err := loadEventsSeed(seedPath)
 			if err != nil {
 				return err
 			}
-			events, err := loadChangeEvents(eventsInputPath(args))
+			events, err := loadChangeEventsArgs(args)
 			if err != nil {
 				return err
 			}
@@ -155,17 +156,18 @@ func newEventsApplyCmd() *cobra.Command {
 	var seedPath, outputPath, seedURI, source string
 
 	cmd := &cobra.Command{
-		Use:   "apply --seed <results.json> [events.ndjson]",
+		Use:   "apply --seed <results.json> [events.ndjson ...]",
 		Short: "Reassemble the reconciled hdf-results from a seed plus change events",
 		Example: `  hdf events apply --seed monday.hdf.json events.ndjson -o reconciled.hdf.json
+  hdf events apply --seed monday.hdf.json batch-1.ndjson batch-2.ndjson -o reconciled.hdf.json
   cat events.ndjson | hdf events apply --seed monday.hdf.json`,
-		Args: cobra.MaximumNArgs(1),
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			seedData, err := loadEventsSeed(seedPath)
 			if err != nil {
 				return err
 			}
-			events, err := loadChangeEvents(eventsInputPath(args))
+			events, err := loadChangeEventsArgs(args)
 			if err != nil {
 				return err
 			}
@@ -201,13 +203,23 @@ func newEventsApplyCmd() *cobra.Command {
 	return cmd
 }
 
-// eventsInputPath maps the optional positional events argument onto the
-// stdin-aware readInput convention ("" and "-" both read stdin).
-func eventsInputPath(args []string) string {
-	if len(args) == 0 {
-		return ""
+// loadChangeEventsArgs reads the event batch from the given files, or stdin
+// when none are given (files XOR stdin). Batches are concatenated raw: the
+// fold contract's (source, eventId) dedup and per-key sequence ordering make
+// multi-batch delivery order-independent, so no merge logic belongs here.
+func loadChangeEventsArgs(paths []string) ([]*hdf.HDFRequirementChangeEvent, error) {
+	if len(paths) == 0 {
+		return loadChangeEvents("")
 	}
-	return args[0]
+	var events []*hdf.HDFRequirementChangeEvent
+	for _, p := range paths {
+		batch, err := loadChangeEvents(p)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, batch...)
+	}
+	return events, nil
 }
 
 // loadEventsResults reads and boundary-validates an hdf-results input,
@@ -270,14 +282,18 @@ func firstValidationError(result validators.ValidationResult) string {
 	return first.Description
 }
 
-// loadChangeEvents reads an event batch (NDJSON, single object, or JSON
-// array; file or stdin) and boundary-validates every event.
+// loadChangeEvents reads one event batch source (NDJSON, single object, or
+// JSON array; file or stdin) and boundary-validates every event.
 func loadChangeEvents(path string) ([]*hdf.HDFRequirementChangeEvent, error) {
+	label := path
+	if path == "" || path == "-" {
+		label = "events input"
+	}
 	data, err := readInput(path, false)
 	if err != nil {
-		return nil, fmt.Errorf("events input: %w", err)
+		return nil, fmt.Errorf("%s: %w", label, err)
 	}
-	if err := shared.ValidateJSONSize(data, "events input", int(getMaxFileSize())); err != nil {
+	if err := shared.ValidateJSONSize(data, label, int(getMaxFileSize())); err != nil {
 		return nil, err
 	}
 
@@ -288,7 +304,7 @@ func loadChangeEvents(path string) ([]*hdf.HDFRequirementChangeEvent, error) {
 		unit = "event"
 		var arr []json.RawMessage
 		if err := json.Unmarshal(trimmed, &arr); err != nil {
-			return nil, fmt.Errorf("events input: failed to parse JSON array: %w", err)
+			return nil, fmt.Errorf("%s: failed to parse JSON array: %w", label, err)
 		}
 		for _, raw := range arr {
 			raws = append(raws, raw)
@@ -305,12 +321,12 @@ func loadChangeEvents(path string) ([]*hdf.HDFRequirementChangeEvent, error) {
 	events := make([]*hdf.HDFRequirementChangeEvent, 0, len(raws))
 	for i, raw := range raws {
 		if result := validators.ValidateRequirementChangeEvent(raw); !result.Valid {
-			return nil, fmt.Errorf("events input: %s %d is not a valid hdf-requirement-change-event: %s",
-				unit, i+1, firstValidationError(result))
+			return nil, fmt.Errorf("%s: %s %d is not a valid hdf-requirement-change-event: %s",
+				label, unit, i+1, firstValidationError(result))
 		}
 		var ev hdf.HDFRequirementChangeEvent
 		if err := json.Unmarshal(raw, &ev); err != nil {
-			return nil, fmt.Errorf("events input: %s %d: %w", unit, i+1, err)
+			return nil, fmt.Errorf("%s: %s %d: %w", label, unit, i+1, err)
 		}
 		events = append(events, &ev)
 	}

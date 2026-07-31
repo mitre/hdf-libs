@@ -335,6 +335,72 @@ func TestEventsApply_SurfacesChainWarningsOnStderr(t *testing.T) {
 	assert.NoError(t, statErr, "output must still be written when warnings occur")
 }
 
+// splitEventStream writes the derived stream into two batch files (3 + 2
+// events) plus the combined single file, returning the three paths.
+func splitEventStream(t *testing.T) (first, second, combined string) {
+	t.Helper()
+	lines := strings.Split(strings.TrimSpace(deriveScanPair(t)), "\n")
+	require.Len(t, lines, 5)
+	dir := t.TempDir()
+	first = filepath.Join(dir, "b1.ndjson")
+	second = filepath.Join(dir, "b2.ndjson")
+	combined = filepath.Join(dir, "all.ndjson")
+	require.NoError(t, os.WriteFile(first, []byte(strings.Join(lines[:3], "\n")+"\n"), 0o600))
+	require.NoError(t, os.WriteFile(second, []byte(strings.Join(lines[3:], "\n")+"\n"), 0o600))
+	require.NoError(t, os.WriteFile(combined, []byte(strings.Join(lines, "\n")+"\n"), 0o600))
+	return first, second, combined
+}
+
+func TestEventsApply_MultipleBatchFiles(t *testing.T) {
+	first, second, combined := splitEventStream(t)
+	seed := eventsFixturePath(t, "scan-before.json")
+	dir := t.TempDir()
+
+	runApply := func(name string, events ...string) []byte {
+		out := filepath.Join(dir, name)
+		args := append([]string{"events", "apply", "--seed", seed}, events...)
+		args = append(args, "-o", out)
+		_, stderr, err := executeCommand(args...)
+		require.NoError(t, err, "stderr: %s", stderr)
+		data, rErr := os.ReadFile(out)
+		require.NoError(t, rErr)
+		return data
+	}
+
+	baseline := runApply("baseline.json", combined)
+	assert.Equal(t, baseline, runApply("split.json", first, second),
+		"two batch files must fold identically to their concatenation")
+	assert.Equal(t, baseline, runApply("reversed.json", second, first),
+		"file order must not matter: sequence is the only ordering authority")
+}
+
+func TestEventsFold_MultipleBatchFiles(t *testing.T) {
+	first, second, combined := splitEventStream(t)
+	seed := eventsFixturePath(t, "scan-before.json")
+
+	baseline, stderr, err := executeCommand("events", "fold", "--seed", seed, combined)
+	require.NoError(t, err, "stderr: %s", stderr)
+	split, stderr, err := executeCommand("events", "fold", "--seed", seed, first, second)
+	require.NoError(t, err, "stderr: %s", stderr)
+	assert.Equal(t, baseline, split)
+	assert.True(t, validators.ValidateComparison([]byte(split)).Valid)
+}
+
+func TestEventsMultiFile_ErrorNamesOffendingFile(t *testing.T) {
+	first, _, _ := splitEventStream(t)
+	bogus := filepath.Join(t.TempDir(), "bogus.ndjson")
+	require.NoError(t, os.WriteFile(bogus, []byte("{\"notAn\":\"event\"}\n"), 0o600))
+
+	_, _, err := executeCommand(
+		"events", "apply",
+		"--seed", eventsFixturePath(t, "scan-before.json"),
+		first, bogus,
+	)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "bogus.ndjson")
+	assert.Contains(t, err.Error(), "line 1")
+}
+
 func TestEventsApply_RejectsEventsFileAsSeed(t *testing.T) {
 	eventsFile := filepath.Join(t.TempDir(), "events.ndjson")
 	require.NoError(t, os.WriteFile(eventsFile, []byte(deriveScanPair(t)), 0o600))
