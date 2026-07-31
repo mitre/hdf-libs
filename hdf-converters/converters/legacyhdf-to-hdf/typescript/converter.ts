@@ -938,7 +938,52 @@ export function convertV2ToV1(v2Data: HDFV2Results): {hdf: HDFV1Results; warning
   return {hdf, warnings};
 }
 
-export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
+/** Parse the leading major-version integer; -1 when the string has none. */
+function inspecMajor(version: string): number {
+  const major = /^(\d+)/.exec(version ?? '')?.[1];
+  return major !== undefined ? parseInt(major, 10) : -1;
+}
+
+/**
+ * Map the source's top-level version to tool metadata. A genuine InSpec
+ * exec-json run carries the InSpec CLI version (major >= 2 for every modern
+ * release), so those flip the tool to InSpec/exec-json. A legacy HDF v1
+ * document with no InSpec provenance (e.g. a bare "1.0.0" format marker) keeps
+ * the historical label.
+ */
+function toolIdentity(version: string): { name: string; version?: string; format?: string } {
+  if (inspecMajor(version) >= 2) {
+    return { name: 'InSpec', version, format: 'exec-json' };
+  }
+  return { name: 'Heimdall Data Format v1' };
+}
+
+/**
+ * The assessment's execution time for the top-level timestamp. An explicit
+ * source timestamp wins; otherwise it is the latest (last-observed) result
+ * start_time — the assessment's effective as-of instant, the value
+ * `hdf events derive` consumes. Returns undefined only when the source carries
+ * no usable time; never the wall clock. Canonical trimmed-UTC form.
+ */
+function documentTimestamp(v1Data: HDFV1Results): string | undefined {
+  if (v1Data.timestamp) {
+    const t = parseTimestamp(v1Data.timestamp);
+    if (t) return formatTimestamp(t);
+  }
+  let latest: Date | undefined;
+  for (const profile of v1Data.profiles || []) {
+    for (const control of profile.controls || []) {
+      for (const result of control.results || []) {
+        if (!result.start_time) continue;
+        const t = parseTimestamp(result.start_time);
+        if (t && (!latest || t > latest)) latest = t;
+      }
+    }
+  }
+  return latest ? formatTimestamp(latest) : undefined;
+}
+
+export function convertV1ToV2(v1Data: HDFV1Results, converterVersion = '1.0.0'): HDFV2Results {
   validateInputSize(JSON.stringify(v1Data), 'legacyhdf-to-hdf');
   const v2: HDFV2Results = {
     baselines: (v1Data.profiles || []).map(convertProfile),
@@ -962,15 +1007,15 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
     v2.components = [component];
   }
 
-  // Copy optional fields
-  if (v1Data.generator) {
-    v2.generator = v1Data.generator;
-  }
+  // generator identifies the converter that produced this file; preserve an
+  // input-provided one, else stamp this converter.
+  v2.generator = v1Data.generator ?? { name: 'legacyhdf-to-hdf', version: converterVersion };
 
-  v2.tool = { name: 'Heimdall Data Format v1' };
+  v2.tool = toolIdentity(v1Data.version);
 
-  if (v1Data.timestamp) {
-    v2.timestamp = v1Data.timestamp;
+  const timestamp = documentTimestamp(v1Data);
+  if (timestamp) {
+    v2.timestamp = timestamp;
   }
 
   // Preserve any extension fields not part of core schema
