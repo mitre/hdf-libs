@@ -1454,6 +1454,19 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
     expect(joined).toContain('POA&M');
   });
 
+  it('round-trips the profile sha256 fingerprint through v1→v2→v1 (GH #163)', () => {
+    const v1 = {
+      version: '1.0.0',
+      platform: {name: 'rhel', release: '9'},
+      profiles: [{name: 'p', sha256: '570c6a9e8a19093085ead8b98d88ba9dc', controls: [], groups: [], supports: [], attributes: []}],
+      statistics: {},
+    } as unknown as HDFV1Results;
+    const v2 = convertV1ToV2(v1);
+    const {hdf} = convertV2ToV1(v2);
+    // The fingerprint survives inspec(v1)→modern(v2/integrity)→legacy(v1/sha256).
+    expect(hdf.profiles[0]!.sha256).toBe('570c6a9e8a19093085ead8b98d88ba9dc');
+  });
+
   it('does not name an expired override in the waiver_data breadcrumb', () => {
     const v2 = {
       baselines: [{name: 'B', requirements: [{

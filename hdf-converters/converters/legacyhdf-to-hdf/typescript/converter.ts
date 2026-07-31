@@ -215,6 +215,14 @@ export interface V2Baseline {
     algorithm?: string;
     value?: string;
   };
+  originalChecksum?: {
+    algorithm?: string;
+    value?: string;
+  };
+  integrity?: {
+    algorithm?: string;
+    checksum?: string;
+  };
   depends?: V2Dependency[];
   parentBaseline?: string;
   status?: string;
@@ -841,16 +849,24 @@ function convertDependencyToV1(d: V2Dependency): V1Dependency {
   return out;
 }
 
+/**
+ * Restore the v1 profile fingerprint Heimdall matches on. Prefer the baseline
+ * integrity hash (where an inspec profile's sha256 round-trips), then the
+ * results/original checksums, else empty. Mirrors the Go downgrade.
+ */
+function baselineSha256(b: V2Baseline): string {
+  return b.integrity?.checksum || b.resultsChecksum?.value || b.originalChecksum?.value || '';
+}
+
 function convertBaselineToV1Profile(b: V2Baseline): {profile: V1Profile; warnings: string[]} {
   // supports/attributes/groups (arrays) and sha256 (string) are required by the InSpec
   // exec-json schema Heimdall loads — always present even when the modern baseline has none.
-  const checksum = b.resultsChecksum;
   const p: V1Profile = {
     name: b.name,
     supports: [],
     attributes: [],
     groups: [],
-    sha256: checksum?.value ?? '',
+    sha256: baselineSha256(b),
   };
   if (b.version !== undefined) p.version = b.version;
   if (b.title !== undefined) p.title = b.title;

@@ -185,13 +185,21 @@ func convertBaselineToV2Profile(b hdf.EvaluatedBaseline) (legacyhdf.V1Profile, [
 	}
 
 	// InSpec-required fields the modern baseline has no equivalent for: supports and
-	// attributes are always-present (possibly empty) arrays, and sha256 is a required
-	// string (use the results checksum when available). Groups is set below.
+	// attributes are always-present (possibly empty) arrays. Groups is set below.
 	p.Supports = make([]map[string]interface{}, 0)
 	p.Attributes = make([]map[string]interface{}, 0)
+
+	// sha256 is InSpec-required and Heimdall matches the profile fingerprint on it.
+	// Prefer the baseline integrity hash (where an inspec profile's sha256 round-trips),
+	// then the results/original checksums, else empty.
 	sha := ""
-	if b.ResultsChecksum != nil {
+	switch {
+	case b.Integrity != nil && b.Integrity.Checksum != nil && *b.Integrity.Checksum != "":
+		sha = *b.Integrity.Checksum
+	case b.ResultsChecksum != nil && b.ResultsChecksum.Value != "":
 		sha = b.ResultsChecksum.Value
+	case b.OriginalChecksum != nil && b.OriginalChecksum.Value != "":
+		sha = b.OriginalChecksum.Value
 	}
 	p.SHA256 = &sha
 
