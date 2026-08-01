@@ -245,15 +245,25 @@ if (awsConfigIdentifierExists('SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK')
 #### Coverage tiers and semantics
 
 The AWS Config→NIST table is regenerated (via `scripts/generate-awsconfig-mappings.mjs`) from
-three tiers, in precedence order:
+four tiers, in precedence order; each row records its tier in the `Source` field:
 
 1. **config-pack** — AWS Config's "Operational Best Practices for NIST 800-53" docs (Rev 4 + Rev 5).
 2. **security-hub** — AWS Security Hub's NIST 800-53 r5 standard control pages (Rev 5).
-3. **derived** — for a managed rule the authoritative tiers miss but whose name matches a strong
+3. **derived-theme** — for a managed rule the authoritative tiers miss but whose name matches a strong
    theme (encryption-at-rest, in-transit/TLS, logging/audit, public-access), the controls that
    ≥75% of AWS's *own* same-theme mapped rules carry. Nothing is invented — controls are reused
    from AWS's authoritative mappings. Rules matching no theme stay unmapped, and the
    `aws-config-to-hdf` converter floors them to **CM-6** (Configuration Settings) at conversion time.
+4. **crosswalk** — per-revision completeness: a rule mapped at exactly one revision gets a row at
+   the other revision by translating its controls through the NIST Rev 4↔Rev 5 crosswalk (above).
+   Native rows are never modified. When the whole control set has no equivalent at the other
+   revision, the row is an explicit **empty-`NIST-ID` marker** — "no mapping exists at this
+   revision" is recorded as an answer, not left as a silent gap. Crosswalk rows inherit the
+   confidence of the native row they were translated from.
+
+With tier 4, every rule in the table has a defined outcome at both supported revisions: native,
+crosswalk-derived, or explicitly unmapped. A single-revision view of the table is therefore
+complete — filtering by `Rev` never silently drops a rule.
 
 > **Interpretation.** These NIST tags are *candidate control associations for triage*, not evidence
 > that a control is assessed or satisfied. A passed Config / Security Hub rule is evidence *toward*

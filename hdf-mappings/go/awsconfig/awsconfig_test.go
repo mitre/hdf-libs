@@ -265,14 +265,19 @@ func TestMappedRevisions(t *testing.T) {
 	if got := MappedRevisions("CLOUD_TRAIL_ENABLED", "cloudtrail-enabled"); len(got) != 2 || got[0] != 4 || got[1] != 5 {
 		t.Errorf("expected [4 5] for cloudtrail-enabled, got %v", got)
 	}
-	// api-gw-ssl-enabled exists only in the Rev 5 table.
-	if got := MappedRevisions("API_GW_SSL_ENABLED", "api-gw-ssl-enabled"); len(got) != 1 || got[0] != 5 {
-		t.Errorf("expected [5] for api-gw-ssl-enabled, got %v", got)
+	// api-gw-ssl-enabled is native to Rev 5 only; the crosswalk tier backfills Rev 4.
+	if got := MappedRevisions("API_GW_SSL_ENABLED", "api-gw-ssl-enabled"); len(got) != 2 || got[0] != 4 || got[1] != 5 {
+		t.Errorf("expected [4 5] for api-gw-ssl-enabled, got %v", got)
 	}
-	// emr-kerberos-enabled exists only in Rev 4 (not in the Config Rev5 docs or the
-	// Security Hub NIST r5 standard).
-	if got := MappedRevisions("EMR_KERBEROS_ENABLED", "emr-kerberos-enabled"); len(got) != 1 || got[0] != 4 {
-		t.Errorf("expected [4] for emr-kerberos-enabled, got %v", got)
+	// emr-kerberos-enabled is native to Rev 4 only; the crosswalk tier backfills Rev 5.
+	if got := MappedRevisions("EMR_KERBEROS_ENABLED", "emr-kerberos-enabled"); len(got) != 2 || got[0] != 4 || got[1] != 5 {
+		t.Errorf("expected [4 5] for emr-kerberos-enabled, got %v", got)
+	}
+	// secretsmanager-rotation-enabled-check maps solely to AC-3(15), which is new
+	// in Rev 5 with no Rev 4 equivalent: its Rev 4 row is an explicit empty-NIST-ID
+	// marker, so only Rev 5 counts as mapped.
+	if got := MappedRevisions("SECRETSMANAGER_ROTATION_ENABLED_CHECK", "secretsmanager-rotation-enabled-check"); len(got) != 1 || got[0] != 5 {
+		t.Errorf("expected [5] for secretsmanager-rotation-enabled-check, got %v", got)
 	}
 	// An unknown rule maps at no revision.
 	if got := MappedRevisions("NOPE", "no-such-rule"); len(got) != 0 {
@@ -285,6 +290,38 @@ func TestMappedRevisions(t *testing.T) {
 	// Resolution works by source identifier alone (rule name empty).
 	if got := MappedRevisions("CLOUD_TRAIL_ENABLED", ""); len(got) != 2 {
 		t.Errorf("expected identifier-only resolution to find both revisions, got %v", got)
+	}
+}
+
+func TestCrosswalkBackfill(t *testing.T) {
+	// Native rows carry their generator tier; crosswalk rows are marked as such.
+	if m := GetByRuleNameForRevision("access-keys-rotated", 4); m == nil || m.Source != "config-pack" {
+		t.Errorf("access-keys-rotated rev4 = %+v, want native config-pack row", m)
+	}
+	m := GetByRuleNameForRevision("api-gw-ssl-enabled", 4)
+	if m == nil || m.Source != "crosswalk" {
+		t.Fatalf("api-gw-ssl-enabled rev4 = %+v, want crosswalk backfill row", m)
+	}
+	// Backfilled controls are the Rev 5 set translated by NIST's crosswalk:
+	// carried IDs stay (SC-8), Rev5-only IDs drop or redirect.
+	controls := NISTControlsForRevision("api-gw-ssl-enabled", 4)
+	if !has(controls, "SC-8") {
+		t.Errorf("api-gw-ssl-enabled rev4 controls = %v, want SC-8 present", controls)
+	}
+	// Rev4-only rules backfill to Rev 5 the same way.
+	rev5 := NISTControlsForRevision("emr-kerberos-enabled", 5)
+	if !has(rev5, "AC-3") || !has(rev5, "AC-6") {
+		t.Errorf("emr-kerberos-enabled rev5 controls = %v, want AC-3+AC-6", rev5)
+	}
+	// A rule whose entire Rev 5 control set has no Rev 4 equivalent gets an
+	// explicit marker row: present, Source crosswalk, empty NIST-ID — so lookups
+	// return no controls and the converter's CM-6 floor applies.
+	marker := GetByRuleNameForRevision("secretsmanager-rotation-enabled-check", 4)
+	if marker == nil || marker.Source != "crosswalk" || marker.NISTID != "" {
+		t.Fatalf("secretsmanager-rotation-enabled-check rev4 = %+v, want empty-NIST-ID crosswalk marker", marker)
+	}
+	if got := NISTControlsForRevision("secretsmanager-rotation-enabled-check", 4); got != nil {
+		t.Errorf("marker row controls = %v, want nil", got)
 	}
 }
 
