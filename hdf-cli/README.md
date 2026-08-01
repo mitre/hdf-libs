@@ -298,6 +298,8 @@ EXAMPLES
   cat events.ndjson | hdf events apply --seed monday.hdf.json -o reconciled.hdf.json
 ```
 
+A complete runnable example — a live container scanned with a MITRE SAF STIG baseline, driven through seed → drift → derive → apply → amendment → chaos → re-center — lives at [mitre/hdf-conmon-demo](https://github.com/mitre/hdf-conmon-demo).
+
 Example loop (real output):
 
 ```console

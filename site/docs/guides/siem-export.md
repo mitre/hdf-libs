@@ -57,7 +57,9 @@ The practical boundary: the destination SIEM index inherits the sensitivity of t
 
 `hdf events derive` emits one `Requirement_Change_Event` per requirement whose
 effective posture moved between observations (state enum:
-`new | absent | updated | fixed | regressed`). Consumers feeding OCSF activity
+`new | absent | updated | fixed | regressed`); a complete runnable
+walkthrough of the event loop lives at
+[mitre/hdf-conmon-demo](https://github.com/mitre/hdf-conmon-demo). Consumers feeding OCSF activity
 pipelines or SARIF baseline comparisons should use the following total
 mappings rather than inventing their own. One rule frames both tables: a
 steady-state control emits **no event**, so "unchanged" is the *absence* of an
