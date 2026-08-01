@@ -323,6 +323,9 @@ function buildMetadata(
 // Go exporter byte-for-byte.
 async function buildSerialNumber(input: string, a: HDFAmendments): Promise<string> {
   if (a.amendmentId) return `urn:uuid:${a.amendmentId}`;
-  return `urn:uuid:${(await sha256(input)).slice(0, 32)}`;
+  // CycloneDX serialNumber must be urn:uuid:<8-4-4-4-12>. Derive a
+  // deterministic, format-valid UUID from the input hash (hyphenated).
+  const h = (await sha256(input)).slice(0, 32);
+  return `urn:uuid:${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }
 

@@ -12,7 +12,8 @@
     ],
     "publisher": {
       "category": "other",
-      "name": "Secvisogram"
+      "name": "Secvisogram",
+      "namespace": "https://saf.mitre.org"
     },
     "tracking": {
       "id": "HDF-VEX-EXPORT",

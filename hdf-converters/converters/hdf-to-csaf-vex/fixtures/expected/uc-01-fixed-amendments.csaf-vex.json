@@ -12,7 +12,8 @@
     ],
     "publisher": {
       "category": "other",
-      "name": "Example Company ProductCERT"
+      "name": "Example Company ProductCERT",
+      "namespace": "https://saf.mitre.org"
     },
     "tracking": {
       "id": "HDF-VEX-EXPORT",

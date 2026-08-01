@@ -12,7 +12,6 @@ package hdftocyclonedxvex
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -489,6 +488,8 @@ func buildSerialNumber(input []byte, a *hdf.HDFAmendments) string {
 	if a.AmendmentID != nil && *a.AmendmentID != "" {
 		return "urn:uuid:" + *a.AmendmentID
 	}
-	sum := sha256.Sum256(input)
-	return "urn:uuid:" + hex.EncodeToString(sum[:16])
+	// CycloneDX serialNumber must be urn:uuid:<8-4-4-4-12>. Derive a
+	// deterministic, format-valid UUID from the input hash (hyphenated).
+	b := sha256.Sum256(input)
+	return fmt.Sprintf("urn:uuid:%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }

@@ -35,12 +35,23 @@ type SchemaValidator struct {
 	modern  *tekuri.Schema       // draft 2019-09 / 2020-12
 }
 
-// NewSchemaValidator compiles a JSON Schema from a file path, choosing the
-// validator from the schema's $schema draft. Prefer a vendored, self-contained
-// schema with documented provenance (source URL, version, sha256) so the check
-// is reproducible and pinned to the version the converter declares conformance
-// to.
+// NewSchemaValidator compiles a self-contained JSON Schema from a file path.
+// For schemas that $ref external schemas by URL, use
+// NewSchemaValidatorWithResources.
 func NewSchemaValidator(t *testing.T, schemaPath string) *SchemaValidator {
+	return NewSchemaValidatorWithResources(t, schemaPath, nil)
+}
+
+// NewSchemaValidatorWithResources compiles a JSON Schema, choosing the validator
+// from the schema's $schema draft, and pre-registers companion schemas so a main
+// schema that $refs external schemas by URL (e.g. CSAF → FIRST.org CVSS,
+// CycloneDX → SPDX/JSF) compiles offline. companions maps each $ref URL exactly
+// as it appears in the main schema to the vendored file that satisfies it.
+//
+// Prefer vendored schemas with documented provenance (source URL, version,
+// sha256) so the check is reproducible and pinned to the version the converter
+// declares conformance to.
+func NewSchemaValidatorWithResources(t *testing.T, schemaPath string, companions map[string]string) *SchemaValidator {
 	t.Helper()
 	abs, err := filepath.Abs(schemaPath)
 	require.NoError(t, err, "resolve schema path %s", schemaPath)
@@ -59,13 +70,30 @@ func NewSchemaValidator(t *testing.T, schemaPath string) *SchemaValidator {
 			}
 		}
 		c := tekuri.NewCompiler()
+		for refURL, path := range companions {
+			cabs, err := filepath.Abs(path)
+			require.NoError(t, err, "resolve companion %s", path)
+			cf, err := os.Open(cabs) //nolint:gosec // test-only, reads a vendored schema fixture
+			require.NoError(t, err, "open companion %s", path)
+			cdoc, err := tekuri.UnmarshalJSON(cf)
+			_ = cf.Close()
+			require.NoError(t, err, "parse companion %s", path)
+			require.NoError(t, c.AddResource(refURL, cdoc), "register companion %s", refURL)
+		}
 		require.NoError(t, c.AddResource(url, doc), "register schema %s", schemaPath)
 		schema, err := c.Compile(url)
 		require.NoError(t, err, "compile schema %s", schemaPath)
 		return &SchemaValidator{modern: schema}
 	}
 
-	schema, err := gojsonschema.NewSchema(gojsonschema.NewReferenceLoader("file://" + abs))
+	sl := gojsonschema.NewSchemaLoader()
+	for refURL, path := range companions {
+		cabs, err := filepath.Abs(path)
+		require.NoError(t, err, "resolve companion %s", path)
+		require.NoError(t, sl.AddSchema(refURL, gojsonschema.NewReferenceLoader("file://"+cabs)),
+			"register companion %s", refURL)
+	}
+	schema, err := sl.Compile(gojsonschema.NewReferenceLoader("file://" + abs))
 	require.NoError(t, err, "compile schema %s", schemaPath)
 	return &SchemaValidator{draft07: schema}
 }
