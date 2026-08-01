@@ -22,6 +22,8 @@
     "clean": "rimraf dist",
     "mappings:awsconfig": "node scripts/generate-awsconfig-mappings.mjs",
     "mappings:awsconfig:check": "node scripts/generate-awsconfig-mappings.mjs --check",
+    "mappings:crosswalk": "node scripts/generate-nist-crosswalk.mjs",
+    "mappings:crosswalk:check": "node scripts/generate-nist-crosswalk.mjs --check",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
     "test:go": "cd go && go test ./...",

@@ -34,9 +34,13 @@ export {
   resetNistRevision,
   isNistStrict,
   setNistStrict,
+  translateNistControl,
+  translateNistControls,
+  nistRosterSize,
 } from './nist/index.js';
 
 export type { NISTDescriptions } from './nist/types.js';
+export type { NistControlTranslation, NistCrosswalkRelation } from './nist/index.js';
 
 // OWASP exports
 export {

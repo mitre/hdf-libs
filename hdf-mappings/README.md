@@ -83,6 +83,40 @@ const family = getNISTFamily('AC-1');
 // Returns: "AC"
 ```
 
+#### Rev 4 ↔ Rev 5 crosswalk
+
+Translates control IDs between 800-53 Rev 4 and Rev 5 using NIST's own
+comparison workbooks (the Rev 4→Rev 5 comparison workbook and the Appendix J
+privacy-control comparison, both from the SP 800-53 Rev 5 final publication
+page). Regenerated via `scripts/generate-nist-crosswalk.mjs`; both the Go and
+TS copies are written byte-identically (`--check` gates drift).
+
+```typescript
+import { translateNistControl, translateNistControls } from '@mitre/hdf-mappings';
+
+translateNistControl('IR-10', 4, 5);
+// { control: 'IR-10', targets: ['IR-4(11)'], relation: 'moved', detail: 'Moved to IR-4(11)' }
+
+translateNistControl('AC-1', 4, 5);
+// { control: 'AC-1', targets: ['AC-1'], relation: 'identity' }  (present in both revisions)
+
+const { translated, unmapped } = translateNistControls(['AC-1', 'IR-10', 'SC-19'], 4, 5);
+// translated: ['AC-1', 'IR-4(11)']; unmapped: [{ control: 'SC-19', relation: 'none', ... }]
+```
+
+Relations: `identity` (same ID at both revisions), `moved` / `incorporated`
+(NIST names a successor), `pointer` (Appendix J privacy controls — NIST calls
+these pointers, not equivalences), `family` (incorporated into a whole family,
+kept as a marker rather than expanded), `none` (NIST names no successor), and
+`unknown` (not a control at the source revision). Controls NIST withdrew in
+Rev 4 itself (e.g. `AC-13`) are valid at neither revision but still redirect to
+their incorporation targets from either direction, so stale tags resolve.
+
+> **Interpretation.** A crosswalk edge means NIST relocated or absorbed the
+> requirement text — it does not make the target control's full scope
+> equivalent to the source control. Treat translated tags as candidate control
+> associations, exactly like the tool-specific mappings below.
+
 ### OWASP Top 10
 
 ```typescript
@@ -271,6 +305,7 @@ hdf-mappings/go/
   hipcheck/   — Hipcheck analysis→NIST lookups (NISTControls, Exists, AllAnalyses)
   scoutsuite/ — ScoutSuite rule→NIST lookups (NISTControls)
   awsconfig/  — AWS Config→NIST lookups (NISTControls, GetByRuleName, GetByIdentifier)
+  nist/       — revision selection (Revision, SetRevision) + Rev 4↔5 crosswalk (Translate, TranslateControls)
 ```
 
 ```go
@@ -301,6 +336,16 @@ mapping  := awsconfig.GetByIdentifier("SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS
 mapping   = awsconfig.GetByRuleName("secretsmanager-scheduled-rotation-success-check")
 ```
 
+```go
+import "github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
+
+tr := nist.Translate("IR-10", 4, 5)
+// Translation{Targets: []string{"IR-4(11)"}, Relation: "moved", ...}
+
+translated, unmapped := nist.TranslateControls([]string{"AC-1", "IR-10", "SC-19"}, 4, 5)
+// translated: ["AC-1", "IR-4(11)"]; unmapped: [{Control: "SC-19", Relation: "none", ...}]
+```
+
 ## Data Sources
 
 | Data | Source |
@@ -313,6 +358,7 @@ mapping   = awsconfig.GetByRuleName("secretsmanager-scheduled-rotation-success-c
 | Nikto→NIST | heimdall2 mapping tables |
 | ScoutSuite→NIST | heimdall2 mapping tables |
 | AWS Config→NIST | AWS Config OBP for NIST 800-53 docs + Security Hub NIST r5 standard + derived (see Coverage tiers) |
+| NIST Rev 4↔5 crosswalk | NIST SP 800-53 Rev 4→Rev 5 comparison workbook + Appendix J comparison (csrc.nist.gov, Rev 5 final) |
 
 ## License
 

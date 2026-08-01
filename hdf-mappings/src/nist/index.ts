@@ -178,5 +178,9 @@ export const DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS: string[] = ['CM-8'];
 /** Configuration-compliance checks with no specific mapping (CM-6: Configuration Settings). */
 export const DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS: string[] = ['CM-6'];
 
+// Rev 4 <-> Rev 5 crosswalk
+export { translateNistControl, translateNistControls, nistRosterSize } from './crosswalk.js';
+export type { NistControlTranslation, NistCrosswalkRelation } from './crosswalk.js';
+
 // Re-export types
 export type { NISTDescriptions } from './types.js';
