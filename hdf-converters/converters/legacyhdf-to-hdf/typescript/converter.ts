@@ -938,13 +938,52 @@ export function convertV2ToV1(v2Data: HDFV2Results): {hdf: HDFV1Results; warning
   return {hdf, warnings};
 }
 
-/**
- * Generator version stamped when the caller supplies none (mirrors the Go
- * DefaultConverterVersion).
- */
-const DEFAULT_CONVERTER_VERSION = '1.0.0';
+/** Parse the leading major-version integer; -1 when the string has none. */
+function inspecMajor(version: string): number {
+  const major = /^(\d+)/.exec(version ?? '')?.[1];
+  return major !== undefined ? parseInt(major, 10) : -1;
+}
 
-export function convertV1ToV2(v1Data: HDFV1Results, converterVersion: string = DEFAULT_CONVERTER_VERSION): HDFV2Results {
+/**
+ * Map the source's top-level version to tool metadata. A genuine InSpec
+ * exec-json run carries the InSpec CLI version (major >= 2 for every modern
+ * release), so those flip the tool to InSpec/exec-json. A legacy HDF v1
+ * document with no InSpec provenance (e.g. a bare "1.0.0" format marker) keeps
+ * the historical label.
+ */
+function toolIdentity(version: string): { name: string; version?: string; format?: string } {
+  if (inspecMajor(version) >= 2) {
+    return { name: 'InSpec', version, format: 'exec-json' };
+  }
+  return { name: 'Heimdall Data Format v1' };
+}
+
+/**
+ * The assessment's execution time for the top-level timestamp. An explicit
+ * source timestamp wins; otherwise it is the latest (last-observed) result
+ * start_time — the assessment's effective as-of instant, the value
+ * `hdf events derive` consumes. Returns undefined only when the source carries
+ * no usable time; never the wall clock. Canonical trimmed-UTC form.
+ */
+function documentTimestamp(v1Data: HDFV1Results): string | undefined {
+  if (v1Data.timestamp) {
+    const t = parseTimestamp(v1Data.timestamp);
+    if (t) return formatTimestamp(t);
+  }
+  let latest: Date | undefined;
+  for (const profile of v1Data.profiles || []) {
+    for (const control of profile.controls || []) {
+      for (const result of control.results || []) {
+        if (!result.start_time) continue;
+        const t = parseTimestamp(result.start_time);
+        if (t && (!latest || t > latest)) latest = t;
+      }
+    }
+  }
+  return latest ? formatTimestamp(latest) : undefined;
+}
+
+export function convertV1ToV2(v1Data: HDFV1Results, converterVersion = '1.0.0'): HDFV2Results {
   validateInputSize(JSON.stringify(v1Data), 'legacyhdf-to-hdf');
   const v2: HDFV2Results = {
     baselines: (v1Data.profiles || []).map(convertProfile),
@@ -968,22 +1007,15 @@ export function convertV1ToV2(v1Data: HDFV1Results, converterVersion: string = D
     v2.components = [component];
   }
 
-  // A source-supplied generator is provenance and wins; otherwise the
-  // conversion stamps its own identity (fleet convention).
-  if (v1Data.generator) {
-    v2.generator = v1Data.generator;
-  } else {
-    v2.generator = { name: 'legacyhdf-to-hdf', version: converterVersion };
-  }
+  // generator identifies the converter that produced this file; preserve an
+  // input-provided one, else stamp this converter.
+  v2.generator = v1Data.generator ?? { name: 'legacyhdf-to-hdf', version: converterVersion };
 
-  // The v1 version field carries the InSpec engine version; a version-less
-  // document keeps the historical Heimdall label. Mirrors the Go buildTool.
-  v2.tool = v1Data.version
-    ? { name: 'InSpec', version: v1Data.version }
-    : { name: 'Heimdall Data Format v1' };
+  v2.tool = toolIdentity(v1Data.version);
 
-  if (v1Data.timestamp) {
-    v2.timestamp = v1Data.timestamp;
+  const timestamp = documentTimestamp(v1Data);
+  if (timestamp) {
+    v2.timestamp = timestamp;
   }
 
   // Preserve any extension fields not part of core schema
@@ -1006,40 +1038,7 @@ export function convertV1ToV2(v1Data: HDFV1Results, converterVersion: string = D
   // Flatten overlays: merge overlay/wrapper baselines so every requirement
   // has results and consumers don't see duplicated controls (741→247 fix).
   const flat = flattenOverlays(v2 as unknown as HDFResults);
-  const out = flat.results as unknown as HDFV2Results;
-
-  // Document timestamp = the earliest result start time ("when this
-  // assessment was executed"): the source carries no scan-level time field,
-  // and fabricating one from the wall clock is forbidden — with no result
-  // times the field stays unset. A source-supplied timestamp wins. Mirrors
-  // the Go earliestResultTime.
-  if (!out.timestamp) {
-    const earliest = earliestResultTime(out);
-    if (earliest) out.timestamp = earliest;
-  }
-  return out;
-}
-
-function earliestResultTime(doc: HDFV2Results): string | undefined {
-  let earliestMs = Number.POSITIVE_INFINITY;
-  let earliest: string | undefined;
-  for (const baseline of doc.baselines) {
-    for (const req of baseline.requirements ?? []) {
-      for (const result of req.results ?? []) {
-        // The legacy zero-time sentinel marks a source result that carried
-        // no start_time — it is not an observation and must never win the
-        // earliest pick (mirrors the Go IsZero skip).
-        if (!result.startTime || result.startTime === LEGACY_ZERO_TIME) continue;
-        const parsed = parseTimestamp(result.startTime);
-        if (!parsed) continue;
-        const ms = parsed.getTime();
-        if (Number.isNaN(ms) || ms >= earliestMs) continue;
-        earliestMs = ms;
-        earliest = formatTimestamp(parsed);
-      }
-    }
-  }
-  return earliest;
+  return flat.results as unknown as HDFV2Results;
 }
 
 /**

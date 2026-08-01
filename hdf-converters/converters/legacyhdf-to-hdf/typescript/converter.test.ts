@@ -63,10 +63,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         osName: 'ubuntu',
         osVersion: '20.04',
       });
-      // The v1 version field is the InSpec engine version, so a
-      // version-bearing document names the real tool.
-      expect(v2.tool?.name).toBe('InSpec');
-      expect(v2.tool?.version).toBe('1.0.0');
+      expect(v2.tool?.name).toBe('Heimdall Data Format v1');
+      expect(v2.tool?.version).toBeUndefined();
       expect(v2.tool?.format).toBeUndefined();
     });
 
@@ -153,7 +151,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(v2.timestamp).toBe(timestamp);
     });
 
-    it('should handle missing optional fields', () => {
+    it('stamps the converter generator and no timestamp when the source carries neither', () => {
       const v1: HDFV1Results = {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -161,12 +159,107 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
+      const v2 = convertV1ToV2(v1, '3.4.5');
+
+      // generator identifies the converter that produced the file.
+      expect(v2.generator).toEqual({ name: 'legacyhdf-to-hdf', version: '3.4.5' });
+      // no result times and no explicit timestamp → undefined (never wall clock).
+      expect(v2.timestamp).toBeUndefined();
+    });
+
+    it('derives the document timestamp from the latest result start_time', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        profiles: [
+          {
+            name: 'p',
+            controls: [
+              {
+                id: 'c-1',
+                impact: 0.5,
+                results: [
+                  { status: 'passed', start_time: '2024-03-01T10:00:00Z' },
+                  { status: 'passed', start_time: '2024-03-01T10:05:30-05:00' }, // latest → 15:05:30Z
+                  { status: 'passed', start_time: '2024-03-01T09:58:00Z' },
+                ],
+              },
+            ],
+          },
+        ],
+        statistics: {},
+      };
+
       const v2 = convertV1ToV2(v1);
 
-      // The conversion stamps its own generator identity; timestamp stays
-      // unset when the source carries no result times (never wall clock).
-      expect(v2.generator).toEqual({ name: 'legacyhdf-to-hdf', version: '1.0.0' });
-      expect(v2.timestamp).toBeUndefined();
+      expect(v2.timestamp).toBe('2024-03-01T15:05:30Z');
+    });
+
+    it('ignores results without start_time when deriving the timestamp', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        profiles: [
+          {
+            name: 'p',
+            controls: [
+              { id: 'c-1', impact: 0.5, results: [{ status: 'passed' }] },
+              { id: 'c-2', impact: 0.5, results: [{ status: 'passed', start_time: '2024-06-01T00:00:00Z' }] },
+            ],
+          },
+        ],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      // A result without start_time is not an observation; the latest real
+      // time wins and no sentinel value can leak into the document.
+      expect(v2.timestamp).toBe('2024-06-01T00:00:00Z');
+    });
+
+    it('normalizes an offset-bearing explicit timestamp to canonical UTC', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        timestamp: '2023-11-05T00:00:00-05:00',
+        profiles: [
+          { name: 'p', controls: [{ id: 'c-1', impact: 0.5, results: [{ status: 'passed', start_time: '2024-03-01T10:00:00Z' }] }] },
+        ],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      // Explicit-timestamp precedence must still produce the repo's
+      // canonical trimmed-UTC form, never the source's offset rendering.
+      expect(v2.timestamp).toBe('2023-11-05T05:00:00Z');
+    });
+
+    it('sets InSpec tool identity from a real InSpec version', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        profiles: [],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      expect(v2.tool).toEqual({ name: 'InSpec', version: '5.22.3', format: 'exec-json' });
+    });
+
+    it('keeps the legacy tool label for a non-InSpec (major<2) version', () => {
+      const v1: HDFV1Results = {
+        version: '1.37.6',
+        platform: { name: 'test' },
+        profiles: [],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      expect(v2.tool).toEqual({ name: 'Heimdall Data Format v1' });
     });
 
     it('should move unknown fields to extensions', () => {
@@ -1619,96 +1712,3 @@ describe('convertV1ToV2 upgrade edge cases', () => {
     expect(req.refs ?? []).toHaveLength(0);
   });
 });
-
-describe('document metadata stamping', () => {
-  it('stamps generator, InSpec tool identity, and the earliest-result timestamp', () => {
-    const v1: HDFV1Results = {
-      version: '7.1.7',
-      platform: { name: 'ubuntu' },
-      statistics: {},
-      profiles: [
-        {
-          name: 'p',
-          controls: [
-            { id: 'c1', impact: 0.5, results: [{ status: 'passed', start_time: '2024-03-01T12:00:00Z' }] },
-            { id: 'c2', impact: 0.5, results: [{ status: 'passed', start_time: '2024-01-15T08:30:00Z' }] },
-          ],
-        },
-      ],
-    };
-    const v2 = convertV1ToV2(v1, '9.9.9-test');
-    // Earliest result start_time: "when this assessment was executed".
-    expect(v2.timestamp).toBe('2024-01-15T08:30:00Z');
-    expect(v2.generator).toEqual({ name: 'legacyhdf-to-hdf', version: '9.9.9-test' });
-    // The v1 version field is the InSpec engine version.
-    expect(v2.tool).toEqual({ name: 'InSpec', version: '7.1.7' });
-  });
-
-  it('degrades honestly with no result times and no engine version', () => {
-    const v1: HDFV1Results = {
-      version: '',
-      platform: { name: 'ubuntu' },
-      statistics: {},
-      profiles: [{ name: 'p', controls: [{ id: 'c1', impact: 0.5 }] }],
-    };
-    const v2 = convertV1ToV2(v1);
-    // No source times -> no timestamp; never the wall clock.
-    expect(v2.timestamp).toBeUndefined();
-    expect(v2.tool).toEqual({ name: 'Heimdall Data Format v1' });
-    expect(v2.generator).toEqual({ name: 'legacyhdf-to-hdf', version: '1.0.0' });
-  });
-
-  it('ignores timeless results when picking the document timestamp', () => {
-    const v1: HDFV1Results = {
-      version: '7.1.7',
-      platform: { name: 'ubuntu' },
-      statistics: {},
-      profiles: [
-        {
-          name: 'p',
-          controls: [
-            // A result without start_time is stamped with the legacy
-            // zero-time sentinel downstream — it is not an observation and
-            // must never win the earliest-time pick.
-            { id: 'c1', impact: 0.5, results: [{ status: 'passed' }] },
-            { id: 'c2', impact: 0.5, results: [{ status: 'passed', start_time: '2024-06-01T00:00:00Z' }] },
-          ],
-        },
-      ],
-    };
-    const v2 = convertV1ToV2(v1);
-    expect(v2.timestamp).toBe('2024-06-01T00:00:00Z');
-  });
-
-  it('omits the timestamp entirely when no result carries a time', () => {
-    const v1: HDFV1Results = {
-      version: '7.1.7',
-      platform: { name: 'ubuntu' },
-      statistics: {},
-      profiles: [
-        { name: 'p', controls: [{ id: 'c1', impact: 0.5, results: [{ status: 'passed' }] }] },
-      ],
-    };
-    const v2 = convertV1ToV2(v1);
-    // Fabricating a document time (wall clock OR the zero-time sentinel)
-    // is forbidden: absent means absent.
-    expect(v2.timestamp).toBeUndefined();
-  });
-
-  it('keeps a source-supplied generator and timestamp (passthrough precedence)', () => {
-    const v1: HDFV1Results = {
-      version: '7.1.7',
-      platform: { name: 'ubuntu' },
-      statistics: {},
-      timestamp: '2023-11-05T00:00:00Z',
-      generator: { name: 'upstream-tool', version: '2.0.0' },
-      profiles: [
-        { name: 'p', controls: [{ id: 'c1', impact: 0.5, results: [{ status: 'passed', start_time: '2024-01-15T08:30:00Z' }] }] },
-      ],
-    };
-    const v2 = convertV1ToV2(v1);
-    expect(v2.generator).toEqual({ name: 'upstream-tool', version: '2.0.0' });
-    expect(v2.timestamp).toBe('2023-11-05T00:00:00Z');
-  });
-});
-

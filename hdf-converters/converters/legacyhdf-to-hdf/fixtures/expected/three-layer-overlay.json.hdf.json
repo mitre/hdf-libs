@@ -19001,8 +19001,9 @@
   "statistics": {
     "duration": 22.029998957
   },
-  "timestamp": "2022-03-06T22:05:48Z",
+  "timestamp": "2022-03-06T22:06:10Z",
   "tool": {
+    "format": "exec-json",
     "name": "InSpec",
     "version": "4.52.9"
   }
