@@ -161,6 +161,57 @@ func TranslateControls(controls []string, from, to int) (translated []string, un
 	return translated, unmapped
 }
 
+// A NIST-shaped base at the start of a longer reference, e.g. "AC-1 a",
+// "AC-1.2 (i)", "SA-12 b 1" — DISA-CCI statement-reference styles.
+var baseControl = regexp.MustCompile(`^([A-Z]{2}-\d+(?:\(\d+\))?)`)
+
+// AtRevision translates a control list authored against nativeRev into rev.
+// Identity when the revisions are equal (or either is unsupported). Per token:
+// the crosswalk redirect is followed when one exists; statement-style suffixes
+// ("AC-1 a", "AC-1.2 (i)") are kept on identity and dropped on redirects;
+// tokens with no equivalent at the target revision are dropped (the analog of
+// the awsconfig empty-NIST-ID marker); tokens outside both NIST catalogs
+// (tool placeholders like "UM-1") pass through unchanged — they are not ours
+// to drop. Output is deduplicated preserving first-seen order.
+func AtRevision(controls []string, nativeRev, rev int) []string {
+	if nativeRev == rev || !supportedRevision(nativeRev) || !supportedRevision(rev) {
+		return controls
+	}
+	seen := make(map[string]bool)
+	out := make([]string, 0, len(controls))
+	add := func(c string) {
+		if c != "" && !seen[c] {
+			seen[c] = true
+			out = append(out, c)
+		}
+	}
+	for _, c := range controls {
+		tr := Translate(c, nativeRev, rev)
+		if tr.Relation != RelationUnknown {
+			for _, t := range tr.Targets {
+				add(t)
+			}
+			continue
+		}
+		if m := baseControl.FindStringSubmatch(c); len(m) > 1 && m[1] != c {
+			switch btr := Translate(m[1], nativeRev, rev); btr.Relation {
+			case RelationIdentity:
+				add(c)
+				continue
+			case RelationUnknown:
+				// fall through to pass-through
+			default:
+				for _, t := range btr.Targets {
+					add(t)
+				}
+				continue
+			}
+		}
+		add(c)
+	}
+	return out
+}
+
 // RosterSize returns the number of control IDs in the crosswalk's catalog for
 // the given revision, or 0 for unsupported revisions.
 func RosterSize(rev int) int {

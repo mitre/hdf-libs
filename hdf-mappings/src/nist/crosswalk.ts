@@ -159,3 +159,58 @@ export function translateNistControls(
 export function nistRosterSize(rev: number): number {
   return rosters.get(rev)?.size ?? 0;
 }
+
+/**
+ * A NIST-shaped base at the start of a longer reference, e.g. "AC-1 a",
+ * "AC-1.2 (i)", "SA-12 b 1" — DISA-CCI statement-reference styles.
+ */
+const BASE_CONTROL = /^([A-Z]{2}-\d+(?:\(\d+\))?)/;
+
+/**
+ * Translates a control list authored against `nativeRev` into `rev`. Identity
+ * when the revisions are equal (or either is unsupported). Per token: the
+ * crosswalk redirect is followed when one exists; statement-style suffixes
+ * ("AC-1 a", "AC-1.2 (i)") are kept on identity and dropped on redirects;
+ * tokens with no equivalent at the target revision are dropped (the analog of
+ * the awsconfig empty-NIST-ID marker); tokens outside both NIST catalogs
+ * (tool placeholders like "UM-1") pass through unchanged — they are not ours
+ * to drop. Output is deduplicated preserving first-seen order.
+ */
+export function nistControlsAtRevision(
+  controls: string[],
+  nativeRev: number,
+  rev: number
+): string[] {
+  if (nativeRev === rev || !SUPPORTED.has(nativeRev) || !SUPPORTED.has(rev)) {
+    return controls;
+  }
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const add = (c: string): void => {
+    if (c && !seen.has(c)) {
+      seen.add(c);
+      out.push(c);
+    }
+  };
+  for (const c of controls) {
+    const tr = translateNistControl(c, nativeRev, rev);
+    if (tr.relation !== 'unknown') {
+      tr.targets.forEach(add);
+      continue;
+    }
+    const base = BASE_CONTROL.exec(c)?.[1];
+    if (base && base !== c) {
+      const btr = translateNistControl(base, nativeRev, rev);
+      if (btr.relation === 'identity') {
+        add(c);
+        continue;
+      }
+      if (btr.relation !== 'unknown') {
+        btr.targets.forEach(add);
+        continue;
+      }
+    }
+    add(c);
+  }
+  return out;
+}

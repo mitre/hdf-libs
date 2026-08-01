@@ -5188,7 +5188,7 @@
           "tags": {
             "fname": "ntp_open.nasl",
             "nist": [
-              "AU-8(1)"
+              "SC-45(1)"
             ],
             "plugin_publication_date": "2015/03/20",
             "plugin_type": "remote",
@@ -5196,7 +5196,7 @@
             "risk_factor": "None"
           },
           "code": "{\n  \"cpe\": \"cpe:/a:ntp:ntp\",\n  \"description\": \"An NTP server is listening on port 123. If not securely configured, it may provide information about its version, current date, current time, and possibly system information.\",\n  \"fname\": \"ntp_open.nasl\",\n  \"iavt\": \"0001-T-0934\",\n  \"plugin_modification_date\": \"2021/02/24\",\n  \"plugin_name\": \"Network Time Protocol (NTP) Server Detection\",\n  \"plugin_publication_date\": \"2015/03/20\",\n  \"plugin_type\": \"remote\",\n  \"risk_factor\": \"None\",\n  \"script_version\": \"1.33\",\n  \"see_also\": \"http://www.ntp.org\",\n  \"solution\": \"n/a\",\n  \"synopsis\": \"An NTP server is listening on the remote host.\",\n  \"xref\": \"IAVT:0001-T-0934\",\n  \"plugin_output\": \"An NTP service has been discovered, listening on port 123.\\n\\n  No sensitive information has been disclosed.\\n\\n  Version : unknown\",\n  \"port\": \"123\",\n  \"svc_name\": \"ntp\",\n  \"protocol\": \"udp\",\n  \"severity\": \"0\",\n  \"pluginID\": \"10884\",\n  \"pluginName\": \"Network Time Protocol (NTP) Server Detection\",\n  \"pluginFamily\": \"Service detection\"\n}",
-          "controlType": "operational",
+          "controlType": "technical",
           "refs": [
             {
               "url": "http://www.ntp.org"

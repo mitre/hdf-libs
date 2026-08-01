@@ -117,6 +117,27 @@ their incorporation targets from either direction, so stale tags resolve.
 > equivalent to the source control. Treat translated tags as candidate control
 > associations, exactly like the tool-specific mappings below.
 
+#### Per-table revision handling
+
+Every tool mapping table declares the NIST revision it was authored against,
+and its default lookups translate to the current module-global revision
+(`--nist-rev` / `setCurrentNistRevision`) through the crosswalk — so every
+NIST-emitting converter honors the requested revision, not just aws-config:
+
+| Table | Native revision | Notes |
+|-------|-----------------|-------|
+| awsconfig | 4 + 5 (dual) | native rows per revision + crosswalk backfill (see below) |
+| cwe | 4 + 5 (dual) | control IDs are byte-identical across revisions |
+| nessus | 4 | carries AU-8(1), which translates to SC-45(1) at Rev 5 |
+| cci | 4 | DISA refs incl. Appendix J privacy controls; translated with statement suffixes |
+| nikto, owasp, scoutsuite | 4 | content identical at both revisions today; a test guards that invariant |
+| hipcheck | 5 | SR-family controls have no Rev 4 equivalent and drop at Rev 4 |
+
+Translation semantics: statement-style suffixes ("AC-1 a") survive identity and
+are dropped on redirects; controls with no equivalent at the requested revision
+are dropped rather than mistranslated; tokens outside both NIST catalogs (tool
+placeholders like Nessus's "UM-1") pass through unchanged.
+
 ### OWASP Top 10
 
 ```typescript

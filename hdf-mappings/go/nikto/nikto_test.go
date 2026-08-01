@@ -1,8 +1,11 @@
 package nikto
 
 import (
+	"strings"
 	"sync"
 	"testing"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 func TestNISTControl_KnownID(t *testing.T) {
@@ -88,5 +91,20 @@ func TestNISTControl_SI11(t *testing.T) {
 	control := NISTControl("750500")
 	if control != "SI-11" {
 		t.Errorf("expected SI-11 for Nikto ID 750500, got %q", control)
+	}
+}
+
+// The nikto table is treated as revision-neutral: NISTControl performs no
+// useful translation only because every control it carries is identical at
+// Rev 4 and Rev 5. If this guard fails, a newly added control diverges across
+// revisions and the mapping's revision handling must be revisited.
+func TestTableIsRevisionNeutral(t *testing.T) {
+	for id, control := range loadData() {
+		for _, c := range strings.Split(control, "|") {
+			tr := nist.Translate(strings.TrimSpace(c), 4, 5)
+			if tr.Relation != nist.RelationIdentity {
+				t.Errorf("nikto %s: control %q is not revision-neutral (relation %s)", id, c, tr.Relation)
+			}
+		}
 	}
 }

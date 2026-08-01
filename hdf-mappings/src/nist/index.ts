@@ -179,7 +179,12 @@ export const DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS: string[] = ['CM-8'];
 export const DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS: string[] = ['CM-6'];
 
 // Rev 4 <-> Rev 5 crosswalk
-export { translateNistControl, translateNistControls, nistRosterSize } from './crosswalk.js';
+export {
+  translateNistControl,
+  translateNistControls,
+  nistRosterSize,
+  nistControlsAtRevision,
+} from './crosswalk.js';
 export type { NistControlTranslation, NistCrosswalkRelation } from './crosswalk.js';
 
 // Re-export types

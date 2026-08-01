@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 // CCIItem represents a CCI (Control Correlation Identifier) with its definition and NIST mappings
@@ -57,8 +59,15 @@ func GetCCIDescription(cciID string) string {
 	return ""
 }
 
-// GetCCINistMappings returns the NIST control mappings for a CCI ID.
-// Returns nil if the CCI ID is not found.
+// NativeRevision is the NIST 800-53 revision the DISA CCI list's NIST
+// references were authored against (Rev 4-era list: it references Appendix J
+// privacy controls and SA-12/SA-19, all withdrawn or relocated in Rev 5).
+// GetCCINistMappings (and CCIToNIST atop it) translate to the process-global
+// revision via the NIST crosswalk.
+const NativeRevision = 4
+
+// GetCCINistMappings returns the NIST control mappings for a CCI ID at the
+// process-global NIST revision. Returns nil if the CCI ID is not found.
 //
 // Example:
 //
@@ -71,7 +80,7 @@ func GetCCINistMappings(cciID string) []string {
 
 	data := loadCCIData()
 	if item, exists := data[cciID]; exists {
-		return item.Nist
+		return nist.AtRevision(item.Nist, NativeRevision, nist.Revision())
 	}
 	return nil
 }

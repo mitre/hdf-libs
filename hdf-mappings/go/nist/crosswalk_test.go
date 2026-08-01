@@ -207,6 +207,39 @@ func TestTranslateControlsDedup(t *testing.T) {
 	}
 }
 
+func TestAtRevision(t *testing.T) {
+	// Same revision (or unsupported) is a no-op.
+	in := []string{"AC-1", "UM-1"}
+	if got := AtRevision(in, 4, 4); !reflect.DeepEqual(got, in) {
+		t.Errorf("same-rev = %v, want unchanged", got)
+	}
+	if got := AtRevision(in, 3, 5); !reflect.DeepEqual(got, in) {
+		t.Errorf("unsupported native rev = %v, want unchanged", got)
+	}
+	// Redirects follow the crosswalk; identity passes through.
+	got := AtRevision([]string{"AC-1", "AU-8(1)"}, 4, 5)
+	if !reflect.DeepEqual(got, []string{"AC-1", "SC-45(1)"}) {
+		t.Errorf("got %v, want [AC-1 SC-45(1)]", got)
+	}
+	// Statement-style suffixes: kept on identity, dropped with redirects;
+	// no-equivalent bases drop the whole reference.
+	got = AtRevision([]string{"AC-1 a", "TR-1 a", "SC-19 a", "SA-12.1 (i)"}, 4, 5)
+	if !reflect.DeepEqual(got, []string{"AC-1 a", "PT-5", "PT-5(1)"}) {
+		t.Errorf("got %v, want [AC-1 a PT-5 PT-5(1)]", got)
+	}
+	// Family-level incorporation drops (no expansion), none drops, and
+	// non-NIST placeholders pass through untouched.
+	got = AtRevision([]string{"SA-12", "SC-19", "UM-1"}, 4, 5)
+	if !reflect.DeepEqual(got, []string{"UM-1"}) {
+		t.Errorf("got %v, want [UM-1]", got)
+	}
+	// Convergent redirects dedup, preserving first-seen order.
+	got = AtRevision([]string{"IA-2(7)", "IA-2(11)", "IA-2(6)"}, 4, 5)
+	if !reflect.DeepEqual(got, []string{"IA-2(6)"}) {
+		t.Errorf("got %v, want [IA-2(6)]", got)
+	}
+}
+
 func TestRosterCounts(t *testing.T) {
 	// Sanity floor: ~1008 Rev 5 IDs and ~856 Rev 4 IDs (incl. Appendix J) per the
 	// NIST comparison workbooks. Guards against a truncated or partially-parsed
