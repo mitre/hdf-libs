@@ -72,7 +72,9 @@ func nonNilDiffs(d []RequirementDiff) []RequirementDiff {
 // changes derived by the batch engine's own computeFieldChanges — under the
 // same fold contract as ApplyChangeEvents (dedup, last-value-wins by
 // sequence, tombstone-aware, warnings never abort). Output is deterministic:
-// the comparison timestamp is the latest event occurrence, never wall clock.
+// the comparison timestamp is the latest event occurrence, and seed-side
+// override expiry anchors to the seed's own timestamp (falling back to the
+// event occurrence when the seed has none) — never the wall clock.
 func FoldChangeEventsIntoComparison(seed []byte, events []*hdf.HDFRequirementChangeEvent) (*FoldResult, error) {
 	var doc map[string]interface{}
 	if err := json.Unmarshal(seed, &doc); err != nil {
@@ -145,13 +147,20 @@ func FoldChangeEventsIntoComparison(seed []byte, events []*hdf.HDFRequirementCha
 			maxOccurred = winner.Timestamp
 		}
 		newTs := winner.Timestamp.UTC().Format(time.RFC3339Nano)
+		// Seed-side override expiry needs a deterministic anchor: the seed's
+		// own observation time, else the event occurrence — a timestamp-less
+		// seed must never fall through to the wall clock.
+		seedRef := docTimestamp
+		if seedRef == "" {
+			seedRef = newTs
+		}
 
 		if winner.State == hdf.EventRequirementStateAbsent {
 			if !inSeed {
 				keyWarn("absentUnknown", "absent event for a key not present in the seed")
 				continue
 			}
-			oldStatus := ComputeEffectiveStatus(*seedTyped, docTimestamp)
+			oldStatus := ComputeEffectiveStatus(*seedTyped, seedRef)
 			oldImpact := seedTyped.Impact
 			diffs = append(diffs, RequirementDiff{
 				ID:                 id,
@@ -200,7 +209,7 @@ func FoldChangeEventsIntoComparison(seed []byte, events []*hdf.HDFRequirementCha
 			continue
 		}
 
-		oldStatus := ComputeEffectiveStatus(*seedTyped, docTimestamp)
+		oldStatus := ComputeEffectiveStatus(*seedTyped, seedRef)
 		oldImpact := seedTyped.Impact
 		diffs = append(diffs, RequirementDiff{
 			ID:                 id,

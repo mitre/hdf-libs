@@ -31,8 +31,9 @@ function findSeedRequirement(doc: Doc, id: string): Doc | null {
  * own computeFieldChanges — under the same fold contract as
  * applyChangeEvents (dedup, last-value-wins by sequence, tombstone-aware,
  * warnings never abort). Deterministic: the comparison timestamp is the
- * latest event occurrence, never wall clock. Go parity:
- * FoldChangeEventsIntoComparison.
+ * latest event occurrence, and seed-side override expiry anchors to the
+ * seed's own timestamp (falling back to the event occurrence when the seed
+ * has none) — never wall clock. Go parity: FoldChangeEventsIntoComparison.
  */
 export async function foldChangeEventsIntoComparison(
   seedJson: string,
@@ -75,6 +76,10 @@ export async function foldChangeEventsIntoComparison(
       asOfFromEvents = winner['timestamp'] as string;
     }
     const newTs = winner['timestamp'] as string;
+    // Seed-side override expiry needs a deterministic anchor: the seed's
+    // own observation time, else the event occurrence — a timestamp-less
+    // seed must never fall through to the wall clock.
+    const seedRef = docTimestamp !== '' ? docTimestamp : newTs;
 
     if (winner['state'] === 'absent') {
       if (!seedReq) {
@@ -85,7 +90,7 @@ export async function foldChangeEventsIntoComparison(
         id,
         title: seedReq['title'] as string | undefined,
         state: 'absent',
-        oldEffectiveStatus: computeEffectiveStatus(seedReq, docTimestamp),
+        oldEffectiveStatus: computeEffectiveStatus(seedReq, seedRef),
         changeReasons: [],
         oldImpact: seedReq['impact'] as number | undefined,
         fieldChanges: [],
@@ -128,7 +133,7 @@ export async function foldChangeEventsIntoComparison(
       id,
       title: (after['title'] as string | undefined) ?? (seedReq['title'] as string | undefined),
       state: winner['state'] as RequirementState,
-      oldEffectiveStatus: computeEffectiveStatus(seedReq, docTimestamp),
+      oldEffectiveStatus: computeEffectiveStatus(seedReq, seedRef),
       newEffectiveStatus: newStatus,
       changeReasons: ((winner['changeReasons'] as string[] | undefined) ?? []) as ChangeReason[],
       oldImpact: seedReq['impact'] as number | undefined,

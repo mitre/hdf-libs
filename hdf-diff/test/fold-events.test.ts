@@ -282,3 +282,76 @@ describe('foldChangeEventsIntoComparison defensive edges', () => {
     );
   });
 });
+
+describe('foldChangeEventsIntoComparison — timestamp-less seed', () => {
+  // Deliberately-past waiver: active at the 2024 event occurrence, expired
+  // by any later wall clock — so a wall-clock expiry anchor is observable
+  // as a wrong seed-side status. Go parity:
+  // TestFoldChangeEvents_TimestampLessSeedAnchorsToEventOccurrence.
+  const refTs = '2024-02-01T00:00:00Z';
+
+  function timestampLessSeed(): { seedJson: string; seedReq: Req } {
+    const doc = JSON.parse(load('scan-before.json')) as Req;
+    delete doc['timestamp'];
+    const seedReq = requirementsOf(doc).find((r) => r['id'] === 'SV-001');
+    if (!seedReq) throw new Error('fixture missing SV-001');
+    seedReq['statusOverrides'] = [
+      {
+        type: 'waiver',
+        status: 'passed',
+        reason: 'accepted pending redesign',
+        appliedBy: { type: 'simple', identifier: 'admin' },
+        appliedAt: '2024-01-01T00:00:00Z',
+        expiresAt: '2025-06-01T00:00:00Z',
+      },
+    ];
+    return { seedJson: JSON.stringify(doc), seedReq };
+  }
+
+  const inputs = {
+    eventId: '0190f6f2-0000-7000-8000-000000000099',
+    source: 'inspec://fixture/scan',
+    sequence: 1,
+    systemRef: 'fixture.hdf-system.json',
+    componentId: '6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60',
+    requirementId: 'SV-001',
+    timestamp: refTs,
+    referenceTimestamp: refTs,
+    prevReferenceTimestamp: refTs,
+  };
+
+  async function seedState(seedReq: Req): Promise<KeyState> {
+    const state = {
+      effectiveStatus: computeEffectiveStatus(seedReq, refTs),
+      effectiveImpact: computeEffectiveImpact(seedReq, refTs),
+      checksum: await computeEffectiveChecksum(seedReq, refTs),
+    };
+    expect(state.effectiveStatus, 'waiver must be active at the event occurrence').toBe('passed');
+    return state;
+  }
+
+  it('absent branch anchors the seed-side status to the event occurrence', async () => {
+    const { seedJson, seedReq } = timestampLessSeed();
+    const ev = await changeEventFromPrevious(await seedState(seedReq), null, seedReq, inputs);
+    expect(ev).not.toBeNull();
+
+    const result = await foldChangeEventsIntoComparison(seedJson, [ev as Req]);
+    expect(result.warnings).toEqual([]);
+    const diffs = result.comparison['requirementDiffs'] as Req[];
+    expect(diffs).toHaveLength(1);
+    expect(diffs[0]?.['oldEffectiveStatus'], 'expiry must anchor to the event occurrence, never the wall clock').toBe('passed');
+  });
+
+  it('content branch anchors the seed-side status to the event occurrence', async () => {
+    const { seedJson, seedReq } = timestampLessSeed();
+    const next = { ...seedReq, impact: 0.6 };
+    const ev = await changeEventFromPrevious(await seedState(seedReq), next, seedReq, inputs);
+    expect(ev).not.toBeNull();
+    expect((ev as Req)['state']).toBe('updated');
+
+    const result = await foldChangeEventsIntoComparison(seedJson, [ev as Req]);
+    const diffs = result.comparison['requirementDiffs'] as Req[];
+    expect(diffs).toHaveLength(1);
+    expect(diffs[0]?.['oldEffectiveStatus'], 'expiry must anchor to the event occurrence, never the wall clock').toBe('passed');
+  });
+});

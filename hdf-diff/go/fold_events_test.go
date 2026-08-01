@@ -3,6 +3,7 @@ package diff
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
@@ -217,5 +218,95 @@ func TestFoldChangeEvents_Anomalies(t *testing.T) {
 		raw, err := json.Marshal(result.Comparison)
 		require.NoError(t, err)
 		assert.True(t, validators.ValidateComparison(raw).Valid)
+	})
+}
+
+// feTimestampLessSeed builds a seed from the shared fixture with the
+// document timestamp removed and a deliberately-past waiver on SV-001:
+// active at the 2024 event occurrence, expired by any later wall clock —
+// so a wall-clock expiry anchor is observable as a wrong old status.
+func feTimestampLessSeed(t *testing.T) ([]byte, hdf.EvaluatedRequirement) {
+	t.Helper()
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(aeLoadFixture(t, "scan-before.json"), &doc))
+	delete(doc, "timestamp")
+
+	baselines, _ := doc["baselines"].([]interface{})
+	first, _ := baselines[0].(map[string]interface{})
+	reqs, _ := first["requirements"].([]interface{})
+	var seedReq hdf.EvaluatedRequirement
+	for i, rRaw := range reqs {
+		r, _ := rRaw.(map[string]interface{})
+		if r["id"] != "SV-001" {
+			continue
+		}
+		typed, ok := typedRequirement(r)
+		require.True(t, ok)
+		typed.StatusOverrides = []hdf.StatusOverride{stMakeOverride(struct {
+			Type      string
+			Status    hdf.ResultStatus
+			Reason    string
+			AppliedAt time.Time
+			ExpiresAt time.Time
+		}{
+			Type:      "waiver",
+			Status:    hdf.Passed,
+			AppliedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			ExpiresAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+		})}
+		raw, err := json.Marshal(typed)
+		require.NoError(t, err)
+		var back map[string]interface{}
+		require.NoError(t, json.Unmarshal(raw, &back))
+		reqs[i] = back
+		seedReq = typed
+	}
+	require.NotEmpty(t, seedReq.ID)
+	out, err := json.Marshal(doc)
+	require.NoError(t, err)
+	return out, seedReq
+}
+
+func TestFoldChangeEvents_TimestampLessSeedAnchorsToEventOccurrence(t *testing.T) {
+	seed, seedReq := feTimestampLessSeed(t)
+	refTs := "2024-02-01T00:00:00Z"
+
+	cs := ComputeEffectiveChecksum(seedReq, refTs)
+	require.NotNil(t, cs)
+	prev := &KeyState{
+		EffectiveStatus: ComputeEffectiveStatus(seedReq, refTs),
+		EffectiveImpact: ComputeEffectiveImpact(seedReq, refTs),
+		Checksum:        *cs,
+	}
+	require.Equal(t, "passed", prev.EffectiveStatus, "waiver must be active at the event occurrence")
+
+	in := ceInputs()
+	in.RequirementID = "SV-001"
+	in.Timestamp = time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)
+	in.ReferenceTimestamp = refTs
+	in.PrevReferenceTimestamp = refTs
+
+	t.Run("absent branch", func(t *testing.T) {
+		ev := ChangeEventFromPrevious(prev, nil, &seedReq, in)
+		require.NotNil(t, ev)
+		result, err := FoldChangeEventsIntoComparison(seed, []*hdf.HDFRequirementChangeEvent{ev})
+		require.NoError(t, err)
+		assert.Empty(t, result.Warnings)
+		require.Len(t, result.Comparison.RequirementDiffs, 1)
+		assert.Equal(t, "passed", result.Comparison.RequirementDiffs[0].OldEffectiveStatus,
+			"seed-side expiry must anchor to the event occurrence, never the wall clock")
+	})
+
+	t.Run("content branch", func(t *testing.T) {
+		next := seedReq
+		next.Impact = 0.6
+		ev := ChangeEventFromPrevious(prev, &next, &seedReq, in)
+		require.NotNil(t, ev)
+		require.Equal(t, hdf.EventRequirementStateUpdated, ev.State)
+		result, err := FoldChangeEventsIntoComparison(seed, []*hdf.HDFRequirementChangeEvent{ev})
+		require.NoError(t, err)
+		require.Len(t, result.Comparison.RequirementDiffs, 1)
+		assert.Equal(t, "passed", result.Comparison.RequirementDiffs[0].OldEffectiveStatus,
+			"seed-side expiry must anchor to the event occurrence, never the wall clock")
 	})
 }
