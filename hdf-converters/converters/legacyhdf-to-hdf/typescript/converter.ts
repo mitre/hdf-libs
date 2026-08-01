@@ -658,7 +658,13 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
  * // v2 = { baselines: [...], components: [{...}], statistics: {...} }
  * ```
  */
-export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
+/**
+ * Generator version stamped when the caller supplies none (mirrors the Go
+ * DefaultConverterVersion).
+ */
+const DEFAULT_CONVERTER_VERSION = '1.0.0';
+
+export function convertV1ToV2(v1Data: HDFV1Results, converterVersion: string = DEFAULT_CONVERTER_VERSION): HDFV2Results {
   validateInputSize(JSON.stringify(v1Data), 'legacyhdf-to-hdf');
   const v2: HDFV2Results = {
     baselines: (v1Data.profiles || []).map(convertProfile),
@@ -682,12 +688,19 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
     v2.components = [component];
   }
 
-  // Copy optional fields
+  // A source-supplied generator is provenance and wins; otherwise the
+  // conversion stamps its own identity (fleet convention).
   if (v1Data.generator) {
     v2.generator = v1Data.generator;
+  } else {
+    v2.generator = { name: 'legacyhdf-to-hdf', version: converterVersion };
   }
 
-  v2.tool = { name: 'Heimdall Data Format v1' };
+  // The v1 version field carries the InSpec engine version; a version-less
+  // document keeps the historical Heimdall label. Mirrors the Go buildTool.
+  v2.tool = v1Data.version
+    ? { name: 'InSpec', version: v1Data.version }
+    : { name: 'Heimdall Data Format v1' };
 
   if (v1Data.timestamp) {
     v2.timestamp = v1Data.timestamp;
@@ -713,7 +726,40 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
   // Flatten overlays: merge overlay/wrapper baselines so every requirement
   // has results and consumers don't see duplicated controls (741→247 fix).
   const flat = flattenOverlays(v2 as unknown as HDFResults);
-  return flat.results as unknown as HDFV2Results;
+  const out = flat.results as unknown as HDFV2Results;
+
+  // Document timestamp = the earliest result start time ("when this
+  // assessment was executed"): the source carries no scan-level time field,
+  // and fabricating one from the wall clock is forbidden — with no result
+  // times the field stays unset. A source-supplied timestamp wins. Mirrors
+  // the Go earliestResultTime.
+  if (!out.timestamp) {
+    const earliest = earliestResultTime(out);
+    if (earliest) out.timestamp = earliest;
+  }
+  return out;
+}
+
+function earliestResultTime(doc: HDFV2Results): string | undefined {
+  let earliestMs = Number.POSITIVE_INFINITY;
+  let earliest: string | undefined;
+  for (const baseline of doc.baselines) {
+    for (const req of baseline.requirements ?? []) {
+      for (const result of req.results ?? []) {
+        // The legacy zero-time sentinel marks a source result that carried
+        // no start_time — it is not an observation and must never win the
+        // earliest pick (mirrors the Go IsZero skip).
+        if (!result.startTime || result.startTime === LEGACY_ZERO_TIME) continue;
+        const parsed = parseTimestamp(result.startTime);
+        if (!parsed) continue;
+        const ms = parsed.getTime();
+        if (Number.isNaN(ms) || ms >= earliestMs) continue;
+        earliestMs = ms;
+        earliest = formatTimestamp(parsed);
+      }
+    }
+  }
+  return earliest;
 }
 
 /**

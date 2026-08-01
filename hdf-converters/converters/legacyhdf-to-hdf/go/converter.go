@@ -498,6 +498,10 @@ func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
 	return v2
 }
 
+// DefaultConverterVersion is the generator version stamped when no caller
+// context supplies one (library upgrade paths; mirrors the TS default).
+const DefaultConverterVersion = "1.0.0"
+
 // ConvertV1ToV2 converts HDF v1.0 results to v2.0 format.
 //
 // Performs comprehensive transformation at all levels:
@@ -505,13 +509,15 @@ func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
 //   - Baselines: sha256 → checksum, controls → requirements, field renaming
 //   - Requirements: snake_case → camelCase, status → effectiveStatus
 //   - Results: snake_case → camelCase for all fields
-func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
-	toolName := "Heimdall Data Format v1"
+//   - Document metadata: generator stamped, tool named from the engine
+//     version, timestamp lifted from the earliest result start time
+func ConvertV1ToV2(v1 *HDFV1Results, converterVersion string) *hdf.HDFResults {
 	v2 := &hdf.HDFResults{
 		Statistics: &hdf.Statistics{
 			Duration: v1.Statistics.Duration,
 		},
-		Tool: &hdf.Tool{Name: &toolName},
+		Generator: &hdf.Generator{Name: "legacyhdf-to-hdf", Version: converterVersion},
+		Tool:      buildTool(v1.Version),
 	}
 
 	// Convert profiles to baselines
@@ -541,5 +547,49 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 	// Flatten overlays: merge overlay/wrapper baselines so every requirement
 	// has results and consumers don't see duplicated controls (741→247 fix).
 	flat := hdfparsers.FlattenOverlays(*v2)
+
+	// Document timestamp = the earliest result start time ("when this
+	// assessment was executed"): the source carries no scan-level time field,
+	// and fabricating one from the wall clock is forbidden — with no result
+	// times the field stays unset.
+	if ts := earliestResultTime(&flat.Results); ts != nil {
+		flat.Results.Timestamp = ts
+	}
 	return &flat.Results
+}
+
+// buildTool names the source engine: the v1 shape's version field carries the
+// InSpec engine version, so a version-bearing document is InSpec output; a
+// version-less one keeps the historical Heimdall label.
+func buildTool(version string) *hdf.Tool {
+	if version != "" {
+		name := "InSpec"
+		v := version
+		return &hdf.Tool{Name: &name, Version: &v}
+	}
+	name := "Heimdall Data Format v1"
+	return &hdf.Tool{Name: &name}
+}
+
+// earliestResultTime scans every requirement result for the earliest non-zero
+// start time.
+func earliestResultTime(doc *hdf.HDFResults) *time.Time {
+	var earliest time.Time
+	for _, b := range doc.Baselines {
+		for _, req := range b.Requirements {
+			for _, r := range req.Results {
+				if r.StartTime.IsZero() {
+					continue
+				}
+				if earliest.IsZero() || r.StartTime.Before(earliest) {
+					earliest = r.StartTime
+				}
+			}
+		}
+	}
+	if earliest.IsZero() {
+		return nil
+	}
+	utc := earliest.UTC()
+	return &utc
 }

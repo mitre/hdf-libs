@@ -86,7 +86,7 @@ func upgradeV2ToV3(input []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to parse legacy HDF (v2): %w", err)
 	}
 
-	modern := legacyhdf.ConvertV1ToV2(&legacy)
+	modern := legacyhdf.ConvertV1ToV2(&legacy, legacyhdf.DefaultConverterVersion)
 	return json.MarshalIndent(modern, "", "  ")
 }
 

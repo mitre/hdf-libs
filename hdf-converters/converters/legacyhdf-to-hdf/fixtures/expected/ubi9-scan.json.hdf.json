@@ -30964,10 +30964,16 @@
       "osVersion": "9.7"
     }
   ],
+  "generator": {
+    "name": "legacyhdf-to-hdf",
+    "version": "1.0.0"
+  },
   "statistics": {
     "duration": 47.904315
   },
+  "timestamp": "2026-02-22T20:56:55Z",
   "tool": {
-    "name": "Heimdall Data Format v1"
+    "name": "InSpec",
+    "version": "5.22.65"
   }
 }

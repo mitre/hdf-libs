@@ -33,7 +33,7 @@ func (c *legacyHDFConverter) Convert(input []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to parse InSpec input: %w", err)
 	}
 
-	v2 := legacyhdf.ConvertV1ToV2(&v1)
+	v2 := legacyhdf.ConvertV1ToV2(&v1, version)
 
 	output, err := json.MarshalIndent(v2, "", "  ")
 	if err != nil {
