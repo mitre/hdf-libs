@@ -306,7 +306,9 @@ func TestEventsApply_ReassemblesNextPosture(t *testing.T) {
 	require.NotNil(t, doc.Derivation)
 	assert.Equal(t, int64(5), doc.Derivation.ThroughSequence)
 	assert.Equal(t, int64(5), doc.Derivation.EventsApplied)
-	assert.Equal(t, eventsFixturePath(t, "scan-before.json"), doc.Derivation.Seed.URI)
+	// The default seed URI is the --seed path normalized to a valid
+	// URI-reference (identity on POSIX; file scheme for Windows shapes).
+	assert.Equal(t, seedURIFromPath(eventsFixturePath(t, "scan-before.json")), doc.Derivation.Seed.URI)
 }
 
 func TestEventsApply_SurfacesChainWarningsOnStderr(t *testing.T) {
@@ -412,4 +414,24 @@ func TestEventsApply_RejectsEventsFileAsSeed(t *testing.T) {
 	)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "hdf-results")
+}
+
+func TestSeedURIFromPath(t *testing.T) {
+	cases := []struct{ name, in, want string }{
+		// The exact shape that failed schema validation in Windows CI.
+		{"windows drive absolute", `D:\a\hdf-libs\hdf-libs\hdf-diff\test\fixtures\scan-before.json`,
+			"file:///D:/a/hdf-libs/hdf-libs/hdf-diff/test/fixtures/scan-before.json"},
+		{"windows drive with space", `C:\scan results\seed.hdf.json`,
+			"file:///C:/scan%20results/seed.hdf.json"},
+		{"UNC share", `\\fileserver\scans\seed.hdf.json`,
+			"file://fileserver/scans/seed.hdf.json"},
+		// POSIX shapes are already valid URI-references: preserved verbatim.
+		{"posix absolute", "/Users/x/scan-before.json", "/Users/x/scan-before.json"},
+		{"relative", "state/seed.hdf.json", "state/seed.hdf.json"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, seedURIFromPath(tc.in))
+		})
+	}
 }

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -173,7 +175,7 @@ func newEventsApplyCmd() *cobra.Command {
 			}
 			resolvedURI := seedURI
 			if resolvedURI == "" {
-				resolvedURI = seedPath
+				resolvedURI = seedURIFromPath(seedPath)
 			}
 			resolvedSource := source
 			if resolvedSource == "" && len(events) > 0 {
@@ -447,6 +449,37 @@ func deriveEventStream(prevDoc, nextDoc *hdf.HDFResults, id eventsDeriveIdentity
 		emit(&s, nil, &q, reqID)
 	}
 	return events
+}
+
+// seedURIFromPath renders a filesystem path as a valid RFC 3986
+// URI-reference for the derivation block's default seed URI. POSIX-style
+// paths are already valid path references and pass through slash-normalized;
+// Windows drive and UNC forms are not (drive colons and backslashes fail the
+// schema's uri-reference format) and get the file scheme. Pure string shape
+// detection — never runtime.GOOS — so both branches are testable on any OS.
+// An explicit --seed-uri is always taken verbatim.
+func seedURIFromPath(p string) string {
+	// Backslash is a legal POSIX filename character, so it is rewritten as a
+	// separator only inside the provably-Windows shapes below.
+	isDrive := len(p) >= 2 && p[1] == ':' &&
+		(('a' <= p[0] && p[0] <= 'z') || ('A' <= p[0] && p[0] <= 'Z'))
+	if isDrive {
+		// Drive-letter absolute (C:\... or C:/...): net/url percent-escapes
+		// into a proper file URI.
+		u := url.URL{Scheme: "file", Path: "/" + strings.ReplaceAll(p, `\`, "/")}
+		return u.String()
+	}
+	if strings.HasPrefix(p, `\\`) {
+		// UNC \\host\share\... becomes file://host/share/...
+		slashed := strings.ReplaceAll(p, `\`, "/")
+		host, rest := slashed[2:], "/"
+		if i := strings.Index(host, "/"); i >= 0 {
+			host, rest = host[:i], host[i:]
+		}
+		u := url.URL{Scheme: "file", Host: host, Path: rest}
+		return u.String()
+	}
+	return filepath.ToSlash(p)
 }
 
 // printEventWarnings surfaces fold-contract anomalies on stderr: warnings
