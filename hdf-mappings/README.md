@@ -89,7 +89,10 @@ Translates control IDs between 800-53 Rev 4 and Rev 5 using NIST's own
 comparison workbooks (the Rev 4→Rev 5 comparison workbook and the Appendix J
 privacy-control comparison, both from the SP 800-53 Rev 5 final publication
 page). Regenerated via `scripts/generate-nist-crosswalk.mjs`; both the Go and
-TS copies are written byte-identically (`--check` gates drift).
+TS copies are written byte-identically (`--check` gates drift). The full
+revision contract — selection, guarantees, and data-consumer guidance — is
+documented in the site guide
+[NIST 800-53 revision handling](../site/docs/guides/nist-revisions.md).
 
 ```typescript
 import { translateNistControl, translateNistControls } from '@mitre/hdf-mappings';
