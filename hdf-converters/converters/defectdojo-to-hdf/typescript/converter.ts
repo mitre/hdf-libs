@@ -15,9 +15,9 @@ import {
   Version as CvssVersion,
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
-import {getCweNistControl, nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
-import {cvssScoreToSeverity, parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
+import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
+import {cvssScoreToSeverity, severityToImpact, parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
+import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, validateInputSize, buildHdfResults, mapCWEToNIST} from '../../../shared/typescript/converterutil.js';
 
 // DefectDojo /api/v2/findings/ input model (subset). The live fetcher produces
 // the same bytes; see converter.go for the design rationale (risk-acceptance
@@ -71,18 +71,6 @@ interface DDAcceptedRisk {
   decision?: string;
   decision_details?: string | null;
   name?: string;
-}
-
-const SEVERITY_IMPACT: Record<string, number> = {
-  critical: 0.9,
-  high: 0.7,
-  medium: 0.5,
-  low: 0.3,
-  info: 0.0,
-};
-
-function impactFor(severity: string): number {
-  return SEVERITY_IMPACT[severity?.toLowerCase()] ?? 0.5;
 }
 
 // Raw-primary: what the tool reported is preserved; triage decisions ride in
@@ -190,11 +178,9 @@ function buildEpss(f: DDFinding): Epss | undefined {
 }
 
 function nistTags(f: DDFinding): string[] {
-  if (f.cwe && f.cwe > 0) {
-    const control = getCweNistControl(f.cwe);
-    if (control) return [control];
-  }
-  return DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
+  return f.cwe && f.cwe > 0
+    ? mapCWEToNIST([`CWE-${f.cwe}`], DEFAULT_STATIC_ANALYSIS_NIST_TAGS)
+    : DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
 }
 
 function buildDescriptions(f: DDFinding): Description[] {
@@ -229,7 +215,7 @@ function convertFinding(f: DDFinding): EvaluatedRequirement {
 
   const req: EvaluatedRequirement = {
     id: findingId(f),
-    impact: impactFor(f.severity),
+    impact: severityToImpact(f.severity),
     results: [result],
     tags,
     descriptions: buildDescriptions(f),

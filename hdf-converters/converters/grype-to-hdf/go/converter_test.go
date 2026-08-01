@@ -57,6 +57,28 @@ func TestConvertGrypeToHDF(t *testing.T) {
 	}
 }
 
+func TestConvertGrypeToHDF_TitleAndStartTime(t *testing.T) {
+	input := loadFixture(t, "input/amazon.json")
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+	req := hdfResults.Baselines[0].Requirements[0]
+
+	// Title names the CVE and the scan target (parity with heimdall2's grype mapper).
+	if req.Title == nil ||
+		!strings.HasPrefix(*req.Title, "Grype found a vulnerability to ") ||
+		!strings.HasSuffix(*req.Title, " in cloudwatch_to_s3:latest") {
+		t.Errorf("unexpected title: %v", req.Title)
+	}
+
+	// Result start_time is anchored to the scan timestamp, not Go zero time.
+	want, _ := time.Parse(time.RFC3339Nano, "2024-08-29T17:47:41.623Z")
+	if got := req.Results[0].StartTime; !got.Equal(want) {
+		t.Errorf("expected result start_time %q, got %q", want, got)
+	}
+}
+
 func TestConvertGrypeToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
 	result, err := ConvertGrypeToHDF(input, testConverterVersion)

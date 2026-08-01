@@ -7,6 +7,7 @@
 
 export {
   convertV1ToV2,
+  convertV2ToV1,
   isHDFV1,
   type HDFV1Results,
   type HDFV2Results,

@@ -31,7 +31,7 @@
             {
               "codeDesc": "Package: apk-tools@2.10.4-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Critical vulnerability is fixed for versions 2.10.7-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -70,6 +70,7 @@
               "url": "https://lists.apache.org/thread.html/rbf4ce74b0d1fa9810dec50ba3ace0caeea677af7c27a97111c06ccb7%40%3Cusers.kafka.apache.org%3E"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-36159 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -101,7 +102,7 @@
             {
               "codeDesc": "Package: apk-tools@2.10.4-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 2.10.6-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -128,6 +129,7 @@
               "url": "https://gitlab.alpinelinux.org/alpine/aports/-/issues/12606"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-30139 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -167,7 +169,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Critical vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -188,6 +190,7 @@
               "url": "https://bugs.busybox.net/show_bug.cgi?id=15216"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-48174 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -234,7 +237,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -261,6 +264,7 @@
               "url": "https://gitlab.alpinelinux.org/alpine/aports/-/issues/13661"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-28391 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -292,7 +296,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -328,6 +332,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42386 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -359,7 +364,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -395,6 +400,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42385 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -426,7 +432,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -462,6 +468,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42384 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -493,7 +500,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-direct-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -529,6 +536,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42383 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -560,7 +568,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -596,6 +604,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42382 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -627,7 +636,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-direct-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -663,6 +672,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42381 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -694,7 +704,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -730,6 +740,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42380 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -761,7 +772,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-direct-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -797,6 +808,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42379 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -828,7 +840,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-direct-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -864,6 +876,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42378 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -895,7 +908,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-direct-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r10",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -934,6 +947,7 @@
               "url": "https://security.gentoo.org/glsa/202105-09"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-28831 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -965,7 +979,7 @@
             {
               "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -1001,6 +1015,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42374 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -1040,7 +1055,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Critical vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -1088,6 +1103,7 @@
               "url": "https://www.openssl.org/news/secadv/20240627.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-5535 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -1134,7 +1150,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Critical vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -1179,6 +1195,7 @@
               "url": "https://www.openssl.org/news/secadv/20220621.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-2068 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -1225,7 +1242,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Critical vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -1285,6 +1302,7 @@
               "url": "https://www.oracle.com/security-alerts/cpujul2022.html"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-1292 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -1316,7 +1334,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Critical vulnerability is fixed for versions 1.1.1l-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -1388,6 +1406,7 @@
               "url": "https://www.tenable.com/security/tns-2022-02"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-3711 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -1427,7 +1446,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -1460,6 +1479,7 @@
               "url": "https://www.openssl.org/news/secadv/20230908.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-4807 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -1499,7 +1519,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -1547,6 +1567,7 @@
               "url": "https://www.openssl.org/news/secadv/20230322.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-0464 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -1586,7 +1607,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -1625,6 +1646,7 @@
               "url": "https://www.openssl.org/news/secadv/20230207.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-0286 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -1664,7 +1686,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -1706,6 +1728,7 @@
               "url": "https://www.openssl.org/news/secadv/20230207.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-0215 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -1745,7 +1768,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -1775,6 +1798,7 @@
               "url": "https://www.openssl.org/news/secadv/20230207.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-4450 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -1821,7 +1845,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -1926,6 +1950,7 @@
               "url": "https://www.tenable.com/security/tns-2022-09"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-0778 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -1957,7 +1982,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.1.1l-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -2041,6 +2066,7 @@
               "url": "https://www.tenable.com/security/tns-2022-02"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-3712 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -2072,7 +2098,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.1.1k-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -2165,6 +2191,7 @@
               "url": "https://www.tenable.com/security/tns-2021-09"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-3450 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -2196,7 +2223,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.1.1j-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -2277,6 +2304,7 @@
               "url": "https://www.tenable.com/security/tns-2021-10"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-23840 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -2308,7 +2336,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.1.1g-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -2425,6 +2453,7 @@
               "url": "https://www.tenable.com/security/tns-2021-10"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2020-1967 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -2464,7 +2493,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -2506,6 +2535,7 @@
               "url": "https://www.openssl.org/news/secadv/20240125.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-0727 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -2545,7 +2575,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -2584,6 +2614,7 @@
               "url": "https://www.openssl.org/news/secadv/20231106.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-5678 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -2623,7 +2654,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -2686,6 +2717,7 @@
               "url": "https://www.openssl.org/news/secadv/20230731.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-3817 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -2725,7 +2757,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -2779,6 +2811,7 @@
               "url": "https://www.openssl.org/news/secadv/20230530.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-2650 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -2818,7 +2851,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -2866,6 +2899,7 @@
               "url": "https://www.openssl.org/news/secadv/20230328.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-0466 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -2905,7 +2939,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -2950,6 +2984,7 @@
               "url": "https://www.openssl.org/news/secadv/20230328.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-0465 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -2989,7 +3024,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -3013,6 +3048,7 @@
               "url": "https://www.openssl.org/news/secadv/20230207.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-4304 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -3059,7 +3095,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -3116,6 +3152,7 @@
               "url": "https://www.openssl.org/news/secadv/20220705.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-2097 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -3162,7 +3199,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -3210,6 +3247,7 @@
               "url": "https://www.oracle.com/security-alerts/cpujul2022.html"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-4160 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -3241,7 +3279,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.1.1k-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -3349,6 +3387,7 @@
               "url": "https://www.tenable.com/security/tns-2021-10"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-3449 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -3380,7 +3419,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.1.1j-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -3467,6 +3506,7 @@
               "url": "https://www.tenable.com/security/tns-2021-09"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-23841 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -3498,7 +3538,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.1.1i-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -3597,6 +3637,7 @@
               "url": "https://www.tenable.com/security/tns-2021-10"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2020-1971 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -3628,7 +3669,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Low vulnerability is fixed for versions 1.1.1j-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -3679,6 +3720,7 @@
               "url": "https://www.oracle.com/security-alerts/cpuoct2021.html"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-23839 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -3709,7 +3751,7 @@
             {
               "codeDesc": "Package: libcrypto1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Unknown vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "notApplicable"
             }
           ],
@@ -3748,6 +3790,7 @@
               "url": "https://www.openssl.org/news/secadv/20240408.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-2511 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -3787,7 +3830,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Critical vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -3835,6 +3878,7 @@
               "url": "https://www.openssl.org/news/secadv/20240627.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-5535 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -3881,7 +3925,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Critical vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -3926,6 +3970,7 @@
               "url": "https://www.openssl.org/news/secadv/20220621.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-2068 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -3972,7 +4017,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Critical vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -4032,6 +4077,7 @@
               "url": "https://www.oracle.com/security-alerts/cpujul2022.html"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-1292 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -4063,7 +4109,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Critical vulnerability is fixed for versions 1.1.1l-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -4135,6 +4181,7 @@
               "url": "https://www.tenable.com/security/tns-2022-02"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-3711 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -4174,7 +4221,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -4207,6 +4254,7 @@
               "url": "https://www.openssl.org/news/secadv/20230908.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-4807 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -4246,7 +4294,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -4294,6 +4342,7 @@
               "url": "https://www.openssl.org/news/secadv/20230322.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-0464 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -4333,7 +4382,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -4372,6 +4421,7 @@
               "url": "https://www.openssl.org/news/secadv/20230207.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-0286 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -4411,7 +4461,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -4453,6 +4503,7 @@
               "url": "https://www.openssl.org/news/secadv/20230207.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-0215 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -4492,7 +4543,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -4522,6 +4573,7 @@
               "url": "https://www.openssl.org/news/secadv/20230207.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-4450 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -4568,7 +4620,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -4673,6 +4725,7 @@
               "url": "https://www.tenable.com/security/tns-2022-09"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-0778 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -4704,7 +4757,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.1.1l-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -4788,6 +4841,7 @@
               "url": "https://www.tenable.com/security/tns-2022-02"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-3712 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -4819,7 +4873,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.1.1k-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -4912,6 +4966,7 @@
               "url": "https://www.tenable.com/security/tns-2021-09"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-3450 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -4943,7 +4998,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.1.1j-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -5024,6 +5079,7 @@
               "url": "https://www.tenable.com/security/tns-2021-10"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-23840 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -5055,7 +5111,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.1.1g-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -5172,6 +5228,7 @@
               "url": "https://www.tenable.com/security/tns-2021-10"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2020-1967 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -5211,7 +5268,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -5253,6 +5310,7 @@
               "url": "https://www.openssl.org/news/secadv/20240125.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-0727 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -5292,7 +5350,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -5331,6 +5389,7 @@
               "url": "https://www.openssl.org/news/secadv/20231106.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-5678 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -5370,7 +5429,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -5433,6 +5492,7 @@
               "url": "https://www.openssl.org/news/secadv/20230731.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-3817 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -5472,7 +5532,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -5526,6 +5586,7 @@
               "url": "https://www.openssl.org/news/secadv/20230530.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-2650 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -5565,7 +5626,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -5613,6 +5674,7 @@
               "url": "https://www.openssl.org/news/secadv/20230328.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-0466 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -5652,7 +5714,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -5697,6 +5759,7 @@
               "url": "https://www.openssl.org/news/secadv/20230328.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-0465 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -5736,7 +5799,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -5760,6 +5823,7 @@
               "url": "https://www.openssl.org/news/secadv/20230207.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-4304 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -5806,7 +5870,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -5863,6 +5927,7 @@
               "url": "https://www.openssl.org/news/secadv/20220705.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-2097 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -5909,7 +5974,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -5957,6 +6022,7 @@
               "url": "https://www.oracle.com/security-alerts/cpujul2022.html"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-4160 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -5988,7 +6054,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.1.1k-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -6096,6 +6162,7 @@
               "url": "https://www.tenable.com/security/tns-2021-10"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-3449 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -6127,7 +6194,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.1.1j-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -6214,6 +6281,7 @@
               "url": "https://www.tenable.com/security/tns-2021-09"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-23841 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -6245,7 +6313,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.1.1i-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -6344,6 +6412,7 @@
               "url": "https://www.tenable.com/security/tns-2021-10"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2020-1971 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -6375,7 +6444,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Low vulnerability is fixed for versions 1.1.1j-r0",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -6426,6 +6495,7 @@
               "url": "https://www.oracle.com/security-alerts/cpuoct2021.html"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-23839 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -6456,7 +6526,7 @@
             {
               "codeDesc": "Package: libssl1.1@1.1.1d-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Unknown vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "notApplicable"
             }
           ],
@@ -6495,6 +6565,7 @@
               "url": "https://www.openssl.org/news/secadv/20240408.txt"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2024-2511 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -6526,7 +6597,7 @@
             {
               "codeDesc": "Package: musl@1.1.24-r0 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-direct-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.1.24-r3",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -6577,6 +6648,7 @@
               "url": "https://www.oracle.com/security-alerts/cpuoct2021.html"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2020-28928 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -6608,7 +6680,7 @@
             {
               "codeDesc": "Package: musl-utils@1.1.24-r0 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.1.24-r3",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -6659,6 +6731,7 @@
               "url": "https://www.oracle.com/security-alerts/cpuoct2021.html"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2020-28928 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -6698,7 +6771,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Critical vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -6719,6 +6792,7 @@
               "url": "https://bugs.busybox.net/show_bug.cgi?id=15216"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-48174 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -6765,7 +6839,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -6792,6 +6866,7 @@
               "url": "https://gitlab.alpinelinux.org/alpine/aports/-/issues/13661"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-28391 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -6823,7 +6898,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -6859,6 +6934,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42386 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -6890,7 +6966,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -6926,6 +7002,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42385 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -6957,7 +7034,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -6993,6 +7070,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42384 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -7024,7 +7102,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -7060,6 +7138,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42383 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -7091,7 +7170,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -7127,6 +7206,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42382 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -7158,7 +7238,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -7194,6 +7274,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42381 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -7225,7 +7306,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -7261,6 +7342,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42380 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -7292,7 +7374,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -7328,6 +7410,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42379 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -7359,7 +7442,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -7395,6 +7478,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42378 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -7426,7 +7510,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is fixed for versions 1.31.1-r10",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -7465,6 +7549,7 @@
               "url": "https://security.gentoo.org/glsa/202105-09"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-28831 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -7496,7 +7581,7 @@
             {
               "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.31.1-r11",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -7532,6 +7617,7 @@
               "url": "https://security.netapp.com/advisory/ntap-20211223-0002/"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2021-42374 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -7571,7 +7657,7 @@
             {
               "codeDesc": "Package: zlib@1.2.11-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: Critical vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -7622,6 +7708,7 @@
               "url": "https://www.winimage.com/zLibDll/minizip.html"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2023-45853 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -7653,7 +7740,7 @@
             {
               "codeDesc": "Package: zlib@1.2.11-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-direct-match",
               "message": "Severity: Critical vulnerability is fixed for versions 1.2.11-r4",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -7752,6 +7839,7 @@
               "url": "https://www.debian.org/security/2022/dsa-5218"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2022-37434 in golang:1.12-alpine",
           "verificationMethod": "automated"
         },
         {
@@ -7798,7 +7886,7 @@
             {
               "codeDesc": "Package: zlib@1.2.11-r3 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-07-23T12:42:03.544Z",
               "status": "failed"
             }
           ],
@@ -7903,6 +7991,7 @@
               "url": "https://www.oracle.com/security-alerts/cpujul2022.html"
             }
           ],
+          "title": "Grype found a vulnerability to CVE-2018-25032 in golang:1.12-alpine",
           "verificationMethod": "automated"
         }
       ],

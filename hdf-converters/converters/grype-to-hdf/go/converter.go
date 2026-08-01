@@ -480,7 +480,7 @@ func buildKev(k *GrypeKEV) *hdf.Kev {
 	return out
 }
 
-func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRequirement {
+func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName string, startTime time.Time) hdf.EvaluatedRequirement {
 	vuln := match.Vulnerability
 	cveID := vuln.ID
 	severity := vuln.Severity
@@ -517,15 +517,11 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 	messageParts = append(messageParts, fixInfo)
 	message := strings.Join(messageParts, " ")
 
-	// Build execution result
-	// Use Go zero time
-	zeroTime := time.Time{}
-
 	result := hdf.RequirementResult{
 		Status:    status,
 		CodeDesc:  buildCodeDesc(match),
 		Message:   &message,
-		StartTime: zeroTime,
+		StartTime: startTime,
 	}
 
 	// Get CCI tags from curated NIST → CCI mapping
@@ -559,8 +555,11 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 		}
 	}
 
+	title := fmt.Sprintf("Grype found a vulnerability to %s in %s", cveID, targetName)
+
 	requirement := hdf.EvaluatedRequirement{
 		ID:                 requirementID,
+		Title:              &title,
 		Impact:             impact,
 		Results:            []hdf.RequirementResult{result},
 		Tags:               tags,
@@ -596,25 +595,38 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		return nil, fmt.Errorf("invalid Grype JSON: %w", err)
 	}
 
+	// Build baseline name from source
+	targetName := grypeData.Source.Target.UserInput
+	if targetName == "" {
+		targetName = "Grype Scan"
+	}
+
+	// The scan timestamp anchors every result's start_time; a valid Go zero time is
+	// the schema-safe fallback when Grype omits descriptor.timestamp.
+	var scanTime *time.Time
+	if grypeData.Descriptor.Timestamp != "" {
+		if parsed := hdfutil.ParseTimestamp(grypeData.Descriptor.Timestamp); !parsed.IsZero() {
+			scanTime = &parsed
+		}
+	}
+	resultStart := time.Time{}
+	if scanTime != nil {
+		resultStart = *scanTime
+	}
+
 	// Build requirements from matches
 	requirements := []hdf.EvaluatedRequirement{}
 
 	// Process regular matches
 	limitedMatches := shared.LimitSliceWithWarning(grypeData.Matches, 0, "match")
 	for _, match := range limitedMatches {
-		requirements = append(requirements, convertMatchToRequirement(match, false))
+		requirements = append(requirements, convertMatchToRequirement(match, false, targetName, resultStart))
 	}
 
 	// Process ignored matches
 	limitedIgnored := shared.LimitSliceWithWarning(grypeData.IgnoredMatches, 0, "ignored match")
 	for _, match := range limitedIgnored {
-		requirements = append(requirements, convertMatchToRequirement(match, true))
-	}
-
-	// Build baseline name from source
-	targetName := grypeData.Source.Target.UserInput
-	if targetName == "" {
-		targetName = "Grype Scan"
+		requirements = append(requirements, convertMatchToRequirement(match, true, targetName, resultStart))
 	}
 
 	if len(requirements) == 0 {
@@ -634,14 +646,6 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ResultsChecksum: resultsChecksum,
 	}
 
-	// Build timestamp
-	var timestamp *time.Time
-	if grypeData.Descriptor.Timestamp != "" {
-		if parsedTime := hdfutil.ParseTimestamp(grypeData.Descriptor.Timestamp); !parsedTime.IsZero() {
-			timestamp = &parsedTime
-		}
-	}
-
 	// Build target from scan source
 	target := hdf.Component{
 		Name: targetName,
@@ -656,7 +660,7 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ToolVersion:      grypeData.Descriptor.Version,
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       []hdf.Component{target},
-		Timestamp:        timestamp,
+		Timestamp:        scanTime,
 	})
 
 	return hdfResult, nil
