@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { convertNetsparkerToHdf } from './converter.js';
+import { convertNetsparkerToHdf, buildNetsparkerCvss } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
@@ -524,5 +524,61 @@ describe('Netsparker to HDF converter', () => {
     expect(req).toBeDefined();
     // Should have owasp tag but no cweid
     expect(req!.tags?.owasp).toBeDefined();
+  });
+});
+
+describe('structured CVSS', () => {
+  it('populates cvss[] from <cvss> (3.0) and <cvss31> (3.1) blocks', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'e8b418ae-a532-4b43-5d9b-af9b04bbbca3');
+    expect(req).toBeDefined();
+    expect(req!.cvss).toHaveLength(2);
+
+    const [c30, c31] = req!.cvss!;
+    expect(c30!.version).toBe('3.0');
+    expect(c30!.baseScore).toBeCloseTo(6.8, 5);
+    expect(c30!.baseSeverity).toBe('medium');
+    expect(c30!.baseVector).toBe('CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N');
+
+    expect(c31!.version).toBe('3.1');
+    expect(c31!.baseScore).toBeCloseTo(6.8, 5);
+    expect(c31!.baseVector).toBe('CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N');
+  });
+
+  it('omits cvss[] when the vuln carries no CVSS block', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    for (const id of ['9c3a51bf-6c1f-47c9-4646-afb704bb8fb0', '8d8e6052-221d-41c4-8f1e-af9704473901']) {
+      const req = findRequirement(hdf, id);
+      expect(req).toBeDefined();
+      expect(req!.cvss).toBeUndefined();
+    }
+  });
+
+  it('builds one entry per block, dropping empty blocks (buildNetsparkerCvss)', () => {
+    expect(buildNetsparkerCvss({
+      cvss: { vector: 'CVSS:3.0/AV:N', score: [{ type: 'Base', value: '6.8' }] },
+      cvss31: { vector: 'CVSS:3.1/AV:N', score: [{ type: 'Base', value: '7.5' }] },
+    })).toHaveLength(2);
+
+    // vector only, no Base score
+    const vectorOnly = buildNetsparkerCvss({ cvss: { vector: 'CVSS:3.1/AV:N' } });
+    expect(vectorOnly).toHaveLength(1);
+    expect(vectorOnly[0]!.baseScore).toBeUndefined();
+
+    // Base score only, no vector
+    const scoreOnly = buildNetsparkerCvss({ cvss31: { score: [{ type: 'Base', value: '4.0' }] } });
+    expect(scoreOnly).toHaveLength(1);
+    expect(scoreOnly[0]!.baseScore).toBeCloseTo(4.0, 5);
+    expect(scoreOnly[0]!.baseVector).toBeUndefined();
+
+    // unparseable / absent Base value and non-Base types → nothing emitted
+    expect(buildNetsparkerCvss({ cvss: { score: [{ type: 'Base', value: 'N/A' }] } })).toHaveLength(0);
+    expect(buildNetsparkerCvss({ cvss: { score: [{ type: 'Base' }] } })).toHaveLength(0);
+    expect(buildNetsparkerCvss({ cvss: { score: [{ type: 'Temporal', value: '6.8' }] } })).toHaveLength(0);
+    expect(buildNetsparkerCvss({ cvss: { score: [{ value: '6.8' }] } })).toHaveLength(0);
+    expect(buildNetsparkerCvss({})).toHaveLength(0);
+    expect(buildNetsparkerCvss(undefined)).toHaveLength(0);
   });
 });

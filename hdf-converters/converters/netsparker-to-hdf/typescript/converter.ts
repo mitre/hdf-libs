@@ -15,11 +15,13 @@ import {
   buildHdfResults,
   buildNoFindingsRequirement,
 } from '../../../shared/typescript/converterutil.js';
+import { buildCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
+  Cvss,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -81,6 +83,19 @@ interface NetsparkerClassification {
   cwe?: string;
   capec?: string;
   iso27001?: string;
+  cvss?: NetsparkerCvssBlock;
+  cvss31?: NetsparkerCvssBlock;
+}
+
+interface NetsparkerCvssBlock {
+  vector?: string;
+  score?: NetsparkerCvssScore[];
+}
+
+interface NetsparkerCvssScore {
+  type?: string;
+  value?: string;
+  severity?: string;
 }
 
 interface NetsparkerHttpRequest {
@@ -177,6 +192,43 @@ function formatControlDesc(vuln: NetsparkerVuln): string {
     parts.push(`Confirmed: ${vuln.confirmed}`);
   }
   return parts.join('\n');
+}
+
+/**
+ * Returns the parsed Base-metric score from a CVSS block, or undefined when
+ * there is no Base score or its value does not parse as a finite number.
+ */
+function baseScoreFromBlock(block: NetsparkerCvssBlock | undefined): number | undefined {
+  const scores = block?.score ?? [];
+  for (const s of scores) {
+    if ((s.type ?? '').toLowerCase() === 'base') {
+      const v = parseFloat((s.value ?? '').trim());
+      return Number.isFinite(v) ? v : undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Assembles the structured cvss[] from the <cvss> (3.0) and <cvss31> (3.1)
+ * classification blocks. Each block carrying a vector or a Base score becomes
+ * one entry; the schema version derives from the vector prefix.
+ */
+export function buildNetsparkerCvss(classification: NetsparkerClassification | undefined): Cvss[] {
+  const out: Cvss[] = [];
+  for (const block of [classification?.cvss, classification?.cvss31]) {
+    const baseScore = baseScoreFromBlock(block);
+    const vector = block?.vector ?? '';
+    if (!vector && baseScore === undefined) {
+      continue;
+    }
+    out.push(buildCvss({
+      version: cvssVersionFromVector(vector),
+      baseScore,
+      baseVector: vector,
+    }));
+  }
+  return out;
 }
 
 /**
@@ -303,6 +355,11 @@ function buildRequirement(
     req.code = rawRequest;
   }
 
+  const cvss = buildNetsparkerCvss(vuln.classification);
+  if (cvss.length > 0) {
+    req.cvss = cvss;
+  }
+
   return req;
 }
 
@@ -322,7 +379,7 @@ export async function convertNetsparkerToHdf(input: string, converterVersion = '
   const resultsChecksum: Checksum = await inputChecksum(input);
 
   // Parse XML — ensure vulnerability is always treated as array
-  const parsed = parseXmlWithArrays(input, ['vulnerability']) as unknown as NetsparkerXml;
+  const parsed = parseXmlWithArrays(input, ['vulnerability', 'score']) as unknown as NetsparkerXml;
 
   // Detect root element
   const isInvicti = !!parsed['invicti-enterprise'];

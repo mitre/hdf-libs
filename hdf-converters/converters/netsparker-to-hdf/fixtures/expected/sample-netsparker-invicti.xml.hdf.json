@@ -3,6 +3,20 @@
     {
       "requirements": [
         {
+          "cvss": [
+            {
+              "baseScore": 6.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
+              "version": "3.0"
+            },
+            {
+              "baseScore": 6.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Invicti Enterprise detected that weak ciphers are enabled during secure communication (SSL). You should allow only strong ciphers on your web server to protect secure communication with your visitors.\nClassification: cwe=\u003e327, owasp=\u003eA6\nImpact: Attackers might decrypt SSL traffic between your server and your visitors.\nFirstSeenDate: 02/20/2023 05:03 PM\nLastSeenDate: 05/05/2023 05:07 PM\nCertainty: 100\nType: WeakCiphersDetected\nConfirmed: True",
