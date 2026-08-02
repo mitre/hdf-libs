@@ -3,6 +3,7 @@ package fortify
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -152,6 +153,81 @@ func TestConvertFortifyToHDF_RequirementFields(t *testing.T) {
 		assert.Equal(t, hdf.Failed, res.Status)
 		assert.NotEmpty(t, res.CodeDesc)
 	}
+}
+
+// requirement.code drives Heimdall's CODE tab. It must carry the raw Fortify
+// source snippet (the FVDL <Snippet><Text>), not the codeDesc wrapper text.
+func TestConvertFortifyToHDF_RequirementCode(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+	pathManip := shared.MustFindRequirement(t, baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
+
+	require.NotNil(t, pathManip.Code, "requirement.code must carry the source snippet")
+	code := *pathManip.Code
+
+	// Raw source, not the "Path:/StartLine:/Code:" codeDesc wrapper.
+	assert.False(t, strings.HasPrefix(code, "Path:"), "code should be raw source, not the codeDesc wrapper")
+	assert.Contains(t, code, "System.out.println(MD5.getHashString(new File(element))")
+
+	// The snippet appears verbatim inside the result codeDesc.
+	require.NotEmpty(t, pathManip.Results)
+	assert.Contains(t, pathManip.Results[0].CodeDesc, code)
+
+	// Every requirement in this fixture has a primary-trace snippet.
+	for _, req := range baseline.Requirements {
+		assert.NotNil(t, req.Code, "requirement %q should have code populated", req.ID)
+	}
+}
+
+// A finding whose primary trace carries no snippet must leave code unset
+// (NOT-IN-SOURCE) rather than fabricating one.
+func TestConvertFortifyToHDF_RequirementCode_NoSnippet(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C3</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I3</InstanceID></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C3">
+  <Abstract>No trace</Abstract>
+  <Explanation>Explanation text</Explanation>
+</Description>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.Code, "code must be unset when the finding carries no snippet")
+}
+
+// Node-bearing trace entries that carry no usable snippet (missing snippet
+// attribute, or a snippet id absent from <Snippets>) must be skipped, leaving
+// code unset rather than emitting an empty or fabricated value.
+func TestConvertFortifyToHDF_RequirementCode_NodeWithoutSnippet(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C9</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I9</InstanceID></InstanceInfo>
+    <AnalysisInfo><Unified><Trace><Primary>
+      <Entry><Node isDefault="true"><SourceLocation path="a.java" line="1"/></Node></Entry>
+      <Entry><Node isDefault="false"><SourceLocation path="b.java" line="2" snippet="MISSING"/></Node></Entry>
+    </Primary></Trace></Unified></AnalysisInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C9"><Abstract>Crafted</Abstract><Explanation>Expl</Explanation></Description>
+<Snippets/>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.Code, "code must be unset when no trace node resolves to a snippet")
 }
 
 func TestConvertFortifyToHDF_NISTTags(t *testing.T) {

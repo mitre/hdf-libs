@@ -207,6 +207,76 @@ describe('Fortify to HDF Converter', () => {
       }
     });
 
+    it('should populate requirement.code with the raw source snippet', async () => {
+      const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, '823FE039-A7FE-4AAD-B976-9EC53FFE4A59');
+      expect(req).toBeDefined();
+
+      const code = req!.code as string;
+      expect(code).toBeDefined();
+      // Raw source, not the "Path:/StartLine:/Code:" codeDesc wrapper.
+      expect(code.startsWith('Path:')).toBe(false);
+      expect(code).toContain(
+        'System.out.println(MD5.getHashString(new File(element))',
+      );
+
+      // The snippet appears verbatim inside the result codeDesc.
+      const results = req!.results as Array<Record<string, unknown>>;
+      expect(results[0]!.codeDesc as string).toContain(code);
+
+      // Every requirement in this fixture carries a primary-trace snippet.
+      const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+      for (const r of reqs) {
+        expect(r.code).toBeDefined();
+      }
+    });
+
+    it('should leave requirement.code unset when the finding has no snippet', async () => {
+      const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C3</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I3</InstanceID></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C3">
+  <Abstract>No trace</Abstract>
+  <Explanation>Explanation text</Explanation>
+</Description>
+</FVDL>`;
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+      expect(reqs[0]!.code).toBeUndefined();
+    });
+
+    it('should leave requirement.code unset when trace nodes resolve to no snippet', async () => {
+      // First node has no snippet attribute; second references a snippet id
+      // absent from <Snippets>. Both are skipped → code stays unset.
+      const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C9</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I9</InstanceID></InstanceInfo>
+    <AnalysisInfo><Unified><Trace><Primary>
+      <Entry><Node isDefault="true"><SourceLocation path="a.java" line="1"/></Node></Entry>
+      <Entry><Node isDefault="false"><SourceLocation path="b.java" line="2" snippet="MISSING"/></Node></Entry>
+    </Primary></Trace></Unified></AnalysisInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C9"><Abstract>Crafted</Abstract><Explanation>Expl</Explanation></Description>
+<Snippets/>
+</FVDL>`;
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+      expect(reqs[0]!.code).toBeUndefined();
+    });
+
     it('should include snippet info in code desc', async () => {
       const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
       const out = parseOutput(await convertFortifyToHdf(fvdl));

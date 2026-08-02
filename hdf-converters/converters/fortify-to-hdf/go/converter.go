@@ -162,7 +162,7 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 	// Build results — one per vulnerability instance
 	results := buildResults(vulns, snippetMap, fvdl)
 
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 desc.ClassID,
 		Title:              &titleStr,
 		Impact:             impact,
@@ -172,6 +172,46 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+
+	// requirement.code = raw source snippet from the representative finding's
+	// primary trace (Heimdall CODE tab). Left unset when no snippet is present.
+	if code := buildRequirementCode(vulns, snippetMap); code != nil {
+		req.Code = code
+	}
+
+	return req
+}
+
+// buildRequirementCode extracts the raw source snippet text from the first
+// vulnerability's primary trace. Returns nil when no snippet is available.
+func buildRequirementCode(vulns []Vulnerability, snippetMap map[string]*Snippet) *string {
+	if len(vulns) == 0 {
+		return nil
+	}
+
+	var parts []string
+	for _, entry := range vulns[0].AnalysisInfo.Unified.Trace.Primary.Entries {
+		if entry.Node == nil {
+			continue
+		}
+		snippetID := entry.Node.SourceLocation.Snippet
+		if snippetID == "" {
+			continue
+		}
+		snippet, ok := snippetMap[snippetID]
+		if !ok {
+			continue
+		}
+		if text := strings.TrimSpace(snippet.Text); text != "" {
+			parts = append(parts, text)
+		}
+	}
+
+	if len(parts) == 0 {
+		return nil
+	}
+	code := strings.Join(parts, "\n")
+	return &code
 }
 
 // buildResults creates one RequirementResult per vulnerability instance.

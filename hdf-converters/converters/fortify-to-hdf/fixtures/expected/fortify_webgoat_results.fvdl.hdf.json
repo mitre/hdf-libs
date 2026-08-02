@@ -30,6 +30,7 @@
               "SI-10"
             ]
           },
+          "code": "} else {\n            for (String element : args) {\n                try {\n                    System.out.println(MD5.getHashString(new File(element)) + \" \" + element);\n                } catch (IOException x) {\n                    System.err.println(x.getMessage());\n                }",
           "controlType": "technical",
           "title": "Attackers are able to control the file system path argument to at line , which allows them to access or modify otherwise protected files. Allowing user input to control paths used in file system operations could enable an attacker to access or modify otherwise protected system resources.",
           "verificationMethod": "automated"
@@ -62,6 +63,7 @@
               "SI-11"
             ]
           },
+          "code": "HttpHeaders httpHeaders = new HttpHeaders();\n            HttpEntity httpEntity = new HttpEntity(httpHeaders);\n            new RestTemplate().exchange(String.format(\"http://%s/PasswordReset/reset/reset-password/%s\", host, resetLink), HttpMethod.GET, httpEntity, Void.class);\n        } catch (Exception e) {\n            //don't care\n        }\n    }\n}",
           "controlType": "technical",
           "title": "The method in ignores an exception on line , which could cause the program to overlook unexpected states and conditions. Ignoring an exception can cause the program to overlook unexpected states and conditions.",
           "verificationMethod": "automated"
@@ -110,6 +112,7 @@
               "AC-4"
             ]
           },
+          "code": "HashMap\u003cString,String\u003e errMap = new HashMap() {{\n                put(\"err\",e.getMessage() + \"::\" + e.getCause());\n            }};\n            e.printStackTrace();\n            return new HashMap\u003cInteger,HashMap\u003e() {{\n                put(0,errMap);\n            }};",
           "controlType": "technical",
           "title": "The function in might reveal system data or debugging information by calling on line . The information revealed by could help an adversary form a plan of attack. Revealing system data or debugging information helps an adversary learn about the system and form a plan of attack.",
           "verificationMethod": "automated"
@@ -144,6 +147,7 @@
               "RA-5"
             ]
           },
+          "code": "private String id;\n        private String hostname;\n        private String ip;\n        private String mac;\n        private String status;\n        private String description;\n    }",
           "title": "The field is never used. This field is never used.",
           "verificationMethod": "automated"
         },
@@ -177,6 +181,7 @@
               "RA-5"
             ]
           },
+          "code": "JavaFileObject javaObjectFromString = getJavaFileContentsAsString(s);\n        Iterable fileObjects = Arrays.asList(javaObjectFromString);\n        JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnosticsCollector, null, null, fileObjects);\n        Boolean result = task.call();\n        List\u003cDiagnostic\u003e diagnostics = diagnosticsCollector.getDiagnostics();\n        return diagnostics;\n    }\nJavaFileObject javaObjectFromString = getJavaFileContentsAsString(s);\n        Iterable fileObjects = Arrays.asList(javaObjectFromString);\n        JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnosticsCollector, null, null, fileObjects);\n        Boolean result = task.call();\n        List\u003cDiagnostic\u003e diagnostics = diagnosticsCollector.getDiagnostics();\n        return diagnostics;\n    }",
           "title": "The method in never uses the value it assigns to the variable on line . The variable's value is assigned but never used, making it a dead store.",
           "verificationMethod": "automated"
         }

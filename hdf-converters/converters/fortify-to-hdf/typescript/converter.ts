@@ -231,6 +231,30 @@ function buildCodeDesc(
   return parts.join('\n');
 }
 
+// requirement.code = raw source snippet from the representative finding's
+// primary trace (Heimdall CODE tab). Returns undefined when no snippet exists.
+function buildRequirementCode(
+  vulns: FVDLVulnerability[],
+  snippetMap: Map<string, FVDLSnippet>,
+): string | undefined {
+  if (vulns.length === 0) return undefined;
+
+  const parts: string[] = [];
+  const entries = ensureArray(vulns[0]!.AnalysisInfo?.Unified?.Trace?.Primary?.Entry);
+  for (const entry of entries) {
+    if (!entry.Node) continue;
+    const snippetID = entry.Node.SourceLocation?.snippet;
+    if (!snippetID) continue;
+    const snippet = snippetMap.get(snippetID);
+    if (!snippet) continue;
+    const text = (snippet.Text ?? '').trim();
+    if (text) parts.push(text);
+  }
+
+  if (parts.length === 0) return undefined;
+  return parts.join('\n');
+}
+
 function buildRequirement(
   desc: FVDLDescription,
   vulns: FVDLVulnerability[],
@@ -300,6 +324,11 @@ function buildRequirement(
   const controlType = deriveControlTypeFromTags(nistTags);
   if (controlType !== undefined) {
     req.controlType = controlType;
+  }
+
+  const code = buildRequirementCode(vulns, snippetMap);
+  if (code !== undefined) {
+    req.code = code;
   }
 
   return req;
