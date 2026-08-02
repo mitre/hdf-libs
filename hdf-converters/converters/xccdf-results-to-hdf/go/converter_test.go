@@ -282,6 +282,88 @@ func TestConvertXccdfResultsToHDF_StigSeverityToImpact(t *testing.T) {
 	assert.Equal(t, 0.3, lowReq.Impact, "low severity should map to 0.3")
 }
 
+// The results path derives impact from severity but historically never set the
+// requirement.severity enum, unlike the baseline path. Pin the parity: a
+// results-path requirement must carry the same HDF severity the baseline path
+// would emit for the rule.
+func TestConvertXccdfResultsToHDF_StigSeverityEnum(t *testing.T) {
+	input := loadFixture(t, "stig-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	medReq := shared.MustFindRequirement(t, reqs, "SV-204393")
+	require.NotNil(t, medReq.Severity, "medium rule must carry a severity")
+	assert.Equal(t, hdf.SeverityMedium, *medReq.Severity)
+
+	highReq := shared.MustFindRequirement(t, reqs, "SV-204424")
+	require.NotNil(t, highReq.Severity, "high rule must carry a severity")
+	assert.Equal(t, hdf.SeverityHigh, *highReq.Severity)
+
+	lowReq := shared.MustFindRequirement(t, reqs, "SV-204452")
+	require.NotNil(t, lowReq.Severity, "low rule must carry a severity")
+	assert.Equal(t, hdf.SeverityLow, *lowReq.Severity)
+}
+
+// SCC output carries @severity on each rule-result but ships no Rule
+// definitions, so severity must come from the rule-result attribute alone.
+func TestConvertXccdfResultsToHDF_SccSeverityFromRuleResult(t *testing.T) {
+	input := loadFixture(t, "xccdf-results-scc-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "SV-204393")
+	require.NotNil(t, req.Severity, "rule-result severity must populate requirement.severity")
+	assert.Equal(t, hdf.SeverityMedium, *req.Severity)
+}
+
+// XCCDF severity="unknown" has no HDF equivalent; the results path must omit
+// severity rather than fabricate one. arf-minimal's sole rule-result is unknown.
+func TestConvertXccdfResultsToHDF_UnknownSeverityOmitted(t *testing.T) {
+	input := loadFixture(t, "arf-minimal.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.Severity, `severity="unknown" must not be emitted`)
+}
+
+// When the rule-result omits @severity, the severity falls back to the Rule
+// definition — mirroring the impact precedence. Also pins that a rule-result
+// with no matching rule and no severity emits no severity at all.
+func TestConvertXccdfResultsToHDF_SeverityPrecedenceAndAbsent(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_sev">
+  <version>1.0</version>
+  <Rule id="xccdf_test_rule_1" selected="true" severity="high">
+    <title>Rule with severity</title>
+    <description>desc</description>
+  </Rule>
+  <TestResult id="xccdf_test_testresult_1" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="xccdf_test_rule_1" time="2021-01-01T00:00:00">
+      <result>fail</result>
+    </rule-result>
+    <rule-result idref="xccdf_unmatched_rule" time="2021-01-01T00:00:00">
+      <result>pass</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`)
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 2)
+
+	// rule-result had no @severity → falls back to the Rule's high.
+	require.NotNil(t, reqs[0].Severity)
+	assert.Equal(t, hdf.SeverityHigh, *reqs[0].Severity)
+
+	// No matching rule and no rule-result @severity → omitted.
+	assert.Nil(t, reqs[1].Severity)
+}
+
 func TestConvertXccdfResultsToHDF_StigStatusMapping(t *testing.T) {
 	input := loadFixture(t, "stig-rhel7.xml")
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)

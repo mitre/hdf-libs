@@ -338,6 +338,61 @@ describe('xccdf-results-to-hdf converter', async () => {
     });
   });
 
+  // --- Severity enum (results path) ---
+  // The results path derives impact from severity but historically never set the
+  // requirement.severity enum, unlike the baseline path. Pin the parity.
+
+  describe('severity enum on results-path requirements', () => {
+    it('sets high severity from stig-rhel7', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      expect(findReq(hdf, 'SV-204424')!.severity).toBe('high');
+    });
+
+    it('sets medium severity from stig-rhel7', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      expect(findReq(hdf, 'SV-204393')!.severity).toBe('medium');
+    });
+
+    it('sets low severity from stig-rhel7', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      expect(findReq(hdf, 'SV-204452')!.severity).toBe('low');
+    });
+
+    it('derives severity from the rule-result attribute when no Rule defs ship (SCC)', async () => {
+      const hdf = await parseHdf('xccdf-results-scc-rhel7.xml');
+      expect(findReq(hdf, 'SV-204393')!.severity).toBe('medium');
+    });
+
+    it('omits severity="unknown" rather than fabricating one (arf-minimal)', async () => {
+      const hdf = await parseHdf('arf-minimal.xml');
+      expect(hdf.baselines[0]!.requirements[0]!.severity).toBeUndefined();
+    });
+
+    it('falls back to the Rule severity when the rule-result omits it, and omits it when absent everywhere', async () => {
+      const input = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_sev">
+  <version>1.0</version>
+  <Rule id="xccdf_test_rule_1" selected="true" severity="high">
+    <title>Rule with severity</title>
+    <description>desc</description>
+  </Rule>
+  <TestResult id="xccdf_test_testresult_1" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="xccdf_test_rule_1" time="2021-01-01T00:00:00">
+      <result>fail</result>
+    </rule-result>
+    <rule-result idref="xccdf_unmatched_rule" time="2021-01-01T00:00:00">
+      <result>pass</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(input)) as HDFResults;
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs[0]!.severity).toBe('high');
+      expect(reqs[1]!.severity).toBeUndefined();
+    });
+  });
+
   // --- Status mapping ---
 
   describe('status mapping', () => {

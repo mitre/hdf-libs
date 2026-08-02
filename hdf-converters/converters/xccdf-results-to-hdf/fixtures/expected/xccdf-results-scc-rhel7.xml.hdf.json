@@ -25,6 +25,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000048"
@@ -58,6 +59,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000056"
@@ -91,6 +93,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001948",
@@ -126,6 +129,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000057"
@@ -159,6 +163,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000057"
@@ -192,6 +197,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000057"
@@ -225,6 +231,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000057"
@@ -258,6 +265,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000057"
@@ -291,6 +299,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000192"
@@ -324,6 +333,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000192"
@@ -357,6 +367,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000192"
@@ -390,6 +401,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000193"
@@ -423,6 +435,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000194"
@@ -456,6 +469,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001619"
@@ -489,6 +503,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -522,6 +537,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -555,6 +571,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -588,6 +605,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -621,6 +639,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000196"
@@ -654,6 +673,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000196"
@@ -687,6 +707,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000196"
@@ -720,6 +741,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000198"
@@ -753,6 +775,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000198"
@@ -786,6 +809,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000199"
@@ -819,6 +843,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000199"
@@ -852,6 +877,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000200"
@@ -885,6 +911,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000205"
@@ -918,6 +945,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -951,6 +979,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000766"
@@ -984,6 +1013,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000795"
@@ -1017,6 +1047,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002038"
@@ -1049,6 +1080,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002038"
@@ -1081,6 +1113,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1114,6 +1147,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1147,6 +1181,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1180,6 +1215,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1213,6 +1249,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1246,6 +1283,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -1279,6 +1317,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -1312,6 +1351,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -1345,6 +1385,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -1378,6 +1419,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -1411,6 +1453,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -1445,6 +1488,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -1479,6 +1523,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001744"
@@ -1511,6 +1556,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-001749"
@@ -1543,6 +1589,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-001749"
@@ -1575,6 +1622,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001958",
@@ -1612,6 +1660,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001958"
@@ -1644,6 +1693,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001958",
@@ -1681,6 +1731,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-002617"
@@ -1713,6 +1764,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1746,6 +1798,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1779,6 +1832,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000764"
@@ -1812,6 +1866,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1845,6 +1900,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1878,6 +1934,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1911,6 +1968,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1944,6 +2002,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1977,6 +2036,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -2010,6 +2070,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -2043,6 +2104,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -2076,6 +2138,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -2109,6 +2172,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -2142,6 +2206,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -2175,6 +2240,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -2208,6 +2274,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-001199",
@@ -2248,6 +2315,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -2282,6 +2350,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000126",
@@ -2318,6 +2387,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000139"
@@ -2351,6 +2421,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2383,6 +2454,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2415,6 +2487,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2447,6 +2520,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2479,6 +2553,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2511,6 +2586,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2543,6 +2619,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2575,6 +2652,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001855"
@@ -2607,6 +2685,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001855"
@@ -2639,6 +2718,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002234"
@@ -2671,6 +2751,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -2707,6 +2788,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000126",
@@ -2743,6 +2825,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000126",
@@ -2779,6 +2862,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000126",
@@ -2815,6 +2899,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2848,6 +2933,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2881,6 +2967,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2914,6 +3001,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2947,6 +3035,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2980,6 +3069,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -3013,6 +3103,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -3046,6 +3137,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -3079,6 +3171,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -3112,6 +3205,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3147,6 +3241,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3182,6 +3277,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3217,6 +3313,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3252,6 +3349,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3287,6 +3385,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3322,6 +3421,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3357,6 +3457,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3392,6 +3493,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3427,6 +3529,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3462,6 +3565,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3500,6 +3604,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000126",
@@ -3538,6 +3643,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3576,6 +3682,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3614,6 +3721,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3652,6 +3760,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3690,6 +3799,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3728,6 +3838,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3769,6 +3880,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000130",
@@ -3810,6 +3922,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3851,6 +3964,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000130",
@@ -3892,6 +4006,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3933,6 +4048,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3968,6 +4084,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -4003,6 +4120,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -4038,6 +4156,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -4073,6 +4192,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -4111,6 +4231,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4149,6 +4270,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4182,6 +4304,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4215,6 +4338,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4248,6 +4372,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4281,6 +4406,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4314,6 +4440,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4347,6 +4474,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000018",
@@ -4385,6 +4513,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001403",
@@ -4423,6 +4552,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000018",
@@ -4461,6 +4591,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001403",
@@ -4499,6 +4630,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000018",
@@ -4537,6 +4669,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4572,6 +4705,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4607,6 +4741,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4642,6 +4777,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4677,6 +4813,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4712,6 +4849,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000054"
@@ -4745,6 +4883,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366",
@@ -4784,6 +4923,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -4817,6 +4957,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002422",
@@ -4854,6 +4995,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001133",
@@ -4889,6 +5031,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -4922,6 +5065,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001133",
@@ -4957,6 +5101,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -4990,6 +5135,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5023,6 +5169,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5056,6 +5203,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5089,6 +5237,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366",
@@ -5125,6 +5274,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001453"
@@ -5158,6 +5308,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5191,6 +5342,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5224,6 +5376,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000318",
@@ -5266,6 +5419,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000368",
@@ -5308,6 +5462,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5341,6 +5496,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5374,6 +5530,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5407,6 +5564,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5440,6 +5598,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5473,6 +5632,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5506,6 +5666,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5539,6 +5700,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5572,6 +5734,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5605,6 +5768,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5638,6 +5802,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5671,6 +5836,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5704,6 +5870,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5737,6 +5904,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5770,6 +5938,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000368",
@@ -5812,6 +5981,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5845,6 +6015,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5878,6 +6049,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5911,6 +6083,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5944,6 +6117,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5977,6 +6151,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001953",
@@ -6012,6 +6187,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001948",
@@ -6047,6 +6223,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001954",
@@ -6082,6 +6259,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-001749"

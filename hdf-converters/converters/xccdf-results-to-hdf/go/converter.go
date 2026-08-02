@@ -1071,6 +1071,7 @@ func convertRuleResult(rr *RuleResult, rule *Rule, fallback time.Time) hdf.Evalu
 		Title:        hdfutil.Ptr(title),
 		Descriptions: descriptions,
 		Impact:       impact,
+		Severity:     determineSeverity(rr, rule),
 		Tags:         tags,
 		Results:      results,
 		ControlType:  shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
@@ -1112,6 +1113,19 @@ func determineImpact(rr *RuleResult, rule *Rule) float64 {
 		severity = strings.ToLower(rule.Severity)
 	}
 	return hdfutil.SeverityToImpact(severity, 0.5)
+}
+
+// determineSeverity maps the XCCDF severity to an HDF severity enum, mirroring
+// determineImpact's precedence: the rule-result @severity first, then the Rule
+// definition's severity. Returns nil when neither carries a mappable severity
+// (empty or "unknown"), so the field is omitted rather than fabricated — the
+// same behavior as the baseline path's xccdfSeverityToHDF.
+func determineSeverity(rr *RuleResult, rule *Rule) *hdf.Severity {
+	severity := rr.Severity
+	if severity == "" && rule != nil {
+		severity = rule.Severity
+	}
+	return xccdfSeverityToHDF(severity)
 }
 
 // buildDescriptions creates HDF Description entries from the Rule definition.

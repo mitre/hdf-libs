@@ -908,6 +908,13 @@ function ruleResultToRequirement(
     req.code = code;
   }
 
+  // Mirror the baseline path: set the explicit severity enum, omitting it when
+  // the (already precedence-resolved) severity has no HDF equivalent.
+  const hdfSeverity = xccdfSeverityToHdf(severity);
+  if (hdfSeverity) {
+    req.severity = hdfSeverity;
+  }
+
   const controlType = deriveControlTypeFromTags(nistTags);
   if (controlType !== undefined) {
     req.controlType = controlType;
