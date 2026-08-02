@@ -208,6 +208,58 @@ function formatSCACodeDesc(comp: Record<string, unknown>): string {
   return parts.join('\n');
 }
 
+/**
+ * Synthesize a static flaw's source-context locus from its function prototype
+ * and source-file position. Returns '' when the flaw carries neither a prototype
+ * nor a source location (the NOT-IN-SOURCE case).
+ */
+function synthesizeFlawCode(flaw: Record<string, unknown>): string {
+  let locus = attr(flaw, 'sourcefilepath') + attr(flaw, 'sourcefile');
+  const line = attr(flaw, 'line');
+  if (locus && line) locus += `:${line}`;
+  const proto = attr(flaw, 'functionprototype');
+  if (proto && locus) return `${proto} at ${locus}`;
+  if (proto) return proto;
+  return locus;
+}
+
+/**
+ * Serialize a CVE and its affected components as indented JSON. Field order is
+ * load-bearing: it must match the Go twin's struct declaration order so the two
+ * `code` strings are byte-identical.
+ */
+function buildSCACode(vuln: Record<string, unknown>, components: Record<string, unknown>[]): string {
+  const entry = {
+    cve_id: attr(vuln, 'cve_id'),
+    cvss_score: attr(vuln, 'cvss_score'),
+    severity: attr(vuln, 'severity'),
+    cwe_id: attr(vuln, 'cwe_id'),
+    first_found_date: attr(vuln, 'first_found_date'),
+    cve_summary: attr(vuln, 'cve_summary'),
+    severity_desc: attr(vuln, 'severity_desc'),
+    components: components.map(comp => {
+      const filePathsElem = comp.file_paths as Record<string, unknown> | undefined;
+      const fps = filePathsElem
+        ? ensureArray(filePathsElem.file_path as Record<string, unknown> | Record<string, unknown>[])
+        : [];
+      return {
+        component_id: attr(comp, 'component_id'),
+        file_name: attr(comp, 'file_name'),
+        sha1: attr(comp, 'sha1'),
+        version: attr(comp, 'version'),
+        library: attr(comp, 'library'),
+        library_id: attr(comp, 'library_id'),
+        vendor: attr(comp, 'vendor'),
+        description: attr(comp, 'description'),
+        max_cvss_score: attr(comp, 'max_cvss_score'),
+        added_date: attr(comp, 'added_date'),
+        file_paths: fps.map(fp => attr(fp, 'value')),
+      };
+    }),
+  };
+  return JSON.stringify(entry, null, 2);
+}
+
 // ---- Requirement builders ----
 
 /** Build CWE-based requirements from severity categories. */
@@ -268,6 +320,15 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     return flaws.map(flaw => attr(flaw, 'sourcefile')).filter(Boolean);
   }).join('\n');
 
+  // Static findings carry no raw snippet; the code-locus (function prototype at
+  // source-file:line) is the richest source context Veracode provides. Leave
+  // code unset when no flaw carries either (NOT-IN-SOURCE).
+  const codeLines = cwes.flatMap(c => {
+    const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
+    const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
+    return flaws.map(flaw => synthesizeFlawCode(flaw)).filter(Boolean);
+  });
+
   const req = createRequirement(
     attr(cat, 'categoryid'),
     attr(cat, 'categoryname'),
@@ -282,6 +343,9 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+  if (codeLines.length > 0) {
+    req.code = codeLines.join('\n');
+  }
 
   return req;
 }
@@ -390,6 +454,11 @@ function buildCVERequirement(
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  // SCA vulnerabilities have no source snippet or function prototype; the richest
+  // faithful representation is the vulnerability/component entry serialized as
+  // indented JSON (the ionchannel/nessus pattern).
+  req.code = buildSCACode(vuln, components);
 
   return req;
 }

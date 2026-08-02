@@ -255,3 +255,30 @@ describe('Veracode to HDF converter', () => {
     expect(sev0!.impact).toBe(0.0);
   });
 });
+
+describe('veracode requirement.code (CODE-tab fill)', () => {
+  it('sets a synthesized source-context code on static CWE requirements', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const cwe = output.baselines[0]!.requirements.find(r => r.id === '18');
+    expect(cwe!.code).toBeDefined();
+    expect(cwe!.code).toContain(
+      'java.lang.String ping(java.lang.String) at com/veracode/verademo/controller/ToolsController.java:53',
+    );
+  });
+
+  it('serializes the vulnerability/component entry as indented JSON on SCA CVE requirements', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const cve = output.baselines[0]!.requirements.find(r => r.id === 'CVE-2012-5783');
+    expect(cve!.code).toBeDefined();
+    const parsed = JSON.parse(cve!.code!) as {
+      cve_id: string;
+      cvss_score: string;
+      components: { library: string; file_paths: string[] }[];
+    };
+    expect(parsed.cve_id).toBe('CVE-2012-5783');
+    expect(parsed.cvss_score).toBe('5.8');
+    expect(parsed.components.length).toBeGreaterThan(0);
+  });
+});

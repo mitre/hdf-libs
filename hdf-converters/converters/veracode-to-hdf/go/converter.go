@@ -9,6 +9,7 @@ package veracode
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -430,13 +431,18 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 		})
 	}
 
-	// Collect all flaws from all CWEs under this category
+	// Collect all flaws from all CWEs under this category. Alongside each result
+	// synthesize its source-context locus for the requirement-level code string.
 	var results []hdf.RequirementResult
+	var codeLines []string
 	for _, c := range cat.CWEs {
 		limited := shared.LimitSliceWithWarning(c.StaticFlaws.Flaws, 0, "flaw")
 		for _, flaw := range limited {
 			result := buildFlawResult(flaw, firstBuildDate)
 			results = append(results, result)
+			if line := synthesizeFlawCode(flaw); line != "" {
+				codeLines = append(codeLines, line)
+			}
 		}
 	}
 
@@ -461,7 +467,33 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 		}
 	}
 
+	// Static findings carry no raw snippet; the code-locus (function prototype at
+	// source-file:line) is the richest source context Veracode provides. Leave
+	// code unset when no flaw carries either (NOT-IN-SOURCE).
+	if len(codeLines) > 0 {
+		code := strings.Join(codeLines, "\n")
+		req.Code = &code
+	}
+
 	return req
+}
+
+// synthesizeFlawCode renders a static flaw's source-context locus from its
+// function prototype and source-file position. Returns "" when the flaw carries
+// neither a prototype nor a source location (the NOT-IN-SOURCE case).
+func synthesizeFlawCode(flaw Flaw) string {
+	locus := flaw.SourceFilePath + flaw.SourceFile
+	if locus != "" && flaw.Line != "" {
+		locus += ":" + flaw.Line
+	}
+	switch {
+	case flaw.FunctionPrototype != "" && locus != "":
+		return flaw.FunctionPrototype + " at " + locus
+	case flaw.FunctionPrototype != "":
+		return flaw.FunctionPrototype
+	default:
+		return locus
+	}
 }
 
 // buildFlawResult creates an HDF RequirementResult from a static analysis flaw.
@@ -595,7 +627,87 @@ func buildCVERequirement(vuln Vulnerability, components []Component, firstBuildD
 		}
 	}
 
+	// SCA vulnerabilities have no source snippet or function prototype; the richest
+	// faithful representation is the vulnerability/component entry serialized as
+	// indented JSON (the ionchannel/nessus pattern).
+	code := buildSCACode(vuln, components)
+	req.Code = &code
+
 	return req
+}
+
+// scaCodeComponent is the JSON shape of an affected component embedded in a CVE
+// requirement's code. Field order is load-bearing: it must match the TypeScript
+// twin's object-literal insertion order for byte-identical output.
+type scaCodeComponent struct {
+	ComponentID  string   `json:"component_id"`
+	FileName     string   `json:"file_name"`
+	SHA1         string   `json:"sha1"`
+	Version      string   `json:"version"`
+	Library      string   `json:"library"`
+	LibraryID    string   `json:"library_id"`
+	Vendor       string   `json:"vendor"`
+	Description  string   `json:"description"`
+	MaxCVSSScore string   `json:"max_cvss_score"`
+	AddedDate    string   `json:"added_date"`
+	FilePaths    []string `json:"file_paths"`
+}
+
+// scaCode is the JSON shape serialized into a CVE requirement's code. Field order
+// must match the TypeScript twin.
+type scaCode struct {
+	CVEID          string             `json:"cve_id"`
+	CVSSScore      string             `json:"cvss_score"`
+	Severity       string             `json:"severity"`
+	CWEID          string             `json:"cwe_id"`
+	FirstFoundDate string             `json:"first_found_date"`
+	CVESummary     string             `json:"cve_summary"`
+	SeverityDesc   string             `json:"severity_desc"`
+	Components     []scaCodeComponent `json:"components"`
+}
+
+// buildSCACode serializes a CVE and its affected components as indented JSON.
+// HTML escaping is off and the trailing newline is trimmed so the bytes match
+// the TypeScript twin's JSON.stringify(entry, null, 2).
+func buildSCACode(vuln Vulnerability, components []Component) string {
+	entry := scaCode{
+		CVEID:          vuln.CVEID,
+		CVSSScore:      vuln.CVSSScore,
+		Severity:       vuln.Severity,
+		CWEID:          vuln.CWEID,
+		FirstFoundDate: vuln.FirstFoundDate,
+		CVESummary:     vuln.CVESummary,
+		SeverityDesc:   vuln.SeverityDesc,
+		Components:     make([]scaCodeComponent, 0, len(components)),
+	}
+	for _, comp := range components {
+		filePaths := make([]string, 0, len(comp.FilePaths.FilePath))
+		for _, fp := range comp.FilePaths.FilePath {
+			filePaths = append(filePaths, fp.Value)
+		}
+		entry.Components = append(entry.Components, scaCodeComponent{
+			ComponentID:  comp.ComponentID,
+			FileName:     comp.FileName,
+			SHA1:         comp.SHA1,
+			Version:      comp.Version,
+			Library:      comp.Library,
+			LibraryID:    comp.LibraryID,
+			Vendor:       comp.Vendor,
+			Description:  comp.Description,
+			MaxCVSSScore: comp.MaxCVSSScore,
+			AddedDate:    comp.AddedDate,
+			FilePaths:    filePaths,
+		})
+	}
+
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(entry); err != nil {
+		return "{}"
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
 }
 
 // buildSCAResult creates an HDF RequirementResult from an SCA component finding.

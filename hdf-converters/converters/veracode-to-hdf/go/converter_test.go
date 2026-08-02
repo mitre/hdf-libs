@@ -2,6 +2,7 @@ package veracode
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"io"
@@ -345,6 +346,179 @@ func TestConvertVeracodeToHDF_NoFindings(t *testing.T) {
 	assert.Equal(t, hdf.Passed, req.Results[0].Status)
 	assert.Contains(t, req.Results[0].CodeDesc, "Veracode")
 	assert.Contains(t, req.Results[0].CodeDesc, "CleanApp")
+}
+
+// synthesizeFlawCode branch coverage: every combination of function prototype
+// and source locus, including the NOT-IN-SOURCE case (neither present).
+func TestSynthesizeFlawCode(t *testing.T) {
+	tests := []struct {
+		name string
+		flaw Flaw
+		want string
+	}{
+		{
+			name: "prototype and full locus",
+			flaw: Flaw{FunctionPrototype: "String ping(String)", SourceFilePath: "com/x/", SourceFile: "A.java", Line: "53"},
+			want: "String ping(String) at com/x/A.java:53",
+		},
+		{
+			name: "prototype only, no locus",
+			flaw: Flaw{FunctionPrototype: "String ping(String)"},
+			want: "String ping(String)",
+		},
+		{
+			name: "locus only, no prototype",
+			flaw: Flaw{SourceFilePath: "com/x/", SourceFile: "A.java", Line: "53"},
+			want: "com/x/A.java:53",
+		},
+		{
+			name: "prototype and locus but no line",
+			flaw: Flaw{FunctionPrototype: "String ping(String)", SourceFilePath: "com/x/", SourceFile: "A.java"},
+			want: "String ping(String) at com/x/A.java",
+		},
+		{
+			name: "neither prototype nor locus (NOT-IN-SOURCE)",
+			flaw: Flaw{IssueID: "42"},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, synthesizeFlawCode(tt.flaw))
+		})
+	}
+}
+
+// Static CWE requirement carries a synthesized source-context code string built
+// from functionprototype + sourcefilepath/sourcefile:line.
+func TestConvertVeracodeToHDF_StaticFlawCode(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	var cweControl *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "18" {
+			cweControl = &result.Baselines[0].Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, cweControl, "expected CWE control 18")
+	require.NotNil(t, cweControl.Code, "static CWE requirement should carry synthesized code")
+	assert.Contains(t, *cweControl.Code,
+		"java.lang.String ping(java.lang.String) at com/veracode/verademo/controller/ToolsController.java:53")
+}
+
+// A CWE requirement whose flaws carry neither a prototype nor a source locus
+// leaves code unset (NOT-IN-SOURCE), exercising the requirement-level guard.
+func TestBuildCWERequirement_NoCode(t *testing.T) {
+	cat := Category{
+		CategoryID:   "99",
+		CategoryName: "No Locus",
+		CWEs: []CWE{{
+			CWEID: "78",
+			StaticFlaws: StaticFlaws{Flaws: []Flaw{
+				{IssueID: "1", Severity: "5"},
+			}},
+		}},
+	}
+	req := buildCWERequirement(cat, 0.9, "")
+	assert.Nil(t, req.Code, "requirement with no source-carrying flaw must leave code unset")
+}
+
+// SCA CVE requirement carries an indented-JSON serialization of the
+// vulnerability/component entry that parses back to the source object.
+func TestConvertVeracodeToHDF_SCACode(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	var cveControl *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "CVE-2012-5783" {
+			cveControl = &result.Baselines[0].Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, cveControl, "expected CVE control CVE-2012-5783")
+	require.NotNil(t, cveControl.Code, "SCA CVE requirement should carry serialized code")
+
+	var parsed struct {
+		CVEID      string `json:"cve_id"`
+		CVSSScore  string `json:"cvss_score"`
+		Components []struct {
+			Library   string   `json:"library"`
+			FilePaths []string `json:"file_paths"`
+		} `json:"components"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(*cveControl.Code), &parsed),
+		"code must be valid JSON that parses back to the source object")
+	assert.Equal(t, "CVE-2012-5783", parsed.CVEID)
+	assert.Equal(t, "5.8", parsed.CVSSScore)
+	assert.NotEmpty(t, parsed.Components, "serialized entry should carry affected components")
+}
+
+// buildSCACode is byte-parity-sensitive: assert its exact indented-JSON shape,
+// including the components array and file_paths, on a crafted single entry.
+func TestBuildSCACode(t *testing.T) {
+	vuln := Vulnerability{
+		CVEID:          "CVE-2012-5783",
+		CVSSScore:      "5.8",
+		Severity:       "3",
+		CWEID:          "CWE-20",
+		FirstFoundDate: "2021-12-29 22:18:20 UTC",
+		CVESummary:     "Apache Commons HttpClient does not verify hostname.",
+		SeverityDesc:   "Medium",
+	}
+	comp := Component{
+		ComponentID: "abc",
+		FileName:    "commons-httpclient-3.1.jar",
+		Version:     "3.1",
+		Library:     "commons-httpclient",
+		LibraryID:   "maven:commons-httpclient:3.1:",
+		Vendor:      "commons-httpclient",
+		AddedDate:   "2021-12-29 22:18:19 UTC",
+		FilePaths: ComponentFilePaths{FilePath: []ComponentFilePath{
+			{Value: "WEB-INF/lib/commons-httpclient-3.1.jar"},
+		}},
+	}
+	want := `{
+  "cve_id": "CVE-2012-5783",
+  "cvss_score": "5.8",
+  "severity": "3",
+  "cwe_id": "CWE-20",
+  "first_found_date": "2021-12-29 22:18:20 UTC",
+  "cve_summary": "Apache Commons HttpClient does not verify hostname.",
+  "severity_desc": "Medium",
+  "components": [
+    {
+      "component_id": "abc",
+      "file_name": "commons-httpclient-3.1.jar",
+      "sha1": "",
+      "version": "3.1",
+      "library": "commons-httpclient",
+      "library_id": "maven:commons-httpclient:3.1:",
+      "vendor": "commons-httpclient",
+      "description": "",
+      "max_cvss_score": "",
+      "added_date": "2021-12-29 22:18:19 UTC",
+      "file_paths": [
+        "WEB-INF/lib/commons-httpclient-3.1.jar"
+      ]
+    }
+  ]
+}`
+	assert.Equal(t, want, buildSCACode(vuln, []Component{comp}))
+}
+
+// A component with no file paths must serialize file_paths as [] (not null),
+// which is the byte the TypeScript twin's JSON.stringify emits.
+func TestBuildSCACode_EmptyFilePaths(t *testing.T) {
+	code := buildSCACode(Vulnerability{CVEID: "CVE-0000-0000"}, []Component{{ComponentID: "x"}})
+	assert.Contains(t, code, `"file_paths": []`)
+	assert.NotContains(t, code, `"file_paths": null`)
 }
 
 func TestConvertVeracodeToHDF_VerificationMethod(t *testing.T) {
