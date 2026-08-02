@@ -131,6 +131,38 @@ describe('dbprotect to HDF converter', () => {
     });
   });
 
+  describe('requirement.code (Heimdall CODE tab)', () => {
+    it('serializes the source row as indented, sorted-key JSON', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
+      expect(req?.code).toBeTruthy();
+      const code = req!.code!;
+
+      // Two-space indented, not a compact blob.
+      expect(code).toContain('\n  "Check": "Schema ownership"');
+
+      // Round-trips back to the source row.
+      const row = JSON.parse(code) as Record<string, string>;
+      expect(row['Check']).toBe('Schema ownership');
+      expect(row['Check Category']).toBe('Improper Access Controls');
+      expect(row['Risk DV']).toBe('Medium');
+      expect(row['Details']).toBe('Schema name=DatabaseMailUserRole;Database=msdb;Owner name=DatabaseMailUserRole');
+
+      // Keys are emitted in sorted order (the byte-parity contract with the Go twin).
+      const sorted = JSON.stringify(row, Object.keys(row).sort(), 2);
+      expect(code).toBe(sorted);
+    });
+
+    it('populates code for every requirement in the Findings Detail report', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.code).toBeTruthy();
+        const row = JSON.parse(req.code!) as Record<string, string>;
+        expect(row['Check']).toBeTruthy();
+      }
+    });
+  });
+
   describe('impact mapping', () => {
     it('should map High risk to 0.7', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;

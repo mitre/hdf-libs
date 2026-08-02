@@ -1,6 +1,7 @@
 package dbprotect
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"os"
 	"path/filepath"
@@ -332,6 +333,68 @@ func TestConvertDbprotect_CheckResults_StartTime(t *testing.T) {
 	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
 	require.NotEmpty(t, req.Results)
 	assert.False(t, req.Results[0].StartTime.IsZero(), "StartTime should be set")
+}
+
+// ---- requirement.code (Heimdall CODE tab) ----
+
+// DBProtect ships no literal check source, so requirement.code carries the
+// parsed finding row (column→value map) serialized as indented JSON. Keys must
+// sort so the bytes match the TypeScript twin.
+func TestMarshalFindingCode(t *testing.T) {
+	f := finding{
+		"Check":          "Schema ownership",
+		"Check Category": "Improper Access Controls",
+		"Risk DV":        "Medium",
+	}
+	code := marshalFindingCode(f)
+
+	// Two-space indented, not a compact blob.
+	assert.Contains(t, code, "\n  \"Check\": \"Schema ownership\"")
+
+	// Keys emitted in sorted order for byte-parity with the TS twin.
+	assert.Less(t, strings.Index(code, `"Check"`), strings.Index(code, `"Check Category"`))
+	assert.Less(t, strings.Index(code, `"Check Category"`), strings.Index(code, `"Risk DV"`))
+
+	// Round-trips back to the source row.
+	var back map[string]string
+	require.NoError(t, json.Unmarshal([]byte(code), &back))
+	assert.Equal(t, map[string]string(f), back)
+}
+
+// An empty row serializes to the empty object rather than "null" — the normal
+// encode path, no separate guard.
+func TestMarshalFindingCode_Empty(t *testing.T) {
+	assert.Equal(t, "{}", marshalFindingCode(finding{}))
+}
+
+func TestConvertDbprotect_CheckResults_RequirementCode(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req.Code, "requirement.code must be populated for the CODE tab")
+
+	var row map[string]string
+	require.NoError(t, json.Unmarshal([]byte(*req.Code), &row))
+	assert.Equal(t, "Schema ownership", row["Check"])
+	assert.Equal(t, "Improper Access Controls", row["Check Category"])
+	assert.Equal(t, "Medium", row["Risk DV"])
+	assert.Equal(t, "Schema name=DatabaseMailUserRole;Database=msdb;Owner name=DatabaseMailUserRole", row["Details"])
+}
+
+// The Findings Detail report (no Result Status column) also populates code.
+func TestConvertDbprotect_FindingsDetail_RequirementCode(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		require.NotNil(t, req.Code, "requirement %q must carry code", req.ID)
+		var row map[string]string
+		require.NoError(t, json.Unmarshal([]byte(*req.Code), &row))
+		assert.NotEmpty(t, row["Check"])
+	}
 }
 
 // ---- NIST tags ----

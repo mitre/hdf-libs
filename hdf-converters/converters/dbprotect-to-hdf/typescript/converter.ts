@@ -170,6 +170,20 @@ function parseDate(dateStr: string): Date {
 }
 
 /**
+ * Renders a finding's parsed row (column→value map) as the indented JSON blob
+ * carried in requirement.code. DBProtect ships no literal check source, so the
+ * row itself is the richest available representation. Keys are sorted so the
+ * bytes match the Go twin, whose encoding/json emits map keys in sorted order.
+ */
+function marshalFindingCode(f: Finding): string {
+  const sorted: Record<string, string> = {};
+  for (const key of Object.keys(f).sort()) {
+    sorted[key] = f[key]!;
+  }
+  return JSON.stringify(sorted, null, 2);
+}
+
+/**
  * Builds a single EvaluatedRequirement from a group of findings sharing a Check ID.
  */
 function buildRequirement(
@@ -208,6 +222,7 @@ function buildRequirement(
     { tags },
   ) as EvaluatedRequirement;
   req.verificationMethod = VerificationMethodEnum.Automated;
+  req.code = marshalFindingCode(rep);
 
   const controlType = deriveControlTypeFromTags([...nist]);
   if (controlType !== undefined) {

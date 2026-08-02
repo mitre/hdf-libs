@@ -1,6 +1,8 @@
 package dbprotect
 
 import (
+	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"strings"
@@ -159,6 +161,22 @@ func hasResultStatus(ds *Dataset) bool {
 	return false
 }
 
+// marshalFindingCode renders the finding's parsed row (column→value map) as the
+// indented JSON blob carried in requirement.code — DBProtect ships no literal
+// check source, so the row itself is the richest available representation.
+// HTML escaping is off and encoding/json emits map keys in sorted order, so the
+// bytes match the TypeScript twin's JSON.stringify over the same sorted object.
+// Encoding a map[string]string cannot fail, so the error is deliberately ignored
+// (no uncoverable defensive branch).
+func marshalFindingCode(f finding) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	_ = enc.Encode(f)
+	return strings.TrimSuffix(buf.String(), "\n")
+}
+
 // buildRequirement converts a group of findings sharing a Check ID into one
 // EvaluatedRequirement with multiple results.
 func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.EvaluatedRequirement {
@@ -192,6 +210,7 @@ func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.Ev
 	}
 
 	title := rep["Check"]
+	code := marshalFindingCode(rep)
 	return hdf.EvaluatedRequirement{
 		ID:                 checkID,
 		Title:              &title,
@@ -200,6 +219,7 @@ func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.Ev
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		Descriptions:       descriptions,
 		Results:            results,
+		Code:               &code,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
