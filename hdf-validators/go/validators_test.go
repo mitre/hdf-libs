@@ -597,8 +597,8 @@ func TestPoamRequiresExpiresAt(t *testing.T) {
 // amendmentAndVulnRequirementFields is the shared shape asserted identically by
 // the Go and TS validator suites: a requirement carrying amendment fields
 // (effectiveStatus, disposition, statusOverrides, poams) and vulnerability
-// fields (cwe, cvss, refs) together. Keep it byte-identical to the TS peer in
-// validators.test.ts so both languages validate the same document.
+// fields (cwe, cvss, refs) together. Keep its fields and values in sync with the
+// TS peer in validators.test.ts so both languages validate the same document.
 const amendmentAndVulnRequirementFields = `"effectiveStatus": "failed",
 	"disposition": "poam",
 	"statusOverrides": [{

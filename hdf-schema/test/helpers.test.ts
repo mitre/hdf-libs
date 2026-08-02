@@ -417,7 +417,6 @@ describe('helper-built docs validate against hdf-results.schema.json', () => {
     });
 
     const ok = validate(doc);
-    if (!ok) console.error(validate.errors);
-    expect(ok).toBe(true);
+    expect(ok, JSON.stringify(validate.errors)).toBe(true);
   });
 });

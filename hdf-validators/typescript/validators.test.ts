@@ -314,7 +314,7 @@ describe('HDF Results Validation', () => {
   // Shared shape asserted identically by the Go and TS validator suites: a
   // requirement carrying amendment fields (effectiveStatus, disposition,
   // statusOverrides, poams) and vulnerability fields (cwe, cvss, refs) together.
-  // Keep byte-aligned with amendmentAndVulnRequirementFields in validators_test.go.
+  // Keep its fields and values in sync with amendmentAndVulnRequirementFields in validators_test.go.
   describe('amendment + vulnerability fields on one requirement', () => {
     it('validates a requirement carrying both amendment and vuln fields', () => {
       const doc = resultsWith({
@@ -345,8 +345,7 @@ describe('HDF Results Validation', () => {
       });
 
       const result = validateResults(doc);
-      if (!result.valid) console.error(result.getErrorMessage());
-      expect(result.valid).toBe(true);
+      expect(result.valid, result.getErrorMessage()).toBe(true);
     });
   });
 });
