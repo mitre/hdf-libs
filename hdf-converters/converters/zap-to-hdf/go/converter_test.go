@@ -375,13 +375,28 @@ func TestConvertZapToHDF_CCITags(t *testing.T) {
 
 // --- Extra tags ---
 
-func TestConvertZapToHDF_CWEIDTag(t *testing.T) {
+func TestConvertZapToHDF_CWEFirstClass(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
 	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
-	assert.Equal(t, "16", req.Tags["cweid"])
+	assert.Equal(t, []string{"CWE-16"}, req.Cwe)
+	// The CWE is now first-class only — it must not linger as a tag.
+	_, ok := req.Tags["cweid"]
+	assert.False(t, ok, "cweid tag must be removed once promoted to cwe[]")
+}
+
+func TestConvertZapToHDF_CWEAbsentWhenEmpty(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// Alert 90022 in minimal.json carries an empty cweid → no cwe[] emitted.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
+	assert.Nil(t, req.Cwe)
+	_, ok := req.Tags["cweid"]
+	assert.False(t, ok)
 }
 
 func TestConvertZapToHDF_WASCIDTag(t *testing.T) {
@@ -462,6 +477,14 @@ func Test_parseCweID(t *testing.T) {
 	assert.Equal(t, 0, parseCweID(""))
 	assert.Equal(t, 0, parseCweID("0"))
 	assert.Equal(t, 0, parseCweID("abc"))
+}
+
+func Test_buildCwe(t *testing.T) {
+	assert.Equal(t, []string{"CWE-16"}, buildCwe("16"))
+	assert.Equal(t, []string{"CWE-200"}, buildCwe("200"))
+	assert.Nil(t, buildCwe(""))
+	assert.Nil(t, buildCwe("0"))
+	assert.Nil(t, buildCwe("abc"))
 }
 
 // --- StripHTML ---

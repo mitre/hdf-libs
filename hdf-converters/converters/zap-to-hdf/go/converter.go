@@ -104,6 +104,16 @@ func buildNistTags(cweid string) []string {
 	return shared.DefaultStaticAnalysisNIST
 }
 
+// buildCwe promotes a ZAP alert cweid to a first-class requirement.cwe entry
+// in the canonical "CWE-N" form (no leading zeros). Returns nil when the alert
+// carries no usable CWE ("", "0", or a non-numeric value).
+func buildCwe(cweid string) []string {
+	if n := parseCweID(cweid); n != 0 {
+		return []string{fmt.Sprintf("CWE-%d", n)}
+	}
+	return nil
+}
+
 // --- Instance to code desc ---
 
 func buildCodeDesc(instance ZapInstance) string {
@@ -236,11 +246,9 @@ func buildSiteRequirements(site *ZapSite) []hdf.EvaluatedRequirement {
 		nistTags := buildNistTags(alert.CweID)
 		cciTags := cci.NISTToCCI(nistTags)
 
-		// Build extra tags
+		// Build extra tags. The CWE is promoted to first-class requirement.cwe[]
+		// below and no longer duplicated into tags; wascid stays a tag.
 		extras := make(map[string]interface{})
-		if alert.CweID != "" {
-			extras["cweid"] = alert.CweID
-		}
 		if alert.WascID != "" {
 			extras["wascid"] = alert.WascID
 		}
@@ -298,6 +306,7 @@ func buildSiteRequirements(site *ZapSite) []hdf.EvaluatedRequirement {
 			Impact:             impact,
 			Results:            results,
 			Tags:               tags,
+			Cwe:                buildCwe(alert.CweID),
 			ControlType:        shared.DeriveControlTypeFromTags(nistTags),
 			Code:               buildRequirementCode(alert),
 			Descriptions:       descriptions,

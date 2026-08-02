@@ -3,6 +3,9 @@
     {
       "requirements": [
         {
+          "cwe": [
+            "CWE-16"
+          ],
           "descriptions": [
             {
               "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.",
@@ -28,7 +31,6 @@
               "CCI-003173"
             ],
             "confidence": "2",
-            "cweid": "16",
             "nist": [
               "SA-11",
               "RA-5"
@@ -55,6 +57,9 @@
     {
       "requirements": [
         {
+          "cwe": [
+            "CWE-16"
+          ],
           "descriptions": [
             {
               "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.",
@@ -80,7 +85,6 @@
               "CCI-003173"
             ],
             "confidence": "2",
-            "cweid": "16",
             "nist": [
               "SA-11",
               "RA-5"
@@ -107,6 +111,9 @@
     {
       "requirements": [
         {
+          "cwe": [
+            "CWE-16"
+          ],
           "descriptions": [
             {
               "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.",
@@ -132,7 +139,6 @@
               "CCI-003173"
             ],
             "confidence": "2",
-            "cweid": "16",
             "nist": [
               "SA-11",
               "RA-5"
@@ -159,6 +165,9 @@
     {
       "requirements": [
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: MKCOL. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -278,7 +287,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -291,6 +299,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-16"
+          ],
           "descriptions": [
             {
               "data": "A cookie has been set without the HttpOnly flag, which means that the cookie can be accessed by JavaScript. If a malicious script can be run on this page then the cookie will be accessible and can be transmitted to another site. If this is a session cookie then session hijacking may be possible.",
@@ -351,7 +362,6 @@
               "CCI-003173"
             ],
             "confidence": "2",
-            "cweid": "16",
             "nist": [
               "SA-11",
               "RA-5"
@@ -364,6 +374,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-425"
+          ],
           "descriptions": [
             {
               "data": "A backup of the file was disclosed by the web server",
@@ -504,7 +517,6 @@
               "CCI-003173"
             ],
             "confidence": "2",
-            "cweid": "425",
             "nist": [
               "SA-11",
               "RA-5"
@@ -517,6 +529,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: COPY. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -636,7 +651,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -649,6 +663,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: MOVE. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -768,7 +785,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -781,6 +797,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This method was originally intended for file managemant operations. It is now most commonly used in REST services, PUT is most-often utilized for **update** capabilities, PUT-ing to a known resource URI with the request body containing the newly-updated representation of the original resource..",
@@ -900,7 +919,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -913,6 +931,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-352"
+          ],
           "descriptions": [
             {
               "data": "No Anti-CSRF tokens were found in a HTML submission form. A cross-site request forgery is an attack that involves forcing a victim to send an HTTP request to a target destination without their knowledge or intent in order to perform an action as the victim. The underlying cause is application functionality using predictable URL/form actions in a repeatable way. The nature of the attack is that CSRF exploits the trust that a web site has for a user. By contrast, cross-site scripting (XSS) exploits the trust that a user has for a web site. Like XSS, CSRF attacks are not necessarily cross-site, but they can be. Cross-site request forgery is also known as CSRF, XSRF, one-click attack, session riding, confused deputy, and sea surf. CSRF attacks are effective in a number of situations, including: * The victim has an active session on the target site. * The victim is authenticated via HTTP auth on the target site. * The victim is on the same local network as the target site. CSRF has primarily been used to perform an action against a target site using the victim's privileges, but recent techniques have been discovered to disclose information by gaining access to the response. The risk of information disclosure is dramatically increased when the target site is vulnerable to XSS, because XSS can be used as a platform for CSRF, allowing the attack to operate within the bounds of the same-origin policy.",
@@ -1032,7 +1053,6 @@
               "CCI-000213"
             ],
             "confidence": "2",
-            "cweid": "352",
             "nist": [
               "AC-3"
             ],
@@ -1045,6 +1065,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "The response appears to contain suspicious comments which may help an attacker.",
@@ -1164,7 +1187,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -1177,6 +1199,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: PROPPATCH. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -1296,7 +1321,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -1309,6 +1333,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: PROPFIND. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -1428,7 +1455,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -1441,6 +1467,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "The response appeared to contain common error messages returned by platforms such as ASP.NET, and Web-servers such as IIS and Apache. You can configure the list of common debug messages.",
@@ -1490,7 +1519,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -1503,6 +1531,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "The response appeared to contain common error messages returned by platforms such as ASP.NET, and Web-servers such as IIS and Apache. You can configure the list of common debug messages.",
@@ -1552,7 +1583,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -1565,6 +1595,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "The response appeared to contain common error messages returned by platforms such as ASP.NET, and Web-servers such as IIS and Apache. You can configure the list of common debug messages.",
@@ -1614,7 +1647,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -1627,6 +1659,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This method is now most commonly used in REST services, PATCH is used for **modify** capabilities. The PATCH request only needs to contain the changes to the resource, not the complete resource.",
@@ -1746,7 +1781,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -1759,6 +1793,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: UNLOCK. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -1878,7 +1915,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -1891,6 +1927,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "The request appeared to contain sensitive information leaked in the URL. This can violate PCI and most organizational compliance policies. You can configure the list of strings for this check to add or remove values specific to your environment.",
@@ -1935,7 +1974,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -1948,6 +1986,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: LOCK. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -2067,7 +2108,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -2080,6 +2120,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This page contains an error/warning message that may disclose sensitive information like the location of the file that produced the unhandled exception. This information can be used to launch further attacks against the web application. The alert could be a false positive if the error message is found inside a documentation page.",
@@ -2129,7 +2172,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -2142,6 +2184,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-541"
+          ],
           "descriptions": [
             {
               "data": "The source code for the current page was disclosed by the web server",
@@ -2174,7 +2219,6 @@
               "CCI-003173"
             ],
             "confidence": "1",
-            "cweid": "541",
             "nist": [
               "SA-11",
               "RA-5"
@@ -2187,6 +2231,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-933"
+          ],
           "descriptions": [
             {
               "data": "Web Browser XSS Protection is not enabled, or is disabled by the configuration of the 'X-XSS-Protection' HTTP response header on the web server",
@@ -2217,7 +2264,6 @@
               "CCI-003173"
             ],
             "confidence": "2",
-            "cweid": "933",
             "nist": [
               "SA-11",
               "RA-5"
@@ -2230,6 +2276,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-352"
+          ],
           "descriptions": [
             {
               "data": "A cross-site request forgery is an attack that involves forcing a victim to send an HTTP request to a target destination without their knowledge or intent in order to perform an action as the victim. The underlying cause is application functionality using predictable URL/form actions in a repeatable way. The nature of the attack is that CSRF exploits the trust that a web site has for a user. By contrast, cross-site scripting (XSS) exploits the trust that a user has for a web site. Like XSS, CSRF attacks are not necessarily cross-site, but they can be. Cross-site request forgery is also known as CSRF, XSRF, one-click attack, session riding, confused deputy, and sea surf. CSRF attacks are effective in a number of situations, including: * The victim has an active session on the target site. * The victim is authenticated via HTTP auth on the target site. * The victim is on the same local network as the target site. CSRF has primarily been used to perform an action against a target site using the victim's privileges, but recent techniques have been discovered to disclose information by gaining access to the response. The risk of information disclosure is dramatically increased when the target site is vulnerable to XSS, because XSS can be used as a platform for CSRF, allowing the attack to operate within the bounds of the same-origin policy.",
@@ -2334,7 +2383,6 @@
               "CCI-000213"
             ],
             "confidence": "2",
-            "cweid": "352",
             "nist": [
               "AC-3"
             ],
@@ -2347,6 +2395,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-20"
+          ],
           "descriptions": [
             {
               "data": "Unspecified form action: HTTP parameter override attack potentially possible. This is a known problem with Java Servlets but other platforms may also be vulnerable.",
@@ -2376,7 +2427,6 @@
               "CCI-001310"
             ],
             "confidence": "1",
-            "cweid": "20",
             "nist": [
               "SI-10"
             ],
@@ -2389,6 +2439,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-89"
+          ],
           "descriptions": [
             {
               "data": "SQL injection may be possible.",
@@ -2444,7 +2497,6 @@
               "CCI-001310"
             ],
             "confidence": "2",
-            "cweid": "89",
             "nist": [
               "SI-10"
             ],
@@ -2457,6 +2509,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "A private IP (such as 10.x.x.x, 172.x.x.x, 192.168.x.x) or an Amazon EC2 private hostname (for example, ip-10-0-56-78) has been found in the HTTP response body. This information might be helpful for further attacks targeting internal systems.",
@@ -2486,7 +2541,6 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
@@ -2499,6 +2553,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-16"
+          ],
           "descriptions": [
             {
               "data": "This check identifies responses where the HTTP Content-Type header declares a charset different from the charset defined by the body of the HTML or XML. When there's a charset mismatch between the HTTP header and content body Web browsers can be forced into an undesirable content-sniffing mode to determine the content's correct character set. An attacker could manipulate content on the page to be interpreted in an encoding of their choice. For example, if an attacker can control content at the beginning of the page, they could inject script using UTF-7 encoded text and manipulate some browsers into interpreting that text.",
@@ -2524,7 +2581,6 @@
               "CCI-003173"
             ],
             "confidence": "1",
-            "cweid": "16",
             "nist": [
               "SA-11",
               "RA-5"

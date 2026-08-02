@@ -311,16 +311,40 @@ describe('ZAP Converter', () => {
     });
   });
 
-  describe('extra tags', () => {
-    it('should include cweid tag', async () => {
+  describe('cwe', () => {
+    it('should promote cweid to first-class cwe[] and drop the cweid tag', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
-      expect(req?.tags?.cweid).toBe('16');
+      expect(req?.cwe).toEqual(['CWE-16']);
+      expect(req?.tags?.cweid).toBeUndefined();
     });
 
+    it('should omit cwe[] when the alert carries an empty cweid', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      // Alert 90022 in minimal.json has an empty cweid.
+      const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
+      expect(req?.cwe).toBeUndefined();
+      expect(req?.tags?.cweid).toBeUndefined();
+    });
+
+    it('should omit cwe[] for a non-numeric cweid', async () => {
+      const zap = {
+        '@version': '2.7.0',
+        site: [{'@host': 'example.com', alerts: [{pluginid: '1', name: 'X', cweid: 'abc'}]}],
+      };
+      const output = await convertZapToHdf(JSON.stringify(zap));
+      const hdf = parseJSON<HDFResults>(output);
+      expect(hdf.baselines[0].requirements[0].cwe).toBeUndefined();
+    });
+  });
+
+  describe('extra tags', () => {
     it('should include wascid tag', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);

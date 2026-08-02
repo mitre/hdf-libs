@@ -3,6 +3,9 @@
     {
       "requirements": [
         {
+          "cwe": [
+            "CWE-16"
+          ],
           "descriptions": [
             {
               "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'.",
@@ -28,7 +31,6 @@
               "CCI-003173"
             ],
             "confidence": "2",
-            "cweid": "16",
             "nist": [
               "SA-11",
               "RA-5"

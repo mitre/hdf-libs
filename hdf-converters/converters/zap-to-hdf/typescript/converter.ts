@@ -94,6 +94,20 @@ function buildNistTags(cweid: string): string[] {
   return [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS];
 }
 
+// buildCwe promotes a ZAP alert cweid to a first-class requirement.cwe entry
+// in the canonical "CWE-N" form (no leading zeros). Returns undefined when the
+// alert carries no usable CWE ('', '0', or a non-numeric value).
+function buildCwe(cweid: string | undefined): string[] | undefined {
+  if (!cweid || cweid === '0') {
+    return undefined;
+  }
+  const cweNum = parseInt(cweid, 10);
+  if (isNaN(cweNum)) {
+    return undefined;
+  }
+  return [`CWE-${cweNum}`];
+}
+
 // --- Instance to code desc ---
 
 function buildCodeDesc(instance: ZapInstance): string {
@@ -205,11 +219,9 @@ function buildSiteRequirements(site: ZapSite): EvaluatedRequirement[] {
     const nistTags = buildNistTags(alert.cweid ?? '');
     const cciTags = nistToCci(nistTags);
 
-    // Build extra tags
+    // Build extra tags. The CWE is promoted to first-class requirement.cwe[]
+    // below and no longer duplicated into tags; wascid stays a tag.
     const extras: Record<string, unknown> = {};
-    if (alert.cweid) {
-      extras.cweid = alert.cweid;
-    }
     if (alert.wascid) {
       extras.wascid = alert.wascid;
     }
@@ -263,6 +275,11 @@ function buildSiteRequirements(site: ZapSite): EvaluatedRequirement[] {
       descriptions,
       verificationMethod: VerificationMethodEnum.Automated,
     };
+
+    const cwe = buildCwe(alert.cweid);
+    if (cwe !== undefined) {
+      req.cwe = cwe;
+    }
 
     const controlType = deriveControlTypeFromTags(nistTags);
     if (controlType !== undefined) {
