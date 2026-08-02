@@ -336,6 +336,13 @@ func TestCveEcosystem_Epss(t *testing.T) {
 		assert.Contains(t, result.Error(), "score")
 	})
 
+	t.Run("rejects EPSS score below 0.0", func(t *testing.T) {
+		data := resultsWith(`"epss": {"score": -0.1, "percentile": 0.5, "date": "2026-05-26"}`)
+		result := ValidateResults(data)
+		assert.False(t, result.Valid)
+		assert.Contains(t, result.Error(), "score")
+	})
+
 	t.Run("rejects EPSS missing date", func(t *testing.T) {
 		data := resultsWith(`"epss": {"score": 0.5, "percentile": 0.5}`)
 		result := ValidateResults(data)
@@ -393,6 +400,15 @@ func TestCveEcosystem_Kev(t *testing.T) {
 func TestCveEcosystem_Cwe(t *testing.T) {
 	t.Run("accepts three valid CWE IDs", func(t *testing.T) {
 		data := resultsWith(`"cwe": ["CWE-79", "CWE-89", "CWE-352"]`)
+		result := ValidateResults(data)
+		if !result.Valid {
+			t.Logf("Unexpected errors: %s", result.Error())
+		}
+		assert.True(t, result.Valid)
+	})
+
+	t.Run("accepts an empty cwe array", func(t *testing.T) {
+		data := resultsWith(`"cwe": []`)
 		result := ValidateResults(data)
 		if !result.Valid {
 			t.Logf("Unexpected errors: %s", result.Error())
@@ -576,6 +592,40 @@ func TestPoamRequiresExpiresAt(t *testing.T) {
 		}
 		assert.True(t, result.Valid)
 	})
+}
+
+// amendmentAndVulnRequirementFields is the shared shape asserted identically by
+// the Go and TS validator suites: a requirement carrying amendment fields
+// (effectiveStatus, disposition, statusOverrides, poams) and vulnerability
+// fields (cwe, cvss, refs) together. Keep it byte-identical to the TS peer in
+// validators.test.ts so both languages validate the same document.
+const amendmentAndVulnRequirementFields = `"effectiveStatus": "failed",
+	"disposition": "poam",
+	"statusOverrides": [{
+		"type": "riskAdjustment",
+		"impact": { "value": 0.4 },
+		"reason": "Environmental exposure reduced — internal VPN only.",
+		"appliedBy": { "type": "simple", "identifier": "sec" },
+		"appliedAt": "2025-01-01T00:00:00Z",
+		"expiresAt": "2099-12-31T00:00:00Z"
+	}],
+	"poams": [{
+		"type": "remediation",
+		"explanation": "Patch deployment scheduled pending vendor fix.",
+		"appliedBy": { "type": "simple", "identifier": "ops" },
+		"appliedAt": "2025-01-01T00:00:00Z",
+		"expiresAt": "2099-12-31T00:00:00Z"
+	}],
+	"cwe": ["CWE-327"],
+	"cvss": [{ "version": "3.1", "baseScore": 7.5, "baseSeverity": "high" }],
+	"refs": [{ "url": "https://example.gov/advisory" }]`
+
+func TestValidateResults_AmendmentAndVulnFields(t *testing.T) {
+	result := ValidateResults(resultsWith(amendmentAndVulnRequirementFields))
+	if !result.Valid {
+		t.Logf("Unexpected errors: %s", result.Error())
+	}
+	assert.True(t, result.Valid)
 }
 
 func TestSetSchemaDir(t *testing.T) {

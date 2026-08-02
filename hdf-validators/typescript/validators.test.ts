@@ -310,6 +310,45 @@ describe('HDF Results Validation', () => {
       expect(result.valid).toBe(true);
     });
   });
+
+  // Shared shape asserted identically by the Go and TS validator suites: a
+  // requirement carrying amendment fields (effectiveStatus, disposition,
+  // statusOverrides, poams) and vulnerability fields (cwe, cvss, refs) together.
+  // Keep byte-aligned with amendmentAndVulnRequirementFields in validators_test.go.
+  describe('amendment + vulnerability fields on one requirement', () => {
+    it('validates a requirement carrying both amendment and vuln fields', () => {
+      const doc = resultsWith({
+        effectiveStatus: 'failed',
+        disposition: 'poam',
+        statusOverrides: [
+          {
+            type: 'riskAdjustment',
+            impact: { value: 0.4 },
+            reason: 'Environmental exposure reduced — internal VPN only.',
+            appliedBy: { type: 'simple', identifier: 'sec' },
+            appliedAt: '2025-01-01T00:00:00Z',
+            expiresAt: '2099-12-31T00:00:00Z',
+          },
+        ],
+        poams: [
+          {
+            type: 'remediation',
+            explanation: 'Patch deployment scheduled pending vendor fix.',
+            appliedBy: { type: 'simple', identifier: 'ops' },
+            appliedAt: '2025-01-01T00:00:00Z',
+            expiresAt: '2099-12-31T00:00:00Z',
+          },
+        ],
+        cwe: ['CWE-327'],
+        cvss: [{ version: '3.1', baseScore: 7.5, baseSeverity: 'high' }],
+        refs: [{ url: 'https://example.gov/advisory' }],
+      });
+
+      const result = validateResults(doc);
+      if (!result.valid) console.error(result.getErrorMessage());
+      expect(result.valid).toBe(true);
+    });
+  });
 });
 
 describe('HDF Baseline Validation', () => {
