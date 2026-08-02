@@ -8,6 +8,7 @@ import (
 	"time"
 
 	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // MergeAmendments applies amendments to an HDF results document.
@@ -373,8 +374,10 @@ func VerifyAmendments(amendments []byte) (*VerifyResult, error) {
 			continue
 		}
 
-		expiresAt, err := time.Parse(time.RFC3339, expiresStr)
-		if err != nil {
+		// ParseTimestamp accepts zone-less values as UTC (repo timestamp
+		// convention); zero means unparseable.
+		expiresAt := hdfutil.ParseTimestamp(expiresStr)
+		if expiresAt.IsZero() {
 			result.HasErrors = true
 			continue
 		}

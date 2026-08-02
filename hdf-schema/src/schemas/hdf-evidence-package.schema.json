@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.4.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.5.0",
   "title": "HDF Evidence Package",
   "description": "Bundles references to all HDF documents for audit, authorization, and compliance review. Each content entry references a document by type, URI, and checksum for integrity verification.",
   "type": "object",
@@ -13,7 +13,7 @@
     "externalReferences": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/External_Reference"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/External_Reference"
       },
       "description": "Optional references to external artifacts relevant to this evidence package (CTI/STIX, BOMs, advisories, or any URI-addressable artifact) beyond the document references it already carries. Inert context; see External_Reference."
     },
@@ -41,7 +41,7 @@
       "description": "URI to the hdf-plan document that drove this assessment. Used for completeness verification — every baseline in the plan should have a corresponding results document in this package."
     },
     "preparedBy": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
       "description": "Identity of who prepared this evidence package."
     },
     "preparedAt": {
@@ -69,7 +69,7 @@
       "description": "Summary of assessment completeness and compliance status."
     },
     "signature": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Signature",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Signature",
       "description": "Digital signature covering the entire evidence package."
     },
     "labels": {
@@ -80,7 +80,7 @@
       "description": "Optional key-value labels for grouping and querying evidence packages."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this evidence package has not been tampered with."
     },
     "version": {
@@ -88,7 +88,7 @@
       "description": "Version of this evidence package."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/Generator",
       "description": "Information about the tool that generated this document."
     }
   },
@@ -125,7 +125,7 @@
           "description": "URI to the document. Can be a relative path or absolute URL."
         },
         "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
           "description": "Cryptographic checksum for verifying the referenced document's integrity."
         },
         "description": {
@@ -236,7 +236,7 @@
           "description": "The native format discriminator of the referenced artifact."
         },
         "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
           "description": "Cryptographic checksum of the referenced artifact for integrity verification.",
           "$comment": "Strongly recommended for external evidence — a point-in-time reference without an integrity hash is weakly auditable. Kept out of `description` so this usage-specific note does not aggregate into the shared Checksum type's generated Go doc comment (quicktype concatenates $ref-sibling descriptions onto the referenced type)."
         },

@@ -270,6 +270,45 @@ func TestEnrichStix_Recompute(t *testing.T) {
 	assert.True(t, r.Valid, r.Error())
 }
 
+func TestEnrichStix_RecomputeMultiCVEVulnerability(t *testing.T) {
+	// One STIX vulnerability citing TWO CVEs, with one sighting of it: the
+	// exploitation signal must reach BOTH findings, not just the last CVE
+	// the vulnerability's external_references happened to list.
+	results := []byte(`{
+	  "generator": { "name": "hdf-converters", "version": "0.0.0" },
+	  "baselines": [{
+	    "name": "Vulnerability Scan",
+	    "checksum": { "algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+	    "requirements": [
+	      { "id": "CVE-2024-0001", "title": "first", "descriptions": [{ "label": "default", "data": "d" }], "impact": 0.9, "tags": {},
+	        "cvss": [{ "version": "3.1", "id": "CVE-2024-0001", "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", "baseScore": 9.8 }],
+	        "results": [{ "status": "failed", "codeDesc": "d", "startTime": "2025-01-01T00:00:00Z" }] },
+	      { "id": "CVE-2024-0002", "title": "second", "descriptions": [{ "label": "default", "data": "d" }], "impact": 0.9, "tags": {},
+	        "cvss": [{ "version": "3.1", "id": "CVE-2024-0002", "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", "baseScore": 9.8 }],
+	        "results": [{ "status": "failed", "codeDesc": "d", "startTime": "2025-01-01T00:00:00Z" }] }
+	    ]
+	  }],
+	  "statistics": { "duration": 1 },
+	  "timestamp": "2025-06-01T00:00:00Z"
+	}`)
+	bundle := []byte(`{"type":"bundle","id":"bundle--multi","objects":[
+	  {"type":"vulnerability","spec_version":"2.1","id":"vulnerability--1","name":"multi",
+	   "external_references":[
+	     {"source_name":"cve","external_id":"CVE-2024-0001"},
+	     {"source_name":"cve","external_id":"CVE-2024-0002"}]},
+	  {"type":"sighting","spec_version":"2.1","id":"sighting--1","sighting_of_ref":"vulnerability--1"}
+	]}`)
+	asOf, _ := time.Parse(time.RFC3339, "2099-01-01T00:00:00Z")
+
+	out, err := EnrichStix(results, bundle, EnrichOptions{RecomputeCVSS: true, AsOf: asOf})
+	require.NoError(t, err)
+	doc := enrichDoc(t, out)
+	require.Len(t, reqRefsUnderKey(requirementByID(t, doc, "CVE-2024-0001"), "statusOverrides"), 1,
+		"first cited CVE gets the riskAdjustment")
+	require.Len(t, reqRefsUnderKey(requirementByID(t, doc, "CVE-2024-0002"), "statusOverrides"), 1,
+		"second cited CVE gets the riskAdjustment")
+}
+
 func TestEnrichStix_RecomputeIsOptIn(t *testing.T) {
 	// Default (no opts / RecomputeCVSS false) authors NO overrides even with exploitation present.
 	out, err := EnrichStix(enrichFixture(t, "results-with-cvss.json"), enrichFixture(t, "poison-ivy-exploited-stix21.json"))

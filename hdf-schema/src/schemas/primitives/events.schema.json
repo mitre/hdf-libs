@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.5.0",
   "title": "HDF Change Event Primitives",
   "description": "Shared building blocks for HDF change-event wire documents. The envelope is entity-agnostic: hdf-requirement-change-event composes it today, and any future sibling event type (e.g. component change events — hdf-comparison already models componentDiffs alongside requirementDiffs) reuses it verbatim.",
   "$defs": {
@@ -54,7 +54,7 @@
         "priorChecksum": {
           "oneOf": [
             {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum"
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum"
             },
             {
               "type": "null"
@@ -72,7 +72,7 @@
           "systemRef": "apptier.hdf-system.json",
           "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
           "timestamp": "2026-07-22T14:03:11Z",
-          "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+          "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.5.0",
           "priorChecksum": {
             "algorithm": "sha256",
             "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
@@ -127,7 +127,7 @@
       ],
       "properties": {
         "effectiveStatus": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0#/$defs/Result_Status",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0#/$defs/Result_Status",
           "description": "The resolved effective compliance status at this point in the chain."
         },
         "effectiveImpact": {
@@ -177,7 +177,7 @@
               "description": "URI to the seed snapshot document (relative path or absolute URL)."
             },
             "checksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
               "description": "Checksum of the seed snapshot, REQUIRED: the derivation pins an immutable snapshot by content, not just location."
             }
           },

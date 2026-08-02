@@ -77,6 +77,17 @@ func parseNDJSONEvents(t *testing.T, ndjson string) []*hdf.HDFRequirementChangeE
 	return events
 }
 
+func TestEventsDerive_RejectsNegativeStartSequence(t *testing.T) {
+	_, _, err := executeCommand("events", "derive",
+		"--prev", eventsFixturePath(t, "scan-before.json"),
+		"--next", eventsFixturePath(t, "scan-after.json"),
+		"--system-ref", "urn:test:sys",
+		"--component-id", "11111111-1111-4111-8111-111111111111",
+		"--start-sequence", "-5")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "--start-sequence must be >= 0")
+}
+
 func TestEventsDerive_EmitsOnlyChangedKeys(t *testing.T) {
 	stdout := deriveScanPair(t)
 	events := parseNDJSONEvents(t, stdout)

@@ -1,3 +1,4 @@
+import { formatTimestamp, parseTimestamp } from '@mitre/hdf-utilities';
 import { computeSummary } from './summary.js';
 import { computeEffectiveStatus } from './status.js';
 import { computeFieldChanges, extractDrift, DEFAULT_TRACKED_FIELDS } from './diff.js';
@@ -70,12 +71,15 @@ export async function foldChangeEventsIntoComparison(
     const inSeed = seedReq !== null;
     await verifyEventChain(chain, seedReq, inSeed, keyWarn);
 
-    const occurredMs = new Date(winner['timestamp'] as string).getTime();
-    if (occurredMs > maxOccurredMs) {
-      maxOccurredMs = occurredMs;
-      asOfFromEvents = winner['timestamp'] as string;
+    // parseTimestamp + formatTimestamp keep the occurrence host-independent
+    // and render timestamps as trimmed UTC, matching the Go peer's
+    // winner.Timestamp.UTC().Format(RFC3339Nano).
+    const occurred = parseTimestamp(winner['timestamp'] as string);
+    if (occurred !== null && occurred.getTime() > maxOccurredMs) {
+      maxOccurredMs = occurred.getTime();
+      asOfFromEvents = formatTimestamp(occurred);
     }
-    const newTs = winner['timestamp'] as string;
+    const newTs = occurred !== null ? formatTimestamp(occurred) : (winner['timestamp'] as string);
     // Seed-side override expiry needs a deterministic anchor: the seed's
     // own observation time, else the event occurrence — a timestamp-less
     // seed must never fall through to the wall clock.

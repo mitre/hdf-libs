@@ -263,6 +263,31 @@ describe('applyChangeEvents defensive edges', () => {
     await expect(applyChangeEvents(seed, [], applyInputs())).rejects.toThrow(/cannot derive asOf/);
   });
 
+  it('falls back to the seed timestamp for asOf when an event timestamp is unparseable', async () => {
+    // A malformed event timestamp → parseTimestamp returns null → asOf is not
+    // taken from the event; it falls back to the seed document's timestamp.
+    const { results } = await applyChangeEvents(
+      MINI_SEED,
+      [rawEvent({ timestamp: 'not-a-date' })],
+      applyInputs(),
+    );
+    const derivation = results['derivation'] as Record<string, unknown>;
+    expect(derivation['asOf']).toBe('2026-07-01T00:00:00Z');
+  });
+
+  it('re-renders an offset-bearing event timestamp as trimmed UTC in asOf (Go parity)', async () => {
+    // Go emits maxOccurred.UTC().Format(RFC3339Nano); a verbatim offset
+    // string would diverge byte-wise between the two implementations.
+    const { results } = await applyChangeEvents(
+      MINI_SEED,
+      [rawEvent({ timestamp: '2026-07-02T05:00:00+02:00' })],
+      applyInputs(),
+    );
+    const derivation = results['derivation'] as Record<string, unknown>;
+    expect(derivation['asOf']).toBe('2026-07-02T03:00:00Z');
+    expect(results['timestamp']).toBe('2026-07-02T03:00:00Z');
+  });
+
   it('warns chainGap on a content-bearing chain for a key the seed does not carry', async () => {
     const { warnings } = await applyChangeEvents(
       MINI_SEED,

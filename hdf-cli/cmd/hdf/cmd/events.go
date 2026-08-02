@@ -67,6 +67,9 @@ func newEventsDeriveCmd() *cobra.Command {
     --system-ref prod.hdf-system.json > events.ndjson`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if startSequence < 0 {
+				return fmt.Errorf("--start-sequence must be >= 0 (the event schema's sequence minimum); got %d", startSequence)
+			}
 			prevDoc, err := loadEventsResults(prevPath, "--prev")
 			if err != nil {
 				return err

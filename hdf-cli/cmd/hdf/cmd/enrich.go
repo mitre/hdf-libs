@@ -5,6 +5,7 @@ import (
 	"os"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -49,17 +50,22 @@ Examples:
 }
 
 func runEnrich(resultsPath, sourcePath, fromFormat, outputPath string, recomputeCVSS bool) error {
-	resultsData, err := os.ReadFile(resultsPath) // #nosec G304 -- CLI reads user-provided file path
+	// readInputFile is the security-gated pipeline: --max-size pre-read
+	// enforcement, symlink policy, regular-file check, BOM stripping.
+	resultsData, err := readInputFile(resultsPath)
 	if err != nil {
 		return fmt.Errorf("failed to read results file: %w", err)
 	}
-	sourceData, err := os.ReadFile(sourcePath) // #nosec G304 -- CLI reads user-provided file path
+	sourceData, err := readInputFile(sourcePath)
 	if err != nil {
 		return fmt.Errorf("failed to read source file: %w", err)
 	}
 
 	if _, typeErr := requireDocumentType(resultsData, []string{"results"}, "hdf enrich"); typeErr != nil {
 		return typeErr
+	}
+	if result := validators.ValidateResults(resultsData); !result.Valid {
+		return fmt.Errorf("not a valid hdf-results document: %s", firstValidationError(result))
 	}
 
 	source, err := resolveEnrichmentSource(fromFormat, sourceData)
@@ -68,7 +74,10 @@ func runEnrich(resultsPath, sourcePath, fromFormat, outputPath string, recompute
 	}
 	printDebug("Enrichment source: %s", source)
 
-	enriched, err := shared.EnrichStix(resultsData, sourceData, shared.EnrichOptions{RecomputeCVSS: recomputeCVSS})
+	enriched, err := shared.EnrichStix(resultsData, sourceData, shared.EnrichOptions{
+		RecomputeCVSS: recomputeCVSS,
+		MaxSize:       int(getMaxFileSize()),
+	})
 	if err != nil {
 		return fmt.Errorf("enrich failed: %w", err)
 	}

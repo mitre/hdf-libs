@@ -18,6 +18,9 @@ export interface EnrichOptions {
   asOf?: Date;
   /** Review horizon in ms before an authored riskAdjustment expires. Default: 90 days. */
   reviewHorizonMs?: number;
+  /** Cap each input's byte size. Default: the shared DEFAULT_MAX_INPUT_SIZE.
+   *  Callers with a user-configurable limit pass it through. */
+  maxSize?: number;
 }
 
 const DEFAULT_REVIEW_HORIZON_MS = 90 * 24 * 60 * 60 * 1000;
@@ -42,18 +45,24 @@ function toRfc3339(d: Date): string {
  * TypeScript peer of shared/go/enrich_stix.go (kept at parity).
  */
 export function enrichStix(resultsInput: string, bundleInput: string, opts?: EnrichOptions): string {
-  validateInputSize(resultsInput, 'enrich-stix');
-  validateInputSize(bundleInput, 'enrich-stix');
+  // 0/undefined → the shared default, matching the Go peer's MaxSize contract.
+  const maxSize = opts?.maxSize ? opts.maxSize : undefined;
+  validateInputSize(resultsInput, 'enrich-stix', maxSize);
+  validateInputSize(bundleInput, 'enrich-stix', maxSize);
   if (!resultsInput) throw new Error('enrich-stix: empty results input');
 
   const bundle = parseStixBundle(bundleInput);
 
-  let doc: Doc;
+  let parsed: unknown;
   try {
-    doc = JSON.parse(resultsInput) as Doc;
+    parsed = JSON.parse(resultsInput);
   } catch (e) {
     throw new Error(`enrich-stix: parsing results: ${(e as Error).message}`);
   }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error('enrich-stix: results input is not a JSON object');
+  }
+  const doc = parsed as Doc;
 
   const reqById = indexRequirementsById(doc);
 
@@ -108,16 +117,18 @@ function recomputeExploitation(bundle: StixBundle, reqById: Map<string, Doc[]>, 
  * relationship (target_ref), or an indicator/report (object_refs).
  */
 function exploitedCves(bundle: StixBundle): Map<string, Doc> {
-  const vulnCve = new Map<string, string>();
+  const vulnCves = new Map<string, string[]>();
   for (const o of bundle.objects) {
     if (o.type === 'vulnerability') {
-      for (const cve of stixObjectCVEs(o)) vulnCve.set(stixObjectId(o), cve);
+      const id = stixObjectId(o);
+      vulnCves.set(id, [...(vulnCves.get(id) ?? []), ...stixObjectCVEs(o)]);
     }
   }
   const exploited = new Map<string, Doc>();
   const mark = (vulnId: string, src: Doc): void => {
-    const cve = vulnCve.get(vulnId);
-    if (cve && !exploited.has(cve)) exploited.set(cve, src);
+    for (const cve of vulnCves.get(vulnId) ?? []) {
+      if (!exploited.has(cve)) exploited.set(cve, src);
+    }
   };
   for (const o of bundle.objects) {
     if (o.type === 'sighting' && typeof o.sighting_of_ref === 'string') {

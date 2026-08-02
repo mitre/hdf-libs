@@ -6,7 +6,6 @@ package diff
 import (
 	"reflect"
 	"sort"
-	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -83,11 +82,13 @@ func ClassifyChangeReasons(
 		reasons = append(reasons, ReasonOverrideRemoved)
 	}
 
-	// Check for override expiration between scans
+	// Check for override expiration between scans. ParseTimestamp keeps
+	// zone-less scan timestamps host-independent (repo timestamp convention);
+	// a zero result means unparseable, so the check is skipped.
 	if oldTimestamp != "" && newTimestamp != "" && oldOverrideCount > 0 {
-		oldTime, errOld := time.Parse(time.RFC3339, oldTimestamp)
-		newTime, errNew := time.Parse(time.RFC3339, newTimestamp)
-		if errOld == nil && errNew == nil {
+		oldTime := hdfutil.ParseTimestamp(oldTimestamp)
+		newTime := hdfutil.ParseTimestamp(newTimestamp)
+		if !oldTime.IsZero() && !newTime.IsZero() {
 			for _, override := range oldReq.StatusOverrides {
 				expiresAt := override.ExpiresAt
 				if expiresAt.After(oldTime) && !expiresAt.After(newTime) {

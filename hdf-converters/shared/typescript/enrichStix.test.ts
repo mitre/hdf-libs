@@ -114,6 +114,19 @@ describe('enrichStix — STIX bundle → results externalReferences[]', () => {
     expect(() => enrichStix(results(), '{"type":"something-else","objects":[]}')).toThrow();
   });
 
+  it('throws a clean error on non-object results roots (null, array, scalar)', () => {
+    expect(() => enrichStix('null', bundle())).toThrow(/not a JSON object/);
+    expect(() => enrichStix('[]', bundle())).toThrow(/not a JSON object/);
+    expect(() => enrichStix('42', bundle())).toThrow(/not a JSON object/);
+  });
+
+  it('drops non-object bundle array elements instead of crashing (Go nil-map parity)', () => {
+    const doc = JSON.parse(
+      enrichStix(results(), '{"type":"bundle","objects":[null, 7, "x"]}'),
+    ) as Doc;
+    expect(doc.externalReferences ?? []).toHaveLength(0);
+  });
+
   it('emits schema-valid references for id-less STIX objects (anyOf description fallback)', () => {
     const b = JSON.stringify({
       type: 'bundle',
@@ -162,6 +175,51 @@ describe('enrichStix — opt-in E:H recompute', () => {
     const refs = ov.externalReferences as Doc[];
     expect(refs).toHaveLength(1);
     expect(refs[0].sourceName).toBe('stix');
+  });
+
+  it('reaches every CVE cited by a multi-CVE vulnerability (Go parity)', () => {
+    const results = JSON.stringify({
+      generator: { name: 'hdf-converters', version: '0.0.0' },
+      baselines: [
+        {
+          name: 'Vulnerability Scan',
+          checksum: { algorithm: 'sha256', value: '0'.repeat(64) },
+          requirements: ['CVE-2024-0001', 'CVE-2024-0002'].map((id) => ({
+            id,
+            title: id,
+            descriptions: [{ label: 'default', data: 'd' }],
+            impact: 0.9,
+            tags: {},
+            cvss: [
+              { version: '3.1', id, baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H', baseScore: 9.8 },
+            ],
+            results: [{ status: 'failed', codeDesc: 'd', startTime: '2025-01-01T00:00:00Z' }],
+          })),
+        },
+      ],
+      statistics: { duration: 1 },
+      timestamp: '2025-06-01T00:00:00Z',
+    });
+    const bundle = JSON.stringify({
+      type: 'bundle',
+      id: 'bundle--multi',
+      objects: [
+        {
+          type: 'vulnerability',
+          spec_version: '2.1',
+          id: 'vulnerability--1',
+          name: 'multi',
+          external_references: [
+            { source_name: 'cve', external_id: 'CVE-2024-0001' },
+            { source_name: 'cve', external_id: 'CVE-2024-0002' },
+          ],
+        },
+        { type: 'sighting', spec_version: '2.1', id: 'sighting--1', sighting_of_ref: 'vulnerability--1' },
+      ],
+    });
+    const doc = JSON.parse(enrichStix(results, bundle, { recomputeCvss: true, asOf })) as Doc;
+    expect((requirementById(doc, 'CVE-2024-0001').statusOverrides as Doc[]) ?? []).toHaveLength(1);
+    expect((requirementById(doc, 'CVE-2024-0002').statusOverrides as Doc[]) ?? []).toHaveLength(1);
   });
 
   it('skips findings with no base vector or a 4.0 base vector (guardrails)', () => {

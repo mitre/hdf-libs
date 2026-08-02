@@ -1,6 +1,6 @@
 # ADR-0006: STIX 2.1 CTI integration — generalized external references + enrichment
 
-- **Status:** Proposed
+- **Status:** Accepted — implemented and merged (PR #162); shipping in v3.5.0
 - **Date:** 2026-07-22
 - **Revised:** 2026-07-26 — incorporates the PR #162 design review (aaronlippold): the CVSS Exploit-Maturity bridge for honest risk recomputation, the converter honesty-boundary split, and `External_Reference` refinements (open `rel`, `anyOf`, `href`, URN note).
 - **Revised:** 2026-07-27 — design pivot after implementing Phase 1. STIX ingestion is modeled as an **enrichment pass over a results doc** (`hdf enrich <results> <source>`), **not** a standalone `stix-to-hdf` → Amendments converter: HDF Amendments has no non-fabricating carrier for inert context (`overrides[]` is required and non-empty; the only `externalReferences[]` carrier is inside `Standalone_Override`, which forces a `requirementId` + status/impact; no lossless-passthrough field exists). `External_Reference` is generalized into an **enrichment envelope** (optional lossless `document` + open `kind`); informational CTI lands inline on the results doc via the `externalReferences[]` carriers already wired in Phase 1, and the `E:A` risk adjustment lands as an inline `Status_Override` in the same pass. A standalone `hdf-enrichment` **document** type is deferred until a second detached-merge consumer exists.

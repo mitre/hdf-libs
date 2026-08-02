@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.5.0",
   "title": "HDF Requirement Change Event",
   "description": "A single continuous-monitoring wire event: one requirement's effective posture changed on one system component. The streaming increment of a systemDrift hdf-comparison — events fold into comparisons and reassemble into hdf-results, they never mutate documents in place. One event per wire document (NDJSON-friendly). The envelope (identity, ordering, hash chain) is the shared Change_Event_Envelope primitive; the payload carries the producer-computable change state, a thin before projection, and the full after requirement (the evidence a responder opens the event for). Design: ADR-0005.",
   "type": "object",
   "unevaluatedProperties": false,
   "allOf": [
     {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Change_Event_Envelope"
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.5.0#/$defs/Change_Event_Envelope"
     },
     {
       "if": {
@@ -30,7 +30,7 @@
       "else": {
         "properties": {
           "after": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.4.0#/$defs/Evaluated_Requirement"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.5.0#/$defs/Evaluated_Requirement"
           }
         }
       }
@@ -56,7 +56,7 @@
       "else": {
         "properties": {
           "before": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Effective_Projection"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.5.0#/$defs/Effective_Projection"
           }
         }
       }
@@ -74,20 +74,20 @@
       "description": "Canonical requirement identifier — the same identity as Requirement_Diff.id and the requirement's id in hdf-results. Together with the envelope's (systemRef, componentId) this forms the durable entity key. A requirement renumbering is emitted as absent + new under the two keys, never an in-place key change; batch comparison reconciles renames via its oldId/newId matching."
     },
     "state": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Event_Requirement_State",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.5.0#/$defs/Event_Requirement_State",
       "description": "The producer-computable subset of Requirement_State: new | absent | updated | fixed | regressed. fixed and regressed carry the direction SARIF's baselineState lacks; project down to SARIF's closed 4 values for external interop."
     },
     "changeReasons": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Event_Change_Reason"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.5.0#/$defs/Event_Change_Reason"
       },
       "description": "Why the state changed. An overrideExpired flip is a different triage than resultChanged: the control did not get worse, a waiver lapsed."
     },
     "before": {
       "oneOf": [
         {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.4.0#/$defs/Effective_Projection"
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.5.0#/$defs/Effective_Projection"
         },
         {
           "type": "null"
@@ -98,7 +98,7 @@
     "after": {
       "oneOf": [
         {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.4.0#/$defs/Evaluated_Requirement"
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.5.0#/$defs/Evaluated_Requirement"
         },
         {
           "type": "null"
@@ -116,7 +116,7 @@
       "systemRef": "apptier.hdf-system.json",
       "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
       "timestamp": "2026-07-22T14:03:11Z",
-      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.5.0",
       "priorChecksum": {
         "algorithm": "sha256",
         "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
@@ -167,7 +167,7 @@
       "systemRef": "apptier.hdf-system.json",
       "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
       "timestamp": "2026-07-21T00:00:05Z",
-      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.5.0",
       "priorChecksum": {
         "algorithm": "sha256",
         "value": "d11c074ab9131807816013a71d986f1ceb2e5871a8a01dee4043391b7a6bf37b"
@@ -232,7 +232,7 @@
       "systemRef": "apptier.hdf-system.json",
       "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
       "timestamp": "2026-07-22T14:03:12Z",
-      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.5.0",
       "priorChecksum": null,
       "requirementId": "RHEL-09-671010",
       "state": "new",
@@ -274,7 +274,7 @@
       "systemRef": "apptier.hdf-system.json",
       "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
       "timestamp": "2026-07-23T08:00:00Z",
-      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.5.0",
       "priorChecksum": {
         "algorithm": "sha256",
         "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
@@ -295,7 +295,7 @@
       "systemRef": "apptier.hdf-system.json",
       "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
       "timestamp": "2026-07-24T10:15:00Z",
-      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.5.0",
       "priorChecksum": {
         "algorithm": "sha256",
         "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"

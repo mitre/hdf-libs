@@ -1,4 +1,4 @@
-import { sha256 } from '@mitre/hdf-utilities';
+import { formatTimestamp, parseTimestamp, sha256 } from '@mitre/hdf-utilities';
 import {
   dedupEvents,
   groupEventChains,
@@ -108,10 +108,13 @@ export async function applyChangeEvents(
     // Apply the winner.
     const winnerSeq = winner['sequence'] as number;
     if (winnerSeq > maxSequence) maxSequence = winnerSeq;
-    const occurredMs = new Date(winner['timestamp'] as string).getTime();
-    if (occurredMs > maxOccurredMs) {
-      maxOccurredMs = occurredMs;
-      asOfFromEvents = winner['timestamp'] as string;
+    // parseTimestamp + formatTimestamp keep the occurrence host-independent
+    // and render asOf as trimmed UTC, matching the Go peer's
+    // winner.Timestamp.UTC().Format(RFC3339Nano).
+    const occurred = parseTimestamp(winner['timestamp'] as string);
+    if (occurred !== null && occurred.getTime() > maxOccurredMs) {
+      maxOccurredMs = occurred.getTime();
+      asOfFromEvents = formatTimestamp(occurred);
     }
 
     if (winner['state'] === 'absent') {

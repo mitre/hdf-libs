@@ -87,7 +87,10 @@ export function computeDisposition(
  * stable under all other document churn. Byte-identical with the Go
  * implementation (ComputeEffectiveChecksum) — the key order of the canonical
  * object is part of the contract. Pass the document timestamp as
- * referenceTimestamp, never wall clock, for determinism.
+ * referenceTimestamp for determinism. A missing or unparseable reference
+ * falls back to the wall clock inside the shared governing-override helper,
+ * so callers that need reproducible output must always supply a valid
+ * timestamp.
  */
 export async function computeEffectiveChecksum(
   requirement: Record<string, unknown>,

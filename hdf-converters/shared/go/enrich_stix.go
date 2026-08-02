@@ -21,6 +21,9 @@ type EnrichOptions struct {
 	// ReviewHorizon is how long an authored riskAdjustment stays valid before
 	// review. Zero → defaultReviewHorizon (90 days).
 	ReviewHorizon time.Duration
+	// MaxSize caps each input's byte size. Zero → DefaultMaxJSONSize. Callers
+	// with a user-configurable limit (the CLI's --max-size) pass it through.
+	MaxSize int
 }
 
 const defaultReviewHorizon = 90 * 24 * time.Hour
@@ -38,10 +41,14 @@ const defaultReviewHorizon = 90 * 24 * time.Hour
 // manipulated structurally (not deserialized into typed HDF structs) so every
 // pre-existing field, including timestamp strings, round-trips unchanged.
 func EnrichStix(resultsInput, bundleInput []byte, opts ...EnrichOptions) ([]byte, error) {
-	if err := ValidateJSONSize(resultsInput, "enrich-stix", 0); err != nil {
+	maxSize := 0
+	if len(opts) > 0 {
+		maxSize = opts[0].MaxSize
+	}
+	if err := ValidateJSONSize(resultsInput, "enrich-stix", maxSize); err != nil {
 		return nil, err
 	}
-	if err := ValidateJSONSize(bundleInput, "enrich-stix", 0); err != nil {
+	if err := ValidateJSONSize(bundleInput, "enrich-stix", maxSize); err != nil {
 		return nil, err
 	}
 	if len(resultsInput) == 0 {
@@ -190,17 +197,15 @@ func recomputeExploitation(bundle *StixBundle, reqByID map[string][]map[string]i
 // is the sighting_of_ref of a sighting, the target_ref of a targets/exploits
 // relationship, or referenced by an indicator/report's object_refs.
 func exploitedCVEs(bundle *StixBundle) map[string]map[string]interface{} {
-	vulnCVE := map[string]string{}
+	vulnCVEs := map[string][]string{}
 	for _, o := range bundle.Objects {
 		if t, _ := o["type"].(string); t == "vulnerability" {
-			for _, cve := range StixObjectCVEs(o) {
-				vulnCVE[StixObjectID(o)] = cve
-			}
+			vulnCVEs[StixObjectID(o)] = append(vulnCVEs[StixObjectID(o)], StixObjectCVEs(o)...)
 		}
 	}
 	exploited := map[string]map[string]interface{}{}
 	mark := func(vulnID string, src map[string]interface{}) {
-		if cve, ok := vulnCVE[vulnID]; ok {
+		for _, cve := range vulnCVEs[vulnID] {
 			if _, exists := exploited[cve]; !exists {
 				exploited[cve] = src
 			}

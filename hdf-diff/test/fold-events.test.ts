@@ -237,6 +237,22 @@ describe('foldChangeEventsIntoComparison defensive edges', () => {
     };
   }
 
+  it('falls back to the seed timestamp when an event timestamp is unparseable', async () => {
+    // Malformed event timestamp → parseTimestamp returns null → the comparison
+    // timestamp falls back to the seed document's timestamp, no crash.
+    const { comparison } = await foldChangeEventsIntoComparison(MINI_SEED, [
+      rawEvent({ timestamp: 'not-a-date' }),
+    ]);
+    expect(comparison['timestamp']).toBe('2026-07-01T00:00:00Z');
+  });
+
+  it('re-renders an offset-bearing event timestamp as trimmed UTC in the comparison timestamp (Go parity)', async () => {
+    const { comparison } = await foldChangeEventsIntoComparison(MINI_SEED, [
+      rawEvent({ timestamp: '2026-07-02T05:00:00+02:00' }),
+    ]);
+    expect(comparison['timestamp']).toBe('2026-07-02T03:00:00Z');
+  });
+
   it('warns absentUnknown and emits no entry for an unknown tombstone', async () => {
     const { comparison, warnings } = await foldChangeEventsIntoComparison(MINI_SEED, [
       rawEvent({ state: 'absent', after: null, before: { effectiveStatus: 'failed', effectiveImpact: 0.5 } }),

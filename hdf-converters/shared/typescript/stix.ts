@@ -29,7 +29,11 @@ export function parseStixBundle(input: string): StixBundle {
   return {
     type: 'bundle',
     id: typeof obj.id === 'string' ? obj.id : undefined,
-    objects: obj.objects as StixObject[],
+    // Non-object array elements (null, numbers, strings) carry nothing usable
+    // and would crash downstream dereferences; drop them here.
+    objects: obj.objects.filter(
+      (o): o is StixObject => typeof o === 'object' && o !== null && !Array.isArray(o),
+    ),
   };
 }
 

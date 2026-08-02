@@ -2581,7 +2581,10 @@ const (
 	Replace Op = "replace"
 )
 
-// The reason a requirement's state changed between sources.
+// The reason a requirement's state changed between sources. 'dispositionChanged' = the governing
+// override type differs between the sources (e.g. a waiver replaced a riskAdjustment);
+// 'effectiveImpactChanged' = the post-override impact score differs while the base impact may be
+// unchanged.
 type ChangeReason string
 
 const (
@@ -2594,6 +2597,8 @@ const (
 	ChangeReasonOverrideRemoved  ChangeReason = "overrideRemoved"
 	ChangeReasonResultChanged    ChangeReason = "resultChanged"
 	ControlMapped                ChangeReason = "controlMapped"
+	DispositionChanged           ChangeReason = "dispositionChanged"
+	EffectiveImpactChanged       ChangeReason = "effectiveImpactChanged"
 	MetadataChanged              ChangeReason = "metadataChanged"
 	ScannerChanged               ChangeReason = "scannerChanged"
 	TargetChanged                ChangeReason = "targetChanged"

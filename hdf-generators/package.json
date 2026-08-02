@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-generators",
-  "version": "3.4.4",
+  "version": "3.5.0",
   "description": "Generate InSpec profile stubs from HDF Baseline definitions",
   "publishConfig": {
     "access": "public"

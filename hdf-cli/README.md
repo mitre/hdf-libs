@@ -48,17 +48,21 @@ Download the latest release for your platform from [GitHub Releases](https://git
 - Linux (amd64, arm64)
 - Windows (amd64)
 
+Release assets are versioned, so set `VERSION` to the release you want (without the `v` prefix):
+
 ```bash
+VERSION=3.5.0
+
 # Example: download and install on macOS (Apple Silicon)
-curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_darwin_arm64.tar.gz | tar xz
+curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_darwin_arm64.tar.gz | tar xz
 sudo mv hdf /usr/local/bin/
 
 # Linux (amd64)
-curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_linux_amd64.tar.gz | tar xz
+curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_linux_amd64.tar.gz | tar xz
 sudo mv hdf /usr/local/bin/
 ```
 
-Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.4.0_darwin_arm64.tar.gz`).
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.5.0_darwin_arm64.tar.gz`).
 
 ### Build from source
 
@@ -121,6 +125,23 @@ $ echo '{"not":"hdf"}' | hdf validate -
   Use --type to specify: results, baseline, comparison, system, plan, amendments, evidence-package
 ```
 
+#### validate threshold
+
+Validate HDF results against compliance thresholds — the CI/CD compliance-gate companion to `hdf generate threshold`. Exit code 0 if all thresholds pass, 1 on any violation.
+
+```
+USAGE
+  hdf validate threshold <results.json> [flags]
+
+FLAGS
+  -T, --template string   Threshold YAML template file
+  -I, --inline string     Inline threshold (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
+
+EXAMPLES
+  hdf validate threshold results.json -T threshold.yaml
+  hdf validate threshold results.json -I "{compliance.min: 80}, {failed.total.max: 0}"
+```
+
 ### list
 
 Summarize any HDF document, or expand a section to item-level detail with `--detail`. The default summary reports document counts and, for results, the status breakdown — this replaces the former `info` and `stats` commands.
@@ -128,6 +149,7 @@ Summarize any HDF document, or expand a section to item-level detail with `--det
 ```
 USAGE
   hdf list <file> [file...] [--detail <section>] [flags]
+  (alias: hdf ls)
 
 DETAIL SECTIONS by document type
   results:           requirements, baselines, components
@@ -142,6 +164,7 @@ DETAIL SECTIONS by document type
 
 FLAGS
   -s, --status string    Filter requirements by status: passed, failed, error, not_applicable, not_reviewed
+  -a, --all              Show all details (expand every section)
 
 EXAMPLES
   hdf list results.json                              # summary (counts + status breakdown)
@@ -184,17 +207,20 @@ USAGE
   hdf query <file> [flags]
 
 FLAGS
-  -s, --status string      Filter by status: passed, failed, error, not_applicable, not_reviewed
-      --severity string    Filter by severity (repeatable, OR logic): critical, high, medium, low, informational
-      --impact string      Filter by impact value (e.g., ">0.5", ">=0.7", "0.5")
-      --cci string         Filter by CCI identifier (e.g., CCI-000366)
-      --nist string        Filter by NIST control (e.g., AC-2, CM-6*)
-      --id string          Filter by requirement ID, STIG ID, GID, or group title
-  -t, --tag string         Filter by tag key:value (e.g., severity:high)
-      --search string      Search in control title and description
-  -p, --baseline string    Filter by profile name
-  -c, --count              Show only the count of matching controls
-  -l, --limit int          Limit number of results (0 = unlimited)
+  -s, --status stringArray     Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed
+      --severity stringArray   Filter by severity (repeatable, OR logic): critical, high, medium, low, informational
+      --impact string          Filter by impact value (e.g., ">0.5", ">=0.7", "0.5")
+      --cci stringArray        Filter by CCI identifier (repeatable, OR logic; e.g., CCI-000366)
+      --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
+      --id string              Filter by requirement ID, STIG ID, GID, or group title
+  -t, --tag stringArray        Filter by tag key:value (repeatable, OR logic; e.g., severity:high)
+      --search string          Search in control title and description
+  -p, --baseline string        Filter by profile name
+  -c, --count                  Show only the count of matching controls
+  -l, --limit int              Limit number of results (0 = unlimited)
+
+Repeatable filters (`--status`, `--severity`, `--cci`, `--nist`, `--tag`) OR their own
+values together; different filter types combine with AND.
 
 EXAMPLES
   hdf query results.json --status failed
@@ -236,8 +262,13 @@ USAGE
 
 FLAGS
   -f, --format string      Output format: table, json, markdown (default "table")
+  -o, --output string      Write output to file instead of stdout
       --stat               Summary counts only (like git diff --stat)
+      --all                Include unchanged requirements/components in output
+      --name-only          List only changed requirement IDs
+      --group-by string    Group results by label key (e.g., baseline)
       --regressed          Show only regressions (also --fixed, --new, --absent)
+  -q, --quiet              Suppress output, return exit code only (implies --exit-code)
       --exit-code          POSIX diff exit codes: 0=identical, 1=differences, 2=error
       --detailed-exitcode  Nuanced codes: 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift
       --system string      System document for component-aware comparison
@@ -245,8 +276,10 @@ FLAGS
 
 EXAMPLES
   hdf diff old-scan.json new-scan.json
-  hdf diff old-scan.json new-scan.json -f markdown
+  hdf diff old-scan.json new-scan.json -f markdown -o report.md
   hdf diff old-scan.json new-scan.json --regressed
+  hdf diff old-scan.json new-scan.json --name-only
+  hdf diff old-scan.json new-scan.json --group-by baseline
   hdf diff old-scan.json new-scan.json --detailed-exitcode   # exit code encodes outcome
   hdf diff --sbom old.cdx.json new.cdx.json
 ```
@@ -330,8 +363,20 @@ INPUT/OUTPUT
   <file>      File path or "-" for stdin
   -o <output> Output file path; defaults to stdout if omitted
 
+FLAGS
+      --from string           Source format (auto-detected if omitted)
+      --to string             Destination format (default: hdf)
+      --catalog string        OSCAL catalog JSON path (required for oscal-profile → HDF Baseline)
+      --component-id string   Set componentId on all components in the output
+      --labels strings        Labels applied to all targets (key=value, e.g. --labels system=Portal,env=prod)
+      --nist-rev int          NIST 800-53 revision for emitted control tags (4 or 5; default 5)
+      --nist-strict           Fail if input references rules mapped only at a different NIST revision
+      --no-validate           Skip schema validation of converter output before writing
+  -f, --force                 Allow overwriting the input file with output
+
 EXAMPLES
   hdf convert scan.nessus -o results.json
+  hdf convert --from oscal-profile profile.json --catalog catalog.json -o baseline.json
   hdf convert --from nessus scan.nessus -o results.json
   hdf convert --from sarif findings.sarif -o results.json
   hdf convert --from gosec gosec-output.json -o results.json
@@ -602,6 +647,8 @@ passed:
 Fetch security data from a live API and convert to HDF in a single step. No intermediate files needed.
 
 All fetch subcommands support `--format raw` to skip HDF conversion and return the tool's native output, and `--output` / `-o` to write to a file instead of stdout.
+
+For endpoints behind a custom TLS chain, every fetch subcommand accepts `--ca-cert <pem>` (a PEM CA bundle for corporate/custom CAs) and `--insecure` (skip TLS verification — prints a warning; use only against trusted hosts).
 
 Credentials are resolved from environment variables or tool-specific config files. See [Credential Handling](#credential-handling).
 
@@ -917,8 +964,10 @@ These flags apply to all commands.
 | `openvex` | | OpenVEX statements → HDF Amendments (JSON) |
 | `oscal` | | OSCAL document (auto-detect type) |
 | `oscal-sar` | `oscal-assessment-results` | OSCAL Assessment Results → HDF Results |
+| `oscal-assessment-plan` | | OSCAL Assessment Plan → HDF Plan |
 | `oscal-catalog` | | OSCAL Catalog → HDF Baseline |
 | `oscal-component-definition` | | OSCAL Component Definition → HDF Baseline |
+| `oscal-profile` | | OSCAL Profile → HDF Baseline (requires `--catalog`) |
 | `oscal-ssp` | | OSCAL System Security Plan → HDF System |
 | `oscal-poam` | | OSCAL Plan of Action and Milestones → HDF Amendments |
 | `prisma` | | Prisma Cloud/Twistlock container scan (JSON) |

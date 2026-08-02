@@ -72,7 +72,10 @@ func ComputeDisposition(req hdf.EvaluatedRequirement, referenceTimestamp string)
 // It flips exactly when the requirement's operative status, impact, or
 // disposition changes, and is stable under all other document churn
 // (results detail, timestamps, tags). referenceTimestamp anchors override
-// expiry — pass the document timestamp, never wall clock, for determinism.
+// expiry — pass the document timestamp for determinism. An empty or
+// unparseable reference falls back to the wall clock inside the shared
+// governing-override helper, so callers that need reproducible output must
+// always supply a valid timestamp.
 func ComputeEffectiveChecksum(req hdf.EvaluatedRequirement, referenceTimestamp string) *hdf.Checksum {
 	fields := effectiveFields{
 		Status: ComputeEffectiveStatus(req, referenceTimestamp),

@@ -1,6 +1,6 @@
 # ADR-0005: HDF continuous-monitoring requirement-change-event stream — schema + kernel (speculative build)
 
-- **Status:** Proposed — revision 2, incorporating design review feedback (PR #161)
+- **Status:** Accepted — implemented and merged (PR #161); shipping in v3.5.0
 - **Date:** 2026-07-22 (revised 2026-07-26)
 - **Deciders:** Will Dower
 - **Supersedes the deferral in:** **[ADR-0003](adr-0003-hdf-conmon-streaming.md)** (which recorded the target architecture but gated the build on an event producer existing). This ADR follows up on ADR-0003: we are now picking up the streaming direction and advancing it to ADR-0003's "Phase 2 — streaming design ADR + delta-event schema."

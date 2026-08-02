@@ -115,6 +115,16 @@ func TestEnrichCmd_ResultsPositionalMustBeResults(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestEnrichCmd_RejectsSchemaInvalidResults(t *testing.T) {
+	// A doc that sniffs as results (has a baselines key) but is not valid HDF
+	// must be rejected at the boundary, matching the events commands.
+	bad := filepath.Join(t.TempDir(), "bad.json")
+	require.NoError(t, os.WriteFile(bad, []byte(`{"baselines":[{"bogus":true}]}`), 0o600))
+	_, _, err := executeCommand("enrich", bad, enrichFixturePath("poison-ivy-stix21.json"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not a valid hdf-results document")
+}
+
 func TestEnrichCmd_Recompute(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "out.json")
 	_, _, err := executeCommand("enrich",
