@@ -12,6 +12,9 @@
               "version": "2.3.0"
             }
           ],
+          "cwe": [
+            "CWE-400"
+          ],
           "descriptions": [
             {
               "data": "Affected versions of `timespan`...",
@@ -39,9 +42,6 @@
             "cci": [
               "CCI-001310"
             ],
-            "cweIds": [
-              "CWE-400"
-            ],
             "nist": [
               "SI-10"
             ]
@@ -59,6 +59,9 @@
               "purl": "pkg:npm/uglify-js@2.4.24",
               "version": "2.4.24"
             }
+          ],
+          "cwe": [
+            "CWE-400"
           ],
           "descriptions": [
             {
@@ -87,8 +90,8 @@
             "cci": [
               "CCI-001310"
             ],
-            "cweIds": [
-              "CWE-400"
+            "cve": [
+              "CVE-2022-2053"
             ],
             "nist": [
               "SI-10"

@@ -243,7 +243,7 @@ func TestConvertDeptrack_AllResultsFailed(t *testing.T) {
 	}
 }
 
-// ---- Tags include CWE info ----
+// ---- Tags: NIST/CCI retained, scoring moved to structured fields ----
 
 func TestConvertDeptrack_Tags(t *testing.T) {
 	input := loadFixture(t, "input/fpf-default.json")
@@ -264,9 +264,64 @@ func TestConvertDeptrack_Tags(t *testing.T) {
 	require.NotNil(t, cci, "cci should be present")
 	assert.NotEmpty(t, cci)
 
-	// cweIds
+	// cweIds tag is retired — CWE now lives in the first-class cwe[] field.
 	_, hasCweIds := req.Tags["cweIds"]
-	assert.True(t, hasCweIds, "cweIds should be present")
+	assert.False(t, hasCweIds, "cweIds tag should be removed (moved to cwe[])")
+}
+
+// ---- CWE → first-class requirement.cwe[] ----
+
+func TestConvertDeptrack_CweField(t *testing.T) {
+	input := loadFixture(t, "input/fpf-default.json")
+	result, err := ConvertDeptrackToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Both findings carry cwes:[{cweId:400}] → cwe:["CWE-400"].
+	for _, req := range result.Baselines[0].Requirements {
+		assert.Equal(t, []string{"CWE-400"}, req.Cwe, "req %q should carry CWE-400 in cwe[]", req.ID)
+	}
+}
+
+// getCweIDs / cwe[] empty-branch: a finding with no cwes emits no cwe[].
+func TestConvertDeptrack_CweField_Absent(t *testing.T) {
+	input := []byte(`{"meta":{},"project":{"uuid":"p1","name":"t"},"findings":[{"component":{"name":"c"},"vulnerability":{"severity":"LOW"},"matrix":"m1"}]}`)
+	result, err := ConvertDeptrackToHDF(input, testVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.Cwe, "no cwes in source → cwe[] omitted")
+	_, hasCve := req.Tags["cve"]
+	assert.False(t, hasCve, "no aliases in source → tags.cve omitted")
+}
+
+// ---- CVE → tags.cve (from aliases[].cveId; the id is a UUID composite) ----
+
+func TestConvertDeptrack_CveTag(t *testing.T) {
+	input := loadFixture(t, "input/fpf-default.json")
+	result, err := ConvertDeptrackToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Finding 1 (timespan) has no aliases → no tags.cve.
+	first := shared.MustFindRequirement(t, result.Baselines[0].Requirements,
+		"ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46")
+	_, hasCve := first.Tags["cve"]
+	assert.False(t, hasCve, "finding without aliases should have no tags.cve")
+
+	// Finding 2 (uglify-js) has aliases[0].cveId = CVE-2022-2053.
+	second := shared.MustFindRequirement(t, result.Baselines[0].Requirements,
+		"ca4f2da9-0fad-4a13-92d7-f627f3168a56:979f87f5-eaf5-4095-9d38-cde17bf9228e:701a3953-666b-4b7a-96ca-e1e6a3e1def3")
+	assert.Equal(t, []string{"CVE-2022-2053"}, hdfutil.SafeStringSlice(second.Tags["cve"]))
+	assert.NotContains(t, second.Cwe, "CVE-2022-2053", "CVE must not leak into cwe[]")
+}
+
+// getCVEs branches: empty cveId skipped, duplicate cveId deduped.
+func TestGetCVEs_Branches(t *testing.T) {
+	assert.Nil(t, getCVEs(DeptrackVulnerability{}), "no aliases → nil")
+	assert.Nil(t, getCVEs(DeptrackVulnerability{Aliases: []DeptrackAlias{{CveID: ""}}}),
+		"empty cveId is skipped")
+	assert.Equal(t, []string{"CVE-2021-44228"},
+		getCVEs(DeptrackVulnerability{Aliases: []DeptrackAlias{
+			{CveID: "CVE-2021-44228"}, {CveID: "CVE-2021-44228"}, {CveID: ""},
+		}}), "duplicates deduped, empties dropped")
 }
 
 // ---- No vulnerabilities fixture ----
