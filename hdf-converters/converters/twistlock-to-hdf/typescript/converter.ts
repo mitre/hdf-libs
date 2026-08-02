@@ -1,9 +1,10 @@
-import { parseJSON, cvssScoreToSeverity, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildCvss as buildSharedCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -18,9 +19,7 @@ import {
   createResult,
   TargetType,
   VerificationMethodEnum,
-  CVSSSeverity,
   Ecosystem,
-  Version as CvssVersion,
   createMinimalBaseline,
   createRequirement,
   type Description,
@@ -137,33 +136,6 @@ function buildSummary(result: TwistlockResult): string {
 }
 
 /**
- * Detects CVSS schema version enum from the vector prefix. Defaults to 3.1
- * since modern Twistlock exclusively emits 3.x output.
- */
-export function cvssVersionFromVector(vector: string | undefined): CvssVersion {
-  if (!vector) return CvssVersion.The31;
-  if (vector.startsWith('CVSS:2.0/')) return CvssVersion.The20;
-  if (vector.startsWith('CVSS:3.0/')) return CvssVersion.The30;
-  if (vector.startsWith('CVSS:4.0/')) return CvssVersion.The40;
-  return CvssVersion.The31;
-}
-
-/**
- * Maps cvssScoreToSeverity('low'|'medium'|...) into the CVSSSeverity enum.
- */
-export function cvssSeverityFromScore(score: number): CVSSSeverity | undefined {
-  const band = cvssScoreToSeverity(score);
-  switch (band) {
-    case 'none': return CVSSSeverity.None;
-    case 'low': return CVSSSeverity.Low;
-    case 'medium': return CVSSSeverity.Medium;
-    case 'high': return CVSSSeverity.High;
-    case 'critical': return CVSSSeverity.Critical;
-    default: return undefined;
-  }
-}
-
-/**
  * Builds a Cvss entry from a Twistlock vulnerability. Returns undefined only
  * when neither a score nor a vector is available. When the vendor emits a
  * score but no vector (common in Twistlock/Prisma Cloud output), the Cvss
@@ -177,18 +149,12 @@ export function buildCvss(vuln: TwistlockVuln): Cvss | undefined {
   const hasVector = !!vuln.vector;
   if (!hasScore && !hasVector) return undefined;
 
-  const cv: Cvss = {version: cvssVersionFromVector(vuln.vector)};
-  if (hasScore) {
-    cv.baseScore = vuln.cvss as number;
-    const sev = cvssSeverityFromScore(vuln.cvss as number);
-    if (sev !== undefined) cv.baseSeverity = sev;
-  }
-  if (hasVector) {
-    cv.baseVector = vuln.vector as string;
-  }
-  const source = vuln.cve ?? vuln.id;
-  if (source) cv.source = source;
-  return cv;
+  return buildSharedCvss({
+    version: cvssVersionFromVector(vuln.vector),
+    baseScore: hasScore ? (vuln.cvss as number) : undefined,
+    baseVector: vuln.vector,
+    source: vuln.cve ?? vuln.id,
+  });
 }
 
 const CWE_REGEX = /cwe[-_]?(\d+)/gi;

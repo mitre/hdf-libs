@@ -226,37 +226,19 @@ func buildCvss(f ddFinding) []hdf.Cvss {
 		if score == nil && (vector == nil || *vector == "") {
 			return
 		}
-		entry := hdf.Cvss{Version: version}
-		if score != nil {
-			s := *score
-			entry.BaseScore = &s
-			sev := cvssBand(s)
-			entry.BaseSeverity = &sev
+		var baseVector string
+		if vector != nil {
+			baseVector = *vector
 		}
-		if vector != nil && *vector != "" {
-			v := *vector
-			entry.BaseVector = &v
-		}
-		out = append(out, entry)
+		out = append(out, shared.BuildCvss(shared.CvssInput{
+			Version:    version,
+			BaseScore:  score,
+			BaseVector: baseVector,
+		}))
 	}
 	add(hdf.The31, f.Cvssv3, f.Cvssv3Score)
 	add(hdf.The40, f.Cvssv4, f.Cvssv4Score)
 	return out
-}
-
-func cvssBand(score float64) hdf.CVSSSeverity {
-	switch hdfutil.CvssScoreToSeverity(score) {
-	case "critical":
-		return hdf.CVSSSeverityCritical
-	case "high":
-		return hdf.CVSSSeverityHigh
-	case "medium":
-		return hdf.CVSSSeverityMedium
-	case "low":
-		return hdf.CVSSSeverityLow
-	default:
-		return hdf.None
-	}
 }
 
 func buildEpss(f ddFinding) *hdf.Epss {

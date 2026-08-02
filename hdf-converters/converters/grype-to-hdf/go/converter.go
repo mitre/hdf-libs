@@ -321,40 +321,6 @@ func buildMatchCode(match GrypeMatch) string {
 	return buf.String()
 }
 
-// cvssVersionToSchema maps a Grype-emitted CVSS version string to the schema
-// Version enum. Grype emits "2.0", "3.0", "3.1", and "4.0". Unrecognized
-// values default to "3.1" (the most common in modern scans).
-func cvssVersionToSchema(v string) hdf.Version {
-	switch v {
-	case "2.0":
-		return hdf.The20
-	case "3.0":
-		return hdf.The30
-	case "4.0":
-		return hdf.The40
-	default:
-		return hdf.The31
-	}
-}
-
-// cvssBandSeverity converts a CVSS base score to the schema CVSSSeverity enum.
-// Delegates to hdfutil.CvssScoreToSeverity so band thresholds stay aligned
-// with the rest of the codebase.
-func cvssBandSeverity(score float64) hdf.CVSSSeverity {
-	switch hdfutil.CvssScoreToSeverity(score) {
-	case "critical":
-		return hdf.CVSSSeverityCritical
-	case "high":
-		return hdf.CVSSSeverityHigh
-	case "medium":
-		return hdf.CVSSSeverityMedium
-	case "low":
-		return hdf.CVSSSeverityLow
-	default:
-		return hdf.None
-	}
-}
-
 // buildCvssEntries maps every entry in vulnerability.cvss[] to a schema Cvss
 // primitive. Related-vulnerability CVSS arrays are NOT merged in — the schema
 // contract is "one entry per source-CVE CVSS metric set", and the source CVE
@@ -369,22 +335,13 @@ func buildCvssEntries(vuln GrypeVulnerability) []hdf.Cvss {
 		if c.Metrics != nil {
 			baseScore = c.Metrics.BaseScore
 		}
-		severity := cvssBandSeverity(baseScore)
-		source := vuln.ID
 		bs := baseScore
-		entry := hdf.Cvss{
-			Version:      cvssVersionToSchema(c.Version),
-			BaseScore:    &bs,
-			BaseSeverity: &severity,
-		}
-		if c.Vector != "" {
-			bv := c.Vector
-			entry.BaseVector = &bv
-		}
-		if source != "" {
-			entry.Source = &source
-		}
-		out = append(out, entry)
+		out = append(out, shared.BuildCvss(shared.CvssInput{
+			Version:    shared.CvssVersionFromString(c.Version),
+			BaseScore:  &bs,
+			BaseVector: c.Vector,
+			Source:     vuln.ID,
+		}))
 	}
 	return out
 }

@@ -636,9 +636,7 @@ func TestCvssSeverityMapping(t *testing.T) {
 		{9.5, hdf.CVSSSeverityCritical},
 	}
 	for _, tt := range tests {
-		got := cvssSeverity(tt.score)
-		require.NotNil(t, got, "score %v should map to severity", tt.score)
-		assert.Equal(t, tt.want, *got)
+		assert.Equal(t, tt.want, shared.CvssSeverityFromScore(tt.score))
 	}
 }
 

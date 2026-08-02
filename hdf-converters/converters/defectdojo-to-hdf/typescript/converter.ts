@@ -1,7 +1,6 @@
 import {
   type Checksum,
   type Cvss,
-  CVSSSeverity,
   type Description,
   type Epss,
   type EvaluatedBaseline,
@@ -16,8 +15,9 @@ import {
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
-import {cvssScoreToSeverity, severityToImpact, parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
+import {severityToImpact, parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
 import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, validateInputSize, buildHdfResults, mapCWEToNIST} from '../../../shared/typescript/converterutil.js';
+import {buildCvss as buildSharedCvss} from '../../../shared/typescript/cvss.js';
 
 // DefectDojo /api/v2/findings/ input model (subset). The live fetcher produces
 // the same bytes; see converter.go for the design rationale (risk-acceptance
@@ -139,32 +139,11 @@ function cveList(f: DDFinding): string[] {
   return (f.vulnerability_ids ?? []).map(v => v.vulnerability_id).filter(Boolean);
 }
 
-function cvssBand(score: number): CVSSSeverity {
-  switch (cvssScoreToSeverity(score)) {
-    case 'critical':
-      return CVSSSeverity.Critical;
-    case 'high':
-      return CVSSSeverity.High;
-    case 'medium':
-      return CVSSSeverity.Medium;
-    case 'low':
-      return CVSSSeverity.Low;
-    default:
-      return CVSSSeverity.None;
-  }
-}
-
 function buildCvss(f: DDFinding): Cvss[] {
   const out: Cvss[] = [];
   const add = (version: CvssVersion, vector?: string | null, score?: number | null): void => {
     if ((score === undefined || score === null) && !vector) return;
-    const entry: Cvss = {version};
-    if (score !== undefined && score !== null) {
-      entry.baseScore = score;
-      entry.baseSeverity = cvssBand(score);
-    }
-    if (vector) entry.baseVector = vector;
-    out.push(entry);
+    out.push(buildSharedCvss({version, baseScore: score, baseVector: vector}));
   };
   add(CvssVersion.The31, f.cvssv3, f.cvssv3_score);
   add(CvssVersion.The40, f.cvssv4, f.cvssv4_score);

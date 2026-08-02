@@ -120,45 +120,6 @@ func buildSummary(result TwistlockResult) string {
 		vulnTotal, complianceTotal)
 }
 
-// cvssVersionFromVector returns the schema CVSS Version enum corresponding to a
-// vector string prefix (CVSS:2.0/, CVSS:3.0/, CVSS:3.1/, CVSS:4.0/). When the
-// prefix is absent or unrecognized, defaults to "3.1" since modern Twistlock
-// exclusively emits 3.x output.
-func cvssVersionFromVector(vector string) hdf.Version {
-	switch {
-	case strings.HasPrefix(vector, "CVSS:2.0/"):
-		return hdf.The20
-	case strings.HasPrefix(vector, "CVSS:3.0/"):
-		return hdf.The30
-	case strings.HasPrefix(vector, "CVSS:4.0/"):
-		return hdf.The40
-	default:
-		return hdf.The31
-	}
-}
-
-// cvssSeverityFromScore converts the band string returned by
-// hdfutil.CvssScoreToSeverity into the schema CVSSSeverity enum.
-func cvssSeverityFromScore(score float64) *hdf.CVSSSeverity {
-	band := hdfutil.CvssScoreToSeverity(score)
-	var sev hdf.CVSSSeverity
-	switch band {
-	case "none":
-		sev = hdf.None
-	case "low":
-		sev = hdf.CVSSSeverityLow
-	case "medium":
-		sev = hdf.CVSSSeverityMedium
-	case "high":
-		sev = hdf.CVSSSeverityHigh
-	case "critical":
-		sev = hdf.CVSSSeverityCritical
-	default:
-		return nil
-	}
-	return &sev
-}
-
 // buildCvss assembles a Cvss entry from the Twistlock vulnerability fields.
 // Returns nil only when neither a score nor a vector is available. When the
 // vendor emits a score but no vector (common in Twistlock/Prisma Cloud
@@ -168,27 +129,21 @@ func buildCvss(vuln TwistlockVuln) *hdf.Cvss {
 	if vuln.Vector == "" && vuln.CVSS == 0 {
 		return nil
 	}
-	cv := hdf.Cvss{
-		Version: cvssVersionFromVector(vuln.Vector),
-	}
-	if vuln.CVSS > 0 {
-		score := vuln.CVSS
-		cv.BaseScore = &score
-	}
-	if vuln.Vector != "" {
-		v := vuln.Vector
-		cv.BaseVector = &v
-	}
 	source := vuln.CVE
 	if source == "" {
 		source = vuln.ID
 	}
-	if source != "" {
-		cv.Source = &source
-	}
+	var scorePtr *float64
 	if vuln.CVSS > 0 {
-		cv.BaseSeverity = cvssSeverityFromScore(vuln.CVSS)
+		score := vuln.CVSS
+		scorePtr = &score
 	}
+	cv := shared.BuildCvss(shared.CvssInput{
+		Version:    shared.CvssVersionFromVector(vuln.Vector),
+		BaseScore:  scorePtr,
+		BaseVector: vuln.Vector,
+		Source:     source,
+	})
 	return &cv
 }
 
