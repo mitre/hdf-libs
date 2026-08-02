@@ -615,3 +615,25 @@ func TestConvertCycloneDX_VerificationMethodNotSet(t *testing.T) {
 			"requirement %q: cyclonedx must not assert verificationMethod (VEX may be human-authored)", req.ID)
 	}
 }
+
+func TestCvssVersionFromMethod(t *testing.T) {
+	cases := []struct {
+		name   string
+		method string
+		vector string
+		want   hdf.Version
+	}{
+		{"v2 bare vector rescued by method", "CVSSv2", "AV:N/AC:L/Au:N/C:P/I:P/A:P", hdf.The20},
+		{"v4 bare vector rescued by method", "CVSSv4", "AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N", hdf.The40},
+		{"prefixed vector wins over method (3.0)", "CVSSv31", "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", hdf.The30},
+		{"prefixed vector wins over method (3.1)", "CVSSv3", "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", hdf.The31},
+		{"prefixless v3 keeps 3.1 default", "CVSSv3", "AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", hdf.The31},
+		{"v31 no vector defaults", "CVSSv31", "", hdf.The31},
+		{"empty method and vector defaults", "", "", hdf.The31},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.Equal(t, c.want, cvssVersionFromMethod(c.method, c.vector))
+		})
+	}
+}

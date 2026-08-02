@@ -102,6 +102,24 @@ var cvssMethods = map[string]bool{
 	"CVSSv4":  true,
 }
 
+// cvssVersionFromMethod derives the CVSS version, preferring an explicit
+// "CVSS:x.y/" vector prefix (the precise 3.0-vs-3.1 signal) and using the
+// CycloneDX rating method to rescue the prefix-less v2/v4 vectors that would
+// otherwise default to 3.1.
+func cvssVersionFromMethod(method, vector string) hdf.Version {
+	if strings.HasPrefix(vector, "CVSS:") {
+		return shared.CvssVersionFromVector(vector)
+	}
+	switch method {
+	case "CVSSv2":
+		return shared.CvssVersionFromString("2.0")
+	case "CVSSv4":
+		return shared.CvssVersionFromString("4.0")
+	default:
+		return shared.CvssVersionFromVector(vector)
+	}
+}
+
 // maxImpact computes the maximum impact across all ratings for a vulnerability.
 // Prefers CVSS score/10 when available, falls back to severityToImpact().
 func maxImpact(ratings []CDXRating) float64 {
@@ -151,7 +169,7 @@ func buildCvssEntries(ratings []CDXRating) []hdf.Cvss {
 			source = r.Source.Name
 		}
 		entries = append(entries, shared.BuildCvss(shared.CvssInput{
-			Version:    shared.CvssVersionFromVector(r.Vector),
+			Version:    cvssVersionFromMethod(r.Method, r.Vector),
 			BaseScore:  r.Score,
 			BaseVector: r.Vector,
 			Source:     source,

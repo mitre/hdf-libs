@@ -6,7 +6,11 @@ import {
 import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { parseBom, buildBom, BOMType, type BuildBomParts } from '../../../shared/typescript/bom/index.js';
 import { canonicalize } from '../../../shared/typescript/exportmap.js';
-import { buildCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
+import {
+  buildCvss,
+  cvssVersionFromVector,
+  cvssVersionFromString,
+} from '../../../shared/typescript/cvss.js';
 import type {
   Component,
   Cvss,
@@ -142,6 +146,26 @@ function maxImpact(ratings: CycloneDXRating[]): number {
  * qualitative severity (method "other") carry no CVSS metrics and are left out,
  * their severity already reflected in the requirement impact.
  */
+// Derive the CVSS version, preferring an explicit "CVSS:x.y/" vector prefix
+// (the precise 3.0-vs-3.1 signal) and using the CycloneDX rating method to
+// rescue the prefix-less v2/v4 vectors that would otherwise default to 3.1.
+function cvssVersionFromMethod(
+  method: string | undefined,
+  vector: string | undefined
+) {
+  if (vector !== undefined && vector.startsWith('CVSS:')) {
+    return cvssVersionFromVector(vector);
+  }
+  switch (method) {
+    case 'CVSSv2':
+      return cvssVersionFromString('2.0');
+    case 'CVSSv4':
+      return cvssVersionFromString('4.0');
+    default:
+      return cvssVersionFromVector(vector);
+  }
+}
+
 function buildCvssEntries(ratings: CycloneDXRating[]): Cvss[] {
   const entries: Cvss[] = [];
   for (const r of ratings) {
@@ -154,7 +178,7 @@ function buildCvssEntries(ratings: CycloneDXRating[]): Cvss[] {
     }
     entries.push(
       buildCvss({
-        version: cvssVersionFromVector(r.vector),
+        version: cvssVersionFromMethod(r.method, r.vector),
         baseScore: r.score,
         baseVector: r.vector,
         source: r.source?.name,

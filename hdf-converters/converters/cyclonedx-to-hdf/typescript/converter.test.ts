@@ -559,4 +559,43 @@ describe('cyclonedx to HDF converter', async () => {
       }
     });
   });
+
+  describe('cvss version from rating method', () => {
+    it('derives the version from rating.method when the vector lacks a CVSS prefix', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'CVE-2021-0001',
+            ratings: [
+              {
+                method: 'CVSSv2',
+                vector: 'AV:N/AC:L/Au:N/C:P/I:P/A:P',
+                score: 6.8,
+              },
+            ],
+          },
+          {
+            id: 'CVE-2021-0002',
+            ratings: [
+              {
+                method: 'CVSSv4',
+                vector:
+                  'AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N',
+                score: 9.3,
+              },
+            ],
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      const versions = hdf.baselines
+        .flatMap((b) => b.requirements)
+        .flatMap((r) => r.cvss ?? [])
+        .map((c) => c.version);
+      expect(versions).toContain('2.0');
+      expect(versions).toContain('4.0');
+    });
+  });
 });
