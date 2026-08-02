@@ -3,6 +3,7 @@ package shared
 import (
 	"bytes"
 	"encoding/json"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,11 +63,13 @@ func NewSchemaValidatorWithResources(t *testing.T, schemaPath string, companions
 		doc, err := tekuri.UnmarshalJSON(bytes.NewReader(raw))
 		require.NoError(t, err, "parse schema %s", schemaPath)
 		// Register/compile under the schema's own $id when present so its
-		// internal $refs resolve against the right base URI.
-		url := "file://" + abs
+		// internal $refs resolve against the right base URI; otherwise use a
+		// file URL derived from the path (a bare "file://"+path is not a valid
+		// URL on Windows — see fileURL).
+		baseURI := fileURL(abs)
 		if m, ok := doc.(map[string]any); ok {
 			if id, ok := m["$id"].(string); ok && id != "" {
-				url = id
+				baseURI = id
 			}
 		}
 		c := tekuri.NewCompiler()
@@ -80,22 +83,56 @@ func NewSchemaValidatorWithResources(t *testing.T, schemaPath string, companions
 			require.NoError(t, err, "parse companion %s", path)
 			require.NoError(t, c.AddResource(refURL, cdoc), "register companion %s", refURL)
 		}
-		require.NoError(t, c.AddResource(url, doc), "register schema %s", schemaPath)
-		schema, err := c.Compile(url)
+		require.NoError(t, c.AddResource(baseURI, doc), "register schema %s", schemaPath)
+		schema, err := c.Compile(baseURI)
 		require.NoError(t, err, "compile schema %s", schemaPath)
 		return &SchemaValidator{modern: schema}
 	}
 
+	// Load from bytes rather than file:// reference loaders: a "file://"+path
+	// reference is not a valid URL on Windows (see fileURL), and companions are
+	// resolved by their registered $ref URLs regardless of source.
 	sl := gojsonschema.NewSchemaLoader()
 	for refURL, path := range companions {
-		cabs, err := filepath.Abs(path)
-		require.NoError(t, err, "resolve companion %s", path)
-		require.NoError(t, sl.AddSchema(refURL, gojsonschema.NewReferenceLoader("file://"+cabs)),
+		craw, err := os.ReadFile(path) //nolint:gosec // test-only, reads a vendored schema fixture
+		require.NoError(t, err, "read companion %s", path)
+		require.NoError(t, sl.AddSchema(refURL, gojsonschema.NewBytesLoader(craw)),
 			"register companion %s", refURL)
 	}
-	schema, err := sl.Compile(gojsonschema.NewReferenceLoader("file://" + abs))
+	schema, err := sl.Compile(gojsonschema.NewBytesLoader(raw))
 	require.NoError(t, err, "compile schema %s", schemaPath)
 	return &SchemaValidator{draft07: schema}
+}
+
+// fileURL renders an absolute filesystem path as a valid file:// URL for use as
+// a schema compiler base URI on every OS. A bare "file://"+path breaks on
+// Windows, where a drive path (D:\a\x.json) parses as host "d" with an invalid
+// port; net/url percent-escapes and slash-normalizes it into file:///D:/a/x.json
+// instead. Pure string-shape detection (never runtime.GOOS or filepath.ToSlash,
+// both OS-dependent) so it is testable on any OS — mirrors the CLI's
+// seedURIFromPath.
+func fileURL(abs string) string {
+	// Backslash is a legal POSIX filename character, so it is treated as a
+	// separator only inside the provably-Windows drive and UNC shapes below.
+	isDrive := len(abs) >= 2 && abs[1] == ':' &&
+		(('a' <= abs[0] && abs[0] <= 'z') || ('A' <= abs[0] && abs[0] <= 'Z'))
+	if isDrive {
+		// Drive-letter absolute (C:\... or C:/...): the leading slash keeps the
+		// drive in the path rather than the authority → file:///C:/...
+		return (&url.URL{Scheme: "file", Path: "/" + strings.ReplaceAll(abs, `\`, "/")}).String()
+	}
+	if strings.HasPrefix(abs, `\\`) {
+		// UNC \\host\share\... → file://host/share/...
+		slashed := strings.ReplaceAll(abs, `\`, "/")
+		host, rest := slashed[2:], "/"
+		if i := strings.Index(host, "/"); i >= 0 {
+			host, rest = host[:i], host[i:]
+		}
+		return (&url.URL{Scheme: "file", Host: host, Path: rest}).String()
+	}
+	// POSIX absolute path: already a valid file path; backslashes here are
+	// legal filename characters and are left intact.
+	return (&url.URL{Scheme: "file", Path: abs}).String()
 }
 
 // schemaIsModern reports whether the schema declares a 2019-09 or 2020-12 draft.
