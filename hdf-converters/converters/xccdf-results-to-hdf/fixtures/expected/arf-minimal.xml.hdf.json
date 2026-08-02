@@ -4,6 +4,7 @@
       "name": "Test Benchmark",
       "requirements": [
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:x:def:1\",\n    \"href\": \"test_single_rule.oval.xml\"\n  }\n}",
           "descriptions": [
             {
               "data": "Description",
