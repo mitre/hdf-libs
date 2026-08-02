@@ -87,6 +87,9 @@
         "value": "eb8812e6f4a62701ff5e8ccff65eaa5694cd71c8e4a22097945eabab2fa07cc1"
       },
       "name": "OWASP ZAP Scan",
+      "labels": {
+        "component": "example.com"
+      },
       "summary": "ZAP Version 2.7.0",
       "title": "OWASP ZAP Scan of https://example.com"
     }

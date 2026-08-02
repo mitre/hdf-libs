@@ -5,6 +5,159 @@
         {
           "descriptions": [
             {
+              "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.",
+              "label": "default"
+            },
+            {
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.\nThis issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: http://ciscobinary.openh264.org/openh264-macosx64-0410d336bb748149a4f560eb6108090f078254b1.zip | Method: GET | Param: X-Content-Type-Options",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "10021",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "confidence": "2",
+            "cweid": "16",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "riskdesc": "Low (Medium)",
+            "wascid": "15"
+          },
+          "title": "X-Content-Type-Options Header Missing",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "ab32820fa4c510ded815dacd1e864f7254d4afb2a9cb309a489cbcec2e98f02d"
+      },
+      "name": "OWASP ZAP Scan: ciscobinary.openh264.org",
+      "labels": {
+        "component": "ciscobinary.openh264.org"
+      },
+      "summary": "ZAP Version 2.7.0",
+      "title": "OWASP ZAP Scan of http://ciscobinary.openh264.org"
+    },
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.",
+              "label": "default"
+            },
+            {
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.\nThis issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css | Method: GET | Param: X-Content-Type-Options",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "10021",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "confidence": "2",
+            "cweid": "16",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "riskdesc": "Low (Medium)",
+            "wascid": "15"
+          },
+          "title": "X-Content-Type-Options Header Missing",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "ab32820fa4c510ded815dacd1e864f7254d4afb2a9cb309a489cbcec2e98f02d"
+      },
+      "name": "OWASP ZAP Scan: code.jquery.com",
+      "labels": {
+        "component": "code.jquery.com"
+      },
+      "summary": "ZAP Version 2.7.0",
+      "title": "OWASP ZAP Scan of http://code.jquery.com"
+    },
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.",
+              "label": "default"
+            },
+            {
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.\nThis issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: http://detectportal.firefox.com/success.txt | Method: GET | Param: X-Content-Type-Options",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "10021",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "confidence": "2",
+            "cweid": "16",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "riskdesc": "Low (Medium)",
+            "wascid": "15"
+          },
+          "title": "X-Content-Type-Options Header Missing",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "ab32820fa4c510ded815dacd1e864f7254d4afb2a9cb309a489cbcec2e98f02d"
+      },
+      "name": "OWASP ZAP Scan: detectportal.firefox.com",
+      "labels": {
+        "component": "detectportal.firefox.com"
+      },
+      "summary": "ZAP Version 2.7.0",
+      "title": "OWASP ZAP Scan of http://detectportal.firefox.com"
+    },
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
               "data": "This HTTP method is a WEBDAV method: MKCOL. If this server is not offering any WEBDAV services, these methods should not be available.",
               "label": "default"
             },
@@ -2360,12 +2513,30 @@
         "algorithm": "sha256",
         "value": "ab32820fa4c510ded815dacd1e864f7254d4afb2a9cb309a489cbcec2e98f02d"
       },
-      "name": "OWASP ZAP Scan",
+      "name": "OWASP ZAP Scan: mymac.com",
+      "labels": {
+        "component": "mymac.com"
+      },
       "summary": "ZAP Version 2.7.0",
       "title": "OWASP ZAP Scan of http://mymac.com:8191"
     }
   ],
   "components": [
+    {
+      "name": "ciscobinary.openh264.org",
+      "type": "application",
+      "url": "http://ciscobinary.openh264.org"
+    },
+    {
+      "name": "code.jquery.com",
+      "type": "application",
+      "url": "http://code.jquery.com"
+    },
+    {
+      "name": "detectportal.firefox.com",
+      "type": "application",
+      "url": "http://detectportal.firefox.com"
+    },
     {
       "name": "mymac.com",
       "type": "application",

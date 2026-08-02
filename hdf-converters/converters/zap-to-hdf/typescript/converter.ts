@@ -132,58 +132,21 @@ function buildCheckDescription(alert: ZapAlert): string {
   return parts.join('\n');
 }
 
-// --- Select site with most alerts ---
+// --- Per-site labeling ---
 
-function selectSite(sites: ZapSite[]): ZapSite | undefined {
-  if (sites.length === 0) return undefined;
-  let best = sites[0]!;
-  for (let i = 1; i < sites.length; i++) {
-    const site = sites[i]!;
-    if ((site.alerts?.length ?? 0) > (best.alerts?.length ?? 0)) {
-      best = site;
-    }
-  }
-  return best;
+// siteLabel returns a stable, human-readable label identifying a site, used to
+// build a unique per-site baseline name. Prefers the host, then the site name
+// (URL), then a positional fallback so a nameless site still gets a unique name.
+function siteLabel(site: ZapSite, index: number): string {
+  return site['@host'] || site['@name'] || `site ${index + 1}`;
 }
 
-// ZAP emits a zone-less RFC1123-like timestamp ("Thu, 6 Dec 2018 10:53:11");
-// parse it as UTC to match the Go peer's parseZapTimestamp and stay host-independent.
-const ZAP_RFC1123_LIKE = /^[A-Za-z]{3}, \d{1,2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2}$/;
-
-function parseZapTimestamp(s: string): Date | undefined {
-  const trimmed = s.trim();
-  if (ZAP_RFC1123_LIKE.test(trimmed)) {
-    // Appending GMT forces UTC interpretation, so this new Date() is
-    // host-independent and safe — unlike a bare tool value.
-    // eslint-disable-next-line no-restricted-syntax
-    const d = new Date(`${trimmed} GMT`);
-    if (!isNaN(d.getTime())) {
-      return d;
-    }
-  }
-  return parseTimestamp(s) ?? undefined;
-}
-
-// --- Main converter ---
-
-export async function convertZapToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
-  validateInputSize(input, 'zap');
-  // SARIF routing — delegate to the shared SARIF converter
-  registerAllFingerprints();
-  const detected = detectConverter(input);
-  if (detected && detected.fingerprint.id === 'sarif-to-hdf') {
-    return convertSarifToHdf(input, converterVersion);
-  }
-
-  const resultsChecksum: Checksum = await inputChecksum(input);
-
-  const zapData = parseJSON<ZapReport>(input);
-
-  const sites = Array.isArray(zapData.site) ? zapData.site : [];
-  const site = selectSite(sites);
-  const alerts = site?.alerts ?? [];
-
-  // Deduplicate by pluginid — append .1, .2 for duplicates
+// buildSiteRequirements converts one site's alerts into requirements, applying
+// the per-site pluginid dedup (duplicates within the site get .1, .2, ...).
+// Dedup is scoped to the site so the same pluginid on two different hosts stays
+// intact in each host's baseline.
+function buildSiteRequirements(site: ZapSite): EvaluatedRequirement[] {
+  const alerts = site.alerts ?? [];
   const pluginIdCount = new Map<string, number>();
   const {items: limitedAlerts, truncated} = limitArray(alerts);
   /* v8 ignore next -- truncation only triggers with >100K items */
@@ -193,7 +156,6 @@ export async function convertZapToHdf(input: string, converterVersion = '1.0.0')
   }
 
   const requirements: EvaluatedRequirement[] = [];
-
   for (const alert of limitedAlerts) {
     // Deduplicate pluginid
     const count = pluginIdCount.get(alert.pluginid) ?? 0;
@@ -270,30 +232,114 @@ export async function convertZapToHdf(input: string, converterVersion = '1.0.0')
 
     requirements.push(req);
   }
+  return requirements;
+}
 
-  const targetName = site?.['@host'] ?? 'Unknown Host';
-  const siteName = site?.['@name'] ?? '';
-  const baselineName = site && (site['@name'] || site['@host'])
-    ? `OWASP ZAP Scan of ${site['@name'] ?? targetName}`
-    : 'OWASP ZAP Scan';
+// ZAP emits a zone-less RFC1123-like timestamp ("Thu, 6 Dec 2018 10:53:11");
+// parse it as UTC to match the Go peer's parseZapTimestamp and stay host-independent.
+const ZAP_RFC1123_LIKE = /^[A-Za-z]{3}, \d{1,2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2}$/;
 
-  if (requirements.length === 0) {
-    let target = siteName || targetName;
-    if (!target || target === 'Unknown Host') {
-      target = 'the target site';
+function parseZapTimestamp(s: string): Date | undefined {
+  const trimmed = s.trim();
+  if (ZAP_RFC1123_LIKE.test(trimmed)) {
+    // Appending GMT forces UTC interpretation, so this new Date() is
+    // host-independent and safe — unlike a bare tool value.
+    // eslint-disable-next-line no-restricted-syntax
+    const d = new Date(`${trimmed} GMT`);
+    if (!isNaN(d.getTime())) {
+      return d;
     }
-    requirements.push(buildNoFindingsRequirement(
-      'zap-no-findings',
-      `OWASP ZAP scanned ${target} and reported zero findings.`,
-      new Date(),
-    ));
+  }
+  return parseTimestamp(s) ?? undefined;
+}
+
+// --- Main converter ---
+
+// Every site[] entry is converted to its own baseline plus an Application
+// component; multi-host ZAP reports are represented as multiple baselines (one
+// per host) rather than a single merged baseline. HDF Results carries no
+// per-requirement componentId, and ZAP reuses pluginids across hosts (e.g. the
+// same informational alert on several origins), so a single merged baseline
+// could neither attribute a finding to its host nor keep the per-site dedup
+// intact. One baseline per host — linked to its component via the "component"
+// label — is the lossless, attributable representation.
+export async function convertZapToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
+  validateInputSize(input, 'zap');
+  // SARIF routing — delegate to the shared SARIF converter
+  registerAllFingerprints();
+  const detected = detectConverter(input);
+  if (detected && detected.fingerprint.id === 'sarif-to-hdf') {
+    return convertSarifToHdf(input, converterVersion);
   }
 
-  const baseline: EvaluatedBaseline = createMinimalBaseline('OWASP ZAP Scan', requirements, {
-    resultsChecksum,
-    title: baselineName,
-    summary: `ZAP Version ${zapData['@version'] ?? 'unknown'}`,
-  }) as EvaluatedBaseline;
+  const resultsChecksum: Checksum = await inputChecksum(input);
+
+  const zapData = parseJSON<ZapReport>(input);
+
+  const sites = Array.isArray(zapData.site) ? zapData.site : [];
+  const multiSite = sites.length > 1;
+  const summary = `ZAP Version ${zapData['@version'] ?? 'unknown'}`;
+
+  const baselines: EvaluatedBaseline[] = [];
+  const components: Array<{name: string; type: TargetType; url?: string; labels?: Record<string, string>}> = [];
+
+  sites.forEach((site, i) => {
+    const targetName = site['@host'] ?? 'Unknown Host';
+    const siteName = site['@name'] ?? '';
+
+    const requirements = buildSiteRequirements(site);
+    if (requirements.length === 0) {
+      let target = siteName || targetName;
+      if (!target || target === 'Unknown Host') {
+        target = 'the target site';
+      }
+      requirements.push(buildNoFindingsRequirement(
+        'zap-no-findings',
+        `OWASP ZAP scanned ${target} and reported zero findings.`,
+        new Date(),
+      ));
+    }
+
+    const baselineTitle = site['@name'] || site['@host']
+      ? `OWASP ZAP Scan of ${site['@name'] ?? targetName}`
+      : 'OWASP ZAP Scan';
+
+    // Single-site reports keep the legacy fixed baseline name; multi-site
+    // reports get a host-scoped, unique name so baselines stay identifiable.
+    const scanLabel = multiSite ? `OWASP ZAP Scan: ${siteLabel(site, i)}` : 'OWASP ZAP Scan';
+
+    const baseline: EvaluatedBaseline = createMinimalBaseline(scanLabel, requirements, {
+      resultsChecksum,
+      title: baselineTitle,
+      summary,
+    }) as EvaluatedBaseline;
+    // Link the baseline to its host component for explicit attribution.
+    if (site['@host']) {
+      baseline.labels = {component: site['@host']};
+    }
+    baselines.push(baseline);
+
+    // Build the component — ZAP is a DAST tool scanning web applications.
+    if (site['@name']) {
+      components.push({name: targetName, type: TargetType.Application, url: site['@name']});
+    } else if (targetName !== 'Unknown Host') {
+      components.push({name: targetName, type: TargetType.Application});
+    }
+  });
+
+  // No sites at all — synthesize a single no-findings baseline.
+  if (baselines.length === 0) {
+    const requirements = [buildNoFindingsRequirement(
+      'zap-no-findings',
+      'OWASP ZAP scanned the target site and reported zero findings.',
+      new Date(),
+    )];
+    baselines.push(createMinimalBaseline('OWASP ZAP Scan', requirements, {
+      resultsChecksum,
+      title: 'OWASP ZAP Scan',
+      summary,
+    }) as EvaluatedBaseline);
+  }
 
   const tool: Tool = {
     name: 'OWASP ZAP',
@@ -303,16 +349,8 @@ export async function convertZapToHdf(input: string, converterVersion = '1.0.0')
     tool.version = zapData['@version'];
   }
 
-  // Build components — ZAP is a DAST tool scanning web applications
-  const components: Array<{name: string; type: TargetType; url?: string; labels?: Record<string, string>}> = [];
-  if (site?.['@name']) {
-    components.push({name: targetName, type: TargetType.Application, url: site['@name']});
-  } else if (targetName !== 'Unknown Host') {
-    components.push({name: targetName, type: TargetType.Application});
-  }
-
   const hdf: HDFResults = {
-    baselines: [baseline],
+    baselines,
     components,
     generator: {
       name: 'zap-to-hdf',

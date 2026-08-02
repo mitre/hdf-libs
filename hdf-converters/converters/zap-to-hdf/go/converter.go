@@ -153,23 +153,127 @@ func buildCheckDescription(alert ZapAlert) string {
 	return result
 }
 
-// --- Select site with most alerts ---
+// --- Per-site labeling ---
 
-func selectSite(sites []ZapSite) *ZapSite {
-	if len(sites) == 0 {
-		return nil
+// siteLabel returns a stable, human-readable label identifying a site, used to
+// build a unique per-site baseline name. Prefers the host, then the site name
+// (URL), then a positional fallback so a nameless site still gets a unique name.
+func siteLabel(site *ZapSite, index int) string {
+	if site.Host != "" {
+		return site.Host
 	}
-	best := &sites[0]
-	for i := 1; i < len(sites); i++ {
-		if len(sites[i].Alerts) > len(best.Alerts) {
-			best = &sites[i]
+	if site.Name != "" {
+		return site.Name
+	}
+	return fmt.Sprintf("site %d", index+1)
+}
+
+// buildSiteRequirements converts one site's alerts into requirements, applying
+// the per-site pluginid dedup (duplicates within the site get .1, .2, ...).
+// Dedup is scoped to the site so the same pluginid on two different hosts stays
+// intact in each host's baseline.
+func buildSiteRequirements(site *ZapSite) []hdf.EvaluatedRequirement {
+	pluginIDCount := make(map[string]int)
+	limitedAlerts := shared.LimitSliceWithWarning(site.Alerts, 0, "alert")
+	zeroTime := time.Time{}
+
+	var requirements []hdf.EvaluatedRequirement
+	for _, alert := range limitedAlerts {
+		// Deduplicate
+		count := pluginIDCount[alert.PluginID]
+		pluginIDCount[alert.PluginID] = count + 1
+		reqID := alert.PluginID
+		if count > 0 {
+			reqID = fmt.Sprintf("%s.%d", alert.PluginID, count)
 		}
+
+		// Build NIST tags
+		nistTags := buildNistTags(alert.CweID)
+		cciTags := cci.NISTToCCI(nistTags)
+
+		// Build extra tags
+		extras := make(map[string]interface{})
+		if alert.CweID != "" {
+			extras["cweid"] = alert.CweID
+		}
+		if alert.WascID != "" {
+			extras["wascid"] = alert.WascID
+		}
+		if alert.RiskDesc != "" {
+			extras["riskdesc"] = alert.RiskDesc
+		}
+		if alert.Confidence != "" {
+			extras["confidence"] = alert.Confidence
+		}
+		var tags map[string]interface{}
+		if len(extras) > 0 {
+			tags = shared.BuildNISTCCITagsWithExtras(nistTags, cciTags, extras)
+		} else {
+			tags = shared.BuildNISTCCITags(nistTags, cciTags)
+		}
+
+		// Build results from instances
+		var results []hdf.RequirementResult
+		if len(alert.Instances) > 0 {
+			limitedInstances := shared.LimitSliceWithWarning(alert.Instances, 0, "instance")
+			for _, inst := range limitedInstances {
+				result := hdf.RequirementResult{
+					Status:    hdf.Failed,
+					CodeDesc:  buildCodeDesc(inst),
+					StartTime: zeroTime,
+				}
+				if inst.Attack != "" {
+					result.Message = &inst.Attack
+				}
+				results = append(results, result)
+			}
+		}
+
+		// Build descriptions
+		var descriptions []hdf.Description
+		if alert.Desc != "" {
+			descriptions = append(descriptions, hdf.Description{
+				Label: "default",
+				Data:  hdfutil.StripHTML(alert.Desc),
+			})
+		}
+		checkDesc := buildCheckDescription(alert)
+		if checkDesc != "" {
+			descriptions = append(descriptions, hdf.Description{
+				Label: "check",
+				Data:  checkDesc,
+			})
+		}
+
+		impact := riskCodeToImpact(alert.RiskCode)
+
+		req := hdf.EvaluatedRequirement{
+			ID:                 reqID,
+			Title:              &alert.AlertName,
+			Impact:             impact,
+			Results:            results,
+			Tags:               tags,
+			ControlType:        shared.DeriveControlTypeFromTags(nistTags),
+			Descriptions:       descriptions,
+			VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+		}
+
+		requirements = append(requirements, req)
 	}
-	return best
+	return requirements
 }
 
 // ConvertZapToHDF converts OWASP ZAP JSON to HDF Results.
 // If the input is detected as SARIF, it delegates to the SARIF converter.
+//
+// Every site[] entry is converted to its own baseline plus an Application
+// component; multi-host ZAP reports are represented as multiple baselines (one
+// per host) rather than a single merged baseline. HDF Results carries no
+// per-requirement componentId, and ZAP reuses pluginids across hosts (e.g. the
+// same informational alert on several origins), so a single merged baseline
+// could neither attribute a finding to its host nor keep the per-site dedup
+// intact. One baseline per host — linked to its component via the "component"
+// label — is the lossless, attributable representation.
 func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("zap: empty input")
@@ -190,154 +294,95 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 		return nil, fmt.Errorf("invalid ZAP JSON: %w", err)
 	}
 
-	// Select site with most alerts
-	site := selectSite(zapData.Site)
+	summary := fmt.Sprintf("ZAP Version %s", zapData.Version)
+	multiSite := len(zapData.Site) > 1
 
-	var requirements []hdf.EvaluatedRequirement
-	targetName := "Unknown Host"
-	siteName := ""
+	var baselines []hdf.EvaluatedBaseline
+	var components []hdf.Component
 
-	if site != nil {
+	for i := range zapData.Site {
+		site := &zapData.Site[i]
+
+		targetName := "Unknown Host"
 		if site.Host != "" {
 			targetName = site.Host
 		}
-		siteName = site.Name
+		siteName := site.Name
 
-		// Deduplicate pluginids
-		pluginIDCount := make(map[string]int)
-
-		limitedAlerts := shared.LimitSliceWithWarning(site.Alerts, 0, "alert")
-
-		zeroTime := time.Time{}
-
-		for _, alert := range limitedAlerts {
-			// Deduplicate
-			count := pluginIDCount[alert.PluginID]
-			pluginIDCount[alert.PluginID] = count + 1
-			reqID := alert.PluginID
-			if count > 0 {
-				reqID = fmt.Sprintf("%s.%d", alert.PluginID, count)
+		requirements := buildSiteRequirements(site)
+		if len(requirements) == 0 {
+			target := siteName
+			if target == "" {
+				target = targetName
 			}
+			if target == "" || target == "Unknown Host" {
+				target = "the target site"
+			}
+			requirements = []hdf.EvaluatedRequirement{
+				shared.BuildNoFindingsRequirement(
+					"zap-no-findings",
+					fmt.Sprintf("OWASP ZAP scanned %s and reported zero findings.", target),
+					time.Now().UTC(),
+				),
+			}
+		}
 
-			// Build NIST tags
-			nistTags := buildNistTags(alert.CweID)
-			cciTags := cci.NISTToCCI(nistTags)
+		baselineTitle := "OWASP ZAP Scan"
+		if siteName != "" {
+			baselineTitle = fmt.Sprintf("OWASP ZAP Scan of %s", siteName)
+		}
 
-			// Build extra tags
-			extras := make(map[string]interface{})
-			if alert.CweID != "" {
-				extras["cweid"] = alert.CweID
-			}
-			if alert.WascID != "" {
-				extras["wascid"] = alert.WascID
-			}
-			if alert.RiskDesc != "" {
-				extras["riskdesc"] = alert.RiskDesc
-			}
-			if alert.Confidence != "" {
-				extras["confidence"] = alert.Confidence
-			}
-			var tags map[string]interface{}
-			if len(extras) > 0 {
-				tags = shared.BuildNISTCCITagsWithExtras(nistTags, cciTags, extras)
-			} else {
-				tags = shared.BuildNISTCCITags(nistTags, cciTags)
-			}
+		// Single-site reports keep the legacy fixed baseline name; multi-site
+		// reports get a host-scoped, unique name so baselines stay identifiable.
+		scanLabel := "OWASP ZAP Scan"
+		if multiSite {
+			scanLabel = fmt.Sprintf("OWASP ZAP Scan: %s", siteLabel(site, i))
+		}
 
-			// Build results from instances
-			var results []hdf.RequirementResult
-			if len(alert.Instances) > 0 {
-				limitedInstances := shared.LimitSliceWithWarning(alert.Instances, 0, "instance")
-				for _, inst := range limitedInstances {
-					result := hdf.RequirementResult{
-						Status:    hdf.Failed,
-						CodeDesc:  buildCodeDesc(inst),
-						StartTime: zeroTime,
-					}
-					if inst.Attack != "" {
-						result.Message = &inst.Attack
-					}
-					results = append(results, result)
-				}
-			}
+		baseline := hdf.EvaluatedBaseline{
+			Name:            scanLabel,
+			Title:           &baselineTitle,
+			Summary:         &summary,
+			Requirements:    requirements,
+			ResultsChecksum: resultsChecksum,
+		}
+		// Link the baseline to its host component for explicit attribution.
+		if site.Host != "" {
+			baseline.Labels = map[string]string{"component": site.Host}
+		}
+		baselines = append(baselines, baseline)
 
-			// Build descriptions
-			var descriptions []hdf.Description
-			if alert.Desc != "" {
-				descriptions = append(descriptions, hdf.Description{
-					Label: "default",
-					Data:  hdfutil.StripHTML(alert.Desc),
-				})
-			}
-			checkDesc := buildCheckDescription(alert)
-			if checkDesc != "" {
-				descriptions = append(descriptions, hdf.Description{
-					Label: "check",
-					Data:  checkDesc,
-				})
-			}
-
-			impact := riskCodeToImpact(alert.RiskCode)
-
-			req := hdf.EvaluatedRequirement{
-				ID:                 reqID,
-				Title:              &alert.AlertName,
-				Impact:             impact,
-				Results:            results,
-				Tags:               tags,
-				ControlType:        shared.DeriveControlTypeFromTags(nistTags),
-				Descriptions:       descriptions,
-				VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
-			}
-
-			requirements = append(requirements, req)
+		// Build the component — ZAP is a DAST tool scanning web applications.
+		if siteName != "" {
+			url := siteName
+			components = append(components, hdf.Component{
+				Name: targetName,
+				Type: hdf.Application,
+				URL:  &url,
+			})
+		} else if targetName != "Unknown Host" {
+			components = append(components, hdf.Component{
+				Name: targetName,
+				Type: hdf.Application,
+			})
 		}
 	}
 
-	if len(requirements) == 0 {
-		target := siteName
-		if target == "" {
-			target = targetName
-		}
-		if target == "" || target == "Unknown Host" {
-			target = "the target site"
-		}
-		requirements = []hdf.EvaluatedRequirement{
-			shared.BuildNoFindingsRequirement(
-				"zap-no-findings",
-				fmt.Sprintf("OWASP ZAP scanned %s and reported zero findings.", target),
-				time.Now().UTC(),
-			),
-		}
-	}
-
-	baselineName := "OWASP ZAP Scan"
-	if siteName != "" {
-		baselineName = fmt.Sprintf("OWASP ZAP Scan of %s", siteName)
-	}
-	summary := fmt.Sprintf("ZAP Version %s", zapData.Version)
-
-	scanLabel := "OWASP ZAP Scan"
-	baseline := hdf.EvaluatedBaseline{
-		Name:            scanLabel,
-		Title:           &baselineName,
-		Summary:         &summary,
-		Requirements:    requirements,
-		ResultsChecksum: resultsChecksum,
-	}
-
-	// Build targets — ZAP is a DAST tool scanning web applications
-	var targets []hdf.Component
-	if siteName != "" {
-		targets = append(targets, hdf.Component{
-			Name: targetName,
-			Type: hdf.Application,
-			URL:  &siteName,
-		})
-	} else if targetName != "Unknown Host" {
-		targets = append(targets, hdf.Component{
-			Name: targetName,
-			Type: hdf.Application,
+	// No sites at all — synthesize a single no-findings baseline.
+	if len(baselines) == 0 {
+		title := "OWASP ZAP Scan"
+		baselines = append(baselines, hdf.EvaluatedBaseline{
+			Name:    "OWASP ZAP Scan",
+			Title:   &title,
+			Summary: &summary,
+			Requirements: []hdf.EvaluatedRequirement{
+				shared.BuildNoFindingsRequirement(
+					"zap-no-findings",
+					"OWASP ZAP scanned the target site and reported zero findings.",
+					time.Now().UTC(),
+				),
+			},
+			ResultsChecksum: resultsChecksum,
 		})
 	}
 
@@ -356,8 +401,8 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 		ToolName:         "OWASP ZAP",
 		ToolVersion:      zapData.Version,
 		ToolFormat:       "JSON",
-		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components:       targets,
+		Baselines:        baselines,
+		Components:       components,
 		Timestamp:        timestamp,
 	})
 

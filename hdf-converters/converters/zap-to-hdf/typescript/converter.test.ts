@@ -22,29 +22,28 @@ runConverterContractTests({
   minimalFixture: 'minimal.json',
 });
 
-// countSelectedSiteAlerts parses raw ZAP JSON generically — NOT via the
-// converter's parser — and returns the alert count of the site with the MOST
-// alerts. The converter processes only that one site (selectSite) and emits one
-// requirement per alert (the pluginid dedup only uniquifies IDs, it does not
-// collapse alerts), so a whole-document "alerts" count would overshoot when the
-// report has multiple sites.
-function countSelectedSiteAlerts(input: string): number {
+// countAllSiteAlerts parses raw ZAP JSON generically — NOT via the converter's
+// parser — and returns the total alert count across EVERY site. The converter
+// emits one requirement per alert of every site (the pluginid dedup only
+// uniquifies IDs within a site, it does not collapse alerts), so a silent
+// per-site drop fails this anchor even when Go/TS agree.
+function countAllSiteAlerts(input: string): number {
   const doc = JSON.parse(input) as {site?: Array<{alerts?: unknown[]}>};
-  return (doc.site ?? []).reduce((best, s) => Math.max(best, s.alerts?.length ?? 0), 0);
+  return (doc.site ?? []).reduce((total, s) => total + (s.alerts?.length ?? 0), 0);
 }
 
 // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
-// the converter selects the single site with the most alerts and emits one
-// requirement per alert of that site, counted independently of the converter's
-// parser so a silent under-extraction fails even when Go/TS agree. webgoat.json's
-// busiest site has 25 alerts (of 28 across all 4 sites).
+// the converter emits one requirement per alert of EVERY site, counted
+// independently of the converter's parser so a silent per-site drop fails even
+// when Go/TS agree. webgoat.json carries 28 alerts across all 4 sites (the old
+// single-site behavior dropped 3).
 describe('zap-to-hdf ground-truth anchor', () => {
-  it('emits one requirement per alert of the site with the most alerts', async () => {
+  it('emits one requirement per alert across all sites', async () => {
     const input = loadFixture('webgoat.json');
     assertRequirementCount(
       await convertZapToHdf(input),
-      countSelectedSiteAlerts(input),
-      'webgoat.json: one requirement per alert of the site with the most alerts',
+      countAllSiteAlerts(input),
+      'webgoat.json: one requirement per alert across all sites',
     );
   });
 });
@@ -413,24 +412,65 @@ describe('ZAP Converter', () => {
   });
 
   describe('webgoat fixture', () => {
-    it('should select site with most alerts (mymac.com, 25 alerts)', async () => {
+    // mymacBaseline returns the per-site baseline for host mymac.com (busiest site).
+    const mymacBaseline = (hdf: HDFResults) => {
+      const b = hdf.baselines.find(b => b.labels?.component === 'mymac.com');
+      expect(b, 'no baseline for host mymac.com').toBeDefined();
+      return b!;
+    };
+
+    it('converts every site to its own baseline + component (no site dropped)', async () => {
       const input = loadFixture('webgoat.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      // Baseline.Name is the fixed scan label; the host goes into targets
-      expect(hdf.baselines[0].name).toBe('OWASP ZAP Scan');
-      expect(hdf.components).toHaveLength(1);
-      expect(hdf.components![0].name).toBe('mymac.com');
+      expect(hdf.baselines).toHaveLength(4);
+      expect(hdf.components).toHaveLength(4);
+      const hosts = hdf.components!.map(c => c.name);
+      expect(hosts).toContain('mymac.com');
+      expect(hosts).toContain('ciscobinary.openh264.org');
+      expect(hosts).toContain('code.jquery.com');
+      expect(hosts).toContain('detectportal.firefox.com');
+      for (const c of hdf.components!) {
+        expect(c.type).toBe('application');
+      }
     });
 
-    it('should produce 15 unique requirements from 25 alerts with deduplication', async () => {
+    it('links each baseline to its host and gives it a unique, host-scoped name', async () => {
       const input = loadFixture('webgoat.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      // 25 alerts, 15 unique pluginids, but duplicates get .1, .2, etc.
-      expect(hdf.baselines[0].requirements).toHaveLength(25);
+      const names = new Set<string>();
+      for (const b of hdf.baselines) {
+        const host = b.labels?.component;
+        expect(host, `baseline ${b.name} missing component label`).toBeTruthy();
+        expect(names.has(b.name), `baseline name ${b.name} not unique`).toBe(false);
+        names.add(b.name);
+        expect(b.name).toContain(host!);
+      }
+    });
+
+    it('keeps the shared pluginid 10021 undeduped across the single-alert hosts', async () => {
+      const input = loadFixture('webgoat.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      const singles = hdf.baselines.filter(b => b.labels?.component !== 'mymac.com');
+      expect(singles).toHaveLength(3);
+      for (const b of singles) {
+        expect(b.requirements).toHaveLength(1);
+        expect(b.requirements[0].id).toBe('10021');
+      }
+    });
+
+    it('produces 25 requirements for mymac.com', async () => {
+      const input = loadFixture('webgoat.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      // 25 alerts, 15 unique pluginids, duplicates get .1, .2, etc.
+      expect(mymacBaseline(hdf).requirements).toHaveLength(25);
     });
 
     it('should deduplicate pluginids with .1, .2 suffixes', async () => {
@@ -438,7 +478,7 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      const ids = hdf.baselines[0].requirements.map(r => r.id);
+      const ids = mymacBaseline(hdf).requirements.map(r => r.id);
       expect(ids).toContain('90028');
       expect(ids).toContain('90028.1');
       expect(ids).toContain('90028.2');
@@ -457,8 +497,7 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      // First requirement (90028) has riskcode 0
-      const req = hdf.baselines[0].requirements.find(r => r.id === '90028');
+      const req = mymacBaseline(hdf).requirements.find(r => r.id === '90028');
       expect(req?.impact).toBe(0.3);
     });
 
@@ -467,8 +506,7 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      // Find a requirement with riskcode 3 (e.g. pluginid 42 or 20012)
-      const req = hdf.baselines[0].requirements.find(r => r.id === '42');
+      const req = mymacBaseline(hdf).requirements.find(r => r.id === '42');
       expect(req?.impact).toBe(0.7);
     });
 
