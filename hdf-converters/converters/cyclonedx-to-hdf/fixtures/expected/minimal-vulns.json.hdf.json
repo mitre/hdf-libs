@@ -3,6 +3,12 @@
     {
       "requirements": [
         {
+          "cwe": [
+            "CWE-173",
+            "CWE-200",
+            "CWE-378",
+            "CWE-732"
+          ],
           "descriptions": [
             {
               "data": "Description: A temp directory creation vulnerability exists in Guava prior to version 32.0.0 allowing an attacker with access to the machine to potentially access data in a temporary directory created by the Guava `com.google.common.io.Files.createTempDir()`. The permissions granted to the directory created default to the standard unix-like /tmp ones, leaving the files open. Maintainers recommend explicitly changing the permissions after the creation of the directory, or removing uses of the vulnerable method.",
@@ -23,22 +29,19 @@
               "CCI-000213",
               "CCI-002418"
             ],
-            "cweid": [
-              "CWE-173",
-              "CWE-200",
-              "CWE-378",
-              "CWE-732"
-            ],
             "nist": [
               "AC-3",
               "SC-8"
-            ],
-            "ratings": "GITHUB - low"
+            ]
           },
           "controlType": "technical",
           "title": "GHSA-5mg8-w23w-74h3 (GITHUB)"
         },
         {
+          "cwe": [
+            "CWE-379",
+            "CWE-552"
+          ],
           "descriptions": [
             {
               "data": "Description: Use of Java's default temporary directory for file creation in `FileBackedOutputStream` in Google Guava versions 1.0 to 31.1 on Unix systems and Android Ice Cream Sandwich allows other users and apps on the machine with access to the default Java temporary directory to be able to access the files created by the class. Even though the security vulnerability is fixed in version 32.0.0, maintainers recommend using version 32.0.1 as version 32.0.0 breaks some functionality under Windows.",
@@ -59,19 +62,17 @@
               "CCI-001643",
               "CCI-003173"
             ],
-            "cweid": [
-              "CWE-379",
-              "CWE-552"
-            ],
             "nist": [
               "SA-11",
               "RA-5"
-            ],
-            "ratings": "GITHUB - medium"
+            ]
           },
           "title": "GHSA-7g45-4rm6-3mm3 (GITHUB)"
         },
         {
+          "cwe": [
+            "CWE-502"
+          ],
           "descriptions": [
             {
               "data": "Description: FasterXML jackson-databind 2.x before 2.9.10.4 mishandles the interaction between serialization gadgets and typing, related to org.apache.hadoop.shaded.com.zaxxer.hikari.HikariConfig (aka shaded hikari-config).",
@@ -91,13 +92,9 @@
             "cci": [
               "CCI-001310"
             ],
-            "cweid": [
-              "CWE-502"
-            ],
             "nist": [
               "SI-10"
-            ],
-            "ratings": "GITHUB - critical"
+            ]
           },
           "controlType": "technical",
           "title": "GHSA-5p34-5m6p-p58g (GITHUB)"

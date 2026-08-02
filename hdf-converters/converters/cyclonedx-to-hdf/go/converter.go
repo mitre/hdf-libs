@@ -135,21 +135,29 @@ func maxImpact(ratings []CDXRating) float64 {
 // unknown→0.5). NotReviewed means "not evaluated" which is incorrect
 // when a scanner has identified a CVE.
 
-// formatRatingsTag formats ratings as a human-readable tag string.
-func formatRatingsTag(ratings []CDXRating) string {
-	parts := make([]string, len(ratings))
-	for i, r := range ratings {
-		source := "Unknown"
-		if r.Source != nil && r.Source.Name != "" {
+// buildCvssEntries assembles structured requirement.cvss[] entries from the
+// CycloneDX ratings. A rating contributes an entry only when it carries a CVSS
+// method (CVSSv2/v3/v31/v4) and at least a score or a vector — ratings that only
+// state a qualitative severity (method "other") carry no CVSS metrics and are
+// left out, their severity already reflected in the requirement impact.
+func buildCvssEntries(ratings []CDXRating) []hdf.Cvss {
+	var entries []hdf.Cvss
+	for _, r := range ratings {
+		if !cvssMethods[r.Method] || (r.Score == nil && r.Vector == "") {
+			continue
+		}
+		source := ""
+		if r.Source != nil {
 			source = r.Source.Name
 		}
-		sev := r.Severity
-		if sev == "" {
-			sev = "unrated"
-		}
-		parts[i] = fmt.Sprintf("%s - %s", source, sev)
+		entries = append(entries, shared.BuildCvss(shared.CvssInput{
+			Version:    shared.CvssVersionFromVector(r.Vector),
+			BaseScore:  r.Score,
+			BaseVector: r.Vector,
+			Source:     source,
+		}))
 	}
-	return strings.Join(parts, ", ")
+	return entries
 }
 
 // formatCodeDesc formats a component reference as a code_desc string.
@@ -300,18 +308,17 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		nist := shared.MapCWEToNIST(cweStrs, shared.DefaultStaticAnalysisNIST)
 		cciTags := cci.NISTToCCI(nist)
 
-		extras := map[string]interface{}{}
+		// CWE identifiers are first-class on requirement.cwe[]; the CWE→NIST
+		// mapping is retained in tags.nist.
+		var cwes []string
 		if len(vuln.CWEs) > 0 {
-			cweids := make([]string, len(vuln.CWEs))
+			cwes = make([]string, len(vuln.CWEs))
 			for i, c := range vuln.CWEs {
-				cweids[i] = fmt.Sprintf("CWE-%d", c)
+				cwes[i] = fmt.Sprintf("CWE-%d", c)
 			}
-			extras["cweid"] = cweids
 		}
-		if len(ratings) > 0 {
-			extras["ratings"] = formatRatingsTag(ratings)
-		}
-		tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
+
+		tags := shared.BuildNISTCCITags(nist, cciTags)
 
 		// Build descriptions (must always include a 'default' label per HDF schema)
 		descriptions := []hdf.Description{}
@@ -386,6 +393,8 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			Title:        &title,
 			Impact:       impact,
 			Tags:         tags,
+			Cvss:         buildCvssEntries(ratings),
+			Cwe:          cwes,
 			ControlType:  shared.DeriveControlTypeFromTags(nist),
 			Descriptions: descriptions,
 			Results:      results,

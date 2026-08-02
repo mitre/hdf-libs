@@ -220,15 +220,123 @@ func TestConvertCycloneDX_Tags(t *testing.T) {
 	require.NotNil(t, cciSlice)
 	assert.NotEmpty(t, cciSlice)
 
-	// cweid
-	cweid, ok := req.Tags["cweid"].([]string)
-	require.True(t, ok)
-	assert.Contains(t, cweid, "CWE-611")
+	// The old freetext scoring tags moved to structured fields.
+	assert.NotContains(t, req.Tags, "cweid", "cweid moved to requirement.cwe[]")
+	assert.NotContains(t, req.Tags, "ratings", "ratings moved to requirement.cvss[]")
+}
 
-	// ratings
-	ratings, ok := req.Tags["ratings"].(string)
-	require.True(t, ok)
-	assert.Contains(t, ratings, "NVD - high")
+// ---- Structured CVSS ----
+
+func TestConvertCycloneDX_Cvss(t *testing.T) {
+	// vex.json has 3 CVSSv31 ratings: NVD 7.5, SNYK 8.2, Acme Inc 0.0, each with
+	// a base vector.
+	input := loadFixture(t, "input/vex.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
+	require.Len(t, req.Cvss, 3)
+
+	// entry 0: NVD 7.5 → high, v3.1, vector preserved
+	require.NotNil(t, req.Cvss[0].BaseScore)
+	assert.InDelta(t, 7.5, *req.Cvss[0].BaseScore, 0.001)
+	require.NotNil(t, req.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityHigh, *req.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.The31, req.Cvss[0].Version)
+	require.NotNil(t, req.Cvss[0].BaseVector)
+	assert.Equal(t, "AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N", *req.Cvss[0].BaseVector)
+	require.NotNil(t, req.Cvss[0].Source)
+	assert.Equal(t, "NVD", *req.Cvss[0].Source)
+
+	// entry 1: SNYK 8.2 → high
+	require.NotNil(t, req.Cvss[1].BaseScore)
+	assert.InDelta(t, 8.2, *req.Cvss[1].BaseScore, 0.001)
+	require.NotNil(t, req.Cvss[1].Source)
+	assert.Equal(t, "SNYK", *req.Cvss[1].Source)
+
+	// entry 2: Acme Inc 0.0 → none band
+	require.NotNil(t, req.Cvss[2].BaseScore)
+	assert.InDelta(t, 0.0, *req.Cvss[2].BaseScore, 0.001)
+	require.NotNil(t, req.Cvss[2].BaseSeverity)
+	assert.Equal(t, hdf.None, *req.Cvss[2].BaseSeverity)
+}
+
+func TestConvertCycloneDX_NoCvssWhenNoScore(t *testing.T) {
+	// minimal-vulns.json ratings use method "other" with only a severity — no
+	// CVSS score/vector, so no cvss[] entries are emitted.
+	input := loadFixture(t, "input/minimal-vulns.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		assert.Empty(t, req.Cvss, "vuln %s has no CVSS metrics → cvss[] omitted", req.ID)
+	}
+}
+
+func TestConvertCycloneDX_CvssVectorOnlyNoSource(t *testing.T) {
+	// A CVSS-method rating carrying a vector but no score and no source: still an
+	// entry (vector present), version defaults to 3.1, source omitted.
+	input := []byte(`{
+		"bomFormat": "CycloneDX",
+		"specVersion": "1.5",
+		"vulnerabilities": [{
+			"id": "TEST-VECTOR-ONLY",
+			"ratings": [{"method": "CVSSv3", "vector": "AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}],
+			"affects": [{"ref": "comp-1"}]
+		}],
+		"components": [{"type": "library", "name": "test-lib", "bom-ref": "comp-1"}]
+	}`)
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Cvss, 1)
+	assert.Nil(t, req.Cvss[0].BaseScore, "no score supplied")
+	assert.Nil(t, req.Cvss[0].Source, "no source supplied")
+	assert.Equal(t, hdf.The31, req.Cvss[0].Version)
+	require.NotNil(t, req.Cvss[0].BaseVector)
+	assert.Equal(t, "AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", *req.Cvss[0].BaseVector)
+}
+
+// ---- Structured CWE ----
+
+func TestConvertCycloneDX_Cwe(t *testing.T) {
+	input := loadFixture(t, "input/vex.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
+	assert.Equal(t, []string{"CWE-611"}, req.Cwe)
+
+	// The CWE→NIST mapping is retained.
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
+	assert.NotEmpty(t, nist)
+}
+
+func TestConvertCycloneDX_CweMulti(t *testing.T) {
+	input := loadFixture(t, "input/minimal-vulns.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "GHSA-5mg8-w23w-74h3")
+	assert.Equal(t, []string{"CWE-173", "CWE-200", "CWE-378", "CWE-732"}, req.Cwe)
+}
+
+func TestConvertCycloneDX_NoCweWhenAbsent(t *testing.T) {
+	// A vulnerability with no cwes[] → requirement.cwe[] omitted.
+	input := []byte(`{
+		"bomFormat": "CycloneDX",
+		"specVersion": "1.5",
+		"vulnerabilities": [{
+			"id": "TEST-NO-CWE",
+			"ratings": [{"severity": "high"}],
+			"affects": [{"ref": "comp-1"}]
+		}],
+		"components": [{"type": "library", "name": "test-lib", "bom-ref": "comp-1"}]
+	}`)
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+	assert.Empty(t, result.Baselines[0].Requirements[0].Cwe)
 }
 
 // ---- Result code_desc ----
