@@ -131,9 +131,15 @@ interface RuleElement {
   check?: CheckElement | CheckElement[];
 }
 
-interface CheckElement {
+export interface CheckElement {
   system?: string;
   'check-content'?: string | TextElement;
+  'check-content-ref'?: CheckContentRefElement | CheckContentRefElement[];
+}
+
+export interface CheckContentRefElement {
+  name?: string;
+  href?: string;
 }
 
 interface FixtextElement {
@@ -862,6 +868,11 @@ function ruleResultToRequirement(
     label: 'default',
     data: stripHTML(extractVulnDiscussion(extractText(ruleDef?.description))),
   }];
+  const check = selectCheck(ruleDef?.check);
+  const checkContent = extractCheckContent(check);
+  if (checkContent) {
+    descriptions.push({ label: 'check', data: stripHTML(checkContent) });
+  }
   const fixtext = extractFixtext(ruleDef?.fixtext);
   if (fixtext) {
     descriptions.push({ label: 'fix', data: stripHTML(fixtext) });
@@ -891,6 +902,18 @@ function ruleResultToRequirement(
     [result],
     { tags }
   ) as EvaluatedRequirement;
+
+  const code = buildCheckCode(check);
+  if (code) {
+    req.code = code;
+  }
+
+  // Mirror the baseline path: set the explicit severity enum, omitting it when
+  // the (already precedence-resolved) severity has no HDF equivalent.
+  const hdfSeverity = xccdfSeverityToHdf(severity);
+  if (hdfSeverity) {
+    req.severity = hdfSeverity;
+  }
 
   const controlType = deriveControlTypeFromTags(nistTags);
   if (controlType !== undefined) {
@@ -1082,6 +1105,66 @@ function extractCheckContent(
     return '';
   }
   return decodeXmlEntities((cc as TextElement)['#text'] ?? '');
+}
+
+/**
+ * Extract the OVAL/SCE check-content-ref (name + href) from a check element.
+ * check-content-ref is not forced into an array, so handle both single and
+ * (rare) multi cases, taking the first.
+ */
+export function extractCheckContentRef(
+  check: CheckElement | undefined
+): { name: string; href: string } {
+  if (!check) {
+    return { name: '', href: '' };
+  }
+  let ref = check['check-content-ref'];
+  if (Array.isArray(ref)) {
+    ref = ref[0];
+  }
+  if (!ref || typeof ref !== 'object') {
+    return { name: '', href: '' };
+  }
+  return { name: ref.name ?? '', href: ref.href ?? '' };
+}
+
+/**
+ * Render a rule's selected <check> as the indented-JSON blob carried in
+ * requirement.code — the automated-check logic (system + OVAL/SCE definition
+ * reference + any inline content). Returns '' when the check is empty so the
+ * caller leaves code unset rather than fabricating one. Key order and the
+ * escape-free JSON.stringify mirror the Go buildCheckCode for byte parity.
+ */
+export function buildCheckCode(check: CheckElement | undefined): string {
+  if (!check) {
+    return '';
+  }
+  const system = check.system ?? '';
+  const ref = extractCheckContentRef(check);
+  const content = extractCheckContent(check).trim();
+  if (!system && !ref.name && !ref.href && !content) {
+    return '';
+  }
+
+  const code: Record<string, unknown> = {};
+  if (system) {
+    code.system = system;
+  }
+  if (ref.name || ref.href) {
+    const refObj: Record<string, string> = {};
+    if (ref.name) {
+      refObj.name = ref.name;
+    }
+    if (ref.href) {
+      refObj.href = ref.href;
+    }
+    code.checkContentRef = refObj;
+  }
+  if (content) {
+    code.checkContent = content;
+  }
+
+  return JSON.stringify(code, null, 2);
 }
 
 /**

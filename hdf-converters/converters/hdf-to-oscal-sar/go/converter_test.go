@@ -46,6 +46,33 @@ func TestGoldenParity(t *testing.T) {
 	assert.Equal(t, maskedGolden, maskedOut, "golden mismatch for minimal.oscal-sar.json")
 }
 
+// TestConvertRequirementWithoutDescriptionsOrResults documents the Go/TS parity
+// contract: descriptions and results are optional on a requirement, and the
+// converter must handle their absence without panicking (the TS peer previously
+// threw "descriptions is not iterable").
+func TestConvertRequirementWithoutDescriptionsOrResults(t *testing.T) {
+	input := []byte(`{
+		"baselines": [{
+			"name": "b",
+			"requirements": [{ "id": "AC-3", "impact": 0.5, "tags": { "nist": ["AC-3"] } }]
+		}]
+	}`)
+
+	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+
+	var doc struct {
+		AssessmentResults oscal.AssessmentResults `json:"assessment-results"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.AssessmentResults.Results, 1)
+	require.Len(t, doc.AssessmentResults.Results[0].Findings, 1)
+	// No default description → falls back to the requirement id/title.
+	assert.Equal(t, "AC-3", doc.AssessmentResults.Results[0].Findings[0].Description)
+	// No results → no observation.
+	assert.Empty(t, doc.AssessmentResults.Results[0].Observations)
+}
+
 // minimalHDFResults returns a minimal valid HDF Results JSON document
 // with one baseline, one requirement, and one result.
 func minimalHDFResults(status hdf.ResultStatus) []byte {

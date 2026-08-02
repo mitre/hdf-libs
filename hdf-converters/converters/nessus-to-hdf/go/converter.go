@@ -637,14 +637,12 @@ func buildCvssEntries(item *ReportItem) []hdf.Cvss {
 	}
 
 	if c.BaseScore != nil {
-		if sev := cvssSeverity(*c.BaseScore); sev != nil {
-			c.BaseSeverity = sev
-		}
+		sev := shared.CvssSeverityFromScore(*c.BaseScore)
+		c.BaseSeverity = &sev
 	}
 	if c.ComputedScore != nil {
-		if sev := cvssSeverity(*c.ComputedScore); sev != nil {
-			c.ComputedSeverity = sev
-		}
+		sev := shared.CvssSeverityFromScore(*c.ComputedScore)
+		c.ComputedSeverity = &sev
 	}
 
 	return []hdf.Cvss{c}
@@ -695,29 +693,6 @@ func parseFloatPtr(s string) *float64 {
 		return nil
 	}
 	return &f
-}
-
-// cvssSeverity maps a CVSS base/computed score to the schema's CVSSSeverity
-// enum via hdfutil. Returns nil when the score is the zero default and no
-// score was actually provided — callers should check before calling.
-func cvssSeverity(score float64) *hdf.CVSSSeverity {
-	sev := hdfutil.CvssScoreToSeverity(score)
-	var out hdf.CVSSSeverity
-	switch sev {
-	case "critical":
-		out = hdf.CVSSSeverityCritical
-	case "high":
-		out = hdf.CVSSSeverityHigh
-	case "medium":
-		out = hdf.CVSSSeverityMedium
-	case "low":
-		out = hdf.CVSSSeverityLow
-	case "none":
-		out = hdf.None
-	default:
-		return nil
-	}
-	return &out
 }
 
 // buildCweIDs returns a sorted, deduplicated slice of CWE IDs in "CWE-N"

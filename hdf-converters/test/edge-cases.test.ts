@@ -33,7 +33,7 @@ describe('Snyk edge cases', () => {
     });
     const hdf = parseHdf(await convertSnykToHdf(input));
     expect(hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc).toContain('Unknown');
-    expect(hdf.baselines[0]!.requirements[0]!.tags?.cveid).toBeDefined();
+    expect(hdf.baselines[0]!.requirements[0]!.tags?.cve).toBeDefined();
     expect(hdf.baselines[0]!.requirements[0]!.tags?.ghsaid).toBeDefined();
   });
 

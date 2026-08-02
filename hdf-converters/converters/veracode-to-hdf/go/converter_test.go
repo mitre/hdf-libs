@@ -2,6 +2,7 @@ package veracode
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"io"
@@ -345,6 +346,299 @@ func TestConvertVeracodeToHDF_NoFindings(t *testing.T) {
 	assert.Equal(t, hdf.Passed, req.Results[0].Status)
 	assert.Contains(t, req.Results[0].CodeDesc, "Veracode")
 	assert.Contains(t, req.Results[0].CodeDesc, "CleanApp")
+}
+
+// synthesizeFlawCode branch coverage: every combination of function prototype
+// and source locus, including the NOT-IN-SOURCE case (neither present).
+func TestSynthesizeFlawCode(t *testing.T) {
+	tests := []struct {
+		name string
+		flaw Flaw
+		want string
+	}{
+		{
+			name: "prototype and full locus",
+			flaw: Flaw{FunctionPrototype: "String ping(String)", SourceFilePath: "com/x/", SourceFile: "A.java", Line: "53"},
+			want: "String ping(String) at com/x/A.java:53",
+		},
+		{
+			name: "prototype only, no locus",
+			flaw: Flaw{FunctionPrototype: "String ping(String)"},
+			want: "String ping(String)",
+		},
+		{
+			name: "locus only, no prototype",
+			flaw: Flaw{SourceFilePath: "com/x/", SourceFile: "A.java", Line: "53"},
+			want: "com/x/A.java:53",
+		},
+		{
+			name: "prototype and locus but no line",
+			flaw: Flaw{FunctionPrototype: "String ping(String)", SourceFilePath: "com/x/", SourceFile: "A.java"},
+			want: "String ping(String) at com/x/A.java",
+		},
+		{
+			name: "neither prototype nor locus (NOT-IN-SOURCE)",
+			flaw: Flaw{IssueID: "42"},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, synthesizeFlawCode(tt.flaw))
+		})
+	}
+}
+
+// Static CWE requirement carries a synthesized source-context code string built
+// from functionprototype + sourcefilepath/sourcefile:line.
+func TestConvertVeracodeToHDF_StaticFlawCode(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	var cweControl *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "18" {
+			cweControl = &result.Baselines[0].Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, cweControl, "expected CWE control 18")
+	require.NotNil(t, cweControl.Code, "static CWE requirement should carry synthesized code")
+	assert.Contains(t, *cweControl.Code,
+		"java.lang.String ping(java.lang.String) at com/veracode/verademo/controller/ToolsController.java:53")
+}
+
+// A CWE requirement whose flaws carry neither a prototype nor a source locus
+// leaves code unset (NOT-IN-SOURCE), exercising the requirement-level guard.
+func TestBuildCWERequirement_NoCode(t *testing.T) {
+	cat := Category{
+		CategoryID:   "99",
+		CategoryName: "No Locus",
+		CWEs: []CWE{{
+			CWEID: "78",
+			StaticFlaws: StaticFlaws{Flaws: []Flaw{
+				{IssueID: "1", Severity: "5"},
+			}},
+		}},
+	}
+	req := buildCWERequirement(cat, 0.9, "")
+	assert.Nil(t, req.Code, "requirement with no source-carrying flaw must leave code unset")
+}
+
+// SCA CVE requirement carries an indented-JSON serialization of the
+// vulnerability/component entry that parses back to the source object.
+func TestConvertVeracodeToHDF_SCACode(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	var cveControl *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "CVE-2012-5783" {
+			cveControl = &result.Baselines[0].Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, cveControl, "expected CVE control CVE-2012-5783")
+	require.NotNil(t, cveControl.Code, "SCA CVE requirement should carry serialized code")
+
+	var parsed struct {
+		CVEID      string `json:"cve_id"`
+		CVSSScore  string `json:"cvss_score"`
+		Components []struct {
+			Library   string   `json:"library"`
+			FilePaths []string `json:"file_paths"`
+		} `json:"components"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(*cveControl.Code), &parsed),
+		"code must be valid JSON that parses back to the source object")
+	assert.Equal(t, "CVE-2012-5783", parsed.CVEID)
+	assert.Equal(t, "5.8", parsed.CVSSScore)
+	assert.NotEmpty(t, parsed.Components, "serialized entry should carry affected components")
+}
+
+// buildSCACode is byte-parity-sensitive: assert its exact indented-JSON shape,
+// including the components array and file_paths, on a crafted single entry.
+func TestBuildSCACode(t *testing.T) {
+	vuln := Vulnerability{
+		CVEID:          "CVE-2012-5783",
+		CVSSScore:      "5.8",
+		Severity:       "3",
+		CWEID:          "CWE-20",
+		FirstFoundDate: "2021-12-29 22:18:20 UTC",
+		CVESummary:     "Apache Commons HttpClient does not verify hostname.",
+		SeverityDesc:   "Medium",
+	}
+	comp := Component{
+		ComponentID: "abc",
+		FileName:    "commons-httpclient-3.1.jar",
+		Version:     "3.1",
+		Library:     "commons-httpclient",
+		LibraryID:   "maven:commons-httpclient:3.1:",
+		Vendor:      "commons-httpclient",
+		AddedDate:   "2021-12-29 22:18:19 UTC",
+		FilePaths: ComponentFilePaths{FilePath: []ComponentFilePath{
+			{Value: "WEB-INF/lib/commons-httpclient-3.1.jar"},
+		}},
+	}
+	want := `{
+  "cve_id": "CVE-2012-5783",
+  "cvss_score": "5.8",
+  "severity": "3",
+  "cwe_id": "CWE-20",
+  "first_found_date": "2021-12-29 22:18:20 UTC",
+  "cve_summary": "Apache Commons HttpClient does not verify hostname.",
+  "severity_desc": "Medium",
+  "components": [
+    {
+      "component_id": "abc",
+      "file_name": "commons-httpclient-3.1.jar",
+      "sha1": "",
+      "version": "3.1",
+      "library": "commons-httpclient",
+      "library_id": "maven:commons-httpclient:3.1:",
+      "vendor": "commons-httpclient",
+      "description": "",
+      "max_cvss_score": "",
+      "added_date": "2021-12-29 22:18:19 UTC",
+      "file_paths": [
+        "WEB-INF/lib/commons-httpclient-3.1.jar"
+      ]
+    }
+  ]
+}`
+	assert.Equal(t, want, buildSCACode(vuln, []Component{comp}))
+}
+
+// A component with no file paths must serialize file_paths as [] (not null),
+// which is the byte the TypeScript twin's JSON.stringify emits.
+func TestBuildSCACode_EmptyFilePaths(t *testing.T) {
+	code := buildSCACode(Vulnerability{CVEID: "CVE-0000-0000"}, []Component{{ComponentID: "x"}})
+	assert.Contains(t, code, `"file_paths": []`)
+	assert.NotContains(t, code, `"file_paths": null`)
+}
+
+// SCA CVE requirements carry structured cvss[] built from the vulnerability's
+// bare numeric cvss_score (no vector, version defaults to 3.1), with the derived
+// severity band. The old freetext scoring lives nowhere else on the requirement.
+func TestConvertVeracodeToHDF_CVSS(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	byID := func(id string) *hdf.EvaluatedRequirement {
+		for i := range result.Baselines[0].Requirements {
+			if result.Baselines[0].Requirements[i].ID == id {
+				return &result.Baselines[0].Requirements[i]
+			}
+		}
+		return nil
+	}
+
+	medium := byID("CVE-2012-5783")
+	require.NotNil(t, medium)
+	require.Len(t, medium.Cvss, 1, "CVE requirement should carry one cvss entry")
+	require.NotNil(t, medium.Cvss[0].BaseScore)
+	assert.InDelta(t, 5.8, *medium.Cvss[0].BaseScore, 0.0001)
+	assert.Equal(t, hdf.The31, medium.Cvss[0].Version)
+	require.NotNil(t, medium.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityMedium, *medium.Cvss[0].BaseSeverity)
+	assert.Nil(t, medium.Cvss[0].BaseVector, "Veracode SCA carries no vector")
+
+	high := byID("CVE-2021-42550")
+	require.NotNil(t, high)
+	require.Len(t, high.Cvss, 1)
+	require.NotNil(t, high.Cvss[0].BaseScore)
+	assert.InDelta(t, 8.5, *high.Cvss[0].BaseScore, 0.0001)
+	require.NotNil(t, high.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityHigh, *high.Cvss[0].BaseSeverity)
+}
+
+// The interim tags.cve migration does not apply to Veracode: the CVE is already
+// the requirement.id on SCA findings, so no duplicate tags.cve is emitted.
+func TestConvertVeracodeToHDF_NoCveTag(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	for _, req := range result.Baselines[0].Requirements {
+		_, hasCve := req.Tags["cve"]
+		assert.False(t, hasCve, "requirement %q should not carry a tags.cve duplicate", req.ID)
+	}
+}
+
+// CWE identifiers are first-class on both static (CWE) and SCA (CVE) requirements:
+// static category cweid attributes are prefixed to CWE-NN; SCA vulns already carry
+// the prefix. The old tags.cweid / tags.cwe freetext is gone; the NIST mapping stays.
+func TestConvertVeracodeToHDF_CweFirstClass(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	byID := func(id string) *hdf.EvaluatedRequirement {
+		for i := range result.Baselines[0].Requirements {
+			if result.Baselines[0].Requirements[i].ID == id {
+				return &result.Baselines[0].Requirements[i]
+			}
+		}
+		return nil
+	}
+
+	static := byID("18")
+	require.NotNil(t, static)
+	assert.Equal(t, []string{"CWE-78"}, static.Cwe)
+	_, hasCweid := static.Tags["cweid"]
+	assert.False(t, hasCweid, "static requirement should not carry tags.cweid")
+	assert.NotEmpty(t, static.Tags["nist"], "NIST mapping must be preserved")
+
+	cve := byID("CVE-2012-5783")
+	require.NotNil(t, cve)
+	assert.Equal(t, []string{"CWE-20"}, cve.Cwe)
+	_, hasCwe := cve.Tags["cwe"]
+	assert.False(t, hasCwe, "CVE requirement should not carry tags.cwe")
+	assert.NotEmpty(t, cve.Tags["nist"], "NIST mapping must be preserved")
+
+	// A CVE vulnerability with an empty cwe_id emits no cwe[].
+	noCwe := byID("CVE-2014-3577")
+	require.NotNil(t, noCwe)
+	assert.Nil(t, noCwe.Cwe, "CVE with empty cwe_id should leave cwe[] unset")
+}
+
+// buildVeracodeCvss branch coverage: score present, component fallback, both
+// absent, and non-numeric — including the field-absent (no entry) paths.
+func TestBuildVeracodeCvss(t *testing.T) {
+	t.Run("vulnerability score present", func(t *testing.T) {
+		cvss := buildVeracodeCvss(Vulnerability{CVSSScore: "7.5"}, nil)
+		require.Len(t, cvss, 1)
+		require.NotNil(t, cvss[0].BaseScore)
+		assert.InDelta(t, 7.5, *cvss[0].BaseScore, 0.0001)
+		assert.Equal(t, hdf.The31, cvss[0].Version)
+	})
+
+	t.Run("falls back to component max_cvss_score", func(t *testing.T) {
+		cvss := buildVeracodeCvss(
+			Vulnerability{CVSSScore: ""},
+			[]Component{{MaxCVSSScore: ""}, {MaxCVSSScore: "6.4"}},
+		)
+		require.Len(t, cvss, 1)
+		require.NotNil(t, cvss[0].BaseScore)
+		assert.InDelta(t, 6.4, *cvss[0].BaseScore, 0.0001)
+	})
+
+	t.Run("no score anywhere yields no entry", func(t *testing.T) {
+		assert.Nil(t, buildVeracodeCvss(Vulnerability{CVSSScore: ""}, []Component{{MaxCVSSScore: ""}}))
+		assert.Nil(t, buildVeracodeCvss(Vulnerability{CVSSScore: ""}, nil))
+	})
+
+	t.Run("non-numeric score yields no entry", func(t *testing.T) {
+		assert.Nil(t, buildVeracodeCvss(Vulnerability{CVSSScore: "not-a-number"}, nil))
+	})
 }
 
 func TestConvertVeracodeToHDF_VerificationMethod(t *testing.T) {

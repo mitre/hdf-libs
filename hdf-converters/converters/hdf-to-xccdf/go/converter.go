@@ -72,9 +72,10 @@ type XCCDFRule struct {
 	Description string           `xml:"description,omitempty"`
 	References  []XCCDFReference `xml:"reference,omitempty"`
 	Rationale   string           `xml:"rationale,omitempty"`
-	Fixtext     string           `xml:"fixtext,omitempty"`
-	Idents      []XCCDFIdent     `xml:"ident,omitempty"`
-	Checks      []XCCDFCheck     `xml:"check,omitempty"`
+	// XCCDF Rule is an ordered sequence: ident precedes fixtext/fix/check.
+	Idents  []XCCDFIdent `xml:"ident,omitempty"`
+	Fixtext string       `xml:"fixtext,omitempty"`
+	Checks  []XCCDFCheck `xml:"check,omitempty"`
 }
 
 // XCCDFReference represents an XCCDF reference element (href attr or text).
@@ -108,6 +109,16 @@ type XCCDFTestResult struct {
 	Target        string            `xml:"target"`
 	TargetAddress string            `xml:"target-address,omitempty"`
 	RuleResults   []XCCDFRuleResult `xml:"rule-result"`
+	// XCCDF requires at least one score element after the rule-results.
+	Score XCCDFScore `xml:"score"`
+}
+
+// XCCDFScore represents the required XCCDF TestResult score element.
+type XCCDFScore struct {
+	XMLName xml.Name `xml:"score"`
+	System  string   `xml:"system,attr"`
+	Maximum string   `xml:"maximum,attr,omitempty"`
+	Value   string   `xml:",chardata"`
 }
 
 // XCCDFRuleResult represents an XCCDF rule-result element.
@@ -330,6 +341,28 @@ func buildTestResult(hdfData *hdf.HDFResults, baseline hdf.EvaluatedBaseline) *X
 
 			testResult.RuleResults = append(testResult.RuleResults, rr)
 		}
+	}
+
+	// XCCDF requires a score element. Emit the default-model pass percentage
+	// over scorable (pass/fail) rule-results.
+	passed, scorable := 0, 0
+	for _, rr := range testResult.RuleResults {
+		switch rr.Result {
+		case "pass":
+			passed++
+			scorable++
+		case "fail":
+			scorable++
+		}
+	}
+	score := 0.0
+	if scorable > 0 {
+		score = float64(passed) / float64(scorable) * 100
+	}
+	testResult.Score = XCCDFScore{
+		System:  "urn:xccdf:scoring:default",
+		Maximum: "100.000000",
+		Value:   fmt.Sprintf("%.6f", score),
 	}
 
 	return testResult

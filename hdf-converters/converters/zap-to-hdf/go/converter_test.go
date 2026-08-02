@@ -106,7 +106,7 @@ func TestConvertZapToHDF_Tool(t *testing.T) {
 
 	require.NotNil(t, result.Tool)
 	assert.Equal(t, "OWASP ZAP", *result.Tool.Name)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 	assert.Equal(t, "2.7.0", *result.Tool.Version)
 }
 
@@ -252,6 +252,79 @@ func TestConvertZapToHDF_AttackMessage(t *testing.T) {
 	assert.Equal(t, "' OR 1=1 --", *req.Results[1].Message)
 }
 
+// --- Requirement code (CODE tab) ---
+// requirement.code is synthesized from the HTTP request context of the alert's
+// representative instance: "<METHOD> <uri>" + optional "Param: <param>" +
+// optional "Attack: <attack>". The representative instance is the first instance
+// carrying an attack payload (falling back to the first instance otherwise), so
+// the DAST payload surfaces on the CODE tab even when it is not on instance[0].
+
+func TestConvertZapToHDF_RequirementCode_FallbackFirstInstance(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// 10021: no instance carries an attack, so the first instance is used.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
+	require.NotNil(t, req.Code)
+	assert.Equal(t, "GET https://example.com/login\nParam: X-Content-Type-Options", *req.Code)
+}
+
+func TestConvertZapToHDF_RequirementCode_PrefersAttackInstance(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// 90022: instance[0] has no attack; instance[1] carries the SQLi payload, so
+	// that instance is chosen and the attack surfaces on the CODE tab.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
+	require.NotNil(t, req.Code)
+	assert.Equal(t, "POST https://example.com/api/login\nParam: username\nAttack: ' OR 1=1 --", *req.Code)
+}
+
+func Test_representativeInstance(t *testing.T) {
+	_, ok := representativeInstance(nil)
+	assert.False(t, ok, "no instances → not ok")
+
+	first := ZapInstance{Method: "GET", URI: "/a"}
+	second := ZapInstance{Method: "POST", URI: "/b", Attack: "x"}
+	got, ok := representativeInstance([]ZapInstance{first, second})
+	require.True(t, ok)
+	assert.Equal(t, second, got, "instance carrying an attack is preferred")
+
+	got, ok = representativeInstance([]ZapInstance{first})
+	require.True(t, ok)
+	assert.Equal(t, first, got, "falls back to the first instance when none carry an attack")
+}
+
+func Test_buildRequirementCode(t *testing.T) {
+	// NOT-IN-SOURCE: no instances at all → code left unset.
+	assert.Nil(t, buildRequirementCode(ZapAlert{}))
+
+	// NOT-IN-SOURCE: an instance with no request context → code left unset.
+	assert.Nil(t, buildRequirementCode(ZapAlert{Instances: []ZapInstance{{}}}))
+
+	// Request line only (no param, no attack).
+	code := buildRequirementCode(ZapAlert{Instances: []ZapInstance{{Method: "GET", URI: "/x"}}})
+	require.NotNil(t, code)
+	assert.Equal(t, "GET /x", *code)
+
+	// Param only — no method/uri, so no request line.
+	code = buildRequirementCode(ZapAlert{Instances: []ZapInstance{{Param: "p"}}})
+	require.NotNil(t, code)
+	assert.Equal(t, "Param: p", *code)
+
+	// Attack only — no method/uri/param.
+	code = buildRequirementCode(ZapAlert{Instances: []ZapInstance{{Attack: "a"}}})
+	require.NotNil(t, code)
+	assert.Equal(t, "Attack: a", *code)
+
+	// Full request context.
+	code = buildRequirementCode(ZapAlert{Instances: []ZapInstance{{Method: "POST", URI: "/y", Param: "q", Attack: "z"}}})
+	require.NotNil(t, code)
+	assert.Equal(t, "POST /y\nParam: q\nAttack: z", *code)
+}
+
 // --- NIST mapping ---
 
 func TestConvertZapToHDF_NISTMappedCWE(t *testing.T) {
@@ -302,13 +375,28 @@ func TestConvertZapToHDF_CCITags(t *testing.T) {
 
 // --- Extra tags ---
 
-func TestConvertZapToHDF_CWEIDTag(t *testing.T) {
+func TestConvertZapToHDF_CWEFirstClass(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
 	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
-	assert.Equal(t, "16", req.Tags["cweid"])
+	assert.Equal(t, []string{"CWE-16"}, req.Cwe)
+	// The CWE is now first-class only — it must not linger as a tag.
+	_, ok := req.Tags["cweid"]
+	assert.False(t, ok, "cweid tag must be removed once promoted to cwe[]")
+}
+
+func TestConvertZapToHDF_CWEAbsentWhenEmpty(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// Alert 90022 in minimal.json carries an empty cweid → no cwe[] emitted.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
+	assert.Nil(t, req.Cwe)
+	_, ok := req.Tags["cweid"]
+	assert.False(t, ok)
 }
 
 func TestConvertZapToHDF_WASCIDTag(t *testing.T) {
@@ -374,24 +462,6 @@ func TestConvertZapToHDF_SARIFInput(t *testing.T) {
 	assert.NotEqual(t, "OWASP ZAP Scan", result.Baselines[0].Name)
 }
 
-// --- Site selection ---
-
-func TestSelectSite(t *testing.T) {
-	sites := []ZapSite{
-		{Host: "small", Alerts: []ZapAlert{{PluginID: "1"}}},
-		{Host: "large", Alerts: []ZapAlert{{PluginID: "1"}, {PluginID: "2"}, {PluginID: "3"}}},
-		{Host: "medium", Alerts: []ZapAlert{{PluginID: "1"}, {PluginID: "2"}}},
-	}
-	best := selectSite(sites)
-	require.NotNil(t, best)
-	assert.Equal(t, "large", best.Host)
-}
-
-func Test_selectSite_Empty(t *testing.T) {
-	best := selectSite([]ZapSite{})
-	assert.Nil(t, best)
-}
-
 // --- Deduplication ---
 
 func Test_deduplicateID(t *testing.T) {
@@ -409,6 +479,14 @@ func Test_parseCweID(t *testing.T) {
 	assert.Equal(t, 0, parseCweID("abc"))
 }
 
+func Test_buildCwe(t *testing.T) {
+	assert.Equal(t, []string{"CWE-16"}, buildCwe("16"))
+	assert.Equal(t, []string{"CWE-200"}, buildCwe("200"))
+	assert.Nil(t, buildCwe(""))
+	assert.Nil(t, buildCwe("0"))
+	assert.Nil(t, buildCwe("abc"))
+}
+
 // --- StripHTML ---
 
 func Test_stripHTML(t *testing.T) {
@@ -419,17 +497,57 @@ func Test_stripHTML(t *testing.T) {
 
 // --- Webgoat fixture ---
 // webgoat.json: ZAP scan results from the OWASP WebGoat deliberately vulnerable application.
-// Contains 2 sites, 25 alerts in the primary site (mymac.com), 15 unique plugin IDs.
+// Contains 4 sites: mymac.com (25 alerts, 15 unique plugin IDs) plus 3 single-alert
+// hosts (ciscobinary.openh264.org, code.jquery.com, detectportal.firefox.com). Every
+// site is converted to its own baseline + Application component (see multi-site tests).
 
-func TestConvertZapToHDF_Webgoat_SelectsSiteWithMostAlerts(t *testing.T) {
+// mymacBaseline returns the per-site baseline for host mymac.com, the busiest site.
+func mymacBaseline(t *testing.T, result *hdf.HDFResults) hdf.EvaluatedBaseline {
+	t.Helper()
+	for _, b := range result.Baselines {
+		if b.Labels["component"] == "mymac.com" {
+			return b
+		}
+	}
+	t.Fatalf("no baseline for host mymac.com")
+	return hdf.EvaluatedBaseline{}
+}
+
+// Every site becomes its own baseline + Application component — no site is dropped.
+func TestConvertZapToHDF_Webgoat_AllSitesConverted(t *testing.T) {
 	input := loadFixture(t, "input/webgoat.json")
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	// Baseline.Name is the fixed scan label; the host goes into Targets
-	assert.Equal(t, "OWASP ZAP Scan", result.Baselines[0].Name)
-	require.Len(t, result.Components, 1)
-	assert.Equal(t, "mymac.com", result.Components[0].Name)
+	require.Len(t, result.Baselines, 4, "one baseline per ZAP site")
+	require.Len(t, result.Components, 4, "one Application component per ZAP site")
+
+	hosts := make(map[string]bool)
+	for _, c := range result.Components {
+		assert.Equal(t, hdf.Application, c.Type)
+		hosts[c.Name] = true
+	}
+	assert.True(t, hosts["mymac.com"], "mymac.com component present")
+	assert.True(t, hosts["ciscobinary.openh264.org"], "ciscobinary component present")
+	assert.True(t, hosts["code.jquery.com"], "code.jquery.com component present")
+	assert.True(t, hosts["detectportal.firefox.com"], "detectportal component present")
+}
+
+// Each per-site baseline is linked to its host component via the "component" label,
+// and carries a unique, host-scoped name.
+func TestConvertZapToHDF_Webgoat_BaselineHostAttribution(t *testing.T) {
+	input := loadFixture(t, "input/webgoat.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	names := make(map[string]bool)
+	for _, b := range result.Baselines {
+		host := b.Labels["component"]
+		require.NotEmpty(t, host, "baseline %q missing component label", b.Name)
+		assert.False(t, names[b.Name], "baseline name %q is not unique", b.Name)
+		names[b.Name] = true
+		assert.Contains(t, b.Name, host, "baseline name should identify its host")
+	}
 }
 
 func TestConvertZapToHDF_Webgoat_RequirementCount(t *testing.T) {
@@ -437,8 +555,29 @@ func TestConvertZapToHDF_Webgoat_RequirementCount(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	// 25 alerts total, each gets its own requirement (duplicates get .1, .2, etc.)
-	assert.Len(t, result.Baselines[0].Requirements, 25)
+	// mymac.com carries 25 alerts, each its own requirement (duplicates get .1, .2, ...).
+	assert.Len(t, mymacBaseline(t, result).Requirements, 25)
+}
+
+// The 3 single-alert hosts all share pluginid 10021. Per-site baselines keep that
+// finding as "10021" in each host's baseline — no cross-site dedup suffixing.
+func TestConvertZapToHDF_Webgoat_CrossSitePluginIDNotConflated(t *testing.T) {
+	input := loadFixture(t, "input/webgoat.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	seen := 0
+	for _, b := range result.Baselines {
+		host := b.Labels["component"]
+		if host == "mymac.com" {
+			continue
+		}
+		require.Len(t, b.Requirements, 1, "single-alert host %q", host)
+		assert.Equal(t, "10021", b.Requirements[0].ID,
+			"host %q keeps pluginid 10021 undeduped", host)
+		seen++
+	}
+	assert.Equal(t, 3, seen, "three single-alert hosts")
 }
 
 func TestConvertZapToHDF_Webgoat_Deduplication(t *testing.T) {
@@ -446,12 +585,13 @@ func TestConvertZapToHDF_Webgoat_Deduplication(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	ids := make([]string, len(result.Baselines[0].Requirements))
-	for i, req := range result.Baselines[0].Requirements {
+	reqs := mymacBaseline(t, result).Requirements
+	ids := make([]string, len(reqs))
+	for i, req := range reqs {
 		ids[i] = req.ID
 	}
 
-	// 90028 appears many times
+	// 90028 appears many times within mymac.com
 	assert.Contains(t, ids, "90028")
 	assert.Contains(t, ids, "90028.1")
 	assert.Contains(t, ids, "90028.2")
@@ -462,7 +602,7 @@ func TestConvertZapToHDF_Webgoat_ImpactRisk0(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90028")
+	req := shared.MustFindRequirement(t, mymacBaseline(t, result).Requirements, "90028")
 	assert.Equal(t, 0.3, req.Impact)
 }
 
@@ -471,7 +611,7 @@ func TestConvertZapToHDF_Webgoat_ImpactRisk3(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "42")
+	req := shared.MustFindRequirement(t, mymacBaseline(t, result).Requirements, "42")
 	assert.Equal(t, 0.7, req.Impact)
 }
 
@@ -500,17 +640,17 @@ func TestConvertZapToHDF_ControlType(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 	require.NotEmpty(t, result.Baselines)
-	reqs := result.Baselines[0].Requirements
-	require.NotEmpty(t, reqs)
 
 	var sawDerivation bool
-	for _, req := range reqs {
-		if req.ControlType != nil {
-			sawDerivation = true
-			switch *req.ControlType {
-			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
-			default:
-				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+	for _, b := range result.Baselines {
+		for _, req := range b.Requirements {
+			if req.ControlType != nil {
+				sawDerivation = true
+				switch *req.ControlType {
+				case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+				default:
+					t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+				}
 			}
 		}
 	}
@@ -523,13 +663,12 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
-// countSelectedSiteAlerts parses raw ZAP JSON generically — NOT via the
-// converter's parser — and returns the alert count of the site with the MOST
-// alerts. The converter processes only that one site (selectSite) and emits one
-// requirement per alert (the pluginid dedup only uniquifies IDs, it does not
-// collapse alerts), so a whole-document "alerts" count would overshoot when the
-// report has multiple sites.
-func countSelectedSiteAlerts(t *testing.T, input []byte) int {
+// countAllSiteAlerts parses raw ZAP JSON generically — NOT via the converter's
+// parser — and returns the total alert count across EVERY site. The converter
+// emits one requirement per alert of every site (the pluginid dedup only
+// uniquifies IDs within a site, it does not collapse alerts), so a silent
+// per-site drop fails this anchor even when Go/TS golden parity agrees.
+func countAllSiteAlerts(t *testing.T, input []byte) int {
 	t.Helper()
 	var doc struct {
 		Site []struct {
@@ -537,26 +676,23 @@ func countSelectedSiteAlerts(t *testing.T, input []byte) int {
 		} `json:"site"`
 	}
 	require.NoError(t, json.Unmarshal(input, &doc), "failed to parse zap JSON for anchor count")
-	best := 0
+	total := 0
 	for _, s := range doc.Site {
-		if len(s.Alerts) > best {
-			best = len(s.Alerts)
-		}
+		total += len(s.Alerts)
 	}
-	return best
+	return total
 }
 
-// Ground-truth anchor: the converter selects the single site with the most
-// alerts and emits one requirement per alert of that site. The count is derived
-// independently of the converter's parser, so a silent under-extraction fails
-// even when Go/TS golden parity agrees. webgoat.json's busiest site has 25 alerts
-// (of 28 across all 4 sites), which the anchor distinguishes from the total.
-func TestConvertZapToHDF_SelectedSiteAlertAnchor(t *testing.T) {
+// Ground-truth anchor: the converter emits one requirement per alert of EVERY
+// site. The count is derived independently of the converter's parser, so a
+// silent per-site drop fails even when Go/TS golden parity agrees. webgoat.json
+// carries 28 alerts across all 4 sites (the old single-site behavior dropped 3).
+func TestConvertZapToHDF_AllSiteAlertAnchor(t *testing.T) {
 	input := loadFixture(t, "input/webgoat.json")
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
-	shared.AssertRequirementCount(t, result, countSelectedSiteAlerts(t, input),
-		"webgoat.json: one requirement per alert of the site with the most alerts")
+	shared.AssertRequirementCount(t, result, countAllSiteAlerts(t, input),
+		"webgoat.json: one requirement per alert across all sites")
 }
 
 func TestConvertZapToHDF_VerificationMethod(t *testing.T) {

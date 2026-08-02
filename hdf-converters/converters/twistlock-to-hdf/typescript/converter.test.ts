@@ -4,14 +4,13 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import {
   convertTwistlockToHdf,
-  cvssVersionFromVector,
-  cvssSeverityFromScore,
   buildCvss,
   parseCwes,
   resolveEcosystem,
   extractFixedInVersion,
   buildAffectedPackage,
 } from './converter.js';
+import { cvssVersionFromVector, cvssSeverityFromScore } from '../../../shared/typescript/cvss.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import {
@@ -143,12 +142,12 @@ describe('twistlock to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource to Twistlock/JSON', async () => {
+    it('should set dataSource to Twistlock', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
       ) as HDFResults;
       expect(hdf.tool?.name).toBe('Twistlock');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 

@@ -832,7 +832,7 @@ describe('Nessus to HDF Converter', async () => {
     });
 
     // Low-band severity (1.0-3.9) + ensures the 'low' switch case in
-    // mapCvssSeverity is exercised.
+    // the shared cvssSeverityFromScore is exercised.
     it('maps low CVSS band to low severity', async () => {
       const xml = `<?xml version="1.0"?>
 <NessusClientData_v2>

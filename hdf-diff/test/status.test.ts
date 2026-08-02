@@ -123,7 +123,28 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req, '2025-06-01T00:00:00Z')).toBe('failed');
   });
 
-  it('uses the first non-expired override when multiple overrides exist', () => {
+  it('uses the governing (most recently applied) override regardless of array order', () => {
+    const req = makeRequirement({
+      results: [makeResult('failed')],
+      statusOverrides: [
+        // Listed first but applied later: governs per the schema's
+        // "most recent non-expired override" definition of disposition.
+        makeOverride({
+          status: 'passed',
+          appliedAt: '2025-06-01T00:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
+        }),
+        makeOverride({
+          status: 'notApplicable',
+          appliedAt: '2025-01-01T00:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
+        }),
+      ],
+    });
+    expect(computeEffectiveStatus(req, '2026-01-01T00:00:00Z')).toBe('passed');
+  });
+
+  it('uses the governing non-expired override when multiple overrides exist', () => {
     const req = makeRequirement({
       results: [makeResult('failed')],
       statusOverrides: [

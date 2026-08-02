@@ -9,6 +9,7 @@
 package asff
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -44,6 +45,28 @@ type asffFinding struct {
 	// Inspector, third-party scanners). Mapped generically so its CVE/CVSS/fix
 	// data survives regardless of whether the producer is specially handled.
 	Vulnerabilities []asffVulnerability `json:"Vulnerabilities"`
+	// FindingProviderFields carries the finding provider's authoritative severity,
+	// which takes precedence over the top-level Severity that Security Hub may
+	// overwrite when it ingests a finding.
+	FindingProviderFields *asffFindingProviderFields `json:"FindingProviderFields"`
+
+	// raw is the finding exactly as the source emitted it. ASFF carries no literal
+	// source snippet, so requirement.code is the whole finding re-indented in place —
+	// preserving source key order, every field the typed struct does not model, and
+	// the source number literals, so the output is byte-identical to the TypeScript
+	// twin's JSON.stringify(finding, null, 2).
+	raw json.RawMessage
+}
+
+func (f *asffFinding) UnmarshalJSON(data []byte) error {
+	type plain asffFinding
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*f = asffFinding(p)
+	f.raw = append(json.RawMessage(nil), data...)
+	return nil
 }
 
 type asffVulnerability struct {
@@ -60,6 +83,10 @@ type asffCvss struct {
 	Version   string   `json:"Version"`
 	BaseScore *float64 `json:"BaseScore"`
 	Source    string   `json:"Source"`
+}
+
+type asffFindingProviderFields struct {
+	Severity asffSeverity `json:"Severity"`
 }
 
 type asffVulnPackage struct {
@@ -211,7 +238,6 @@ func ConvertAsffToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 		GeneratorName:    "asff-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "AWS Security Finding Format",
-		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Components:       components,
 		Timestamp:        &now,
@@ -314,6 +340,12 @@ func buildRequirement(id string, group []asffFinding) hdf.EvaluatedRequirement {
 	if len(nist) > 0 {
 		tags = shared.BuildNISTCCITags(nist, cci.NISTToCCI(nist))
 	}
+	// The CVE lives in ASFF's Vulnerabilities[].Id, while requirement.id is the
+	// finding id — so the CVE is not otherwise represented. Surface it in tags.cve
+	// (interim, pending a first-class identifiers[] schema field).
+	if cves := vulnCVEs(primary); len(cves) > 0 {
+		tags["cve"] = cves
+	}
 
 	results := make([]hdf.RequirementResult, 0, len(group))
 	for _, f := range group {
@@ -328,6 +360,12 @@ func buildRequirement(id string, group []asffFinding) hdf.EvaluatedRequirement {
 		Descriptions: descriptions,
 		Results:      results,
 		ControlType:  shared.DeriveControlTypeFromTags(nist),
+	}
+	if cvss := vulnCvss(primary); len(cvss) > 0 {
+		req.Cvss = cvss
+	}
+	if code := buildRequirementCode(primary); code != "" {
+		req.Code = hdfutil.Ptr(code)
 	}
 	var refs []hdf.Reference
 	if primary.SourceURL != "" {
@@ -346,6 +384,22 @@ func buildRequirement(id string, group []asffFinding) hdf.EvaluatedRequirement {
 		req.Refs = refs
 	}
 	return req
+}
+
+// buildRequirementCode renders the raw finding as indented JSON for
+// requirement.code. json.Indent re-formats the original bytes in place,
+// preserving source key order so the output is byte-identical to the TypeScript
+// twin's JSON.stringify(finding, null, 2). Returns "" when the finding carries no
+// raw source (nothing to serialize), leaving requirement.code unset.
+func buildRequirementCode(f asffFinding) string {
+	if len(f.raw) == 0 {
+		return ""
+	}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, f.raw, "", "  "); err != nil {
+		return ""
+	}
+	return buf.String()
 }
 
 func buildResult(f asffFinding) hdf.RequirementResult {
@@ -380,6 +434,41 @@ func buildResult(f asffFinding) hdf.RequirementResult {
 		res.Message = hdfutil.Ptr(message)
 	}
 	return res
+}
+
+// vulnCvss assembles requirement.cvss[] from a finding's ASFF Vulnerabilities[].
+// Each Cvss entry carrying a BaseScore becomes one structured hdf.Cvss via the
+// shared builder. ASFF's Cvss shape has no vector string, so only version, score,
+// and source map; an entry without a BaseScore contributes nothing.
+func vulnCvss(f asffFinding) []hdf.Cvss {
+	var out []hdf.Cvss
+	for _, v := range f.Vulnerabilities {
+		for _, c := range v.Cvss {
+			if c.BaseScore == nil {
+				continue
+			}
+			out = append(out, shared.BuildCvss(shared.CvssInput{
+				Version:   shared.CvssVersionFromString(c.Version),
+				BaseScore: c.BaseScore,
+				Source:    c.Source,
+			}))
+		}
+	}
+	return out
+}
+
+// vulnCVEs collects the CVE ids a finding's Vulnerabilities[] carry (dedup,
+// first-seen order) for tags.cve. ASFF stores the CVE in Vulnerabilities[].Id.
+func vulnCVEs(f asffFinding) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, v := range f.Vulnerabilities {
+		if v.ID != "" && !seen[v.ID] {
+			seen[v.ID] = true
+			out = append(out, v.ID)
+		}
+	}
+	return out
 }
 
 // vulnerabilitySummary renders a finding's ASFF Vulnerabilities[] as a compact
@@ -491,8 +580,10 @@ func severityLabelToImpact(label string) float64 {
 
 // findingImpact derives a 0.0–1.0 impact. Suppressed findings are forced to 0.
 // When a standards control is matched, its severity rating wins; otherwise the
-// finding's Severity.Label is used, with Security Hub's INFORMATIONAL up-graded
-// to MEDIUM (Security Hub over-marks findings INFORMATIONAL without context).
+// finding's severity is used, with Security Hub's INFORMATIONAL up-graded to
+// MEDIUM (Security Hub over-marks findings INFORMATIONAL without context).
+// FindingProviderFields.Severity — the provider's own rating — is preferred over
+// the top-level Severity, which Security Hub may overwrite on ingest.
 func findingImpact(f asffFinding, control *standardsControl) float64 {
 	if f.Workflow.Status == "SUPPRESSED" {
 		return 0.0
@@ -500,15 +591,19 @@ func findingImpact(f asffFinding, control *standardsControl) float64 {
 	if control != nil && control.SeverityRating != "" {
 		return severityLabelToImpact(control.SeverityRating)
 	}
-	label := f.Severity.Label
+	sev := f.Severity
+	if f.FindingProviderFields != nil && f.FindingProviderFields.Severity.Label != "" {
+		sev = f.FindingProviderFields.Severity
+	}
+	label := sev.Label
 	if isSecurityHub(f) && strings.EqualFold(label, "INFORMATIONAL") {
 		label = "MEDIUM"
 	}
 	if label != "" {
 		return severityLabelToImpact(label)
 	}
-	if f.Severity.Normalized != nil {
-		return *f.Severity.Normalized / 100.0
+	if sev.Normalized != nil {
+		return *sev.Normalized / 100.0
 	}
 	return 0.0
 }

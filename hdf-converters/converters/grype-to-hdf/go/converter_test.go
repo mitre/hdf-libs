@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -53,6 +54,45 @@ func TestConvertGrypeToHDF(t *testing.T) {
 			t.Error("Expected timestamp to be defined")
 		} else {
 			t.Errorf("Expected timestamp %q, got %q", expectedTime.Format(time.RFC3339Nano), hdfResults.Timestamp.Format(time.RFC3339Nano))
+		}
+	}
+}
+
+// Grype carries no literal source snippet, so requirement.code holds the raw
+// match object serialized as indented JSON. Pin that it is set and round-trips
+// byte-structurally back to the source match (Heimdall CODE-tab fidelity).
+func TestConvertGrypeToHDF_RequirementCode(t *testing.T) {
+	input := loadFixture(t, "input/amazon.json")
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+
+	var raw struct {
+		Matches []json.RawMessage `json:"matches"`
+	}
+	if err := json.Unmarshal(input, &raw); err != nil {
+		t.Fatalf("Failed to parse fixture: %v", err)
+	}
+
+	reqs := hdfResults.Baselines[0].Requirements
+	if len(reqs) != len(raw.Matches) {
+		t.Fatalf("Expected %d requirements, got %d", len(raw.Matches), len(reqs))
+	}
+
+	for i, req := range reqs {
+		if req.Code == nil {
+			t.Fatalf("requirement %d: Code is nil; Heimdall CODE tab would be empty", i)
+		}
+		var got, want interface{}
+		if err := json.Unmarshal([]byte(*req.Code), &got); err != nil {
+			t.Fatalf("requirement %d: Code is not valid JSON: %v", i, err)
+		}
+		if err := json.Unmarshal(raw.Matches[i], &want); err != nil {
+			t.Fatalf("match %d: %v", i, err)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("requirement %d: Code does not round-trip to source match object", i)
 		}
 	}
 }
@@ -586,4 +626,31 @@ func TestConvertGrypeToHDF_MatchesAnchor(t *testing.T) {
 	}
 	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "matches"),
 		"anchore_grype.json: one requirement per matches[] (no ignoredMatches)")
+}
+
+func TestBuildCvssEntries_MissingMetrics(t *testing.T) {
+	vuln := GrypeVulnerability{
+		ID: "CVE-2021-0001",
+		CVSS: []GrypeCVSS{
+			{Version: "3.1", Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}, // metrics absent
+			{Version: "3.1"}, // neither score nor vector -> dropped
+			{Version: "3.1", Vector: "CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:U/C:L/I:L/A:L", Metrics: &CVSSMetrics{BaseScore: 3.4}},
+		},
+	}
+	got := buildCvssEntries(vuln)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 cvss entries (neither-score-nor-vector dropped), got %d", len(got))
+	}
+	if got[0].BaseScore != nil {
+		t.Errorf("metrics-less entry must omit baseScore, got %v", *got[0].BaseScore)
+	}
+	if got[0].BaseSeverity != nil {
+		t.Errorf("metrics-less entry must omit baseSeverity")
+	}
+	if got[0].BaseVector == nil {
+		t.Errorf("metrics-less entry must preserve baseVector")
+	}
+	if got[1].BaseScore == nil || *got[1].BaseScore != 3.4 {
+		t.Errorf("entry with metrics must keep baseScore 3.4, got %v", got[1].BaseScore)
+	}
 }

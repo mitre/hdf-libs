@@ -247,7 +247,6 @@ export async function convertHipcheckToHdf(input: string, converterVersion = '1.
     generatorName: 'hipcheck-to-hdf',
     converterVersion,
     toolName: 'Hipcheck',
-    toolFormat: 'JSON',
     toolVersion: report.hipcheck_version,
     baselines: [baseline],
     components: ident ? [{ name: ident, type: TargetType.Repository }] : undefined,

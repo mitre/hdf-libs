@@ -481,6 +481,17 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 		}
 	}
 
+	// requirement.code = raw source snippet (region.snippet.text) so Heimdall's
+	// CODE tab is populated. Only set when a primary location carries a snippet —
+	// never fabricated.
+	var codePtr *string
+	for _, loc := range firstResult.Locations {
+		if snippet := extractSnippet(loc); snippet != "" {
+			codePtr = &snippet
+			break
+		}
+	}
+
 	// Convert each SARIF result into RequirementResult(s)
 	var results []hdf.RequirementResult
 	for _, sr := range sarifResults {
@@ -500,6 +511,7 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 		Impact:             impact,
 		Tags:               tags,
 		Results:            results,
+		Code:               codePtr,
 		SourceLocation:     sourceLocationPtr,
 		ControlType:        shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
@@ -956,6 +968,16 @@ func extractSourceLocation(location SarifLocation) hdf.SourceLocation {
 	}
 
 	return sourceLocation
+}
+
+// extractSnippet returns the raw source text at a location's region, or "" when absent.
+func extractSnippet(location SarifLocation) string {
+	if location.PhysicalLocation != nil &&
+		location.PhysicalLocation.Region != nil &&
+		location.PhysicalLocation.Region.Snippet != nil {
+		return location.PhysicalLocation.Region.Snippet.Text
+	}
+	return ""
 }
 
 func createHDFResult(location SarifLocation, status hdf.ResultStatus, timestamp time.Time, backtrace []string) hdf.RequirementResult {

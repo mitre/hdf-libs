@@ -119,8 +119,18 @@ type Ident struct {
 
 // Check represents an XCCDF check element.
 type Check struct {
-	System       string `xml:"system,attr"`
-	CheckContent string `xml:"check-content"`
+	System          string          `xml:"system,attr"`
+	CheckContent    string          `xml:"check-content"`
+	CheckContentRef CheckContentRef `xml:"check-content-ref"`
+}
+
+// CheckContentRef points at the external automated-check definition (e.g. the
+// OVAL definition id and the file that holds it). This is the automated-check
+// logic that fills the Heimdall CODE tab; the element text (CheckContent) is
+// usually empty because the definition lives in the referenced file.
+type CheckContentRef struct {
+	Name string `xml:"name,attr"`
+	Href string `xml:"href,attr"`
 }
 
 // checkPriority ranks XCCDF check systems. A rule can carry several <check>
@@ -155,6 +165,49 @@ func selectCheck(checks []Check) Check {
 		}
 	}
 	return best
+}
+
+// checkCodeJSON is the JSON shape serialized into requirement.code: the
+// automated-check logic (system + OVAL/SCE definition reference + any inline
+// content). Field order and omitempty are chosen so json.MarshalIndent and the
+// TypeScript twin's JSON.stringify emit byte-identical output.
+type checkCodeJSON struct {
+	System          string               `json:"system,omitempty"`
+	CheckContentRef *checkContentRefJSON `json:"checkContentRef,omitempty"`
+	CheckContent    string               `json:"checkContent,omitempty"`
+}
+
+type checkContentRefJSON struct {
+	Name string `json:"name,omitempty"`
+	Href string `json:"href,omitempty"`
+}
+
+// buildCheckCode renders a rule's selected <check> as the indented-JSON blob
+// carried in requirement.code. Returns "" when the check is empty so the caller
+// leaves code unset rather than fabricating one. HTML escaping is off to match
+// the TypeScript twin's JSON.stringify byte-for-byte.
+func buildCheckCode(check Check) string {
+	content := strings.TrimSpace(check.CheckContent)
+	if check.System == "" && check.CheckContentRef.Name == "" && check.CheckContentRef.Href == "" && content == "" {
+		return ""
+	}
+
+	code := checkCodeJSON{System: check.System, CheckContent: content}
+	if check.CheckContentRef.Name != "" || check.CheckContentRef.Href != "" {
+		code.CheckContentRef = &checkContentRefJSON{
+			Name: check.CheckContentRef.Name,
+			Href: check.CheckContentRef.Href,
+		}
+	}
+
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(code); err != nil {
+		return ""
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
 }
 
 // TestResult represents the XCCDF TestResult element containing scan results.
@@ -1013,15 +1066,24 @@ func convertRuleResult(rr *RuleResult, rule *Rule, fallback time.Time) hdf.Evalu
 	tags := buildTags(rr, rule)
 	results := []hdf.RequirementResult{buildResult(rr, fallback)}
 
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:           id,
 		Title:        hdfutil.Ptr(title),
 		Descriptions: descriptions,
 		Impact:       impact,
+		Severity:     determineSeverity(rr, rule),
 		Tags:         tags,
 		Results:      results,
 		ControlType:  shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
 	}
+
+	if rule != nil {
+		if code := buildCheckCode(selectCheck(rule.Checks)); code != "" {
+			req.Code = &code
+		}
+	}
+
+	return req
 }
 
 // determineID returns the requirement ID. Prefers the Rule ID extracted
@@ -1053,6 +1115,19 @@ func determineImpact(rr *RuleResult, rule *Rule) float64 {
 	return hdfutil.SeverityToImpact(severity, 0.5)
 }
 
+// determineSeverity maps the XCCDF severity to an HDF severity enum, mirroring
+// determineImpact's precedence: the rule-result @severity first, then the Rule
+// definition's severity. Returns nil when neither carries a mappable severity
+// (empty or "unknown"), so the field is omitted rather than fabricated — the
+// same behavior as the baseline path's xccdfSeverityToHDF.
+func determineSeverity(rr *RuleResult, rule *Rule) *hdf.Severity {
+	severity := rr.Severity
+	if severity == "" && rule != nil {
+		severity = rule.Severity
+	}
+	return xccdfSeverityToHDF(severity)
+}
+
 // buildDescriptions creates HDF Description entries from the Rule definition.
 func buildDescriptions(rule *Rule) []hdf.Description {
 	var descriptions []hdf.Description
@@ -1068,6 +1143,15 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 			Label: "default",
 			Data:  "",
 		})
+	}
+
+	if rule != nil {
+		if cc := selectCheck(rule.Checks).CheckContent; cc != "" {
+			descriptions = append(descriptions, hdf.Description{
+				Label: "check",
+				Data:  hdfutil.StripHTML(cc),
+			})
+		}
 	}
 
 	if rule != nil && rule.Fixtext.Text != "" {

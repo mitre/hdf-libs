@@ -282,6 +282,88 @@ func TestConvertXccdfResultsToHDF_StigSeverityToImpact(t *testing.T) {
 	assert.Equal(t, 0.3, lowReq.Impact, "low severity should map to 0.3")
 }
 
+// The results path derives impact from severity but historically never set the
+// requirement.severity enum, unlike the baseline path. Pin the parity: a
+// results-path requirement must carry the same HDF severity the baseline path
+// would emit for the rule.
+func TestConvertXccdfResultsToHDF_StigSeverityEnum(t *testing.T) {
+	input := loadFixture(t, "stig-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	medReq := shared.MustFindRequirement(t, reqs, "SV-204393")
+	require.NotNil(t, medReq.Severity, "medium rule must carry a severity")
+	assert.Equal(t, hdf.SeverityMedium, *medReq.Severity)
+
+	highReq := shared.MustFindRequirement(t, reqs, "SV-204424")
+	require.NotNil(t, highReq.Severity, "high rule must carry a severity")
+	assert.Equal(t, hdf.SeverityHigh, *highReq.Severity)
+
+	lowReq := shared.MustFindRequirement(t, reqs, "SV-204452")
+	require.NotNil(t, lowReq.Severity, "low rule must carry a severity")
+	assert.Equal(t, hdf.SeverityLow, *lowReq.Severity)
+}
+
+// SCC output carries @severity on each rule-result but ships no Rule
+// definitions, so severity must come from the rule-result attribute alone.
+func TestConvertXccdfResultsToHDF_SccSeverityFromRuleResult(t *testing.T) {
+	input := loadFixture(t, "xccdf-results-scc-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "SV-204393")
+	require.NotNil(t, req.Severity, "rule-result severity must populate requirement.severity")
+	assert.Equal(t, hdf.SeverityMedium, *req.Severity)
+}
+
+// XCCDF severity="unknown" has no HDF equivalent; the results path must omit
+// severity rather than fabricate one. arf-minimal's sole rule-result is unknown.
+func TestConvertXccdfResultsToHDF_UnknownSeverityOmitted(t *testing.T) {
+	input := loadFixture(t, "arf-minimal.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.Severity, `severity="unknown" must not be emitted`)
+}
+
+// When the rule-result omits @severity, the severity falls back to the Rule
+// definition — mirroring the impact precedence. Also pins that a rule-result
+// with no matching rule and no severity emits no severity at all.
+func TestConvertXccdfResultsToHDF_SeverityPrecedenceAndAbsent(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_sev">
+  <version>1.0</version>
+  <Rule id="xccdf_test_rule_1" selected="true" severity="high">
+    <title>Rule with severity</title>
+    <description>desc</description>
+  </Rule>
+  <TestResult id="xccdf_test_testresult_1" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="xccdf_test_rule_1" time="2021-01-01T00:00:00">
+      <result>fail</result>
+    </rule-result>
+    <rule-result idref="xccdf_unmatched_rule" time="2021-01-01T00:00:00">
+      <result>pass</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`)
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 2)
+
+	// rule-result had no @severity → falls back to the Rule's high.
+	require.NotNil(t, reqs[0].Severity)
+	assert.Equal(t, hdf.SeverityHigh, *reqs[0].Severity)
+
+	// No matching rule and no rule-result @severity → omitted.
+	assert.Nil(t, reqs[1].Severity)
+}
+
 func TestConvertXccdfResultsToHDF_StigStatusMapping(t *testing.T) {
 	input := loadFixture(t, "stig-rhel7.xml")
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
@@ -375,6 +457,119 @@ func TestConvertXccdfResultsToHDF_StigDescriptions(t *testing.T) {
 	fixDesc := findDescription(req.Descriptions, "fix")
 	require.NotNil(t, fixDesc, "Should have fix description")
 	assert.NotEmpty(t, fixDesc.Data, "Fix description should not be empty")
+}
+
+// The results path historically emitted only default+fix descriptions, dropping
+// the check (OVAL/SCE) description that the baseline path already produces. Pin
+// the restored parity: a rule-result whose rule carries inline check-content
+// must surface it as a "check" description, exactly like the baseline path.
+func TestConvertXccdfResultsToHDF_ResultsPathCheckDescription(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_1">
+  <version>1.0</version>
+  <Rule id="xccdf_test_rule_1" selected="true" severity="medium">
+    <title>Test rule</title>
+    <description>&lt;VulnDiscussion&gt;Some discussion&lt;/VulnDiscussion&gt;</description>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content>OVAL definition logic goes here</check-content>
+      <check-content-ref name="oval:x:def:1" href="oval.xml"/>
+    </check>
+  </Rule>
+  <TestResult id="xccdf_test_testresult_1" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="xccdf_test_rule_1" time="2021-01-01T00:00:00">
+      <result>fail</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`)
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	checkDesc := findDescription(req.Descriptions, "check")
+	require.NotNil(t, checkDesc, "results path must emit a check description (parity with baseline path)")
+	assert.Contains(t, checkDesc.Data, "OVAL definition logic goes here")
+}
+
+// requirement.code must carry the automated-check logic (OVAL/SCE
+// check-content-ref name/href + any inline check-content), the natural CODE-tab
+// fill. Pinned against the real stig-rhel7 OVAL reference.
+func TestConvertXccdfResultsToHDF_RequirementCode(t *testing.T) {
+	input := loadFixture(t, "stig-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "SV-204393")
+	require.NotNil(t, req.Code, "requirement.code must be set from the OVAL check")
+
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(*req.Code), &parsed), "code must be valid JSON")
+	assert.Equal(t, "http://oval.mitre.org/XMLSchema/oval-definitions-5", parsed["system"])
+	ref, ok := parsed["checkContentRef"].(map[string]interface{})
+	require.True(t, ok, "code must carry checkContentRef")
+	assert.Equal(t, "oval:mil.disa.stig.rhel7:def:922", ref["name"])
+	assert.Contains(t, ref["href"], "oval.xml")
+}
+
+// A rule with no check element must leave code unset (NOT-IN-SOURCE) rather than
+// fabricate a value.
+func TestConvertXccdfResultsToHDF_RequirementCodeUnsetWhenNoCheck(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_2">
+  <version>1.0</version>
+  <Rule id="xccdf_test_rule_1" selected="true" severity="low">
+    <title>No check rule</title>
+    <description>desc</description>
+  </Rule>
+  <TestResult id="xccdf_test_testresult_1" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="xccdf_test_rule_1" time="2021-01-01T00:00:00">
+      <result>pass</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`)
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.Code, "code must be unset when the rule has no check element")
+}
+
+// buildCheckCode branch coverage: exercises every path the fixtures don't reach
+// (all fixtures carry a check-content-ref with empty inline check-content).
+func TestBuildCheckCode(t *testing.T) {
+	// Empty check → unset (the "no check element" guard).
+	assert.Equal(t, "", buildCheckCode(Check{}), "empty check must yield no code")
+
+	// Whitespace-only check-content with no system/ref is still empty → unset.
+	assert.Equal(t, "", buildCheckCode(Check{CheckContent: "   \n  "}), "blank check-content must yield no code")
+
+	// Inline check-content present, no content-ref: checkContent is trimmed and
+	// included; checkContentRef is omitted.
+	contentOnly := buildCheckCode(Check{
+		System:       "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+		CheckContent: "  OVAL definition logic  ",
+	})
+	assert.Contains(t, contentOnly, `"checkContent": "OVAL definition logic"`)
+	assert.NotContains(t, contentOnly, "checkContentRef")
+
+	// Content-ref present with no system: system key omitted, ref present.
+	refNoSystem := buildCheckCode(Check{
+		CheckContentRef: CheckContentRef{Name: "oval:x:def:1", Href: "oval.xml"},
+	})
+	assert.NotContains(t, refNoSystem, `"system"`)
+	assert.Contains(t, refNoSystem, `"name": "oval:x:def:1"`)
+	assert.Contains(t, refNoSystem, `"href": "oval.xml"`)
+
+	// All fields present: system + ref + inline content.
+	full := buildCheckCode(Check{
+		System:          "sce",
+		CheckContent:    "logic",
+		CheckContentRef: CheckContentRef{Name: "n", Href: "h"},
+	})
+	assert.Contains(t, full, `"system": "sce"`)
+	assert.Contains(t, full, `"checkContentRef"`)
+	assert.Contains(t, full, `"checkContent": "logic"`)
 }
 
 func TestConvertXccdfResultsToHDF_StigRuleVersionAsID(t *testing.T) {

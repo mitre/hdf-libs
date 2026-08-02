@@ -283,6 +283,72 @@ describe('HDF Results Validation', () => {
       expect(result.errors.length).toBeGreaterThan(1); // Multiple errors
     });
   });
+
+  // A POA&M is a time-boxed acceptance of an open finding; without a deadline it
+  // lets a failing requirement duck remediation indefinitely (bead 2cyd).
+  describe('POA&M deadline enforcement', () => {
+    const poam = (extra: Record<string, unknown>): Record<string, unknown> =>
+      resultsWith({
+        poams: [
+          {
+            type: 'remediation',
+            explanation: 'Patch deployment scheduled pending vendor fix.',
+            appliedBy: { type: 'email', identifier: 'ops@agency.gov' },
+            appliedAt: '2026-01-20T10:00:00Z',
+            ...extra,
+          },
+        ],
+      });
+
+    it('rejects a POA&M without expiresAt', () => {
+      const result = validateResults(poam({}));
+      expect(result.valid).toBe(false);
+      expect(result.getErrorMessage()).toContain('expiresAt');
+    });
+
+    it('accepts a POA&M with expiresAt', () => {
+      const result = validateResults(poam({ expiresAt: '2099-12-31T00:00:00Z' }));
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  // Shared shape asserted identically by the Go and TS validator suites: a
+  // requirement carrying amendment fields (effectiveStatus, disposition,
+  // statusOverrides, poams) and vulnerability fields (cwe, cvss, refs) together.
+  // Keep its fields and values in sync with amendmentAndVulnRequirementFields in validators_test.go.
+  describe('amendment + vulnerability fields on one requirement', () => {
+    it('validates a requirement carrying both amendment and vuln fields', () => {
+      const doc = resultsWith({
+        effectiveStatus: 'failed',
+        disposition: 'poam',
+        statusOverrides: [
+          {
+            type: 'riskAdjustment',
+            impact: { value: 0.4 },
+            reason: 'Environmental exposure reduced — internal VPN only.',
+            appliedBy: { type: 'simple', identifier: 'sec' },
+            appliedAt: '2025-01-01T00:00:00Z',
+            expiresAt: '2099-12-31T00:00:00Z',
+          },
+        ],
+        poams: [
+          {
+            type: 'remediation',
+            explanation: 'Patch deployment scheduled pending vendor fix.',
+            appliedBy: { type: 'simple', identifier: 'ops' },
+            appliedAt: '2025-01-01T00:00:00Z',
+            expiresAt: '2099-12-31T00:00:00Z',
+          },
+        ],
+        cwe: ['CWE-327'],
+        cvss: [{ version: '3.1', baseScore: 7.5, baseSeverity: 'high' }],
+        refs: [{ url: 'https://example.gov/advisory' }],
+      });
+
+      const result = validateResults(doc);
+      expect(result.valid, result.getErrorMessage()).toBe(true);
+    });
+  });
 });
 
 describe('HDF Baseline Validation', () => {

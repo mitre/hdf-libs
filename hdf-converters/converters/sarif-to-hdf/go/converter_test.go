@@ -1703,3 +1703,50 @@ func TestConvertSarifToHDF_VerificationMethod(t *testing.T) {
 			"requirement %q expected verificationMethod=automated", req.ID)
 	}
 }
+
+// findReq locates a requirement by ID across all baselines.
+func findReq(t *testing.T, result *hdf.HDFResults, id string) *hdf.EvaluatedRequirement {
+	t.Helper()
+	for bi := range result.Baselines {
+		for ri := range result.Baselines[bi].Requirements {
+			if result.Baselines[bi].Requirements[ri].ID == id {
+				return &result.Baselines[bi].Requirements[ri]
+			}
+		}
+	}
+	return nil
+}
+
+// requirement.code carries the raw source snippet from the primary location so
+// Heimdall's CODE tab is populated (region.snippet.text — literal source).
+func TestConvertSarifToHDF_RequirementCodeFromSnippet(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("rich.sarif"))
+	require.NoError(t, err)
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+
+	req := findReq(t, result, "SEC-001")
+	require.NotNil(t, req, "expected SEC-001 requirement")
+	require.NotNil(t, req.Code, "requirement.code should be set from region.snippet.text")
+	assert.Equal(t, `db.Query("SELECT * FROM users WHERE name = '" + userInput + "'")`, *req.Code)
+}
+
+// Fixtures whose primary locations carry no region.snippet.text must leave
+// requirement.code unset — no fabrication (NOT-IN-SOURCE).
+func TestConvertSarifToHDF_RequirementCodeNilWhenNoSnippet(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("spotbugs.sarif"))
+	require.NoError(t, err)
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	for bi := range result.Baselines {
+		for ri := range result.Baselines[bi].Requirements {
+			assert.Nil(t, result.Baselines[bi].Requirements[ri].Code,
+				"requirement %q must have nil code when no snippet present",
+				result.Baselines[bi].Requirements[ri].ID)
+		}
+	}
+}

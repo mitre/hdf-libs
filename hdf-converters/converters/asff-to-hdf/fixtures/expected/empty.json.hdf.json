@@ -35,7 +35,6 @@
   },
   "timestamp": "2026-07-14T01:06:49.520122Z",
   "tool": {
-    "format": "JSON",
     "name": "AWS Security Finding Format"
   }
 }

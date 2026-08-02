@@ -10,7 +10,9 @@ import (
 	"time"
 
 	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // HDF schema version identifiers. The taxonomy: v1 is raw InSpec exec-json
@@ -364,50 +366,25 @@ func firstCVSSSeverity(cvss []hdf.Cvss) string {
 	return ""
 }
 
-// effectiveOrRollup returns the v1 status string for a requirement's effective
-// status, or the worst-wins rollup of its results when no effectiveStatus is set.
+// effectiveOrRollup returns the v1 status string for a requirement's
+// effective status, computed by the canonical shared helper in hdf-utilities
+// (impact==0, governing override, stored effectiveStatus, worst-wins rollup —
+// see status-determination.md).
 func effectiveOrRollup(r hdf.EvaluatedRequirement) string {
-	if r.EffectiveStatus != nil {
-		return v2StatusString(*r.EffectiveStatus)
-	}
-	return v2StatusString(rollupStatus(r.Results))
+	input := shared.RequirementStatusInput(r)
+	return v2StatusString(hdf.ResultStatus(hdfutil.ComputeEffectiveStatus(input, time.Time{})))
 }
 
-// rollupStatus computes the worst-wins status across results
-// (error > failed > passed > notApplicable > notReviewed).
-func rollupStatus(results []hdf.RequirementResult) hdf.ResultStatus {
-	rank := map[hdf.ResultStatus]int{
-		hdf.Error: 4, hdf.Failed: 3, hdf.Passed: 2, hdf.NotApplicable: 1, hdf.NotReviewed: 0,
-	}
-	worst := hdf.NotReviewed
-	for i, res := range results {
-		if i == 0 || rank[res.Status] > rank[worst] {
-			worst = res.Status
-		}
-	}
-	return worst
-}
-
-// governingOverride returns the most-recently-applied status-bearing override,
-// which is the one that drives effectiveStatus, or nil if there is none.
+// governingOverride returns the override that drives effectiveStatus (the
+// most-recently-applied non-expired status-bearing one, per the canonical
+// selection in hdf-utilities), or nil if there is none. An expired override
+// must not become the waiver_data breadcrumb.
 func governingOverride(r hdf.EvaluatedRequirement) *hdf.StatusOverride {
-	now := time.Now()
-	var gov *hdf.StatusOverride
-	for i := range r.StatusOverrides {
-		o := &r.StatusOverrides[i]
-		if o.Status == nil {
-			continue
-		}
-		// An expired override must not become the waiver_data breadcrumb; a
-		// zero ExpiresAt means no expiry, so it stays eligible.
-		if !o.ExpiresAt.IsZero() && !o.ExpiresAt.After(now) {
-			continue
-		}
-		if gov == nil || o.AppliedAt.After(gov.AppliedAt) {
-			gov = o
-		}
+	inputs := shared.StatusOverrideInputs(r.StatusOverrides)
+	if i := hdfutil.GoverningStatusOverrideIndex(inputs, time.Time{}); i >= 0 {
+		return &r.StatusOverrides[i]
 	}
-	return gov
+	return nil
 }
 
 // buildWaiverData renders the governing override (and any non-representable

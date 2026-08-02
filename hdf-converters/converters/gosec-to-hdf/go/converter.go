@@ -103,6 +103,15 @@ func formatMessage(issue GosecIssue) string {
 	return fmt.Sprintf("%s confidence of rule violation at:\n%s", issue.Confidence, issue.Code)
 }
 
+// cweIDs returns the first-class CWE identifiers for an issue in "CWE-N" form,
+// or nil when the issue carries no CWE.
+func cweIDs(issue GosecIssue) []string {
+	if issue.CWE.ID == "" {
+		return nil
+	}
+	return []string{"CWE-" + issue.CWE.ID}
+}
+
 // nistTagsForIssue looks up NIST controls for the issue's CWE, falling back to
 // shared.DefaultRemediationNIST when no mapping is found.
 func nistTagsForIssue(issue GosecIssue) []string {
@@ -168,10 +177,6 @@ func buildRequirement(ruleID string, issues []GosecIssue, startTime time.Time) h
 
 	tags := map[string]interface{}{
 		"nist": nistIface,
-		"cwe": map[string]interface{}{
-			"id":  rep.CWE.ID,
-			"url": rep.CWE.URL,
-		},
 	}
 
 	descriptions := []hdf.Description{
@@ -189,9 +194,11 @@ func buildRequirement(ruleID string, issues []GosecIssue, startTime time.Time) h
 		ID:                 ruleID,
 		Title:              &title,
 		Impact:             getImpact(rep.Severity),
+		Cwe:                cweIDs(rep),
 		Tags:               tags,
 		Descriptions:       descriptions,
 		Results:            results,
+		Code:               hdfutil.Ptr(rep.Code),
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}

@@ -53,6 +53,17 @@ export { stripHtml, parseTimestamp, formatTimestamp, formatTimestampSeconds, tri
 // Severity/impact mapping
 export { severityToImpact, impactToSeverity, cvssScoreToSeverity } from './severity/index.js';
 
+export {
+  STATUS_SEVERITY_ORDER,
+  statusRank,
+  worstStatus,
+  governingStatusOverride,
+  governingStatusOverrideIndex,
+  computeEffectiveStatus,
+  type StatusOverrideInput,
+  type EffectiveStatusInput,
+} from './status/index.js';
+
 // CVSS vector parsing + validation
 export {
   parseCvssVector,

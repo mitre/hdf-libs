@@ -105,8 +105,7 @@ func TestConvertNeuVector_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Equal(t, "NeuVector", *result.Tool.Name)
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 // ---- Impact: score_v3 / 10 ----
@@ -203,11 +202,10 @@ func TestConvertNeuVector_CweToNist(t *testing.T) {
 	require.NotNil(t, nist, "nist tag should be present")
 	assert.NotEmpty(t, nist)
 
-	// CWE tag should also be set
-	cweTags, ok := req.Tags["cwe"]
-	require.True(t, ok, "cwe tag should be present")
-	cweStrings := hdfutil.SafeStringSlice(cweTags)
-	assert.Contains(t, cweStrings, "CWE-787")
+	// CWE is now first-class on the requirement (not a tag).
+	assert.Contains(t, req.Cwe, "CWE-787")
+	_, hasCweTag := req.Tags["cwe"]
+	assert.False(t, hasCweTag, "cwe must no longer be emitted as a tag")
 }
 
 func TestConvertNeuVector_NistFallback(t *testing.T) {
@@ -224,6 +222,92 @@ func TestConvertNeuVector_NistFallback(t *testing.T) {
 	require.NotNil(t, nist, "nist fallback should be present")
 	assert.Contains(t, nist, "SI-2")
 	assert.Contains(t, nist, "RA-5")
+}
+
+// ---- Structured CVSS ----
+
+func TestConvertNeuVector_CvssV3FromVector(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	// CVE-2021-36159/apk-tools carries a v3 vector + score_v3=9.1.
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	require.Len(t, req.Cvss, 1)
+	cv := req.Cvss[0]
+	assert.Equal(t, hdf.The31, cv.Version)
+	require.NotNil(t, cv.BaseScore)
+	assert.InDelta(t, 9.1, *cv.BaseScore, 0.001)
+	require.NotNil(t, cv.BaseVector)
+	assert.Equal(t, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H", *cv.BaseVector)
+	require.NotNil(t, cv.BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityCritical, *cv.BaseSeverity)
+	require.NotNil(t, cv.Source)
+	assert.Equal(t, "NeuVector", *cv.Source)
+}
+
+func TestConvertNeuVector_CvssV2Fallback(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	// CVE-2018-25032/ruby:nokogiri has no v3 vector, so the prefix-less v2
+	// vector + score (5) is used and forced to version 2.0.
+	req := shared.MustFindRequirement(t, reqs, "CVE-2018-25032/ruby:nokogiri/1.10.9")
+	require.Len(t, req.Cvss, 1)
+	cv := req.Cvss[0]
+	assert.Equal(t, hdf.The20, cv.Version)
+	require.NotNil(t, cv.BaseScore)
+	assert.InDelta(t, 5.0, *cv.BaseScore, 0.001)
+	require.NotNil(t, cv.BaseVector)
+	assert.Equal(t, "AV:N/AC:L/Au:N/C:N/I:N/A:P", *cv.BaseVector)
+}
+
+// buildCvssEntries branch coverage for the sub-branches fixtures don't exercise:
+// a vector present with a zero score (score omitted), and no vector at all.
+func TestBuildCvssEntries_Branches(t *testing.T) {
+	t.Run("v3 vector, no score", func(t *testing.T) {
+		out := buildCvssEntries(NeuVectorVuln{VectorsV3: "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", ScoreV3: 0})
+		require.Len(t, out, 1)
+		assert.Equal(t, hdf.The30, out[0].Version)
+		assert.Nil(t, out[0].BaseScore, "zero score_v3 must not be emitted")
+		require.NotNil(t, out[0].BaseVector)
+	})
+	t.Run("v2 vector, no score", func(t *testing.T) {
+		out := buildCvssEntries(NeuVectorVuln{Vectors: "AV:N/AC:L/Au:N/C:P/I:P/A:P", Score: 0})
+		require.Len(t, out, 1)
+		assert.Equal(t, hdf.The20, out[0].Version)
+		assert.Nil(t, out[0].BaseScore, "zero score must not be emitted")
+	})
+	t.Run("no vector, no entry", func(t *testing.T) {
+		assert.Empty(t, buildCvssEntries(NeuVectorVuln{ScoreV3: 9.8, Score: 5}),
+			"a vulnerability with no vector contributes no cvss entry")
+	})
+}
+
+// ---- CVE tag (interim) ----
+
+func TestConvertNeuVector_CveTag(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+
+	// requirement.id is a name/package/version composite, NOT the bare CVE.
+	assert.NotEqual(t, "CVE-2021-36159", req.ID)
+	cveTags := hdfutil.SafeStringSlice(req.Tags["cve"])
+	require.NotNil(t, cveTags, "cve tag should be present")
+	assert.Equal(t, []string{"CVE-2021-36159"}, cveTags)
+}
+
+func TestExtractCVEs_Dedup(t *testing.T) {
+	out := extractCVEs(NeuVectorVuln{Cves: []string{"CVE-2021-1", "", "CVE-2021-1", "CVE-2021-2"}})
+	assert.Equal(t, []string{"CVE-2021-1", "CVE-2021-2"}, out)
+	assert.Nil(t, extractCVEs(NeuVectorVuln{Cves: nil}), "no cves -> no tag")
 }
 
 // ---- Requirement ID and Title ----
@@ -498,6 +582,44 @@ func countDistinctNeuVectorVulns(t *testing.T, input []byte) int {
 		distinct[v.Name+"/"+v.PackageName+"/"+v.PackageVersion] = struct{}{}
 	}
 	return len(distinct)
+}
+
+// ---- CODE tab / code_desc fidelity ----
+
+// The requirement's code carries the source vulnerability object serialized as
+// indented JSON; it must round-trip back to the exact source vuln.
+func TestConvertNeuVector_RequirementCodeRoundTrips(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	var scan NeuVectorScan
+	require.NoError(t, json.Unmarshal(input, &scan))
+
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.NotNil(t, req.Code, "requirement.code must be populated (CODE tab)")
+	assert.NotEmpty(t, *req.Code)
+
+	var back NeuVectorVuln
+	require.NoError(t, json.Unmarshal([]byte(*req.Code), &back),
+		"requirement.code must parse back to the source vuln object")
+	assert.Equal(t, scan.Report.Vulnerabilities[0], back)
+}
+
+// code_desc is no longer hard-coded empty; it is a pipe-joined composite of the
+// fields the vuln carries.
+func TestConvertNeuVector_ResultCodeDescComposite(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1)
+	cd := req.Results[0].CodeDesc
+	assert.NotEmpty(t, cd, "code_desc must no longer be hard-coded empty")
+	assert.Equal(t,
+		"apk-tools@2.10.5-r1 | CVE-2021-36159 | CVSS 9.1 | libfetch before 2021-07-26, as used in apk-tools, xbps, and other products, mishandles numeric strin…",
+		cd)
 }
 
 // Ground-truth anchor (input-derived count; see shared/go/anchor.go). Golden

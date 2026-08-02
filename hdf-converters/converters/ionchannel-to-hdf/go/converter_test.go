@@ -252,14 +252,72 @@ func TestConvert_EdgeCases_NAVersionOmitted(t *testing.T) {
 	assert.Equal(t, "Dependency internal-lib from example-corp (Required >=0.5.0)", *req.Title)
 }
 
-func TestConvert_EdgeCases_NonDependencyScansIgnored(t *testing.T) {
-	// edge-cases.json has a community scan — should be ignored
+// findBaseline returns the baseline with the given name, failing the test if absent.
+func findBaseline(t *testing.T, result *hdf.HDFResults, name string) *hdf.EvaluatedBaseline {
+	t.Helper()
+	for i := range result.Baselines {
+		if result.Baselines[i].Name == name {
+			return &result.Baselines[i]
+		}
+	}
+	t.Fatalf("baseline %q not found", name)
+	return nil
+}
+
+func TestConvert_EdgeCases_DependencyBaselineUnchanged(t *testing.T) {
+	// The dependency scan still produces its own baseline with exactly its 3 deps.
 	input := loadFixture(t, "input/edge-cases.json")
 	result, err := ConvertIonChannelToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	// Should only have 3 deps from the dependency scan
-	assert.Len(t, result.Baselines[0].Requirements, 3)
+	dep := findBaseline(t, result, "Ion Channel SBOM Analysis")
+	assert.Len(t, dep.Requirements, 3)
+}
+
+func TestConvert_EdgeCases_CommunityBaselineEmitted(t *testing.T) {
+	// The non-dependency "community" scan now gets its own baseline + requirement.
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	community := findBaseline(t, result, "Ion Channel community Scan")
+	require.Len(t, community.Requirements, 1)
+
+	req := community.Requirements[0]
+	assert.Equal(t, "scan-community", req.ID)
+	require.NotNil(t, req.Title)
+	assert.Equal(t, "Community analysis", *req.Title)
+	require.Len(t, req.Descriptions, 1)
+	assert.Equal(t, "Community scan completed", req.Descriptions[0].Data)
+	assert.Equal(t, "community", req.Tags["name"])
+	assert.Equal(t, "community", req.Tags["type"])
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+
+	// The serializable scan data lands in the requirement's code field.
+	require.NotNil(t, req.Code)
+	assert.Contains(t, *req.Code, `"committers": 5`)
+	assert.Contains(t, *req.Code, `"stars": 42`)
+}
+
+func TestConvert_EdgeCases_AnalysisVerdict(t *testing.T) {
+	// Analysis-level verdict fields surface on the primary (dependency) baseline.
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	dep := findBaseline(t, result, "Ion Channel SBOM Analysis")
+
+	require.NotNil(t, dep.Description)
+	assert.Contains(t, *dep.Description, "FAILED")
+	assert.Contains(t, *dep.Description, "medium")
+	assert.Contains(t, *dep.Description, "strict")
+
+	require.NotNil(t, dep.Labels)
+	assert.Equal(t, "false", dep.Labels["passed"])
+	assert.Equal(t, "medium", dep.Labels["risk"])
+	assert.Equal(t, "strict", dep.Labels["ruleset_name"])
+	assert.Equal(t, "ruleset-002", dep.Labels["ruleset_id"])
 }
 
 // ---- Helper function tests ----
@@ -384,14 +442,14 @@ func TestConvertIonChannel_VerificationMethod(t *testing.T) {
 	}
 }
 
-// countDistinctFlattenedDeps derives the ground-truth requirement count directly
-// from the raw JSON, independent of the converter's structs: it recursively
-// flattens the "dependency" scan summary's dependency tree and counts each
-// distinct org/name exactly once — mirroring the emission unit (one requirement
-// per deduped, flattened dependency). A generic CountJSONItemsUnderKey would
-// over-count when the same package appears in two subtrees, so the anchor
-// re-derives the dedup here rather than reusing the converter's traversal.
-func countDistinctFlattenedDeps(t *testing.T, input []byte) int {
+// countEmittedRequirements derives the ground-truth requirement count directly
+// from the raw JSON, independent of the converter's structs. The emission model
+// is: one requirement per distinct org/name in the flattened "dependency" scan
+// tree, PLUS one requirement per non-dependency scan summary. A generic
+// CountJSONItemsUnderKey would over-count when the same package appears in two
+// subtrees, so the anchor re-derives the dedup here rather than reusing the
+// converter's traversal.
+func countEmittedRequirements(t *testing.T, input []byte) int {
 	t.Helper()
 	var doc struct {
 		ScanSummaries []struct {
@@ -419,25 +477,28 @@ func countDistinctFlattenedDeps(t *testing.T, input []byte) int {
 			walk(sub)
 		}
 	}
+	nonDep := 0
 	for _, scan := range doc.ScanSummaries {
 		if scan.Name == "dependency" {
 			for _, dep := range scan.Results.Data.Dependencies {
 				walk(dep)
 			}
+		} else {
+			nonDep++
 		}
 	}
-	return len(seen)
+	return len(seen) + nonDep
 }
 
 // Ground-truth anchor: one requirement per distinct dependency in the flattened
-// "dependency" scan tree. Catches a silent under-extraction that TS/Go golden
-// parity cannot see.
+// "dependency" scan tree, plus one per non-dependency scan summary. Catches a
+// silent under- or over-extraction that TS/Go golden parity cannot see.
 func TestConvertIonChannel_DependencyAnchor(t *testing.T) {
 	for _, name := range []string{"input/minimal.json", "input/edge-cases.json"} {
 		input := loadFixture(t, name)
 		result, err := ConvertIonChannelToHDF(input, testVersion)
 		require.NoError(t, err)
-		shared.AssertRequirementCount(t, result, countDistinctFlattenedDeps(t, input),
-			name+": one requirement per distinct flattened dependency")
+		shared.AssertRequirementCount(t, result, countEmittedRequirements(t, input),
+			name+": one requirement per distinct flattened dependency plus one per non-dependency scan")
 	}
 }

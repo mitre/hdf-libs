@@ -139,6 +139,33 @@ func TestConvertGosecToHDF_RequirementTitle(t *testing.T) {
 	}
 }
 
+// ---- requirement.code (CODE tab; dggj) ----
+
+func TestConvertGosecToHDF_RequirementCode(t *testing.T) {
+	input := loadFixture(t, "input/ethereum.json")
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// The representative code is the literal source of the first issue in each
+	// rule group — exactly what Heimdall's CODE tab renders.
+	var report GosecReport
+	require.NoError(t, json.Unmarshal(input, &report))
+	firstCode := map[string]string{}
+	for _, iss := range report.Issues {
+		if _, seen := firstCode[iss.RuleID]; !seen {
+			firstCode[iss.RuleID] = iss.Code
+		}
+	}
+
+	for i := range result.Baselines[0].Requirements {
+		req := &result.Baselines[0].Requirements[i]
+		want, ok := firstCode[req.ID]
+		require.True(t, ok, "unexpected requirement %s", req.ID)
+		require.NotNil(t, req.Code, "requirement %s missing code (CODE tab empty)", req.ID)
+		assert.Equal(t, want, *req.Code, "requirement %s code should be the literal source snippet", req.ID)
+	}
+}
+
 // ---- Impact mapping ----
 
 func TestConvertGosecToHDF_ImpactHigh(t *testing.T) {
@@ -404,19 +431,47 @@ func TestConvertGosecToHDF_NISTFallback(t *testing.T) {
 	assert.Equal(t, []string{"SI-2", "RA-5"}, nist)
 }
 
-func TestConvertGosecToHDF_CWETag(t *testing.T) {
+func TestConvertGosecToHDF_CWEFirstClass(t *testing.T) {
 	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	for _, req := range result.Baselines[0].Requirements {
-		if req.ID == "G304" {
-			cweTag, ok := req.Tags["cwe"].(map[string]interface{})
-			require.True(t, ok, "cwe tag should be map[string]interface{}")
-			assert.Equal(t, "22", cweTag["id"])
-			assert.Equal(t, "https://cwe.mitre.org/data/definitions/22.html", cweTag["url"])
+	var g304 *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "G304" {
+			g304 = &result.Baselines[0].Requirements[i]
+			break
 		}
 	}
+	require.NotNil(t, g304, "expected requirement G304")
+
+	// CWE is now a first-class []string in "CWE-N" form.
+	assert.Equal(t, []string{"CWE-22"}, g304.Cwe)
+
+	// The legacy tags.cwe object is gone; tags.nist stays.
+	_, hasCweTag := g304.Tags["cwe"]
+	assert.False(t, hasCweTag, "tags.cwe should be removed (CWE now first-class)")
+	_, hasNist := g304.Tags["nist"]
+	assert.True(t, hasNist, "tags.nist must be preserved")
+}
+
+func TestConvertGosecToHDF_CWEAbsentWhenNoID(t *testing.T) {
+	// An issue with no CWE id must not emit an empty cwe[].
+	input := []byte(`{
+		"Golang errors": {},
+		"Issues": [{
+			"severity": "LOW", "confidence": "HIGH",
+			"cwe": {"id": "", "url": ""},
+			"rule_id": "G000", "details": "No CWE",
+			"file": "/app/main.go", "code": "x()\n",
+			"line": "1", "column": "1", "nosec": false, "suppressions": null
+		}],
+		"Stats": {"files": 1, "lines": 5, "nosec": 0, "found": 1},
+		"GosecVersion": "2.18.0"
+	}`)
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+	assert.Nil(t, result.Baselines[0].Requirements[0].Cwe, "cwe[] must be omitted when no CWE id")
 }
 
 // ---- Empty Issues ----
@@ -564,6 +619,13 @@ func TestNistTagsForIssue_EmptyCWE(t *testing.T) {
 	issue := GosecIssue{CWE: GosecCWE{ID: ""}}
 	tags := nistTagsForIssue(issue)
 	assert.Equal(t, []string{"SI-2", "RA-5"}, tags)
+}
+
+// ---- Helper: cweIDs ----
+
+func TestCweIDs(t *testing.T) {
+	assert.Equal(t, []string{"CWE-22"}, cweIDs(GosecIssue{CWE: GosecCWE{ID: "22"}}))
+	assert.Nil(t, cweIDs(GosecIssue{CWE: GosecCWE{ID: ""}}))
 }
 
 // ---- SARIF format detection and routing ----

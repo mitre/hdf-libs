@@ -338,6 +338,13 @@ func TestCveEcosystem_Epss(t *testing.T) {
 		assert.Contains(t, result.Error(), "score")
 	})
 
+	t.Run("rejects EPSS score below 0.0", func(t *testing.T) {
+		data := resultsWith(`"epss": {"score": -0.1, "percentile": 0.5, "date": "2026-05-26"}`)
+		result := ValidateResults(data)
+		assert.False(t, result.Valid)
+		assert.Contains(t, result.Error(), "score")
+	})
+
 	t.Run("rejects EPSS missing date", func(t *testing.T) {
 		data := resultsWith(`"epss": {"score": 0.5, "percentile": 0.5}`)
 		result := ValidateResults(data)
@@ -395,6 +402,15 @@ func TestCveEcosystem_Kev(t *testing.T) {
 func TestCveEcosystem_Cwe(t *testing.T) {
 	t.Run("accepts three valid CWE IDs", func(t *testing.T) {
 		data := resultsWith(`"cwe": ["CWE-79", "CWE-89", "CWE-352"]`)
+		result := ValidateResults(data)
+		if !result.Valid {
+			t.Logf("Unexpected errors: %s", result.Error())
+		}
+		assert.True(t, result.Valid)
+	})
+
+	t.Run("accepts an empty cwe array", func(t *testing.T) {
+		data := resultsWith(`"cwe": []`)
 		result := ValidateResults(data)
 		if !result.Valid {
 			t.Logf("Unexpected errors: %s", result.Error())
@@ -550,6 +566,68 @@ func TestCveEcosystem_OverrideCvss(t *testing.T) {
 		}
 		assert.True(t, result.Valid)
 	})
+}
+
+// TestPoamRequiresExpiresAt asserts a POA&M is time-boxed: without an expiresAt
+// deadline it lets a failing requirement duck remediation indefinitely, so the
+// schema must reject it (bead 2cyd).
+func TestPoamRequiresExpiresAt(t *testing.T) {
+	poam := func(expiresAt string) []byte {
+		return resultsWith(`"poams": [{
+			"type": "remediation",
+			"explanation": "Patch deployment scheduled pending vendor fix.",
+			"appliedBy": { "type": "email", "identifier": "ops@agency.gov" },
+			"appliedAt": "2026-01-20T10:00:00Z"` + expiresAt + `
+		}]`)
+	}
+
+	t.Run("rejects a POA&M without expiresAt", func(t *testing.T) {
+		result := ValidateResults(poam(""))
+		assert.False(t, result.Valid)
+		assert.Contains(t, result.Error(), "expiresAt")
+	})
+
+	t.Run("accepts a POA&M with expiresAt", func(t *testing.T) {
+		result := ValidateResults(poam(`, "expiresAt": "2099-12-31T00:00:00Z"`))
+		if !result.Valid {
+			t.Logf("Unexpected errors: %s", result.Error())
+		}
+		assert.True(t, result.Valid)
+	})
+}
+
+// amendmentAndVulnRequirementFields is the shared shape asserted identically by
+// the Go and TS validator suites: a requirement carrying amendment fields
+// (effectiveStatus, disposition, statusOverrides, poams) and vulnerability
+// fields (cwe, cvss, refs) together. Keep its fields and values in sync with the
+// TS peer in validators.test.ts so both languages validate the same document.
+const amendmentAndVulnRequirementFields = `"effectiveStatus": "failed",
+	"disposition": "poam",
+	"statusOverrides": [{
+		"type": "riskAdjustment",
+		"impact": { "value": 0.4 },
+		"reason": "Environmental exposure reduced — internal VPN only.",
+		"appliedBy": { "type": "simple", "identifier": "sec" },
+		"appliedAt": "2025-01-01T00:00:00Z",
+		"expiresAt": "2099-12-31T00:00:00Z"
+	}],
+	"poams": [{
+		"type": "remediation",
+		"explanation": "Patch deployment scheduled pending vendor fix.",
+		"appliedBy": { "type": "simple", "identifier": "ops" },
+		"appliedAt": "2025-01-01T00:00:00Z",
+		"expiresAt": "2099-12-31T00:00:00Z"
+	}],
+	"cwe": ["CWE-327"],
+	"cvss": [{ "version": "3.1", "baseScore": 7.5, "baseSeverity": "high" }],
+	"refs": [{ "url": "https://example.gov/advisory" }]`
+
+func TestValidateResults_AmendmentAndVulnFields(t *testing.T) {
+	result := ValidateResults(resultsWith(amendmentAndVulnRequirementFields))
+	if !result.Valid {
+		t.Logf("Unexpected errors: %s", result.Error())
+	}
+	assert.True(t, result.Valid)
 }
 
 func TestSetSchemaDir(t *testing.T) {

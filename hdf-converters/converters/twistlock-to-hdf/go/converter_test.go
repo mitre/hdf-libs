@@ -150,8 +150,7 @@ func TestConvertTwistlock_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Equal(t, "Twistlock", *result.Tool.Name)
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 // ---- Severity → Impact mapping ----
@@ -457,7 +456,7 @@ func TestConvertTwistlock_CvssVersionDetect(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, cvssVersionFromVector(tc.vector))
+			assert.Equal(t, tc.want, shared.CvssVersionFromVector(tc.vector))
 		})
 	}
 }
@@ -479,9 +478,7 @@ func TestConvertTwistlock_CvssSeverityBands(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run("", func(t *testing.T) {
-			got := cvssSeverityFromScore(tc.score)
-			require.NotNil(t, got)
-			assert.Equal(t, tc.want, *got)
+			assert.Equal(t, tc.want, shared.CvssSeverityFromScore(tc.score))
 		})
 	}
 }

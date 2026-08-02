@@ -111,8 +111,7 @@ func TestConvertNetsparker_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Contains(t, *result.Tool.Name, "Invicti")
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "XML", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 // ---- Target ----
@@ -300,6 +299,52 @@ func TestConvertNetsparker_CodeDesc(t *testing.T) {
 	assert.Contains(t, codeDesc, "GET")
 }
 
+// ---- requirement.code holds the raw HTTP request (CODE tab) ----
+
+func TestConvertNetsparker_Code(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// First vuln: http-request content is "[SSL Connection]"
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
+	require.NotNil(t, req.Code, "requirement.code should carry the raw HTTP request")
+	assert.Equal(t, "[SSL Connection]", *req.Code)
+
+	// Second vuln: full raw GET request preserved verbatim
+	req2 := shared.MustFindRequirement(t, reqs, "9c3a51bf-6c1f-47c9-4646-afb704bb8fb0")
+	require.NotNil(t, req2.Code)
+	assert.Contains(t, *req2.Code, "GET / HTTP/1.1")
+	assert.Contains(t, *req2.Code, "Host: mlrcommercial.vams-impl.cms.gov")
+	// code is the RAW request only — no "method :" / "http-request :" framing
+	assert.NotContains(t, *req2.Code, "method :")
+}
+
+func TestConvertNetsparker_CodeUnsetWhenNoHTTPRequest(t *testing.T) {
+	// Crafted vuln with no <http-request> element → code must stay unset.
+	xml := `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-http-request</LookupId>
+			<name>No Request Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`
+
+	result, err := ConvertNetsparkerToHDF([]byte(xml), testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "no-http-request")
+	assert.Nil(t, req.Code, "code should be unset when the vuln carries no http-request content")
+}
+
 // ---- Message contains HTTP response info ----
 
 func TestConvertNetsparker_Message(t *testing.T) {
@@ -400,6 +445,103 @@ func TestConvertNetsparkerToHDF_EntityExpansion(t *testing.T) {
 	_, err := ConvertNetsparkerToHDF(input, testVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+// ---- Structured CVSS ----
+
+func TestConvertNetsparker_Cvss(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// First vuln carries both <cvss> (3.0) and <cvss31> (3.1) blocks.
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
+	require.Len(t, req.Cvss, 2, "expected one cvss[] entry per CVSS block")
+
+	// cvss (3.0) first.
+	require.NotNil(t, req.Cvss[0].BaseScore)
+	assert.InDelta(t, 6.8, *req.Cvss[0].BaseScore, 0.001)
+	assert.Equal(t, hdf.The30, req.Cvss[0].Version)
+	require.NotNil(t, req.Cvss[0].BaseVector)
+	assert.Equal(t, "CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N", *req.Cvss[0].BaseVector)
+	require.NotNil(t, req.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityMedium, *req.Cvss[0].BaseSeverity)
+
+	// cvss31 (3.1) second.
+	require.NotNil(t, req.Cvss[1].BaseScore)
+	assert.InDelta(t, 6.8, *req.Cvss[1].BaseScore, 0.001)
+	assert.Equal(t, hdf.The31, req.Cvss[1].Version)
+	require.NotNil(t, req.Cvss[1].BaseVector)
+	assert.Equal(t, "CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N", *req.Cvss[1].BaseVector)
+}
+
+func TestConvertNetsparker_CvssAbsent(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// Second and third vulns carry no CVSS blocks → cvss[] omitted.
+	for _, id := range []string{"9c3a51bf-6c1f-47c9-4646-afb704bb8fb0", "8d8e6052-221d-41c4-8f1e-af9704473901"} {
+		req := shared.MustFindRequirement(t, reqs, id)
+		assert.Empty(t, req.Cvss, "cvss[] should be omitted when the vuln carries no CVSS block (%s)", id)
+	}
+}
+
+func TestBaseScoreFromScores(t *testing.T) {
+	t.Run("base present and parseable", func(t *testing.T) {
+		got := baseScoreFromScores([]NetsparkerCVSSScore{
+			{Type: "Temporal", Value: "5.0"},
+			{Type: "Base", Value: " 6.8 "},
+		})
+		require.NotNil(t, got)
+		assert.InDelta(t, 6.8, *got, 0.001)
+	})
+	t.Run("base present but unparseable", func(t *testing.T) {
+		got := baseScoreFromScores([]NetsparkerCVSSScore{{Type: "Base", Value: "N/A"}})
+		assert.Nil(t, got)
+	})
+	t.Run("no base score", func(t *testing.T) {
+		got := baseScoreFromScores([]NetsparkerCVSSScore{{Type: "Temporal", Value: "6.8"}})
+		assert.Nil(t, got)
+	})
+	t.Run("empty scores", func(t *testing.T) {
+		assert.Nil(t, baseScoreFromScores(nil))
+	})
+}
+
+func TestBuildNetsparkerCvss(t *testing.T) {
+	t.Run("both blocks", func(t *testing.T) {
+		out := buildNetsparkerCvss(NetsparkerClassification{
+			CVSS:   NetsparkerCVSS{Vector: "CVSS:3.0/AV:N", Scores: []NetsparkerCVSSScore{{Type: "Base", Value: "6.8"}}},
+			CVSS31: NetsparkerCVSS{Vector: "CVSS:3.1/AV:N", Scores: []NetsparkerCVSSScore{{Type: "Base", Value: "7.5"}}},
+		})
+		require.Len(t, out, 2)
+		assert.Equal(t, hdf.The30, out[0].Version)
+		assert.Equal(t, hdf.The31, out[1].Version)
+	})
+	t.Run("vector only, no score", func(t *testing.T) {
+		out := buildNetsparkerCvss(NetsparkerClassification{
+			CVSS: NetsparkerCVSS{Vector: "CVSS:3.1/AV:N"},
+		})
+		require.Len(t, out, 1)
+		assert.Nil(t, out[0].BaseScore)
+		require.NotNil(t, out[0].BaseVector)
+	})
+	t.Run("score only, no vector", func(t *testing.T) {
+		out := buildNetsparkerCvss(NetsparkerClassification{
+			CVSS31: NetsparkerCVSS{Scores: []NetsparkerCVSSScore{{Type: "Base", Value: "4.0"}}},
+		})
+		require.Len(t, out, 1)
+		require.NotNil(t, out[0].BaseScore)
+		assert.Nil(t, out[0].BaseVector)
+	})
+	t.Run("no blocks", func(t *testing.T) {
+		assert.Empty(t, buildNetsparkerCvss(NetsparkerClassification{}))
+	})
 }
 
 func TestSnapshots(t *testing.T) {

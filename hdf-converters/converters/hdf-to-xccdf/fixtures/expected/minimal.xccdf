@@ -27,5 +27,6 @@
         <check-content>XCCDF rule xccdf_moc.elpmaxe.www_rule_2</check-content>
       </check>
     </rule-result>
+    <score system="urn:xccdf:scoring:default" maximum="100.000000">50.000000</score>
   </TestResult>
 </Benchmark>

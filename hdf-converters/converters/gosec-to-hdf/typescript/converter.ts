@@ -71,6 +71,14 @@ const IMPACT_MAPPING: Record<string, number> = {
 
 
 /**
+ * Returns the first-class CWE identifiers for an issue in "CWE-N" form,
+ * or an empty array when the issue carries no CWE.
+ */
+function cweIds(issue: GosecIssue): string[] {
+  return issue.cwe.id ? [`CWE-${issue.cwe.id}`] : [];
+}
+
+/**
  * Returns true if the issue is suppressed (via nosec flag or suppressions list).
  */
 function isSuppressed(issue: GosecIssue): boolean {
@@ -123,7 +131,6 @@ function buildRequirement(ruleId: string, issues: GosecIssue[], scanTime: Date):
 
   const tags: Record<string, unknown> = {
     nist,
-    cwe: { id: rep.cwe.id, url: rep.cwe.url },
   };
 
   const results = issues.map((issue) => issueToResult(issue, scanTime));
@@ -134,6 +141,11 @@ function buildRequirement(ruleId: string, issues: GosecIssue[], scanTime: Date):
   ];
 
   const req = createRequirement(ruleId, rep.details, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+  const cwe = cweIds(rep);
+  if (cwe.length > 0) {
+    req.cwe = cwe;
+  }
+  req.code = rep.code;
   req.verificationMethod = VerificationMethodEnum.Automated;
   const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {

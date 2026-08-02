@@ -1234,6 +1234,33 @@ describe('SARIF Converter', async () => {
   });
 });
 
+describe('requirement.code from region.snippet.text', async () => {
+  it('sets requirement.code to the raw source snippet', async () => {
+    const input = loadFixture('input', 'rich.sarif');
+    const result = JSON.parse(await convertSarifToHdf(input));
+    const findReq = (id: string) =>
+      result.baselines
+        .flatMap((b: any) => b.requirements)
+        .find((r: any) => r.id === id);
+
+    const sec001 = findReq('SEC-001');
+    expect(sec001).toBeDefined();
+    expect(sec001.code).toBe(
+      `db.Query("SELECT * FROM users WHERE name = '" + userInput + "'")`,
+    );
+  });
+
+  it('leaves requirement.code unset when no snippet is present (NOT-IN-SOURCE)', async () => {
+    const input = loadFixture('input', 'spotbugs.sarif');
+    const result = JSON.parse(await convertSarifToHdf(input));
+    for (const baseline of result.baselines) {
+      for (const req of baseline.requirements) {
+        expect(req.code).toBeUndefined();
+      }
+    }
+  });
+});
+
 // --- Helpers ---
 
 async function convertWithLevel(level: string) {

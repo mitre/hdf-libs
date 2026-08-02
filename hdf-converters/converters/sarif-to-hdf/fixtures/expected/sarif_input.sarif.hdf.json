@@ -46,6 +46,7 @@
             ],
             "severity": "error"
           },
+          "code": " gets(f);",
           "controlType": "technical",
           "title": "buffer/gets",
           "verificationMethod": "automated"
@@ -103,6 +104,7 @@
             ],
             "severity": "note"
           },
+          "code": "  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
           "controlType": "technical",
           "title": "buffer/strncat",
           "verificationMethod": "automated"
@@ -150,6 +152,7 @@
             ],
             "severity": "note"
           },
+          "code": "  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */",
           "controlType": "technical",
           "title": "buffer/_tcsncat",
           "verificationMethod": "automated"
@@ -227,6 +230,7 @@
             ],
             "severity": "note"
           },
+          "code": "  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));",
           "controlType": "technical",
           "title": "buffer/MultiByteToWideChar",
           "verificationMethod": "automated"
@@ -284,6 +288,7 @@
             ],
             "severity": "error"
           },
+          "code": "  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
           "controlType": "technical",
           "title": "misc/SetSecurityDescriptorDacl",
           "verificationMethod": "automated"
@@ -356,6 +361,7 @@
             ],
             "severity": "error"
           },
+          "code": " strcpy(b, a);",
           "controlType": "technical",
           "title": "buffer/strcpy",
           "verificationMethod": "automated"
@@ -443,6 +449,7 @@
             ],
             "severity": "error"
           },
+          "code": " sprintf(s, \"hello %s\", bug);",
           "controlType": "technical",
           "title": "buffer/sprintf",
           "verificationMethod": "automated"
@@ -490,6 +497,7 @@
             ],
             "severity": "error"
           },
+          "code": " printf(bf, x);",
           "controlType": "technical",
           "title": "format/printf",
           "verificationMethod": "automated"
@@ -558,6 +566,7 @@
             ],
             "severity": "error"
           },
+          "code": " scanf(\"%s\", s);",
           "controlType": "technical",
           "title": "buffer/scanf",
           "verificationMethod": "automated"
@@ -605,6 +614,7 @@
             ],
             "severity": "error"
           },
+          "code": " syslog(LOG_ERR, attacker_string);",
           "controlType": "technical",
           "title": "format/syslog",
           "verificationMethod": "automated"
@@ -652,6 +662,7 @@
             ],
             "severity": "error"
           },
+          "code": "  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */",
           "controlType": "technical",
           "title": "buffer/_mbscpy",
           "verificationMethod": "automated"
@@ -699,6 +710,7 @@
             ],
             "severity": "error"
           },
+          "code": "  lstrcat(d,s);",
           "controlType": "technical",
           "title": "buffer/lstrcat",
           "verificationMethod": "automated"
@@ -756,6 +768,7 @@
             ],
             "severity": "warning"
           },
+          "code": "  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
           "controlType": "technical",
           "title": "shell/CreateProcess",
           "verificationMethod": "automated"
@@ -804,6 +817,7 @@
             ],
             "severity": "warning"
           },
+          "code": "    while ((optc = getopt_long (argc, argv, \"a\",longopts, NULL )) != EOF) {",
           "controlType": "technical",
           "title": "buffer/getopt_long",
           "verificationMethod": "automated"
@@ -847,6 +861,7 @@
             ],
             "severity": "warning"
           },
+          "code": "  (void) LoadLibraryEx(L\"user32.dll\", nullptr, LOAD_LIBRARY_AS_DATAFILE);",
           "controlType": "technical",
           "title": "misc/LoadLibraryEx",
           "verificationMethod": "automated"
@@ -910,6 +925,7 @@
             ],
             "severity": "note"
           },
+          "code": "  char    buf[1024], *s;",
           "controlType": "technical",
           "title": "buffer/char",
           "verificationMethod": "automated"
@@ -977,6 +993,7 @@
             ],
             "severity": "note"
           },
+          "code": "  memcpy(d,s);",
           "controlType": "technical",
           "title": "buffer/memcpy",
           "verificationMethod": "automated"
@@ -1024,6 +1041,7 @@
             ],
             "severity": "note"
           },
+          "code": "  f = fopen(\"/etc/passwd\", \"r\"); ",
           "controlType": "technical",
           "title": "misc/fopen",
           "verificationMethod": "automated"
@@ -1071,6 +1089,7 @@
             ],
             "severity": "note"
           },
+          "code": "  strncpy(d,s);",
           "controlType": "technical",
           "title": "buffer/strncpy",
           "verificationMethod": "automated"
@@ -1118,6 +1137,7 @@
             ],
             "severity": "note"
           },
+          "code": "  _tcsncpy(d,s);",
           "controlType": "technical",
           "title": "buffer/_tcsncpy",
           "verificationMethod": "automated"
@@ -1165,6 +1185,7 @@
             ],
             "severity": "note"
           },
+          "code": "  n = strlen(d);",
           "controlType": "technical",
           "title": "buffer/strlen",
           "verificationMethod": "automated"
