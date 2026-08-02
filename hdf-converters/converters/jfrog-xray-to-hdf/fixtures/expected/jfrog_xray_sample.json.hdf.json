@@ -11,6 +11,20 @@
               "version": "5.7.3"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "version": "3.0"
+            },
+            {
+              "baseScore": 7.1,
+              "baseSeverity": "high",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:N/A:C",
+              "version": "2.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "Acorn contains an infinite loop condition in regexp.js that is triggered when handling UTF_16 surrogates while validating regular expressions. This may allow a context-dependent attacker to hang a process using the library.\ncves: [{\"cvss_v2\"=\u003e\"7.1/AV:N/AC:M/Au:N/C:N/I:N/A:C\", \"cvss_v3\"=\u003e\"7.5/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\"}]",
@@ -94,6 +108,14 @@
               "fixedInVersion": "4.0.14",
               "name": "handlebars",
               "version": "4.0.11"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 10,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:2.0/AV:N/AC:L/Au:N/C:C/I:C/A:C",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -224,6 +246,25 @@
               "version": "4.0.11"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2019-19919",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:2.0/AV:N/AC:L/Au:N/C:P/I:P/A:P",
+              "source": "CVE-2019-19919",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-74"
+          ],
           "descriptions": [
             {
               "data": "Versions of handlebars prior to 4.3.0 are vulnerable to Prototype Pollution leading to Remote Code Execution. Templates may alter an Object's __proto__ and __defineGetter__ properties, which may allow an attacker to execute arbitrary code through crafted payloads.\ncves: [{\"cve\"=\u003e\"CVE-2019-19919\", \"cwe\"=\u003e[\"CWE-74\"], \"cvss_v2\"=\u003e\"7.5/CVSS:2.0/AV:N/AC:L/Au:N/C:P/I:P/A:P\", \"cvss_v3\"=\u003e\"9.8/CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\"}]",
@@ -249,8 +290,8 @@
               "CCI-001643",
               "CCI-003173"
             ],
-            "cweid": [
-              "CWE-74"
+            "cve": [
+              "CVE-2019-19919"
             ],
             "nist": [
               "SA-11",
@@ -268,6 +309,20 @@
               "fixedInVersion": "4.17.16",
               "name": "lodash",
               "version": "4.17.15"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "version": "3.0"
+            },
+            {
+              "baseScore": 7.1,
+              "baseSeverity": "high",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:N/A:C",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -313,6 +368,25 @@
               "version": "4.0.11"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2019-20922",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 7.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:2.0/AV:N/AC:L/Au:N/C:N/I:N/A:C",
+              "source": "CVE-2019-20922",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-835"
+          ],
           "descriptions": [
             {
               "data": "Handlebars before 4.4.5 allows Regular Expression Denial of Service (ReDoS) because of eager matching. The parser may be forced into an endless loop while processing crafted templates. This may allow attackers to exhaust system resources.\ncves: [{\"cve\"=\u003e\"CVE-2019-20922\", \"cwe\"=\u003e[\"CWE-835\"], \"cvss_v2\"=\u003e\"7.8/CVSS:2.0/AV:N/AC:L/Au:N/C:N/I:N/A:C\", \"cvss_v3\"=\u003e\"7.5/CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\"}]",
@@ -338,8 +412,8 @@
               "CCI-001643",
               "CCI-003173"
             ],
-            "cweid": [
-              "CWE-835"
+            "cve": [
+              "CVE-2019-20922"
             ],
             "nist": [
               "SA-11",
@@ -357,6 +431,20 @@
               "fixedInVersion": "4.17.12",
               "name": "lodash",
               "version": "4.17.5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "version": "3.0"
+            },
+            {
+              "baseScore": 9.3,
+              "baseSeverity": "critical",
+              "baseVector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -397,6 +485,25 @@
               "version": "6.0.2"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2019-20149",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:2.0/AV:N/AC:L/Au:N/C:N/I:P/A:N",
+              "source": "CVE-2019-20149",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-668"
+          ],
           "descriptions": [
             {
               "data": "ctorName in index.js in kind-of v6.0.2 allows external user input to overwrite certain internal attributes via a conflicting name, as demonstrated by 'constructor': {'name':'Symbol'}. Hence, a crafted payload can overwrite this builtin attribute to manipulate the type detection result.\ncves: [{\"cve\"=\u003e\"CVE-2019-20149\", \"cwe\"=\u003e[\"CWE-668\"], \"cvss_v2\"=\u003e\"5.0/CVSS:2.0/AV:N/AC:L/Au:N/C:N/I:P/A:N\", \"cvss_v3\"=\u003e\"7.5/CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N\"}]",
@@ -417,8 +524,8 @@
               "CCI-001643",
               "CCI-003173"
             ],
-            "cweid": [
-              "CWE-668"
+            "cve": [
+              "CVE-2019-20149"
             ],
             "nist": [
               "SA-11",
@@ -437,6 +544,25 @@
               "name": "ajv",
               "version": "5.5.2"
             }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.6,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+              "source": "CVE-2020-15366",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 6.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:2.0/AV:N/AC:M/Au:N/C:P/I:P/A:P",
+              "source": "CVE-2020-15366",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-20"
           ],
           "descriptions": [
             {
@@ -457,8 +583,8 @@
             "cci": [
               "CCI-001310"
             ],
-            "cweid": [
-              "CWE-20"
+            "cve": [
+              "CVE-2020-15366"
             ],
             "nist": [
               "SI-10"
@@ -477,6 +603,25 @@
               "name": "minimist",
               "version": "0.0.8"
             }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.6,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+              "source": "CVE-2020-7598",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 6.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:2.0/AV:N/AC:M/Au:N/C:P/I:P/A:P",
+              "source": "CVE-2020-7598",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-20"
           ],
           "descriptions": [
             {
@@ -497,8 +642,8 @@
             "cci": [
               "CCI-001310"
             ],
-            "cweid": [
-              "CWE-20"
+            "cve": [
+              "CVE-2020-7598"
             ],
             "nist": [
               "SI-10"
@@ -516,6 +661,14 @@
               "fixedInVersion": "2.3.1",
               "name": "braces",
               "version": "1.8.5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:2.0/AV:N/AC:M/Au:N/C:N/I:N/A:P",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -556,6 +709,25 @@
               "version": "8.1.0"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:L",
+              "source": "CVE-2020-7608",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 4.6,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:2.0/AV:L/AC:L/Au:N/C:P/I:P/A:P",
+              "source": "CVE-2020-7608",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-20"
+          ],
           "descriptions": [
             {
               "data": "yargs-parser could be tricked into adding or modifying properties of Object.prototype using a \"__proto__\" payload.\ncves: [{\"cve\"=\u003e\"CVE-2020-7608\", \"cwe\"=\u003e[\"CWE-20\"], \"cvss_v2\"=\u003e\"4.6/CVSS:2.0/AV:L/AC:L/Au:N/C:P/I:P/A:P\", \"cvss_v3\"=\u003e\"5.3/CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:L\"}]",
@@ -585,8 +757,8 @@
             "cci": [
               "CCI-001310"
             ],
-            "cweid": [
-              "CWE-20"
+            "cve": [
+              "CVE-2020-7608"
             ],
             "nist": [
               "SI-10"
@@ -604,6 +776,14 @@
               "fixedInVersion": "4.0.0",
               "name": "mem",
               "version": "1.1.0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:2.0/AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -644,6 +824,25 @@
               "version": "4.0.11"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 8.1,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:L/A:L",
+              "source": "CVE-2019-20920",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 6.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:2.0/AV:N/AC:M/Au:N/C:P/I:P/A:P",
+              "source": "CVE-2019-20920",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-94"
+          ],
           "descriptions": [
             {
               "data": "Handlebars before 3.0.8 and 4.x before 4.5.3 is vulnerable to Arbitrary Code Execution. The lookup helper fails to properly validate templates, allowing attackers to submit templates that execute arbitrary JavaScript. This can be used to run arbitrary code on a server processing Handlebars templates or in a victim's browser (effectively serving as XSS).\ncves: [{\"cve\"=\u003e\"CVE-2019-20920\", \"cwe\"=\u003e[\"CWE-94\"], \"cvss_v2\"=\u003e\"6.8/CVSS:2.0/AV:N/AC:M/Au:N/C:P/I:P/A:P\", \"cvss_v3\"=\u003e\"8.1/CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:L/A:L\"}]",
@@ -663,8 +862,8 @@
             "cci": [
               "CCI-001310"
             ],
-            "cweid": [
-              "CWE-94"
+            "cve": [
+              "CVE-2019-20920"
             ],
             "nist": [
               "SI-10"
