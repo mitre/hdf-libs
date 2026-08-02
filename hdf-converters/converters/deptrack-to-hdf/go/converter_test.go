@@ -1,6 +1,7 @@
 package deptrack
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -307,6 +308,74 @@ func TestConvertDeptrack_ResultCodeDesc(t *testing.T) {
 	require.NotEmpty(t, req.Results)
 
 	assert.Contains(t, req.Results[0].CodeDesc, "Update to version 2.6.0 or later.")
+}
+
+// ---- Requirement raw code (Heimdall CODE tab) ----
+
+// Dependency-Track carries no literal source snippet, so requirement.code holds
+// the raw finding object serialized as indented JSON. Pin that it is set and
+// round-trips byte-structurally back to the source finding (CODE-tab fidelity),
+// including fields the typed struct drops (aliases, source, vulnId).
+func TestConvertDeptrack_RequirementCode(t *testing.T) {
+	for _, name := range []string{"input/fpf-default.json", "input/fpf-info-vulnerability.json"} {
+		t.Run(name, func(t *testing.T) {
+			input := loadFixture(t, name)
+			result, err := ConvertDeptrackToHDF(input, testVersion)
+			require.NoError(t, err)
+
+			var raw struct {
+				Findings []json.RawMessage `json:"findings"`
+			}
+			require.NoError(t, json.Unmarshal(input, &raw))
+
+			reqs := result.Baselines[0].Requirements
+			require.Len(t, reqs, len(raw.Findings))
+			for i, req := range reqs {
+				require.NotNil(t, req.Code, "req %d: Code is nil; Heimdall CODE tab would be empty", i)
+				var got, want interface{}
+				require.NoError(t, json.Unmarshal([]byte(*req.Code), &got), "req %d: Code is not valid JSON", i)
+				require.NoError(t, json.Unmarshal(raw.Findings[i], &want))
+				assert.Equal(t, want, got, "req %d: Code does not round-trip to source finding object", i)
+			}
+		})
+	}
+}
+
+// TestConvertDeptrack_RequirementCode_Aliases pins that the untyped fields the
+// Go struct drops (aliases, source, vulnId) survive into requirement.code.
+func TestConvertDeptrack_RequirementCode_Aliases(t *testing.T) {
+	input := loadFixture(t, "input/fpf-default.json")
+	result, err := ConvertDeptrackToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements,
+		"ca4f2da9-0fad-4a13-92d7-f627f3168a56:979f87f5-eaf5-4095-9d38-cde17bf9228e:701a3953-666b-4b7a-96ca-e1e6a3e1def3")
+	require.NotNil(t, req.Code)
+	assert.Contains(t, *req.Code, "CVE-2022-2053")
+	assert.Contains(t, *req.Code, "GHSA-95rf-557x-44g5")
+	assert.Contains(t, *req.Code, "\"vulnId\": \"48\"")
+}
+
+// buildFindingCode branch coverage: success, empty-raw (NOT-IN-SOURCE / zero
+// value), and json.Indent error paths.
+func TestBuildFindingCode_Branches(t *testing.T) {
+	// success: raw reformatted with two-space indent
+	f := DeptrackFinding{raw: json.RawMessage(`{"matrix":"x","analysis":{"isSuppressed":false}}`)}
+	assert.Equal(t,
+		"{\n  \"matrix\": \"x\",\n  \"analysis\": {\n    \"isSuppressed\": false\n  }\n}",
+		buildFindingCode(f))
+
+	// empty raw (zero-value finding, never unmarshaled) -> "{}"
+	assert.Equal(t, "{}", buildFindingCode(DeptrackFinding{}))
+
+	// invalid raw -> json.Indent errors -> "{}"
+	assert.Equal(t, "{}", buildFindingCode(DeptrackFinding{raw: json.RawMessage(`{invalid`)}))
+}
+
+// DeptrackFinding.UnmarshalJSON error path.
+func TestDeptrackFinding_UnmarshalJSON_Error(t *testing.T) {
+	var f DeptrackFinding
+	assert.Error(t, f.UnmarshalJSON([]byte(`{invalid`)))
 }
 
 // ---- Impact mapping table test ----

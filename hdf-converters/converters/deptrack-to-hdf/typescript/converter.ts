@@ -194,6 +194,12 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
   ) as EvaluatedRequirement;
   req.verificationMethod = VerificationMethodEnum.Automated;
 
+  // Dependency-Track carries no literal source snippet, so code holds the whole
+  // finding serialized as indented JSON (byte-identical to the Go twin's
+  // json.Indent output). This preserves every field the typed interfaces drop
+  // (aliases, epssScore, source, vulnId) for the Heimdall CODE tab.
+  req.code = JSON.stringify(finding, null, 2);
+
   const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {
     req.controlType = controlType;

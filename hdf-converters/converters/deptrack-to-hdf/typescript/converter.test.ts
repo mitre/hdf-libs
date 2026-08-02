@@ -225,6 +225,32 @@ describe('Dependency-Track to HDF converter', async () => {
     });
   });
 
+  describe('requirement code (Heimdall CODE tab)', async () => {
+    it('sets code to the raw finding object, round-tripping including dropped fields', async () => {
+      for (const name of ['fpf-default.json', 'fpf-info-vulnerability.json']) {
+        const input = loadFixture(name);
+        const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
+        const source = JSON.parse(input) as { findings: unknown[] };
+        const reqs = hdf.baselines[0]!.requirements;
+        expect(reqs).toHaveLength(source.findings.length);
+        reqs.forEach((req, i) => {
+          expect(req.code).toBeDefined();
+          expect(JSON.parse(req.code!)).toEqual(source.findings[i]);
+        });
+      }
+    });
+
+    it('preserves untyped fields (aliases, source, vulnId) in code', async () => {
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'ca4f2da9-0fad-4a13-92d7-f627f3168a56:979f87f5-eaf5-4095-9d38-cde17bf9228e:701a3953-666b-4b7a-96ca-e1e6a3e1def3'
+      );
+      expect(req!.code).toContain('CVE-2022-2053');
+      expect(req!.code).toContain('GHSA-95rf-557x-44g5');
+      expect(req!.code).toContain('"vulnId": "48"');
+    });
+  });
+
   describe('edge cases: missing optional fields', async () => {
     it('should handle all severity levels', async () => {
       for (const [sev, expected] of [['CRITICAL', 0.9], ['HIGH', 0.7], ['MEDIUM', 0.5], ['LOW', 0.3], ['INFO', 0.0], ['UNKNOWN', 0.5]] as const) {

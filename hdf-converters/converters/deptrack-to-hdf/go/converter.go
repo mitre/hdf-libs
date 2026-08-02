@@ -1,6 +1,7 @@
 package deptrack
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -43,6 +44,24 @@ type DeptrackFinding struct {
 	Analysis      DeptrackAnalysis      `json:"analysis"`
 	Attribution   *DeptrackAttribution  `json:"attribution,omitempty"`
 	Matrix        string                `json:"matrix"`
+
+	// raw is the finding exactly as Dependency-Track emitted it. It carries no
+	// literal source snippet, so requirement.code is the whole finding re-indented
+	// in place — preserving source key order and every field the typed struct does
+	// not model (aliases, epssScore, source, vulnId), so the output is
+	// byte-identical to the TypeScript twin's JSON.stringify(finding, null, 2).
+	raw json.RawMessage
+}
+
+func (f *DeptrackFinding) UnmarshalJSON(data []byte) error {
+	type plain DeptrackFinding
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*f = DeptrackFinding(p)
+	f.raw = append(json.RawMessage(nil), data...)
+	return nil
 }
 
 // DeptrackComponent identifies the affected software component.
@@ -133,6 +152,21 @@ func getCweIDs(cwes []DeptrackCwe) []string {
 	return ids
 }
 
+// buildFindingCode renders the raw Dependency-Track finding as indented JSON for
+// requirement.code (the Heimdall CODE tab). json.Indent reformats the original
+// bytes in place, preserving source key order so the output is byte-identical to
+// the TypeScript twin's JSON.stringify(finding, null, 2).
+func buildFindingCode(finding DeptrackFinding) string {
+	if len(finding.raw) == 0 {
+		return "{}"
+	}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, finding.raw, "", "  "); err != nil {
+		return "{}"
+	}
+	return buf.String()
+}
+
 // buildRequirement converts a Dependency-Track finding into an EvaluatedRequirement.
 func buildRequirement(finding DeptrackFinding, timestamp string) hdf.EvaluatedRequirement {
 	cweIDs := getCweIDs(finding.Vulnerability.Cwes)
@@ -187,6 +221,7 @@ func buildRequirement(finding DeptrackFinding, timestamp string) hdf.EvaluatedRe
 	req := hdf.EvaluatedRequirement{
 		ID:                 finding.Matrix,
 		Title:              &title,
+		Code:               hdfutil.Ptr(buildFindingCode(finding)),
 		Impact:             getImpact(finding.Vulnerability.Severity),
 		Tags:               tags,
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
