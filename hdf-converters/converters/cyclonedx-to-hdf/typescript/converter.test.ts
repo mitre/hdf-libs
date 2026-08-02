@@ -104,7 +104,7 @@ describe('cyclonedx to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource name to "CycloneDX" and format to "JSON"', async () => {
+    it('should set dataSource name to "CycloneDX" with no format', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
       ) as HDFResults;

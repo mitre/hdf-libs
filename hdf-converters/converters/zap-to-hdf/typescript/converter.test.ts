@@ -155,7 +155,7 @@ describe('ZAP Converter', () => {
       expect(hdf.generator.name).toBe('zap-to-hdf');
     });
 
-    it('should set dataSource name to "OWASP ZAP" and format to "JSON"', async () => {
+    it('should set dataSource name to "OWASP ZAP" with no format', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
