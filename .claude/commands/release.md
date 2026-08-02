@@ -152,6 +152,34 @@ The repo carries several **deliberate-suppression / "don't-bump" mechanisms**, e
 
 Retirements are their own small commits/PRs (they change behavior — a dropped override or lifted ignore can surface a real advisory or bump), not folded into the version-bump commit. Anything that can't be retired yet: leave it, and note the still-blocking condition so the next release re-checks it.
 
+### Phase 1.7 — Vendored external-schema freshness *(minor/major only)*
+
+Converters that emit a format with a published schema validate their output
+against a **vendored copy** of that schema (see `converters/*/schemas/` and
+sibling `*/fixtures/*schema*.json`, each with a `PROVENANCE.md`). Vendoring keeps
+the tests hermetic and pins validation to the exact schema version the converter
+claims — but the copy can drift from upstream. This phase is the checkpoint.
+**Minor/major only** — the schemas don't change between patches, so this must not
+hold up a patch release.
+
+For each vendored external schema (JSON Schema or XSD) with a `PROVENANCE.md`:
+
+1. Re-fetch the pinned source URL and compare its SHA-256 against the value
+   recorded in the schema's `PROVENANCE.md`.
+2. **Match** → still current; done.
+3. **Mismatch** → upstream changed the artifact in place. Investigate: for a
+   *versioned* spec (XCCDF 1.2, OSCAL 1.1.2, CSAF 2.0) an in-place change is rare
+   and worth scrutiny; for a date-stamped one (e.g. FIRST.org CVSS) it may be a
+   routine re-stamp. Refresh the vendored file, re-run that converter's
+   output-validation test, re-apply any local edits the provenance documents
+   (e.g. XCCDF `schemaLocation` rewrites), and update the recorded SHA-256.
+4. **Fetch fails / URL moved** → note it; the pin still validates offline, but
+   record the new canonical URL in `PROVENANCE.md`.
+
+A drift or a new upstream schema version can surface real converter
+conformance gaps — treat any resulting fix as its own commit, not folded into the
+version bump. If nothing drifted, this phase is a no-op confirmation.
+
 ### Phase 2 — Mechanical version sweep *(minor/major only)*
 
 > **Patch:** edit only the workspace `package.json` versions and `go.mod` requires (rows 1–2 and 4 below). Leave schema `$id` URLs at `OLD_VERSION` — the schema didn't change — and skip Phases 2.5–4 entirely.
@@ -281,6 +309,7 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] Phase 1 swarm review run (incl. docs/README-accuracy dimension); critical/high findings resolved or waived; deferrals filed as beads
 - [ ] Phase 1.5 pre-release bead reconciliation: every delivered open/in_progress bead verified against the code and closed citing its PR; remaining-open cards triaged as blocking-bug vs. patchable
 - [ ] Phase 1.6 suppression review: pnpm overrides re-validated against current advisory floors; `ignoreGhsas` checked for now-available fixes; dependabot `ignore` rules checked against their still-blocking conditions; retirements filed as their own commits
+- [ ] *(minor/major)* Phase 1.7 vendored external-schema freshness: each `converters/*/schemas/**` (and sibling fixture schema) re-fetched and SHA-256-compared against its `PROVENANCE.md`; drift refreshed + revalidated, or confirmed no-op
 - [ ] 10 `package.json` files at NEW
 - [ ] 5 `go.mod` files: every `hdf-libs/<x>/v3 vNEW` (no stragglers)
 - [ ] *(minor/major)* 7 schema `$id` URLs at NEW
