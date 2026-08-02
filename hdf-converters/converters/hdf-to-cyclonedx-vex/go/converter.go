@@ -488,8 +488,12 @@ func buildSerialNumber(input []byte, a *hdf.HDFAmendments) string {
 	if a.AmendmentID != nil && *a.AmendmentID != "" {
 		return "urn:uuid:" + *a.AmendmentID
 	}
-	// CycloneDX serialNumber must be urn:uuid:<8-4-4-4-12>. Derive a
-	// deterministic, format-valid UUID from the input hash (hyphenated).
+	// CycloneDX serialNumber must be an RFC 4122 urn:uuid. Derive a
+	// deterministic name-based (v5-style) UUID from the input hash: take the
+	// first 16 bytes and set the version (5) and variant bits so strict UUID
+	// parsers accept it.
 	b := sha256.Sum256(input)
+	b[6] = (b[6] & 0x0f) | 0x50 // version 5
+	b[8] = (b[8] & 0x3f) | 0x80 // RFC 4122 variant
 	return fmt.Sprintf("urn:uuid:%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }

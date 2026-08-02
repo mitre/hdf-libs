@@ -18,7 +18,10 @@ import (
 )
 
 // libxml2's parser is initialized once per process; tests share it.
-var initOnce sync.Once
+var (
+	initOnce sync.Once
+	errInit  error
+)
 
 // Validator validates XML documents against an XSD, compiled once for reuse.
 type Validator struct {
@@ -30,7 +33,8 @@ type Validator struct {
 // schema compiles offline (see the vendored XCCDF chain + its PROVENANCE.md).
 func New(t *testing.T, xsdPath string) *Validator {
 	t.Helper()
-	initOnce.Do(func() { _ = xsd.Init() })
+	initOnce.Do(func() { errInit = xsd.Init() })
+	require.NoError(t, errInit, "initialize libxml2 (go-xsd-validate)")
 	abs, err := filepath.Abs(xsdPath)
 	require.NoError(t, err, "resolve XSD path %s", xsdPath)
 	handler, err := xsd.NewXsdHandlerUrl(abs, xsd.ParsErrDefault)

@@ -18,9 +18,9 @@ import (
 //
 // Converters that emit a format with a published schema MUST validate their
 // output against it in tests: golden fixtures alone silently encode whatever the
-// converter emits, so schema-invalid output ships unnoticed (see the
-// hdf-to-oscal-sar regression in GitHub #184, which declared OSCAL 1.1.2
-// conformance while failing that schema on four counts).
+// converter emits, so schema-invalid output ships unnoticed — as an oscal-sar
+// regression once did, declaring OSCAL 1.1.2 conformance while failing that
+// schema.
 //
 // It dispatches on the schema's declared draft, because no single Go library
 // covers the range we need:
