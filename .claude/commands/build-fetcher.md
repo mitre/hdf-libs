@@ -36,7 +36,7 @@ CLI wiring lives in `hdf-cli/cmd/hdf/cmd/fetch_<tool>.go`, registered under the 
 
 Research and decide:
 
-1. **The converter it feeds.** Which existing converter consumes this source's bytes? What exact shape does that converter expect (JSON array? single object? NDJSON)? The fetcher must produce exactly that.
+1. **The converter it feeds.** Which existing converter consumes this source's bytes? What exact shape does that converter expect (JSON array? single object? NDJSON)? The fetcher must produce exactly that — and must **preserve the full field set the converter maps**. Request every field and expansion the API offers (e.g. `related_fields=true`, `expand=`, `fields=*`, nested-object includes) rather than a narrow projection that silently strips data the converter would translate into HDF; upstream field-stripping defeats the converter's coverage mandate (`/build-converter` Step 1a). If you are unsure whether the assembled shape carries everything the converter needs, or the API's field-selection behavior is ambiguous, **STOP and ask the developer** — do not guess.
 2. **Auth model.** Bearer token, API key header, session cookie, OAuth, SDK credential chain? Where does the credential come from — env var, config file, SDK discovery? **Credentials are never accepted as raw CLI flags** (visible in `ps`, shell history, CI logs) — prefer `--profile`, env vars, or a token file. The AWS CLI itself does not accept `--secret-access-key` as a flag; follow that precedent.
 3. **Response schema — get a REAL sample.** Do not invent field names or nesting. Capture a real API response (a live instance you stand up and populate, or documented API reference). A fetcher/converter built against a guessed schema validates the wrong thing and diverges silently from real data. If you can't obtain a real sample, STOP and ask.
 4. **Pagination & size.** Does the API paginate? Both loops must be capped at a maximum page count. Response bodies must be size-limited (`ReadLimitedBody`).
@@ -132,6 +132,7 @@ Fix every finding before marking the work done. `aws-config` / `gitlab` are the 
 
 - [ ] The converter this fetcher feeds already exists (or lands in the same PR)
 - [ ] Response schema confirmed against a REAL API sample — no invented fields
+- [ ] Full field set preserved: every API field/expansion the converter maps is requested (no narrow projection that strips data the converter would translate); ambiguity surfaced to the developer, not guessed
 - [ ] `fetchers/<tool>/go/` — two constructors (default-discovery + injection), params struct, default timeout + max-size consts, URL validation, `ReadLimitedBody`, `ctx.Err()` in pagination
 - [ ] `fetchers/<tool>/typescript/` (if in scope) — auth-agnostic: pre-authenticated transport / `authFetch`, never credentials
 - [ ] Tests use `httptest.Server` / mock transport; assert headers + query params + body, not just path; no live credentials
