@@ -284,10 +284,14 @@ export async function convertGitlabToHdf(input: string, converterVersion = '1.0.
 
     const impact = gitlabSeverityToImpact(vuln.severity ?? 'Unknown');
 
+    // GitLab carries no literal source snippet, so code holds the whole
+    // vulnerability serialized as indented JSON (byte-identical to the Go twin's
+    // json.Indent output — same source key order, same dropped fields preserved).
     const req: EvaluatedRequirement = {
       id: vuln.id,
       title: vuln.name ?? vuln.id,
       impact,
+      code: JSON.stringify(vuln, null, 2),
       results: [result],
       tags,
       descriptions,

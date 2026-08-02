@@ -374,3 +374,73 @@ func TestConvertGitlabToHDF_VerificationMethod(t *testing.T) {
 		}
 	}
 }
+
+// GitLab carries no literal source snippet, so requirement.code holds the whole
+// vulnerability object serialized as indented JSON. Pin that it is set on every
+// requirement and round-trips byte-structurally back to the source vulnerability
+// object across all scan-type fixtures (Heimdall CODE-tab fidelity). This also
+// proves the many dropped fields (links, identifiers[].url, remediation linkage,
+// location detail) survive into code.
+func TestConvertGitlabToHDF_RequirementCode(t *testing.T) {
+	for _, name := range []string{"minimal-dast.json", "minimal-sast.json", "multi-vuln.json"} {
+		t.Run(name, func(t *testing.T) {
+			input := loadFixture(t, "input/"+name)
+			result, err := ConvertGitlabToHDF(input, testVersion)
+			require.NoError(t, err)
+
+			var raw struct {
+				Vulnerabilities []json.RawMessage `json:"vulnerabilities"`
+			}
+			require.NoError(t, json.Unmarshal(input, &raw))
+
+			reqs := result.Baselines[0].Requirements
+			require.Len(t, reqs, len(raw.Vulnerabilities))
+
+			for i, req := range reqs {
+				require.NotNilf(t, req.Code, "requirement %d: Code is nil; Heimdall CODE tab would be empty", i)
+
+				var got, want interface{}
+				require.NoErrorf(t, json.Unmarshal([]byte(*req.Code), &got), "requirement %d: Code is not valid JSON", i)
+				require.NoError(t, json.Unmarshal(raw.Vulnerabilities[i], &want))
+				assert.Equalf(t, want, got, "requirement %d: Code does not round-trip to source vulnerability object", i)
+
+				// url fields that the typed struct/tags path drops must survive into code.
+				assert.Contains(t, *req.Code, "\n", "requirement %d: Code should be indented JSON", i)
+			}
+		})
+	}
+}
+
+// buildVulnCode has three branches: populated raw (indented JSON), empty raw,
+// and malformed raw (json.Indent error). The last two are defensive and
+// unreachable via the normal parse path, so exercise them directly.
+func TestBuildVulnCode_Branches(t *testing.T) {
+	// Populated raw: indented JSON that round-trips to the source object.
+	source := []byte(`{"id":"x","severity":"High","links":[{"url":"https://example.com"}]}`)
+	var vuln GitLabVulnerability
+	require.NoError(t, json.Unmarshal(source, &vuln))
+	code := buildVulnCode(vuln)
+	assert.Contains(t, code, "\n  ", "expected indented JSON")
+	var got, want interface{}
+	require.NoError(t, json.Unmarshal([]byte(code), &got))
+	require.NoError(t, json.Unmarshal(source, &want))
+	assert.Equal(t, want, got)
+
+	// Empty raw: defensive fallback.
+	assert.Equal(t, "{}", buildVulnCode(GitLabVulnerability{}))
+
+	// Malformed raw: json.Indent error fallback.
+	assert.Equal(t, "{}", buildVulnCode(GitLabVulnerability{raw: json.RawMessage("{not json")}))
+}
+
+// UnmarshalJSON captures the raw bytes and delegates typed decoding; a type
+// mismatch in the vulnerability propagates the decode error (exercised via the
+// report-level parse, which surfaces as an invalid-JSON conversion failure).
+func TestGitLabVulnerability_UnmarshalJSON_Error(t *testing.T) {
+	var vuln GitLabVulnerability
+	// id is typed string; a numeric id forces the inner json.Unmarshal to error.
+	assert.Error(t, vuln.UnmarshalJSON([]byte(`{"id": 12345}`)))
+
+	_, err := ConvertGitlabToHDF([]byte(`{"vulnerabilities":[{"id": 12345}]}`), testVersion)
+	assert.Error(t, err)
+}

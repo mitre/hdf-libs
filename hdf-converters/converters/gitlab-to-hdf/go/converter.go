@@ -1,6 +1,7 @@
 package gitlab_to_hdf
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -50,6 +51,24 @@ type GitLabVulnerability struct {
 	Identifiers []GitLabIdentifier `json:"identifiers,omitempty"`
 	Location    *GitLabLocation    `json:"location,omitempty"`
 	Links       []GitLabLink       `json:"links,omitempty"`
+
+	// raw is the vulnerability exactly as GitLab emitted it. GitLab carries no
+	// literal source snippet, so requirement.code is the whole vulnerability
+	// re-indented in place — preserving source key order and every field the
+	// typed struct drops (links, identifiers[].url, location detail) so the
+	// output is byte-identical to the TypeScript twin's JSON.stringify(vuln, null, 2).
+	raw json.RawMessage
+}
+
+func (v *GitLabVulnerability) UnmarshalJSON(data []byte) error {
+	type plain GitLabVulnerability
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*v = GitLabVulnerability(p)
+	v.raw = append(json.RawMessage(nil), data...)
+	return nil
 }
 
 // GitLabIdentifier is a vulnerability identifier (CWE, CVE, etc.).
@@ -177,6 +196,21 @@ func collectIdentifierExtras(identifiers []GitLabIdentifier) map[string]interfac
 		extras[k] = hdfutil.StringsToInterfaces(v)
 	}
 	return extras
+}
+
+// buildVulnCode renders the raw vulnerability as indented JSON for
+// requirement.code. json.Indent re-formats the original bytes in place,
+// preserving source key order so the output is byte-identical to the
+// TypeScript twin's JSON.stringify(vuln, null, 2).
+func buildVulnCode(vuln GitLabVulnerability) string {
+	if len(vuln.raw) == 0 {
+		return "{}"
+	}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, vuln.raw, "", "  "); err != nil {
+		return "{}"
+	}
+	return buf.String()
 }
 
 // --- Build code description by scan type ---
@@ -362,6 +396,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 			ID:                 vuln.ID,
 			Title:              &title,
 			Impact:             impact,
+			Code:               hdfutil.Ptr(buildVulnCode(vuln)),
 			Results:            []hdf.RequirementResult{result},
 			Tags:               tags,
 			Descriptions:       descriptions,

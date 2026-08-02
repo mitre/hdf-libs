@@ -498,4 +498,25 @@ describe('GitLab to HDF converter', () => {
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('URL: https://example.com');
     });
   });
+
+  // GitLab carries no literal source snippet, so requirement.code holds the whole
+  // vulnerability object serialized as indented JSON — byte-identical to the Go
+  // twin's json.Indent output. Pin that it is set on every requirement and
+  // round-trips to the source vulnerability object across all scan-type fixtures.
+  describe('requirement.code (Heimdall CODE tab)', () => {
+    for (const name of ['minimal-dast.json', 'minimal-sast.json', 'multi-vuln.json']) {
+      it(`round-trips the source vulnerability object for ${name}`, async () => {
+        const input = loadFixture(name);
+        const source = parseJSON<{vulnerabilities: unknown[]}>(input);
+        const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
+        const reqs = hdf.baselines[0].requirements;
+        expect(reqs.length).toBe(source.vulnerabilities.length);
+        reqs.forEach((req, i) => {
+          expect(req.code, `requirement ${i}: code unset; CODE tab empty`).toBeDefined();
+          expect(req.code).toContain('\n');
+          expect(JSON.parse(req.code as string)).toEqual(source.vulnerabilities[i]);
+        });
+      });
+    }
+  });
 });
