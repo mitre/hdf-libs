@@ -7,6 +7,8 @@
  * site/docs/architecture/status-determination.md; do not re-implement them.
  */
 
+import { parseTimestamp } from '../string/index.js';
+
 /** Canonical worst-wins ordering, worst first. */
 export const STATUS_SEVERITY_ORDER: readonly string[] = [
   'error',
@@ -54,8 +56,10 @@ export interface StatusOverrideInput {
 
 function isExpired(override: StatusOverrideInput, ref: Date): boolean {
   if (!override.expiresAt) return false;
-  const expires = new Date(override.expiresAt);
-  return !Number.isNaN(expires.getTime()) && expires <= ref;
+  // parseTimestamp normalizes zone-less values to UTC (a raw `new Date` would
+  // read them as host-local and make expiry host-timezone-dependent).
+  const expires = parseTimestamp(override.expiresAt);
+  return expires !== null && expires <= ref;
 }
 
 /**
@@ -95,16 +99,12 @@ export function governingStatusOverrideIndex(
 
 function appliedTime(override: StatusOverrideInput): number {
   if (!override.appliedAt) return Number.NEGATIVE_INFINITY;
-  const t = new Date(override.appliedAt).getTime();
-  return Number.isNaN(t) ? Number.NEGATIVE_INFINITY : t;
+  return parseTimestamp(override.appliedAt)?.getTime() ?? Number.NEGATIVE_INFINITY;
 }
 
 function refTime(referenceTimestamp?: string): Date {
-  if (referenceTimestamp) {
-    const parsed = new Date(referenceTimestamp);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-  return new Date();
+  const parsed = referenceTimestamp ? parseTimestamp(referenceTimestamp) : null;
+  return parsed ?? new Date();
 }
 
 /** Neutral shape of a requirement for effective-status computation. */

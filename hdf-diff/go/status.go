@@ -34,12 +34,9 @@ var failingStatuses = map[string]bool{
 //  4. Aggregate results using worst-wins
 //  5. Empty results -> "notReviewed"
 func ComputeEffectiveStatus(req hdf.EvaluatedRequirement, referenceTimestamp string) string {
-	var ref time.Time
-	if referenceTimestamp != "" {
-		if parsed, err := time.Parse(time.RFC3339, referenceTimestamp); err == nil {
-			ref = parsed
-		}
-	}
+	// ParseTimestamp keeps zone-less inputs host-independent (repo timestamp
+	// convention); a zero result means "now" to the shared helper.
+	ref := hdfutil.ParseTimestamp(referenceTimestamp)
 
 	input := hdfutil.EffectiveStatusInput{Impact: req.Impact}
 	if req.EffectiveStatus != nil {
