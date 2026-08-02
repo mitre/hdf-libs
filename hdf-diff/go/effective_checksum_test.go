@@ -178,6 +178,53 @@ func TestComputeEffectiveImpact(t *testing.T) {
 		req.EffectiveImpact = &v
 		assert.InDelta(t, 0.3, ComputeEffectiveImpact(req, ecRefTime), 1e-9)
 	})
+
+	t.Run("most recently applied impact override wins regardless of array order", func(t *testing.T) {
+		req := ecFailingReq()
+		req.StatusOverrides = []hdf.StatusOverride{
+			{
+				Type:      hdf.RiskAdjustment,
+				Impact:    &hdf.ImpactOverride{Value: 0.4},
+				Reason:    "initial adjustment",
+				AppliedBy: hdf.Identity{Identifier: "admin"},
+				AppliedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+				ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+			},
+			{
+				Type:      hdf.RiskAdjustment,
+				Impact:    &hdf.ImpactOverride{Value: 0.1},
+				Reason:    "superseding adjustment",
+				AppliedBy: hdf.Identity{Identifier: "admin"},
+				AppliedAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+				ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+			},
+		}
+		assert.InDelta(t, 0.1, ComputeEffectiveImpact(req, ecRefTime), 1e-9)
+	})
+
+	t.Run("impact-less newer override does not mask an older impact-bearing one", func(t *testing.T) {
+		req := ecFailingReq()
+		waived := hdf.NotApplicable
+		req.StatusOverrides = []hdf.StatusOverride{
+			{
+				Type:      hdf.RiskAdjustment,
+				Impact:    &hdf.ImpactOverride{Value: 0.2},
+				Reason:    "environmental adjustment",
+				AppliedBy: hdf.Identity{Identifier: "admin"},
+				AppliedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+				ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+			},
+			{
+				Type:      hdf.OverrideTypeWaiver,
+				Status:    &waived,
+				Reason:    "risk accepted",
+				AppliedBy: hdf.Identity{Identifier: "admin"},
+				AppliedAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+				ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+			},
+		}
+		assert.InDelta(t, 0.2, ComputeEffectiveImpact(req, ecRefTime), 1e-9)
+	})
 }
 
 func TestComputeDisposition(t *testing.T) {
@@ -218,6 +265,32 @@ func TestComputeDisposition(t *testing.T) {
 			ExpiresAt time.Time
 		}{Type: "waiver", Status: hdf.NotApplicable, ExpiresAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)})}
 		assert.Nil(t, ComputeDisposition(req, ecRefTime))
+	})
+
+	t.Run("most recently applied override type wins regardless of array order", func(t *testing.T) {
+		req := ecFailingReq()
+		waived := hdf.NotApplicable
+		req.StatusOverrides = []hdf.StatusOverride{
+			{
+				Type:      hdf.OverrideTypeWaiver,
+				Status:    &waived,
+				Reason:    "risk accepted",
+				AppliedBy: hdf.Identity{Identifier: "admin"},
+				AppliedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+				ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+			},
+			{
+				Type:      hdf.RiskAdjustment,
+				Impact:    &hdf.ImpactOverride{Value: 0.2},
+				Reason:    "superseding adjustment",
+				AppliedBy: hdf.Identity{Identifier: "admin"},
+				AppliedAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+				ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+			},
+		}
+		d := ComputeDisposition(req, ecRefTime)
+		require.NotNil(t, d)
+		assert.Equal(t, hdf.RiskAdjustment, *d)
 	})
 }
 

@@ -1,4 +1,4 @@
-import { sha256 } from '@mitre/hdf-utilities';
+import { governingOverrideIndex, sha256 } from '@mitre/hdf-utilities';
 import { computeEffectiveStatus } from './status.js';
 
 interface ImpactOverrideLike {
@@ -9,6 +9,7 @@ interface OverrideLike {
   type?: string;
   status?: string;
   impact?: ImpactOverrideLike;
+  appliedAt?: string;
   expiresAt: string;
 }
 
@@ -17,16 +18,18 @@ export interface EffectiveChecksum {
   value: string;
 }
 
-function referenceTimeMs(referenceTimestamp?: string): number {
-  return referenceTimestamp ? new Date(referenceTimestamp).getTime() : Date.now();
+/** Maps overrides onto the shared neutral selection shape (applied/expiry
+ * window only; eligibility is passed separately). */
+function overrideWindows(overrides: readonly OverrideLike[]) {
+  return overrides.map((o) => ({ appliedAt: o.appliedAt, expiresAt: o.expiresAt }));
 }
 
 /**
- * Determine the effective impact of a requirement: the first non-expired
- * override carrying an impact value wins; with no overrides, a stored
- * effectiveImpact field is honored; otherwise the base impact.
- * Mirrors computeEffectiveStatus's resolution priority (Go parity:
- * ComputeEffectiveImpact in hdf-diff/go/effective_checksum.go).
+ * Determine the effective impact of a requirement: the most recently applied
+ * non-expired override carrying an impact value wins (the schema's definition
+ * of effectiveImpact, selected by the shared governing helper); with no
+ * overrides, a stored effectiveImpact field is honored; otherwise the base
+ * impact. (Go parity: ComputeEffectiveImpact in hdf-diff/go/effective_checksum.go.)
  */
 export function computeEffectiveImpact(
   requirement: Record<string, unknown>,
@@ -36,12 +39,13 @@ export function computeEffectiveImpact(
   const overrides = requirement['statusOverrides'] as OverrideLike[] | undefined;
 
   if (overrides && overrides.length > 0) {
-    const refTime = referenceTimeMs(referenceTimestamp);
-    for (const override of overrides) {
-      const expiresAt = new Date(override.expiresAt).getTime();
-      if (expiresAt > refTime && override.impact) {
-        return override.impact.value;
-      }
+    const i = governingOverrideIndex(
+      overrideWindows(overrides),
+      (idx) => overrides[idx]?.impact !== undefined,
+      referenceTimestamp,
+    );
+    if (i >= 0) {
+      return overrides[i]!.impact!.value;
     }
     return baseImpact;
   }
@@ -54,10 +58,9 @@ export function computeEffectiveImpact(
 }
 
 /**
- * Return the Override_Type of the governing (first non-expired) override,
- * a stored disposition field when no overrides are present, or null.
- * Mirrors computeEffectiveStatus's governing-override selection (Go parity:
- * ComputeDisposition).
+ * Return the Override_Type of the governing (most recently applied
+ * non-expired) override, a stored disposition field when no overrides are
+ * present, or null. (Go parity: ComputeDisposition.)
  */
 export function computeDisposition(
   requirement: Record<string, unknown>,
@@ -66,12 +69,9 @@ export function computeDisposition(
   const overrides = requirement['statusOverrides'] as OverrideLike[] | undefined;
 
   if (overrides && overrides.length > 0) {
-    const refTime = referenceTimeMs(referenceTimestamp);
-    for (const override of overrides) {
-      const expiresAt = new Date(override.expiresAt).getTime();
-      if (expiresAt > refTime && override.type) {
-        return override.type;
-      }
+    const i = governingOverrideIndex(overrideWindows(overrides), () => true, referenceTimestamp);
+    if (i >= 0) {
+      return overrides[i]?.type ?? null;
     }
     return null;
   }

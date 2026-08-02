@@ -23,6 +23,7 @@ function makeOverride(opts: {
   type?: string;
   status?: string;
   impact?: number;
+  appliedAt?: string;
   expiresAt?: string;
 }) {
   return {
@@ -31,7 +32,7 @@ function makeOverride(opts: {
     ...(opts.impact !== undefined ? { impact: { value: opts.impact } } : {}),
     reason: 'approved by team lead',
     appliedBy: { identifier: 'admin' },
-    appliedAt: '2025-01-01T00:00:00Z',
+    appliedAt: opts.appliedAt ?? '2025-01-01T00:00:00Z',
     expiresAt: opts.expiresAt ?? '2099-12-31T23:59:59Z',
   };
 }
@@ -150,6 +151,28 @@ describe('computeEffectiveImpact', () => {
     const req = { ...failingReq(), effectiveImpact: 0.3 };
     expect(computeEffectiveImpact(req, REF_TIME)).toBe(0.3);
   });
+
+  it('lets the most recently applied impact override win regardless of array order', () => {
+    const req = {
+      ...failingReq(),
+      statusOverrides: [
+        makeOverride({ type: 'riskAdjustment', impact: 0.4, appliedAt: '2025-01-01T00:00:00Z' }),
+        makeOverride({ type: 'riskAdjustment', impact: 0.1, appliedAt: '2025-06-01T00:00:00Z' }),
+      ],
+    };
+    expect(computeEffectiveImpact(req, REF_TIME)).toBe(0.1);
+  });
+
+  it('does not let an impact-less newer override mask an older impact-bearing one', () => {
+    const req = {
+      ...failingReq(),
+      statusOverrides: [
+        makeOverride({ type: 'riskAdjustment', impact: 0.2, appliedAt: '2025-01-01T00:00:00Z' }),
+        makeOverride({ type: 'waiver', status: 'notApplicable', appliedAt: '2025-06-01T00:00:00Z' }),
+      ],
+    };
+    expect(computeEffectiveImpact(req, REF_TIME)).toBe(0.2);
+  });
 });
 
 describe('computeDisposition', () => {
@@ -187,5 +210,16 @@ describe('computeDisposition', () => {
       ],
     };
     expect(computeDisposition(req, REF_TIME)).toBeNull();
+  });
+
+  it('lets the most recently applied override type win regardless of array order', () => {
+    const req = {
+      ...failingReq(),
+      statusOverrides: [
+        makeOverride({ type: 'waiver', status: 'notApplicable', appliedAt: '2025-01-01T00:00:00Z' }),
+        makeOverride({ type: 'riskAdjustment', impact: 0.2, appliedAt: '2025-06-01T00:00:00Z' }),
+      ],
+    };
+    expect(computeDisposition(req, REF_TIME)).toBe('riskAdjustment');
   });
 });

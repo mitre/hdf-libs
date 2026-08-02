@@ -4,9 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // effectiveFields is the canonical hash input for ComputeEffectiveChecksum.
@@ -18,29 +18,30 @@ type effectiveFields struct {
 	Disposition *string `json:"disposition"`
 }
 
-// resolveReferenceTime parses the reference timestamp used for override
-// expiry, falling back to the current time when absent or unparseable
-// (mirrors ComputeEffectiveStatus's historical behavior).
-func resolveReferenceTime(referenceTimestamp string) time.Time {
-	if referenceTimestamp != "" {
-		if parsed, err := time.Parse(time.RFC3339, referenceTimestamp); err == nil {
-			return parsed
+// overrideWindows maps schema overrides onto the shared neutral selection
+// shape (applied/expiry window only; eligibility is passed separately).
+func overrideWindows(overrides []hdf.StatusOverride) []hdfutil.StatusOverrideInput {
+	windows := make([]hdfutil.StatusOverrideInput, len(overrides))
+	for i := range overrides {
+		windows[i] = hdfutil.StatusOverrideInput{
+			AppliedAt: overrides[i].AppliedAt,
+			ExpiresAt: overrides[i].ExpiresAt,
 		}
 	}
-	return time.Now()
+	return windows
 }
 
 // ComputeEffectiveImpact determines the effective impact of a requirement:
-// the first non-expired override carrying an impact value wins; with no
-// overrides, a stored effectiveImpact field is honored; otherwise the base
-// impact. Mirrors ComputeEffectiveStatus's resolution priority.
+// the most recently applied non-expired override carrying an impact value
+// wins (the schema's definition of effectiveImpact, selected by the shared
+// governing helper); with no overrides, a stored effectiveImpact field is
+// honored; otherwise the base impact.
 func ComputeEffectiveImpact(req hdf.EvaluatedRequirement, referenceTimestamp string) float64 {
 	if len(req.StatusOverrides) > 0 {
-		refTime := resolveReferenceTime(referenceTimestamp)
-		for _, override := range req.StatusOverrides {
-			if override.ExpiresAt.After(refTime) && override.Impact != nil {
-				return override.Impact.Value
-			}
+		ref := hdfutil.ParseTimestamp(referenceTimestamp)
+		carriesImpact := func(i int) bool { return req.StatusOverrides[i].Impact != nil }
+		if i := hdfutil.GoverningOverrideIndex(overrideWindows(req.StatusOverrides), carriesImpact, ref); i >= 0 {
+			return req.StatusOverrides[i].Impact.Value
 		}
 		return req.Impact
 	}
@@ -50,17 +51,15 @@ func ComputeEffectiveImpact(req hdf.EvaluatedRequirement, referenceTimestamp str
 	return req.Impact
 }
 
-// ComputeDisposition returns the Override_Type of the governing (first
-// non-expired) override, a stored disposition field when no overrides are
-// present, or nil when nothing governs. Mirrors ComputeEffectiveStatus's
-// governing-override selection.
+// ComputeDisposition returns the Override_Type of the governing (most
+// recently applied non-expired) override, a stored disposition field when no
+// overrides are present, or nil when nothing governs.
 func ComputeDisposition(req hdf.EvaluatedRequirement, referenceTimestamp string) *hdf.OverrideType {
 	if len(req.StatusOverrides) > 0 {
-		refTime := resolveReferenceTime(referenceTimestamp)
-		for i := range req.StatusOverrides {
-			if req.StatusOverrides[i].ExpiresAt.After(refTime) {
-				return &req.StatusOverrides[i].Type
-			}
+		ref := hdfutil.ParseTimestamp(referenceTimestamp)
+		all := func(int) bool { return true }
+		if i := hdfutil.GoverningOverrideIndex(overrideWindows(req.StatusOverrides), all, ref); i >= 0 {
+			return &req.StatusOverrides[i].Type
 		}
 		return nil
 	}

@@ -106,6 +106,56 @@ func TestGoverningStatusOverride(t *testing.T) {
 	})
 }
 
+func TestGoverningOverrideIndex(t *testing.T) {
+	all := func(int) bool { return true }
+
+	t.Run("most recent AppliedAt wins among eligible non-expired", func(t *testing.T) {
+		overrides := []StatusOverrideInput{
+			{AppliedAt: appliedOld, ExpiresAt: farFuture},
+			{AppliedAt: appliedNew, ExpiresAt: farFuture},
+		}
+		if got := GoverningOverrideIndex(overrides, all, statusRef); got != 1 {
+			t.Fatalf("got %d, want 1 (later-applied)", got)
+		}
+	})
+
+	t.Run("ineligible overrides are skipped", func(t *testing.T) {
+		overrides := []StatusOverrideInput{
+			{AppliedAt: appliedOld, ExpiresAt: farFuture},
+			{AppliedAt: appliedNew, ExpiresAt: farFuture},
+		}
+		onlyFirst := func(i int) bool { return i == 0 }
+		if got := GoverningOverrideIndex(overrides, onlyFirst, statusRef); got != 0 {
+			t.Fatalf("got %d, want 0 (only eligible)", got)
+		}
+	})
+
+	t.Run("expired overrides are skipped", func(t *testing.T) {
+		overrides := []StatusOverrideInput{
+			{AppliedAt: appliedNew, ExpiresAt: longAgo},
+			{AppliedAt: appliedOld, ExpiresAt: farFuture},
+		}
+		if got := GoverningOverrideIndex(overrides, all, statusRef); got != 1 {
+			t.Fatalf("got %d, want 1 (non-expired)", got)
+		}
+	})
+
+	t.Run("zero ExpiresAt never expires", func(t *testing.T) {
+		overrides := []StatusOverrideInput{{AppliedAt: appliedOld}}
+		if got := GoverningOverrideIndex(overrides, all, statusRef); got != 0 {
+			t.Fatalf("got %d, want 0", got)
+		}
+	})
+
+	t.Run("none eligible yields -1", func(t *testing.T) {
+		overrides := []StatusOverrideInput{{AppliedAt: appliedOld, ExpiresAt: farFuture}}
+		none := func(int) bool { return false }
+		if got := GoverningOverrideIndex(overrides, none, statusRef); got != -1 {
+			t.Fatalf("got %d, want -1", got)
+		}
+	})
+}
+
 func TestComputeEffectiveStatus(t *testing.T) {
 	waived := "notApplicable"
 

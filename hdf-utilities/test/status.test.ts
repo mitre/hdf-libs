@@ -4,6 +4,7 @@ import {
   statusRank,
   worstStatus,
   governingStatusOverride,
+  governingOverrideIndex,
   computeEffectiveStatus,
 } from '../src/status/index.js';
 
@@ -41,6 +42,43 @@ describe('worstStatus', () => {
     expect(worstStatus(['notReviewed', 'notApplicable'])).toBe('notApplicable');
     expect(worstStatus(['bogus', 'passed'])).toBe('passed');
     expect(worstStatus(['bogus'])).toBe('notReviewed');
+  });
+});
+
+describe('governingOverrideIndex', () => {
+  const all = () => true;
+
+  it('selects the most recently applied eligible non-expired override', () => {
+    const overrides = [
+      { appliedAt: APPLIED_OLD, expiresAt: FAR_FUTURE },
+      { appliedAt: APPLIED_NEW, expiresAt: FAR_FUTURE },
+    ];
+    expect(governingOverrideIndex(overrides, all, REF)).toBe(1);
+  });
+
+  it('skips ineligible overrides', () => {
+    const overrides = [
+      { appliedAt: APPLIED_OLD, expiresAt: FAR_FUTURE },
+      { appliedAt: APPLIED_NEW, expiresAt: FAR_FUTURE },
+    ];
+    expect(governingOverrideIndex(overrides, (i) => i === 0, REF)).toBe(0);
+  });
+
+  it('skips expired overrides', () => {
+    const overrides = [
+      { appliedAt: APPLIED_NEW, expiresAt: LONG_AGO },
+      { appliedAt: APPLIED_OLD, expiresAt: FAR_FUTURE },
+    ];
+    expect(governingOverrideIndex(overrides, all, REF)).toBe(1);
+  });
+
+  it('treats a missing expiresAt as never expiring', () => {
+    expect(governingOverrideIndex([{ appliedAt: APPLIED_OLD }], all, REF)).toBe(0);
+  });
+
+  it('returns -1 when none are eligible', () => {
+    const overrides = [{ appliedAt: APPLIED_OLD, expiresAt: FAR_FUTURE }];
+    expect(governingOverrideIndex(overrides, () => false, REF)).toBe(-1);
   });
 });
 
