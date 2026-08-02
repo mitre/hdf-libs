@@ -45,10 +45,11 @@ function toRfc3339(d: Date): string {
  * TypeScript peer of shared/go/enrich_stix.go (kept at parity).
  */
 export function enrichStix(resultsInput: string, bundleInput: string, opts?: EnrichOptions): string {
-  // 0/undefined → the shared default, matching the Go peer's MaxSize contract.
-  const maxSize = opts?.maxSize ? opts.maxSize : undefined;
-  validateInputSize(resultsInput, 'enrich-stix', maxSize);
-  validateInputSize(bundleInput, 'enrich-stix', maxSize);
+  // validateInputSize treats a non-positive/undefined limit as the shared
+  // default (mirroring Go's ValidateJSONSize + EnrichStix MaxSize contract);
+  // a positive opts.maxSize caps the input.
+  validateInputSize(resultsInput, 'enrich-stix', opts?.maxSize);
+  validateInputSize(bundleInput, 'enrich-stix', opts?.maxSize);
   if (!resultsInput) throw new Error('enrich-stix: empty results input');
 
   const bundle = parseStixBundle(bundleInput);
