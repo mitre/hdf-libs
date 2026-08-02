@@ -93,7 +93,7 @@ describe('BurpSuite to HDF Converter', () => {
       const out = parseOutput(await convertBurpsuiteToHdf(xml));
       const ds = out.tool as Record<string, unknown>;
       expect(ds.name).toBe('BurpSuite');
-      expect(ds.format).toBe('XML');
+      expect(ds.format).toBeUndefined() // serialization structures are not formats (kpvj);
       expect(ds.version).toBe('2020.1');
     });
 

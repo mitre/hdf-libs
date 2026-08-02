@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "TruffleHog scanned the target source and reported zero findings.",
-              "startTime": "2026-07-24T05:46:35.510707Z",
+              "startTime": "2026-07-24T05:46:35.510709Z",
               "status": "passed"
             }
           ],
@@ -36,7 +36,6 @@
   },
   "timestamp": "2026-07-24T05:46:35.510709Z",
   "tool": {
-    "format": "JSON",
     "name": "TruffleHog"
   }
 }

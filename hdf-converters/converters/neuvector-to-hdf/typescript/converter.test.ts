@@ -88,6 +88,29 @@ describe('neuvector to HDF converter', async () => {
     });
   });
 
+  describe('CODE tab / code_desc fidelity', async () => {
+    it('populates requirement.code with the source vuln as indented JSON that round-trips', async () => {
+      const input = loadFixture('minimal.json');
+      const sourceVuln = (JSON.parse(input) as {
+        report: { vulnerabilities: unknown[] };
+      }).report.vulnerabilities[0];
+
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.code).toBeTruthy();
+      expect(JSON.parse(req.code!)).toEqual(sourceVuln);
+    });
+
+    it('builds a pipe-joined composite code_desc (no longer empty)', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const cd = hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc;
+      expect(cd).toBeTruthy();
+      expect(cd).toBe(
+        'apk-tools@2.10.5-r1 | CVE-2021-36159 | CVSS 9.1 | libfetch before 2021-07-26, as used in apk-tools, xbps, and other products, mishandles numeric strin…',
+      );
+    });
+  });
+
   describe('generator and dataSource', async () => {
     it('should set generator name and version', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
@@ -95,10 +118,10 @@ describe('neuvector to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set tool name to "NeuVector" and format to "JSON"', async () => {
+    it('should set tool name to "NeuVector" with no format', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('NeuVector');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 
@@ -178,14 +201,15 @@ describe('neuvector to HDF converter', async () => {
       expect(nist.length).toBeGreaterThan(0);
     });
 
-    it('should include CWE tags when found', async () => {
+    it('should emit CWE as a first-class field, not a tag', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       // CVE-2018-25032/ruby:nokogiri/1.10.9 has CWE-787 in description
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2018-25032/ruby:nokogiri/1.10.9'
       );
       expect(req).toBeDefined();
-      expect(req!.tags?.['cwe']).toContain('CWE-787');
+      expect(req!.cwe).toContain('CWE-787');
+      expect(req!.tags?.['cwe']).toBeUndefined();
     });
 
     it('should use default remediation NIST when no CWE found', async () => {
@@ -200,6 +224,119 @@ describe('neuvector to HDF converter', async () => {
       expect(nist).toBeDefined();
       expect(nist).toContain('SI-2');
       expect(nist).toContain('RA-5');
+    });
+  });
+
+  describe('structured CVSS', async () => {
+    it('emits a v3 cvss entry from vectors_v3 + score_v3', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req?.cvss).toHaveLength(1);
+      const cv = req!.cvss![0]!;
+      expect(cv.version).toBe('3.1');
+      expect(cv.baseScore).toBeCloseTo(9.1, 2);
+      expect(cv.baseVector).toBe('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H');
+      expect(cv.baseSeverity).toBe('critical');
+      expect(cv.source).toBe('NeuVector');
+    });
+
+    it('falls back to the prefix-less v2 vector forced to version 2.0', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
+      // CVE-2018-25032/ruby:nokogiri has no v3 vector.
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2018-25032/ruby:nokogiri/1.10.9'
+      );
+      expect(req?.cvss).toHaveLength(1);
+      const cv = req!.cvss![0]!;
+      expect(cv.version).toBe('2.0');
+      expect(cv.baseScore).toBeCloseTo(5, 2);
+      expect(cv.baseVector).toBe('AV:N/AC:L/Au:N/C:N/I:N/A:P');
+    });
+
+    it('omits baseScore when a vector is present but the score is zero', async () => {
+      const mk = (v: Record<string, unknown>) => JSON.stringify({
+        error_message: '',
+        report: {
+          image_id: 'a', registry: 'r', repository: 'x/y', tag: 't', digest: 'd',
+          size: 1, author: '', base_os: 'alpine', created_at: '2024-01-01T00:00:00Z',
+          cvedb_version: '1', cvedb_create_time: '2024-01-01T00:00:00Z', layers: [],
+          vulnerabilities: [{
+            name: 'CVE-2020-0002', score: 0, severity: 'High', vectors: '', description: 'x',
+            file_name: '', package_name: 'p', package_version: '1.0', fixed_version: '',
+            link: '', score_v3: 0, vectors_v3: '', published_timestamp: 1, last_modified_timestamp: 1,
+            feed_rating: 'High', ...v,
+          }],
+        },
+      });
+      const v3 = JSON.parse(await convertNeuvectorToHdf(mk({ vectors_v3: 'CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H' }))) as HDFResults;
+      const cv3 = v3.baselines[0]!.requirements[0]!.cvss![0]!;
+      expect(cv3.version).toBe('3.0');
+      expect(cv3.baseScore).toBeUndefined();
+      expect(cv3.baseVector).toBeTruthy();
+
+      const v2 = JSON.parse(await convertNeuvectorToHdf(mk({ vectors: 'AV:N/AC:L/Au:N/C:P/I:P/A:P' }))) as HDFResults;
+      const cv2 = v2.baselines[0]!.requirements[0]!.cvss![0]!;
+      expect(cv2.version).toBe('2.0');
+      expect(cv2.baseScore).toBeUndefined();
+    });
+
+    it('omits cvss[] when the vulnerability carries no vector', async () => {
+      // A vector-less vuln (score only) is present in the large heimdall fixture.
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall.json'))) as HDFResults;
+      const noVector = hdf.baselines[0]!.requirements.filter(r => r.cvss === undefined);
+      expect(noVector.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('CVE tag (interim)', async () => {
+    it('emits cves[] as tags.cve, distinct from the composite requirement id', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req).toBeDefined();
+      expect(req!.id).not.toBe('CVE-2021-36159');
+      expect(req!.tags?.['cve']).toEqual(['CVE-2021-36159']);
+    });
+
+    it('dedupes and drops empty entries in cves[]', async () => {
+      const input = JSON.stringify({
+        error_message: '',
+        report: {
+          image_id: 'a', registry: 'r', repository: 'x/y', tag: 't', digest: 'd',
+          size: 1, author: '', base_os: 'alpine', created_at: '2024-01-01T00:00:00Z',
+          cvedb_version: '1', cvedb_create_time: '2024-01-01T00:00:00Z', layers: [],
+          vulnerabilities: [{
+            name: 'CVE-2020-0003', score: 5, severity: 'High', vectors: '', description: 'x',
+            file_name: '', package_name: 'p', package_version: '1.0', fixed_version: '',
+            link: '', score_v3: 0, vectors_v3: '', published_timestamp: 1, last_modified_timestamp: 1,
+            feed_rating: 'High', cves: ['CVE-2020-0003', '', 'CVE-2020-0003', 'CVE-2020-9999'],
+          }],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.tags?.['cve']).toEqual(['CVE-2020-0003', 'CVE-2020-9999']);
+    });
+
+    it('omits tags.cve when the vulnerability has no cves', async () => {
+      const input = JSON.stringify({
+        error_message: '',
+        report: {
+          image_id: 'a', registry: 'r', repository: 'x/y', tag: 't', digest: 'd',
+          size: 1, author: '', base_os: 'alpine', created_at: '2024-01-01T00:00:00Z',
+          cvedb_version: '1', cvedb_create_time: '2024-01-01T00:00:00Z', layers: [],
+          vulnerabilities: [{
+            name: 'GHSA-xxxx', score: 5, severity: 'High', vectors: '', description: 'x',
+            file_name: '', package_name: 'p', package_version: '1.0', fixed_version: '',
+            link: '', score_v3: 0, vectors_v3: '', published_timestamp: 1, last_modified_timestamp: 1,
+            feed_rating: 'High',
+          }],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.tags?.['cve']).toBeUndefined();
     });
   });
 

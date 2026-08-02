@@ -296,7 +296,6 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 		GeneratorName:    "msft-secure-score-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Microsoft Secure Score",
-		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Components: []hdf.Component{
 			{

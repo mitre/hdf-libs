@@ -60,6 +60,20 @@ describe('convertHdfToOscalSar', () => {
     await expect(convertHdfToOscalSar('{}')).rejects.toThrow('missing baselines');
   });
 
+  // descriptions/results are optional on a requirement; the Go converter ranges
+  // nil slices safely, so TS must too rather than throwing "not iterable".
+  it('converts a requirement with no descriptions or results (Go/TS parity)', async () => {
+    const input = JSON.stringify({
+      baselines: [{ name: 'b', requirements: [{ id: 'AC-3', impact: 0.5, tags: { nist: ['AC-3'] } }] }],
+    });
+    const result = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0];
+    expect(result.findings).toHaveLength(1);
+    // no default description → falls back to the requirement id/title
+    expect(result.findings[0].description).toBe('AC-3');
+    // no results → no observation emitted
+    expect(result.observations ?? []).toHaveLength(0);
+  });
+
   it('should map code, check/fix/rationale, cci, classification, and refs onto the finding', async () => {
     const input = JSON.stringify({
       baselines: [{

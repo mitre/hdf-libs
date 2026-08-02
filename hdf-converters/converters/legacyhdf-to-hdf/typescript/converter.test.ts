@@ -151,7 +151,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(v2.timestamp).toBe(timestamp);
     });
 
-    it('should handle missing optional fields', () => {
+    it('stamps the converter generator and no timestamp when the source carries neither', () => {
       const v1: HDFV1Results = {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -159,10 +159,66 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
+      const v2 = convertV1ToV2(v1, '3.4.5');
+
+      // generator identifies the converter that produced the file.
+      expect(v2.generator).toEqual({ name: 'legacyhdf-to-hdf', version: '3.4.5' });
+      // no result times and no explicit timestamp → undefined (never wall clock).
+      expect(v2.timestamp).toBeUndefined();
+    });
+
+    it('derives the document timestamp from the latest result start_time', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        profiles: [
+          {
+            name: 'p',
+            controls: [
+              {
+                id: 'c-1',
+                impact: 0.5,
+                results: [
+                  { status: 'passed', start_time: '2024-03-01T10:00:00Z' },
+                  { status: 'passed', start_time: '2024-03-01T10:05:30-05:00' }, // latest → 15:05:30Z
+                  { status: 'passed', start_time: '2024-03-01T09:58:00Z' },
+                ],
+              },
+            ],
+          },
+        ],
+        statistics: {},
+      };
+
       const v2 = convertV1ToV2(v1);
 
-      expect(v2.generator).toBeUndefined();
-      expect(v2.timestamp).toBeUndefined();
+      expect(v2.timestamp).toBe('2024-03-01T15:05:30Z');
+    });
+
+    it('sets InSpec tool identity from a real InSpec version', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        profiles: [],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      expect(v2.tool).toEqual({ name: 'InSpec', version: '5.22.3', format: 'exec-json' });
+    });
+
+    it('keeps the legacy tool label for a non-InSpec (major<2) version', () => {
+      const v1: HDFV1Results = {
+        version: '1.37.6',
+        platform: { name: 'test' },
+        profiles: [],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      expect(v2.tool).toEqual({ name: 'Heimdall Data Format v1' });
     });
 
     it('should move unknown fields to extensions', () => {
@@ -1452,6 +1508,19 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
     const joined = warnings.join('\n');
     expect(joined).toContain('V-003-poam');
     expect(joined).toContain('POA&M');
+  });
+
+  it('round-trips the profile sha256 fingerprint through v1→v2→v1 (GH #163)', () => {
+    const v1 = {
+      version: '1.0.0',
+      platform: {name: 'rhel', release: '9'},
+      profiles: [{name: 'p', sha256: '570c6a9e8a19093085ead8b98d88ba9dc', controls: [], groups: [], supports: [], attributes: []}],
+      statistics: {},
+    } as unknown as HDFV1Results;
+    const v2 = convertV1ToV2(v1);
+    const {hdf} = convertV2ToV1(v2);
+    // The fingerprint survives inspec(v1)→modern(v2/integrity)→legacy(v1/sha256).
+    expect(hdf.profiles[0]!.sha256).toBe('570c6a9e8a19093085ead8b98d88ba9dc');
   });
 
   it('does not name an expired override in the waiver_data breadcrumb', () => {

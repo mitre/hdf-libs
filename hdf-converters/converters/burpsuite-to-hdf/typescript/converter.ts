@@ -186,7 +186,6 @@ export async function convertBurpsuiteToHdf(input: string, converterVersion = '1
 
   const tool: Tool = {
     name: 'BurpSuite',
-    format: 'XML',
   };
   if (burpVersion) {
     tool.version = burpVersion;

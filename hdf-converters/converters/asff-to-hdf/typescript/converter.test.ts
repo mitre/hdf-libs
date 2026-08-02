@@ -360,6 +360,61 @@ describe('asff product special-cases', () => {
       expect(byId.has('acme/future-scanner/finding/0002')).toBe(true); // second CVE, own requirement
       expect(byId.has('ACME.1')).toBe(true); // compliance finding groups by control ref
     });
+
+    // Scoring data must land in STRUCTURED fields (requirement.cvss[], tags.cve),
+    // not only the freetext result message, so Heimdall risk sort/filter can act.
+    it('surfaces CVSS in requirement.cvss[] and the CVE in tags.cve, omitting EPSS/KEV', async () => {
+      const hdf = JSON.parse(await convertAsffToHdf(loadFixture('unknown-producer.json'), '1.0.0')) as HDFResults;
+      const byId = new Map(hdf.baselines[0]!.requirements.map((r) => [r.id, r]));
+
+      const v1 = byId.get('acme/future-scanner/finding/0001')!;
+      expect(v1.cvss).toEqual([{version: '3.1', baseScore: 8.1, baseSeverity: 'high', source: 'NVD'}]);
+      expect((v1.tags as Record<string, unknown>).cve).toEqual(['CVE-2099-0001']);
+      // ASFF lacks the EPSS percentile/date and KEV dates the schema requires.
+      expect(v1.epss).toBeUndefined();
+      expect(v1.kev).toBeUndefined();
+
+      const v2 = byId.get('acme/future-scanner/finding/0002')!;
+      expect(v2.cvss).toEqual([{version: '3.1', baseScore: 5.4, baseSeverity: 'medium', source: 'NVD'}]);
+      expect((v2.tags as Record<string, unknown>).cve).toEqual(['CVE-2099-0002']);
+
+      const ctrl = byId.get('ACME.1')!;
+      expect(ctrl.cvss).toBeUndefined();
+      expect((ctrl.tags as Record<string, unknown>).cve).toBeUndefined();
+    });
+  });
+
+  // FindingProviderFields.Severity — the provider's own rating — takes precedence
+  // over the top-level Severity that Security Hub may overwrite on ingest.
+  it('prefers FindingProviderFields.Severity over the top-level Severity for impact', () => {
+    expect(
+      findingImpact({ Severity: { Label: 'HIGH' }, FindingProviderFields: { Severity: { Label: 'LOW' } } })
+    ).toBeCloseTo(0.3, 9);
+    // An empty FPF label falls back to the top-level Severity.
+    expect(
+      findingImpact({ Severity: { Label: 'HIGH' }, FindingProviderFields: { Severity: {} } })
+    ).toBeCloseTo(0.7, 9);
+  });
+
+  // requirement.cvss[] carries one entry per scored Cvss; a scoreless entry
+  // contributes nothing, and multiple distinct CVEs all land in tags.cve.
+  it('emits one cvss[] entry per scored vulnerability and lists every CVE in tags.cve', async () => {
+    const input = JSON.stringify([{
+      Id: 'multi-1',
+      ProductArn: 'arn:aws:securityhub:us-east-1::product/acme/future-scanner',
+      Severity: { Label: 'HIGH' },
+      Vulnerabilities: [
+        { Id: 'CVE-2099-1111', Cvss: [{ Version: '3.0', BaseScore: 9.8, Source: 'NVD' }, { Version: '3.1' }] },
+        { Id: 'CVE-2099-2222', Cvss: [{ Version: '2.0', BaseScore: 4.0 }] },
+      ],
+    }]);
+    const hdf = JSON.parse(await convertAsffToHdf(input, '1.0.0')) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]!;
+    expect(req.cvss).toEqual([
+      { version: '3.0', baseScore: 9.8, baseSeverity: 'critical', source: 'NVD' },
+      { version: '2.0', baseScore: 4.0, baseSeverity: 'medium' },
+    ]);
+    expect((req.tags as Record<string, unknown>).cve).toEqual(['CVE-2099-1111', 'CVE-2099-2222']);
   });
 
 
@@ -379,6 +434,34 @@ describe('asff product special-cases', () => {
     expect(req.results[0]!.message).toContain('CVE-2099-9999');
     // the duplicate URL appears once
     expect(req.refs).toEqual([{ url: 'https://example.test/dup' }]);
+  });
+
+  // requirement.code carries the whole finding as indented JSON (CODE tab fill),
+  // preserving every source field and round-tripping to the source object.
+  it('populates requirement.code with the indented source finding', async () => {
+    const finding = {
+      Id: 'code-1',
+      ProductArn: 'arn:aws:securityhub:us-east-1::product/acme/future-scanner',
+      Compliance: { Status: 'FAILED' },
+      GeneratorId: 'acme/rule/CODE.1',
+      Severity: { Label: 'HIGH' },
+      Extra: { nested: ['a', 'b'] },
+    };
+    const hdf = JSON.parse(await convertAsffToHdf(JSON.stringify([finding]), '1.0.0')) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]! as { code?: string };
+    expect(req.code).toBeDefined();
+    // 2-space indented and byte-identical to the canonical serialization.
+    expect(req.code).toBe(JSON.stringify(finding, null, 2));
+    // parses back to the source finding, losing nothing (incl. unmodeled Extra).
+    expect(JSON.parse(req.code!)).toEqual(finding);
+  });
+
+  // A zero-finding document produces the no-findings placeholder requirement,
+  // which carries no source object → requirement.code stays unset (NOT-IN-SOURCE).
+  it('leaves requirement.code unset when there is no finding', async () => {
+    const hdf = JSON.parse(await convertAsffToHdf('{"Findings": []}', '1.0.0')) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]! as { code?: string };
+    expect(req.code).toBeUndefined();
   });
 
 });

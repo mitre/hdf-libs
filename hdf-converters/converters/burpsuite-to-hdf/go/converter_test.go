@@ -101,7 +101,7 @@ func TestConvertBurpsuiteToHDF_Tool(t *testing.T) {
 
 	require.NotNil(t, result.Tool)
 	assert.Equal(t, "BurpSuite", *result.Tool.Name)
-	assert.Equal(t, "XML", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 	assert.Equal(t, "2020.1", *result.Tool.Version)
 }
 

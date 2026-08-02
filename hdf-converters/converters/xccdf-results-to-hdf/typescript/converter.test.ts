@@ -2,7 +2,8 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
-import { convertXccdfResultsToHdf, convertXccdfBenchmarkToHdf, convertXccdfToHdf } from './converter.js';
+import { convertXccdfResultsToHdf, convertXccdfBenchmarkToHdf, convertXccdfToHdf, buildCheckCode, extractCheckContentRef } from './converter.js';
+import type { CheckElement } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
@@ -337,6 +338,61 @@ describe('xccdf-results-to-hdf converter', async () => {
     });
   });
 
+  // --- Severity enum (results path) ---
+  // The results path derives impact from severity but historically never set the
+  // requirement.severity enum, unlike the baseline path. Pin the parity.
+
+  describe('severity enum on results-path requirements', () => {
+    it('sets high severity from stig-rhel7', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      expect(findReq(hdf, 'SV-204424')!.severity).toBe('high');
+    });
+
+    it('sets medium severity from stig-rhel7', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      expect(findReq(hdf, 'SV-204393')!.severity).toBe('medium');
+    });
+
+    it('sets low severity from stig-rhel7', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      expect(findReq(hdf, 'SV-204452')!.severity).toBe('low');
+    });
+
+    it('derives severity from the rule-result attribute when no Rule defs ship (SCC)', async () => {
+      const hdf = await parseHdf('xccdf-results-scc-rhel7.xml');
+      expect(findReq(hdf, 'SV-204393')!.severity).toBe('medium');
+    });
+
+    it('omits severity="unknown" rather than fabricating one (arf-minimal)', async () => {
+      const hdf = await parseHdf('arf-minimal.xml');
+      expect(hdf.baselines[0]!.requirements[0]!.severity).toBeUndefined();
+    });
+
+    it('falls back to the Rule severity when the rule-result omits it, and omits it when absent everywhere', async () => {
+      const input = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_sev">
+  <version>1.0</version>
+  <Rule id="xccdf_test_rule_1" selected="true" severity="high">
+    <title>Rule with severity</title>
+    <description>desc</description>
+  </Rule>
+  <TestResult id="xccdf_test_testresult_1" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="xccdf_test_rule_1" time="2021-01-01T00:00:00">
+      <result>fail</result>
+    </rule-result>
+    <rule-result idref="xccdf_unmatched_rule" time="2021-01-01T00:00:00">
+      <result>pass</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(input)) as HDFResults;
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs[0]!.severity).toBe('high');
+      expect(reqs[1]!.severity).toBeUndefined();
+    });
+  });
+
   // --- Status mapping ---
 
   describe('status mapping', () => {
@@ -554,6 +610,124 @@ describe('xccdf-results-to-hdf converter', async () => {
       const fixDesc = req!.descriptions.find((d) => d.label === 'fix');
       expect(fixDesc).toBeDefined();
       expect(fixDesc!.data).toContain('nullok');
+    });
+
+    // The results path historically dropped the check description that the
+    // baseline path already produces. Pin the restored parity.
+    it('emits a check description in the results path (parity with baseline path)', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_1">
+  <version>1.0</version>
+  <Rule id="xccdf_test_rule_1" selected="true" severity="medium">
+    <title>Test rule</title>
+    <description>&lt;VulnDiscussion&gt;Some discussion&lt;/VulnDiscussion&gt;</description>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content>OVAL definition logic goes here</check-content>
+      <check-content-ref name="oval:x:def:1" href="oval.xml"/>
+    </check>
+  </Rule>
+  <TestResult id="xccdf_test_testresult_1" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="xccdf_test_rule_1" time="2021-01-01T00:00:00">
+      <result>fail</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      const checkDesc = req.descriptions.find((d) => d.label === 'check');
+      expect(checkDesc).toBeDefined();
+      expect(checkDesc!.data).toContain('OVAL definition logic goes here');
+    });
+  });
+
+  // --- requirement.code (CODE tab) ---
+
+  describe('requirement.code', () => {
+    it('carries the OVAL check-content-ref name/href as the code fill', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      const req = findReq(hdf, 'SV-204393');
+      expect(req!.code).toBeDefined();
+      const parsed = JSON.parse(req!.code!) as {
+        system: string;
+        checkContentRef: { name: string; href: string };
+      };
+      expect(parsed.system).toBe(
+        'http://oval.mitre.org/XMLSchema/oval-definitions-5'
+      );
+      expect(parsed.checkContentRef.name).toBe(
+        'oval:mil.disa.stig.rhel7:def:922'
+      );
+      expect(parsed.checkContentRef.href).toContain('oval.xml');
+    });
+
+    // Fixtures only carry check-content-ref with empty inline check-content;
+    // these crafted inputs exercise the remaining buildCheckCode branches.
+    it('includes inline check-content and omits checkContentRef when only content is present', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_c">
+  <version>1.0</version>
+  <Rule id="xccdf_test_rule_1" selected="true" severity="medium">
+    <title>Inline content rule</title>
+    <description>desc</description>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content>  OVAL definition logic  </check-content>
+    </check>
+  </Rule>
+  <TestResult id="xccdf_test_testresult_1" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="xccdf_test_rule_1" time="2021-01-01T00:00:00">
+      <result>fail</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.code).toBeDefined();
+      const parsed = JSON.parse(req.code!) as Record<string, unknown>;
+      expect(parsed.checkContent).toBe('OVAL definition logic');
+      expect(parsed.checkContentRef).toBeUndefined();
+    });
+
+    it('leaves code unset when the check element is empty', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_e">
+  <version>1.0</version>
+  <Rule id="xccdf_test_rule_1" selected="true" severity="low">
+    <title>Empty check rule</title>
+    <description>desc</description>
+    <check></check>
+  </Rule>
+  <TestResult id="xccdf_test_testresult_1" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="xccdf_test_rule_1" time="2021-01-01T00:00:00">
+      <result>pass</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.code).toBeUndefined();
+    });
+
+    it('leaves code unset when the rule has no check element', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_2">
+  <version>1.0</version>
+  <Rule id="xccdf_test_rule_1" selected="true" severity="low">
+    <title>No check rule</title>
+    <description>desc</description>
+  </Rule>
+  <TestResult id="xccdf_test_testresult_1" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="xccdf_test_rule_1" time="2021-01-01T00:00:00">
+      <result>pass</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.code).toBeUndefined();
     });
   });
 
@@ -1176,5 +1350,91 @@ describe('XCCDF severity mapping', () => {
     expect(counts['medium']).toBe(3);
     expect(counts['<omitted>'], 'severity="unknown" must not be emitted').toBe(2);
     expect(counts['unknown'], 'raw XCCDF severity must never reach HDF').toBeUndefined();
+  });
+});
+
+// Direct unit tests for the two code-fill helpers. The converter-level tests
+// can't drive every field-presence combination (fixtures always carry a
+// check-content-ref with empty inline content), so exercise each branch here.
+// Mirrors the Go TestBuildCheckCode.
+describe('buildCheckCode', () => {
+  it('returns empty string for an undefined check', () => {
+    expect(buildCheckCode(undefined)).toBe('');
+  });
+
+  it('returns empty string for an entirely empty check', () => {
+    expect(buildCheckCode({} as CheckElement)).toBe('');
+  });
+
+  it('emits only system when no ref or content is present', () => {
+    const parsed = JSON.parse(buildCheckCode({ system: 'sys' })) as Record<string, unknown>;
+    expect(parsed).toEqual({ system: 'sys' });
+  });
+
+  it('emits checkContentRef with only name when href is absent, omitting system', () => {
+    const parsed = JSON.parse(
+      buildCheckCode({ 'check-content-ref': { name: 'oval:x:def:1' } })
+    ) as Record<string, unknown>;
+    expect(parsed).toEqual({ checkContentRef: { name: 'oval:x:def:1' } });
+    expect(parsed.system).toBeUndefined();
+  });
+
+  it('emits checkContentRef with only href when name is absent', () => {
+    const parsed = JSON.parse(
+      buildCheckCode({ 'check-content-ref': { href: 'oval.xml' } })
+    ) as Record<string, unknown>;
+    expect(parsed).toEqual({ checkContentRef: { href: 'oval.xml' } });
+  });
+
+  it('emits system, checkContentRef, and trimmed checkContent when all present', () => {
+    const parsed = JSON.parse(
+      buildCheckCode({
+        system: 'sce',
+        'check-content': '  logic  ',
+        'check-content-ref': { name: 'n', href: 'h' },
+      })
+    ) as Record<string, unknown>;
+    expect(parsed).toEqual({
+      system: 'sce',
+      checkContentRef: { name: 'n', href: 'h' },
+      checkContent: 'logic',
+    });
+  });
+
+  it('produces 2-space indented JSON (byte-parity shape with Go)', () => {
+    expect(buildCheckCode({ system: 'sys' })).toBe('{\n  "system": "sys"\n}');
+  });
+});
+
+describe('extractCheckContentRef', () => {
+  it('returns empty name/href for an undefined check', () => {
+    expect(extractCheckContentRef(undefined)).toEqual({ name: '', href: '' });
+  });
+
+  it('returns empty name/href when the check has no content-ref', () => {
+    expect(extractCheckContentRef({} as CheckElement)).toEqual({ name: '', href: '' });
+  });
+
+  it('reads a single-object check-content-ref', () => {
+    expect(
+      extractCheckContentRef({ 'check-content-ref': { name: 'n', href: 'h' } })
+    ).toEqual({ name: 'n', href: 'h' });
+  });
+
+  it('takes the first entry of an array check-content-ref', () => {
+    expect(
+      extractCheckContentRef({
+        'check-content-ref': [
+          { name: 'first', href: 'a.xml' },
+          { name: 'second', href: 'b.xml' },
+        ],
+      })
+    ).toEqual({ name: 'first', href: 'a.xml' });
+  });
+
+  it('defaults missing name/href to empty strings when the ref object is bare', () => {
+    expect(
+      extractCheckContentRef({ 'check-content-ref': {} as CheckElement['check-content-ref'] })
+    ).toEqual({ name: '', href: '' });
   });
 });

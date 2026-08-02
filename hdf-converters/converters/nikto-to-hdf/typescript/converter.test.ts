@@ -106,13 +106,13 @@ describe('Nikto Converter', async () => {
       expect(hdf.generator.name).toBe('nikto-to-hdf');
     });
 
-    it('should set dataSource name to "Nikto" and format to "JSON"', async () => {
+    it('should set dataSource name to "Nikto" with no format', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertNiktoToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.tool?.name).toBe('Nikto');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 

@@ -159,7 +159,6 @@ export async function convertNiktoToHdf(input: string, converterVersion = 'unkno
     generatorName: 'nikto-to-hdf',
     converterVersion,
     toolName: 'Nikto',
-    toolFormat: 'JSON',
     baselines: [baseline],
     components: [{
       type: TargetType.Application,

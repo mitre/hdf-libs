@@ -2230,6 +2230,7 @@ describe('Primitive Schema Validation', () => {
             type: 'simple',
           },
           appliedAt: '2025-12-01T10:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
         };
         expect(validate(valid)).toBe(true);
       });
@@ -2243,6 +2244,7 @@ describe('Primitive Schema Validation', () => {
             type: 'simple',
           },
           appliedAt: '2025-12-01T10:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
           milestones: [
             {
               description: 'Configure firewall rules to isolate affected system',
@@ -2305,6 +2307,7 @@ describe('Primitive Schema Validation', () => {
             type: 'simple',
           },
           appliedAt: '2025-12-07T10:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
           evidence: [
             {
               type: 'file',
@@ -2434,6 +2437,7 @@ describe('Primitive Schema Validation', () => {
             type: 'simple',
           },
           appliedAt: '2025-12-07T16:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
           previousChecksum: {
             algorithm: 'sha256',
             value: 'xyz789abc012...',
@@ -2644,6 +2648,7 @@ describe('Primitive Schema Validation', () => {
           explanation: 'Deploy security patch to fix CVE-2025-12345',
           appliedBy: { identifier: 'security.team@example.com', type: 'email' },
           appliedAt: '2025-12-14T10:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
         };
         expect(validate(valid)).toBe(true);
       });

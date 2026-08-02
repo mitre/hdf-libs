@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -132,8 +131,9 @@ func TestEnrichCmd_Recompute(t *testing.T) {
 	require.NoError(t, verr)
 	assert.Contains(t, stdout, "valid HDF results")
 
-	// End-to-end: the hdf-diff resolver surfaces the recomputed effectiveImpact
-	// from the authored (non-expired) inline riskAdjustment.
+	// End-to-end: the authored inline riskAdjustment carries the recomputed
+	// impact and a not-yet-expired review horizon, so any downstream
+	// effective-impact resolver will surface it.
 	var results hdf.HDFResults
 	require.NoError(t, json.Unmarshal(data, &results))
 	var req hdf.EvaluatedRequirement
@@ -149,7 +149,8 @@ func TestEnrichCmd_Recompute(t *testing.T) {
 	require.True(t, found, "CVE-2012-0158 finding present")
 	require.Len(t, req.StatusOverrides, 1, "riskAdjustment authored")
 
-	eff := diff.ComputeEffectiveImpact(req, time.Now().UTC().Format(time.RFC3339))
-	require.NotNil(t, eff, "resolver surfaces effectiveImpact from the non-expired override")
-	assert.InDelta(t, 0.98, *eff, 1e-9, "E:H recompute of the 9.8 base vector → impact 0.98")
+	authored := req.StatusOverrides[0]
+	require.NotNil(t, authored.Impact, "riskAdjustment carries an impact value")
+	assert.InDelta(t, 0.98, authored.Impact.Value, 1e-9, "E:H recompute of the 9.8 base vector → impact 0.98")
+	assert.True(t, authored.ExpiresAt.After(time.Now()), "review horizon is in the future")
 }

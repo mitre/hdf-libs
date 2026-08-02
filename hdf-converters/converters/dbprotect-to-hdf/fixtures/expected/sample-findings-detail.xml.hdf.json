@@ -33,6 +33,7 @@
               "RA-5"
             ]
           },
+          "code": "{\n  \"Asset\": \"HOST1\",\n  \"Asset Type\": \"Microsoft SQL Server\",\n  \"Check\": \"Protection of DBMS asymmetric encryption keys\",\n  \"Check Category\": \"Improper Access Controls\",\n  \"Check ID\": \"2801\",\n  \"Date\": \"Feb 18 2021 15:57\",\n  \"Details\": \"Key=MS_SQLEnableSystemAssemblyLoadingKey;Private key encryption type=NO_PRIVATE_KEY;Database containing key=master\",\n  \"End Date\": \"\",\n  \"IP Address, Port, Instance\": \"192.168.1.200, 1433, MSSQLSERVER\",\n  \"Job Name\": \"Sample scan report generation\",\n  \"Organization\": \"Sample Organization Server\",\n  \"Policy\": \"DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)\",\n  \"Risk DV\": \"Informational\",\n  \"Start Date\": \"2021-02-18 15:55\",\n  \"Task\": \"Audit\"\n}",
           "title": "Protection of DBMS asymmetric encryption keys",
           "verificationMethod": "automated"
         },
@@ -62,6 +63,7 @@
               "RA-5"
             ]
           },
+          "code": "{\n  \"Asset\": \"HOST1\",\n  \"Asset Type\": \"Microsoft SQL Server\",\n  \"Check\": \"System Table Permissions\",\n  \"Check Category\": \"Improper Access Controls\",\n  \"Check ID\": \"2830\",\n  \"Date\": \"Feb 18 2021 15:57\",\n  \"Details\": \"Grantee=db_ssisadmin;State=GRANT;Database=msdb;Object Name=sysssislog;Permission=DELETE;Object Type=Table\",\n  \"End Date\": \"\",\n  \"IP Address, Port, Instance\": \"192.168.1.200, 1433, MSSQLSERVER\",\n  \"Job Name\": \"Sample scan report generation\",\n  \"Organization\": \"Sample Organization Server\",\n  \"Policy\": \"DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)\",\n  \"Risk DV\": \"Informational\",\n  \"Start Date\": \"2021-02-18 15:55\",\n  \"Task\": \"Audit\"\n}",
           "title": "System Table Permissions",
           "verificationMethod": "automated"
         },
@@ -91,6 +93,7 @@
               "RA-5"
             ]
           },
+          "code": "{\n  \"Asset\": \"HOST1\",\n  \"Asset Type\": \"Microsoft SQL Server\",\n  \"Check\": \"Symmetric encryption keys\",\n  \"Check Category\": \"Misconfigurations\",\n  \"Check ID\": \"2903\",\n  \"Date\": \"Feb 18 2021 15:57\",\n  \"Details\": \"Key=##MS_ServiceMasterKey##;Database=master;Algorithm=AES_256\",\n  \"End Date\": \"\",\n  \"IP Address, Port, Instance\": \"192.168.1.200, 1433, MSSQLSERVER\",\n  \"Job Name\": \"Sample scan report generation\",\n  \"Organization\": \"Sample Organization Server\",\n  \"Policy\": \"DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)\",\n  \"Risk DV\": \"High\",\n  \"Start Date\": \"2021-02-18 15:55\",\n  \"Task\": \"Audit\"\n}",
           "title": "Symmetric encryption keys",
           "verificationMethod": "automated"
         }
@@ -117,7 +120,6 @@
   },
   "timestamp": "2026-07-12T23:39:51.937263Z",
   "tool": {
-    "format": "XML",
     "name": "DBProtect"
   }
 }

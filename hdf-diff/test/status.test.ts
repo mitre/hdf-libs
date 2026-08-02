@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   computeEffectiveStatus,
-  computeEffectiveImpact,
   classifyChangeReasons,
   classifyDiffStatus,
 } from '../src/status.js';
@@ -124,7 +123,28 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req, '2025-06-01T00:00:00Z')).toBe('failed');
   });
 
-  it('uses the first non-expired override when multiple overrides exist', () => {
+  it('uses the governing (most recently applied) override regardless of array order', () => {
+    const req = makeRequirement({
+      results: [makeResult('failed')],
+      statusOverrides: [
+        // Listed first but applied later: governs per the schema's
+        // "most recent non-expired override" definition of disposition.
+        makeOverride({
+          status: 'passed',
+          appliedAt: '2025-06-01T00:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
+        }),
+        makeOverride({
+          status: 'notApplicable',
+          appliedAt: '2025-01-01T00:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
+        }),
+      ],
+    });
+    expect(computeEffectiveStatus(req, '2026-01-01T00:00:00Z')).toBe('passed');
+  });
+
+  it('uses the governing non-expired override when multiple overrides exist', () => {
     const req = makeRequirement({
       results: [makeResult('failed')],
       statusOverrides: [
@@ -542,26 +562,5 @@ describe('classifyDiffStatus', () => {
 
   it('returns "regressed" when passed -> notReviewed', () => {
     expect(classifyDiffStatus('passed', 'notReviewed')).toBe('regressed');
-  });
-});
-
-describe('computeEffectiveImpact', () => {
-  const ref = '2099-01-01T00:00:00Z';
-  it('returns the non-expired impact override value', () => {
-    const req = { statusOverrides: [{ impact: { value: 0.98 }, expiresAt: '2100-01-01T00:00:00Z' }] };
-    expect(computeEffectiveImpact(req, ref)).toBe(0.98);
-  });
-  it('falls through to effectiveImpact when the override is expired', () => {
-    const req = {
-      statusOverrides: [{ impact: { value: 0.98 }, expiresAt: '2000-01-01T00:00:00Z' }],
-      effectiveImpact: 0.5,
-    };
-    expect(computeEffectiveImpact(req, ref)).toBe(0.5);
-  });
-  it('uses the effectiveImpact field when there are no overrides', () => {
-    expect(computeEffectiveImpact({ effectiveImpact: 0.3 })).toBe(0.3);
-  });
-  it('returns undefined when nothing is set', () => {
-    expect(computeEffectiveImpact({})).toBeUndefined();
   });
 });

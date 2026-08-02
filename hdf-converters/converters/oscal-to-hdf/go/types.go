@@ -587,15 +587,16 @@ type ARLocalDefinitions struct {
 
 // Result contains assessment findings for a specific assessment cycle.
 type Result struct {
-	UUID         string        `json:"uuid"`
-	Title        string        `json:"title"`
-	Description  string        `json:"description,omitempty"`
-	Start        string        `json:"start"`
-	End          string        `json:"end,omitempty"`
-	Props        []Property    `json:"props,omitempty"`
-	Findings     []Finding     `json:"findings,omitempty"`
-	Observations []Observation `json:"observations,omitempty"`
-	Risks        []Risk        `json:"risks,omitempty"`
+	UUID             string            `json:"uuid"`
+	Title            string            `json:"title"`
+	Description      string            `json:"description,omitempty"`
+	Start            string            `json:"start"`
+	End              string            `json:"end,omitempty"`
+	Props            []Property        `json:"props,omitempty"`
+	ReviewedControls *ReviewedControls `json:"reviewed-controls,omitempty"`
+	Findings         []Finding         `json:"findings,omitempty"`
+	Observations     []Observation     `json:"observations,omitempty"`
+	Risks            []Risk            `json:"risks,omitempty"`
 }
 
 // Finding is an assessment determination about a control.

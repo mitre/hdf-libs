@@ -196,6 +196,34 @@ describe('defectdojo-to-hdf converter', () => {
     expect(noCwe.cwe).toBeUndefined();
   });
 
+  it('maps CVE from vulnerability_ids into tags.cve (not the requirement id)', async () => {
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    const byId = new Map(hdf.baselines[0].requirements.map(r => [r.id, r]));
+
+    const first = byId.get('DefectDojo-Finding-1');
+    expect(first).toBeDefined(); // id is the native finding id, not the CVE
+    expect((first!.tags as Record<string, unknown>).cve).toEqual(['CVE-2020-36234']);
+    expect((byId.get('DefectDojo-Finding-2')!.tags as Record<string, unknown>).cve).toEqual(['CVE-2020-36235']);
+    expect((byId.get('DefectDojo-Finding-3')!.tags as Record<string, unknown>).cve).toEqual(['CVE-2020-36236']);
+  });
+
+  it('collects all CVEs (empty ids dropped) and omits tags.cve when none present', async () => {
+    const multi = await convertOne({
+      vulnerability_ids: [{vulnerability_id: 'CVE-2021-1'}, {vulnerability_id: ''}, {vulnerability_id: 'CVE-2021-2'}],
+    });
+    expect((multi.tags as Record<string, unknown>).cve).toEqual(['CVE-2021-1', 'CVE-2021-2']);
+
+    const none = await convertOne({});
+    expect((none.tags as Record<string, unknown>).cve).toBeUndefined();
+  });
+
+  it('never emits requirement.kev (DefectDojo carries no CISA due date)', async () => {
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    for (const r of hdf.baselines[0].requirements) {
+      expect(r.kev).toBeUndefined();
+    }
+  });
+
   it('builds descriptions and a rich code description', async () => {
     const r = await convertOne({
       description: 'd',
@@ -211,6 +239,26 @@ describe('defectdojo-to-hdf converter', () => {
     expect(r.results[0].codeDesc).toContain('Component: lodash@4.17.0');
     expect(r.results[0].codeDesc).toContain('Location: src/x.js:42');
     expect(r.results[0].codeDesc).toContain('CVE: CVE-2026-1');
+  });
+
+  it('populates requirement.code with each finding serialized as indented JSON', async () => {
+    const raw = JSON.parse(load('findings.json')) as {results: Record<string, unknown>[]};
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    const reqs = hdf.baselines[0].requirements;
+    expect(reqs).toHaveLength(4);
+    reqs.forEach((req, i) => {
+      expect(req.code).toBeDefined();
+      expect(req.code).toContain('\n  '); // indented, not compact
+      // value-pinning: code round-trips to the source finding object
+      expect(JSON.parse(req.code!)).toEqual(raw.results[i]);
+    });
+  });
+
+  it('serializes a crafted finding to code that round-trips to the source', async () => {
+    const f = {...base, cwe: 79, file_path: 'src/x.js', line: 7};
+    const r = await convertOne(f);
+    expect(r.code).toBeDefined();
+    expect(JSON.parse(r.code!)).toEqual(f);
   });
 
   it('names the baseline DefectDojo when no scanner is present', async () => {

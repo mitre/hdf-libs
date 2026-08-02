@@ -1,5 +1,18 @@
-import { describe, it, expect } from 'vitest';
-import { computeEffectiveStatus, severityToImpact, impactToSeverity, createResult } from '../src/helpers.js';
+import { describe, it, expect, beforeAll } from 'vitest';
+import type Ajv2020 from 'ajv/dist/2020.js';
+import {
+  computeEffectiveStatus,
+  severityToImpact,
+  impactToSeverity,
+  createResult,
+  createRequirement,
+  createMinimalBaseline,
+  createDescription,
+  createStatusOverride,
+  createPoam,
+  createCvss,
+} from '../src/helpers.js';
+import { createAjvWithPrimitives, loadSchema, createMinimalResultsDoc } from './setup';
 
 /**
  * Minimal requirement stub with only the fields computeEffectiveStatus inspects.
@@ -293,5 +306,117 @@ describe('createResult', () => {
     expect(r.codeDesc).toBe('x');
     expect(r.runTime).toBe(5);
     expect('message' in r).toBe(false);
+  });
+
+  it('includes resource and resourceId when provided', () => {
+    const r = createResult('failed', 'boom', { resource: 'File', resourceId: '/etc/passwd' });
+    expect(r.resource).toBe('File');
+    expect(r.resourceId).toBe('/etc/passwd');
+  });
+
+  it('omits resource/resourceId when not provided', () => {
+    const r = createResult('passed');
+    expect('resource' in r).toBe(false);
+    expect('resourceId' in r).toBe(false);
+  });
+});
+
+describe('createRequirement extensions', () => {
+  it('omits title when not provided', () => {
+    const req = createRequirement('V-1', undefined, [createDescription('default', 'd')], 0.5, []);
+    expect('title' in req).toBe(false);
+    expect(req.id).toBe('V-1');
+  });
+
+  it('includes title when provided (unchanged behavior)', () => {
+    const req = createRequirement('V-1', 'A title', [createDescription('default', 'd')], 0.5, []);
+    expect(req.title).toBe('A title');
+  });
+
+  it('models control code', () => {
+    const req = createRequirement('V-1', 'T', [], 0.5, [], { code: 'describe(...) do; end' });
+    expect(req.code).toBe('describe(...) do; end');
+  });
+
+  it('models amendment fields', () => {
+    const req = createRequirement('V-1', 'T', [], 0.5, [], {
+      effectiveStatus: 'failed',
+      effectiveImpact: 0.5,
+      disposition: 'poam',
+      statusOverrides: [createStatusOverride('waiver', { status: 'notApplicable' })],
+      poams: [createPoam('remediation')],
+    });
+    expect(req.effectiveStatus).toBe('failed');
+    expect(req.effectiveImpact).toBe(0.5);
+    expect(req.disposition).toBe('poam');
+    expect(req.statusOverrides).toHaveLength(1);
+    expect(req.poams).toHaveLength(1);
+  });
+
+  it('models vulnerability fields', () => {
+    const req = createRequirement('CVE-2024-1', 'T', [], 0.7, [], {
+      cwe: ['CWE-79'],
+      cvss: [createCvss('3.1', { baseScore: 9.8, baseSeverity: 'critical' })],
+      refs: [{ url: 'https://nvd.nist.gov/vuln/detail/CVE-2024-1' }],
+    });
+    expect(req.cwe).toEqual(['CWE-79']);
+    expect(req.cvss?.[0].baseScore).toBe(9.8);
+    expect(req.refs).toHaveLength(1);
+  });
+});
+
+describe('piece-builders produce schema-valid pieces', () => {
+  it('createStatusOverride defaults to a valid, non-expired override', () => {
+    const o = createStatusOverride('waiver');
+    expect(o.type).toBe('waiver');
+    expect(o.expiresAt).toBe('2099-12-31T00:00:00Z');
+    // anyOf(status|impact): the minimal builder must set one to stay schema-valid.
+    expect(o.status ?? o.impact).toBeDefined();
+  });
+
+  it('createPoam carries the now-required expiresAt', () => {
+    const p = createPoam('remediation');
+    expect(p.type).toBe('remediation');
+    expect(p.expiresAt).toBe('2099-12-31T00:00:00Z');
+    expect(p.explanation).toBeTruthy();
+  });
+
+  it('createCvss requires only version and passes options through', () => {
+    expect(createCvss('3.1')).toEqual({ version: '3.1' });
+    expect(createCvss('4.0', { baseScore: 7.5 }).baseScore).toBe(7.5);
+  });
+});
+
+describe('helper-built docs validate against hdf-results.schema.json', () => {
+  let validate: ReturnType<Ajv2020['compile']>;
+  beforeAll(() => {
+    validate = createAjvWithPrimitives().compile(loadSchema('hdf-results.schema.json'));
+  });
+
+  it('a requirement with amendment + vulnerability fields is schema-valid', () => {
+    const req = createRequirement(
+      'CVE-2024-1',
+      undefined,
+      [createDescription('default', 'Vulnerable dependency')],
+      0.7,
+      [createResult('failed', 'found', { startTime: '2026-01-01T00:00:00Z', resource: 'Package', resourceId: 'openssl' })],
+      {
+        code: 'check openssl version',
+        effectiveStatus: 'failed',
+        disposition: 'poam',
+        statusOverrides: [createStatusOverride('riskAdjustment', { impact: { value: 0.4 } })],
+        poams: [createPoam('remediation', { milestones: [{ description: 'patch', estimatedCompletion: '2099-01-01T00:00:00Z', status: 'pending' }] })],
+        cwe: ['CWE-327'],
+        cvss: [createCvss('3.1', { baseScore: 7.5, baseSeverity: 'high' })],
+        refs: [{ url: 'https://example.gov/advisory' }],
+      },
+    );
+    const doc = createMinimalResultsDoc({
+      baselines: [createMinimalBaseline('b', [req])],
+      components: [],
+    });
+
+    const ok = validate(doc);
+    expect(ok, JSON.stringify(validate.errors)).toBe(true);
   });
 });

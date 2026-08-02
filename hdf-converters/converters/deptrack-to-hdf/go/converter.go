@@ -1,6 +1,7 @@
 package deptrack
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -43,6 +44,24 @@ type DeptrackFinding struct {
 	Analysis      DeptrackAnalysis      `json:"analysis"`
 	Attribution   *DeptrackAttribution  `json:"attribution,omitempty"`
 	Matrix        string                `json:"matrix"`
+
+	// raw is the finding exactly as Dependency-Track emitted it. It carries no
+	// literal source snippet, so requirement.code is the whole finding re-indented
+	// in place — preserving source key order and every field the typed struct does
+	// not model (aliases, epssScore, source, vulnId), so the output is
+	// byte-identical to the TypeScript twin's JSON.stringify(finding, null, 2).
+	raw json.RawMessage
+}
+
+func (f *DeptrackFinding) UnmarshalJSON(data []byte) error {
+	type plain DeptrackFinding
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*f = DeptrackFinding(p)
+	f.raw = append(json.RawMessage(nil), data...)
+	return nil
 }
 
 // DeptrackComponent identifies the affected software component.
@@ -59,23 +78,30 @@ type DeptrackComponent struct {
 
 // DeptrackVulnerability holds vulnerability details.
 type DeptrackVulnerability struct {
-	UUID           string        `json:"uuid"`
-	Source         string        `json:"source"`
-	VulnID         string        `json:"vulnId"`
-	Title          string        `json:"title"`
-	Subtitle       string        `json:"subtitle"`
-	Severity       string        `json:"severity"`
-	SeverityRank   int           `json:"severityRank"`
-	CweID          int           `json:"cweId"`
-	CweName        string        `json:"cweName"`
-	Cwes           []DeptrackCwe `json:"cwes"`
-	Description    string        `json:"description"`
-	Recommendation string        `json:"recommendation"`
-	Aliases        []interface{} `json:"aliases"`
-	CvssV2Base     float64       `json:"cvssV2BaseScore"`
-	CvssV3Base     float64       `json:"cvssV3BaseScore"`
-	EpssScore      float64       `json:"epssScore"`
-	EpssPercentile float64       `json:"epssPercentile"`
+	UUID           string          `json:"uuid"`
+	Source         string          `json:"source"`
+	VulnID         string          `json:"vulnId"`
+	Title          string          `json:"title"`
+	Subtitle       string          `json:"subtitle"`
+	Severity       string          `json:"severity"`
+	SeverityRank   int             `json:"severityRank"`
+	CweID          int             `json:"cweId"`
+	CweName        string          `json:"cweName"`
+	Cwes           []DeptrackCwe   `json:"cwes"`
+	Description    string          `json:"description"`
+	Recommendation string          `json:"recommendation"`
+	Aliases        []DeptrackAlias `json:"aliases"`
+	CvssV2Base     float64         `json:"cvssV2BaseScore"`
+	CvssV3Base     float64         `json:"cvssV3BaseScore"`
+	EpssScore      float64         `json:"epssScore"`
+	EpssPercentile float64         `json:"epssPercentile"`
+}
+
+// DeptrackAlias is a cross-reference to the same vulnerability under another
+// naming scheme. Dependency-Track's finding.id is a UUID composite (matrix), not
+// the CVE, so aliases[].cveId is where the CVE identifier lives.
+type DeptrackAlias struct {
+	CveID string `json:"cveId"`
 }
 
 // DeptrackCwe represents a CWE entry.
@@ -133,15 +159,46 @@ func getCweIDs(cwes []DeptrackCwe) []string {
 	return ids
 }
 
+// getCVEs collects CVE identifiers from vulnerability.aliases[].cveId, deduped in
+// first-seen order. The finding.id is a UUID composite, so the CVE has no other
+// home; it goes to tags.cve (interim, pending an identifiers[] schema field).
+func getCVEs(vuln DeptrackVulnerability) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, alias := range vuln.Aliases {
+		if alias.CveID != "" && !seen[alias.CveID] {
+			seen[alias.CveID] = true
+			out = append(out, alias.CveID)
+		}
+	}
+	return out
+}
+
+// buildFindingCode renders the raw Dependency-Track finding as indented JSON for
+// requirement.code (the Heimdall CODE tab). json.Indent reformats the original
+// bytes in place, preserving source key order so the output is byte-identical to
+// the TypeScript twin's JSON.stringify(finding, null, 2).
+func buildFindingCode(finding DeptrackFinding) string {
+	if len(finding.raw) == 0 {
+		return "{}"
+	}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, finding.raw, "", "  "); err != nil {
+		return "{}"
+	}
+	return buf.String()
+}
+
 // buildRequirement converts a Dependency-Track finding into an EvaluatedRequirement.
 func buildRequirement(finding DeptrackFinding, timestamp string) hdf.EvaluatedRequirement {
 	cweIDs := getCweIDs(finding.Vulnerability.Cwes)
+	cveIDs := getCVEs(finding.Vulnerability)
 	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultStaticAnalysisNIST)
 	cciTags := cci.NISTToCCI(nist)
 
 	extras := map[string]interface{}{}
-	if len(cweIDs) > 0 {
-		extras["cweIds"] = hdfutil.StringsToInterfaces(cweIDs)
+	if len(cveIDs) > 0 {
+		extras["cve"] = hdfutil.StringsToInterfaces(cveIDs)
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -187,12 +244,16 @@ func buildRequirement(finding DeptrackFinding, timestamp string) hdf.EvaluatedRe
 	req := hdf.EvaluatedRequirement{
 		ID:                 finding.Matrix,
 		Title:              &title,
+		Code:               hdfutil.Ptr(buildFindingCode(finding)),
 		Impact:             getImpact(finding.Vulnerability.Severity),
 		Tags:               tags,
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		Descriptions:       descriptions,
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+	if len(cweIDs) > 0 {
+		req.Cwe = cweIDs
 	}
 	if pkg := buildAffectedPackageFromComponent(finding.Component); pkg != nil {
 		req.AffectedPackages = []hdf.AffectedPackage{*pkg}
@@ -290,7 +351,7 @@ func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		GeneratorName:    "deptrack-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Dependency-Track",
-		ToolFormat:       "JSON",
+		ToolFormat:       "FPF",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Application},

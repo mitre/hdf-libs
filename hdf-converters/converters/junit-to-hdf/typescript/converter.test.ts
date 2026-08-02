@@ -99,7 +99,7 @@ describe('junit to HDF converter', async () => {
     it('should set tool', async () => {
       const hdf = await parseHdf('surefire-failing.xml');
       expect(hdf.tool?.name).toBe('JUnit XML');
-      expect(hdf.tool?.format).toBe('XML');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 

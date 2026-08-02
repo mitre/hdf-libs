@@ -257,7 +257,9 @@ func earliestAppliedAt(a *hdf.HDFAmendments) time.Time {
 
 func buildDocument(a *hdf.HDFAmendments, docTime time.Time, converterVersion string) CSAFVexDocument {
 	publisherName := "HDF Amendments Export"
-	publisherNamespace := ""
+	// CSAF requires publisher.namespace: a URL under the issuing party's control
+	// serving as its globally unique identifier. This is a SAF/HDF tool export.
+	publisherNamespace := "https://saf.mitre.org"
 	if a.AppliedBy != nil && a.AppliedBy.Identifier != "" {
 		publisherName = a.AppliedBy.Identifier
 	}

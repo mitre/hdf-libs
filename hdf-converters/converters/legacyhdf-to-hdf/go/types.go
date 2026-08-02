@@ -7,6 +7,8 @@
 // Current HDF types are imported from github.com/mitre/hdf-libs/hdf-schema/dist/go/v3.
 package legacyhdf
 
+import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+
 // V1Result represents a test result in HDF v1.0 format.
 type V1Result struct {
 	Status         string   `json:"status"`
@@ -117,4 +119,8 @@ type HDFV1Results struct {
 	Platform   V1Platform   `json:"platform"`
 	Profiles   []V1Profile  `json:"profiles"`
 	Statistics V1Statistics `json:"statistics"`
+	// Timestamp/Generator are absent from genuine InSpec exec-json but a
+	// re-exported HDF v1 document may carry them; preserve when present.
+	Timestamp *string        `json:"timestamp,omitempty"`
+	Generator *hdf.Generator `json:"generator,omitempty"`
 }

@@ -723,6 +723,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-01T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                   },
                 ],
                 effectiveStatus: 'failed', // POAM doesn't change status
@@ -750,6 +751,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-01T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                     milestones: [
                       {
                         description: 'Implement firewall rules to isolate affected system',
@@ -807,6 +809,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-01T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                     milestones: [
                       {
                         description: 'Test patch in staging',
@@ -846,6 +849,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-01T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                   },
                   {
                     type: 'mitigation',
@@ -855,6 +859,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-02T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                   },
                   {
                     type: 'remediation',
@@ -864,6 +869,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-03T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                   },
                 ],
                 effectiveStatus: 'failed',
@@ -1247,6 +1253,7 @@ describe('hdf-results.schema.json (refactored)', () => {
                     explanation: 'Waiting for vendor to release patch for CVE-2026-1234',
                     appliedBy: { identifier: 'ops@agency.gov', type: 'email' },
                     appliedAt: '2026-04-14T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                   },
                 ],
                 effectiveStatus: 'failed',

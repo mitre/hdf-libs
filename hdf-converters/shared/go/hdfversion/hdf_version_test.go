@@ -246,6 +246,31 @@ func TestDowngradeV3ToV2_SkipsExpiredOverrideBreadcrumb(t *testing.T) {
 	assert.NotContains(t, wd, "override_type", "an expired override must not become the waiver_data breadcrumb")
 }
 
+func TestDowngradeV3ToV2_ProfileSha256FromIntegrity(t *testing.T) {
+	// Heimdall's "No fingerprint match" hinges on the v2 profile sha256. It must be
+	// sourced from the baseline integrity hash first (where an inspec profile's sha256
+	// round-trips), ahead of the results/original checksums.
+	input := []byte(`{
+		"baselines": [{
+			"name": "B",
+			"integrity": {"algorithm": "sha256", "checksum": "integrity-hash"},
+			"resultsChecksum": {"algorithm": "sha256", "value": "results-hash"},
+			"requirements": [{"id":"V-1","title":"t","impact":0.5,
+				"results":[{"status":"failed","codeDesc":"x","startTime":"2020-01-01T00:00:00Z"}]}]
+		}],
+		"components": [{"name":"h","type":"host"}],
+		"generator": {"name":"g","version":"1.0.0"},
+		"tool": {"name":"t","version":"1.0.0"}
+	}`)
+	out, _, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(out, &legacy))
+	p := legacy["profiles"].([]any)[0].(map[string]any)
+	assert.Equal(t, "integrity-hash", p["sha256"], "integrity hash wins for the profile fingerprint")
+}
+
 func TestDetectHDFVersion(t *testing.T) {
 	tests := []struct {
 		name    string

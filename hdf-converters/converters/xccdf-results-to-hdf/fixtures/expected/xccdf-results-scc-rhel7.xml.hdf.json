@@ -4,6 +4,7 @@
       "name": "Red Hat Enterprise Linux 7 Security Technical Implementation Guide",
       "requirements": [
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:922\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -24,6 +25,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000048"
@@ -36,6 +38,7 @@
           "title": "The Red Hat Enterprise Linux operating system must display the Standard Mandatory DoD Notice and Consent Banner before granting local or remote access to the system via a graphical user logon."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:988\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -56,6 +59,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000056"
@@ -68,6 +72,7 @@
           "title": "The Red Hat Enterprise Linux operating system must enable a user session lock until that user re-establishes access using established identification and authentication procedures."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:92515\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -88,6 +93,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001948",
@@ -102,6 +108,7 @@
           "title": "The Red Hat Enterprise Linux operating system must uniquely identify and must authenticate users using multifactor authentication via a graphical user logon."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:981\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -122,6 +129,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000057"
@@ -134,6 +142,7 @@
           "title": "The Red Hat Enterprise Linux operating system must initiate a screensaver after a 15-minute period of inactivity for graphical user interfaces."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:999\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -154,6 +163,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000057"
@@ -166,6 +176,7 @@
           "title": "The Red Hat Enterprise Linux operating system must prevent a user from overriding the screensaver lock-delay setting for the graphical user interface."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:978\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -186,6 +197,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000057"
@@ -198,6 +210,7 @@
           "title": "The Red Hat Enterprise Linux operating system must initiate a session lock for the screensaver after a period of inactivity for graphical user interfaces."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:93703\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -218,6 +231,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000057"
@@ -230,6 +244,7 @@
           "title": "The Red Hat Enterprise Linux operating system must prevent a user from overriding the screensaver idle-activation-enabled setting for the graphical user interface."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:985\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -250,6 +265,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000057"
@@ -262,6 +278,7 @@
           "title": "The Red Hat Enterprise Linux operating system must initiate a session lock for graphical user interfaces when the screensaver is activated."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:95715\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -282,6 +299,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000192"
@@ -294,6 +312,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that /etc/pam.d/passwd implements /etc/pam.d/system-auth when changing passwords."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:481\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -314,6 +333,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000192"
@@ -326,6 +346,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that when passwords are changed or new passwords are established, pwquality must be used."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:484\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -346,6 +367,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000192"
@@ -358,6 +380,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that when passwords are changed or new passwords are established, the new password must contain at least one upper-case character."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:468\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -378,6 +401,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000193"
@@ -390,6 +414,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that when passwords are changed or new passwords are established, the new password must contain at least one lower-case character."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:463\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -410,6 +435,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000194"
@@ -422,6 +448,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that when passwords are changed or new passwords are assigned, the new password must contain at least one numeric character."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:478\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -442,6 +469,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001619"
@@ -454,6 +482,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that when passwords are changed or new passwords are established, the new password must contain at least one special character."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:466\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -474,6 +503,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -486,6 +516,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that when passwords are changed a minimum of eight of the total number of characters must be changed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:474\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -506,6 +537,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -518,6 +550,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that when passwords are changed a minimum of four character classes must be changed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:472\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -538,6 +571,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -550,6 +584,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that when passwords are changed the number of repeating consecutive characters must not be more than three characters."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:470\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -570,6 +605,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -582,6 +618,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that when passwords are changed the number of repeating characters of the same character class must not be more than four characters."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1367\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -602,6 +639,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000196"
@@ -614,6 +652,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the PAM system service is configured to store only encrypted representations of passwords."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1365\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -634,6 +673,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000196"
@@ -646,6 +686,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured to use the shadow file to store only encrypted representations of passwords."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1363\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -666,6 +707,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000196"
@@ -678,6 +720,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that user and group account administration utilities are configured to store only encrypted representations of passwords."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:455\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -698,6 +741,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000198"
@@ -710,6 +754,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that passwords for new users are restricted to a 24 hours/1 day minimum lifetime."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86551\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -730,6 +775,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000198"
@@ -742,6 +788,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that passwords are restricted to a 24 hours/1 day minimum lifetime."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:453\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -762,6 +809,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000199"
@@ -774,6 +822,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that passwords for new users are restricted to a 60-day maximum lifetime."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86555\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -794,6 +843,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000199"
@@ -806,6 +856,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that existing passwords are restricted to a 60-day maximum lifetime."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:486\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -826,6 +877,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000200"
@@ -838,6 +890,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that passwords are prohibited from reuse for a minimum of five generations."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:476\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -858,6 +911,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000205"
@@ -870,6 +924,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that passwords are a minimum of 15 characters in length."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1229\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -890,6 +945,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -902,6 +958,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not have accounts configured with blank or null passwords."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1375\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -922,6 +979,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000766"
@@ -934,6 +992,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH daemon does not allow authentication using an empty password."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:443\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -954,6 +1013,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000795"
@@ -966,6 +1026,7 @@
           "title": "The Red Hat Enterprise Linux operating system must disable account identifiers (individuals, groups, roles, and devices) if the password expires."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:176\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -986,6 +1047,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002038"
@@ -997,6 +1059,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that users must provide a password for privilege escalation."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:173\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1017,6 +1080,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002038"
@@ -1028,6 +1092,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that users must re-authenticate for privilege escalation."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:101\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1048,6 +1113,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1060,6 +1126,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the delay between logon prompts following a failed console logon attempt is at least four seconds."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1119\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1080,6 +1147,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1092,6 +1160,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not allow an unattended or automatic logon to the system via a graphical user interface."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1122\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1112,6 +1181,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1124,6 +1194,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not allow an unrestricted logon to the system."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1385\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1144,6 +1215,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1156,6 +1228,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not allow users to override SSH environment variables."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1011\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1176,6 +1249,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1188,6 +1262,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not allow a non-certificate trusted host SSH logon to the system."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:908\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1208,6 +1283,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -1220,6 +1296,7 @@
           "title": "Red Hat Enterprise Linux operating systems prior to version 7.2 with a Basic Input/Output System (BIOS) must require authentication upon booting into single-user and maintenance modes."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:92519\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1240,6 +1317,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -1252,6 +1330,7 @@
           "title": "The Red Hat Enterprise Linux operating system must require authentication upon booting into single-user and maintenance modes."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:95717\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1272,6 +1351,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -1284,6 +1364,7 @@
           "title": "Red Hat Enterprise Linux operating systems version 7.2 or newer with a Basic Input/Output System (BIOS) must require authentication upon booting into single-user and maintenance modes."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:912\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1304,6 +1385,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -1316,6 +1398,7 @@
           "title": "Red Hat Enterprise Linux operating systems prior to version 7.2 using Unified Extensible Firmware Interface (UEFI) must require authentication upon booting into single-user and maintenance modes."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:95719\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1336,6 +1419,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -1348,6 +1432,7 @@
           "title": "Red Hat Enterprise Linux operating systems version 7.2 or newer using Unified Extensible Firmware Interface (UEFI) must require authentication upon booting into single-user and maintenance modes."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1271\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1368,6 +1453,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -1381,6 +1467,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not have the rsh-server package installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1309\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1401,6 +1488,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -1414,6 +1502,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not have the ypserv package installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:525\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1434,6 +1523,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001744"
@@ -1445,6 +1535,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that a file integrity tool verifies the baseline operating system configuration at least weekly."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1027\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1465,6 +1556,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-001749"
@@ -1476,6 +1568,7 @@
           "title": "The Red Hat Enterprise Linux operating system must prevent the installation of software, patches, service packs, device drivers, or operating system components from a repository without verification they have been digitally signed using a certificate that is issued by a Certificate Authority (CA) that is recognized and approved by the organization."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:110\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1496,6 +1589,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-001749"
@@ -1507,6 +1601,7 @@
           "title": "The Red Hat Enterprise Linux operating system must prevent the installation of software, patches, service packs, device drivers, or operating system components of local packages without verification they have been digitally signed using a certificate that is issued by a Certificate Authority (CA) that is recognized and approved by the organization."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1141\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1527,6 +1622,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001958",
@@ -1543,6 +1639,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured to disable USB mass storage."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:92517\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1563,6 +1660,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001958"
@@ -1574,6 +1672,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the Datagram Congestion Control Protocol (DCCP) kernel module is disabled unless required."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86609\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1594,6 +1693,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001958",
@@ -1610,6 +1710,7 @@
           "title": "The Red Hat Enterprise Linux operating system must disable the file system automounter unless required."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:108\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1630,6 +1731,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-002617"
@@ -1641,6 +1743,7 @@
           "title": "The Red Hat Enterprise Linux operating system must remove all software components after updated versions have been installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:518\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1661,6 +1764,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1673,6 +1777,7 @@
           "title": "The Red Hat Enterprise Linux operating system must define default permissions for all authenticated users in such a way that the user can only read and modify their own files."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:169\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1693,6 +1798,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1705,6 +1811,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be a vendor supported release."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1117\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1725,6 +1832,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000764"
@@ -1737,6 +1845,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that all Group Identifiers (GIDs) referenced in the /etc/passwd file are defined in the /etc/group file."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:457\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1757,6 +1866,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1769,6 +1879,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the root account must be the only account having unrestricted access to the system."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:447\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1789,6 +1900,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1801,6 +1913,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that all local interactive user accounts, upon creation, are assigned a home directory."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86639\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1821,6 +1934,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1833,6 +1947,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that all local interactive users have a home directory assigned and defined in the /etc/passwd file."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1186\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1853,6 +1968,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1865,6 +1981,7 @@
           "title": "The Red Hat Enterprise Linux operating system must prevent files with the setuid and setgid bit set from being executed on file systems that are being imported via Network File System (NFS)."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1178\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1885,6 +2002,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1897,6 +2015,7 @@
           "title": "The Red Hat Enterprise Linux operating system must prevent binary files from being executed on file systems that are being imported via Network File System (NFS)."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1009\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1917,6 +2036,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1929,6 +2049,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that all world-writable directories are group-owned by root, sys, bin, or an application group."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:116\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1949,6 +2070,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1961,6 +2083,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the cron.allow file, if it exists, is owned by root."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:114\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1981,6 +2104,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1993,6 +2117,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the cron.allow file, if it exists, is group-owned by root."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1311\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2013,6 +2138,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -2025,6 +2151,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that a separate file system is used for user home directories (such as /home or an equivalent)."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1315\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2045,6 +2172,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -2057,6 +2185,7 @@
           "title": "The Red Hat Enterprise Linux operating system must use a separate file system for /var."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1319\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2077,6 +2206,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -2089,6 +2219,7 @@
           "title": "The Red Hat Enterprise Linux operating system must use a separate file system for the system audit data path."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86689\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2109,6 +2240,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -2121,6 +2253,7 @@
           "title": "The Red Hat Enterprise Linux operating system must use a separate file system for /tmp (or equivalent)."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:126\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2141,6 +2274,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-001199",
@@ -2160,6 +2294,7 @@
           "title": "The Red Hat Enterprise Linux operating system must implement NIST FIPS-validated cryptography for the following: to provision digital signatures, to generate cryptographic hashes, and to protect data requiring data-at-rest protections in accordance with applicable federal laws, Executive Orders, directives, policies, regulations, and standards."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1292\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2180,6 +2315,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -2193,6 +2329,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not have the telnet-server package installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86703\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2213,6 +2350,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000126",
@@ -2228,6 +2366,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that auditing is configured to produce records containing information to establish what type of events occurred, where the events occurred, the source of the events, and the outcome of the events. These audit records must also identify individual identities of group account users."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:776\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2248,6 +2387,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000139"
@@ -2260,6 +2400,7 @@
           "title": "The Red Hat Enterprise Linux operating system must shut down upon audit processing failure, unless availability is an overriding concern. If availability is a concern, the system must alert the designated staff (System Administrator [SA] and Information System Security Officer [ISSO] at a minimum) in the event of an audit processing failure."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:95729\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2280,6 +2421,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2291,6 +2433,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured to off-load audit logs onto a different system or storage media from the system being audited."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:95731\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2311,6 +2454,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2322,6 +2466,7 @@
           "title": "The Red Hat Enterprise Linux operating system must take appropriate action when the remote logging buffer is full."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:95733\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2342,6 +2487,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2353,6 +2499,7 @@
           "title": "The Red Hat Enterprise Linux operating system must label all off-loaded audit logs before sending them to the central log server."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86707\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2373,6 +2520,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2384,6 +2532,7 @@
           "title": "The Red Hat Enterprise Linux operating system must off-load audit records onto a different system or media from the system being audited."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86709\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2404,6 +2553,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2415,6 +2565,7 @@
           "title": "The Red Hat Enterprise Linux operating system must encrypt the transfer of audit records off-loaded onto a different system or media from the system being audited."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86711\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2435,6 +2586,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2446,6 +2598,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the audit system takes appropriate action when the audit storage volume is full."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:87815\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2466,6 +2619,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -2477,6 +2631,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the audit system takes appropriate action when there is an error sending audit records to a remote system."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86715\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2497,6 +2652,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001855"
@@ -2508,6 +2664,7 @@
           "title": "The Red Hat Enterprise Linux operating system must immediately notify the System Administrator (SA) and Information System Security Officer (ISSO) (at a minimum) via email when the threshold for the repository maximum audit record storage capacity is reached."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:885\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2528,6 +2685,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001855"
@@ -2539,6 +2697,7 @@
           "title": "The Red Hat Enterprise Linux operating system must immediately notify the System Administrator (SA) and Information System Security Officer (ISSO) (at a minimum) when the threshold for the repository maximum audit record storage capacity is reached."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:710\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2559,6 +2718,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002234"
@@ -2570,6 +2730,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all executions of privileged functions."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:552\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2590,6 +2751,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -2605,6 +2767,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the chown syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:567\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2625,6 +2788,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000126",
@@ -2640,6 +2804,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the fchown syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:587\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2660,6 +2825,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000126",
@@ -2675,6 +2841,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the lchown syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:572\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2695,6 +2862,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000126",
@@ -2710,6 +2878,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the fchownat syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:546\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2730,6 +2899,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2742,6 +2912,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the chmod syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:557\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2762,6 +2933,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2774,6 +2946,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the fchmod syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:562\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2794,6 +2967,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2806,6 +2980,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the fchmodat syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:607\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2826,6 +3001,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2838,6 +3014,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the setxattr syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:582\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2858,6 +3035,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2870,6 +3048,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the fsetxattr syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:597\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2890,6 +3069,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2902,6 +3082,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the lsetxattr syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:602\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2922,6 +3103,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2934,6 +3116,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the removexattr syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:577\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2954,6 +3137,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2966,6 +3150,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the fremovexattr syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:592\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -2986,6 +3171,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -2998,6 +3184,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the lremovexattr syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:801\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3018,6 +3205,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3032,6 +3220,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the creat syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:805\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3052,6 +3241,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3066,6 +3256,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the open syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:803\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3086,6 +3277,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3100,6 +3292,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the openat syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:804\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3120,6 +3313,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3134,6 +3328,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the open_by_handle_at syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:806\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3154,6 +3349,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3168,6 +3364,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the truncate syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:802\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3188,6 +3385,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3202,6 +3400,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the ftruncate syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:618\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3222,6 +3421,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3236,6 +3436,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the semanage command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:621\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3256,6 +3457,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3270,6 +3472,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the setsebool command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:612\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3290,6 +3493,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3304,6 +3508,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the chcon command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86765\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3324,6 +3529,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3338,6 +3544,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the setfiles command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:675\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3358,6 +3565,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3375,6 +3583,7 @@
           "title": "The Red Hat Enterprise Linux operating system must generate audit records for all unsuccessful account access events."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:676\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3395,6 +3604,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000126",
@@ -3412,6 +3622,7 @@
           "title": "The Red Hat Enterprise Linux operating system must generate audit records for all successful account access events."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:733\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3432,6 +3643,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3449,6 +3661,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the passwd command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:760\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3469,6 +3682,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3486,6 +3700,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the unix_chkpwd command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:724\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3506,6 +3721,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3523,6 +3739,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the gpasswd command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:715\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3543,6 +3760,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3560,6 +3778,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the chage command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:763\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3580,6 +3799,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3597,6 +3817,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the userhelper command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:748\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3617,6 +3838,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3637,6 +3859,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the su command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:751\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3657,6 +3880,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000130",
@@ -3677,6 +3901,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the sudo command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:773\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3697,6 +3922,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3717,6 +3943,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the sudoers file and all files in the /etc/sudoers.d/ directory."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:727\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3737,6 +3964,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000130",
@@ -3757,6 +3985,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the newgrp command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:718\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3777,6 +4006,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -3797,6 +4027,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the chsh command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:686\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3817,6 +4048,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3831,6 +4063,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the mount command and syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:757\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3851,6 +4084,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3865,6 +4099,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the umount command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:736\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3885,6 +4120,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3899,6 +4135,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the postdrop command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:739\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3919,6 +4156,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3933,6 +4171,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the postqueue command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:745\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3953,6 +4192,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000135",
@@ -3970,6 +4210,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the ssh-keysign command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:721\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3990,6 +4231,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4007,6 +4249,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the crontab command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:730\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4027,6 +4270,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4039,6 +4283,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the pam_timestamp_check command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:93705\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4059,6 +4304,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4071,6 +4317,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the create_module syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:657\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4091,6 +4338,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4103,6 +4351,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the init_module syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:93707\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4123,6 +4372,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4135,6 +4385,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the finit_module syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:658\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4155,6 +4406,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4167,6 +4419,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the delete_module syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86815\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4187,6 +4440,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172"
@@ -4199,6 +4453,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the kmod command."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:875\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4219,6 +4474,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000018",
@@ -4236,6 +4492,7 @@
           "title": "The Red Hat Enterprise Linux operating system must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/passwd."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:866\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4256,6 +4513,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001403",
@@ -4273,6 +4531,7 @@
           "title": "The Red Hat Enterprise Linux operating system must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/group."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:869\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4293,6 +4552,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000018",
@@ -4310,6 +4570,7 @@
           "title": "The Red Hat Enterprise Linux operating system must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/gshadow."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:878\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4330,6 +4591,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001403",
@@ -4347,6 +4609,7 @@
           "title": "The Red Hat Enterprise Linux operating system must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/shadow."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:872\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4367,6 +4630,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000018",
@@ -4384,6 +4648,7 @@
           "title": "The Red Hat Enterprise Linux operating system must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/opasswd."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:628\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4404,6 +4669,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4418,6 +4684,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the rename syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:629\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4438,6 +4705,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4452,6 +4720,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the renameat syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:625\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4472,6 +4741,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4486,6 +4756,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the rmdir syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:626\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4506,6 +4777,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4520,6 +4792,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the unlink syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:627\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4540,6 +4813,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000172",
@@ -4554,6 +4828,7 @@
           "title": "The Red Hat Enterprise Linux operating system must audit all uses of the unlinkat syscall."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:449\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4574,6 +4849,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000054"
@@ -4586,6 +4862,7 @@
           "title": "The Red Hat Enterprise Linux operating system must limit the number of concurrent sessions to 10 for all accounts and/or account types."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1399\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4606,6 +4883,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366",
@@ -4624,6 +4902,7 @@
           "title": "The Red Hat Enterprise Linux 7 operating system must implement DoD-approved encryption to protect the confidentiality of SSH connections."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:92521\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4644,6 +4923,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -4656,6 +4936,7 @@
           "title": "The Red Hat Enterprise Linux operating system must implement virtual address space randomization."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:4248\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4676,6 +4957,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002422",
@@ -4692,6 +4974,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that all networked systems have SSH installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1391\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4712,6 +4995,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001133",
@@ -4726,6 +5010,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that all network connections associated with SSH traffic are terminated at the end of the session or after 10 minutes of inactivity, except to fulfill documented and validated mission requirements."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1379\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4746,6 +5031,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -4758,6 +5044,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH daemon does not allow authentication using RSA rhosts authentication."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1393\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4778,6 +5065,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001133",
@@ -4792,6 +5080,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that all network connections associated with SSH traffic terminate after a period of inactivity."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1377\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4812,6 +5101,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -4824,6 +5114,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH daemon does not allow authentication using rhosts authentication."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:166\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4844,6 +5135,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -4856,6 +5148,7 @@
           "title": "The Red Hat Enterprise Linux operating system must display the date and time of the last successful account logon upon an SSH logon."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1381\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4876,6 +5169,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -4888,6 +5182,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not permit direct logons to the root account using remote access via SSH."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1383\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4908,6 +5203,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -4920,6 +5216,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH daemon does not allow authentication using known hosts authentication."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1373\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4940,6 +5237,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366",
@@ -4955,6 +5253,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH daemon is configured to only use the SSHv2 protocol."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:168\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -4975,6 +5274,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001453"
@@ -4987,6 +5287,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH daemon is configured to only use Message Authentication Codes (MACs) employing FIPS 140-2 approved cryptographic hash algorithms."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:120\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5007,6 +5308,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5019,6 +5321,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH public host key files have mode 0644 or less permissive."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:118\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5039,6 +5342,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5051,6 +5355,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH private host key files have mode 0640 or less permissive."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:160\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5071,6 +5376,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000318",
@@ -5092,6 +5398,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH daemon does not permit Generic Security Service Application Program Interface (GSSAPI) authentication unless needed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:162\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5112,6 +5419,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000368",
@@ -5133,6 +5441,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH daemon does not permit Kerberos authentication unless needed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:164\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5153,6 +5462,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5165,6 +5475,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH daemon performs strict mode checking of home directory configuration files."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:171\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5185,6 +5496,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5197,6 +5509,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH daemon uses privilege separation."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:158\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5217,6 +5530,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5229,6 +5543,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that the SSH daemon does not allow compression or only allows compression after successful authentication."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1020\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5249,6 +5564,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5261,6 +5577,7 @@
           "title": "The Red Hat Enterprise Linux operating system must display the date and time of the last successful account logon upon logon."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86901\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5281,6 +5598,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5293,6 +5611,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not contain .shosts files."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:86903\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5313,6 +5632,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5325,6 +5645,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not contain shosts.equiv files."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:251\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5345,6 +5666,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5357,6 +5679,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not forward Internet Protocol version 4 (IPv4) source-routed packets."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:269\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5377,6 +5700,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5389,6 +5713,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not forward Internet Protocol version 4 (IPv4) source-routed packets by default."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:284\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5409,6 +5734,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5421,6 +5747,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not respond to Internet Protocol version 4 (IPv4) Internet Control Message Protocol (ICMP) echoes sent to a broadcast address."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:266\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5441,6 +5768,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5453,6 +5781,7 @@
           "title": "The Red Hat Enterprise Linux operating system must prevent Internet Protocol version 4 (IPv4) Internet Control Message Protocol (ICMP) redirect messages from being accepted."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:248\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5473,6 +5802,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5485,6 +5815,7 @@
           "title": "The Red Hat Enterprise Linux operating system must ignore Internet Protocol version 4 (IPv4) Internet Control Message Protocol (ICMP) redirect messages."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:281\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5505,6 +5836,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5517,6 +5849,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not allow interfaces to perform Internet Protocol version 4 (IPv4) Internet Control Message Protocol (ICMP) redirects by default."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:263\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5537,6 +5870,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5549,6 +5883,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not send Internet Protocol version 4 (IPv4) Internet Control Message Protocol (ICMP) redirects."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1301\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5569,6 +5904,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5581,6 +5917,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not have a File Transfer Protocol (FTP) server package installed unless needed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1296\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5601,6 +5938,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000368",
@@ -5622,6 +5960,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not have the Trivial File Transfer Protocol (TFTP) server package installed if not required for operational support."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1389\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5642,6 +5981,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5654,6 +5994,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that remote X connections are disabled except to fulfill documented and validated mission requirements."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1305\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5674,6 +6015,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5686,6 +6028,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not have a graphical display manager installed unless approved."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:290\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5706,6 +6049,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5718,6 +6062,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not be performing packet forwarding unless the system is a router."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1369\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5738,6 +6083,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5750,6 +6096,7 @@
           "title": "SNMP community strings on the Red Hat Enterprise Linux operating system must be changed from the default."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:303\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5770,6 +6117,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5782,6 +6130,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not forward IPv6 source-routed packets."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:87041\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -5802,6 +6151,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001953",
@@ -5816,6 +6166,7 @@
           "title": "The Red Hat Enterprise Linux operating system must have the required packages for multifactor authentication installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1405\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -5836,6 +6187,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001948",
@@ -5850,6 +6202,7 @@
           "title": "The Red Hat Enterprise Linux operating system must implement multifactor authentication for access to privileged accounts via pluggable authentication modules (PAM)."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:87057\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -5870,6 +6223,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001954",
@@ -5884,6 +6238,7 @@
           "title": "The Red Hat Enterprise Linux operating system must implement certificate status checking for PKI authentication."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1340\",\n    \"href\": \"U_RHEL_7_V3R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5904,6 +6259,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-001749"

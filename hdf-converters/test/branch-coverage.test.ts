@@ -211,7 +211,7 @@ describe('ZAP branch coverage', () => {
     expect(hdf.baselines).toHaveLength(1);
   });
 
-  it('should handle multiple sites (selects one with most alerts)', async () => {
+  it('should convert every site (multi-site, no site dropped)', async () => {
     const input = JSON.stringify({
       site: [
         {
@@ -228,7 +228,10 @@ describe('ZAP branch coverage', () => {
       ],
     });
     const hdf = parseHdf(await convertZapToHdf(input));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(2);
+    // Both sites are now converted (previously only the busiest site survived).
+    expect(hdf.baselines).toHaveLength(2);
+    const totalReqs = hdf.baselines.reduce((n, b) => n + b!.requirements.length, 0);
+    expect(totalReqs).toBe(3);
   });
 
   it('should handle duplicate pluginids', async () => {
@@ -4262,7 +4265,7 @@ describe('DBProtect second-pass branch coverage', () => {
 });
 
 describe('ZAP second-pass branch coverage', () => {
-  it('should handle selectSite with sites that have no alerts array — L140', async () => {
+  it('should convert every site even when none have alerts (multi-site no-findings)', async () => {
     const input = JSON.stringify({
       site: [
         { '@name': 'http://a.com', '@host': 'a.com', '@port': '80' },
@@ -4271,7 +4274,11 @@ describe('ZAP second-pass branch coverage', () => {
       '@version': '2.14.0',
     });
     const hdf = parseHdf(await convertZapToHdf(input));
-    expect(hdf.baselines).toHaveLength(1);
+    // Each alert-less site still yields its own baseline with a no-findings placeholder.
+    expect(hdf.baselines).toHaveLength(2);
+    for (const b of hdf.baselines) {
+      expect(b!.requirements[0]!.results[0]!.status).toBe('passed');
+    }
   });
 
   it('should handle alert with no desc — L260', async () => {
