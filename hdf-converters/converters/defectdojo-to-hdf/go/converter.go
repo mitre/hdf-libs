@@ -327,6 +327,13 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 		tags[k] = v
 	}
 
+	// CVE → tags.cve (interim, pending a first-class identifiers[] field). The
+	// requirement.id is a native DefectDojo finding id (DefectDojo-Finding-<n> or
+	// a tool id), never the CVE, so the CVE list is not a duplicate of the id.
+	if cves := cveList(f); len(cves) > 0 {
+		tags["cve"] = cves
+	}
+
 	status := deriveStatus(f)
 	startTime := hdfutil.ParseTimestamp(f.Date)
 	if startTime.IsZero() {
@@ -352,6 +359,13 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 	if f.CWE != nil && *f.CWE > 0 {
 		req.Cwe = []string{fmt.Sprintf("CWE-%d", *f.CWE)}
 	}
+
+	// KEV is NOT-IN-SOURCE: DefectDojo findings carry known_exploited/kev_date/
+	// ransomware_used but no CISA remediation due date. hdf.Kev requires both
+	// dateAdded AND dueDate when inKev is true, so a schema-valid requirement.kev
+	// cannot be produced from source alone — synthesizing a dueDate DefectDojo
+	// never sent would be fabrication. The KEV signal is preserved verbatim in
+	// requirement.code (the raw finding JSON).
 
 	if code := buildFindingCode(f); code != "" {
 		req.Code = &code

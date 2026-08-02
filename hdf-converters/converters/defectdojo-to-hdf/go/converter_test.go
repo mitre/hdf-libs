@@ -162,6 +162,57 @@ func TestConvertFinding_NoCodeWithoutRaw(t *testing.T) {
 	assert.Nil(t, req.Code, "code must be unset when no raw source bytes are present")
 }
 
+// TestConvertDefectDojo_CVETag pins the CVE from vulnerability_ids[] into
+// tags.cve. The requirement.id is a native DefectDojo finding id
+// (DefectDojo-Finding-<n>), never the CVE, so tags.cve is not a duplicate of it.
+func TestConvertDefectDojo_CVETag(t *testing.T) {
+	result, err := ConvertDefectDojo(loadFixture(t, "findings.json"), converterVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range reqs {
+		byID[r.ID] = r
+	}
+
+	first, ok := byID["DefectDojo-Finding-1"]
+	require.True(t, ok, "id must be the native finding id, not the CVE")
+	assert.Equal(t, []string{"CVE-2020-36234"}, first.Tags["cve"])
+	assert.Equal(t, []string{"CVE-2020-36235"}, byID["DefectDojo-Finding-2"].Tags["cve"])
+	assert.Equal(t, []string{"CVE-2020-36236"}, byID["DefectDojo-Finding-3"].Tags["cve"])
+	assert.Equal(t, []string{"CVE-2020-36236"}, byID["DefectDojo-Finding-4"].Tags["cve"])
+}
+
+// TestBuildCVETag_Branches covers the multi-CVE (empty ids dropped) and
+// absent-CVE branches of the tags.cve mapping.
+func TestBuildCVETag_Branches(t *testing.T) {
+	multi := convertFinding(ddFinding{
+		Title:    "t",
+		Severity: "High",
+		VulnerabilityIDs: []ddVulnID{
+			{VulnerabilityID: "CVE-2021-1"},
+			{VulnerabilityID: ""},
+			{VulnerabilityID: "CVE-2021-2"},
+		},
+	})
+	assert.Equal(t, []string{"CVE-2021-1", "CVE-2021-2"}, multi.Tags["cve"])
+
+	none := convertFinding(ddFinding{Title: "t", Severity: "High"})
+	_, present := none.Tags["cve"]
+	assert.False(t, present, "no vulnerability_ids → tags.cve absent")
+}
+
+// TestConvertDefectDojo_NoKev locks the KEV NOT-IN-SOURCE decision: DefectDojo
+// carries no CISA remediation due date, so requirement.kev (which requires
+// dateAdded + dueDate when inKev=true) is never emitted.
+func TestConvertDefectDojo_NoKev(t *testing.T) {
+	result, err := ConvertDefectDojo(loadFixture(t, "findings.json"), converterVersion)
+	require.NoError(t, err)
+	for _, r := range result.Baselines[0].Requirements {
+		assert.Nil(t, r.Kev, "defectdojo never emits requirement.kev (no source due date)")
+	}
+}
+
 func TestConvertDefectDojo_Empty(t *testing.T) {
 	result, err := ConvertDefectDojo(loadFixture(t, "empty.json"), converterVersion)
 	require.NoError(t, err)

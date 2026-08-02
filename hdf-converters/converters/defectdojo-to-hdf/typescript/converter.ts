@@ -186,6 +186,12 @@ function convertFinding(f: DDFinding): EvaluatedRequirement {
   const nist = nistTags(f);
   const tags = buildNistCciTags(nist, nistToCci(nist), triageTags(f));
 
+  // CVE → tags.cve (interim, pending a first-class identifiers[] field). The
+  // requirement.id is a native DefectDojo finding id (DefectDojo-Finding-<n> or a
+  // tool id), never the CVE, so the CVE list is not a duplicate of the id.
+  const cves = cveList(f);
+  if (cves.length > 0) tags.cve = cves;
+
   const result: RequirementResult = {
     status: deriveStatus(f),
     codeDesc: codeDesc(f),
@@ -208,6 +214,13 @@ function convertFinding(f: DDFinding): EvaluatedRequirement {
   const epss = buildEpss(f);
   if (epss) req.epss = epss;
   if (f.cwe && f.cwe > 0) req.cwe = [`CWE-${f.cwe}`];
+
+  // KEV is NOT-IN-SOURCE: DefectDojo findings carry known_exploited/kev_date/
+  // ransomware_used but no CISA remediation due date. hdf Kev requires both
+  // dateAdded AND dueDate when inKev is true, so a schema-valid requirement.kev
+  // cannot be produced from source alone — synthesizing a dueDate DefectDojo
+  // never sent would be fabrication. The KEV signal is preserved verbatim in
+  // requirement.code (the raw finding JSON).
 
   // DefectDojo carries no literal source snippet, so requirement.code (Heimdall's
   // CODE tab) holds the whole finding as indented JSON — every field the typed
