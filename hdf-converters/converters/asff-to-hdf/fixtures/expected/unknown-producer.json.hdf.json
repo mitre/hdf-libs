@@ -3,6 +3,14 @@
     {
       "requirements": [
         {
+          "cvss": [
+            {
+              "baseScore": 8.1,
+              "baseSeverity": "high",
+              "source": "NVD",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A vulnerability was detected in libexample.",
@@ -24,6 +32,9 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "cve": [
+              "CVE-2099-0001"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -38,6 +49,14 @@
           "title": "CVE-2099-0001 - libexample"
         },
         {
+          "cvss": [
+            {
+              "baseScore": 5.4,
+              "baseSeverity": "medium",
+              "source": "NVD",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A second, distinct vulnerability.",
@@ -58,6 +77,9 @@
             "cci": [
               "CCI-001643",
               "CCI-003173"
+            ],
+            "cve": [
+              "CVE-2099-0002"
             ],
             "nist": [
               "SA-11",
