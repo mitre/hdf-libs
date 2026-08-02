@@ -233,8 +233,13 @@ function requirementToFindingSet(
   toolActorUuid: string,
 ): { finding: Finding; observation: Observation | undefined; risk: IdentifiedRisk | undefined } {
   const controlID = nistTagToControlId(req.id);
-  const { state, reason } = aggregateStatus(req.results);
-  const findingDesc = extractDefaultDescription(req.descriptions);
+  // results/descriptions are optional and absent on real minimal HDF; normalize
+  // to arrays so this converter matches the Go implementation, which ranges nil
+  // slices safely rather than throwing.
+  const results = req.results ?? [];
+  const descriptions = req.descriptions ?? [];
+  const { state, reason } = aggregateStatus(results);
+  const findingDesc = extractDefaultDescription(descriptions);
 
   // Build props from control mappings (nist/cci), source code, non-default
   // descriptions (check/fix/rationale), and v3.2 classification fields.
@@ -254,7 +259,7 @@ function requirementToFindingSet(
   pushTagValues('cci');
   if (req.code != null) addProp('code', req.code);
   for (const label of ['check', 'fix', 'rationale']) {
-    const d = req.descriptions.find((x) => x.label === label);
+    const d = descriptions.find((x) => x.label === label);
     addProp(label, d ? d.data : '');
   }
   if (req.controlType) addProp('control-type', req.controlType);
@@ -301,16 +306,16 @@ function requirementToFindingSet(
 
   // Build observation from requirement results
   let observation: Observation | undefined;
-  if (req.results.length > 0) {
+  if (results.length > 0) {
     const obsUUID = crypto.randomUUID();
-    const obsDesc = buildObservationDescription(req.results);
+    const obsDesc = buildObservationDescription(results);
     observation = {
       uuid: obsUUID,
       description: obsDesc,
       methods: ['TEST'],
       // When the evidence was gathered — the scan time for this requirement, not
       // when the file was converted.
-      collected: formatAssessmentTime(earliestResultTime(req.results), timestamp),
+      collected: formatAssessmentTime(earliestResultTime(results), timestamp),
     } as unknown as Observation;
     finding['related-observations'] = [{ 'observation-uuid': obsUUID }];
   }
