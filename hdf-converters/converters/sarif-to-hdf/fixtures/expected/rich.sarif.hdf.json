@@ -70,6 +70,7 @@
             ],
             "severity": "error"
           },
+          "code": "db.Query(\"SELECT * FROM users WHERE name = '\" + userInput + \"'\")",
           "controlType": "technical",
           "title": "SqlInjection",
           "verificationMethod": "automated"
@@ -119,6 +120,7 @@
             ],
             "severity": "warning"
           },
+          "code": "h := md5.New()",
           "controlType": "technical",
           "title": "WeakCrypto",
           "verificationMethod": "automated"

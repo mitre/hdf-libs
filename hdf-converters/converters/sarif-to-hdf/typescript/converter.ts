@@ -316,6 +316,16 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
 
+  // requirement.code = raw source snippet (region.snippet.text) so Heimdall's
+  // CODE tab is populated. Only set when a primary location carries a snippet —
+  // never fabricated.
+  const snippet = (firstResult.locations ?? [])
+    .map((loc) => loc.physicalLocation?.region?.snippet?.text)
+    .find((text): text is string => Boolean(text));
+  if (snippet) {
+    (req as EvaluatedRequirement).code = snippet;
+  }
+
   // SCA-shaped SARIF (Grype, Trivy, Dependency-Check) carries package
   // identity in result.properties. Pure SAST results have empty
   // properties → no affectedPackage. We dedupe by purl/cpe/name@version

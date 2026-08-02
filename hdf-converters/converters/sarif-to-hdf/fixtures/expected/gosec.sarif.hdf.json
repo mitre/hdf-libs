@@ -44,6 +44,7 @@
             ],
             "severity": "error"
           },
+          "code": "\tquery := fmt.Sprintf(\"SELECT * FROM users WHERE id = %s\", id)",
           "controlType": "technical",
           "title": "SQL query construction using format string",
           "verificationMethod": "automated"
@@ -93,6 +94,7 @@
               }
             ]
           },
+          "code": "\tdata, err := os.ReadFile(filePath)",
           "controlType": "technical",
           "title": "File path provided as taint input",
           "verificationMethod": "automated"
@@ -130,6 +132,7 @@
             ],
             "severity": "warning"
           },
+          "code": "\th := md5.New()",
           "controlType": "technical",
           "title": "Detect the usage of MD5 or SHA1",
           "verificationMethod": "automated"
@@ -173,6 +176,7 @@
             ],
             "severity": "error"
           },
+          "code": "\tdbPassword = \"supersecret123\"",
           "title": "Look for hard coded credentials",
           "verificationMethod": "automated"
         }
