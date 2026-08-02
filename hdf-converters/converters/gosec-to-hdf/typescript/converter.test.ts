@@ -200,12 +200,30 @@ describe('gosec to HDF converter', async () => {
       expect(hdf.baselines[0]!.requirements[0]!.tags?.['nist']).toEqual(['SI-2', 'RA-5']);
     });
 
-    it('should include CWE object in tags', async () => {
+    it('should populate first-class cwe[] and drop the cwe tag', async () => {
       const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
       const g304 = hdf.baselines[0]!.requirements.find(r => r.id === 'G304');
-      const cweTag = g304?.tags?.['cwe'] as { id: string; url: string };
-      expect(cweTag?.id).toBe('22');
-      expect(cweTag?.url).toContain('cwe.mitre.org');
+      expect(g304?.cwe).toEqual(['CWE-22']);
+      // Legacy tags.cwe object is removed; tags.nist stays.
+      expect(g304?.tags?.['cwe']).toBeUndefined();
+      expect(g304?.tags?.['nist']).toBeDefined();
+    });
+
+    it('should omit cwe[] when the issue carries no CWE id', async () => {
+      const input = JSON.stringify({
+        'Golang errors': {},
+        Issues: [{
+          severity: 'LOW', confidence: 'HIGH',
+          cwe: { id: '', url: '' },
+          rule_id: 'G000', details: 'No CWE',
+          file: '/app/main.go', code: 'x()\n',
+          line: '1', column: '1', nosec: false, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 5, nosec: 0, found: 1 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.cwe).toBeUndefined();
     });
 
     it('should synthesize a passed placeholder for empty Issues array', async () => {

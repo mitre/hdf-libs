@@ -3,6 +3,9 @@
     {
       "requirements": [
         {
+          "cwe": [
+            "CWE-338"
+          ],
           "descriptions": [
             {
               "data": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
@@ -48,10 +51,6 @@
           "id": "G404",
           "impact": 0.7,
           "tags": {
-            "cwe": {
-              "id": "338",
-              "url": "https://cwe.mitre.org/data/definitions/338.html"
-            },
             "nist": [
               "SC-13"
             ]
@@ -62,6 +61,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-22"
+          ],
           "descriptions": [
             {
               "data": "Potential file inclusion via variable",
@@ -113,10 +115,6 @@
           "id": "G304",
           "impact": 0.5,
           "tags": {
-            "cwe": {
-              "id": "22",
-              "url": "https://cwe.mitre.org/data/definitions/22.html"
-            },
             "nist": [
               "SI-10"
             ]
@@ -127,6 +125,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-276"
+          ],
           "descriptions": [
             {
               "data": "Expect file permissions to be 0600 or less",
@@ -178,10 +179,6 @@
           "id": "G302",
           "impact": 0.5,
           "tags": {
-            "cwe": {
-              "id": "276",
-              "url": "https://cwe.mitre.org/data/definitions/276.html"
-            },
             "nist": [
               "SI-2",
               "RA-5"
@@ -192,6 +189,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-276"
+          ],
           "descriptions": [
             {
               "data": "Expect directory permissions to be 0750 or less",
@@ -219,10 +219,6 @@
           "id": "G301",
           "impact": 0.5,
           "tags": {
-            "cwe": {
-              "id": "276",
-              "url": "https://cwe.mitre.org/data/definitions/276.html"
-            },
             "nist": [
               "SI-2",
               "RA-5"
@@ -233,6 +229,9 @@
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-703"
+          ],
           "descriptions": [
             {
               "data": "Errors unhandled.",
@@ -1172,10 +1171,6 @@
           "id": "G104",
           "impact": 0.3,
           "tags": {
-            "cwe": {
-              "id": "703",
-              "url": "https://cwe.mitre.org/data/definitions/703.html"
-            },
             "nist": [
               "SI-2",
               "RA-5"
