@@ -106,6 +106,25 @@ func synthesizeSnykPurl(ecosystem hdf.Ecosystem, name, version string) string {
 	return fmt.Sprintf("pkg:%s/%s@%s", ecosystem, name, version)
 }
 
+// buildSnykCvss assembles the structured cvss[] entry for a Snyk vulnerability
+// from its cvssScore (base score) and CVSSv3 (base vector, carrying a CVSS:3.1/
+// prefix). Returns nil when the source carries neither so the field is omitted.
+func buildSnykCvss(v SnykVuln) []hdf.Cvss {
+	if v.CvssScore == 0 && v.CVSSv3 == "" {
+		return nil
+	}
+	var scorePtr *float64
+	if v.CvssScore != 0 {
+		s := v.CvssScore
+		scorePtr = &s
+	}
+	return []hdf.Cvss{shared.BuildCvss(shared.CvssInput{
+		Version:    shared.CvssVersionFromVector(v.CVSSv3),
+		BaseScore:  scorePtr,
+		BaseVector: v.CVSSv3,
+	})}
+}
+
 // buildRequirement converts a group of vulnerabilities sharing an ID into one
 // EvaluatedRequirement with multiple results.
 func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageManager string) hdf.EvaluatedRequirement {
@@ -115,11 +134,10 @@ func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageMan
 	cciTags := cci.NISTToCCI(nist)
 
 	extras := map[string]interface{}{}
-	if len(rep.Identifiers.CWE) > 0 {
-		extras["cweid"] = rep.Identifiers.CWE
-	}
+	// requirement.id is a SNYK/npm advisory id, not the CVE, so tags.cve is the
+	// CVE's home. (Interim pending an identifiers[] schema field.)
 	if len(rep.Identifiers.CVE) > 0 {
-		extras["cveid"] = rep.Identifiers.CVE
+		extras["cve"] = rep.Identifiers.CVE
 	}
 	if len(rep.Identifiers.GHSA) > 0 {
 		extras["ghsaid"] = rep.Identifiers.GHSA
@@ -149,6 +167,13 @@ func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageMan
 		Descriptions:       descriptions,
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+
+	if cvss := buildSnykCvss(rep); len(cvss) > 0 {
+		req.Cvss = cvss
+	}
+	if len(rep.Identifiers.CWE) > 0 {
+		req.Cwe = rep.Identifiers.CWE
 	}
 
 	name := rep.PackageName

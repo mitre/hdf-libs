@@ -198,15 +198,16 @@ func TestConvertSnyk_Tags(t *testing.T) {
 	// npm:adm-zip:20180415 has CVE, CWE, and GHSA identifiers
 	req := shared.MustFindRequirement(t, reqs, "npm:adm-zip:20180415")
 
-	// cweid
-	cweid, ok := req.Tags["cweid"].([]string)
-	require.True(t, ok, "cweid should be []string")
-	assert.Contains(t, cweid, "CWE-29")
+	// CWE is now first-class (req.Cwe), not a tag
+	_, hasCweid := req.Tags["cweid"]
+	assert.False(t, hasCweid, "cweid tag removed — CWE now lives in requirement.cwe[]")
 
-	// cveid
-	cveid, ok := req.Tags["cveid"].([]string)
-	require.True(t, ok, "cveid should be []string")
-	assert.Contains(t, cveid, "CVE-2018-1002204")
+	// cve (renamed from cveid); CVE is not the requirement.id so it lives here
+	cve, ok := req.Tags["cve"].([]string)
+	require.True(t, ok, "cve should be []string")
+	assert.Contains(t, cve, "CVE-2018-1002204")
+	_, hasCveid := req.Tags["cveid"]
+	assert.False(t, hasCveid, "cveid tag renamed to cve")
 
 	// ghsaid
 	ghsaid, ok := req.Tags["ghsaid"].([]string)
@@ -222,6 +223,71 @@ func TestConvertSnyk_Tags(t *testing.T) {
 	cciSlice := hdfutil.SafeStringSlice(req.Tags["cci"])
 	require.NotNil(t, cciSlice, "cci should be present")
 	assert.NotEmpty(t, cciSlice)
+}
+
+// ---- Structured CVSS ----
+
+func TestConvertSnyk_Cvss(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
+
+	require.Len(t, req.Cvss, 1)
+	cv := req.Cvss[0]
+	assert.Equal(t, hdf.The31, cv.Version)
+	require.NotNil(t, cv.BaseScore)
+	assert.InDelta(t, 7.4, *cv.BaseScore, 0.001)
+	require.NotNil(t, cv.BaseVector)
+	assert.Equal(t, "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N", *cv.BaseVector)
+	require.NotNil(t, cv.BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityHigh, *cv.BaseSeverity)
+
+	// Old CVSS-related tags must not be present
+	_, hasBaseScore := req.Tags["cvss_base_score"]
+	assert.False(t, hasBaseScore)
+	_, hasCvss31 := req.Tags["cvss31"]
+	assert.False(t, hasCvss31)
+}
+
+// ---- Structured CWE ----
+
+func TestConvertSnyk_Cwe(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
+
+	assert.Equal(t, []string{"CWE-22"}, req.Cwe)
+	// NIST mapping (derived from CWE) stays as a tag
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
+	assert.NotEmpty(t, nist)
+}
+
+// ---- buildSnykCvss branch coverage ----
+
+func TestBuildSnykCvss_Branches(t *testing.T) {
+	// Both absent → omitted
+	assert.Nil(t, buildSnykCvss(SnykVuln{}))
+
+	// Score present, vector absent → default version 3.1, no vector, no severity band absent-check
+	scoreOnly := buildSnykCvss(SnykVuln{CvssScore: 5.5})
+	require.Len(t, scoreOnly, 1)
+	assert.Equal(t, hdf.The31, scoreOnly[0].Version)
+	require.NotNil(t, scoreOnly[0].BaseScore)
+	assert.InDelta(t, 5.5, *scoreOnly[0].BaseScore, 0.001)
+	assert.Nil(t, scoreOnly[0].BaseVector)
+
+	// Vector present, score zero → vector set, no base score
+	vectorOnly := buildSnykCvss(SnykVuln{CVSSv3: "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"})
+	require.Len(t, vectorOnly, 1)
+	assert.Equal(t, hdf.The30, vectorOnly[0].Version)
+	assert.Nil(t, vectorOnly[0].BaseScore)
+	require.NotNil(t, vectorOnly[0].BaseVector)
 }
 
 // ---- Status: all results are Failed ----
