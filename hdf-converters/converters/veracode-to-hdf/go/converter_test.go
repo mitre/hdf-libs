@@ -521,6 +521,126 @@ func TestBuildSCACode_EmptyFilePaths(t *testing.T) {
 	assert.NotContains(t, code, `"file_paths": null`)
 }
 
+// SCA CVE requirements carry structured cvss[] built from the vulnerability's
+// bare numeric cvss_score (no vector, version defaults to 3.1), with the derived
+// severity band. The old freetext scoring lives nowhere else on the requirement.
+func TestConvertVeracodeToHDF_CVSS(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	byID := func(id string) *hdf.EvaluatedRequirement {
+		for i := range result.Baselines[0].Requirements {
+			if result.Baselines[0].Requirements[i].ID == id {
+				return &result.Baselines[0].Requirements[i]
+			}
+		}
+		return nil
+	}
+
+	medium := byID("CVE-2012-5783")
+	require.NotNil(t, medium)
+	require.Len(t, medium.Cvss, 1, "CVE requirement should carry one cvss entry")
+	require.NotNil(t, medium.Cvss[0].BaseScore)
+	assert.InDelta(t, 5.8, *medium.Cvss[0].BaseScore, 0.0001)
+	assert.Equal(t, hdf.The31, medium.Cvss[0].Version)
+	require.NotNil(t, medium.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityMedium, *medium.Cvss[0].BaseSeverity)
+	assert.Nil(t, medium.Cvss[0].BaseVector, "Veracode SCA carries no vector")
+
+	high := byID("CVE-2021-42550")
+	require.NotNil(t, high)
+	require.Len(t, high.Cvss, 1)
+	require.NotNil(t, high.Cvss[0].BaseScore)
+	assert.InDelta(t, 8.5, *high.Cvss[0].BaseScore, 0.0001)
+	require.NotNil(t, high.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityHigh, *high.Cvss[0].BaseSeverity)
+}
+
+// The interim tags.cve migration does not apply to Veracode: the CVE is already
+// the requirement.id on SCA findings, so no duplicate tags.cve is emitted.
+func TestConvertVeracodeToHDF_NoCveTag(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	for _, req := range result.Baselines[0].Requirements {
+		_, hasCve := req.Tags["cve"]
+		assert.False(t, hasCve, "requirement %q should not carry a tags.cve duplicate", req.ID)
+	}
+}
+
+// CWE identifiers are first-class on both static (CWE) and SCA (CVE) requirements:
+// static category cweid attributes are prefixed to CWE-NN; SCA vulns already carry
+// the prefix. The old tags.cweid / tags.cwe freetext is gone; the NIST mapping stays.
+func TestConvertVeracodeToHDF_CweFirstClass(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	byID := func(id string) *hdf.EvaluatedRequirement {
+		for i := range result.Baselines[0].Requirements {
+			if result.Baselines[0].Requirements[i].ID == id {
+				return &result.Baselines[0].Requirements[i]
+			}
+		}
+		return nil
+	}
+
+	static := byID("18")
+	require.NotNil(t, static)
+	assert.Equal(t, []string{"CWE-78"}, static.Cwe)
+	_, hasCweid := static.Tags["cweid"]
+	assert.False(t, hasCweid, "static requirement should not carry tags.cweid")
+	assert.NotEmpty(t, static.Tags["nist"], "NIST mapping must be preserved")
+
+	cve := byID("CVE-2012-5783")
+	require.NotNil(t, cve)
+	assert.Equal(t, []string{"CWE-20"}, cve.Cwe)
+	_, hasCwe := cve.Tags["cwe"]
+	assert.False(t, hasCwe, "CVE requirement should not carry tags.cwe")
+	assert.NotEmpty(t, cve.Tags["nist"], "NIST mapping must be preserved")
+
+	// A CVE vulnerability with an empty cwe_id emits no cwe[].
+	noCwe := byID("CVE-2014-3577")
+	require.NotNil(t, noCwe)
+	assert.Nil(t, noCwe.Cwe, "CVE with empty cwe_id should leave cwe[] unset")
+}
+
+// buildVeracodeCvss branch coverage: score present, component fallback, both
+// absent, and non-numeric — including the field-absent (no entry) paths.
+func TestBuildVeracodeCvss(t *testing.T) {
+	t.Run("vulnerability score present", func(t *testing.T) {
+		cvss := buildVeracodeCvss(Vulnerability{CVSSScore: "7.5"}, nil)
+		require.Len(t, cvss, 1)
+		require.NotNil(t, cvss[0].BaseScore)
+		assert.InDelta(t, 7.5, *cvss[0].BaseScore, 0.0001)
+		assert.Equal(t, hdf.The31, cvss[0].Version)
+	})
+
+	t.Run("falls back to component max_cvss_score", func(t *testing.T) {
+		cvss := buildVeracodeCvss(
+			Vulnerability{CVSSScore: ""},
+			[]Component{{MaxCVSSScore: ""}, {MaxCVSSScore: "6.4"}},
+		)
+		require.Len(t, cvss, 1)
+		require.NotNil(t, cvss[0].BaseScore)
+		assert.InDelta(t, 6.4, *cvss[0].BaseScore, 0.0001)
+	})
+
+	t.Run("no score anywhere yields no entry", func(t *testing.T) {
+		assert.Nil(t, buildVeracodeCvss(Vulnerability{CVSSScore: ""}, []Component{{MaxCVSSScore: ""}}))
+		assert.Nil(t, buildVeracodeCvss(Vulnerability{CVSSScore: ""}, nil))
+	})
+
+	t.Run("non-numeric score yields no entry", func(t *testing.T) {
+		assert.Nil(t, buildVeracodeCvss(Vulnerability{CVSSScore: "not-a-number"}, nil))
+	})
+}
+
 func TestConvertVeracodeToHDF_VerificationMethod(t *testing.T) {
 	input := loadFixture(t, "veracode.xml")
 	result, err := ConvertVeracodeToHDF(input, testConverterVersion)

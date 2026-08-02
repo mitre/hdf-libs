@@ -14,10 +14,12 @@
 import { parseXml, parseTimestamp } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildCvss, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Cvss,
   Description,
   RequirementResult,
 } from '@mitre/hdf-schema';
@@ -109,26 +111,6 @@ function formatRecommendations(rec: Record<string, unknown> | undefined): string
     }
   }
   return parts.join('\n');
-}
-
-/** Format CWE data for the cweid tag. */
-function formatCWEData(cwes: Record<string, unknown>[]): string {
-  return cwes.map(c => {
-    let entry = `CWE-${attr(c, 'cweid')}: ${attr(c, 'cwename')}`;
-    const categories: [string, string][] = [
-      ['pcrirelated', attr(c, 'pcirelated')],
-      ['owasp', attr(c, 'owasp')],
-      ['sans', attr(c, 'sans')],
-      ['certc', attr(c, 'certc')],
-      ['certcpp', attr(c, 'certcpp')],
-      ['certjava', attr(c, 'certjava')],
-      ['owaspmobile', attr(c, 'owaspmobile')],
-    ];
-    for (const [name, val] of categories) {
-      if (val) entry += `${name}: ${val}\n`;
-    }
-    return entry;
-  }).join('\n');
 }
 
 /** Format CWE descriptions for the cweDescription tag. */
@@ -289,12 +271,14 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
 
   // Build tags
   const extras: Record<string, unknown> = {};
-  const cweData = formatCWEData(cwes);
-  if (cweData) extras.cweid = cweData;
   const cweDescStr = formatCWEDesc(cwes);
   if (cweDescStr) extras.cweDescription = cweDescStr;
 
   const tags = buildNistCciTags(nist, cciTags, extras);
+
+  // First-class CWE identifiers ("CWE-NN"). The category cweid attributes are
+  // bare numbers; prefix them to match the schema's CWE-N convention.
+  const cweList = cweIDs.map(id => `CWE-${id}`);
 
   // Build descriptions
   const descriptions: Description[] = [
@@ -343,6 +327,9 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+  if (cweList.length > 0) {
+    req.cwe = cweList;
+  }
   if (codeLines.length > 0) {
     req.code = codeLines.join('\n');
   }
@@ -400,6 +387,30 @@ function buildCVERequirements(
   });
 }
 
+/**
+ * Assemble the structured CVSS entry for an SCA CVE. Veracode reports a bare
+ * numeric base score (no vector, no version), so the version defaults to 3.1 via
+ * the shared helper. When the vulnerability itself carries no cvss_score, the
+ * first affected component's max_cvss_score is used as a fallback. A missing or
+ * non-numeric score yields no entry.
+ */
+function buildVeracodeCvss(vuln: Record<string, unknown>, components: Record<string, unknown>[]): Cvss[] {
+  let scoreStr = attr(vuln, 'cvss_score');
+  if (!scoreStr) {
+    for (const comp of components) {
+      const max = attr(comp, 'max_cvss_score');
+      if (max) {
+        scoreStr = max;
+        break;
+      }
+    }
+  }
+  if (!scoreStr) return [];
+  const score = Number(scoreStr);
+  if (!Number.isFinite(score)) return [];
+  return [buildCvss({ version: cvssVersionFromString(undefined), baseScore: score })];
+}
+
 /** Build a single CVE-based requirement. */
 function buildCVERequirement(
   vuln: Record<string, unknown>,
@@ -417,9 +428,7 @@ function buildCVERequirement(
     nist = DEFAULT_REMEDIATION_NIST_TAGS;
   }
   const cciTags = nistToCci(nist);
-  const extras: Record<string, unknown> = {};
-  if (cweID) extras.cwe = cweID;
-  const tags = buildNistCciTags(nist, cciTags, extras);
+  const tags = buildNistCciTags(nist, cciTags, {});
 
   // One result per affected component
   const startTime = parseVeracodeTimestamp(firstBuildDate) ?? new Date();
@@ -454,6 +463,17 @@ function buildCVERequirement(
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  const cvss = buildVeracodeCvss(vuln, components);
+  if (cvss.length > 0) {
+    req.cvss = cvss;
+  }
+
+  // CVE is already the requirement.id, so no interim tags.cve is emitted; the
+  // CWE moves to the first-class cwe[] (already in "CWE-NN" form on SCA vulns).
+  if (cweID) {
+    req.cwe = [cweID];
+  }
 
   // SCA vulnerabilities have no source snippet or function prototype; the richest
   // faithful representation is the vulnerability/component entry serialized as

@@ -13,6 +13,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -402,19 +403,21 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultRemediationNIST)
 	cciTags := cci.NISTToCCI(nist)
 
-	// Build CWE data string for tags
-	cweData := formatCWEData(cat.CWEs)
 	cweDescStr := formatCWEDesc(cat.CWEs)
 
 	extras := map[string]interface{}{}
-	if cweData != "" {
-		extras["cweid"] = cweData
-	}
 	if cweDescStr != "" {
 		extras["cweDescription"] = cweDescStr
 	}
 
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
+
+	// First-class CWE identifiers ("CWE-NN"). The category cweid attributes are
+	// bare numbers; prefix them to match the schema's CWE-N convention.
+	cweList := make([]string, 0, len(cweIDs))
+	for _, id := range cweIDs {
+		cweList = append(cweList, "CWE-"+id)
+	}
 
 	// Build descriptions
 	descriptions := []hdf.Description{
@@ -458,6 +461,10 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 		Descriptions:       descriptions,
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+
+	if len(cweList) > 0 {
+		req.Cwe = cweList
 	}
 
 	if sourceRef != "" {
@@ -579,12 +586,7 @@ func buildCVERequirement(vuln Vulnerability, components []Component, firstBuildD
 		nist = shared.DefaultRemediationNIST
 	}
 	cciTags := cci.NISTToCCI(nist)
-
-	extras := map[string]interface{}{}
-	if vuln.CWEID != "" {
-		extras["cwe"] = vuln.CWEID
-	}
-	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
+	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, nil)
 
 	// Build results: one per affected component
 	results := make([]hdf.RequirementResult, len(components))
@@ -620,6 +622,16 @@ func buildCVERequirement(vuln Vulnerability, components []Component, firstBuildD
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 
+	if cvss := buildVeracodeCvss(vuln, components); len(cvss) > 0 {
+		req.Cvss = cvss
+	}
+
+	// CVE is already the requirement.id, so no interim tags.cve is emitted; the
+	// CWE moves to the first-class cwe[] (already in "CWE-NN" form on SCA vulns).
+	if vuln.CWEID != "" {
+		req.Cwe = []string{vuln.CWEID}
+	}
+
 	if sourceRef != "" {
 		req.SourceLocation = &hdf.SourceLocation{
 			Ref: &sourceRef,
@@ -633,6 +645,34 @@ func buildCVERequirement(vuln Vulnerability, components []Component, firstBuildD
 	req.Code = &code
 
 	return req
+}
+
+// buildVeracodeCvss assembles the structured CVSS entry for an SCA CVE. Veracode
+// reports a bare numeric base score (no vector, no version), so the version
+// defaults to 3.1 via the shared helper. When the vulnerability itself carries
+// no cvss_score, the first affected component's max_cvss_score is used as a
+// fallback. A missing or non-numeric score yields no entry.
+func buildVeracodeCvss(vuln Vulnerability, components []Component) []hdf.Cvss {
+	scoreStr := vuln.CVSSScore
+	if scoreStr == "" {
+		for _, comp := range components {
+			if comp.MaxCVSSScore != "" {
+				scoreStr = comp.MaxCVSSScore
+				break
+			}
+		}
+	}
+	if scoreStr == "" {
+		return nil
+	}
+	score, err := strconv.ParseFloat(scoreStr, 64)
+	if err != nil {
+		return nil
+	}
+	return []hdf.Cvss{shared.BuildCvss(shared.CvssInput{
+		Version:   shared.CvssVersionFromString(""),
+		BaseScore: &score,
+	})}
 }
 
 // scaCodeComponent is the JSON shape of an affected component embedded in a CVE
@@ -748,31 +788,6 @@ func formatRecommendations(rec Recommendations) string {
 				parts = append(parts, b.Text)
 			}
 		}
-	}
-	return strings.Join(parts, "\n")
-}
-
-// formatCWEData formats CWE entries with their category metadata for the cweid tag.
-func formatCWEData(cwes []CWE) string {
-	var parts []string
-	for _, c := range cwes {
-		entry := fmt.Sprintf("CWE-%s: %s", c.CWEID, c.CWEName)
-
-		categories := []struct{ name, val string }{
-			{"pcrirelated", c.PCIRelated},
-			{"owasp", c.OWASP},
-			{"sans", c.SANS},
-			{"certc", c.CERTC},
-			{"certcpp", c.CERTCPP},
-			{"certjava", c.CERTJava},
-			{"owaspmobile", c.OWASPMobile},
-		}
-		for _, cat := range categories {
-			if cat.val != "" {
-				entry += fmt.Sprintf("%s: %s\n", cat.name, cat.val)
-			}
-		}
-		parts = append(parts, entry)
 	}
 	return strings.Join(parts, "\n")
 }
