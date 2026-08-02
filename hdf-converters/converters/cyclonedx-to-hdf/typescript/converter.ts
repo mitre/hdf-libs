@@ -18,6 +18,7 @@ import type {
   EvaluatedRequirement,
   Checksum,
   RequirementResult,
+  Version as CvssVersion,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -152,7 +153,7 @@ function maxImpact(ratings: CycloneDXRating[]): number {
 function cvssVersionFromMethod(
   method: string | undefined,
   vector: string | undefined
-) {
+): CvssVersion {
   if (vector !== undefined && vector.startsWith('CVSS:')) {
     return cvssVersionFromVector(vector);
   }
