@@ -75,8 +75,9 @@ func NewRootCmd() *cobra.Command {
 	var gf GlobalFlags
 
 	cmd := &cobra.Command{
-		Use:   "hdf",
-		Short: "Work with Heimdall Data Format (HDF) files",
+		Use:     "hdf",
+		Version: version,
+		Short:   "Work with Heimdall Data Format (HDF) files",
 		Long: `hdf is a CLI tool for working with Heimdall Data Format (HDF) documents.
 
 HDF is a standardized format for security assessments covering the full
@@ -116,6 +117,14 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.PersistentFlags().StringVar(&gf.SchemaDirFlag, "schema-dir", "", "Load schemas from directory instead of embedded (for development)")
 	cmd.PersistentFlags().BoolVarP(&gf.FailFast, "fail-fast", "F", false, "Abort on first file that fails instead of continuing")
 	cmd.PersistentFlags().BoolVar(&gf.NoHeaders, "no-headers", false, "Suppress column headers in table output")
+
+	// Enable cobra's built-in --version (from the Version field above) and give
+	// it the conventional -v shorthand. The output mirrors the `hdf version`
+	// subcommand's core string, sharing the same build-time version var.
+	cmd.InitDefaultVersionFlag()
+	if f := cmd.Flags().Lookup("version"); f != nil {
+		f.Shorthand = "v"
+	}
 
 	// Add subcommands
 	cmd.AddCommand(NewValidateCmd())
