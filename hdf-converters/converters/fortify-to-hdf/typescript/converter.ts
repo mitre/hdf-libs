@@ -5,6 +5,7 @@ import {
   deriveControlTypeFromTags,
   inputChecksum,
   buildNistCciTags,
+  mapCWEToNIST,
   limitArray,
   stripHTML,
   ensureArray,
@@ -32,9 +33,15 @@ import {
 const NIST_REFERENCE_NAME =
   'Standards Mapping - NIST Special Publication 800-53 Revision 4';
 
+// CWE reference name used by Fortify in Description.References
+const CWE_REFERENCE_NAME =
+  'Standards Mapping - Common Weakness Enumeration';
 
 // Regex to match NIST control identifiers like SI-10, AC-2
 const NIST_PATTERN = /[a-zA-Z]{2}-\d+/g;
+
+// Regex to match the numeric CWE IDs in a title like "CWE ID 22, CWE ID 73"
+const CWE_ID_PATTERN = /\d+/g;
 
 // --- FVDL XML types ---
 
@@ -193,6 +200,32 @@ function extractNISTFromReferences(refs: FVDLReference[]): string[] {
   return [];
 }
 
+// Pull CWE identifiers from the Common Weakness Enumeration reference, returning
+// them in "CWE-NN" form (e.g. ["CWE-22","CWE-73"]).
+function extractCWEFromReferences(refs: FVDLReference[]): string[] {
+  for (const ref of refs) {
+    if (ref.Author === CWE_REFERENCE_NAME) {
+      const matches = ref.Title?.match(CWE_ID_PATTERN);
+      if (matches && matches.length > 0) {
+        return matches.map(m => `CWE-${m}`);
+      }
+    }
+  }
+  return [];
+}
+
+// Append the NIST controls implied by cweIDs to the native NIST tags, preserving
+// native order and skipping duplicates.
+function mergeCweNist(nist: string[], cweIDs: string[]): string[] {
+  const merged = [...nist];
+  for (const ctrl of mapCWEToNIST(cweIDs, [])) {
+    if (!merged.includes(ctrl)) {
+      merged.push(ctrl);
+    }
+  }
+  return merged;
+}
+
 function formatSnippet(snippet: FVDLSnippet): string {
   const text = (snippet.Text ?? '').trim();
   return `Path: ${snippet.File ?? ''}\nStartLine: ${snippet.StartLine ?? ''}, EndLine: ${snippet.EndLine ?? ''}\nCode:\n${text}`;
@@ -261,9 +294,11 @@ function buildRequirement(
   snippetMap: Map<string, FVDLSnippet>,
   startTimeStr: string,
 ): EvaluatedRequirement {
-  // Extract NIST tags from Description References
+  // Extract NIST tags from Description References, then merge in the NIST
+  // controls implied by the CWE mapping so tags.nist reflects both sources.
   const refs = ensureArray(desc.References?.Reference);
-  let nistTags = extractNISTFromReferences(refs);
+  const cweIDs = extractCWEFromReferences(refs);
+  let nistTags = mergeCweNist(extractNISTFromReferences(refs), cweIDs);
   if (nistTags.length === 0) {
     nistTags = [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS];
   }
@@ -290,10 +325,10 @@ function buildRequirement(
     });
   }
 
-  // Impact from the first vulnerability's DefaultSeverity / 5
+  // Impact from the representative instance's per-instance severity / 5.
   let impact = 0;
   if (vulns.length > 0) {
-    const severity = parseFloat(vulns[0]!.ClassInfo?.DefaultSeverity ?? '0');
+    const severity = parseFloat(vulns[0]!.InstanceInfo?.InstanceSeverity ?? '0');
     impact = severity / 5.0;
   }
 
@@ -320,6 +355,10 @@ function buildRequirement(
     results,
     verificationMethod: VerificationMethodEnum.Automated,
   };
+
+  if (cweIDs.length > 0) {
+    req.cwe = cweIDs;
+  }
 
   const controlType = deriveControlTypeFromTags(nistTags);
   if (controlType !== undefined) {

@@ -160,14 +160,36 @@ describe('Fortify to HDF Converter', () => {
       expect(req!.title as string).not.toContain('<Paragraph>');
     });
 
-    it('should compute impact from DefaultSeverity / 5', async () => {
+    it('should compute impact from InstanceSeverity / 5', async () => {
       const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
       const out = parseOutput(await convertFortifyToHdf(fvdl));
       const bl = out.baselines as Array<Record<string, unknown>>;
-      // Path Manipulation has DefaultSeverity=3.0 -> 3.0/5 = 0.6
+      // Path Manipulation has InstanceSeverity=3.0 -> 3.0/5 = 0.6
       const req = findRequirement(bl, '823FE039-A7FE-4AAD-B976-9EC53FFE4A59');
       expect(req).toBeDefined();
       expect(req!.impact).toBe(0.6);
+    });
+
+    it('should populate cwe[] from the CWE reference and merge CWE->NIST', async () => {
+      const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+
+      // "CWE ID 22, CWE ID 73" -> ["CWE-22","CWE-73"].
+      const pathManip = findRequirement(bl, '823FE039-A7FE-4AAD-B976-9EC53FFE4A59');
+      expect(pathManip!.cwe).toEqual(['CWE-22', 'CWE-73']);
+
+      // CWE-497 maps to NIST SI-11; native reference is AC-4, so both appear.
+      const sysInfo = findRequirement(bl, 'FE4EADF2-7055-4C36-863E-5A01C4A0E1A4');
+      expect(sysInfo!.cwe).toEqual(['CWE-497']);
+      const nist = (sysInfo!.tags as Record<string, unknown>).nist as string[];
+      expect(nist).toContain('AC-4');
+      expect(nist).toContain('SI-11');
+
+      // CWE-561 has no NIST mapping: cwe[] set, native NIST untouched.
+      const deadCode = findRequirement(bl, '3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E');
+      expect(deadCode!.cwe).toEqual(['CWE-561']);
+      expect((deadCode!.tags as Record<string, unknown>).nist).toEqual(['SA-11', 'RA-5']);
     });
 
     it('should set default description from Explanation (HTML stripped)', async () => {
@@ -498,6 +520,69 @@ describe('Fortify to HDF Converter', () => {
     const tags = reqs[0]!.tags as Record<string, unknown>;
     const nist = tags.nist as string[];
     expect(nist.length).toBeGreaterThan(0);
+  });
+
+  it('should leave cwe unset when the Description has no CWE reference', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>CN</ClassID><DefaultSeverity>3.0</DefaultSeverity></ClassInfo>
+    <InstanceInfo><InstanceID>I</InstanceID><InstanceSeverity>3.0</InstanceSeverity></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="CN">
+  <Abstract>No CWE</Abstract><Explanation>e</Explanation>
+  <References>
+    <Reference><Title>SI-10</Title><Author>Standards Mapping - NIST Special Publication 800-53 Revision 4</Author></Reference>
+  </References>
+</Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    expect(reqs[0]!.cwe).toBeUndefined();
+    expect((reqs[0]!.tags as Record<string, unknown>).nist).toEqual(['SI-10']);
+  });
+
+  it('should leave cwe unset when the CWE reference has no numeric ID', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>CX</ClassID><DefaultSeverity>3.0</DefaultSeverity></ClassInfo>
+    <InstanceInfo><InstanceID>I</InstanceID><InstanceSeverity>3.0</InstanceSeverity></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="CX">
+  <Abstract>a</Abstract><Explanation>e</Explanation>
+  <References>
+    <Reference><Title>Not applicable</Title><Author>Standards Mapping - Common Weakness Enumeration</Author></Reference>
+  </References>
+</Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    expect(reqs[0]!.cwe).toBeUndefined();
+  });
+
+  it('should derive impact from InstanceSeverity, not DefaultSeverity', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>CDIV</ClassID><DefaultSeverity>5.0</DefaultSeverity></ClassInfo>
+    <InstanceInfo><InstanceID>I</InstanceID><InstanceSeverity>1.0</InstanceSeverity></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="CDIV"><Abstract>Divergent</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    // 1.0/5 = 0.2, NOT DefaultSeverity 5.0/5 = 1.0
+    expect(reqs[0]!.impact).toBe(0.2);
   });
 
   it('should handle description with classID not matching any vulnerability', async () => {
