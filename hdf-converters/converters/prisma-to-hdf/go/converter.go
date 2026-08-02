@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,6 +40,9 @@ type prismaRecord struct {
 	FixStatus         string
 	Published         string
 	VulnerabilityLink string
+	// CVSS is the base score column (numeric, no vector). Compliance/config
+	// rows carry "0.00"; only vulnerability rows carry a real score.
+	CVSS string
 }
 
 // requiredColumns are the CSV header names that must be present.
@@ -168,6 +172,7 @@ func parseCSV(input []byte) ([]prismaRecord, error) {
 			FixStatus:         safeCol(row, colIdx, "Fix Status"),
 			Published:         safeCol(row, colIdx, "Published"),
 			VulnerabilityLink: safeCol(row, colIdx, "Vulnerability Link"),
+			CVSS:              safeCol(row, colIdx, "CVSS"),
 		}
 		records = append(records, rec)
 	}
@@ -241,12 +246,47 @@ func buildRequirement(rec prismaRecord, scanTime time.Time) hdf.EvaluatedRequire
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+	if cvss := buildCvssEntries(rec); cvss != nil {
+		req.Cvss = cvss
+	}
 	if rec.CVEID != "" {
 		if pkg := buildAffectedPackageFromRecord(rec); pkg != nil {
 			req.AffectedPackages = []hdf.AffectedPackage{*pkg}
 		}
 	}
 	return req
+}
+
+// buildCvssEntries maps the CSV CVSS column to a structured cvss[] entry.
+// Prisma emits a bare base score with no vector, so version defaults to 3.1
+// via the shared helper. Non-vulnerability rows carry "0.00" (or blank);
+// only a positive score yields an entry, and the source is the associated CVE.
+func buildCvssEntries(rec prismaRecord) []hdf.Cvss {
+	score, ok := parseCvssScore(rec.CVSS)
+	if !ok {
+		return nil
+	}
+	return []hdf.Cvss{
+		shared.BuildCvss(shared.CvssInput{
+			Version:   shared.CvssVersionFromString(""),
+			BaseScore: &score,
+			Source:    rec.CVEID,
+		}),
+	}
+}
+
+// parseCvssScore parses the CVSS column, returning ok=false for blank,
+// non-numeric, or non-positive scores (the placeholder value on config rows).
+func parseCvssScore(field string) (float64, bool) {
+	s := strings.TrimSpace(field)
+	if s == "" {
+		return 0, false
+	}
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil || v <= 0 {
+		return 0, false
+	}
+	return v, true
 }
 
 // Distro slugs in Prisma look like `redhat-RHEL7`, `debian-buster`,

@@ -361,6 +361,84 @@ func TestConvertPrisma_NoFindings(t *testing.T) {
 	assert.Contains(t, req.Results[0].CodeDesc, "vulnerable components")
 }
 
+// ---- CVSS structured scoring ----
+
+func TestConvertPrisma_Cvss_CVEFinding(t *testing.T) {
+	input := loadFixture(t, "input/minimal.csv")
+	result, err := ConvertPrismaToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	host1 := findBaseline(result.Baselines, "host-1.example.com")
+	require.NotNil(t, host1)
+
+	// CVSS 9.90 → baseScore 9.9, critical band, default version 3.1, source = CVE.
+	req := shared.MustFindRequirement(t, host1.Requirements, "46-CVE-2021-44142")
+	require.Len(t, req.Cvss, 1)
+	cv := req.Cvss[0]
+	require.NotNil(t, cv.BaseScore)
+	assert.InDelta(t, 9.9, *cv.BaseScore, 0.001)
+	require.NotNil(t, cv.BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityCritical, *cv.BaseSeverity)
+	assert.Equal(t, hdf.The31, cv.Version)
+	assert.Nil(t, cv.BaseVector, "Prisma CSV carries no CVSS vector")
+	require.NotNil(t, cv.Source)
+	assert.Equal(t, "CVE-2021-44142", *cv.Source)
+
+	// CVSS 3.30 → baseScore 3.3, low band.
+	req = shared.MustFindRequirement(t, host1.Requirements, "46-CVE-2016-2226")
+	require.Len(t, req.Cvss, 1)
+	require.NotNil(t, req.Cvss[0].BaseScore)
+	assert.InDelta(t, 3.3, *req.Cvss[0].BaseScore, 0.001)
+	require.NotNil(t, req.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityLow, *req.Cvss[0].BaseSeverity)
+}
+
+func TestConvertPrisma_Cvss_ComplianceFindingOmitted(t *testing.T) {
+	input := loadFixture(t, "input/minimal.csv")
+	result, err := ConvertPrismaToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	host1 := findBaseline(result.Baselines, "host-1.example.com")
+	require.NotNil(t, host1)
+
+	// Compliance finding carries CVSS "0.00" → no meaningful score → omitted.
+	req := shared.MustFindRequirement(t, host1.Requirements, "60522-redhat-RHEL7-high")
+	assert.Nil(t, req.Cvss)
+}
+
+const cvssHeader = "Hostname,Distro,CVE ID,Compliance ID,Type,Severity,Packages,Source Package,Package Version,Package License,CVSS,Fix Status,Vulnerability Tags,Description,Cause,Published,Services,Cluster,Vulnerability Link\n"
+
+func firstReqCvss(t *testing.T, csv string) []hdf.Cvss {
+	t.Helper()
+	result, err := ConvertPrismaToHDF([]byte(cvssHeader+csv), testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	return result.Baselines[0].Requirements[0].Cvss
+}
+
+func TestConvertPrisma_Cvss_EmptyScoreOmitted(t *testing.T) {
+	// CVE row with a blank CVSS column → omitted (no coercion to 0).
+	row := "h,redhat-RHEL7,CVE-2026-1,1,image,high,pkg,,1.0,,,,,d,,,,,\n"
+	assert.Nil(t, firstReqCvss(t, row))
+}
+
+func TestConvertPrisma_Cvss_NonNumericOmitted(t *testing.T) {
+	// Defensive: a non-numeric CVSS token is treated as "no score".
+	row := "h,redhat-RHEL7,CVE-2026-1,1,image,high,pkg,,1.0,,n/a,,,d,,,,,\n"
+	assert.Nil(t, firstReqCvss(t, row))
+}
+
+func TestConvertPrisma_Cvss_PositiveScoreOnNonCVERow(t *testing.T) {
+	// A positive score with no CVE emits cvss[] but leaves source unset.
+	row := "h,redhat-RHEL7,,60522,linux,high,,,,,7.50,,,d,,,,,\n"
+	cvss := firstReqCvss(t, row)
+	require.Len(t, cvss, 1)
+	require.NotNil(t, cvss[0].BaseScore)
+	assert.InDelta(t, 7.5, *cvss[0].BaseScore, 0.001)
+	assert.Nil(t, cvss[0].Source)
+}
+
 func TestSnapshots(t *testing.T) {
 	// Prisma Cloud export carries no scan time.
 	shared.RunSnapshotTests(t, "prisma-to-hdf", func(input []byte) (interface{}, error) {

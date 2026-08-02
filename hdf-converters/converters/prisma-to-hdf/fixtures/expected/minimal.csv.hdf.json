@@ -41,6 +41,14 @@
               "version": "4.10.16-15.el7_9"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 9.9,
+              "baseSeverity": "critical",
+              "source": "CVE-2021-44142",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Samba out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution.",
@@ -79,6 +87,14 @@
               "ecosystem": "rpm",
               "name": "gcc",
               "version": "4.8.5-44.el7"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 3.3,
+              "baseSeverity": "low",
+              "source": "CVE-2016-2226",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -162,6 +178,14 @@
               "version": "1.17.1"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "source": "CVE-2021-38297",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Go vulnerability CVE-2021-38297.",
@@ -201,6 +225,14 @@
               "fixedInVersion": "1.16.5",
               "name": "go",
               "version": "1.14.4"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-33197",
+              "version": "3.1"
             }
           ],
           "descriptions": [
