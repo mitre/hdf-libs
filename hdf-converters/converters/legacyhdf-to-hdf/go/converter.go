@@ -10,50 +10,18 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
-// computeEffectiveStatus derives effectiveStatus from impact and v2 results.
-// Implements InSpec enhanced outcomes precedence:
-//
-//	impact=0 → notApplicable
-//	error > failed > passed > notApplicable > notReviewed
-//
-// See docs/design/status-determination.md for full specification.
+// computeEffectiveStatus derives effectiveStatus from impact and v2 results,
+// via the canonical worst-wins ordering in hdf-utilities (impact=0 →
+// notApplicable; error > failed > passed > notApplicable > notReviewed).
 func computeEffectiveStatus(impact float64, results []hdf.RequirementResult) hdf.ResultStatus {
-	if impact == 0 {
-		return hdf.NotApplicable
+	statuses := make([]string, len(results))
+	for i, r := range results {
+		statuses[i] = string(r.Status)
 	}
-	if len(results) == 0 {
-		return hdf.NotReviewed
-	}
-
-	hasFailed := false
-	hasPassed := false
-	hasNotApplicable := false
-
-	for _, r := range results {
-		switch r.Status {
-		case hdf.Error:
-			return hdf.Error // fail-fast: highest precedence
-		case hdf.Failed:
-			hasFailed = true
-		case hdf.Passed:
-			hasPassed = true
-		case hdf.NotApplicable:
-			hasNotApplicable = true
-		case hdf.NotReviewed:
-			// lowest precedence
-		}
-	}
-
-	if hasFailed {
-		return hdf.Failed
-	}
-	if hasPassed {
-		return hdf.Passed
-	}
-	if hasNotApplicable {
-		return hdf.NotApplicable
-	}
-	return hdf.NotReviewed
+	return hdf.ResultStatus(hdfutil.ComputeEffectiveStatus(hdfutil.EffectiveStatusInput{
+		Impact:         impact,
+		ResultStatuses: statuses,
+	}, time.Time{}))
 }
 
 // normalizeStatus converts v1.0 status values to v2.0 ResultStatus.

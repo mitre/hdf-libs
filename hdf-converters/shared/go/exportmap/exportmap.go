@@ -74,23 +74,17 @@ func StringSlice(v interface{}) []string {
 // --- status roll-up ---
 
 // WorstOfResults returns the most-significant status across a requirement's
-// results[] (lossless — does not consult effectiveStatus). Empty results yield
-// "notReviewed".
+// results[] (lossless — does not consult effectiveStatus), using the canonical
+// worst-wins ordering from hdf-utilities. Empty results yield "notReviewed".
 func WorstOfResults(req map[string]interface{}) string {
 	results, _ := AsSlice(req["results"])
-	precedence := []string{"failed", "error", "passed", "notReviewed", "notApplicable"}
-	present := map[string]bool{}
+	statuses := make([]string, 0, len(results))
 	for _, rRaw := range results {
 		if r, ok := AsMap(rRaw); ok {
-			present[GetStr(r, "status")] = true
+			statuses = append(statuses, GetStr(r, "status"))
 		}
 	}
-	for _, s := range precedence {
-		if present[s] {
-			return s
-		}
-	}
-	return "notReviewed"
+	return hdfutil.WorstStatus(statuses)
 }
 
 // IsFailing reports whether an HDF Result_Status is a failing verdict. Only

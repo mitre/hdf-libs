@@ -1,13 +1,5 @@
+import { computeEffectiveStatus as canonicalEffectiveStatus } from '@mitre/hdf-utilities';
 import type { ChangeReason, RequirementState } from './types.js';
-
-/** Status severity ranking — higher index = worse */
-const STATUS_SEVERITY: readonly string[] = [
-  'notApplicable',
-  'notReviewed',
-  'passed',
-  'failed',
-  'error',
-];
 
 /** Statuses that count as "passing" for fixed/regressed classification */
 const PASSING_STATUSES = new Set(['passed']);
@@ -21,16 +13,18 @@ interface ResultLike {
 
 interface OverrideLike {
   status?: string;
+  appliedAt?: string;
   expiresAt: string;
 }
 
 /**
- * Determine the effective status of a requirement from its results and overrides.
+ * Determine the effective status of a requirement from its results and
+ * overrides, delegating to the canonical shared implementation in
+ * `@mitre/hdf-utilities` (see status-determination.md):
  *
- * Priority:
  * 1. impact === 0 → notApplicable (regardless of results)
- * 2. effectiveStatus field set (and no statusOverrides) → use it
- * 3. Non-expired statusOverrides → use first non-expired
+ * 2. the governing (most recent non-expired) status override's status
+ * 3. effectiveStatus field set (and no statusOverrides) → use it
  * 4. Aggregate results using worst-wins
  * 5. Empty results → notReviewed
  */
@@ -38,46 +32,22 @@ export function computeEffectiveStatus(
   requirement: Record<string, unknown>,
   referenceTimestamp?: string,
 ): string {
-  const impact = requirement['impact'] as number | undefined;
-  if (impact === 0) {
-    return 'notApplicable';
-  }
-
-  const overrides = requirement['statusOverrides'] as OverrideLike[] | undefined;
-  if (overrides && overrides.length > 0) {
-    const refTime = referenceTimestamp ? new Date(referenceTimestamp).getTime() : Date.now();
-    for (const override of overrides) {
-      const expiresAt = new Date(override.expiresAt).getTime();
-      if (expiresAt > refTime && override.status) {
-        return override.status;
-      }
-    }
-    // All overrides expired — fall through to results
-  }
-
-  // If effectiveStatus is set and there are no overrides, use it
-  const effectiveStatus = requirement['effectiveStatus'] as string | undefined;
-  if (effectiveStatus && (!overrides || overrides.length === 0)) {
-    return effectiveStatus;
-  }
-
-  const results = requirement['results'] as ResultLike[] | undefined;
-  if (!results || results.length === 0) {
-    return 'notReviewed';
-  }
-
-  // Worst-wins: find the status with the highest severity index
-  let worstIndex = -1;
-  let worstStatus = 'notReviewed';
-  for (const result of results) {
-    const idx = STATUS_SEVERITY.indexOf(result.status);
-    if (idx > worstIndex) {
-      worstIndex = idx;
-      worstStatus = result.status;
-    }
-  }
-
-  return worstStatus;
+  const results = (requirement['results'] as ResultLike[] | undefined) ?? [];
+  const overrides = (requirement['statusOverrides'] as OverrideLike[] | undefined) ?? [];
+  return canonicalEffectiveStatus(
+    {
+      // A missing impact must not read as 0 (which would force notApplicable).
+      impact: (requirement['impact'] as number | undefined) ?? Number.NaN,
+      effectiveStatus: requirement['effectiveStatus'] as string | undefined,
+      resultStatuses: results.map((r) => r.status),
+      overrides: overrides.map((o) => ({
+        status: o.status,
+        appliedAt: o.appliedAt,
+        expiresAt: o.expiresAt,
+      })),
+    },
+    referenceTimestamp,
+  );
 }
 
 /**

@@ -10,7 +10,7 @@
  * (ECS field names, CIM field names, envelopes) stays in each converter.
  */
 
-import { parseTimestamp } from '@mitre/hdf-utilities';
+import { parseTimestamp, worstStatus } from '@mitre/hdf-utilities';
 import { validateInputSize, parseHdf } from './converterutil.js';
 
 export type Obj = Record<string, unknown>;
@@ -42,19 +42,18 @@ export function stringSlice(v: unknown): string[] {
 
 // --- status roll-up ---
 
-/** Most-significant status across a requirement's results[] (lossless). */
+/**
+ * Most-significant status across a requirement's results[] (lossless), using
+ * the canonical worst-wins ordering from @mitre/hdf-utilities.
+ */
 export function worstOfResults(req: Obj): string {
   const results = asArr(req.results) ?? [];
-  const precedence = ['failed', 'error', 'passed', 'notReviewed', 'notApplicable'];
-  const present = new Set<string>();
+  const statuses: string[] = [];
   for (const rRaw of results) {
     const r = asMap(rRaw);
-    if (r) present.add(getStr(r, 'status'));
+    if (r) statuses.push(getStr(r, 'status'));
   }
-  for (const s of precedence) {
-    if (present.has(s)) return s;
-  }
-  return 'notReviewed';
+  return worstStatus(statuses);
 }
 
 /**
