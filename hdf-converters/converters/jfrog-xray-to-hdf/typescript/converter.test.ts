@@ -80,6 +80,33 @@ describe('jfrog-xray to HDF converter', async () => {
     });
   });
 
+  describe('CODE tab: requirement.code', async () => {
+    it('populates requirement.code with the serialized entry JSON', async () => {
+      const hdf = JSON.parse(await convertJfrogXrayToHdf(loadFixture('jfrog_xray_sample.json'))) as HDFResults;
+      const acorn = hdf.baselines[0]!.requirements.find((r) => r.title?.includes('Acorn regexp.js'));
+      expect(acorn).toBeDefined();
+      expect(acorn!.code).toBeDefined();
+
+      // Indented (2-space) serialization of the source entry object.
+      expect(acorn!.code!.startsWith('{\n  "')).toBe(true);
+
+      const decoded = JSON.parse(acorn!.code!) as {
+        source_comp_id: string;
+        severity: string;
+        component_versions: {
+          fixed_versions: string[];
+          more_details: { cves: Array<{ cvss_v3?: string }> };
+        };
+      };
+      expect(decoded.source_comp_id).toBe('npm://acorn:5.7.3');
+      expect(decoded.severity).toBe('High');
+      expect(decoded.component_versions.fixed_versions).toEqual(['5.7.4', '6.4.1', '7.1.1']);
+      expect(decoded.component_versions.more_details.cves[0]!.cvss_v3).toBe(
+        '7.5/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H',
+      );
+    });
+  });
+
   describe('generator and dataSource', async () => {
     it('should set generator name and version', async () => {
       const hdf = JSON.parse(await convertJfrogXrayToHdf(loadFixture('jfrog_xray_sample.json'))) as HDFResults;

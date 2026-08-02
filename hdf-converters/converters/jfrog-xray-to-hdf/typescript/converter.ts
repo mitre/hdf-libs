@@ -135,6 +135,48 @@ function formatCodeDesc(entry: XrayEntry): string {
 }
 
 /**
+ * Render an Xray entry as the indented JSON blob carried in the requirement's
+ * code field (the ionchannel pattern), so Heimdall's CODE tab shows the raw
+ * finding. The object is reconstructed with a fixed key order and full field set
+ * matching the Go twin's struct marshal, keeping Go and TS byte-identical
+ * (verified by the shared snapshot test).
+ */
+function marshalEntryCode(entry: XrayEntry): string {
+  const cv = entry.component_versions;
+  const md = cv?.more_details;
+  const cves = md?.cves;
+  const codeObject = {
+    id: entry.id ?? '',
+    severity: entry.severity ?? '',
+    summary: entry.summary ?? '',
+    issue_type: entry.issue_type ?? '',
+    provider: entry.provider ?? '',
+    component: entry.component ?? '',
+    source_id: entry.source_id ?? '',
+    source_comp_id: entry.source_comp_id ?? '',
+    component_versions: {
+      id: cv?.id ?? '',
+      vulnerable_versions: cv?.vulnerable_versions ?? null,
+      fixed_versions: cv?.fixed_versions ?? null,
+      more_details: {
+        cves: cves
+          ? cves.map((c) => ({
+              cve: c.cve ?? '',
+              cwe: c.cwe ?? null,
+              cvss_v2: c.cvss_v2 ?? '',
+              cvss_v3: c.cvss_v3 ?? '',
+            }))
+          : null,
+        description: md?.description ?? '',
+        provider: md?.provider ?? '',
+      },
+    },
+    edited: entry.edited ?? '',
+  };
+  return JSON.stringify(codeObject, null, 2);
+}
+
+/**
  * Builds a single EvaluatedRequirement from a group of entries sharing an ID.
  */
 function buildRequirement(entryID: string, entries: XrayEntry[], scanTime: Date): EvaluatedRequirement {
@@ -172,6 +214,7 @@ function buildRequirement(entryID: string, entries: XrayEntry[], scanTime: Date)
     results,
     { tags }
   ) as EvaluatedRequirement;
+  req.code = marshalEntryCode(rep);
   const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {
     req.controlType = controlType;

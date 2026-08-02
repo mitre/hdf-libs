@@ -181,6 +181,22 @@ func formatCodeDesc(entry XrayEntry) string {
 	return strings.ReplaceAll(result, ",", ", ")
 }
 
+// marshalEntryCode renders an Xray entry as the indented JSON blob carried in
+// the requirement's code field (the ionchannel pattern), so Heimdall's CODE tab
+// shows the raw finding. HTML escaping is off so `<` in a version range survives
+// as itself; the struct's fixed field order matches the TS twin's reconstructed
+// object, keeping Go and TS byte-identical (verified by the shared snapshot test).
+func marshalEntryCode(entry XrayEntry) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(entry); err != nil {
+		return "{}"
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
+}
+
 // groupByID groups entries by their effective ID, preserving insertion order.
 func groupByID(entries []XrayEntry) ([]string, map[string][]XrayEntry) {
 	order := []string{}
@@ -231,6 +247,7 @@ func buildRequirement(entryID string, entries []XrayEntry, scanTime time.Time) h
 		Impact:             getImpact(rep.Severity),
 		Tags:               tags,
 		Descriptions:       descriptions,
+		Code:               hdfutil.Ptr(marshalEntryCode(rep)),
 		Results:            results,
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),

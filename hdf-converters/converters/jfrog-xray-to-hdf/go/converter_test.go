@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -327,6 +328,41 @@ func TestGetImpact(t *testing.T) {
 			assert.InDelta(t, tc.expected, getImpact(tc.severity), 0.001)
 		})
 	}
+}
+
+// ---- CODE tab: requirement.code carries the serialized entry ----
+
+func findRequirementByTitle(reqs []hdf.EvaluatedRequirement, substr string) *hdf.EvaluatedRequirement {
+	for i := range reqs {
+		if reqs[i].Title != nil && strings.Contains(*reqs[i].Title, substr) {
+			return &reqs[i]
+		}
+	}
+	return nil
+}
+
+func TestConvertJfrogXray_CodeContainsEntryJSON(t *testing.T) {
+	input := loadFixture(t, "input/jfrog_xray_sample.json")
+	result, err := ConvertJfrogXrayToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	acorn := findRequirementByTitle(result.Baselines[0].Requirements, "Acorn regexp.js")
+	require.NotNil(t, acorn, "expected the acorn requirement")
+	require.NotNil(t, acorn.Code, "requirement.code must be populated for the Heimdall CODE tab")
+
+	// Indented (2-space) serialization of the source entry object.
+	assert.True(t, strings.HasPrefix(*acorn.Code, "{\n  \""), "code must be indented JSON")
+
+	// The serialized code must round-trip to the source entry.
+	var decoded XrayEntry
+	require.NoError(t, json.Unmarshal([]byte(*acorn.Code), &decoded))
+	assert.Equal(t, "npm://acorn:5.7.3", decoded.SourceCompID)
+	assert.Equal(t, "High", decoded.Severity)
+	assert.Equal(t, []string{"5.7.4", "6.4.1", "7.1.1"}, decoded.ComponentVersions.FixedVersions)
+	require.Len(t, decoded.ComponentVersions.MoreDetails.CVEs, 1)
+	assert.Equal(t,
+		"7.5/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+		decoded.ComponentVersions.MoreDetails.CVEs[0].CvssV3)
 }
 
 func TestSnapshots(t *testing.T) {
