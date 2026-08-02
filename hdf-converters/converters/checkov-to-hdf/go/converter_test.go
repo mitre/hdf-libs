@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -241,6 +242,109 @@ func TestConvertCheckovToHDF_CodeDesc(t *testing.T) {
 			assert.Contains(t, r.CodeDesc, "vpc")
 		}
 	}
+}
+
+// ---- Code (CODE-tab: requirement.code from code_block) ----
+
+func TestConvertCheckovToHDF_Code(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	var ckvTF1 *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "CKV_TF_1" {
+			ckvTF1 = &result.Baselines[0].Requirements[i]
+		}
+	}
+	require.NotNil(t, ckvTF1, "expected requirement CKV_TF_1")
+	require.NotNil(t, ckvTF1.Code, "requirement.code must carry the code_block source snippet")
+
+	expected := strings.Join([]string{
+		`26 module "vpc" {`,
+		`27   source  = "terraform-aws-modules/vpc/aws"`,
+		`28   version = "5.8.1"`,
+		"29 ",
+		`30   name = "education-vpc"`,
+	}, "\n")
+	assert.Equal(t, expected, *ckvTF1.Code)
+}
+
+func TestConvertCheckovToHDF_CodeNilWhenNoCodeBlock(t *testing.T) {
+	// code_block is null in this inline fixture → requirement.code must be omitted.
+	input := []byte(`{
+		"check_type": "terraform",
+		"results": {
+			"passed_checks": [],
+			"failed_checks": [{
+				"check_id": "CKV_TEST_1",
+				"check_name": "Test check",
+				"check_result": {"result": "FAILED"},
+				"severity": null,
+				"file_path": "/main.tf",
+				"file_line_range": [1, 5],
+				"resource": "aws_s3_bucket.test",
+				"guideline": null,
+				"code_block": null,
+				"check_class": "checkov.terraform.checks.resource.Test"
+			}],
+			"skipped_checks": [],
+			"parsing_errors": []
+		},
+		"summary": {"passed": 0, "failed": 1, "skipped": 0, "parsing_errors": 0, "resource_count": 1, "checkov_version": "3.2.524"}
+	}`)
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	assert.Nil(t, result.Baselines[0].Requirements[0].Code, "code must be nil when code_block is null")
+}
+
+func TestConvertCheckovToHDF_CodeBlockDefensive(t *testing.T) {
+	// Malformed/empty code_block entries: non-array and short entries are skipped,
+	// a non-string source renders as an empty line, no-newline source is kept verbatim,
+	// and an empty array yields no code. Mirrors the TS renderer for Go/TS parity.
+	input := []byte(`{
+		"check_type": "terraform",
+		"results": {
+			"passed_checks": [],
+			"failed_checks": [{
+				"check_id": "CKV_EDGE_1",
+				"check_name": "Mixed code_block",
+				"check_result": {"result": "FAILED"},
+				"severity": "LOW",
+				"file_path": "/main.tf",
+				"file_line_range": [26, 30],
+				"resource": "edge",
+				"guideline": null,
+				"code_block": [[26, "valid line\n"], "not-an-array", [27], [28, 123], [29, "no-eol"]],
+				"check_class": "test"
+			}, {
+				"check_id": "CKV_EDGE_2",
+				"check_name": "Empty code_block",
+				"check_result": {"result": "FAILED"},
+				"severity": "LOW",
+				"file_path": "/main.tf",
+				"file_line_range": [1, 1],
+				"resource": "edge2",
+				"guideline": null,
+				"code_block": [],
+				"check_class": "test"
+			}],
+			"skipped_checks": [],
+			"parsing_errors": []
+		},
+		"summary": {"passed": 0, "failed": 2, "skipped": 0, "parsing_errors": 0, "resource_count": 2, "checkov_version": "3.2.524"}
+	}`)
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+	byID := map[string]*string{}
+	for i := range result.Baselines[0].Requirements {
+		r := result.Baselines[0].Requirements[i]
+		byID[r.ID] = r.Code
+	}
+	require.NotNil(t, byID["CKV_EDGE_1"], "mixed code_block must still yield code from valid entries")
+	assert.Equal(t, "26 valid line\n28 \n29 no-eol", *byID["CKV_EDGE_1"])
+	assert.Nil(t, byID["CKV_EDGE_2"], "empty code_block array must yield no code")
 }
 
 // ---- Impact ----

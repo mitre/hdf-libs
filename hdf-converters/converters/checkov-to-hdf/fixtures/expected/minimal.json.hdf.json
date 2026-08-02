@@ -33,6 +33,7 @@
               "RA-5"
             ]
           },
+          "code": "26 module \"vpc\" {\n27   source  = \"terraform-aws-modules/vpc/aws\"\n28   version = \"5.8.1\"\n29 \n30   name = \"education-vpc\"",
           "title": "Ensure Terraform module sources use a tag with a version number",
           "verificationMethod": "automated"
         },
@@ -72,6 +73,7 @@
               "RA-5"
             ]
           },
+          "code": "26 module \"vpc\" {\n27   source  = \"terraform-aws-modules/vpc/aws\"\n28   version = \"5.8.1\"\n29 \n30   name = \"education-vpc\"",
           "title": "Ensure Terraform module sources use a commit hash",
           "verificationMethod": "automated"
         },
@@ -102,6 +104,7 @@
               "RA-5"
             ]
           },
+          "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
           "title": "Ensure that S3 bucket has a Public Access block",
           "verificationMethod": "automated"
         },
@@ -132,6 +135,7 @@
               "RA-5"
             ]
           },
+          "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
           "title": "Ensure the S3 bucket has access logging enabled",
           "verificationMethod": "automated"
         }

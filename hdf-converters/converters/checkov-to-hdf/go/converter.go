@@ -86,6 +86,32 @@ func formatCodeDesc(check CheckovCheck) string {
 		check.Resource, check.FilePath, formatLineRange(check.FileLineRange))
 }
 
+// renderCodeBlock renders checkov's code_block ([[lineno, "source"], ...]) into a
+// readable, line-numbered source snippet for the Heimdall CODE tab. Returns "" when
+// the code_block is absent or unparseable so the caller can omit requirement.code.
+func renderCodeBlock(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var entries []json.RawMessage
+	if err := json.Unmarshal(raw, &entries); err != nil {
+		return ""
+	}
+	lines := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		var pair []json.RawMessage
+		if err := json.Unmarshal(entry, &pair); err != nil || len(pair) < 2 {
+			continue // skip a non-array or short entry, matching the TS renderer
+		}
+		var lineno int
+		var src string
+		_ = json.Unmarshal(pair[0], &lineno)
+		_ = json.Unmarshal(pair[1], &src)
+		lines = append(lines, fmt.Sprintf("%d %s", lineno, strings.TrimSuffix(src, "\n")))
+	}
+	return strings.Join(lines, "\n")
+}
+
 // formatLineRange renders the line range as a JSON array literal ("[26,49]").
 // Go's %v on a slice would emit a space-separated Go-ism instead.
 func formatLineRange(lines []int) string {
@@ -155,7 +181,7 @@ func buildRequirement(checkID string, checks []CheckovCheck, now time.Time) hdf.
 	}
 
 	title := rep.CheckName
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 checkID,
 		Title:              &title,
 		Impact:             getImpact(rep.Severity),
@@ -165,6 +191,10 @@ func buildRequirement(checkID string, checks []CheckovCheck, now time.Time) hdf.
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+	if code := renderCodeBlock(rep.CodeBlock); code != "" {
+		req.Code = &code
+	}
+	return req
 }
 
 // parseInput parses checkov JSON which can be either a single object or an array of objects.
