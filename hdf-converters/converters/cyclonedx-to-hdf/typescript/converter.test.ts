@@ -109,7 +109,7 @@ describe('cyclonedx to HDF converter', async () => {
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
       ) as HDFResults;
       expect(hdf.tool?.name).toBe('CycloneDX');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 

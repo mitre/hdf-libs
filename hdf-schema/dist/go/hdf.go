@@ -1157,15 +1157,19 @@ type StatisticBlock struct {
 // The security tool that produced the assessment data represented in this HDF file. Aligns with
 // SARIF, OSCAL, and CycloneDX terminology.
 type Tool struct {
-	// The file format, if it is a recognized named format shared by multiple tools. Examples:         
-	// 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the        
-	// format (Nessus XML, gosec JSON).                                                                
-	Format                                                                                     *string `json:"format,omitempty"`
-	// The name of the security tool that produced the data. Examples: 'gosec', 'Semgrep',             
-	// 'OpenSCAP', 'AWS Config', 'Nessus'. Omit if the tool cannot be identified.                      
-	Name                                                                                       *string `json:"name,omitempty"`
-	// Version of the source tool, if available in the tool's output. Example: '5.22.3'.               
-	Version                                                                                    *string `json:"version,omitempty"`
+	// The named format of the source data, when it follows a recognized format specification        
+	// with its own identity: an interchange format emitted by many tools ('SARIF', 'XCCDF',         
+	// 'OSCAL') or one of several named output formats a single tool produces ('FVDL',               
+	// 'exec-json', 'FPF'). Never a serialization structure — 'JSON', 'XML', and 'CSV' are           
+	// encodings, not formats. Omit for a tool's native output: an absent format means the           
+	// tool's own shape, and data arriving as a named format is converted by that format's           
+	// converter, which sets this field alongside the producing tool's name.                         
+	Format                                                                                   *string `json:"format,omitempty"`
+	// The name of the security tool that produced the data. Examples: 'gosec', 'Semgrep',           
+	// 'OpenSCAP', 'AWS Config', 'Nessus'. Omit if the tool cannot be identified.                    
+	Name                                                                                     *string `json:"name,omitempty"`
+	// Version of the source tool, if available in the tool's output. Example: '5.22.3'.             
+	Version                                                                                  *string `json:"version,omitempty"`
 }
 
 // Information on the set of requirements that can be assessed, including baseline metadata and

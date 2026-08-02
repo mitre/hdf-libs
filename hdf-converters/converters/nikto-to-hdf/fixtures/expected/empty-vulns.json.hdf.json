@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "Nikto scanned Host: clean.example.com Port: 443 and reported zero findings.",
-              "startTime": "2026-07-12T22:56:41.23362Z",
+              "startTime": "2026-08-01T23:52:52.530765Z",
               "status": "passed"
             }
           ],
@@ -42,7 +42,6 @@
     "version": "unknown"
   },
   "tool": {
-    "format": "JSON",
     "name": "Nikto"
   }
 }

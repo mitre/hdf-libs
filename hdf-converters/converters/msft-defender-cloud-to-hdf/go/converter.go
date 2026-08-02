@@ -177,7 +177,6 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 		GeneratorName:    "msft-defender-cloud-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Microsoft Defender for Cloud",
-		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       targets,
 		Timestamp:        &scanTime,

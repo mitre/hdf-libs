@@ -69,7 +69,7 @@
     "name": "aws-config-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:19:55.955956Z",
+  "timestamp": "2026-08-01T23:52:40.602262Z",
   "tool": {
     "name": "AWS Config"
   }

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Notable behavior changes
+
+- **`tool.format` now names formats, never serialization structures.** The field's schema description is sharpened: it carries a named format specification — an interchange format emitted by many tools (`SARIF`, `XCCDF`, `ARF`, `OSCAL`) or one of several named outputs a single tool produces (`FVDL`, `exec-json`) — and is omitted for a tool's native output. Twenty-three converters that stamped bare `JSON`/`XML`/`CSV` serialization labels no longer emit `tool.format` at all, `deptrack-to-hdf` now emits `FPF` (the Dependency-Track Finding Packaging Format) instead of `JSON`, and `checkov-to-hdf` no longer abuses `tool.format` for the scan scope — each requirement instead carries a `tags.check_type` array naming the framework report it came from (e.g. `["terraform"]`), which is new consumer-visible data. Consumers pinning exact converter output will see the `tool.format` key disappear (or change to `FPF`); the tool name and version are unchanged. Go and TypeScript in lockstep, goldens regenerated.
+
 ## [3.4.4] - 2026-07-30
 
 ### Fixes

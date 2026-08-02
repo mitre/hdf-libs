@@ -361,7 +361,10 @@ func Convert<Name>(input []byte, converterVersion string) (*hdf.HDFResults, erro
         },
         Tool: &hdf.Tool{
             Name:   shared.Ptr("<Source Tool Name>"),
-            Format: shared.Ptr("<Format>"), // e.g. "XML", "JSON", "CSV"
+            // Format names a FORMAT SPECIFICATION only (SARIF, XCCDF, FVDL,
+            // exec-json) — never a serialization structure. Omit for the
+            // tool's native output: "JSON"/"XML"/"CSV" are encodings, not
+            // formats, and are banned here (swept fleet-wide 2026-08-01).
         },
         Baselines:  baselines,
         Components: components,

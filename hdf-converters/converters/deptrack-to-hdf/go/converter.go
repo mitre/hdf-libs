@@ -290,7 +290,7 @@ func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		GeneratorName:    "deptrack-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Dependency-Track",
-		ToolFormat:       "JSON",
+		ToolFormat:       "FPF",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Application},

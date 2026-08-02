@@ -366,7 +366,6 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		GeneratorName:    "trufflehog-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "TruffleHog",
-		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       targets,
 		Timestamp:        &now,

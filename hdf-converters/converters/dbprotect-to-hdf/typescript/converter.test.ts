@@ -93,7 +93,7 @@ describe('dbprotect to HDF converter', () => {
     it('should set tool name to "DBProtect" and format to "XML"', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
       expect(hdf.tool?.name).toBe('DBProtect');
-      expect(hdf.tool?.format).toBe('XML');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
 
     it('should have 6 unique requirements from 8 rows', async () => {

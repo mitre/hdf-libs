@@ -16,7 +16,7 @@
           "results": [
             {
               "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Storage/storageAccounts/mystorageacct",
-              "startTime": "2026-07-12T22:56:40.063755Z",
+              "startTime": "2026-08-01T23:52:51.090342Z",
               "status": "passed"
             }
           ],
@@ -61,7 +61,7 @@
             {
               "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Compute/virtualMachines/myvm",
               "message": "Azure Disk Encryption is not enabled on the virtual machine.",
-              "startTime": "2026-07-12T22:56:40.063755Z",
+              "startTime": "2026-08-01T23:52:51.090342Z",
               "status": "failed"
             }
           ],
@@ -114,9 +114,8 @@
     "name": "msft-defender-cloud-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T22:56:40.063755Z",
+  "timestamp": "2026-08-01T23:52:51.090342Z",
   "tool": {
-    "format": "JSON",
     "name": "Microsoft Defender for Cloud"
   }
 }

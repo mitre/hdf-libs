@@ -545,7 +545,7 @@ export async function convertAsffToHdf(input: string, converterVersion = '1.0.0'
   const hdf: HDFResults = {
     baselines,
     generator: { name: 'asff-to-hdf', version: converterVersion },
-    tool: { name: 'AWS Security Finding Format', format: 'JSON' },
+    tool: { name: 'AWS Security Finding Format' },
     timestamp: new Date(),
   };
 

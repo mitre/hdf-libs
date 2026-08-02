@@ -47,6 +47,10 @@ func TestConvertCKLToHDF_Structure(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Equal(t, "DISA STIG Viewer", *result.Tool.Name)
+	// CKL is a named checklist format (one of STIG Viewer's two named
+	// outputs), so it survives the format-not-serialization rule (kpvj).
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "CKL", *result.Tool.Format)
 	require.NotNil(t, result.Timestamp)
 
 	require.Len(t, result.Baselines, 1)

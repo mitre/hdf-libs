@@ -104,7 +104,7 @@ describe('conveyor to HDF converter', async () => {
     it('should set tool name to "Conveyor" and format to "JSON"', async () => {
       const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Conveyor');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 

@@ -16,7 +16,7 @@
           "results": [
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem LINE : 1 COLUMN : 1",
-              "startTime": "2026-07-12T18:56:40.225842-04:00",
+              "startTime": "2026-08-01T19:52:51.315868-04:00",
               "status": "failed"
             }
           ],
@@ -83,7 +83,7 @@
           "results": [
             {
               "codeDesc": "URL : samples/Dockerfile LINE : 1 COLUMN : 0\nFROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
-              "startTime": "2026-07-12T18:56:40.225842-04:00",
+              "startTime": "2026-08-01T19:52:51.315868-04:00",
               "status": "failed"
             }
           ],
@@ -126,7 +126,7 @@
           "results": [
             {
               "codeDesc": "URL : samples/Dockerfile LINE : 1 COLUMN : 0\nFROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
-              "startTime": "2026-07-12T18:56:40.225842-04:00",
+              "startTime": "2026-08-01T19:52:51.315868-04:00",
               "status": "failed"
             }
           ],
@@ -182,7 +182,7 @@
     "name": "msft-defender-devops-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T18:56:40.225842-04:00",
+  "timestamp": "2026-08-01T19:52:51.315868-04:00",
   "tool": {
     "format": "SARIF",
     "name": "Microsoft Defender for DevOps",

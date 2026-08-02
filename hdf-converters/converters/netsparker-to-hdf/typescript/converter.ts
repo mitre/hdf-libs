@@ -367,7 +367,6 @@ export async function convertNetsparkerToHdf(input: string, converterVersion = '
     generatorName: 'netsparker-to-hdf',
     converterVersion,
     toolName,
-    toolFormat: 'XML',
     baselines: [baseline],
     components: [
       {

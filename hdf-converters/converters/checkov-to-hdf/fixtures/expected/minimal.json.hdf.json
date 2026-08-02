@@ -16,18 +16,21 @@
           "results": [
             {
               "codeDesc": "Resource: vpc\nFile: /main.tf (lines [26,49])",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-02T00:13:27.099768Z",
               "status": "passed"
             },
             {
               "codeDesc": "Resource: eks\nFile: /main.tf (lines [51,96])",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-02T00:13:27.099768Z",
               "status": "passed"
             }
           ],
           "id": "CKV_TF_2",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -50,23 +53,26 @@
           "results": [
             {
               "codeDesc": "Resource: vpc\nFile: /main.tf (lines [26,49])",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-02T00:13:27.099768Z",
               "status": "failed"
             },
             {
               "codeDesc": "Resource: eks\nFile: /main.tf (lines [51,96])",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-02T00:13:27.099768Z",
               "status": "failed"
             },
             {
               "codeDesc": "Resource: irsa-ebs-csi\nFile: /main.tf (lines [104,113])",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-02T00:13:27.099768Z",
               "status": "failed"
             }
           ],
           "id": "CKV_TF_1",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -90,13 +96,16 @@
             {
               "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115,119])",
               "message": "Skipping public access block for demo",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-02T00:13:27.099768Z",
               "status": "notReviewed"
             }
           ],
           "id": "CKV2_AWS_6",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -120,13 +129,16 @@
             {
               "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115,119])",
               "message": "Skipping access logging for demo bucket",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-02T00:13:27.099768Z",
               "status": "notReviewed"
             }
           ],
           "id": "CKV_AWS_18",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -147,9 +159,8 @@
     "name": "checkov-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:25:21.463728Z",
+  "timestamp": "2026-08-02T00:13:27.099768Z",
   "tool": {
-    "format": "terraform",
     "name": "Checkov",
     "version": "3.2.524"
   }

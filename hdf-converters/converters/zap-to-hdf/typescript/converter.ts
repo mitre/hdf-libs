@@ -297,7 +297,6 @@ export async function convertZapToHdf(input: string, converterVersion = '1.0.0')
 
   const tool: Tool = {
     name: 'OWASP ZAP',
-    format: 'JSON',
   };
   if (zapData['@version']) {
     tool.version = zapData['@version'];

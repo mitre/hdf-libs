@@ -276,7 +276,6 @@ export async function convertScoutsuiteToHdf(input: string, converterVersion = '
     generatorName: 'scoutsuite-to-hdf',
     converterVersion,
     toolName: 'ScoutSuite',
-    toolFormat: 'JSON',
     toolVersion: report.last_run.version,
     baselines: [baseline],
     components: [{

@@ -211,7 +211,6 @@ func ConvertAsffToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 		GeneratorName:    "asff-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "AWS Security Finding Format",
-		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Components:       components,
 		Timestamp:        &now,

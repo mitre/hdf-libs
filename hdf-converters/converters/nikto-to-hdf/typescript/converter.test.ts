@@ -112,7 +112,7 @@ describe('Nikto Converter', async () => {
       const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.tool?.name).toBe('Nikto');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 

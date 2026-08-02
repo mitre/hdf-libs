@@ -27,7 +27,7 @@
             {
               "codeDesc": "STIG rule FFOX-00-000001",
               "message": "Installed Firefox version is current and supported.",
-              "startTime": "2026-07-14T17:48:54.404924Z",
+              "startTime": "2026-08-01T23:52:41.469239Z",
               "status": "passed"
             }
           ],
@@ -73,7 +73,7 @@
             {
               "codeDesc": "STIG rule FFOX-00-000002",
               "message": "SSLVersionMin is locked to tls1.2.",
-              "startTime": "2026-07-14T17:48:54.404924Z",
+              "startTime": "2026-08-01T23:52:41.469239Z",
               "status": "passed"
             }
           ],
@@ -119,7 +119,7 @@
             {
               "codeDesc": "STIG rule FFOX-00-000003",
               "message": "Preferences policy locks security.default_personal_cert correctly.",
-              "startTime": "2026-07-14T17:48:54.404924Z",
+              "startTime": "2026-08-01T23:52:41.469239Z",
               "status": "passed"
             }
           ],
@@ -178,7 +178,7 @@
     "name": "ckl-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-14T17:48:54.404924Z",
+  "timestamp": "2026-08-01T23:52:41.469239Z",
   "tool": {
     "format": "CKL",
     "name": "DISA STIG Viewer"

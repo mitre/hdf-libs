@@ -355,7 +355,6 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 		ConverterVersion: converterVersion,
 		ToolName:         "OWASP ZAP",
 		ToolVersion:      zapData.Version,
-		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       targets,
 		Timestamp:        timestamp,

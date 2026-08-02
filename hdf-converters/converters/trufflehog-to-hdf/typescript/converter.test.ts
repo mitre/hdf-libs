@@ -173,10 +173,10 @@ describe('trufflehog to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set tool to TruffleHog/JSON', async () => {
+    it('should set tool to TruffleHog', async () => {
       const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('TruffleHog');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
 
     it('should set requirement ID to "AWS PLAIN"', async () => {

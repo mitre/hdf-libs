@@ -289,7 +289,6 @@ export async function convertDbprotectToHdf(input: string, converterVersion = '1
     generatorName: 'dbprotect-to-hdf',
     converterVersion,
     toolName: 'DBProtect',
-    toolFormat: 'XML',
     baselines: [baseline],
     components: [{ name: targetName, type: TargetType.Host }],
     timestamp: new Date(),

@@ -2709,7 +2709,6 @@
   },
   "timestamp": "2021-12-29T22:16:36Z",
   "tool": {
-    "format": "XML",
     "name": "Veracode"
   }
 }

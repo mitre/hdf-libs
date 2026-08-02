@@ -108,7 +108,7 @@ describe('msft-secure-score to HDF converter', async () => {
     it('should set tool name to "Microsoft Secure Score" and format to "JSON"', async () => {
       const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Microsoft Secure Score');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 

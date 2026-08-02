@@ -298,7 +298,7 @@ export async function convertTrufflehogToHdf(input: string, converterVersion = '
     }
   ) as EvaluatedBaseline;
 
-  const tool: Tool = { name: 'TruffleHog', format: 'JSON' };
+  const tool: Tool = { name: 'TruffleHog' };
 
   const hdf: HDFResults = {
     baselines: [baseline],

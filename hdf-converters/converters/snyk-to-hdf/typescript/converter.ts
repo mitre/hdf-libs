@@ -278,7 +278,6 @@ export async function convertSnykToHdf(input: string, converterVersion = '1.0.0'
     generatorName: 'snyk-to-hdf',
     converterVersion,
     toolName: 'Snyk',
-    toolFormat: 'JSON',
     baselines,
     components: [{ name: targetName, type: TargetType.Application }],
     timestamp: scanTime,

@@ -167,8 +167,7 @@ func TestConvertConveyor_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Equal(t, "Conveyor", *result.Tool.Name)
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 // ---- Target ----

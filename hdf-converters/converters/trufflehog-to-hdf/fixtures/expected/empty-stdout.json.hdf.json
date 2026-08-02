@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "TruffleHog scanned the target source and reported zero findings.",
-              "startTime": "2026-07-24T05:46:35.510707Z",
+              "startTime": "2026-08-01T23:52:54.443115Z",
               "status": "passed"
             }
           ],
@@ -34,9 +34,8 @@
     "name": "trufflehog-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-24T05:46:35.510709Z",
+  "timestamp": "2026-08-01T23:52:54.443116Z",
   "tool": {
-    "format": "JSON",
     "name": "TruffleHog"
   }
 }

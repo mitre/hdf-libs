@@ -117,9 +117,9 @@
     "name": "deptrack-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T22:56:35.670501Z",
+  "timestamp": "2026-08-01T23:52:43.213203Z",
   "tool": {
-    "format": "JSON",
+    "format": "FPF",
     "name": "Dependency-Track"
   }
 }

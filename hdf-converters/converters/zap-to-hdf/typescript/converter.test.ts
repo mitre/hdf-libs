@@ -161,7 +161,7 @@ describe('ZAP Converter', () => {
       const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.tool?.name).toBe('OWASP ZAP');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
 
     it('should set tool version from @version', async () => {

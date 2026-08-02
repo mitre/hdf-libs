@@ -92,10 +92,10 @@ describe('Dependency-Track to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set tool name to "Dependency-Track" and format to "JSON"', async () => {
+    it('should set tool name to "Dependency-Track" and format to "FPF"', async () => {
       const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Dependency-Track');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBe('FPF');
     });
   });
 

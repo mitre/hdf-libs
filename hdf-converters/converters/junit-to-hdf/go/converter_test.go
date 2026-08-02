@@ -49,8 +49,7 @@ func TestConvertJUnitToHDF_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Equal(t, "JUnit XML", *result.Tool.Name)
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "XML", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 func TestConverterContract(t *testing.T) {
