@@ -266,7 +266,7 @@ func buildRequirement(vuln *NetsparkerVuln, initiated string) hdf.EvaluatedRequi
 	impact := getImpact(vuln.Severity)
 	title := vuln.Name
 
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 vuln.LookupID,
 		Title:              &title,
 		Impact:             impact,
@@ -276,6 +276,14 @@ func buildRequirement(vuln *NetsparkerVuln, initiated string) hdf.EvaluatedRequi
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+
+	// requirement.code = the raw HTTP request that triggered the finding — the
+	// natural CODE-tab fill for a DAST tool. Leave unset when absent.
+	if vuln.HTTPRequest.Content != "" {
+		req.Code = hdfutil.Ptr(vuln.HTTPRequest.Content)
+	}
+
+	return req
 }
 
 // detectRootElement reads the first start element of the XML to determine

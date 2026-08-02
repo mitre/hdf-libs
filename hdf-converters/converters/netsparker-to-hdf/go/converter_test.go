@@ -300,6 +300,52 @@ func TestConvertNetsparker_CodeDesc(t *testing.T) {
 	assert.Contains(t, codeDesc, "GET")
 }
 
+// ---- requirement.code holds the raw HTTP request (CODE tab) ----
+
+func TestConvertNetsparker_Code(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// First vuln: http-request content is "[SSL Connection]"
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
+	require.NotNil(t, req.Code, "requirement.code should carry the raw HTTP request")
+	assert.Equal(t, "[SSL Connection]", *req.Code)
+
+	// Second vuln: full raw GET request preserved verbatim
+	req2 := shared.MustFindRequirement(t, reqs, "9c3a51bf-6c1f-47c9-4646-afb704bb8fb0")
+	require.NotNil(t, req2.Code)
+	assert.Contains(t, *req2.Code, "GET / HTTP/1.1")
+	assert.Contains(t, *req2.Code, "Host: mlrcommercial.vams-impl.cms.gov")
+	// code is the RAW request only — no "method :" / "http-request :" framing
+	assert.NotContains(t, *req2.Code, "method :")
+}
+
+func TestConvertNetsparker_CodeUnsetWhenNoHTTPRequest(t *testing.T) {
+	// Crafted vuln with no <http-request> element → code must stay unset.
+	xml := `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-http-request</LookupId>
+			<name>No Request Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`
+
+	result, err := ConvertNetsparkerToHDF([]byte(xml), testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "no-http-request")
+	assert.Nil(t, req.Code, "code should be unset when the vuln carries no http-request content")
+}
+
 // ---- Message contains HTTP response info ----
 
 func TestConvertNetsparker_Message(t *testing.T) {

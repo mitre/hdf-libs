@@ -295,6 +295,14 @@ function buildRequirement(
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  // requirement.code = the raw HTTP request that triggered the finding — the
+  // natural CODE-tab fill for a DAST tool. Leave unset when absent.
+  const rawRequest = vuln['http-request']?.content;
+  if (rawRequest) {
+    req.code = rawRequest;
+  }
+
   return req;
 }
 

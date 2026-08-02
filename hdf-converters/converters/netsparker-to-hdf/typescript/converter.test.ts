@@ -235,6 +235,42 @@ describe('Netsparker to HDF converter', () => {
     expect(req!.results![0]!.codeDesc).toContain('GET');
   });
 
+  // ---- requirement.code holds the raw HTTP request (CODE tab) ----
+
+  it('should set requirement.code to the raw HTTP request content', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+
+    // First vuln: http-request content is "[SSL Connection]"
+    const req = findRequirement(hdf, 'e8b418ae-a532-4b43-5d9b-af9b04bbbca3');
+    expect(req?.code).toBe('[SSL Connection]');
+
+    // Second vuln: full raw GET request preserved verbatim, no framing
+    const req2 = findRequirement(hdf, '9c3a51bf-6c1f-47c9-4646-afb704bb8fb0');
+    expect(req2?.code).toContain('GET / HTTP/1.1');
+    expect(req2?.code).toContain('Host: mlrcommercial.vams-impl.cms.gov');
+    expect(req2?.code).not.toContain('method :');
+  });
+
+  it('should leave requirement.code unset when the vuln has no http-request content', async () => {
+    const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+  <target>
+    <url>https://example.com/</url>
+  </target>
+  <vulnerabilities>
+    <vulnerability>
+      <LookupId>no-http-request</LookupId>
+      <name>No Request Vuln</name>
+      <severity>Low</severity>
+    </vulnerability>
+  </vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(xml));
+    const req = findRequirement(hdf, 'no-http-request');
+    expect(req?.code).toBeUndefined();
+  });
+
   // ---- Message contains HTTP response info ----
 
   it('should include HTTP response info in message', async () => {
