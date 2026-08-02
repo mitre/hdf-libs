@@ -381,4 +381,32 @@ describe('asff product special-cases', () => {
     expect(req.refs).toEqual([{ url: 'https://example.test/dup' }]);
   });
 
+  // requirement.code carries the whole finding as indented JSON (CODE tab fill),
+  // preserving every source field and round-tripping to the source object.
+  it('populates requirement.code with the indented source finding', async () => {
+    const finding = {
+      Id: 'code-1',
+      ProductArn: 'arn:aws:securityhub:us-east-1::product/acme/future-scanner',
+      Compliance: { Status: 'FAILED' },
+      GeneratorId: 'acme/rule/CODE.1',
+      Severity: { Label: 'HIGH' },
+      Extra: { nested: ['a', 'b'] },
+    };
+    const hdf = JSON.parse(await convertAsffToHdf(JSON.stringify([finding]), '1.0.0')) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]! as { code?: string };
+    expect(req.code).toBeDefined();
+    // 2-space indented and byte-identical to the canonical serialization.
+    expect(req.code).toBe(JSON.stringify(finding, null, 2));
+    // parses back to the source finding, losing nothing (incl. unmodeled Extra).
+    expect(JSON.parse(req.code!)).toEqual(finding);
+  });
+
+  // A zero-finding document produces the no-findings placeholder requirement,
+  // which carries no source object → requirement.code stays unset (NOT-IN-SOURCE).
+  it('leaves requirement.code unset when there is no finding', async () => {
+    const hdf = JSON.parse(await convertAsffToHdf('{"Findings": []}', '1.0.0')) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]! as { code?: string };
+    expect(req.code).toBeUndefined();
+  });
+
 });

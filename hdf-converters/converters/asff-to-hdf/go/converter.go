@@ -9,6 +9,7 @@
 package asff
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -44,6 +45,24 @@ type asffFinding struct {
 	// Inspector, third-party scanners). Mapped generically so its CVE/CVSS/fix
 	// data survives regardless of whether the producer is specially handled.
 	Vulnerabilities []asffVulnerability `json:"Vulnerabilities"`
+
+	// raw is the finding exactly as the source emitted it. ASFF carries no literal
+	// source snippet, so requirement.code is the whole finding re-indented in place —
+	// preserving source key order, every field the typed struct does not model, and
+	// the source number literals, so the output is byte-identical to the TypeScript
+	// twin's JSON.stringify(finding, null, 2).
+	raw json.RawMessage
+}
+
+func (f *asffFinding) UnmarshalJSON(data []byte) error {
+	type plain asffFinding
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*f = asffFinding(p)
+	f.raw = append(json.RawMessage(nil), data...)
+	return nil
 }
 
 type asffVulnerability struct {
@@ -329,6 +348,9 @@ func buildRequirement(id string, group []asffFinding) hdf.EvaluatedRequirement {
 		Results:      results,
 		ControlType:  shared.DeriveControlTypeFromTags(nist),
 	}
+	if code := buildRequirementCode(primary); code != "" {
+		req.Code = hdfutil.Ptr(code)
+	}
 	var refs []hdf.Reference
 	if primary.SourceURL != "" {
 		refs = append(refs, hdf.Reference{URL: hdfutil.Ptr(primary.SourceURL)})
@@ -346,6 +368,22 @@ func buildRequirement(id string, group []asffFinding) hdf.EvaluatedRequirement {
 		req.Refs = refs
 	}
 	return req
+}
+
+// buildRequirementCode renders the raw finding as indented JSON for
+// requirement.code. json.Indent re-formats the original bytes in place,
+// preserving source key order so the output is byte-identical to the TypeScript
+// twin's JSON.stringify(finding, null, 2). Returns "" when the finding carries no
+// raw source (nothing to serialize), leaving requirement.code unset.
+func buildRequirementCode(f asffFinding) string {
+	if len(f.raw) == 0 {
+		return ""
+	}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, f.raw, "", "  "); err != nil {
+		return ""
+	}
+	return buf.String()
 }
 
 func buildResult(f asffFinding) hdf.RequirementResult {

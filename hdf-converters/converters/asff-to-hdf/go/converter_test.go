@@ -470,3 +470,67 @@ func TestUnknownProducer_GenericPath(t *testing.T) {
 	_, hasControl := byID["ACME.1"]
 	assert.True(t, hasControl, "a compliance finding groups by control ref")
 }
+
+// --- requirement.code (CODE-tab fill) ---
+
+// A real finding's requirement.code is the finding object re-indented in place,
+// preserving every source field and key order, and parses back to the source.
+func TestConvertAsff_RequirementCode_SerializesFinding(t *testing.T) {
+	result, err := ConvertAsffToHDF(loadFixture(t, "minimal.json"), converterVersion)
+	require.NoError(t, err)
+
+	afsbp := baselineByName(t, result, "AWS Foundational Security Best Practices v1.0.0")
+	var config1 hdf.EvaluatedRequirement
+	for _, req := range afsbp.Requirements {
+		if req.ID == "Config.1" {
+			config1 = req
+		}
+	}
+	require.NotNil(t, config1.Code, "requirement.code must be populated for a real finding")
+
+	// The code is valid indented JSON that round-trips to the source finding's fields.
+	var decoded map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(*config1.Code), &decoded))
+	assert.Equal(t, "arn:aws:securityhub:us-east-1::product/aws/securityhub", decoded["ProductArn"])
+	assert.Contains(t, *config1.Code, "\n  \"Id\":", "code must be 2-space indented")
+}
+
+// buildRequirementCode round-trips a crafted finding: indented output decodes
+// back to the same object it was built from.
+func TestBuildRequirementCode_RoundTrips(t *testing.T) {
+	src := []byte(`{"Id":"x","Severity":{"Label":"HIGH"},"Nested":{"a":1}}`)
+	var f asffFinding
+	require.NoError(t, json.Unmarshal(src, &f))
+
+	code := buildRequirementCode(f)
+	require.NotEmpty(t, code)
+	assert.Contains(t, code, "\n  \"Id\": \"x\"")
+
+	var got map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(code), &got))
+	var want map[string]interface{}
+	require.NoError(t, json.Unmarshal(src, &want))
+	assert.Equal(t, want, got)
+}
+
+// A finding with no captured raw source (constructed, never unmarshaled) yields
+// no code — the NOT-IN-SOURCE branch that leaves requirement.code unset.
+func TestBuildRequirementCode_EmptyRawUnset(t *testing.T) {
+	assert.Empty(t, buildRequirementCode(asffFinding{}))
+
+	req := buildRequirement("id-1", []asffFinding{{ID: "id-1", Title: "t"}})
+	assert.Nil(t, req.Code, "a raw-less finding must leave requirement.code unset")
+}
+
+// Defensive: malformed raw bytes cannot be re-indented, so no code is emitted.
+func TestBuildRequirementCode_InvalidRawUnset(t *testing.T) {
+	assert.Empty(t, buildRequirementCode(asffFinding{raw: json.RawMessage("{not-json")}))
+}
+
+// The raw-capturing UnmarshalJSON surfaces a decode error when a finding field
+// has the wrong shape, rather than swallowing it.
+func TestAsffFinding_UnmarshalJSON_TypeMismatchErrors(t *testing.T) {
+	var f asffFinding
+	err := json.Unmarshal([]byte(`{"Severity": 123}`), &f)
+	require.Error(t, err)
+}

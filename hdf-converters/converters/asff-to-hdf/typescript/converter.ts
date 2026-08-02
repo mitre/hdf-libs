@@ -458,6 +458,10 @@ function buildRequirement(id: string, group: AsffFinding[]): EvaluatedRequiremen
   if (controlType !== undefined) {
     req.controlType = controlType;
   }
+  // ASFF carries no literal source snippet, so code holds the whole finding
+  // serialized as indented JSON (byte-identical to the Go twin's json.Indent of
+  // the source bytes).
+  req.code = JSON.stringify(primary, null, 2);
   const refs: { url: string }[] = [];
   if (primary.SourceUrl) refs.push({ url: primary.SourceUrl });
   const seen = new Set<string>();
