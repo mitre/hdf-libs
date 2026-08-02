@@ -116,9 +116,28 @@ describe('trufflehog to HDF converter', async () => {
       expect(hdf.baselines[0]!.name).toBe('TruffleHog Scan');
     });
 
-    it('should set impact to 0.5 for all findings', async () => {
+    it('should rate a verified secret at high impact (0.7)', async () => {
+      // minimal.json's single finding is Verified=true.
       const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('minimal.json'))) as HDFResults;
-      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.7);
+    });
+
+    it('should rate an unverified candidate at medium impact (0.5)', async () => {
+      // ndjson-input.ndjson findings are all Verified=false.
+      const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('ndjson-input.ndjson'))) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.impact).toBe(0.5);
+      }
+    });
+
+    it('should take the verified impact when a group mixes verified and unverified', async () => {
+      const mixed = JSON.stringify([
+        { DetectorName: 'AWS', DecoderName: 'PLAIN', Verified: false, Raw: 'a', Redacted: 'a' },
+        { DetectorName: 'AWS', DecoderName: 'PLAIN', Verified: true, Raw: 'b', Redacted: 'b' },
+      ]);
+      const hdf = JSON.parse(await convertTrufflehogToHdf(mixed)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.7);
     });
 
     it('should set NIST tag to IA-5 (7)', async () => {

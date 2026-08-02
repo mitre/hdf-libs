@@ -73,6 +73,25 @@ var (
 	trufflehogCCI  = []string{"CCI-000202", "CCI-000203", "CCI-002367"}
 )
 
+// A verified secret is a confirmed-live credential (TruffleHog reached the
+// provider and the credential authenticated) and rates high; an unverified
+// candidate rates medium.
+const (
+	impactVerified   = 0.7
+	impactUnverified = 0.5
+)
+
+// groupImpact rates a requirement by its strongest signal: any verified finding
+// in the group elevates the whole requirement to the verified impact.
+func groupImpact(findings []TrufflehogFinding) float64 {
+	for _, f := range findings {
+		if f.Verified {
+			return impactVerified
+		}
+	}
+	return impactUnverified
+}
+
 // parseFindings attempts to parse input as JSON array, single object, or NDJSON.
 func parseFindings(input []byte) ([]TrufflehogFinding, error) {
 	// Try JSON array first
@@ -261,7 +280,7 @@ func buildRequirement(reqID string, findings []TrufflehogFinding) hdf.EvaluatedR
 	return hdf.EvaluatedRequirement{
 		ID:                 reqID,
 		Title:              &title,
-		Impact:             0.5,
+		Impact:             groupImpact(findings),
 		Tags:               tags,
 		ControlType:        shared.DeriveControlTypeFromTags(trufflehogNIST),
 		Descriptions:       descriptions,

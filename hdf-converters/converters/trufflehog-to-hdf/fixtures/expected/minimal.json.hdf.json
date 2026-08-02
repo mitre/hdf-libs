@@ -22,7 +22,7 @@
             "ref": "new_key"
           },
           "id": "AWS PLAIN",
-          "impact": 0.5,
+          "impact": 0.7,
           "tags": {
             "cci": [
               "CCI-000202",
