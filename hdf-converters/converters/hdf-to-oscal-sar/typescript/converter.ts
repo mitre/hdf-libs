@@ -61,6 +61,22 @@ export async function convertHdfToOscalSar(input: string): Promise<string> {
 }
 
 /**
+ * Human-readable assessment-tool label from the HDF tool/generator identity,
+ * falling back when neither is present.
+ */
+function toolPartyName(hdfResults: HDFResults): string {
+  const tool = hdfResults.tool;
+  if (tool?.name) {
+    return tool.version ? `${tool.name} ${tool.version}` : tool.name;
+  }
+  const gen = hdfResults.generator;
+  if (gen?.name) {
+    return gen.version ? `${gen.name} ${gen.version}` : gen.name;
+  }
+  return 'HDF Assessment Tool';
+}
+
+/**
  * Constructs the full OSCAL assessment-results document from HDF results.
  */
 function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
@@ -71,11 +87,17 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
     timestamp = formatTimestampSeconds(documentTime);
   }
 
+  // Define the assessment tool once for the whole document and reference its
+  // single UUID from every characterization origin, so each actor-uuid resolves
+  // to a party defined in the same document (OSCAL referential integrity, which
+  // the JSON schema alone does not enforce). Sourced from the HDF tool identity.
+  const toolActorUuid = crypto.randomUUID();
   const metadata = {
     title: 'HDF Assessment Results Export',
     'last-modified': timestamp,
     version: '1.0.0',
     'oscal-version': OSCAL_VERSION,
+    parties: [{ uuid: toolActorUuid, type: 'organization', name: toolPartyName(hdfResults) }],
   } as unknown as DocumentMetadata;
 
   let importAP: ImportAssessmentPlan;
@@ -87,7 +109,7 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
 
   const results: AssessmentResult[] = [];
   for (const baseline of hdfResults.baselines) {
-    results.push(baselineToResult(baseline, timestamp));
+    results.push(baselineToResult(baseline, timestamp, toolActorUuid));
   }
 
   return {
@@ -149,7 +171,7 @@ function assessmentStart(baseline: EvaluatedBaseline, fallback: string): string 
 /**
  * Converts a single EvaluatedBaseline to an OSCAL Result.
  */
-function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): AssessmentResult {
+function baselineToResult(baseline: EvaluatedBaseline, timestamp: string, toolActorUuid: string): AssessmentResult {
   let title = baseline.name;
   if (baseline.title && baseline.title !== '') {
     title = baseline.title;
@@ -170,7 +192,7 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Asses
   const seenControl = new Set<string>();
 
   for (const req of baseline.requirements) {
-    const { finding, observation, risk } = requirementToFindingSet(req, timestamp);
+    const { finding, observation, risk } = requirementToFindingSet(req, timestamp, toolActorUuid);
     findings.push(finding);
     if (observation) {
       observations.push(observation);
@@ -208,6 +230,7 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Asses
 function requirementToFindingSet(
   req: EvaluatedRequirement,
   timestamp: string,
+  toolActorUuid: string,
 ): { finding: Finding; observation: Observation | undefined; risk: IdentifiedRisk | undefined } {
   const controlID = nistTagToControlId(req.id);
   const { state, reason } = aggregateStatus(req.results);
@@ -305,10 +328,11 @@ function requirementToFindingSet(
       status: riskStatusFromState(state),
       characterizations: [
         {
-          // OSCAL requires characterization.origin. This characterization is
-          // produced by the converter acting as an assessment tool.
+          // OSCAL requires characterization.origin. Reference the single
+          // document-level tool party so the actor-uuid resolves to a defined
+          // party (referential integrity), not a dangling per-risk UUID.
           origin: {
-            actors: [{ type: 'tool', 'actor-uuid': crypto.randomUUID() }],
+            actors: [{ type: 'party', 'actor-uuid': toolActorUuid }],
           },
           facets: [
             {

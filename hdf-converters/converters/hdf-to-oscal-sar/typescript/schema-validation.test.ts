@@ -80,3 +80,61 @@ describe('hdf-to-oscal-sar output validates against NIST OSCAL v1.1.2 AR schema'
     expect(valid).toBe(true);
   });
 });
+
+// Referential integrity beyond JSON-schema validity (GH #184 follow-up, bead
+// d1xo): every characterization.origin.actors[].actor-uuid must resolve to a
+// party defined in the same document, and the tool must be a single consistent
+// party across the whole document.
+interface OriginActor {
+  type: string;
+  'actor-uuid': string;
+}
+interface ARDocument {
+  'assessment-results': {
+    metadata: { parties?: Array<{ uuid: string }> };
+    results: Array<{ risks?: Array<{ characterizations?: Array<{ origin?: { actors?: OriginActor[] } }> }> }>;
+  };
+}
+
+describe('hdf-to-oscal-sar origin actors resolve to a defined party', () => {
+  const WITH_TOOL = JSON.stringify({
+    tool: { name: 'InSpec', version: '5.22.65', format: 'exec-json' },
+    baselines: [
+      {
+        name: 'b1',
+        requirements: [
+          { id: 'AC-3', impact: 0.5, tags: { nist: ['AC-3'] }, descriptions: [], results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-06-01T00:00:00Z' }] },
+        ],
+      },
+      {
+        name: 'b2',
+        requirements: [
+          { id: 'AU-2', impact: 0.7, tags: { nist: ['AU-2'] }, descriptions: [], results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-06-01T00:00:00Z' }] },
+        ],
+      },
+    ],
+  });
+
+  const cases: Array<[string, string]> = [
+    ['tool identity across two baselines', WITH_TOOL],
+    ['shared minimal fixture', results.minimal.read()],
+  ];
+
+  it.each(cases)('%s', async (_label, input) => {
+    const doc = JSON.parse(await convertHdfToOscalSar(input)) as ARDocument;
+    const defined = new Set((doc['assessment-results'].metadata.parties ?? []).map((p) => p.uuid));
+    const actorUuids = new Set<string>();
+    for (const r of doc['assessment-results'].results) {
+      for (const risk of r.risks ?? []) {
+        for (const c of risk.characterizations ?? []) {
+          for (const a of c.origin?.actors ?? []) {
+            expect(a['actor-uuid']).toBeTruthy();
+            expect(defined.has(a['actor-uuid'])).toBe(true);
+            actorUuids.add(a['actor-uuid']);
+          }
+        }
+      }
+    }
+    expect(actorUuids.size).toBe(1);
+  });
+});

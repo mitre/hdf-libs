@@ -57,12 +57,19 @@ func buildOSCALDocument(hdfResults *hdf.HDFResults) *oscalSARDocument {
 		now = hdfResults.Timestamp.Format(time.RFC3339)
 	}
 
-	// Build metadata
+	// Define the assessment tool once for the whole document and reference its
+	// single UUID from every characterization origin, so each actor-uuid resolves
+	// to a party defined in the same document (OSCAL referential integrity, which
+	// the JSON schema alone does not enforce). Sourced from the HDF tool identity.
+	toolActorUUID := oscal.GenerateUUID()
 	metadata := oscal.Metadata{
 		Title:        "HDF Assessment Results Export",
 		LastModified: now,
 		Version:      "1.0.0",
 		OscalVersion: oscal.OscalVersion,
+		Parties: []oscal.Party{
+			{UUID: toolActorUUID, Type: "organization", Name: toolPartyName(hdfResults)},
+		},
 	}
 
 	// Build import-ap reference
@@ -76,7 +83,7 @@ func buildOSCALDocument(hdfResults *hdf.HDFResults) *oscalSARDocument {
 	// Build results from baselines
 	results := make([]oscal.Result, 0, len(hdfResults.Baselines))
 	for i := range hdfResults.Baselines {
-		result := baselineToResult(&hdfResults.Baselines[i], now)
+		result := baselineToResult(&hdfResults.Baselines[i], now, toolActorUUID)
 		results = append(results, result)
 	}
 
@@ -88,6 +95,24 @@ func buildOSCALDocument(hdfResults *hdf.HDFResults) *oscalSARDocument {
 			Results:  results,
 		},
 	}
+}
+
+// toolPartyName derives a human-readable assessment-tool label from the HDF
+// document's tool/generator identity, falling back when neither is present.
+func toolPartyName(r *hdf.HDFResults) string {
+	if r.Tool != nil && r.Tool.Name != nil && *r.Tool.Name != "" {
+		if r.Tool.Version != nil && *r.Tool.Version != "" {
+			return *r.Tool.Name + " " + *r.Tool.Version
+		}
+		return *r.Tool.Name
+	}
+	if r.Generator != nil && r.Generator.Name != "" {
+		if r.Generator.Version != "" {
+			return r.Generator.Name + " " + r.Generator.Version
+		}
+		return r.Generator.Name
+	}
+	return "HDF Assessment Tool"
 }
 
 // earliestResultTime returns the earliest non-zero startTime across the results.
@@ -134,7 +159,7 @@ func assessmentStart(baseline *hdf.EvaluatedBaseline, fallback string) string {
 }
 
 // baselineToResult converts a single EvaluatedBaseline to an OSCAL Result.
-func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string) oscal.Result {
+func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolActorUUID string) oscal.Result {
 	title := baseline.Name
 	if baseline.Title != nil && *baseline.Title != "" {
 		title = *baseline.Title
@@ -156,7 +181,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string) oscal.R
 
 	for i := range baseline.Requirements {
 		req := &baseline.Requirements[i]
-		f, obs, rsk := requirementToFindingSet(req, timestamp)
+		f, obs, rsk := requirementToFindingSet(req, timestamp, toolActorUUID)
 		findings = append(findings, f)
 		if obs != nil {
 			observations = append(observations, *obs)
@@ -206,7 +231,7 @@ func descriptionByLabel(descriptions []hdf.Description, label string) string {
 	return ""
 }
 
-func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (oscal.Finding, *oscal.Observation, *oscal.Risk) {
+func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, toolActorUUID string) (oscal.Finding, *oscal.Observation, *oscal.Risk) {
 	controlID := oscal.NistTagToControlID(req.ID)
 
 	// Determine overall status from results
@@ -327,11 +352,11 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 			Status:      riskStatusFromState(state),
 			Characterizations: []oscal.Characterization{
 				{
-					// OSCAL requires characterization.origin. This characterization
-					// is produced by the converter acting as an assessment tool.
+					// OSCAL requires characterization.origin. Reference the single
+					// document-level tool party so the actor-uuid resolves to a defined party.
 					Origin: &oscal.Origin{
 						Actors: []oscal.Actor{
-							{Type: "tool", ActorID: oscal.GenerateUUID()},
+							{Type: "party", ActorID: toolActorUUID},
 						},
 					},
 					Facets: []oscal.Facet{
