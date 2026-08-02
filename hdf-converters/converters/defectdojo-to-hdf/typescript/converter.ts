@@ -230,6 +230,11 @@ function convertFinding(f: DDFinding): EvaluatedRequirement {
   if (epss) req.epss = epss;
   if (f.cwe && f.cwe > 0) req.cwe = [`CWE-${f.cwe}`];
 
+  // DefectDojo carries no literal source snippet, so requirement.code (Heimdall's
+  // CODE tab) holds the whole finding as indented JSON — every field the typed
+  // interface does not model, byte-identical to the Go twin's json.Indent output.
+  req.code = JSON.stringify(f, null, 2);
+
   // The novel part: a risk-accepted finding carries a real waiver override built
   // from accepted_risks provenance.
   const firstRisk = f.accepted_risks?.[0];

@@ -12,6 +12,7 @@
 package defectdojo_to_hdf
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -63,6 +64,26 @@ type ddFinding struct {
 	UnderReview      bool             `json:"under_review"`
 	AcceptedRisks    []ddAcceptedRisk `json:"accepted_risks"`
 	RelatedFields    *ddRelatedFields `json:"related_fields"`
+
+	// raw is the finding exactly as DefectDojo emitted it. DefectDojo carries no
+	// literal source snippet, so requirement.code is the whole finding re-indented
+	// in place — preserving source key order and every field the typed struct
+	// does not model, byte-identical to the TypeScript twin's
+	// JSON.stringify(finding, null, 2).
+	raw json.RawMessage
+}
+
+// UnmarshalJSON captures the source bytes for requirement.code before decoding
+// the typed fields. The plain alias avoids unmarshal recursion.
+func (f *ddFinding) UnmarshalJSON(data []byte) error {
+	type plain ddFinding
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*f = ddFinding(p)
+	f.raw = append(json.RawMessage(nil), data...)
+	return nil
 }
 
 type ddVulnID struct {
@@ -300,6 +321,23 @@ func codeDesc(f ddFinding) string {
 	return strings.Join(parts, " | ")
 }
 
+// buildFindingCode renders the raw DefectDojo finding as indented JSON for
+// requirement.code (Heimdall's CODE tab). json.Indent reformats the original
+// bytes in place, preserving source key order so the output matches the TS
+// twin's JSON.stringify(finding, null, 2). Returns "" when no raw bytes are
+// available (a synthesized finding) or the bytes are malformed, so the caller
+// leaves code unset rather than emitting a placeholder.
+func buildFindingCode(f ddFinding) string {
+	if len(f.raw) == 0 {
+		return ""
+	}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, f.raw, "", "  "); err != nil {
+		return ""
+	}
+	return buf.String()
+}
+
 func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 	nist := nistTags(f)
 	tags := shared.BuildNISTCCITags(nist, cci.NISTToCCI(nist))
@@ -331,6 +369,10 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 
 	if f.CWE != nil && *f.CWE > 0 {
 		req.Cwe = []string{fmt.Sprintf("CWE-%d", *f.CWE)}
+	}
+
+	if code := buildFindingCode(f); code != "" {
+		req.Code = &code
 	}
 
 	// The novel part: a risk-accepted finding carries a real waiver override

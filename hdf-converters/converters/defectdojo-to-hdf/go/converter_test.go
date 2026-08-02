@@ -113,6 +113,55 @@ func TestConvertDefectDojo_RiskAcceptanceWaiverOverride(t *testing.T) {
 	assert.False(t, ov.AppliedAt.IsZero())
 }
 
+// TestConvertDefectDojo_RequirementCode pins requirement.code to the raw
+// DefectDojo finding serialized as indented JSON (the Heimdall CODE tab source).
+// No golden fixture exists, so this asserts each code round-trips to its source
+// finding object and is indented — the value-pinning contract.
+func TestConvertDefectDojo_RequirementCode(t *testing.T) {
+	input := loadFixture(t, "findings.json")
+	result, err := ConvertDefectDojo(input, converterVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 4)
+
+	var env struct {
+		Results []json.RawMessage `json:"results"`
+	}
+	require.NoError(t, json.Unmarshal(input, &env))
+	require.Len(t, env.Results, 4)
+
+	for i, req := range reqs {
+		require.NotNil(t, req.Code, "requirement %d must carry code", i)
+		assert.Contains(t, *req.Code, "\n  ", "code must be indented")
+		var got, want map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(*req.Code), &got))
+		require.NoError(t, json.Unmarshal(env.Results[i], &want))
+		assert.Equal(t, want, got, "code must round-trip to the source finding")
+	}
+}
+
+// TestBuildFindingCode_Branches covers every branch of buildFindingCode: the
+// no-raw-bytes guard, the malformed-raw guard, and the indented success path.
+func TestBuildFindingCode_Branches(t *testing.T) {
+	// no raw bytes (a synthesized finding, not parsed from source) → unset
+	assert.Equal(t, "", buildFindingCode(ddFinding{}))
+	// malformed raw bytes → unset (defensive; unreachable via UnmarshalJSON)
+	assert.Equal(t, "", buildFindingCode(ddFinding{raw: json.RawMessage("{not json")}))
+	// valid raw → indented, round-trips
+	code := buildFindingCode(ddFinding{raw: json.RawMessage(`{"id":1,"title":"x"}`)})
+	assert.Contains(t, code, "\n  \"id\": 1")
+	var got map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(code), &got))
+	assert.Equal(t, map[string]interface{}{"id": float64(1), "title": "x"}, got)
+}
+
+// TestConvertFinding_NoCodeWithoutRaw covers the caller branch that leaves code
+// unset when the finding carries no raw bytes.
+func TestConvertFinding_NoCodeWithoutRaw(t *testing.T) {
+	req := convertFinding(ddFinding{Title: "t", Severity: "High"})
+	assert.Nil(t, req.Code, "code must be unset when no raw source bytes are present")
+}
+
 func TestConvertDefectDojo_Empty(t *testing.T) {
 	result, err := ConvertDefectDojo(loadFixture(t, "empty.json"), converterVersion)
 	require.NoError(t, err)
@@ -132,5 +181,9 @@ func TestConvertDefectDojo_InvalidAndEmptyInput(t *testing.T) {
 	assert.Error(t, err)
 
 	_, err = ConvertDefectDojo([]byte("not json"), converterVersion)
+	assert.Error(t, err)
+
+	// A malformed finding element exercises ddFinding.UnmarshalJSON's error path.
+	_, err = ConvertDefectDojo([]byte(`[{"id":"not-an-int"}]`), converterVersion)
 	assert.Error(t, err)
 }

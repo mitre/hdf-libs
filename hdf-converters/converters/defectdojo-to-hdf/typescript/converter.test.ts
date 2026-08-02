@@ -213,6 +213,26 @@ describe('defectdojo-to-hdf converter', () => {
     expect(r.results[0].codeDesc).toContain('CVE: CVE-2026-1');
   });
 
+  it('populates requirement.code with each finding serialized as indented JSON', async () => {
+    const raw = JSON.parse(load('findings.json')) as {results: Record<string, unknown>[]};
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    const reqs = hdf.baselines[0].requirements;
+    expect(reqs).toHaveLength(4);
+    reqs.forEach((req, i) => {
+      expect(req.code).toBeDefined();
+      expect(req.code).toContain('\n  '); // indented, not compact
+      // value-pinning: code round-trips to the source finding object
+      expect(JSON.parse(req.code!)).toEqual(raw.results[i]);
+    });
+  });
+
+  it('serializes a crafted finding to code that round-trips to the source', async () => {
+    const f = {...base, cwe: 79, file_path: 'src/x.js', line: 7};
+    const r = await convertOne(f);
+    expect(r.code).toBeDefined();
+    expect(JSON.parse(r.code!)).toEqual(f);
+  });
+
   it('names the baseline DefectDojo when no scanner is present', async () => {
     const hdf = JSON.parse(await convertDefectDojoToHdf(JSON.stringify([base]))) as HDFResults;
     expect(hdf.baselines[0].name).toBe('DefectDojo: DefectDojo');
