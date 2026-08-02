@@ -16,13 +16,16 @@
           "results": [
             {
               "codeDesc": "Resource: aws_iam_policy.ebs_csi_policy\nFile: /main.tf (lines [100,102])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-02T00:13:27.100546Z",
               "status": "passed"
             }
           ],
           "id": "CKV_AWS_275",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -45,13 +48,16 @@
           "results": [
             {
               "codeDesc": "Resource: aws.default\nFile: /main.tf (lines [4,6])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-02T00:13:27.100546Z",
               "status": "passed"
             }
           ],
           "id": "CKV_AWS_41",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -74,18 +80,21 @@
           "results": [
             {
               "codeDesc": "Resource: vpc\nFile: /main.tf (lines [26,49])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-02T00:13:27.100546Z",
               "status": "failed"
             },
             {
               "codeDesc": "Resource: eks\nFile: /main.tf (lines [51,96])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-02T00:13:27.100546Z",
               "status": "failed"
             }
           ],
           "id": "CKV_TF_1",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -109,13 +118,16 @@
             {
               "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115,119])",
               "message": "Skipping access logging for demo bucket",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-02T00:13:27.100546Z",
               "status": "notReviewed"
             }
           ],
           "id": "CKV_AWS_18",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -139,13 +151,16 @@
             {
               "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115,119])",
               "message": "Skipping public access block for demo",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-02T00:13:27.100546Z",
               "status": "notReviewed"
             }
           ],
           "id": "CKV2_AWS_6",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -168,13 +183,16 @@
           "results": [
             {
               "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1,41])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-02T00:13:27.100546Z",
               "status": "passed"
             }
           ],
           "id": "CKV_DOCKER_11",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -197,13 +215,16 @@
           "results": [
             {
               "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1,41])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-02T00:13:27.100546Z",
               "status": "passed"
             }
           ],
           "id": "CKV_DOCKER_5",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -226,13 +247,16 @@
           "results": [
             {
               "codeDesc": "Resource: /Dockerfile.FROM\nFile: /Dockerfile (lines [22,22])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-02T00:13:27.100546Z",
               "status": "failed"
             }
           ],
           "id": "CKV_DOCKER_7",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -255,13 +279,16 @@
           "results": [
             {
               "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1,41])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-02T00:13:27.100546Z",
               "status": "failed"
             }
           ],
           "id": "CKV_DOCKER_2",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -282,9 +309,8 @@
     "name": "checkov-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:25:21.464819Z",
+  "timestamp": "2026-08-02T00:13:27.100546Z",
   "tool": {
-    "format": "terraform, dockerfile",
     "name": "Checkov",
     "version": "3.2.524"
   }

@@ -133,7 +133,6 @@
     "version": "1.0.0"
   },
   "tool": {
-    "format": "XML",
     "name": "Invicti"
   }
 }

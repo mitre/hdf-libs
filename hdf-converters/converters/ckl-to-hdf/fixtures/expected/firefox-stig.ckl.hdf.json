@@ -27,7 +27,7 @@
             {
               "codeDesc": "STIG rule FFOX-00-000001",
               "message": "Installed Firefox version is end-of-life and unsupported.",
-              "startTime": "2026-07-14T17:48:54.41918Z",
+              "startTime": "2026-08-01T23:52:41.470109Z",
               "status": "failed"
             }
           ],
@@ -74,7 +74,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000002",
-              "startTime": "2026-07-14T17:48:54.41918Z",
+              "startTime": "2026-08-01T23:52:41.470109Z",
               "status": "passed"
             }
           ],
@@ -121,7 +121,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000003",
-              "startTime": "2026-07-14T17:48:54.41918Z",
+              "startTime": "2026-08-01T23:52:41.470109Z",
               "status": "notApplicable"
             }
           ],
@@ -169,7 +169,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000004",
-              "startTime": "2026-07-14T17:48:54.41918Z",
+              "startTime": "2026-08-01T23:52:41.470109Z",
               "status": "passed"
             }
           ],
@@ -217,7 +217,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000015",
-              "startTime": "2026-07-14T17:48:54.41918Z",
+              "startTime": "2026-08-01T23:52:41.470109Z",
               "status": "notReviewed"
             }
           ],
@@ -265,7 +265,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000021",
-              "startTime": "2026-07-14T17:48:54.41918Z",
+              "startTime": "2026-08-01T23:52:41.470109Z",
               "status": "failed"
             }
           ],
@@ -326,7 +326,7 @@
     "name": "ckl-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-14T17:48:54.41918Z",
+  "timestamp": "2026-08-01T23:52:41.470109Z",
   "tool": {
     "format": "CKL",
     "name": "DISA STIG Viewer"

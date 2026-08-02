@@ -2378,7 +2378,6 @@
   },
   "timestamp": "2018-12-06T10:53:11Z",
   "tool": {
-    "format": "JSON",
     "name": "OWASP ZAP",
     "version": "2.7.0"
   }

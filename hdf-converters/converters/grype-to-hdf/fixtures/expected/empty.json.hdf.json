@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "Grype scanned alpine:3.20 and reported zero vulnerable components.",
-              "startTime": "2026-07-12T23:26:56.631377Z",
+              "startTime": "2026-08-01T23:52:44.056919Z",
               "status": "passed"
             }
           ],

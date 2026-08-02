@@ -49,7 +49,7 @@ func TestConvertNiktoToHDF_Tool(t *testing.T) {
 
 	require.NotNil(t, result.Tool)
 	assert.Equal(t, "Nikto", *result.Tool.Name)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 func TestConvertNiktoToHDF_BaselineName(t *testing.T) {

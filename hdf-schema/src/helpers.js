@@ -149,6 +149,8 @@ export function createSourceLocation(ref, line) {
 // @mitre/hdf-schema/helpers still get these functions.
 export { severityToImpact, impactToSeverity } from '@mitre/hdf-utilities';
 
+import { worstStatus } from '@mitre/hdf-utilities';
+
 /**
  * Compute the effective status of a requirement from its results and impact.
  *
@@ -157,10 +159,8 @@ export { severityToImpact, impactToSeverity } from '@mitre/hdf-utilities';
  *   1. effectiveStatus already set → return it
  *   2. impact === 0 → notApplicable
  *   3. No results → notReviewed
- *   4. Any "error" result → error
- *   5. Any "failed" result → failed
- *   6. All "passed" → passed
- *   7. Otherwise → notReviewed
+ *   4. Worst-wins roll-up of results via the canonical shared ordering
+ *      (error > failed > passed > notApplicable > notReviewed)
  *
  * @param {import('../dist/ts/hdf-results.js').EvaluatedRequirement} requirement
  * @returns {import('../dist/ts/hdf-results.js').ResultStatus}
@@ -174,31 +174,11 @@ export function computeEffectiveStatus(requirement) {
     return 'notApplicable';
   }
 
-  const results = requirement.results;
-  if (!results || results.length === 0) {
-    return 'notReviewed';
-  }
-
-  let hasError = false;
-  let hasFailed = false;
-  let hasPassed = false;
-
-  for (const result of results) {
-    switch (result.status) {
-      case 'error':
-        hasError = true;
-        break;
-      case 'failed':
-        hasFailed = true;
-        break;
-      case 'passed':
-        hasPassed = true;
-        break;
-    }
-  }
-
-  if (hasError) return 'error';
-  if (hasFailed) return 'failed';
-  if (hasPassed) return 'passed';
-  return 'notReviewed';
+  // Worst-wins roll-up via the canonical shared ordering (error > failed >
+  // passed > notApplicable > notReviewed); empty results -> notReviewed.
+  // NOTE: unlike the full effective-status computation in @mitre/hdf-utilities,
+  // this helper deliberately honors an already-set effectiveStatus first (its
+  // documented back-compat contract) and does not consult statusOverrides.
+  const results = requirement.results ?? [];
+  return worstStatus(results.map((result) => result.status));
 }

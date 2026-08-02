@@ -333,7 +333,6 @@ export async function convertPrismaToHdf(input: string, converterVersion = '1.0.
     generatorName: 'prisma-to-hdf',
     converterVersion,
     toolName: 'Prisma Cloud',
-    toolFormat: 'CSV',
     baselines,
     components,
     timestamp: scanTime,

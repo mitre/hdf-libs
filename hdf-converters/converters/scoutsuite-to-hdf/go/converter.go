@@ -299,7 +299,6 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		GeneratorName:    "scoutsuite-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "ScoutSuite",
-		ToolFormat:       "JSON",
 		ToolVersion:      report.LastRun.Version,
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{

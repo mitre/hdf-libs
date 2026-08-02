@@ -3,6 +3,7 @@ package checkov
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -115,21 +116,46 @@ func checkToResult(check CheckovCheck, now time.Time) hdf.RequirementResult {
 	}
 }
 
+// checkWithType pairs a check with the check_type of the report it came
+// from, so requirement tags can carry the per-finding scan scope.
+type checkWithType struct {
+	check     CheckovCheck
+	checkType string
+}
+
 // groupByCheckID groups checks by check_id, preserving insertion order.
-func groupByCheckID(checks []CheckovCheck) ([]string, map[string][]CheckovCheck) {
+func groupByCheckID(checks []checkWithType) ([]string, map[string][]checkWithType) {
 	order := []string{}
-	groups := map[string][]CheckovCheck{}
-	for _, check := range checks {
-		if _, seen := groups[check.CheckID]; !seen {
-			order = append(order, check.CheckID)
+	groups := map[string][]checkWithType{}
+	for _, c := range checks {
+		if _, seen := groups[c.check.CheckID]; !seen {
+			order = append(order, c.check.CheckID)
 		}
-		groups[check.CheckID] = append(groups[check.CheckID], check)
+		groups[c.check.CheckID] = append(groups[c.check.CheckID], c)
 	}
 	return order, groups
 }
 
+// checkTypesOf collects the unique, sorted check_types of a group.
+func checkTypesOf(checks []checkWithType) []string {
+	seen := map[string]bool{}
+	out := []string{}
+	for _, c := range checks {
+		if c.checkType != "" && !seen[c.checkType] {
+			seen[c.checkType] = true
+			out = append(out, c.checkType)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 // buildRequirement converts a group of checks sharing a check_id into one EvaluatedRequirement.
-func buildRequirement(checkID string, checks []CheckovCheck, now time.Time) hdf.EvaluatedRequirement {
+func buildRequirement(checkID string, group []checkWithType, now time.Time) hdf.EvaluatedRequirement {
+	checks := make([]CheckovCheck, len(group))
+	for i, c := range group {
+		checks[i] = c.check
+	}
 	rep := checks[0]
 
 	nist := make([]string, len(shared.DefaultStaticAnalysisNIST))
@@ -137,6 +163,11 @@ func buildRequirement(checkID string, checks []CheckovCheck, now time.Time) hdf.
 
 	tags := map[string]interface{}{
 		"nist": nist,
+	}
+	// The scan scope (which framework's report produced this finding) is
+	// requirement-level data, not tool metadata.
+	if types := checkTypesOf(group); len(types) > 0 {
+		tags["check_type"] = types
 	}
 
 	descriptions := []hdf.Description{
@@ -215,7 +246,7 @@ func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 	checksum := shared.InputChecksum(input)
 
 	// Merge all checks from all frameworks
-	var allChecks []CheckovCheck
+	var allChecks []checkWithType
 	var checkTypes []string
 	var version string
 
@@ -224,9 +255,11 @@ func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		if version == "" && report.Summary.CheckovVersion != "" {
 			version = report.Summary.CheckovVersion
 		}
-		allChecks = append(allChecks, report.Results.PassedChecks...)
-		allChecks = append(allChecks, report.Results.FailedChecks...)
-		allChecks = append(allChecks, report.Results.SkippedChecks...)
+		for _, group := range [][]CheckovCheck{report.Results.PassedChecks, report.Results.FailedChecks, report.Results.SkippedChecks} {
+			for _, check := range group {
+				allChecks = append(allChecks, checkWithType{check: check, checkType: report.CheckType})
+			}
+		}
 	}
 
 	// Checkov native JSON carries no per-finding or scan timestamp; use conversion time
@@ -240,7 +273,8 @@ func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		requirements[i] = buildRequirement(checkID, groups[checkID], now)
 	}
 
-	// Build tool format from check_types
+	// The joined check_types survive only in the no-findings message; the
+	// per-finding scan scope lives in requirement tags (never tool.format).
 	format := strings.Join(checkTypes, ", ")
 
 	if len(requirements) == 0 {
@@ -268,7 +302,6 @@ func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		ConverterVersion: converterVersion,
 		ToolName:         "Checkov",
 		ToolVersion:      version,
-		ToolFormat:       format,
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Timestamp:        &now,
 	}), nil

@@ -135,7 +135,7 @@ func TestConvertGitlabToHDF_MinimalSAST_Tool(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "Semgrep", *result.Tool.Name)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 	assert.Equal(t, "1.34.0", *result.Tool.Version)
 }
 

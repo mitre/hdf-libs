@@ -97,9 +97,8 @@
     "name": "trufflehog-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:25:15.138453Z",
+  "timestamp": "2026-08-01T23:52:54.443533Z",
   "tool": {
-    "format": "JSON",
     "name": "TruffleHog"
   }
 }

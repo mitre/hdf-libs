@@ -59,7 +59,6 @@
   },
   "timestamp": "2024-02-20T14:15:00Z",
   "tool": {
-    "format": "JSON",
     "name": "ZAProxy",
     "version": "2.14.0"
   }

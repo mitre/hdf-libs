@@ -29,17 +29,17 @@
                 "src/db/queries.go:45 - Unsanitized input used in SQL query"
               ],
               "codeDesc": "URL : src/db/queries.go LINE : 45 COLUMN : 12\ndb.Query(\"SELECT * FROM users WHERE name = '\" + userInput + \"'\")",
-              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "startTime": "2026-08-01T19:52:53.428132-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : src/db/safe_queries.go LINE : 10 COLUMN : 1",
-              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "startTime": "2026-08-01T19:52:53.428132-04:00",
               "status": "notApplicable"
             },
             {
               "codeDesc": "URL : src/db/dynamic.go LINE : 88 COLUMN : 5",
-              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "startTime": "2026-08-01T19:52:53.428132-04:00",
               "status": "failed"
             }
           ],
@@ -96,7 +96,7 @@
           "results": [
             {
               "codeDesc": "URL : src/auth/hash.go LINE : 18 COLUMN : 3\nh := md5.New()",
-              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "startTime": "2026-08-01T19:52:53.428132-04:00",
               "status": "failed"
             }
           ],
@@ -142,18 +142,18 @@
             {
               "codeDesc": "URL : src/config/settings.go LINE : 8 COLUMN : 1",
               "message": "Suppressed: This is a test API key used only in development environments",
-              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "startTime": "2026-08-01T19:52:53.428132-04:00",
               "status": "notReviewed"
             },
             {
               "codeDesc": "URL : src/config/db.go LINE : 15 COLUMN : 1",
-              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "startTime": "2026-08-01T19:52:53.428132-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : src/config/tokens.go LINE : 5 COLUMN : 1",
               "message": "Suppressed: Reviewing whether this token is still active; Marked as false positive by security team",
-              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "startTime": "2026-08-01T19:52:53.428132-04:00",
               "status": "notReviewed"
             }
           ],
@@ -198,12 +198,12 @@
           "results": [
             {
               "codeDesc": "URL : src/handlers/error.go LINE : 30 COLUMN : 1",
-              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "startTime": "2026-08-01T19:52:53.428132-04:00",
               "status": "passed"
             },
             {
               "codeDesc": "URL : src/handlers/api.go LINE : 55 COLUMN : 3",
-              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "startTime": "2026-08-01T19:52:53.428132-04:00",
               "status": "notReviewed"
             }
           ],
@@ -241,7 +241,7 @@
           "results": [
             {
               "codeDesc": "URL : src/static/index.html LINE : 1 COLUMN : 1",
-              "startTime": "2026-07-12T18:56:41.922814-04:00",
+              "startTime": "2026-08-01T19:52:53.428132-04:00",
               "status": "notApplicable"
             }
           ],
@@ -281,7 +281,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T18:56:41.922814-04:00",
+  "timestamp": "2026-08-01T19:52:53.428132-04:00",
   "tool": {
     "format": "SARIF",
     "name": "SecurityScanner",

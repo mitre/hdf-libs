@@ -186,7 +186,6 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ConverterVersion: converterVersion,
 		ToolName:         "BurpSuite",
 		ToolVersion:      burpData.BurpVersion,
-		ToolFormat:       "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{

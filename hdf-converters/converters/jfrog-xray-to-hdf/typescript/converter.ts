@@ -313,7 +313,6 @@ export async function convertJfrogXrayToHdf(input: string, converterVersion = '1
     generatorName: 'jfrog-xray-to-hdf',
     converterVersion,
     toolName: 'JFrog Xray',
-    toolFormat: 'JSON',
     baselines: [baseline],
     components: [{ name: 'JFrog Xray Scan', type: TargetType.Application }],
     timestamp: scanTime,

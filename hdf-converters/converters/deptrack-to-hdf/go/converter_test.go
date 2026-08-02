@@ -124,7 +124,7 @@ func TestConvertDeptrack_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool.Name)
 	assert.Equal(t, "Dependency-Track", *result.Tool.Name)
 	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Equal(t, "FPF", *result.Tool.Format)
 }
 
 // ---- Target ----

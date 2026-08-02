@@ -76,8 +76,7 @@ func TestConvertCheckovToHDF_Tool(t *testing.T) {
 	assert.Equal(t, "Checkov", *result.Tool.Name)
 	require.NotNil(t, result.Tool.Version)
 	assert.Equal(t, "3.2.524", *result.Tool.Version)
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "terraform", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "scan scope is not a format; check_type lives in requirement tags (kpvj)")
 }
 
 // ---- Baseline structure ----
@@ -435,15 +434,24 @@ func TestConvertCheckovToHDF_DistinctCheckIDAnchor(t *testing.T) {
 		"multi-framework.json: one requirement per distinct check_id")
 }
 
-func TestConvertCheckovToHDF_MultiFrameworkToolFormat(t *testing.T) {
+func TestConvertCheckovToHDF_CheckTypeTags(t *testing.T) {
 	input := loadFixture(t, "input/multi-framework.json")
 	result, err := ConvertCheckovToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.Tool)
-	require.NotNil(t, result.Tool.Format)
-	assert.Contains(t, *result.Tool.Format, "terraform")
-	assert.Contains(t, *result.Tool.Format, "dockerfile")
+	// Scan scope moved out of tool.format: each requirement is tagged with
+	// the check_type of the report(s) it came from.
+	assert.Nil(t, result.Tool.Format)
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, b := range result.Baselines {
+		for _, r := range b.Requirements {
+			byID[r.ID] = r
+		}
+	}
+	require.Contains(t, byID, "CKV_TF_1")
+	require.Contains(t, byID, "CKV_DOCKER_7")
+	assert.Equal(t, []string{"terraform"}, byID["CKV_TF_1"].Tags["check_type"])
+	assert.Equal(t, []string{"dockerfile"}, byID["CKV_DOCKER_7"].Tags["check_type"])
 }
 
 // ---- Empty checks ----

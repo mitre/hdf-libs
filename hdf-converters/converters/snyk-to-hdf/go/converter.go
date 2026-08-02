@@ -271,7 +271,6 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 		GeneratorName:    "snyk-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Snyk",
-		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Application},
@@ -293,7 +292,6 @@ func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converter
 		GeneratorName:    "snyk-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Snyk",
-		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Timestamp:        &now,
 	}), nil

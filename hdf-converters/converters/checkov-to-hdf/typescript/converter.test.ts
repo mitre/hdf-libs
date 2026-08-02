@@ -71,7 +71,8 @@ describe('checkov to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
       expect(hdf.tool?.name).toBe('Checkov');
       expect(hdf.tool?.version).toBe('3.2.524');
-      expect(hdf.tool?.format).toBe('terraform');
+      // Scan scope is not a format; check_type lives in requirement tags (kpvj).
+      expect(hdf.tool?.format).toBeUndefined();
       expect(hdf.baselines).toHaveLength(1);
     });
 
@@ -242,11 +243,39 @@ describe('checkov to HDF converter', async () => {
       expect(ids).toContain('CKV_DOCKER_7');
     });
 
-    it('should include all framework types in tool format', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('multi-framework.json'))) as HDFResults;
-      expect(hdf.tool?.format).toContain('terraform');
-      expect(hdf.tool?.format).toContain('dockerfile');
+    it('omits the check_type tag when a report carries an empty check_type', async () => {
+      const doc = {
+        check_type: '',
+        results: {
+          passed_checks: [
+            { check_id: 'CKV_X_1', check_name: 'edge', check_result: { result: 'PASSED' }, resource: 'r', file_path: 'f', file_line_range: [1, 2], severity: null },
+          ],
+          failed_checks: [],
+          skipped_checks: [],
+        },
+        summary: { passed: 1, failed: 0, skipped: 0, parsing_errors: 0, resource_count: 1, checkov_version: '3.2.0' },
+      };
+      const hdf = JSON.parse(await convertCheckovToHdf(JSON.stringify(doc))) as HDFResults;
+      const req = hdf.baselines?.[0]?.requirements?.[0];
+      expect(req?.id).toBe('CKV_X_1');
+      // An empty check_type is not a scan scope: no tag, rather than [""].
+      expect(req?.tags?.['check_type']).toBeUndefined();
     });
+
+    it('rejects a non-object payload with a structure error', async () => {
+      await expect(convertCheckovToHdf('"just a string"')).rejects.toThrow('Invalid checkov structure');
+    });
+
+    it('tags each requirement with its report check_type and drops tool.format', async () => {
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('multi-framework.json'))) as HDFResults;
+      expect(hdf.tool?.format).toBeUndefined();
+      const byId = new Map(
+        (hdf.baselines ?? []).flatMap((b) => (b.requirements ?? []).map((r) => [r.id, r] as const)),
+      );
+      expect(byId.get('CKV_TF_1')?.tags?.['check_type']).toEqual(['terraform']);
+      expect(byId.get('CKV_DOCKER_7')?.tags?.['check_type']).toEqual(['dockerfile']);
+    });
+
   });
 
   describe('SARIF routing', async () => {

@@ -242,7 +242,7 @@ describe('GitLab to HDF converter', () => {
       const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.tool?.name).toBe('Semgrep');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
       expect(hdf.tool?.version).toBe('1.34.0');
     });
   });

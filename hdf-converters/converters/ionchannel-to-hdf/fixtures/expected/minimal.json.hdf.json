@@ -123,9 +123,8 @@
     "name": "ionchannel-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T19:40:22.571296-04:00",
+  "timestamp": "2026-08-01T19:52:50.085308-04:00",
   "tool": {
-    "format": "JSON",
     "name": "Ion Channel"
   }
 }

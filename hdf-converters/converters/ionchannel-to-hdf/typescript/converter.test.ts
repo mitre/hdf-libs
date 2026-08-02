@@ -100,7 +100,7 @@ describe('ionchannel to HDF converter', async () => {
     it('should include data source info', async () => {
       const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Ion Channel');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
 
     it('should flatten 2 top-level + 1 sub-dependency into 3 requirements', async () => {

@@ -384,7 +384,6 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		GeneratorName:    "netsparker-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         toolName,
-		ToolFormat:       "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{

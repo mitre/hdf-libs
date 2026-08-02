@@ -138,7 +138,6 @@
     "version": "unknown"
   },
   "tool": {
-    "format": "JSON",
     "name": "Nikto"
   }
 }

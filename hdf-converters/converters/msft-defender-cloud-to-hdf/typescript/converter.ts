@@ -253,7 +253,6 @@ export async function convertMsftDefenderCloudToHdf(input: string, converterVers
     generatorName: 'msft-defender-cloud-to-hdf',
     converterVersion,
     toolName: 'Microsoft Defender for Cloud',
-    toolFormat: 'JSON',
     baselines: [baseline],
     components,
     timestamp: scanTime,

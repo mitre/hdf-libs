@@ -88,9 +88,8 @@
     "name": "asff-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-15T02:58:09.96803Z",
+  "timestamp": "2026-08-01T23:52:40.842106Z",
   "tool": {
-    "format": "JSON",
     "name": "AWS Security Finding Format"
   }
 }

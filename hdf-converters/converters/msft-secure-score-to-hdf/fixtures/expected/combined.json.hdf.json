@@ -2054,9 +2054,8 @@
     "name": "msft-secure-score-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:30:23.256245Z",
+  "timestamp": "2026-08-01T23:52:51.712258Z",
   "tool": {
-    "format": "JSON",
     "name": "Microsoft Secure Score"
   }
 }

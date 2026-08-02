@@ -483,7 +483,6 @@ export async function convertVeracodeToHdf(input: string, converterVersion = '1.
     generatorName: 'veracode-to-hdf',
     converterVersion,
     toolName: 'Veracode',
-    toolFormat: 'XML',
     baselines: [baseline],
     components: [{ name: targetName, type: TargetType.Application }],
     timestamp,

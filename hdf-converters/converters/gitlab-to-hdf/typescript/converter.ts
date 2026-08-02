@@ -323,7 +323,6 @@ export async function convertGitlabToHdf(input: string, converterVersion = '1.0.
 
   const tool: Tool = {
     name: scannerName,
-    format: 'JSON',
   };
   if (scannerVersion) {
     tool.version = scannerVersion;
