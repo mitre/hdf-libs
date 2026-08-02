@@ -113,6 +113,45 @@ function buildCodeDesc(instance: ZapInstance): string {
   return parts.join(' | ');
 }
 
+// --- Requirement code (CODE tab) synthesis ---
+
+// representativeInstance picks the instance best representing the alert for the
+// CODE tab: the first instance carrying an attack payload, falling back to the
+// first instance when none do. Returns undefined when there are no instances.
+function representativeInstance(instances: ZapInstance[] | undefined): ZapInstance | undefined {
+  if (!instances || instances.length === 0) {
+    return undefined;
+  }
+  return instances.find(inst => inst.attack) ?? instances[0];
+}
+
+// buildRequirementCode synthesizes requirement.code for a DAST finding from the
+// HTTP request context of the representative instance: "<METHOD> <uri>" plus an
+// optional "Param:" line and an optional "Attack:" line. ZAP has no source code,
+// so this reconstructs the request/payload that triggered the alert. Returns
+// undefined when the alert carries no instances or no request context.
+function buildRequirementCode(alert: ZapAlert): string | undefined {
+  const inst = representativeInstance(alert.instances);
+  if (!inst) {
+    return undefined;
+  }
+  const parts: string[] = [];
+  const requestLine = `${inst.method ?? ''} ${inst.uri ?? ''}`.trim();
+  if (requestLine) {
+    parts.push(requestLine);
+  }
+  if (inst.param) {
+    parts.push(`Param: ${inst.param}`);
+  }
+  if (inst.attack) {
+    parts.push(`Attack: ${inst.attack}`);
+  }
+  if (parts.length === 0) {
+    return undefined;
+  }
+  return parts.join('\n');
+}
+
 // --- Build check description ---
 
 function buildCheckDescription(alert: ZapAlert): string {
@@ -228,6 +267,11 @@ function buildSiteRequirements(site: ZapSite): EvaluatedRequirement[] {
     const controlType = deriveControlTypeFromTags(nistTags);
     if (controlType !== undefined) {
       req.controlType = controlType;
+    }
+
+    const code = buildRequirementCode(alert);
+    if (code !== undefined) {
+      req.code = code;
     }
 
     requirements.push(req);

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	sarif "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sarif-to-hdf/go"
@@ -131,6 +132,50 @@ func buildCodeDesc(instance ZapInstance) string {
 	return result
 }
 
+// --- Requirement code (CODE tab) synthesis ---
+
+// representativeInstance picks the instance best representing the alert for the
+// CODE tab: the first instance carrying an attack payload, falling back to the
+// first instance when none do. Returns false when there are no instances.
+func representativeInstance(instances []ZapInstance) (ZapInstance, bool) {
+	if len(instances) == 0 {
+		return ZapInstance{}, false
+	}
+	for _, inst := range instances {
+		if inst.Attack != "" {
+			return inst, true
+		}
+	}
+	return instances[0], true
+}
+
+// buildRequirementCode synthesizes requirement.code for a DAST finding from the
+// HTTP request context of the representative instance: "<METHOD> <uri>" plus an
+// optional "Param:" line and an optional "Attack:" line. ZAP has no source code,
+// so this reconstructs the request/payload that triggered the alert. Returns nil
+// when the alert carries no instances or no request context (NOT-IN-SOURCE).
+func buildRequirementCode(alert ZapAlert) *string {
+	inst, ok := representativeInstance(alert.Instances)
+	if !ok {
+		return nil
+	}
+	var parts []string
+	if requestLine := strings.TrimSpace(inst.Method + " " + inst.URI); requestLine != "" {
+		parts = append(parts, requestLine)
+	}
+	if inst.Param != "" {
+		parts = append(parts, "Param: "+inst.Param)
+	}
+	if inst.Attack != "" {
+		parts = append(parts, "Attack: "+inst.Attack)
+	}
+	if len(parts) == 0 {
+		return nil
+	}
+	code := strings.Join(parts, "\n")
+	return &code
+}
+
 // --- Build check description ---
 
 func buildCheckDescription(alert ZapAlert) string {
@@ -254,6 +299,7 @@ func buildSiteRequirements(site *ZapSite) []hdf.EvaluatedRequirement {
 			Results:            results,
 			Tags:               tags,
 			ControlType:        shared.DeriveControlTypeFromTags(nistTags),
+			Code:               buildRequirementCode(alert),
 			Descriptions:       descriptions,
 			VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 		}

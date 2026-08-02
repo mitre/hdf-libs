@@ -394,6 +394,57 @@ describe('ZAP Converter', () => {
     });
   });
 
+  // requirement.code is synthesized from the representative instance's HTTP
+  // request context: "<METHOD> <uri>" + optional "Param:" + optional "Attack:".
+  // The representative instance is the first carrying an attack payload (else the
+  // first instance), so the DAST payload surfaces on the CODE tab.
+  describe('requirement code (CODE tab)', () => {
+    async function firstReqCode(zap: unknown): Promise<string | undefined> {
+      const output = await convertZapToHdf(JSON.stringify(zap));
+      const hdf = parseJSON<HDFResults>(output);
+      return hdf.baselines[0].requirements[0].code;
+    }
+
+    it('falls back to the first instance when none carry an attack', async () => {
+      const input = loadFixture('minimal.json');
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(input));
+      const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
+      expect(req?.code).toBe('GET https://example.com/login\nParam: X-Content-Type-Options');
+    });
+
+    it('prefers the instance carrying the attack payload', async () => {
+      const input = loadFixture('minimal.json');
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(input));
+      const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
+      expect(req?.code).toBe("POST https://example.com/api/login\nParam: username\nAttack: ' OR 1=1 --");
+    });
+
+    it('leaves code unset when the alert has no instances (NOT-IN-SOURCE)', async () => {
+      const code = await firstReqCode({site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n'}]}]});
+      expect(code).toBeUndefined();
+    });
+
+    it('leaves code unset when the instance carries no request context', async () => {
+      const code = await firstReqCode({site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n', instances: [{}]}]}]});
+      expect(code).toBeUndefined();
+    });
+
+    it('emits the request line only when there is no param or attack', async () => {
+      const code = await firstReqCode({site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n', instances: [{method: 'GET', uri: '/x'}]}]}]});
+      expect(code).toBe('GET /x');
+    });
+
+    it('emits a Param line with no request line when only param is present', async () => {
+      const code = await firstReqCode({site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n', instances: [{param: 'p'}]}]}]});
+      expect(code).toBe('Param: p');
+    });
+
+    it('emits an Attack line with no request line when only attack is present', async () => {
+      const code = await firstReqCode({site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n', instances: [{attack: 'a'}]}]}]});
+      expect(code).toBe('Attack: a');
+    });
+  });
+
   describe('SARIF routing', () => {
     it('should delegate SARIF input to SARIF converter', async () => {
       const sarifInput = JSON.stringify({

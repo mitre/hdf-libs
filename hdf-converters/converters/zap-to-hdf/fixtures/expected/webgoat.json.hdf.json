@@ -36,6 +36,7 @@
             "riskdesc": "Low (Medium)",
             "wascid": "15"
           },
+          "code": "GET http://ciscobinary.openh264.org/openh264-macosx64-0410d336bb748149a4f560eb6108090f078254b1.zip\nParam: X-Content-Type-Options",
           "title": "X-Content-Type-Options Header Missing",
           "verificationMethod": "automated"
         }
@@ -87,6 +88,7 @@
             "riskdesc": "Low (Medium)",
             "wascid": "15"
           },
+          "code": "GET http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css\nParam: X-Content-Type-Options",
           "title": "X-Content-Type-Options Header Missing",
           "verificationMethod": "automated"
         }
@@ -138,6 +140,7 @@
             "riskdesc": "Low (Medium)",
             "wascid": "15"
           },
+          "code": "GET http://detectportal.firefox.com/success.txt\nParam: X-Content-Type-Options",
           "title": "X-Content-Type-Options Header Missing",
           "verificationMethod": "automated"
         }
@@ -282,6 +285,7 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "MKCOL http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id",
           "controlType": "technical",
           "title": "Insecure HTTP Method - MKCOL",
           "verificationMethod": "automated"
@@ -355,6 +359,7 @@
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/attack\nParam: JSESSIONID",
           "title": "Cookie No HttpOnly Flag",
           "verificationMethod": "automated"
         },
@@ -507,6 +512,7 @@
             "riskdesc": "Medium (Medium)",
             "wascid": "34"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old.baseUrl%\u003e\nAttack: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old.baseUrl%\u003e",
           "title": "Backup File Disclosure",
           "verificationMethod": "automated"
         },
@@ -637,6 +643,7 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "COPY http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923",
           "controlType": "technical",
           "title": "Insecure HTTP Method - COPY",
           "verificationMethod": "automated"
@@ -768,6 +775,7 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "MOVE http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss",
           "controlType": "technical",
           "title": "Insecure HTTP Method - MOVE",
           "verificationMethod": "automated"
@@ -899,6 +907,7 @@
             "riskdesc": "Medium (Medium)",
             "wascid": "45"
           },
+          "code": "PUT http://mymac.com:8191/WebGoat/service/ixvsrz0hz5",
           "controlType": "technical",
           "title": "Insecure HTTP Method - PUT",
           "verificationMethod": "automated"
@@ -1030,6 +1039,7 @@
             "riskdesc": "Low (Medium)",
             "wascid": "9"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson",
           "controlType": "technical",
           "title": "Absence of Anti-CSRF Tokens",
           "verificationMethod": "automated"
@@ -1161,6 +1171,7 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson",
           "controlType": "technical",
           "title": "Information Disclosure - Suspicious Comments",
           "verificationMethod": "automated"
@@ -1292,6 +1303,7 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "PROPPATCH http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922",
           "controlType": "technical",
           "title": "Insecure HTTP Method - PROPPATCH",
           "verificationMethod": "automated"
@@ -1423,6 +1435,7 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "PROPFIND http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson",
           "controlType": "technical",
           "title": "Insecure HTTP Method - PROPFIND",
           "verificationMethod": "automated"
@@ -1484,6 +1497,7 @@
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E",
           "controlType": "technical",
           "title": "Information Disclosure - Debug Error Messages",
           "verificationMethod": "automated"
@@ -1545,6 +1559,7 @@
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E",
           "controlType": "technical",
           "title": "Information Disclosure - Debug Error Messages",
           "verificationMethod": "automated"
@@ -1606,6 +1621,7 @@
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E",
           "controlType": "technical",
           "title": "Information Disclosure - Debug Error Messages",
           "verificationMethod": "automated"
@@ -1737,6 +1753,7 @@
             "riskdesc": "Medium (Medium)",
             "wascid": "45"
           },
+          "code": "PATCH http://mymac.com:8191/WebGoat/service/lessonoverview.mvc/eh79fr0hqg",
           "controlType": "technical",
           "title": "Insecure HTTP Method - PATCH",
           "verificationMethod": "automated"
@@ -1868,6 +1885,7 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "UNLOCK http://mymac.com:8191/WebGoat/service/lessonprogress.mvc",
           "controlType": "technical",
           "title": "Insecure HTTP Method - UNLOCK",
           "verificationMethod": "automated"
@@ -1924,6 +1942,7 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/challenge/6?confirm_password_reg=ZAP\u0026email_reg=foo-bar%40example.com\u0026password_reg=ZAP\u0026register-submit=Register+Now\u0026username_reg=ZAP\nParam: username_reg",
           "controlType": "technical",
           "title": "Information Disclosure - Sensitive Informations in URL",
           "verificationMethod": "automated"
@@ -2055,6 +2074,7 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "LOCK http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson",
           "controlType": "technical",
           "title": "Insecure HTTP Method - LOCK",
           "verificationMethod": "automated"
@@ -2116,6 +2136,7 @@
             "riskdesc": "Medium (Medium)",
             "wascid": "13"
           },
+          "code": "POST http://mymac.com:8191/WebGoat/IDOR/profile/alt-path",
           "controlType": "technical",
           "title": "Application Error Disclosure",
           "verificationMethod": "automated"
@@ -2161,6 +2182,7 @@
             "riskdesc": "High (Low)",
             "wascid": "34"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e/\u003c%=index%\u003e\nAttack: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e/.svn/text-base/\u003c%=index%\u003e.svn-base",
           "title": "Source Code Disclosure - SVN",
           "verificationMethod": "automated"
         },
@@ -2203,6 +2225,7 @@
             "riskdesc": "Low (Medium)",
             "wascid": "14"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E\nParam: X-XSS-Protection",
           "title": "Web Browser XSS Protection Not Enabled",
           "verificationMethod": "automated"
         },
@@ -2318,6 +2341,7 @@
             "riskdesc": "High (Medium)",
             "wascid": "9"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/WebWolf/landing/password-reset",
           "controlType": "technical",
           "title": "Anti CSRF Tokens Scanner",
           "verificationMethod": "automated"
@@ -2359,6 +2383,7 @@
             "riskdesc": "Medium (Low)",
             "wascid": "20"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/libs/jquery.form.js",
           "controlType": "technical",
           "title": "HTTP Parameter Override",
           "verificationMethod": "automated"
@@ -2426,6 +2451,7 @@
             "riskdesc": "High (Medium)",
             "wascid": "19"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/service/debug/labels.mvc?query=query+ASC++--+\nParam: query\nAttack: query ASC  -- ",
           "controlType": "technical",
           "title": "SQL Injection",
           "verificationMethod": "automated"
@@ -2467,6 +2493,7 @@
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/WebWolfIntroduction.lesson.lesson",
           "controlType": "technical",
           "title": "Private IP Disclosure",
           "verificationMethod": "automated"
@@ -2505,6 +2532,7 @@
             "riskdesc": "Informational (Low)",
             "wascid": "15"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/start.mvc",
           "title": "Charset Mismatch (Header Versus Meta Content-Type Charset)",
           "verificationMethod": "automated"
         }

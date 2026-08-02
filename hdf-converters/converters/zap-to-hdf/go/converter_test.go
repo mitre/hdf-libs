@@ -252,6 +252,79 @@ func TestConvertZapToHDF_AttackMessage(t *testing.T) {
 	assert.Equal(t, "' OR 1=1 --", *req.Results[1].Message)
 }
 
+// --- Requirement code (CODE tab) ---
+// requirement.code is synthesized from the HTTP request context of the alert's
+// representative instance: "<METHOD> <uri>" + optional "Param: <param>" +
+// optional "Attack: <attack>". The representative instance is the first instance
+// carrying an attack payload (falling back to the first instance otherwise), so
+// the DAST payload surfaces on the CODE tab even when it is not on instance[0].
+
+func TestConvertZapToHDF_RequirementCode_FallbackFirstInstance(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// 10021: no instance carries an attack, so the first instance is used.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
+	require.NotNil(t, req.Code)
+	assert.Equal(t, "GET https://example.com/login\nParam: X-Content-Type-Options", *req.Code)
+}
+
+func TestConvertZapToHDF_RequirementCode_PrefersAttackInstance(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// 90022: instance[0] has no attack; instance[1] carries the SQLi payload, so
+	// that instance is chosen and the attack surfaces on the CODE tab.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
+	require.NotNil(t, req.Code)
+	assert.Equal(t, "POST https://example.com/api/login\nParam: username\nAttack: ' OR 1=1 --", *req.Code)
+}
+
+func Test_representativeInstance(t *testing.T) {
+	_, ok := representativeInstance(nil)
+	assert.False(t, ok, "no instances → not ok")
+
+	first := ZapInstance{Method: "GET", URI: "/a"}
+	second := ZapInstance{Method: "POST", URI: "/b", Attack: "x"}
+	got, ok := representativeInstance([]ZapInstance{first, second})
+	require.True(t, ok)
+	assert.Equal(t, second, got, "instance carrying an attack is preferred")
+
+	got, ok = representativeInstance([]ZapInstance{first})
+	require.True(t, ok)
+	assert.Equal(t, first, got, "falls back to the first instance when none carry an attack")
+}
+
+func Test_buildRequirementCode(t *testing.T) {
+	// NOT-IN-SOURCE: no instances at all → code left unset.
+	assert.Nil(t, buildRequirementCode(ZapAlert{}))
+
+	// NOT-IN-SOURCE: an instance with no request context → code left unset.
+	assert.Nil(t, buildRequirementCode(ZapAlert{Instances: []ZapInstance{{}}}))
+
+	// Request line only (no param, no attack).
+	code := buildRequirementCode(ZapAlert{Instances: []ZapInstance{{Method: "GET", URI: "/x"}}})
+	require.NotNil(t, code)
+	assert.Equal(t, "GET /x", *code)
+
+	// Param only — no method/uri, so no request line.
+	code = buildRequirementCode(ZapAlert{Instances: []ZapInstance{{Param: "p"}}})
+	require.NotNil(t, code)
+	assert.Equal(t, "Param: p", *code)
+
+	// Attack only — no method/uri/param.
+	code = buildRequirementCode(ZapAlert{Instances: []ZapInstance{{Attack: "a"}}})
+	require.NotNil(t, code)
+	assert.Equal(t, "Attack: a", *code)
+
+	// Full request context.
+	code = buildRequirementCode(ZapAlert{Instances: []ZapInstance{{Method: "POST", URI: "/y", Param: "q", Attack: "z"}}})
+	require.NotNil(t, code)
+	assert.Equal(t, "POST /y\nParam: q\nAttack: z", *code)
+}
+
 // --- NIST mapping ---
 
 func TestConvertZapToHDF_NISTMappedCWE(t *testing.T) {
