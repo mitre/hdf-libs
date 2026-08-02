@@ -16,6 +16,7 @@ require (
 	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.4.3
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/stretchr/testify v1.11.1
+	github.com/terminalstatic/go-xsd-validate v0.1.6
 	github.com/xeipuuv/gojsonschema v1.2.0
 	gopkg.in/yaml.v3 v3.0.1
 )
