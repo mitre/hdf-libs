@@ -11,6 +11,15 @@
               "version": "2.10.5-r1"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 9.1,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "libfetch before 2021-07-26, as used in apk-tools, xbps, and other products, mishandles numeric strings for the FTP and HTTP protocols. The FTP passive mode implementation allows an out-of-bounds read because strtol is used to parse the relevant numbers into address bytes. It does not check if the line ends prematurely. If it does, the for-loop condition checks for the '\\0' terminator one byte too late.",
@@ -32,6 +41,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-36159"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -48,6 +60,15 @@
               "fixedInVersion": "2.2.10-r2",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -71,6 +92,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-25235"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -87,6 +111,15 @@
               "fixedInVersion": "2.10.6-r0",
               "name": "apk-tools",
               "version": "2.10.5-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -110,6 +143,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-30139"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -126,6 +162,15 @@
               "fixedInVersion": "0.8-r2",
               "name": "avahi",
               "version": "0.8-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.2,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -149,6 +194,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-36217"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -166,6 +214,18 @@
               "name": "ruby:nokogiri",
               "version": "1.10.9"
             }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-787"
           ],
           "descriptions": [
             {
@@ -187,8 +247,8 @@
             "cci": [
               "CCI-001310"
             ],
-            "cwe": [
-              "CWE-787"
+            "cve": [
+              "CVE-2018-25032"
             ],
             "nist": [
               "SI-10"
@@ -206,6 +266,15 @@
               "fixedInVersion": "1.2.12-r0",
               "name": "zlib",
               "version": "1.2.11-r3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -229,6 +298,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2018-25032"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -246,6 +318,18 @@
               "name": "ruby:webrick",
               "version": "1.4.2"
             }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:P/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-444"
           ],
           "descriptions": [
             {
@@ -267,8 +351,8 @@
             "cci": [
               "CCI-001310"
             ],
-            "cwe": [
-              "CWE-444"
+            "cve": [
+              "CVE-2020-25613"
             ],
             "nist": [
               "SI-10"
@@ -285,6 +369,15 @@
               "ecosystem": "generic",
               "name": "ca-certificates",
               "version": "2023.2.60_v7.0.306-80.0.el8_8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.1,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -307,6 +400,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2023-37920"
             ],
             "nist": [
               "SI-2",

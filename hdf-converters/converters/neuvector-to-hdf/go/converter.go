@@ -94,6 +94,57 @@ func extractCWEs(description string) []string {
 	return result
 }
 
+// extractCVEs collects the distinct CVE identifiers a vulnerability carries in
+// its cves[] field, preserving first-seen order. The requirement ID is a
+// name/package/version composite (not the CVE), so tags.cve is where the CVE
+// list lives.
+func extractCVEs(vuln NeuVectorVuln) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, cve := range vuln.Cves {
+		if cve != "" && !seen[cve] {
+			seen[cve] = true
+			out = append(out, cve)
+		}
+	}
+	return out
+}
+
+// buildCvssEntries assembles the structured requirement.cvss[] from the scoring
+// a vulnerability carries. NeuVector emits a CVSS v3 vector (with a
+// version-prefixed string) and, separately, a legacy v2 vector (prefix-less).
+// The v3 metric is preferred; the v2 metric is the fallback. A vulnerability
+// with neither vector contributes no entry — its score still drives impact.
+func buildCvssEntries(vuln NeuVectorVuln) []hdf.Cvss {
+	if vuln.VectorsV3 != "" {
+		var score *float64
+		if vuln.ScoreV3 > 0 {
+			s := vuln.ScoreV3
+			score = &s
+		}
+		return []hdf.Cvss{shared.BuildCvss(shared.CvssInput{
+			Version:    shared.CvssVersionFromVector(vuln.VectorsV3),
+			BaseScore:  score,
+			BaseVector: vuln.VectorsV3,
+			Source:     "NeuVector",
+		})}
+	}
+	if vuln.Vectors != "" {
+		var score *float64
+		if vuln.Score > 0 {
+			s := vuln.Score
+			score = &s
+		}
+		return []hdf.Cvss{shared.BuildCvss(shared.CvssInput{
+			Version:    shared.CvssVersionFromString("2.0"),
+			BaseScore:  score,
+			BaseVector: vuln.Vectors,
+			Source:     "NeuVector",
+		})}
+	}
+	return nil
+}
+
 // getImpact computes the HDF impact from NeuVector CVSS scores.
 // Prefers CVSS v3 score; falls back to CVSS v2 if v3 is 0.
 // Impact is normalized to 0.0-1.0 by dividing by 10.
@@ -191,12 +242,13 @@ func marshalVulnCode(vuln NeuVectorVuln) string {
 // buildRequirement converts a NeuVector vulnerability to an EvaluatedRequirement.
 func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequirement {
 	cweIDs := extractCWEs(vuln.Description)
+	cveIDs := extractCVEs(vuln)
 	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultRemediationNIST)
 	cciTags := cci.NISTToCCI(nist)
 
 	extras := map[string]interface{}{}
-	if len(cweIDs) > 0 {
-		extras["cwe"] = hdfutil.StringsToInterfaces(cweIDs)
+	if len(cveIDs) > 0 {
+		extras["cve"] = hdfutil.StringsToInterfaces(cveIDs)
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -225,6 +277,12 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequi
 		Code:               hdfutil.Ptr(marshalVulnCode(vuln)),
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+	if len(cweIDs) > 0 {
+		req.Cwe = cweIDs
+	}
+	if cvss := buildCvssEntries(vuln); len(cvss) > 0 {
+		req.Cvss = cvss
 	}
 
 	// NeuVector scans container images; the package ecosystem isn't

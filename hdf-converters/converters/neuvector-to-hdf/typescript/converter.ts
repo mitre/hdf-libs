@@ -4,8 +4,10 @@ import {
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildCvss, cvssVersionFromVector, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type {
+  Cvss,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
@@ -83,6 +85,51 @@ interface NeuVectorScanModule {
  */
 function extractCWEs(description: string): string[] {
   return extractCWEIDs(description).map(id => `CWE-${id}`);
+}
+
+/**
+ * Collects the distinct CVE identifiers a vulnerability carries in its cves[]
+ * field, preserving first-seen order. The requirement ID is a
+ * name/package/version composite (not the CVE), so tags.cve is where the CVE
+ * list lives.
+ */
+function extractCVEs(vuln: NeuVectorVuln): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const cve of vuln.cves ?? []) {
+    if (cve && !seen.has(cve)) {
+      seen.add(cve);
+      out.push(cve);
+    }
+  }
+  return out;
+}
+
+/**
+ * Assembles the structured requirement.cvss[] from the scoring a vulnerability
+ * carries. NeuVector emits a CVSS v3 vector (version-prefixed) and, separately,
+ * a legacy v2 vector (prefix-less). The v3 metric is preferred; the v2 metric
+ * is the fallback. A vulnerability with neither vector contributes no entry —
+ * its score still drives impact.
+ */
+function buildCvssEntries(vuln: NeuVectorVuln): Cvss[] {
+  if (vuln.vectors_v3) {
+    return [buildCvss({
+      version: cvssVersionFromVector(vuln.vectors_v3),
+      baseScore: vuln.score_v3 > 0 ? vuln.score_v3 : undefined,
+      baseVector: vuln.vectors_v3,
+      source: 'NeuVector',
+    })];
+  }
+  if (vuln.vectors) {
+    return [buildCvss({
+      version: cvssVersionFromString('2.0'),
+      baseScore: vuln.score > 0 ? vuln.score : undefined,
+      baseVector: vuln.vectors,
+      source: 'NeuVector',
+    })];
+  }
+  return [];
 }
 
 /**
@@ -177,6 +224,7 @@ function buildCodeDesc(vuln: NeuVectorVuln): string {
  */
 function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequirement {
   const cweIDs = extractCWEs(vuln.description);
+  const cveIDs = extractCVEs(vuln);
   const nist = mapCWEToNIST(cweIDs, DEFAULT_REMEDIATION_NIST_TAGS);
   const cciTags = nistToCci(nist);
 
@@ -185,8 +233,8 @@ function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequire
     cci: cciTags,
   };
 
-  if (cweIDs.length > 0) {
-    tags['cwe'] = cweIDs;
+  if (cveIDs.length > 0) {
+    tags['cve'] = cveIDs;
   }
 
   const descriptions: Description[] = [
@@ -214,6 +262,13 @@ function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequire
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+  if (cweIDs.length > 0) {
+    req.cwe = cweIDs;
+  }
+  const cvss = buildCvssEntries(vuln);
+  if (cvss.length > 0) {
+    req.cvss = cvss;
+  }
 
   // NeuVector scans container images; the package ecosystem isn't
   // disambiguated by the source format (could be rpm/deb/python/etc.

@@ -11,6 +11,15 @@
               "version": "2.10.5-r1"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 9.1,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "libfetch before 2021-07-26, as used in apk-tools, xbps, and other products, mishandles numeric strings for the FTP and HTTP protocols. The FTP passive mode implementation allows an out-of-bounds read because strtol is used to parse the relevant numbers into address bytes. It does not check if the line ends prematurely. If it does, the for-loop condition checks for the '\\0' terminator one byte too late.",
@@ -32,6 +41,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-36159"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -48,6 +60,15 @@
               "fixedInVersion": "2.2.10-r2",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -71,6 +92,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-25235"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -87,6 +111,15 @@
               "fixedInVersion": "2.2.10-r0",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -110,6 +143,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-22824"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -126,6 +162,15 @@
               "fixedInVersion": "2.2.10-r0",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -149,6 +194,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-45960"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -165,6 +213,15 @@
               "fixedInVersion": "2.2.10-r2",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -188,6 +245,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-25236"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -204,6 +264,15 @@
               "fixedInVersion": "2.2.10-r0",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -227,6 +296,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-22823"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -243,6 +315,15 @@
               "fixedInVersion": "2.2.10-r2",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -266,6 +347,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-25315"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -282,6 +366,15 @@
               "fixedInVersion": "2.2.10-r0",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -305,6 +398,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-22822"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -321,6 +417,15 @@
               "fixedInVersion": "2.2.10-r1",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -344,6 +449,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-23852"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -360,6 +468,15 @@
               "fixedInVersion": "2.10.4-r1",
               "name": "freetype",
               "version": "2.10.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -383,6 +500,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-27404"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -399,6 +519,15 @@
               "fixedInVersion": "9.52-r1",
               "name": "ghostscript",
               "version": "9.52-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -422,6 +551,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-15900"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -438,6 +570,15 @@
               "fixedInVersion": "3.6.15-r1",
               "name": "gnutls",
               "version": "3.6.15-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -461,6 +602,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-20232"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -477,6 +621,15 @@
               "fixedInVersion": "3.6.15-r1",
               "name": "gnutls",
               "version": "3.6.15-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -500,6 +653,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-20231"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -516,6 +672,15 @@
               "fixedInVersion": "1.6.12-r1",
               "name": "libx11",
               "version": "1.6.12-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -539,6 +704,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-31535"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -555,6 +723,15 @@
               "fixedInVersion": "12.22.1-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -578,6 +755,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-7774"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -594,6 +774,15 @@
               "fixedInVersion": "12.22.5-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -617,6 +806,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-22931"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -633,6 +825,15 @@
               "fixedInVersion": "12.22.4-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -656,6 +857,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-22930"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -672,6 +876,15 @@
               "fixedInVersion": "1.1.1l-r0",
               "name": "openssl",
               "version": "1.1.1g-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -695,6 +908,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3711"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -711,6 +927,15 @@
               "fixedInVersion": "1.2.12-r2",
               "name": "zlib",
               "version": "1.2.11-r3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -734,6 +959,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-37434"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -750,6 +978,15 @@
               "fixedInVersion": "2.10.6-r0",
               "name": "apk-tools",
               "version": "2.10.5-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -773,6 +1010,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-30139"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -789,6 +1029,15 @@
               "fixedInVersion": "1.31.1-r21",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -812,6 +1061,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-42378"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -828,6 +1080,15 @@
               "fixedInVersion": "1.31.1-r21",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -851,6 +1112,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-42379"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -867,6 +1131,15 @@
               "fixedInVersion": "1.31.1-r21",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -890,6 +1163,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-42381"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -906,6 +1182,15 @@
               "fixedInVersion": "1.31.1-r21",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -929,6 +1214,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-42384"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -945,6 +1233,15 @@
               "fixedInVersion": "1.31.1-r21",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -968,6 +1265,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-42385"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -984,6 +1284,15 @@
               "fixedInVersion": "1.31.1-r21",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1007,6 +1316,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-42383"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1023,6 +1335,15 @@
               "fixedInVersion": "1.31.1-r21",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1046,6 +1367,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-42386"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1062,6 +1386,15 @@
               "fixedInVersion": "1.31.1-r20",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1085,6 +1418,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-28831"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1101,6 +1437,15 @@
               "fixedInVersion": "1.31.1-r21",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1124,6 +1469,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-42380"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1140,6 +1488,15 @@
               "fixedInVersion": "1.31.1-r22",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1163,6 +1520,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-28391"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1179,6 +1539,15 @@
               "fixedInVersion": "1.31.1-r21",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1202,6 +1571,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-42382"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1218,6 +1590,15 @@
               "fixedInVersion": "1.16.0-r3",
               "name": "cairo",
               "version": "1.16.0-r2"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1241,6 +1622,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-35492"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1257,6 +1641,15 @@
               "fixedInVersion": "2.1.28-r0",
               "name": "cyrus-sasl",
               "version": "2.1.27-r6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1280,6 +1673,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-24407"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1296,6 +1692,15 @@
               "fixedInVersion": "2.2.10-r0",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1319,6 +1724,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-46143"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1335,6 +1743,15 @@
               "fixedInVersion": "2.2.10-r0",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1358,6 +1775,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-22825"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1374,6 +1794,15 @@
               "fixedInVersion": "2.2.10-r0",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1397,6 +1826,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-22826"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1413,6 +1845,15 @@
               "fixedInVersion": "2.2.10-r0",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1436,6 +1877,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-22827"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1452,6 +1896,15 @@
               "fixedInVersion": "2.2.10-r2",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1475,6 +1928,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-25314"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1491,6 +1947,15 @@
               "fixedInVersion": "2.2.10-r1",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1514,6 +1979,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-23990"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1530,6 +1998,15 @@
               "fixedInVersion": "2.10.4-r2",
               "name": "freetype",
               "version": "2.10.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1553,6 +2030,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-27406"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1569,6 +2049,15 @@
               "fixedInVersion": "2.10.4-r2",
               "name": "freetype",
               "version": "2.10.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1592,6 +2081,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-27405"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1608,6 +2100,15 @@
               "fixedInVersion": "2.40.0-r3",
               "name": "gdk-pixbuf",
               "version": "2.40.0-r2"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1631,6 +2132,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-20240"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1647,6 +2151,15 @@
               "fixedInVersion": "6.2.1-r1",
               "name": "gmp",
               "version": "6.2.0-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1670,6 +2183,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-43618"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1686,6 +2202,15 @@
               "fixedInVersion": "6.9.11.42-r0",
               "name": "imagemagick6",
               "version": "6.9.11.25-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1709,6 +2234,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-29599"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1725,6 +2253,15 @@
               "fixedInVersion": "2.9.10-r6",
               "name": "libxml2",
               "version": "2.9.10-r5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1748,6 +2285,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3518"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1764,6 +2304,15 @@
               "fixedInVersion": "2.9.10-r6",
               "name": "libxml2",
               "version": "2.9.10-r5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.6,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1787,6 +2336,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3517"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1803,6 +2355,15 @@
               "fixedInVersion": "2.9.13-r0",
               "name": "libxml2",
               "version": "2.9.10-r5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1826,6 +2387,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-23308"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1842,6 +2406,15 @@
               "fixedInVersion": "6.2_p20200523-r1",
               "name": "ncurses",
               "version": "6.2_p20200523-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1865,6 +2438,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-39537"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1881,6 +2457,15 @@
               "fixedInVersion": "3.5.1-r2",
               "name": "nettle",
               "version": "3.5.1-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1904,6 +2489,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3580"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1920,6 +2508,15 @@
               "fixedInVersion": "12.22.6-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1943,6 +2540,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-39135"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1959,6 +2559,15 @@
               "fixedInVersion": "12.20.1-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1982,6 +2591,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-8277"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -1998,6 +2610,15 @@
               "fixedInVersion": "12.22.10-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2021,6 +2642,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-21824"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2037,6 +2661,15 @@
               "fixedInVersion": "12.22.6-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2060,6 +2693,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-39134"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2076,6 +2712,15 @@
               "fixedInVersion": "12.22.6-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.6,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2099,6 +2744,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-37713"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2115,6 +2763,15 @@
               "fixedInVersion": "12.21.0-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2138,6 +2795,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-22883"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2154,6 +2814,15 @@
               "fixedInVersion": "12.20.1-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.1,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2177,6 +2846,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-8265"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2193,6 +2865,15 @@
               "fixedInVersion": "12.22.10-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.4,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2216,6 +2897,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-44531"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2232,6 +2916,15 @@
               "fixedInVersion": "12.22.6-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.6,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2255,6 +2948,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-37701"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2271,6 +2967,15 @@
               "fixedInVersion": "12.22.6-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.6,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2294,6 +2999,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-37712"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2310,6 +3018,15 @@
               "fixedInVersion": "12.21.0-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2333,6 +3050,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-22884"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2349,6 +3069,15 @@
               "fixedInVersion": "2.4.50-r1",
               "name": "openldap",
               "version": "2.4.50-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2372,6 +3101,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-25692"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2388,6 +3120,15 @@
               "fixedInVersion": "2.4.50-r1",
               "name": "openldap",
               "version": "2.4.50-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2411,6 +3152,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-25709"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2427,6 +3171,15 @@
               "fixedInVersion": "2.4.50-r1",
               "name": "openldap",
               "version": "2.4.50-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2450,6 +3203,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-25710"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2466,6 +3222,15 @@
               "fixedInVersion": "2.4.50-r2",
               "name": "openldap",
               "version": "2.4.50-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2489,6 +3254,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-27212"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2505,6 +3273,15 @@
               "fixedInVersion": "1.1.1j-r0",
               "name": "openssl",
               "version": "1.1.1g-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2528,6 +3305,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-23840"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2544,6 +3324,15 @@
               "fixedInVersion": "1.1.1n-r0",
               "name": "openssl",
               "version": "1.1.1g-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2567,6 +3356,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-0778"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2583,6 +3375,15 @@
               "fixedInVersion": "1.1.1k-r0",
               "name": "openssl",
               "version": "1.1.1g-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.4,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2606,6 +3407,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3450"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2622,6 +3426,15 @@
               "fixedInVersion": "1.1.1l-r0",
               "name": "openssl",
               "version": "1.1.1g-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.4,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2645,6 +3458,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3712"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2661,6 +3477,15 @@
               "fixedInVersion": "0.23.22-r0",
               "name": "p11-kit",
               "version": "0.23.20-r5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2684,6 +3509,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-29363"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2700,6 +3528,15 @@
               "fixedInVersion": "0.23.22-r0",
               "name": "p11-kit",
               "version": "0.23.20-r5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2723,6 +3560,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-29361"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2739,6 +3579,15 @@
               "fixedInVersion": "12.5-r0",
               "name": "postgresql",
               "version": "12.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2762,6 +3611,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-25696"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2778,6 +3630,15 @@
               "fixedInVersion": "12.5-r0",
               "name": "postgresql",
               "version": "12.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2801,6 +3662,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-25695"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2817,6 +3681,15 @@
               "fixedInVersion": "12.9-r0",
               "name": "postgresql",
               "version": "12.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.1,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2840,6 +3713,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-23214"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2856,6 +3732,15 @@
               "fixedInVersion": "12.5-r0",
               "name": "postgresql",
               "version": "12.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.1,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2879,6 +3764,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-25694"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2895,6 +3783,15 @@
               "fixedInVersion": "12.7-r0",
               "name": "postgresql",
               "version": "12.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2918,6 +3815,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-32027"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2934,6 +3834,15 @@
               "fixedInVersion": "5.2.5-r1",
               "name": "xz",
               "version": "5.2.5-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2957,6 +3866,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-1271"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -2973,6 +3885,15 @@
               "fixedInVersion": "1.2.12-r0",
               "name": "zlib",
               "version": "1.2.11-r3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2996,6 +3917,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2018-25032"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3012,6 +3936,15 @@
               "fixedInVersion": "0.8-r2",
               "name": "avahi",
               "version": "0.8-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.2,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3035,6 +3968,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-36217"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3051,6 +3987,15 @@
               "fixedInVersion": "0.8-r1",
               "name": "avahi",
               "version": "0.8-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3074,6 +4019,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3468"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3090,6 +4038,15 @@
               "fixedInVersion": "1.31.1-r21",
               "name": "busybox",
               "version": "1.31.1-r19"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:L/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3113,6 +4070,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-42374"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3129,6 +4089,15 @@
               "fixedInVersion": "1.17.2-r0",
               "name": "c-ares",
               "version": "1.16.1-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.6,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3152,6 +4121,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3672"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3168,6 +4140,15 @@
               "fixedInVersion": "1.16.0-r5",
               "name": "cairo",
               "version": "1.16.0-r2"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3191,6 +4172,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2019-6462"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3207,6 +4191,15 @@
               "fixedInVersion": "2.2.10-r2",
               "name": "expat",
               "version": "2.2.9-r1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3230,6 +4223,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-25313"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3246,6 +4242,15 @@
               "fixedInVersion": "2.40.0-r4",
               "name": "gdk-pixbuf",
               "version": "2.40.0-r2"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3269,6 +4274,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-29385"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3285,6 +4293,15 @@
               "fixedInVersion": "6.9.11.35-r0",
               "name": "imagemagick6",
               "version": "6.9.11.25-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 3.3,
+              "baseSeverity": "low",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:L",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3308,6 +4325,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-27560"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3324,6 +4344,15 @@
               "fixedInVersion": "2.1.0-r0",
               "name": "libjpeg-turbo",
               "version": "2.0.5-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3347,6 +4376,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-20205"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3363,6 +4395,15 @@
               "fixedInVersion": "2.9.14-r0",
               "name": "libxml2",
               "version": "2.9.10-r5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3386,6 +4427,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-29824"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3402,6 +4446,15 @@
               "fixedInVersion": "2.9.10-r6",
               "name": "libxml2",
               "version": "2.9.10-r5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.9,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3425,6 +4478,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3537"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3441,6 +4497,15 @@
               "fixedInVersion": "2.9.12-r0",
               "name": "libxml2",
               "version": "2.9.10-r5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3464,6 +4529,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3541"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3480,6 +4548,15 @@
               "fixedInVersion": "1.1.24-r10",
               "name": "musl",
               "version": "1.1.24-r9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3503,6 +4580,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-28928"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3519,6 +4599,15 @@
               "fixedInVersion": "12.22.10-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3542,6 +4631,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-22960"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3558,6 +4650,15 @@
               "fixedInVersion": "12.22.10-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3581,6 +4682,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-22959"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3597,6 +4701,15 @@
               "fixedInVersion": "12.22.10-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3620,6 +4733,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-44533"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3636,6 +4752,15 @@
               "fixedInVersion": "12.22.10-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3659,6 +4784,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-44532"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3675,6 +4803,15 @@
               "fixedInVersion": "12.22.5-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3698,6 +4835,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-22939"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3714,6 +4854,15 @@
               "fixedInVersion": "12.20.1-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3737,6 +4886,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-8287"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3753,6 +4905,15 @@
               "fixedInVersion": "12.22.2-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3776,6 +4937,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-22918"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3792,6 +4956,15 @@
               "fixedInVersion": "12.22.5-r0",
               "name": "nodejs",
               "version": "12.18.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.6,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3815,6 +4988,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3672"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3831,6 +5007,15 @@
               "fixedInVersion": "1.1.1k-r0",
               "name": "openssl",
               "version": "1.1.1g-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.9,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3854,6 +5039,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3449"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3870,6 +5058,15 @@
               "fixedInVersion": "1.1.1j-r0",
               "name": "openssl",
               "version": "1.1.1g-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 3.7,
+              "baseSeverity": "low",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3893,6 +5090,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-23839"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3909,6 +5109,15 @@
               "fixedInVersion": "1.1.1i-r0",
               "name": "openssl",
               "version": "1.1.1g-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.9,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3932,6 +5141,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-1971"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3948,6 +5160,15 @@
               "fixedInVersion": "1.1.1j-r0",
               "name": "openssl",
               "version": "1.1.1g-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.9,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3971,6 +5192,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-23841"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -3987,6 +5211,15 @@
               "fixedInVersion": "0.23.22-r0",
               "name": "p11-kit",
               "version": "0.23.20-r5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4010,6 +5243,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-29362"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4026,6 +5262,15 @@
               "fixedInVersion": "12.7-r0",
               "name": "postgresql",
               "version": "12.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4049,6 +5294,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-32028"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4065,6 +5313,15 @@
               "fixedInVersion": "12.6-r0",
               "name": "postgresql",
               "version": "12.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4088,6 +5345,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-20229"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4104,6 +5364,15 @@
               "fixedInVersion": "12.6-r0",
               "name": "postgresql",
               "version": "12.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4127,6 +5396,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3393"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4143,6 +5415,15 @@
               "fixedInVersion": "12.7-r0",
               "name": "postgresql",
               "version": "12.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4166,6 +5447,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-32029"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4182,6 +5466,15 @@
               "fixedInVersion": "12.8-r0",
               "name": "postgresql",
               "version": "12.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4205,6 +5498,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3677"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4221,6 +5517,15 @@
               "fixedInVersion": "12.9-r0",
               "name": "postgresql",
               "version": "12.4-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.9,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4244,6 +5549,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-23222"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4260,6 +5568,15 @@
               "fixedInVersion": "2.37.4-r0",
               "name": "util-linux",
               "version": "2.35.2-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4283,6 +5600,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-0563"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4299,6 +5619,15 @@
               "fixedInVersion": "2.37.3-r0",
               "name": "util-linux",
               "version": "2.35.2-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4322,6 +5651,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3995"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4338,6 +5670,15 @@
               "fixedInVersion": "2.37.3-r0",
               "name": "util-linux",
               "version": "2.35.2-r0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4360,6 +5701,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2021-3996"
             ],
             "nist": [
               "SI-2",
@@ -4400,6 +5744,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-32224"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4416,6 +5763,15 @@
               "fixedInVersion": "\u003e=5.2.6.3,5.2; OR \u003e=6.0.4.7,6.0; OR \u003e=6.1.4.7,6.1; OR \u003e=7.0.2.3",
               "name": "ruby:activestorage",
               "version": "5.2.4.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.8,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:P/I:P/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -4439,6 +5795,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-21831"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4455,6 +5814,15 @@
               "fixedInVersion": "=2.2.10; OR \u003e=2.2.18",
               "name": "ruby:bundler",
               "version": "2.1.4"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.3,
+              "baseSeverity": "critical",
+              "baseVector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -4478,6 +5846,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-36327"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4494,6 +5865,15 @@
               "fixedInVersion": "\u003e=2.2.33",
               "name": "ruby:bundler",
               "version": "2.1.4"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.3,
+              "baseSeverity": "critical",
+              "baseVector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -4517,6 +5897,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-43809"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4533,6 +5916,15 @@
               "fixedInVersion": "=2.2.10; OR \u003e=2.2.18",
               "name": "ruby:bundler",
               "version": "1.17.2"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.3,
+              "baseSeverity": "critical",
+              "baseVector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -4555,6 +5947,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2020-36327"
             ],
             "nist": [
               "SI-2",
@@ -4595,6 +5990,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2016-7954"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4611,6 +6009,15 @@
               "fixedInVersion": "\u003e=2.2.33",
               "name": "ruby:bundler",
               "version": "1.17.2"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.3,
+              "baseSeverity": "critical",
+              "baseVector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -4634,6 +6041,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-43809"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4650,6 +6060,15 @@
               "fixedInVersion": "\u003e=1.6.1",
               "name": "ruby:jmespath",
               "version": "1.4.0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -4672,6 +6091,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2022-32511"
             ],
             "nist": [
               "SI-2",
@@ -4712,6 +6134,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-25765"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4728,6 +6153,15 @@
               "fixedInVersion": "\u003e=4.3.12,4.3; OR \u003e=5.6.4",
               "name": "ruby:puma",
               "version": "3.12.6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:P/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -4750,6 +6184,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2022-24790"
             ],
             "nist": [
               "SI-2",
@@ -4790,6 +6227,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-30123"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4829,6 +6269,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2024-27280"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4845,6 +6288,15 @@
               "fixedInVersion": "\u003e=5.2.4.6,5.2; OR \u003e=5.2.6,5.2; OR \u003e=6.0.3.7,6.0; OR \u003e=6.1.3.2",
               "name": "ruby:actionpack",
               "version": "5.2.4.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:P/I:N/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -4868,6 +6320,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-22885"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4884,6 +6339,15 @@
               "fixedInVersion": "\u003e=5.2.4.6,5.2; OR \u003e=5.2.6,5.2; OR \u003e=6.0.3.7,6.0; OR \u003e=6.1.3.2",
               "name": "ruby:actionpack",
               "version": "5.2.4.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -4907,6 +6371,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-22904"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4923,6 +6390,15 @@
               "fixedInVersion": "\u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1",
               "name": "ruby:actionpack",
               "version": "5.2.4.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4946,6 +6422,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2023-22795"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -4962,6 +6441,15 @@
               "fixedInVersion": "\u003e=5.2.6.2,5.2; OR \u003e=6.0.4.6,6.0; OR \u003e=6.1.4.6,6.1; OR \u003e=7.0.2.2",
               "name": "ruby:actionpack",
               "version": "5.2.4.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:P/I:N/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -4985,6 +6473,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-23633"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5001,6 +6492,15 @@
               "fixedInVersion": "\u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1",
               "name": "ruby:actionpack",
               "version": "5.2.4.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -5023,6 +6523,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2023-22792"
             ],
             "nist": [
               "SI-2",
@@ -5063,6 +6566,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2023-23913"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5102,6 +6608,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-44566"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5118,6 +6627,15 @@
               "fixedInVersion": "\u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1",
               "name": "ruby:activesupport",
               "version": "5.2.4.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -5141,6 +6659,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2023-22796"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5157,6 +6678,15 @@
               "fixedInVersion": "\u003e=2.8.0",
               "name": "ruby:addressable",
               "version": "2.6.0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5180,6 +6710,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-32740"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5196,6 +6729,15 @@
               "fixedInVersion": "\u003e=2.1.0",
               "name": "ruby:bundler",
               "version": "1.17.2"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.4,
+              "baseSeverity": "medium",
+              "baseVector": "AV:L/AC:M/Au:N/C:P/I:P/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5219,6 +6761,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2019-3881"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5235,6 +6780,15 @@
               "fixedInVersion": "\u003e=1.3.2,1.3; OR \u003e=2.1.1",
               "name": "ruby:carrierwave",
               "version": "1.3.1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5258,6 +6812,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-21305"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5274,6 +6831,15 @@
               "fixedInVersion": "\u003e=2.0.1,2.0; OR \u003e=3.0.2,3.0; OR \u003e=3.1.2,3.1; OR \u003e=3.2.1",
               "name": "ruby:date",
               "version": "2.0.0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5297,6 +6863,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-41817"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5313,6 +6882,15 @@
               "fixedInVersion": "\u003e=1.0.1",
               "name": "ruby:globalid",
               "version": "0.4.2"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -5336,6 +6914,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2023-22799"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5352,6 +6933,15 @@
               "fixedInVersion": "\u003e=2.3.0",
               "name": "ruby:json",
               "version": "2.1.0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:P/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5374,6 +6964,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2020-10663"
             ],
             "nist": [
               "SI-2",
@@ -5414,6 +7007,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-23514"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5453,6 +7049,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-23516"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5469,6 +7068,15 @@
               "fixedInVersion": "\u003e=1.13.4",
               "name": "ruby:nokogiri",
               "version": "1.10.9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5492,6 +7100,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-24836"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5509,6 +7120,18 @@
               "name": "ruby:nokogiri",
               "version": "1.10.9"
             }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-787"
           ],
           "descriptions": [
             {
@@ -5530,8 +7153,8 @@
             "cci": [
               "CCI-001310"
             ],
-            "cwe": [
-              "CWE-787"
+            "cve": [
+              "CVE-2018-25032"
             ],
             "nist": [
               "SI-10"
@@ -5550,6 +7173,18 @@
               "name": "ruby:nokogiri",
               "version": "1.10.9"
             }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.1,
+              "baseSeverity": "high",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:N/A:C",
+              "source": "NeuVector",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-91"
           ],
           "descriptions": [
             {
@@ -5571,8 +7206,8 @@
             "cci": [
               "CCI-001310"
             ],
-            "cwe": [
-              "CWE-91"
+            "cve": [
+              "CVE-2022-23437"
             ],
             "nist": [
               "SI-10"
@@ -5590,6 +7225,15 @@
               "fixedInVersion": "\u003e=1.11.4",
               "name": "ruby:nokogiri",
               "version": "1.10.9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5613,6 +7257,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3517"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5629,6 +7276,15 @@
               "fixedInVersion": "\u003e=1.13.6",
               "name": "ruby:nokogiri",
               "version": "1.10.9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.4,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:P/I:N/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5652,6 +7308,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-29181"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5668,6 +7327,15 @@
               "fixedInVersion": "\u003e=1.13.2",
               "name": "ruby:nokogiri",
               "version": "1.10.9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.8,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:P/I:P/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5691,6 +7359,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-30560"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5707,6 +7378,15 @@
               "fixedInVersion": "\u003e=1.11.4",
               "name": "ruby:nokogiri",
               "version": "1.10.9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.8,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:P/I:P/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5730,6 +7410,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3518"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5746,6 +7429,15 @@
               "fixedInVersion": "\u003e=1.12.5",
               "name": "ruby:nokogiri",
               "version": "1.10.9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:P/I:N/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5769,6 +7461,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-41098"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5786,6 +7481,18 @@
               "name": "ruby:nokogiri",
               "version": "1.10.9"
             }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-400"
           ],
           "descriptions": [
             {
@@ -5807,8 +7514,8 @@
             "cci": [
               "CCI-001310"
             ],
-            "cwe": [
-              "CWE-400"
+            "cve": [
+              "CVE-2022-24839"
             ],
             "nist": [
               "SI-10"
@@ -5826,6 +7533,15 @@
               "fixedInVersion": "\u003e=4.3.11,4.3; OR \u003e=5.6.2",
               "name": "ruby:puma",
               "version": "3.12.6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:P/I:N/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5849,6 +7565,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-23634"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5865,6 +7584,15 @@
               "fixedInVersion": "\u003e=4.3.8,4.3; OR \u003e=5.3.1",
               "name": "ruby:puma",
               "version": "3.12.6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -5888,6 +7616,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-29509"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5904,6 +7635,15 @@
               "fixedInVersion": "\u003e=2.0.9.2,2.0; OR \u003e=2.1.4.2,2.1; OR \u003e=2.2.6.1,2.2; OR \u003e=3.0.4.1",
               "name": "ruby:rack",
               "version": "2.2.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -5927,6 +7667,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-44571"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -5943,6 +7686,15 @@
               "fixedInVersion": "\u003e=2.0.9.2,2.0; OR \u003e=2.1.4.2,2.1; OR \u003e=2.2.6.1,2.2; OR \u003e=3.0.4.1",
               "name": "ruby:rack",
               "version": "2.2.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -5965,6 +7717,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2022-44572"
             ],
             "nist": [
               "SI-2",
@@ -6005,6 +7760,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2023-27530"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6043,6 +7801,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2022-44570"
             ],
             "nist": [
               "SI-2",
@@ -6083,6 +7844,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-30122"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6122,6 +7886,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-23517"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6138,6 +7905,15 @@
               "fixedInVersion": "\u003e=6.1.2.1,6.1; OR \u003e=6.2.1.1,6.2; OR \u003e=6.3.1",
               "name": "ruby:rdoc",
               "version": "6.1.2"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.4,
+              "baseSeverity": "medium",
+              "baseVector": "AV:L/AC:M/Au:N/C:P/I:P/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -6161,6 +7937,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-31799"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6177,6 +7956,15 @@
               "fixedInVersion": "\u003e=3.1.9.1,3.1; OR \u003e=3.2.3.1,3.2; OR \u003e=3.2.5",
               "name": "ruby:rexml",
               "version": "3.1.9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:P/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -6199,6 +7987,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2021-28965"
             ],
             "nist": [
               "SI-2",
@@ -6239,6 +8030,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-31163"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6256,6 +8050,18 @@
               "name": "ruby:webrick",
               "version": "1.4.2"
             }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:P/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-444"
           ],
           "descriptions": [
             {
@@ -6277,8 +8083,8 @@
             "cci": [
               "CCI-001310"
             ],
-            "cwe": [
-              "CWE-444"
+            "cve": [
+              "CVE-2020-25613"
             ],
             "nist": [
               "SI-10"
@@ -6296,6 +8102,15 @@
               "fixedInVersion": "\u003e=5.2.7.1,5.2; OR \u003e=6.0.4.8,6.0; OR \u003e=6.1.5.1,6.1; OR \u003e=7.0.2.4",
               "name": "ruby:actionpack",
               "version": "5.2.4.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:P/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -6319,6 +8134,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-22577"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6335,6 +8153,15 @@
               "fixedInVersion": "\u003e=5.2.7.1,5.2; OR \u003e=6.0.4.8,6.0; OR \u003e=6.1.5.1,6.1; OR \u003e=7.0.2.4",
               "name": "ruby:actionview",
               "version": "5.2.4.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:P/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -6358,6 +8185,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-27777"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6374,6 +8204,15 @@
               "fixedInVersion": "\u003e=5.2.4.4,5.2; OR \u003e=6.0.3.3",
               "name": "ruby:actionview",
               "version": "5.2.4.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:P/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -6397,6 +8236,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2020-15169"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6413,6 +8255,15 @@
               "fixedInVersion": "\u003e=5.2.4.5,5.2; OR \u003e=6.0.3.5,6.0; OR \u003e=6.1.2.1",
               "name": "ruby:activerecord",
               "version": "5.2.4.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -6435,6 +8286,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2021-22880"
             ],
             "nist": [
               "SI-2",
@@ -6475,6 +8329,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2024-26144"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6491,6 +8348,15 @@
               "fixedInVersion": "\u003e=1.3.2,1.3; OR \u003e=2.1.1",
               "name": "ruby:carrierwave",
               "version": "1.3.1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:S/C:P/I:N/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -6513,6 +8379,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2021-21288"
             ],
             "nist": [
               "SI-2",
@@ -6553,6 +8422,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2023-49090"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6591,6 +8463,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2024-29034"
             ],
             "nist": [
               "SI-2",
@@ -6631,6 +8506,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-23515"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6670,6 +8548,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2021-3537"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6686,6 +8567,15 @@
               "fixedInVersion": "\u003e=1.11.0.rc4",
               "name": "ruby:nokogiri",
               "version": "1.10.9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:S/C:P/I:N/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -6708,6 +8598,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2020-26247"
             ],
             "nist": [
               "SI-2",
@@ -6748,6 +8641,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2023-40175"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6787,6 +8683,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2024-21647"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6803,6 +8702,15 @@
               "fixedInVersion": "\u003e=2.2.8.1,2.2; OR \u003e=3.0.9.1",
               "name": "ruby:rack",
               "version": "2.2.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:N/A:L",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -6826,6 +8734,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2024-26141"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6842,6 +8753,15 @@
               "fixedInVersion": "\u003e=2.2.6.4,2.0; OR \u003e=3.0.6.1",
               "name": "ruby:rack",
               "version": "2.2.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -6864,6 +8784,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2023-27539"
             ],
             "nist": [
               "SI-2",
@@ -6904,6 +8827,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2024-25126"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -6920,6 +8846,15 @@
               "fixedInVersion": "\u003e=2.0.9.4,2.0; OR \u003e=2.1.4.4,2.1; OR \u003e=2.2.8.1,2.2; OR \u003e=3.0.9.1",
               "name": "ruby:rack",
               "version": "2.2.3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+              "source": "NeuVector",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -6942,6 +8877,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2024-26146"
             ],
             "nist": [
               "SI-2",
@@ -6982,6 +8920,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2014-0081"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -7021,6 +8962,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-23518"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -7037,6 +8981,15 @@
               "fixedInVersion": "\u003e=1.4.3",
               "name": "ruby:rails-html-sanitizer",
               "version": "1.3.0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:P/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -7059,6 +9012,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2022-32209"
             ],
             "nist": [
               "SI-2",
@@ -7099,6 +9055,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2022-23519"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -7137,6 +9096,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2022-23520"
             ],
             "nist": [
               "SI-2",
@@ -7177,6 +9139,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2024-27281"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -7215,6 +9180,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2024-39908"
             ],
             "nist": [
               "SI-2",
@@ -7255,6 +9223,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2024-35176"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -7293,6 +9264,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2024-43398"
             ],
             "nist": [
               "SI-2",
@@ -7333,6 +9307,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2024-41123"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -7372,6 +9349,9 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "cve": [
+              "CVE-2024-41946"
+            ],
             "nist": [
               "SI-2",
               "RA-5"
@@ -7388,6 +9368,15 @@
               "fixedInVersion": "\u003e=4.3.9,4.3; OR \u003e=5.5.1",
               "name": "ruby:puma",
               "version": "3.12.6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 3.6,
+              "baseSeverity": "low",
+              "baseVector": "AV:N/AC:H/Au:S/C:P/I:P/A:N",
+              "source": "NeuVector",
+              "version": "2.0"
             }
           ],
           "descriptions": [
@@ -7410,6 +9399,9 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2021-41136"
             ],
             "nist": [
               "SI-2",
