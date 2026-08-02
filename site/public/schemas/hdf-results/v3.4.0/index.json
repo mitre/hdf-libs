@@ -605,6 +605,7 @@
                 "identifier": "ops@agency.gov"
               },
               "appliedAt": "2026-01-20T10:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
               "milestones": [
                 {
                   "description": "Vendor releases compatible patch",
@@ -3118,7 +3119,8 @@
             "type",
             "explanation",
             "appliedBy",
-            "appliedAt"
+            "appliedAt",
+            "expiresAt"
           ],
           "properties": {
             "type": {
@@ -3148,7 +3150,7 @@
             "expiresAt": {
               "type": "string",
               "format": "date-time",
-              "description": "Optional expiration date for this POA&M requiring review/renewal. ISO 8601 format."
+              "description": "Required deadline for this POA&M. A POA&M is a time-boxed acceptance of an open finding; without a deadline it lets a failing requirement duck remediation indefinitely. Source a real date (e.g. a remediation target or vendor-fix date) — never a wall-clock default. ISO 8601 format."
             },
             "milestones": {
               "type": "array",
@@ -3182,6 +3184,7 @@
                 "type": "email"
               },
               "appliedAt": "2025-12-01T09:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
               "milestones": [
                 {
                   "description": "Update base Docker image to use OpenSSL 3.0.x",
@@ -3214,7 +3217,7 @@
                 "description": "Automated POA&M creation from vulnerability scan"
               },
               "appliedAt": "2025-11-28T14:00:00Z",
-              "expiresAt": "2026-02-28T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
               "milestones": [
                 {
                   "description": "Configure firewall rules to restrict database access to management VLAN",
@@ -3249,7 +3252,7 @@
                 "type": "email"
               },
               "appliedAt": "2025-12-05T10:00:00Z",
-              "expiresAt": "2026-04-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
               "milestones": [
                 {
                   "description": "Complete migration to replacement system",

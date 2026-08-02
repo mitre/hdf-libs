@@ -482,6 +482,7 @@
               "explanation": "Patch deployment blocked by vendor compatibility testing. Vendor confirmed fix for Q2 2026.",
               "appliedBy": { "type": "email", "identifier": "ops@agency.gov" },
               "appliedAt": "2026-01-20T10:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
               "milestones": [
                 { "description": "Vendor releases compatible patch", "estimatedCompletion": "2026-04-01T00:00:00Z", "status": "pending" },
                 { "description": "Deploy to production", "estimatedCompletion": "2026-04-15T00:00:00Z", "status": "pending" }

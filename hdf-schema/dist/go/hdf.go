@@ -561,8 +561,11 @@ type PoamElement struct {
 	// Supporting evidence for this POA&M, such as documentation of compensating controls or               
 	// mitigation implementation.                                                                          
 	Evidence                                                                                   []Evidence  `json:"evidence,omitempty"`
-	// Optional expiration date for this POA&M requiring review/renewal. ISO 8601 format.                  
-	ExpiresAt                                                                                  *time.Time  `json:"expiresAt,omitempty"`
+	// Required deadline for this POA&M. A POA&M is a time-boxed acceptance of an open finding;            
+	// without a deadline it lets a failing requirement duck remediation indefinitely. Source a            
+	// real date (e.g. a remediation target or vendor-fix date) — never a wall-clock default.              
+	// ISO 8601 format.                                                                                    
+	ExpiresAt                                                                                  time.Time   `json:"expiresAt"`
 	// Detailed explanation of the plan, including what actions will be taken.                             
 	Explanation                                                                                string      `json:"explanation"`
 	// Optional array of milestones tracking progress toward completion.                                   

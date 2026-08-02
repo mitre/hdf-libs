@@ -282,6 +282,34 @@ describe('HDF Results Validation', () => {
       expect(result.errors.length).toBeGreaterThan(1); // Multiple errors
     });
   });
+
+  // A POA&M is a time-boxed acceptance of an open finding; without a deadline it
+  // lets a failing requirement duck remediation indefinitely (bead 2cyd).
+  describe('POA&M deadline enforcement', () => {
+    const poam = (extra: Record<string, unknown>): Record<string, unknown> =>
+      resultsWith({
+        poams: [
+          {
+            type: 'remediation',
+            explanation: 'Patch deployment scheduled pending vendor fix.',
+            appliedBy: { type: 'email', identifier: 'ops@agency.gov' },
+            appliedAt: '2026-01-20T10:00:00Z',
+            ...extra,
+          },
+        ],
+      });
+
+    it('rejects a POA&M without expiresAt', () => {
+      const result = validateResults(poam({}));
+      expect(result.valid).toBe(false);
+      expect(result.getErrorMessage()).toContain('expiresAt');
+    });
+
+    it('accepts a POA&M with expiresAt', () => {
+      const result = validateResults(poam({ expiresAt: '2099-12-31T00:00:00Z' }));
+      expect(result.valid).toBe(true);
+    });
+  });
 });
 
 describe('HDF Baseline Validation', () => {

@@ -550,6 +550,34 @@ func TestCveEcosystem_OverrideCvss(t *testing.T) {
 	})
 }
 
+// TestPoamRequiresExpiresAt asserts a POA&M is time-boxed: without an expiresAt
+// deadline it lets a failing requirement duck remediation indefinitely, so the
+// schema must reject it (bead 2cyd).
+func TestPoamRequiresExpiresAt(t *testing.T) {
+	poam := func(expiresAt string) []byte {
+		return resultsWith(`"poams": [{
+			"type": "remediation",
+			"explanation": "Patch deployment scheduled pending vendor fix.",
+			"appliedBy": { "type": "email", "identifier": "ops@agency.gov" },
+			"appliedAt": "2026-01-20T10:00:00Z"` + expiresAt + `
+		}]`)
+	}
+
+	t.Run("rejects a POA&M without expiresAt", func(t *testing.T) {
+		result := ValidateResults(poam(""))
+		assert.False(t, result.Valid)
+		assert.Contains(t, result.Error(), "expiresAt")
+	})
+
+	t.Run("accepts a POA&M with expiresAt", func(t *testing.T) {
+		result := ValidateResults(poam(`, "expiresAt": "2099-12-31T00:00:00Z"`))
+		if !result.Valid {
+			t.Logf("Unexpected errors: %s", result.Error())
+		}
+		assert.True(t, result.Valid)
+	})
+}
+
 func TestSetSchemaDir(t *testing.T) {
 	t.Run("should allow loading schemas from custom directory", func(t *testing.T) {
 		// Store original
