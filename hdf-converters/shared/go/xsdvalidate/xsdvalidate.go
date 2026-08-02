@@ -1,3 +1,5 @@
+//go:build !windows
+
 // Package xsdvalidate provides XML-against-XSD validation for converter output
 // tests, for formats whose authoritative schema is an XSD rather than JSON
 // Schema (e.g. XCCDF).
@@ -6,6 +8,11 @@
 // package pulls in a cgo + libxml2 build dependency. It lives in its own package
 // precisely so that dependency stays isolated to the XSD-validating tests — the
 // main shared/go package (imported by every converter) stays cgo-free.
+//
+// The real implementation builds only where libxml2 is available (Linux CI,
+// local macOS); Windows gets the skipping stub in xsdvalidate_windows.go, since
+// libxml2 headers are absent on Windows runners and the validated output is
+// platform-independent.
 package xsdvalidate
 
 import (
