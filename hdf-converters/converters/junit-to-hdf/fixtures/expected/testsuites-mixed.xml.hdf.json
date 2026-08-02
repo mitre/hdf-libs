@@ -155,7 +155,6 @@
   },
   "timestamp": "2024-11-15T10:30:00Z",
   "tool": {
-    "format": "XML",
     "name": "JUnit XML"
   }
 }

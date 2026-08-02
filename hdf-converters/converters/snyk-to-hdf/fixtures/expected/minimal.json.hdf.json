@@ -379,7 +379,6 @@
   },
   "timestamp": "2026-07-12T22:56:42.253085Z",
   "tool": {
-    "format": "JSON",
     "name": "Snyk"
   }
 }

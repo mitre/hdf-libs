@@ -224,7 +224,6 @@
   },
   "timestamp": "2026-07-12T23:29:30.765221Z",
   "tool": {
-    "format": "JSON",
     "name": "Twistlock"
   }
 }

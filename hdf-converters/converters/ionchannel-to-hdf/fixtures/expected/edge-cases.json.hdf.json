@@ -163,7 +163,6 @@
   },
   "timestamp": "2026-08-01T20:08:49.791421-04:00",
   "tool": {
-    "format": "JSON",
     "name": "Ion Channel"
   }
 }

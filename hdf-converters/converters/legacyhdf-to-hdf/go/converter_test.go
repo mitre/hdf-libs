@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
@@ -101,7 +102,7 @@ func TestSnapshots(t *testing.T) {
 		if err := json.Unmarshal(input, &v1); err != nil {
 			return nil, err
 		}
-		return ConvertV1ToV2(&v1), nil
+		return ConvertV1ToV2(&v1, "1.0.0"), nil
 	}, sharedLegacyInput)
 }
 
@@ -117,7 +118,7 @@ func TestConvertV1ToV2_Minimal(t *testing.T) {
 	require.NoError(t, err, "Failed to unmarshal input")
 
 	// Convert
-	v2 := ConvertV1ToV2(&v1)
+	v2 := ConvertV1ToV2(&v1, "1.0.0")
 
 	// Write output for differential testing
 	outputDir := getOutputDir()
@@ -146,7 +147,123 @@ func TestConvertV1ToV2_Tool(t *testing.T) {
 	err = json.Unmarshal(inputData, &v1)
 	require.NoError(t, err)
 
-	v2 := ConvertV1ToV2(&v1)
+	v2 := ConvertV1ToV2(&v1, "1.0.0")
+
+	require.NotNil(t, v2.Tool)
+	require.NotNil(t, v2.Tool.Name)
+	assert.Equal(t, "Heimdall Data Format v1", *v2.Tool.Name)
+	assert.Nil(t, v2.Tool.Version)
+	assert.Nil(t, v2.Tool.Format)
+}
+
+// v1WithResultTimes builds a minimal v1 document whose controls carry the given
+// result start_times, for exercising document-metadata derivation.
+func v1WithResultTimes(version string, startTimes ...string) *HDFV1Results {
+	results := make([]V1Result, len(startTimes))
+	for i, st := range startTimes {
+		s := st
+		results[i] = V1Result{Status: "passed", StartTime: &s}
+	}
+	return &HDFV1Results{
+		Version:  version,
+		Platform: V1Platform{Name: "test-system"},
+		Profiles: []V1Profile{{
+			Name:     "p",
+			Controls: []V1Control{{ID: "c-1", Impact: 0.5, Results: results}},
+		}},
+		Statistics: V1Statistics{},
+	}
+}
+
+func TestConvertV1ToV2_SetsDocumentTimestampFromResults(t *testing.T) {
+	v1 := v1WithResultTimes("5.22.3",
+		"2024-03-01T10:00:00Z",
+		"2024-03-01T10:05:30Z", // latest
+		"2024-03-01T09:58:00Z",
+	)
+
+	v2 := ConvertV1ToV2(v1, "1.0.0")
+
+	require.NotNil(t, v2.Timestamp, "top-level timestamp must be derived from results")
+	assert.Equal(t, "2024-03-01T10:05:30Z", v2.Timestamp.UTC().Format(time.RFC3339),
+		"timestamp is the latest (last-observed) result start_time")
+}
+
+func TestConvertV1ToV2_TimestampNormalizesOffsetToUTC(t *testing.T) {
+	v1 := v1WithResultTimes("5.22.3", "2024-03-01T10:05:30-05:00")
+
+	v2 := ConvertV1ToV2(v1, "1.0.0")
+
+	require.NotNil(t, v2.Timestamp)
+	assert.Equal(t, "2024-03-01T15:05:30Z", v2.Timestamp.UTC().Format(time.RFC3339),
+		"canonical form is trimmed UTC")
+}
+
+func TestConvertV1ToV2_PrefersExplicitTimestamp(t *testing.T) {
+	v1 := v1WithResultTimes("5.22.3", "2024-03-01T10:05:30Z")
+	explicit := "2020-01-02T03:04:05Z"
+	v1.Timestamp = &explicit
+
+	v2 := ConvertV1ToV2(v1, "1.0.0")
+
+	require.NotNil(t, v2.Timestamp)
+	assert.Equal(t, "2020-01-02T03:04:05Z", v2.Timestamp.UTC().Format(time.RFC3339),
+		"an explicit source timestamp wins over the derived one")
+}
+
+func TestConvertV1ToV2_NoTimestampWhenSourceHasNoTimes(t *testing.T) {
+	v1 := &HDFV1Results{
+		Version:    "5.22.3",
+		Platform:   V1Platform{Name: "test-system"},
+		Profiles:   []V1Profile{{Name: "p", Controls: []V1Control{{ID: "c-1", Impact: 0}}}},
+		Statistics: V1Statistics{},
+	}
+
+	v2 := ConvertV1ToV2(v1, "1.0.0")
+
+	assert.Nil(t, v2.Timestamp, "no result times and no explicit timestamp → nil (never wall clock)")
+}
+
+func TestConvertV1ToV2_SetsGenerator(t *testing.T) {
+	v1 := v1WithResultTimes("5.22.3", "2024-03-01T10:00:00Z")
+
+	v2 := ConvertV1ToV2(v1, "3.4.5")
+
+	require.NotNil(t, v2.Generator)
+	assert.Equal(t, "legacyhdf-to-hdf", v2.Generator.Name)
+	assert.Equal(t, "3.4.5", v2.Generator.Version)
+}
+
+func TestConvertV1ToV2_PreservesInputGenerator(t *testing.T) {
+	v1 := v1WithResultTimes("5.22.3", "2024-03-01T10:00:00Z")
+	v1.Generator = &hdf.Generator{Name: "inspec", Version: "4.18.0"}
+
+	v2 := ConvertV1ToV2(v1, "3.4.5")
+
+	require.NotNil(t, v2.Generator)
+	assert.Equal(t, "inspec", v2.Generator.Name, "an input generator is preserved")
+	assert.Equal(t, "4.18.0", v2.Generator.Version)
+}
+
+func TestConvertV1ToV2_ToolInSpecFromRealVersion(t *testing.T) {
+	v1 := v1WithResultTimes("5.22.3", "2024-03-01T10:00:00Z")
+
+	v2 := ConvertV1ToV2(v1, "1.0.0")
+
+	require.NotNil(t, v2.Tool)
+	require.NotNil(t, v2.Tool.Name)
+	assert.Equal(t, "InSpec", *v2.Tool.Name)
+	require.NotNil(t, v2.Tool.Version)
+	assert.Equal(t, "5.22.3", *v2.Tool.Version)
+	require.NotNil(t, v2.Tool.Format)
+	assert.Equal(t, "exec-json", *v2.Tool.Format)
+}
+
+func TestConvertV1ToV2_ToolKeepsLegacyLabelForNonInSpecVersion(t *testing.T) {
+	// major < 2 is a legacy HDF v1 format marker, not a modern InSpec release.
+	v1 := v1WithResultTimes("1.37.6", "2024-03-01T10:00:00Z")
+
+	v2 := ConvertV1ToV2(v1, "1.0.0")
 
 	require.NotNil(t, v2.Tool)
 	require.NotNil(t, v2.Tool.Name)
@@ -167,7 +284,7 @@ func TestConvertV1ToV2_ContainerScan(t *testing.T) {
 	require.NoError(t, err, "Failed to unmarshal input")
 
 	// Convert
-	v2 := ConvertV1ToV2(&v1)
+	v2 := ConvertV1ToV2(&v1, "1.0.0")
 
 	// Write output for differential testing
 	outputDir := getOutputDir()
@@ -197,7 +314,7 @@ func TestConvertV1ToV2_Wrapper(t *testing.T) {
 	require.NoError(t, err, "Failed to unmarshal input")
 
 	// Convert
-	v2 := ConvertV1ToV2(&v1)
+	v2 := ConvertV1ToV2(&v1, "1.0.0")
 
 	// Write output for differential testing
 	outputDir := getOutputDir()
@@ -384,7 +501,7 @@ func TestConvertV1ToV2_WithNilProfiles(t *testing.T) {
 		Statistics: V1Statistics{},
 	}
 
-	v2 := ConvertV1ToV2(v1)
+	v2 := ConvertV1ToV2(v1, "1.0.0")
 
 	// Should handle nil profiles
 	require.NotNil(t, v2.Baselines)
@@ -569,7 +686,7 @@ func TestConvertV1ToV2_DeepOverlayFlatten(t *testing.T) {
 	require.NoError(t, json.Unmarshal(inputData, &v1))
 	require.Len(t, v1.Profiles, 3, "fixture should have 3 profiles before conversion")
 
-	v2 := ConvertV1ToV2(&v1)
+	v2 := ConvertV1ToV2(&v1, "1.0.0")
 
 	t.Run("flattens 3 profiles into 1 baseline", func(t *testing.T) {
 		assert.Len(t, v2.Baselines, 1)
@@ -607,7 +724,7 @@ func TestConvertV1ToV2_WideWrapperFlatten(t *testing.T) {
 	require.NoError(t, json.Unmarshal(inputData, &v1))
 	require.Len(t, v1.Profiles, 4, "fixture should have 4 profiles before conversion")
 
-	v2 := ConvertV1ToV2(&v1)
+	v2 := ConvertV1ToV2(&v1, "1.0.0")
 
 	t.Run("flattens 4 profiles into 1 baseline", func(t *testing.T) {
 		assert.Len(t, v2.Baselines, 1)
@@ -636,7 +753,7 @@ func TestConvertV1ToV2_PassthroughNoOverlays(t *testing.T) {
 		}},
 	}
 
-	v2 := ConvertV1ToV2(v1)
+	v2 := ConvertV1ToV2(v1, "1.0.0")
 
 	t.Run("single profile passes through as single baseline", func(t *testing.T) {
 		assert.Len(t, v2.Baselines, 1)
@@ -658,7 +775,7 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 				},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		reqs := v2.Baselines[0].Requirements
 
 		require.NotNil(t, reqs[0].EffectiveStatus)
@@ -679,7 +796,7 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 				},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
@@ -692,7 +809,7 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 		var v1 HDFV1Results
 		require.NoError(t, json.Unmarshal(inputData, &v1))
 
-		v2 := ConvertV1ToV2(&v1)
+		v2 := ConvertV1ToV2(&v1, "1.0.0")
 		reqs := v2.Baselines[0].Requirements
 
 		notApplicable := 0
@@ -716,7 +833,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "passed"}}}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
@@ -730,7 +847,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "passed"}, {Status: "failed"}}}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.Failed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
@@ -744,7 +861,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "skipped"}, {Status: "passed"}}}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
@@ -758,7 +875,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 				Controls: []V1Control{{ID: "V-1", Impact: 0.5, Results: []V1Result{{Status: "skipped"}}}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.NotReviewed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
@@ -772,7 +889,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 				Controls: []V1Control{{ID: "V-1", Impact: 0.5, Results: []V1Result{}}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.NotReviewed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
@@ -783,7 +900,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 		require.NoError(t, err)
 		var v1 HDFV1Results
 		require.NoError(t, json.Unmarshal(inputData, &v1))
-		v2 := ConvertV1ToV2(&v1)
+		v2 := ConvertV1ToV2(&v1, "1.0.0")
 
 		for _, r := range v2.Baselines[0].Requirements {
 			assert.NotNilf(t, r.EffectiveStatus, "control %s missing effectiveStatus", r.ID)
@@ -796,7 +913,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 		require.NoError(t, err)
 		var v1 HDFV1Results
 		require.NoError(t, json.Unmarshal(inputData, &v1))
-		v2 := ConvertV1ToV2(&v1)
+		v2 := ConvertV1ToV2(&v1, "1.0.0")
 
 		counts := map[hdf.ResultStatus]int{}
 		for _, r := range v2.Baselines[0].Requirements {
@@ -829,7 +946,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 				}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		req := v2.Baselines[0].Requirements[0]
 		require.NotNil(t, req.Severity, "severity should be set")
 		assert.Equal(t, hdf.SeverityMedium, *req.Severity)
@@ -851,7 +968,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 				}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
 		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
@@ -869,7 +986,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 				}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
 		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
@@ -893,7 +1010,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 					Controls: []V1Control{{ID: "V-1", Impact: tc.impact, Results: []V1Result{}}},
 				}},
 			}
-			v2 := ConvertV1ToV2(v1)
+			v2 := ConvertV1ToV2(v1, "1.0.0")
 			require.NotNilf(t, v2.Baselines[0].Requirements[0].Severity, "impact=%.1f should have severity", tc.impact)
 			assert.Equalf(t, tc.expected, *v2.Baselines[0].Requirements[0].Severity, "impact=%.1f", tc.impact)
 		}
@@ -913,7 +1030,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 				}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
 		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
@@ -926,7 +1043,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 		var v1 HDFV1Results
 		require.NoError(t, json.Unmarshal(inputData, &v1))
 
-		v2 := ConvertV1ToV2(&v1)
+		v2 := ConvertV1ToV2(&v1, "1.0.0")
 		reqs := v2.Baselines[0].Requirements
 
 		// Find SV-257779: impact=0, tags.severity=medium
@@ -968,7 +1085,7 @@ func TestConvertV1ToV2_ControlType(t *testing.T) {
 	var v1 HDFV1Results
 	require.NoError(t, json.Unmarshal(inputData, &v1))
 
-	v2 := ConvertV1ToV2(&v1)
+	v2 := ConvertV1ToV2(&v1, "1.0.0")
 	require.NotEmpty(t, v2.Baselines)
 
 	reqs := v2.Baselines[0].Requirements
@@ -1105,7 +1222,7 @@ func TestConvertV1ToV2_UBI9RefsAndSupports(t *testing.T) {
 	var v1 HDFV1Results
 	require.NoError(t, json.Unmarshal(inputData, &v1))
 
-	v2 := ConvertV1ToV2(&v1)
+	v2 := ConvertV1ToV2(&v1, "1.0.0")
 	require.NotEmpty(t, v2.Baselines)
 
 	t.Run("profile supports mapped onto baseline", func(t *testing.T) {
@@ -1137,7 +1254,7 @@ func TestConvertV1ToV2_PlatformReleaseWithoutTargetID(t *testing.T) {
 			Version:  "1.0.0",
 			Platform: V1Platform{Name: "centos", Release: &release},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		require.Len(t, v2.Components, 1)
 		require.NotNil(t, v2.Components[0].OSName)
 		assert.Equal(t, "centos", *v2.Components[0].OSName)
@@ -1150,7 +1267,7 @@ func TestConvertV1ToV2_PlatformReleaseWithoutTargetID(t *testing.T) {
 			Version:  "1.0.0",
 			Platform: V1Platform{Name: "test"},
 		}
-		v2 := ConvertV1ToV2(v1)
+		v2 := ConvertV1ToV2(v1, "1.0.0")
 		require.Len(t, v2.Components, 1)
 		assert.Nil(t, v2.Components[0].OSName)
 		assert.Nil(t, v2.Components[0].OSVersion)
@@ -1165,7 +1282,7 @@ func TestConvertV1ToV2_VerificationMethodNotFabricated(t *testing.T) {
 	var v1 HDFV1Results
 	require.NoError(t, json.Unmarshal(inputData, &v1))
 
-	v2 := ConvertV1ToV2(&v1)
+	v2 := ConvertV1ToV2(&v1, "1.0.0")
 	require.NotEmpty(t, v2.Baselines)
 	reqs := v2.Baselines[0].Requirements
 	require.NotEmpty(t, reqs)
@@ -1194,7 +1311,7 @@ func TestConvertV1ToV2_RequirementCountAnchor(t *testing.T) {
 	require.NoError(t, json.Unmarshal(input, &v1))
 	require.Len(t, v1.Profiles, 1, "anchor requires a single-profile fixture (no overlay flattening)")
 
-	v2 := ConvertV1ToV2(&v1)
+	v2 := ConvertV1ToV2(&v1, "1.0.0")
 	shared.AssertRequirementCount(t, v2, countProfileControls(t, input),
 		"ubi9-scan.json: one requirement per profiles[0].controls[] (single profile, no overlay flatten)")
 }

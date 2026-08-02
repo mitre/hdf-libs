@@ -18,6 +18,9 @@ func TestDetermineControlStatus(t *testing.T) {
 		{
 			name: "passed from effective_status",
 			control: hdf.EvaluatedRequirement{
+				// impact must be non-zero: impact==0 canonically forces
+				// not_applicable ahead of effectiveStatus.
+				Impact:          0.7,
 				EffectiveStatus: ptrResultStatus(hdf.Passed),
 				Results:         []hdf.RequirementResult{},
 			},
@@ -26,6 +29,7 @@ func TestDetermineControlStatus(t *testing.T) {
 		{
 			name: "failed from effective_status",
 			control: hdf.EvaluatedRequirement{
+				Impact:          0.7,
 				EffectiveStatus: ptrResultStatus(hdf.Failed),
 				Results:         []hdf.RequirementResult{},
 			},

@@ -106,7 +106,7 @@ func TestConvertZapToHDF_Tool(t *testing.T) {
 
 	require.NotNil(t, result.Tool)
 	assert.Equal(t, "OWASP ZAP", *result.Tool.Name)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 	assert.Equal(t, "2.7.0", *result.Tool.Version)
 }
 

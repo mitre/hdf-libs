@@ -9,10 +9,11 @@ import (
 
 // Test-level status string constants to avoid goconst duplication.
 const (
-	stStatusPassed = string(hdf.Passed)
-	stStatusFailed = "failed"
-	statusError    = "error"
-	statusNotAppl  = "notApplicable"
+	stStatusPassed    = string(hdf.Passed)
+	stStatusFailed    = "failed"
+	statusError       = "error"
+	statusNotAppl     = "notApplicable"
+	statusNotReviewed = "notReviewed"
 )
 
 // ---------------------------------------------------------------------------
@@ -196,7 +197,7 @@ func TestComputeEffectiveStatus(t *testing.T) {
 			expected:           stStatusFailed,
 		},
 		{
-			name: "uses the first non-expired override when multiple overrides exist",
+			name: "uses the governing non-expired override when multiple overrides exist",
 			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = []hdf.RequirementResult{stMakeResult(hdf.Failed)}
 				r.StatusOverrides = []hdf.StatusOverride{
@@ -732,26 +733,54 @@ func TestClassifyDiffStatus(t *testing.T) {
 // Coverage: severityIndex — all statuses and unknown
 // ---------------------------------------------------------------------------
 
-func TestSeverityIndex_AllStatuses(t *testing.T) {
-	tests := []struct {
-		status   string
-		expected int
-	}{
-		{statusNotAppl, 0},
-		{statusNotReviewed, 1},
-		{stStatusPassed, 2},
-		{stStatusFailed, 3},
-		{statusError, 4},
-		{"unknownStatus", -1},
-		{"", -1},
+func TestComputeEffectiveStatus_MostRecentOverrideGoverns(t *testing.T) {
+	// Two non-expired overrides: the most recently applied governs regardless
+	// of array order (schema: disposition is "the most recent non-expired
+	// override").
+	req := stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
+		r.Results = []hdf.RequirementResult{stMakeResult(hdf.Failed)}
+		r.StatusOverrides = []hdf.StatusOverride{
+			stMakeOverride(struct {
+				Type      string
+				Status    hdf.ResultStatus
+				Reason    string
+				AppliedAt time.Time
+				ExpiresAt time.Time
+			}{
+				Status:    hdf.Passed,
+				AppliedAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+				ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+			}),
+			stMakeOverride(struct {
+				Type      string
+				Status    hdf.ResultStatus
+				Reason    string
+				AppliedAt time.Time
+				ExpiresAt time.Time
+			}{
+				Status:    hdf.NotApplicable,
+				AppliedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+				ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+			}),
+		}
+	})
+	if got := ComputeEffectiveStatus(req, "2026-01-01T00:00:00Z"); got != stStatusPassed {
+		t.Errorf("got %q, want the later-applied override's status %q", got, stStatusPassed)
 	}
-	for _, tc := range tests {
-		t.Run(tc.status, func(t *testing.T) {
-			got := severityIndex(tc.status)
-			if got != tc.expected {
-				t.Errorf("severityIndex(%q) = %d, want %d", tc.status, got, tc.expected)
-			}
-		})
+}
+
+func TestComputeEffectiveStatus_CanonicalOrdering(t *testing.T) {
+	// The canonical worst-wins ordering (status-determination.md) ranks
+	// notApplicable above notReviewed: a mixed NA+NR result set rolls up to
+	// notApplicable.
+	req := stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
+		r.Results = []hdf.RequirementResult{
+			stMakeResult(hdf.NotReviewed),
+			stMakeResult(hdf.NotApplicable),
+		}
+	})
+	if got := ComputeEffectiveStatus(req, ""); got != statusNotAppl {
+		t.Errorf("NA+NR rollup = %q, want %q", got, statusNotAppl)
 	}
 }
 

@@ -130,8 +130,7 @@ func TestConvertPrisma_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Equal(t, "Prisma Cloud", *result.Tool.Name)
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "CSV", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 // ---- Targets ----

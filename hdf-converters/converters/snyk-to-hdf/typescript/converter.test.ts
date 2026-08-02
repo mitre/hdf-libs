@@ -104,10 +104,10 @@ describe('snyk to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set tool name to "Snyk" and format to "JSON"', async () => {
+    it('should set tool name to "Snyk" with no format', async () => {
       const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Snyk');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 

@@ -378,7 +378,6 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
     generatorName: 'cyclonedx-to-hdf',
     converterVersion,
     toolName: 'CycloneDX',
-    toolFormat: 'JSON',
     baselines: [baseline],
     components: [{ ...targetComponent, boms: [componentBom] }],
     timestamp: scanTime,

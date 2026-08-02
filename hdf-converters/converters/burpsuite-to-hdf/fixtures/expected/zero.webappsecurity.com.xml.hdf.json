@@ -786,7 +786,6 @@
   },
   "timestamp": "2020-02-27T14:28:17Z",
   "tool": {
-    "format": "XML",
     "name": "BurpSuite",
     "version": "2020.1"
   }

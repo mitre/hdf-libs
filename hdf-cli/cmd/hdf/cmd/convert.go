@@ -314,7 +314,7 @@ func normalizeLegacyHDFInput(data []byte, fromFormat, fromVersion, toFormat stri
 	if !legacyhdf.IsHDFV1(data) {
 		return data, fromFormat, fromVersion, nil
 	}
-	upgraded, err := hdfversion.TransformHDF(data, hdfversion.LegacyVersion, hdfversion.ModernVersion)
+	upgraded, _, err := hdfversion.TransformHDF(data, hdfversion.LegacyVersion, hdfversion.ModernVersion)
 	if err != nil {
 		return nil, "", "", fmt.Errorf("failed to upgrade legacy HDF (v2) input for %s conversion: %w", toFormat, err)
 	}

@@ -58,7 +58,6 @@
   },
   "timestamp": "2026-07-12T23:25:15.137974Z",
   "tool": {
-    "format": "JSON",
     "name": "TruffleHog"
   }
 }

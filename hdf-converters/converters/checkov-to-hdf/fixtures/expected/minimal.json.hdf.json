@@ -28,6 +28,9 @@
           "id": "CKV_TF_2",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -68,6 +71,9 @@
           "id": "CKV_TF_1",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -99,6 +105,9 @@
           "id": "CKV2_AWS_6",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -130,6 +139,9 @@
           "id": "CKV_AWS_18",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -153,7 +165,6 @@
   },
   "timestamp": "2026-07-12T23:25:21.463728Z",
   "tool": {
-    "format": "terraform",
     "name": "Checkov",
     "version": "3.2.524"
   }

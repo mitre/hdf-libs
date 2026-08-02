@@ -433,7 +433,6 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		GeneratorName:    "cyclonedx-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "CycloneDX",
-		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       []hdf.Component{comp},
 		Timestamp:        &scanTime,

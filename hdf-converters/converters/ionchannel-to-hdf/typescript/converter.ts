@@ -364,7 +364,6 @@ export async function convertIonchannelToHdf(input: string, converterVersion = '
     generatorName: 'ionchannel-to-hdf',
     converterVersion,
     toolName: 'Ion Channel',
-    toolFormat: 'JSON',
     baselines,
     timestamp: new Date(),
   });

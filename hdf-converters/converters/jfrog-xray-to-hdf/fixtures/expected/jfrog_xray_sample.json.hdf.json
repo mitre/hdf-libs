@@ -733,7 +733,6 @@
   },
   "timestamp": "2026-07-12T23:19:47.897421Z",
   "tool": {
-    "format": "JSON",
     "name": "JFrog Xray"
   }
 }

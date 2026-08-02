@@ -115,7 +115,7 @@ describe('Netsparker to HDF converter', () => {
     const input = loadFixture('input/sample-netsparker-invicti.xml');
     const hdf = parseResult(await convertNetsparkerToHdf(input));
     expect(hdf.tool?.name).toContain('Invicti');
-    expect(hdf.tool?.format).toBe('XML');
+    expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
   });
 
   // ---- Target ----

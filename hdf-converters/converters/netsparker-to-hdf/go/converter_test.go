@@ -111,8 +111,7 @@ func TestConvertNetsparker_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Contains(t, *result.Tool.Name, "Invicti")
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "XML", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 // ---- Target ----

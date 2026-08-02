@@ -121,7 +121,7 @@
   },
   "timestamp": "2026-07-12T22:56:35.670501Z",
   "tool": {
-    "format": "JSON",
+    "format": "FPF",
     "name": "Dependency-Track"
   }
 }

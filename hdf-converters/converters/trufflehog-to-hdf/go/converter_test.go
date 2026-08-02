@@ -272,8 +272,7 @@ func TestConvertTrufflehogToHDF_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Equal(t, "TruffleHog", *result.Tool.Name)
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 // ---- No target for filesystem sources ----

@@ -2056,7 +2056,6 @@
   },
   "timestamp": "2026-07-12T23:30:23.256245Z",
   "tool": {
-    "format": "JSON",
     "name": "Microsoft Secure Score"
   }
 }

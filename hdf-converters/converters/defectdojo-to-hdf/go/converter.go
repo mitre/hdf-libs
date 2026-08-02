@@ -457,7 +457,6 @@ func ConvertDefectDojo(input []byte, converterVersion string) (*hdf.HDFResults, 
 		GeneratorName:    "defectdojo-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "DefectDojo",
-		ToolFormat:       "JSON",
 		Baselines:        baselines,
 	}), nil
 }

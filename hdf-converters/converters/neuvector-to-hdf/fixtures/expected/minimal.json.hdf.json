@@ -342,7 +342,6 @@
   },
   "timestamp": "2026-07-12T22:56:41.066114Z",
   "tool": {
-    "format": "JSON",
     "name": "NeuVector"
   }
 }

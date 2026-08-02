@@ -51,7 +51,7 @@ func (c *hdfVersionConverter) Convert(input []byte) ([]byte, error) {
 		return input, nil
 	}
 
-	output, err := hdfversion.TransformHDF(input, fromVer, toVer)
+	output, warnings, err := hdfversion.TransformHDF(input, fromVer, toVer)
 	if err != nil {
 		return nil, fmt.Errorf("HDF version transform failed: %w", err)
 	}
@@ -62,8 +62,21 @@ func (c *hdfVersionConverter) Convert(input []byte) ([]byte, error) {
 	if fromNum > toNum {
 		fmt.Fprintln(os.Stderr, "Warning: HDF version downgrade is a lossy conversion. Some fields have no equivalent in the target version.")
 	}
+	emitTransformWarnings(warnings)
 
 	return output, nil
+}
+
+// emitTransformWarnings prints per-item warnings (e.g. amendments with no v2
+// equivalent) to stderr so a lossy downgrade is never silent.
+func emitTransformWarnings(warnings []string) {
+	if len(warnings) == 0 {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "Warning: %d amendment(s) could not be represented in the target HDF version:\n", len(warnings))
+	for _, w := range warnings {
+		fmt.Fprintf(os.Stderr, "  - %s\n", w)
+	}
 }
 
 // SetInputVersion sets the source HDF version.
@@ -98,11 +111,12 @@ func PostProcessToVersion(output []byte, toVersion string) ([]byte, error) {
 		return output, nil
 	}
 
-	result, err := hdfversion.TransformHDF(output, hdfversion.ModernVersion, toVersion)
+	result, warnings, err := hdfversion.TransformHDF(output, hdfversion.ModernVersion, toVersion)
 	if err != nil {
 		return nil, fmt.Errorf("HDF version post-processing failed: %w", err)
 	}
 
 	fmt.Fprintln(os.Stderr, "Warning: HDF version downgrade is a lossy conversion. Some fields have no equivalent in the target version.")
+	emitTransformWarnings(warnings)
 	return result, nil
 }

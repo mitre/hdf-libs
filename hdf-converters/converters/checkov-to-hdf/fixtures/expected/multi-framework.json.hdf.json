@@ -23,6 +23,9 @@
           "id": "CKV_AWS_275",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -53,6 +56,9 @@
           "id": "CKV_AWS_41",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -88,6 +94,9 @@
           "id": "CKV_TF_1",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -119,6 +128,9 @@
           "id": "CKV_AWS_18",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -150,6 +162,9 @@
           "id": "CKV2_AWS_6",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -180,6 +195,9 @@
           "id": "CKV_DOCKER_11",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -210,6 +228,9 @@
           "id": "CKV_DOCKER_5",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -240,6 +261,9 @@
           "id": "CKV_DOCKER_7",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -270,6 +294,9 @@
           "id": "CKV_DOCKER_2",
           "impact": 0.5,
           "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
@@ -293,7 +320,6 @@
   },
   "timestamp": "2026-07-12T23:25:21.464819Z",
   "tool": {
-    "format": "terraform, dockerfile",
     "name": "Checkov",
     "version": "3.2.524"
   }

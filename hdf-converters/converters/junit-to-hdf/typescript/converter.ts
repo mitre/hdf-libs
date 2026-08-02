@@ -114,7 +114,6 @@ export async function convertJunitToHdf(input: string, converterVersion = '1.0.0
     generatorName: 'junit-to-hdf',
     converterVersion,
     toolName: 'JUnit XML',
-    toolFormat: 'XML',
     baselines: [baseline],
     components: [{
       type: TargetType.Application,

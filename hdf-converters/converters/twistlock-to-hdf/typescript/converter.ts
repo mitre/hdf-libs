@@ -467,7 +467,6 @@ export async function convertTwistlockToHdf(input: string, converterVersion = '1
     generatorName: 'twistlock-to-hdf',
     converterVersion,
     toolName: 'Twistlock',
-    toolFormat: 'JSON',
     baselines,
     components: [component],
     timestamp: new Date(),

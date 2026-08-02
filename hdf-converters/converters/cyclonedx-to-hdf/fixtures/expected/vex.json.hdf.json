@@ -162,7 +162,6 @@
   },
   "timestamp": "2026-07-12T23:29:28.221396Z",
   "tool": {
-    "format": "JSON",
     "name": "CycloneDX"
   }
 }

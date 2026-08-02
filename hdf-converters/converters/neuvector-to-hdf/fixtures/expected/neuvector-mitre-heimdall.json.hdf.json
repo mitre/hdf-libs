@@ -7445,7 +7445,6 @@
   },
   "timestamp": "2026-07-12T22:56:41.069065Z",
   "tool": {
-    "format": "JSON",
     "name": "NeuVector"
   }
 }

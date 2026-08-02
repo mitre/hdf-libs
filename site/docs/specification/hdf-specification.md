@@ -531,7 +531,7 @@ Impact is a float 0.0 to 1.0. Conventional mapping to severity:
 
 ### Tool
 ```json
-{ "name": "Nessus", "version": "10.8.1", "format": "XML" }
+{ "name": "Semgrep", "version": "1.34.0", "format": "SARIF" }
 ```
 
 ### Identity

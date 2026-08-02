@@ -297,7 +297,7 @@ export async function convertDeptrackToHdf(input: string, converterVersion = '1.
     generatorName: 'deptrack-to-hdf',
     converterVersion,
     toolName: 'Dependency-Track',
-    toolFormat: 'JSON',
+    toolFormat: 'FPF',
     baselines: [baseline],
     components: [{ name: targetName, type: TargetType.Application }],
     timestamp: new Date(),

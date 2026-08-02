@@ -328,7 +328,6 @@ export async function convertNeuvectorToHdf(input: string, converterVersion = '1
     generatorName: 'neuvector-to-hdf',
     converterVersion,
     toolName: 'NeuVector',
-    toolFormat: 'JSON',
     baselines: [baseline],
     components: [
       {

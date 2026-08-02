@@ -349,7 +349,6 @@ func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		GeneratorName:    "conveyor-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Conveyor",
-		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Application},

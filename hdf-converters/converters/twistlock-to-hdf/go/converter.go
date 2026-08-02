@@ -522,7 +522,6 @@ func ConvertTwistlockToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		GeneratorName:    "twistlock-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Twistlock",
-		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Components:       []hdf.Component{component},
 		Timestamp:        &now,

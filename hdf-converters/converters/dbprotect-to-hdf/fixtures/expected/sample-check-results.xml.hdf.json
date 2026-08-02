@@ -215,7 +215,6 @@
   },
   "timestamp": "2026-07-12T23:39:51.936729Z",
   "tool": {
-    "format": "XML",
     "name": "DBProtect"
   }
 }

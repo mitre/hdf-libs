@@ -3729,7 +3729,6 @@
   },
   "timestamp": "2026-07-12T22:56:41.753624Z",
   "tool": {
-    "format": "CSV",
     "name": "Prisma Cloud"
   }
 }
