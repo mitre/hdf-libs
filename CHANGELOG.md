@@ -4,9 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **STIX 2.1 CTI enrichment — `hdf enrich`.** A new enrichment pass overlays a STIX 2.1 bundle onto an existing HDF results document: a CVE-bearing STIX object attaches to the finding whose requirement ID is that CVE (`rel: investigate`), everything else (non-CVE objects, and CVEs with no matching finding) attaches to the results root (`rel: reference`) — each as an `External_Reference` enrichment envelope carrying the raw STIX object losslessly in `document`. Informational by default: it authors no overrides and changes no status or impact. Source format is auto-detected (`--from stix` to assert). Dual Go + TS. (ADR-0006)
+- **`External_Reference` primitive + broad `externalReferences[]` wiring.** A generalized, purpose-agnostic reference (modeled on the STIX 2.1 `external_references` common property): required `sourceName` plus at least one of `externalId`/`href`/`description`, open `rel` and `kind` tokens, optional `mediaType`/`checksum`/`addedBy`/`addedAt`, and an optional lossless embedded `document` that turns a bare reference into an enrichment envelope. Wired across the HDF schemas, including on the inline `Status_Override`.
+- **CVSS scoring engine in `hdf-utilities` (Go + TS).** Base + Threat score computation for CVSS **3.1** (`computeCvssScore`) and CVSS **4.0** (`computeCvss40Score` — the FIRST MacroVector algorithm with max-vector severity-distance interpolation, validated exact against FIRST reference vectors across 0.0–10.0). Extends the existing parse/validate; no third-party dependency; Go and TS produce byte-identical scores via a shared data table.
+- **Opt-in CVSS Threat recompute — `hdf enrich --recompute-cvss`.** When a matched STIX object shows active exploitation (a sighting, a `targets`/`exploits` relationship, or an indicator/report reference) and the finding carries a CVSS 3.1 base vector, applies Exploit Maturity `E:H` and recomputes the Threat score, authoring an auditable inline `riskAdjustment` (with the `cvss` block, `impact.value = computedScore/10`, a review-horizon `expiresAt`, and an `externalReferences[]` back to the STIX source). Findings with no base vector — or a CVSS 4.0 base vector — are left unchanged. Exploitation maps to CVSS Exploit Maturity only, never to `Kev`/`Epss`.
+- **`roundImpact` / `RoundImpact` in `hdf-utilities` (Go + TS).** Canonical rounding of a computed impact to its natural 0.01 grid, eliminating binary-float representation noise (e.g. `score/10` serializing as `0.9800000000000001`). Consumed by the enrich recompute.
+
 ### Notable behavior changes
 
 - **`tool.format` now names formats, never serialization structures.** The field's schema description is sharpened: it carries a named format specification — an interchange format emitted by many tools (`SARIF`, `XCCDF`, `ARF`, `OSCAL`) or one of several named outputs a single tool produces (`FVDL`, `exec-json`) — and is omitted for a tool's native output. Twenty-three converters that stamped bare `JSON`/`XML`/`CSV` serialization labels no longer emit `tool.format` at all, `deptrack-to-hdf` now emits `FPF` (the Dependency-Track Finding Packaging Format) instead of `JSON`, and `checkov-to-hdf` no longer abuses `tool.format` for the scan scope — each requirement instead carries a `tags.check_type` array naming the framework report it came from (e.g. `["terraform"]`), which is new consumer-visible data. Consumers pinning exact converter output will see the `tool.format` key disappear (or change to `FPF`); the tool name and version are unchanged. Go and TypeScript in lockstep, goldens regenerated.
+
+### Compatibility
+
+- The schema additions are additive and optional (`External_Reference`, `externalReferences[]`, `kind`, `document`, and the inline `Status_Override.externalReferences[]`); existing v3.x HDF documents validate unchanged.
 
 ## [3.4.4] - 2026-07-30
 

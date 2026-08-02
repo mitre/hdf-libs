@@ -11,6 +11,13 @@
     "requirementDiffs"
   ],
   "properties": {
+    "externalReferences": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/External_Reference"
+      },
+      "description": "Optional references to external artifacts relevant to this comparison (CTI/STIX, advisories, or any URI-addressable artifact). Inert context; see External_Reference."
+    },
     "formatVersion": {
       "type": "string",
       "const": "1.0.0",
@@ -105,6 +112,1077 @@
   "description": "Structured comparison between two or more HDF security assessment documents. Supports temporal, baseline, fleet, and multi-source comparison modes.",
   "title": "HDF Comparison",
   "$defs": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0",
+      "title": "HDF Common Primitives",
+      "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
+      "$defs": {
+        "External_Reference": {
+          "type": "object",
+          "title": "External Reference",
+          "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property. Purpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category. `sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible. A reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
+          "required": [
+            "sourceName"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "externalId"
+              ]
+            },
+            {
+              "required": [
+                "href"
+              ]
+            },
+            {
+              "required": [
+                "description"
+              ]
+            }
+          ],
+          "properties": {
+            "sourceName": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Name of the external system/source being referenced (e.g., 'cve', 'mitre-att&ck', 'stix', 'taxii', or any vendor label). Open string — not a closed enum. Use the `x-` prefix convention for custom/experimental sources, mirroring `bomType`."
+            },
+            "externalId": {
+              "type": "string",
+              "description": "Identifier of the artifact within `sourceName` (e.g., 'CVE-2021-44228' for source 'cve', 'T1059' for 'mitre-att&ck'). Cite by id without needing a URL. Together with `sourceName` this is a URN."
+            },
+            "href": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Location of the artifact. `uri-reference` (not `uri`) so a bare internal `#fragment`/`#uuid` reference is expressible alongside absolute URLs. `checksum`/`mediaType` apply only to a retrievable `href`."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of what is referenced. Satisfies the at-least-one rule on its own when neither id nor href is available."
+            },
+            "rel": {
+              "type": "string",
+              "description": "Open relationship token describing how this reference relates to the referencing object. Deliberately open (cf. OSCAL `rel` allow-other, RFC 8288 extension relations). Documented starter vocabulary: 'reference' (generic), 'definition' (defines the concept), 'evidence' (supporting evidence), 'investigate' (a live pivot to investigate), 'canonical' (the authoritative source)."
+            },
+            "mediaType": {
+              "type": "string",
+              "description": "IANA media type of the referenced artifact when retrievable (RFC 6838), e.g., 'application/json'. Meaningful only with `href`."
+            },
+            "checksum": {
+              "$ref": "#/$defs/Checksum",
+              "description": "Integrity hash of the referenced artifact. Reuses the HDF `Checksum` primitive (not STIX `hashes`). Meaningful only with a retrievable `href`."
+            },
+            "addedBy": {
+              "$ref": "#/$defs/Identity",
+              "description": "Who attached this reference. Lightweight, flat attribution — a reference overrides nothing, so it has no chaining/superseding/disposition."
+            },
+            "addedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When this reference was attached (RFC 3339 / trimmed-UTC per HDF timestamp convention)."
+            },
+            "kind": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Open token classifying the referenced/embedded payload, turning a bare reference into an enrichment envelope. Deliberately open (like `sourceName`/`rel`), not a closed enum. Documented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory' (vendor/security advisory). Use the `x-` prefix for custom kinds."
+            },
+            "document": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim. Composes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed. HDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
+            }
+          },
+          "unevaluatedProperties": false,
+          "examples": [
+            {
+              "$comment": "By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228.",
+              "sourceName": "cve",
+              "externalId": "CVE-2021-44228",
+              "rel": "definition"
+            },
+            {
+              "$comment": "By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL.",
+              "sourceName": "mitre-att&ck",
+              "externalId": "T1059",
+              "href": "https://attack.mitre.org/techniques/T1059/",
+              "rel": "canonical"
+            },
+            {
+              "$comment": "By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution.",
+              "sourceName": "stix",
+              "href": "https://cti.example.org/bundles/log4shell.json",
+              "rel": "investigate",
+              "mediaType": "application/json",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "addedBy": {
+                "type": "email",
+                "identifier": "analyst@agency.gov"
+              },
+              "addedAt": "2026-07-26T00:00:00Z"
+            },
+            {
+              "$comment": "Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields.",
+              "sourceName": "stix",
+              "externalId": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+              "href": "https://cti.example.org/bundles/log4shell.json#vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+              "rel": "investigate",
+              "kind": "threat-intel",
+              "document": {
+                "type": "vulnerability",
+                "spec_version": "2.1",
+                "id": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+                "name": "CVE-2021-44228",
+                "external_references": [
+                  {
+                    "source_name": "cve",
+                    "external_id": "CVE-2021-44228"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "Hash_Algorithm": {
+          "type": "string",
+          "enum": [
+            "sha256",
+            "sha384",
+            "sha512",
+            "blake3"
+          ],
+          "description": "Supported cryptographic hash algorithms for checksums and integrity verification. blake3 covers container-image and other artifact digests that use it.",
+          "title": "Hash Algorithm"
+        },
+        "Requirement_Group": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "id",
+            "requirements"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "The unique identifier for the group. Example: the relative path to the file specifying the requirements."
+            },
+            "title": {
+              "type": "string",
+              "description": "The title of the group - should be human readable."
+            },
+            "requirements": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The set of requirements as specified by their ids in this group. Example: 'SV-238196'."
+            }
+          },
+          "description": "Describes a group of requirements, such as those defined in a single file.",
+          "title": "Requirement Group"
+        },
+        "Dependency": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name or assigned alias."
+            },
+            "url": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "The address of the dependency."
+            },
+            "branch": {
+              "type": "string",
+              "description": "The branch name for a git repo."
+            },
+            "path": {
+              "type": "string",
+              "description": "The relative path if the dependency is locally available."
+            },
+            "statusMessage": {
+              "type": "string",
+              "description": "The reason for the status if it is 'failed' or 'skipped'."
+            },
+            "status": {
+              "type": "string",
+              "description": "The status. Should be: 'loaded', 'failed', or 'skipped'."
+            },
+            "git": {
+              "type": "string",
+              "format": "uri",
+              "description": "The location of the git repo. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'."
+            },
+            "supermarket": {
+              "type": "string",
+              "description": "The 'user/profilename' attribute for a Supermarket server."
+            },
+            "compliance": {
+              "type": "string",
+              "description": "The 'user/profilename' attribute for an Automate server."
+            }
+          },
+          "examples": [
+            {
+              "name": "ubuntu-22.04-baseline",
+              "url": "https://github.com/my-org/ubuntu-22.04-stig-baseline",
+              "git": "https://github.com/my-org/ubuntu-22.04-stig-baseline.git",
+              "branch": "main",
+              "status": "loaded"
+            },
+            {
+              "name": "ssl-tls-baseline",
+              "path": "../shared-baselines/ssl-tls",
+              "status": "loaded"
+            },
+            {
+              "name": "windows-2022-baseline",
+              "git": "https://github.com/security-org/windows-2022-stig.git",
+              "branch": "v1.2.0",
+              "status": "failed",
+              "statusMessage": "Unable to clone repository: authentication failed"
+            },
+            {
+              "name": "chef-supermarket-baseline",
+              "supermarket": "dev-sec/linux-baseline",
+              "status": "loaded"
+            }
+          ],
+          "description": "A dependency for a baseline. Can include relative paths or URLs for where to find the dependency.",
+          "title": "Dependency"
+        },
+        "Reference": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "ref"
+              ],
+              "properties": {
+                "ref": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "description": "A human readable/meaningful reference. Example: a book title."
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "description": "An array of reference objects."
+                    }
+                  ]
+                }
+              },
+              "description": "A reference using the 'ref' field."
+            },
+            {
+              "type": "object",
+              "required": [
+                "url"
+              ],
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "description": "A URL pointing at the reference."
+            },
+            {
+              "type": "object",
+              "required": [
+                "uri"
+              ],
+              "properties": {
+                "uri": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "description": "A URI pointing at the reference."
+            }
+          ],
+          "description": "A reference to an external document.",
+          "title": "Reference"
+        },
+        "Source_Location": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [],
+          "properties": {
+            "ref": {
+              "type": "string",
+              "description": "Path to the file that this requirement originates from."
+            },
+            "line": {
+              "type": "number",
+              "description": "The line on which this requirement is located."
+            }
+          },
+          "examples": [
+            {
+              "ref": "controls/SV-260476.rb",
+              "line": 1
+            },
+            {
+              "ref": "profiles/ubuntu/controls/configure_audit.rb",
+              "line": 42
+            }
+          ],
+          "description": "The explicit location of a requirement within source code.",
+          "title": "Source Location"
+        },
+        "Supported_Platform": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [],
+          "properties": {
+            "platformFamily": {
+              "type": "string",
+              "description": "The platform family. Example: 'redhat'."
+            },
+            "platformName": {
+              "type": "string",
+              "description": "The platform name - can include wildcards. Example: 'debian'."
+            },
+            "platform": {
+              "type": "string",
+              "description": "The location of the platform. Can be: 'os', 'aws', 'azure', or 'gcp'."
+            },
+            "release": {
+              "type": "string",
+              "description": "The release of the platform. Example: '20.04' for 'ubuntu'."
+            }
+          },
+          "description": "A supported platform target. Example: the platform name being 'ubuntu'.",
+          "title": "Supported Platform"
+        },
+        "Checksum": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "algorithm",
+            "value"
+          ],
+          "properties": {
+            "algorithm": {
+              "$ref": "#/$defs/Hash_Algorithm",
+              "description": "The hash algorithm used for the checksum."
+            },
+            "value": {
+              "type": "string",
+              "description": "The checksum value."
+            }
+          },
+          "examples": [
+            {
+              "algorithm": "sha256",
+              "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "algorithm": "sha512",
+              "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+            }
+          ],
+          "description": "Cryptographic checksum for baseline integrity verification.",
+          "title": "Checksum"
+        },
+        "Identity": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "identifier",
+            "type"
+          ],
+          "properties": {
+            "identifier": {
+              "type": "string",
+              "description": "The identifier value. Example: 'user@example.com', 'jdoe', 'automated-scanner-01'."
+            },
+            "type": {
+              "type": "string",
+              "title": "Identity Type",
+              "enum": [
+                "email",
+                "username",
+                "system",
+                "agent",
+                "simple",
+                "other"
+              ],
+              "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent' for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
+            },
+            "description": {
+              "type": "string",
+              "description": "Optional description of the identity or identity system, particularly useful when type is 'other'."
+            }
+          },
+          "examples": [
+            {
+              "type": "email",
+              "identifier": "admin@example.com"
+            },
+            {
+              "type": "username",
+              "identifier": "jdoe",
+              "description": "Security Operations Analyst"
+            },
+            {
+              "type": "system",
+              "identifier": "automated-scanner-01",
+              "description": "Nightly compliance scan pipeline"
+            },
+            {
+              "type": "agent",
+              "identifier": "cve-enrichment-bot/v0.4.2",
+              "description": "OpenAI GPT-4 via internal CVE-enrichment tool; proposes environmental CVSS for human review"
+            }
+          ],
+          "description": "Represents an identity that performed an action, such as capturing evidence or applying an override.",
+          "title": "Identity"
+        },
+        "Evidence": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "title": "Evidence Type",
+              "enum": [
+                "screenshot",
+                "code",
+                "log",
+                "url",
+                "file",
+                "other"
+              ],
+              "description": "The type of evidence being provided."
+            },
+            "data": {
+              "type": "string",
+              "description": "The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs: the raw text. For URLs: the URL string."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of what this evidence shows."
+            },
+            "mimeType": {
+              "type": "string",
+              "description": "MIME type of the evidence. Example: 'image/png', 'text/plain', 'application/json'."
+            },
+            "encoding": {
+              "type": "string",
+              "description": "Encoding used for the data. Example: 'base64', 'utf-8'."
+            },
+            "size": {
+              "type": "number",
+              "description": "Size of the evidence data in bytes."
+            },
+            "capturedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp when this evidence was captured. ISO 8601 format."
+            },
+            "capturedBy": {
+              "$ref": "#/$defs/Identity",
+              "description": "Identity of who or what captured this evidence."
+            }
+          },
+          "examples": [
+            {
+              "type": "screenshot",
+              "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+              "description": "Screenshot showing firewall configuration with required ports blocked",
+              "mimeType": "image/png",
+              "encoding": "base64",
+              "size": 95,
+              "capturedAt": "2025-12-14T10:30:00Z",
+              "capturedBy": {
+                "identifier": "security-auditor@example.com",
+                "type": "email"
+              }
+            },
+            {
+              "type": "code",
+              "data": "# Nginx configuration\nserver {\n  listen 443 ssl;\n  ssl_protocols TLSv1.2 TLSv1.3;\n  ssl_ciphers HIGH:!aNULL:!MD5;\n}",
+              "description": "Server configuration showing TLS 1.2+ enforcement",
+              "mimeType": "text/plain",
+              "capturedAt": "2025-12-14T10:45:00Z"
+            },
+            {
+              "type": "log",
+              "data": "[2025-12-14 10:00:15] INFO: Security scan completed - 0 critical vulnerabilities found\n[2025-12-14 10:00:16] INFO: All required security patches applied\n[2025-12-14 10:00:17] INFO: System compliant with security baseline",
+              "description": "Security scan log output",
+              "mimeType": "text/plain",
+              "size": 256
+            },
+            {
+              "type": "url",
+              "data": "https://jira.example.com/browse/SEC-12345",
+              "description": "Link to security ticket documenting remediation work",
+              "capturedAt": "2025-12-14T11:00:00Z"
+            },
+            {
+              "type": "file",
+              "data": "UEsDBBQAAAAIAI1ZX1YhQp8FHgAAABIAAAAIAAAAdGVzdC50eHRLy8nPS8lQSgIAUmNEBhQAAAA=",
+              "description": "Compliance audit report PDF",
+              "mimeType": "application/pdf",
+              "encoding": "base64",
+              "size": 2048,
+              "capturedAt": "2025-12-14T12:00:00Z",
+              "capturedBy": {
+                "identifier": "compliance-system",
+                "type": "system"
+              }
+            }
+          ],
+          "description": "Supporting evidence for a finding or override, such as screenshots, code samples, log excerpts, or URLs.",
+          "title": "Evidence"
+        },
+        "Remediation": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "uri"
+          ],
+          "properties": {
+            "uri": {
+              "type": "string",
+              "format": "uri",
+              "description": "URI pointing to automated remediation resources (Ansible playbooks, Terraform scripts, etc.). Examples: GitHub repository, DISA STIG Supplemental Automation Content, vendor-provided scripts."
+            },
+            "checksum": {
+              "$ref": "#/$defs/Checksum",
+              "description": "Optional cryptographic checksum for verifying the integrity of remediation resources fetched from the URI. Recommended for security when referencing external automation scripts."
+            }
+          },
+          "examples": [
+            {
+              "uri": "https://github.com/ansible-lockdown/RHEL9-STIG/tree/main/tasks"
+            },
+            {
+              "uri": "https://artifacts.example.com/remediation/ubuntu-22.04-hardening-v1.2.tar.gz",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+              }
+            }
+          ],
+          "description": "Reference to automated remediation resources for implementing security controls. Points to external automation content like Ansible playbooks, Terraform scripts, or vendor-provided remediation tools.",
+          "title": "Remediation"
+        },
+        "Verification_Method": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "type",
+            "controller"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "The type of verification method. Example: 'JsonWebKey2020', 'RsaVerificationKey2018', 'Ed25519VerificationKey2020'."
+            },
+            "controller": {
+              "type": "string",
+              "description": "The entity that controls this verification method. Can be a DID, URI, or other identifier."
+            },
+            "publicKeyJwk": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Public key in JSON Web Key format."
+            },
+            "publicKeyPem": {
+              "type": "string",
+              "description": "Public key in PEM format. Example: '-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----'."
+            },
+            "publicKeyBase58": {
+              "type": "string",
+              "description": "Public key in Base58 format, commonly used with Ed25519 keys."
+            }
+          },
+          "description": "Verification method containing the public key needed to verify a digital signature. Supports multiple key formats including JWK (for RSA, EC), PEM, and Base58.",
+          "title": "Verification Method"
+        },
+        "Milestone": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "description",
+            "estimatedCompletion",
+            "status"
+          ],
+          "properties": {
+            "description": {
+              "type": "string",
+              "description": "Description of this milestone or task."
+            },
+            "estimatedCompletion": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Estimated completion date. ISO 8601 format."
+            },
+            "status": {
+              "type": "string",
+              "title": "Milestone Status",
+              "enum": [
+                "pending",
+                "inProgress",
+                "completed"
+              ],
+              "description": "Current status of this milestone."
+            },
+            "completedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Actual completion timestamp. ISO 8601 format."
+            },
+            "completedBy": {
+              "$ref": "#/$defs/Identity",
+              "description": "Identity of who completed this milestone."
+            }
+          },
+          "description": "A milestone or task within a POA&M remediation plan.",
+          "title": "Milestone"
+        },
+        "Signature": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "type",
+            "created",
+            "creator",
+            "signatureValue",
+            "proofPurpose",
+            "verificationMethod"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "The signature suite type. Example: 'JsonWebSignature2020', 'RsaSignature2018', 'Ed25519Signature2020'."
+            },
+            "created": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the signature was created. ISO 8601 format."
+            },
+            "creator": {
+              "$ref": "#/$defs/Identity",
+              "description": "The identity that created this signature."
+            },
+            "signatureValue": {
+              "type": "string",
+              "description": "The base64-encoded or base58-encoded signature value."
+            },
+            "proofPurpose": {
+              "type": "string",
+              "description": "The purpose of this signature. Example: 'attestation', 'authentication', 'assertionMethod'."
+            },
+            "verificationMethod": {
+              "$ref": "#/$defs/Verification_Method",
+              "description": "The verification method containing the public key for signature verification."
+            },
+            "nonce": {
+              "type": "string",
+              "description": "Random value to prevent replay attacks."
+            },
+            "challenge": {
+              "type": "string",
+              "description": "Challenge value from the verifier, used in challenge-response authentication."
+            },
+            "domain": {
+              "type": "string",
+              "description": "Domain restriction for the signature, prevents cross-domain replay attacks."
+            }
+          },
+          "examples": [
+            {
+              "type": "JsonWebSignature2020",
+              "created": "2025-12-14T10:00:00Z",
+              "creator": {
+                "identifier": "security-team@example.com",
+                "type": "email"
+              },
+              "signatureValue": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..MEYCIQDvKbtLRhWAa",
+              "proofPurpose": "attestation",
+              "verificationMethod": {
+                "type": "JsonWebKey2020",
+                "controller": "did:example:123456789abcdefghi",
+                "publicKeyJwk": {
+                  "kty": "RSA",
+                  "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtV",
+                  "e": "AQAB"
+                }
+              }
+            },
+            {
+              "type": "RsaSignature2018",
+              "created": "2025-12-14T11:30:00Z",
+              "creator": {
+                "identifier": "ciso@example.com",
+                "type": "email"
+              },
+              "signatureValue": "pY9...Cg==",
+              "proofPurpose": "authentication",
+              "verificationMethod": {
+                "type": "RsaVerificationKey2018",
+                "controller": "https://example.com/issuers/565049",
+                "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAryQICCl6NZ5gDKrnSztO\n-----END PUBLIC KEY-----"
+              },
+              "nonce": "c0ae1c8e-c7e7-469f-b252-86e6a0e7387e"
+            },
+            {
+              "type": "Ed25519Signature2020",
+              "created": "2025-12-14T14:00:00Z",
+              "creator": {
+                "identifier": "automated-signer",
+                "type": "system",
+                "description": "Hardware security module (HSM) for automated attestations"
+              },
+              "signatureValue": "z58DAdFfa9SkqZMVMxABEBC59Ck6WibLZ",
+              "proofPurpose": "assertionMethod",
+              "verificationMethod": {
+                "type": "Ed25519VerificationKey2020",
+                "controller": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+                "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
+              },
+              "challenge": "1f44d2f3-d16c-47a4-9f5f-1d6e8f4e3a2b",
+              "domain": "https://compliance.example.com"
+            }
+          ],
+          "description": "A digital signature following W3C Data Integrity Proofs pattern. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other cryptographic signing methods via JWK, PEM, or Base58 key formats.",
+          "title": "Signature"
+        },
+        "Baseline_Metadata": {
+          "type": "object",
+          "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/External_Reference"
+              },
+              "description": "Optional references to external artifacts relevant to this baseline (CTI/STIX, advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline definition. Inert context; see External_Reference."
+            },
+            "name": {
+              "type": "string",
+              "description": "The name - must be unique."
+            },
+            "title": {
+              "type": "string",
+              "description": "The title - should be human readable."
+            },
+            "maintainer": {
+              "type": "string",
+              "description": "The maintainer(s)."
+            },
+            "copyright": {
+              "type": "string",
+              "description": "The copyright holder(s)."
+            },
+            "copyrightEmail": {
+              "type": "string",
+              "description": "The email address or other contact information of the copyright holder(s)."
+            },
+            "license": {
+              "type": "string",
+              "description": "The copyright license. Example: 'Apache-2.0'."
+            },
+            "summary": {
+              "type": "string",
+              "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
+            },
+            "version": {
+              "type": "string",
+              "description": "The version of the baseline."
+            },
+            "supports": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Supported_Platform"
+              },
+              "description": "The set of supported platform targets."
+            },
+            "status": {
+              "type": "string",
+              "description": "The status. Example: 'loaded'."
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
+            }
+          },
+          "examples": [
+            {
+              "name": "rhel-9-stig-baseline",
+              "title": "Red Hat Enterprise Linux 9 STIG Baseline",
+              "maintainer": "MITRE SAF Team",
+              "copyright": "The MITRE Corporation",
+              "copyrightEmail": "saf@mitre.org",
+              "license": "Apache-2.0",
+              "summary": "InSpec baseline for RHEL 9 STIG compliance",
+              "version": "1.0.0",
+              "supports": [
+                {
+                  "platformName": "redhat",
+                  "platformFamily": "redhat",
+                  "release": "9"
+                }
+              ],
+              "status": "loaded"
+            }
+          ],
+          "description": "Shared metadata fields for baselines. Used in both standalone baseline documents and evaluated baseline results.",
+          "title": "Baseline Metadata"
+        },
+        "Requirement_Core": {
+          "type": "object",
+          "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/External_Reference"
+              },
+              "description": "Optional references to external artifacts relevant to this requirement (CTI/STIX correlation, advisories, control/definition sources, or any URI-addressable artifact). Applies to both baseline requirement definitions and evaluated requirements. Inert context; see External_Reference."
+            },
+            "id": {
+              "type": "string",
+              "description": "The requirement identifier. Example: 'SV-238196'."
+            },
+            "title": {
+              "type": "string",
+              "description": "The title - is nullable."
+            },
+            "descriptions": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "unevaluatedProperties": false,
+                "required": [
+                  "label",
+                  "data"
+                ],
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "Description category. The 'default' label is required for the primary description. Common labels: 'default', 'check', 'fix', 'rationale'. Tools may use custom labels."
+                  },
+                  "data": {
+                    "type": "string",
+                    "description": "The description text content."
+                  }
+                }
+              },
+              "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
+            },
+            "impact": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "The impactfulness or severity (0.0 to 1.0)."
+            },
+            "refs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Reference"
+              },
+              "description": "The set of references to external documents."
+            },
+            "tags": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
+            },
+            "code": {
+              "type": "string",
+              "description": "The raw source code of the requirement. Set to null for manual-only requirements or requirements not yet implemented; use verificationMethod to disambiguate manual-by-design from manual-pending-automation. Note that if this is an overlay, it does not include the underlying source code."
+            },
+            "sourceLocation": {
+              "$ref": "#/$defs/Source_Location",
+              "description": "The explicit location of the requirement within the source code."
+            },
+            "controlType": {
+              "type": "string",
+              "title": "Control Type",
+              "enum": [
+                "policy",
+                "procedure",
+                "technical",
+                "management",
+                "operational"
+              ],
+              "description": "Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A categories. 'policy' = an authored governance statement; 'procedure' = a documented process; 'technical' = an enforced technical configuration; 'management' = a programmatic/management activity; 'operational' = a recurring operational activity (e.g. AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from family/id but should not assume a default."
+            },
+            "verificationMethod": {
+              "$ref": "#/$defs/Verification_Method_Enum",
+              "description": "How this requirement is intended to be verified. Disambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual. Optional: when omitted, consumers should not infer a default."
+            },
+            "applicability": {
+              "type": "string",
+              "title": "Applicability",
+              "enum": [
+                "required",
+                "optional",
+                "advisory"
+              ],
+              "description": "Whether the requirement is mandatory within its baseline. Distinct from severity (risk weight) and status (lifecycle state). Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop, FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}). Optional: when omitted, consumers should treat the requirement as 'required' by convention."
+            }
+          },
+          "examples": [
+            {
+              "$comment": "v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape under v3.4.0 (backward compatibility).",
+              "id": "SV-238196",
+              "title": "The Ubuntu operating system must enforce password complexity",
+              "impact": 0.5,
+              "tags": {
+                "nist": [
+                  "IA-5"
+                ],
+                "severity": "medium",
+                "cci": [
+                  "CCI-000192"
+                ]
+              },
+              "refs": [
+                {
+                  "url": "https://public.cyber.mil/stigs/"
+                }
+              ],
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "Use of a complex password helps to increase the time and resources required to compromise the password."
+                },
+                {
+                  "label": "check",
+                  "data": "Verify the value of 'minlen' in /etc/security/pwquality.conf."
+                }
+              ]
+            },
+            {
+              "$comment": "v3.2 example populating all three classification fields. controlType=technical because AC-3 is enforced via configuration, not policy text. verificationMethod=automated because a check exists. applicability=required because this is a CORE control in the source baseline.",
+              "id": "AC-3",
+              "title": "Access Enforcement",
+              "impact": 0.7,
+              "tags": {
+                "nist": [
+                  "AC-3"
+                ],
+                "severity": "high"
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "The information system enforces approved authorizations for logical access to information and system resources."
+                }
+              ],
+              "code": "control 'AC-3' do; impact 0.7; end",
+              "controlType": "technical",
+              "verificationMethod": "automated",
+              "applicability": "required"
+            },
+            {
+              "$comment": "v3.2 example for a manual-by-design requirement. FedRAMP 20x KSIs are statement-form: code is omitted (not null) and verificationMethod=manual-by-design distinguishes this from 'automation could exist but doesn't yet'. controlType=policy because this is an authored governance statement.",
+              "id": "KSI-CNA-01",
+              "title": "Cyber Security Plan documents the system",
+              "impact": 0.5,
+              "tags": {
+                "ksi": [
+                  "KSI-CNA"
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "The Cyber Security Plan documents the system, its boundary, and its components."
+                }
+              ],
+              "controlType": "policy",
+              "verificationMethod": "manual-by-design",
+              "applicability": "required"
+            },
+            {
+              "$comment": "v3.2 example for a STIG rule lacking a <fix>. Differs from manual-by-design: automation should exist, just not yet. applicability=advisory used here because the source format flagged it as recommended-but-not-mandatory; CIS-style IG memberships and FedRAMP 'Optional:' markers map onto applicability=optional or advisory similarly.",
+              "id": "SV-999999",
+              "title": "Example STIG rule pending automation",
+              "impact": 0.3,
+              "tags": {
+                "stig_id": "SV-999999"
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "Example requirement that is intended to be automated but currently lacks a fix block."
+                },
+                {
+                  "label": "check",
+                  "data": "Manual review of system configuration is required."
+                }
+              ],
+              "verificationMethod": "manual-pending-automation",
+              "applicability": "advisory"
+            }
+          ],
+          "description": "Core requirement fields shared between baseline requirements and evaluated requirements. Contains the fundamental requirement definition without assessment results.",
+          "title": "Requirement Core"
+        },
+        "Verification_Method_Enum": {
+          "type": "string",
+          "enum": [
+            "automated",
+            "manual-by-design",
+            "manual-pending-automation",
+            "hybrid"
+          ],
+          "description": "How a requirement is intended to be verified. Disambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual. Named '_Enum' to disambiguate from the unrelated Verification_Method DID-context struct.",
+          "title": "Verification Method Enum"
+        },
+        "Severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "informational"
+          ],
+          "description": "Severity rating for a requirement. Typically derived from the numeric impact score.",
+          "title": "Severity"
+        },
+        "Cloud_Provider": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "aws",
+            "azure",
+            "gcp",
+            "oci",
+            "other",
+            null
+          ],
+          "description": "Cloud service provider identifier.",
+          "title": "Cloud Provider"
+        }
+      }
+    },
     "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.4.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.4.0",
@@ -968,935 +2046,6 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0",
-      "title": "HDF Common Primitives",
-      "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
-      "$defs": {
-        "Hash_Algorithm": {
-          "type": "string",
-          "enum": [
-            "sha256",
-            "sha384",
-            "sha512",
-            "blake3"
-          ],
-          "description": "Supported cryptographic hash algorithms for checksums and integrity verification. blake3 covers container-image and other artifact digests that use it.",
-          "title": "Hash Algorithm"
-        },
-        "Requirement_Group": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "id",
-            "requirements"
-          ],
-          "properties": {
-            "id": {
-              "type": "string",
-              "description": "The unique identifier for the group. Example: the relative path to the file specifying the requirements."
-            },
-            "title": {
-              "type": "string",
-              "description": "The title of the group - should be human readable."
-            },
-            "requirements": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "description": "The set of requirements as specified by their ids in this group. Example: 'SV-238196'."
-            }
-          },
-          "description": "Describes a group of requirements, such as those defined in a single file.",
-          "title": "Requirement Group"
-        },
-        "Dependency": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [],
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "The name or assigned alias."
-            },
-            "url": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "The address of the dependency."
-            },
-            "branch": {
-              "type": "string",
-              "description": "The branch name for a git repo."
-            },
-            "path": {
-              "type": "string",
-              "description": "The relative path if the dependency is locally available."
-            },
-            "statusMessage": {
-              "type": "string",
-              "description": "The reason for the status if it is 'failed' or 'skipped'."
-            },
-            "status": {
-              "type": "string",
-              "description": "The status. Should be: 'loaded', 'failed', or 'skipped'."
-            },
-            "git": {
-              "type": "string",
-              "format": "uri",
-              "description": "The location of the git repo. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'."
-            },
-            "supermarket": {
-              "type": "string",
-              "description": "The 'user/profilename' attribute for a Supermarket server."
-            },
-            "compliance": {
-              "type": "string",
-              "description": "The 'user/profilename' attribute for an Automate server."
-            }
-          },
-          "examples": [
-            {
-              "name": "ubuntu-22.04-baseline",
-              "url": "https://github.com/my-org/ubuntu-22.04-stig-baseline",
-              "git": "https://github.com/my-org/ubuntu-22.04-stig-baseline.git",
-              "branch": "main",
-              "status": "loaded"
-            },
-            {
-              "name": "ssl-tls-baseline",
-              "path": "../shared-baselines/ssl-tls",
-              "status": "loaded"
-            },
-            {
-              "name": "windows-2022-baseline",
-              "git": "https://github.com/security-org/windows-2022-stig.git",
-              "branch": "v1.2.0",
-              "status": "failed",
-              "statusMessage": "Unable to clone repository: authentication failed"
-            },
-            {
-              "name": "chef-supermarket-baseline",
-              "supermarket": "dev-sec/linux-baseline",
-              "status": "loaded"
-            }
-          ],
-          "description": "A dependency for a baseline. Can include relative paths or URLs for where to find the dependency.",
-          "title": "Dependency"
-        },
-        "Reference": {
-          "anyOf": [
-            {
-              "type": "object",
-              "required": [
-                "ref"
-              ],
-              "properties": {
-                "ref": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "description": "A human readable/meaningful reference. Example: a book title."
-                    },
-                    {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": true
-                      },
-                      "description": "An array of reference objects."
-                    }
-                  ]
-                }
-              },
-              "description": "A reference using the 'ref' field."
-            },
-            {
-              "type": "object",
-              "required": [
-                "url"
-              ],
-              "properties": {
-                "url": {
-                  "type": "string",
-                  "format": "uri"
-                }
-              },
-              "description": "A URL pointing at the reference."
-            },
-            {
-              "type": "object",
-              "required": [
-                "uri"
-              ],
-              "properties": {
-                "uri": {
-                  "type": "string",
-                  "format": "uri"
-                }
-              },
-              "description": "A URI pointing at the reference."
-            }
-          ],
-          "description": "A reference to an external document.",
-          "title": "Reference"
-        },
-        "Source_Location": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [],
-          "properties": {
-            "ref": {
-              "type": "string",
-              "description": "Path to the file that this requirement originates from."
-            },
-            "line": {
-              "type": "number",
-              "description": "The line on which this requirement is located."
-            }
-          },
-          "examples": [
-            {
-              "ref": "controls/SV-260476.rb",
-              "line": 1
-            },
-            {
-              "ref": "profiles/ubuntu/controls/configure_audit.rb",
-              "line": 42
-            }
-          ],
-          "description": "The explicit location of a requirement within source code.",
-          "title": "Source Location"
-        },
-        "Supported_Platform": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [],
-          "properties": {
-            "platformFamily": {
-              "type": "string",
-              "description": "The platform family. Example: 'redhat'."
-            },
-            "platformName": {
-              "type": "string",
-              "description": "The platform name - can include wildcards. Example: 'debian'."
-            },
-            "platform": {
-              "type": "string",
-              "description": "The location of the platform. Can be: 'os', 'aws', 'azure', or 'gcp'."
-            },
-            "release": {
-              "type": "string",
-              "description": "The release of the platform. Example: '20.04' for 'ubuntu'."
-            }
-          },
-          "description": "A supported platform target. Example: the platform name being 'ubuntu'.",
-          "title": "Supported Platform"
-        },
-        "Checksum": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "algorithm",
-            "value"
-          ],
-          "properties": {
-            "algorithm": {
-              "$ref": "#/$defs/Hash_Algorithm",
-              "description": "The hash algorithm used for the checksum."
-            },
-            "value": {
-              "type": "string",
-              "description": "The checksum value."
-            }
-          },
-          "examples": [
-            {
-              "algorithm": "sha256",
-              "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-            },
-            {
-              "algorithm": "sha512",
-              "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
-            }
-          ],
-          "description": "Cryptographic checksum for baseline integrity verification.",
-          "title": "Checksum"
-        },
-        "Identity": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "identifier",
-            "type"
-          ],
-          "properties": {
-            "identifier": {
-              "type": "string",
-              "description": "The identifier value. Example: 'user@example.com', 'jdoe', 'automated-scanner-01'."
-            },
-            "type": {
-              "type": "string",
-              "title": "Identity Type",
-              "enum": [
-                "email",
-                "username",
-                "system",
-                "agent",
-                "simple",
-                "other"
-              ],
-              "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent' for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
-            },
-            "description": {
-              "type": "string",
-              "description": "Optional description of the identity or identity system, particularly useful when type is 'other'."
-            }
-          },
-          "examples": [
-            {
-              "type": "email",
-              "identifier": "admin@example.com"
-            },
-            {
-              "type": "username",
-              "identifier": "jdoe",
-              "description": "Security Operations Analyst"
-            },
-            {
-              "type": "system",
-              "identifier": "automated-scanner-01",
-              "description": "Nightly compliance scan pipeline"
-            },
-            {
-              "type": "agent",
-              "identifier": "cve-enrichment-bot/v0.4.2",
-              "description": "OpenAI GPT-4 via internal CVE-enrichment tool; proposes environmental CVSS for human review"
-            }
-          ],
-          "description": "Represents an identity that performed an action, such as capturing evidence or applying an override.",
-          "title": "Identity"
-        },
-        "Evidence": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "type",
-            "data"
-          ],
-          "properties": {
-            "type": {
-              "type": "string",
-              "title": "Evidence Type",
-              "enum": [
-                "screenshot",
-                "code",
-                "log",
-                "url",
-                "file",
-                "other"
-              ],
-              "description": "The type of evidence being provided."
-            },
-            "data": {
-              "type": "string",
-              "description": "The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs: the raw text. For URLs: the URL string."
-            },
-            "description": {
-              "type": "string",
-              "description": "Human-readable description of what this evidence shows."
-            },
-            "mimeType": {
-              "type": "string",
-              "description": "MIME type of the evidence. Example: 'image/png', 'text/plain', 'application/json'."
-            },
-            "encoding": {
-              "type": "string",
-              "description": "Encoding used for the data. Example: 'base64', 'utf-8'."
-            },
-            "size": {
-              "type": "number",
-              "description": "Size of the evidence data in bytes."
-            },
-            "capturedAt": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Timestamp when this evidence was captured. ISO 8601 format."
-            },
-            "capturedBy": {
-              "$ref": "#/$defs/Identity",
-              "description": "Identity of who or what captured this evidence."
-            }
-          },
-          "examples": [
-            {
-              "type": "screenshot",
-              "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-              "description": "Screenshot showing firewall configuration with required ports blocked",
-              "mimeType": "image/png",
-              "encoding": "base64",
-              "size": 95,
-              "capturedAt": "2025-12-14T10:30:00Z",
-              "capturedBy": {
-                "identifier": "security-auditor@example.com",
-                "type": "email"
-              }
-            },
-            {
-              "type": "code",
-              "data": "# Nginx configuration\nserver {\n  listen 443 ssl;\n  ssl_protocols TLSv1.2 TLSv1.3;\n  ssl_ciphers HIGH:!aNULL:!MD5;\n}",
-              "description": "Server configuration showing TLS 1.2+ enforcement",
-              "mimeType": "text/plain",
-              "capturedAt": "2025-12-14T10:45:00Z"
-            },
-            {
-              "type": "log",
-              "data": "[2025-12-14 10:00:15] INFO: Security scan completed - 0 critical vulnerabilities found\n[2025-12-14 10:00:16] INFO: All required security patches applied\n[2025-12-14 10:00:17] INFO: System compliant with security baseline",
-              "description": "Security scan log output",
-              "mimeType": "text/plain",
-              "size": 256
-            },
-            {
-              "type": "url",
-              "data": "https://jira.example.com/browse/SEC-12345",
-              "description": "Link to security ticket documenting remediation work",
-              "capturedAt": "2025-12-14T11:00:00Z"
-            },
-            {
-              "type": "file",
-              "data": "UEsDBBQAAAAIAI1ZX1YhQp8FHgAAABIAAAAIAAAAdGVzdC50eHRLy8nPS8lQSgIAUmNEBhQAAAA=",
-              "description": "Compliance audit report PDF",
-              "mimeType": "application/pdf",
-              "encoding": "base64",
-              "size": 2048,
-              "capturedAt": "2025-12-14T12:00:00Z",
-              "capturedBy": {
-                "identifier": "compliance-system",
-                "type": "system"
-              }
-            }
-          ],
-          "description": "Supporting evidence for a finding or override, such as screenshots, code samples, log excerpts, or URLs.",
-          "title": "Evidence"
-        },
-        "Remediation": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "uri"
-          ],
-          "properties": {
-            "uri": {
-              "type": "string",
-              "format": "uri",
-              "description": "URI pointing to automated remediation resources (Ansible playbooks, Terraform scripts, etc.). Examples: GitHub repository, DISA STIG Supplemental Automation Content, vendor-provided scripts."
-            },
-            "checksum": {
-              "$ref": "#/$defs/Checksum",
-              "description": "Optional cryptographic checksum for verifying the integrity of remediation resources fetched from the URI. Recommended for security when referencing external automation scripts."
-            }
-          },
-          "examples": [
-            {
-              "uri": "https://github.com/ansible-lockdown/RHEL9-STIG/tree/main/tasks"
-            },
-            {
-              "uri": "https://artifacts.example.com/remediation/ubuntu-22.04-hardening-v1.2.tar.gz",
-              "checksum": {
-                "algorithm": "sha256",
-                "value": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
-              }
-            }
-          ],
-          "description": "Reference to automated remediation resources for implementing security controls. Points to external automation content like Ansible playbooks, Terraform scripts, or vendor-provided remediation tools.",
-          "title": "Remediation"
-        },
-        "Verification_Method": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "type",
-            "controller"
-          ],
-          "properties": {
-            "type": {
-              "type": "string",
-              "description": "The type of verification method. Example: 'JsonWebKey2020', 'RsaVerificationKey2018', 'Ed25519VerificationKey2020'."
-            },
-            "controller": {
-              "type": "string",
-              "description": "The entity that controls this verification method. Can be a DID, URI, or other identifier."
-            },
-            "publicKeyJwk": {
-              "type": "object",
-              "additionalProperties": true,
-              "description": "Public key in JSON Web Key format."
-            },
-            "publicKeyPem": {
-              "type": "string",
-              "description": "Public key in PEM format. Example: '-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----'."
-            },
-            "publicKeyBase58": {
-              "type": "string",
-              "description": "Public key in Base58 format, commonly used with Ed25519 keys."
-            }
-          },
-          "description": "Verification method containing the public key needed to verify a digital signature. Supports multiple key formats including JWK (for RSA, EC), PEM, and Base58.",
-          "title": "Verification Method"
-        },
-        "Milestone": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "description",
-            "estimatedCompletion",
-            "status"
-          ],
-          "properties": {
-            "description": {
-              "type": "string",
-              "description": "Description of this milestone or task."
-            },
-            "estimatedCompletion": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Estimated completion date. ISO 8601 format."
-            },
-            "status": {
-              "type": "string",
-              "title": "Milestone Status",
-              "enum": [
-                "pending",
-                "inProgress",
-                "completed"
-              ],
-              "description": "Current status of this milestone."
-            },
-            "completedAt": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Actual completion timestamp. ISO 8601 format."
-            },
-            "completedBy": {
-              "$ref": "#/$defs/Identity",
-              "description": "Identity of who completed this milestone."
-            }
-          },
-          "description": "A milestone or task within a POA&M remediation plan.",
-          "title": "Milestone"
-        },
-        "Signature": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "type",
-            "created",
-            "creator",
-            "signatureValue",
-            "proofPurpose",
-            "verificationMethod"
-          ],
-          "properties": {
-            "type": {
-              "type": "string",
-              "description": "The signature suite type. Example: 'JsonWebSignature2020', 'RsaSignature2018', 'Ed25519Signature2020'."
-            },
-            "created": {
-              "type": "string",
-              "format": "date-time",
-              "description": "When the signature was created. ISO 8601 format."
-            },
-            "creator": {
-              "$ref": "#/$defs/Identity",
-              "description": "The identity that created this signature."
-            },
-            "signatureValue": {
-              "type": "string",
-              "description": "The base64-encoded or base58-encoded signature value."
-            },
-            "proofPurpose": {
-              "type": "string",
-              "description": "The purpose of this signature. Example: 'attestation', 'authentication', 'assertionMethod'."
-            },
-            "verificationMethod": {
-              "$ref": "#/$defs/Verification_Method",
-              "description": "The verification method containing the public key for signature verification."
-            },
-            "nonce": {
-              "type": "string",
-              "description": "Random value to prevent replay attacks."
-            },
-            "challenge": {
-              "type": "string",
-              "description": "Challenge value from the verifier, used in challenge-response authentication."
-            },
-            "domain": {
-              "type": "string",
-              "description": "Domain restriction for the signature, prevents cross-domain replay attacks."
-            }
-          },
-          "examples": [
-            {
-              "type": "JsonWebSignature2020",
-              "created": "2025-12-14T10:00:00Z",
-              "creator": {
-                "identifier": "security-team@example.com",
-                "type": "email"
-              },
-              "signatureValue": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..MEYCIQDvKbtLRhWAa",
-              "proofPurpose": "attestation",
-              "verificationMethod": {
-                "type": "JsonWebKey2020",
-                "controller": "did:example:123456789abcdefghi",
-                "publicKeyJwk": {
-                  "kty": "RSA",
-                  "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtV",
-                  "e": "AQAB"
-                }
-              }
-            },
-            {
-              "type": "RsaSignature2018",
-              "created": "2025-12-14T11:30:00Z",
-              "creator": {
-                "identifier": "ciso@example.com",
-                "type": "email"
-              },
-              "signatureValue": "pY9...Cg==",
-              "proofPurpose": "authentication",
-              "verificationMethod": {
-                "type": "RsaVerificationKey2018",
-                "controller": "https://example.com/issuers/565049",
-                "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAryQICCl6NZ5gDKrnSztO\n-----END PUBLIC KEY-----"
-              },
-              "nonce": "c0ae1c8e-c7e7-469f-b252-86e6a0e7387e"
-            },
-            {
-              "type": "Ed25519Signature2020",
-              "created": "2025-12-14T14:00:00Z",
-              "creator": {
-                "identifier": "automated-signer",
-                "type": "system",
-                "description": "Hardware security module (HSM) for automated attestations"
-              },
-              "signatureValue": "z58DAdFfa9SkqZMVMxABEBC59Ck6WibLZ",
-              "proofPurpose": "assertionMethod",
-              "verificationMethod": {
-                "type": "Ed25519VerificationKey2020",
-                "controller": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
-                "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
-              },
-              "challenge": "1f44d2f3-d16c-47a4-9f5f-1d6e8f4e3a2b",
-              "domain": "https://compliance.example.com"
-            }
-          ],
-          "description": "A digital signature following W3C Data Integrity Proofs pattern. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other cryptographic signing methods via JWK, PEM, or Base58 key formats.",
-          "title": "Signature"
-        },
-        "Baseline_Metadata": {
-          "type": "object",
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "The name - must be unique."
-            },
-            "title": {
-              "type": "string",
-              "description": "The title - should be human readable."
-            },
-            "maintainer": {
-              "type": "string",
-              "description": "The maintainer(s)."
-            },
-            "copyright": {
-              "type": "string",
-              "description": "The copyright holder(s)."
-            },
-            "copyrightEmail": {
-              "type": "string",
-              "description": "The email address or other contact information of the copyright holder(s)."
-            },
-            "license": {
-              "type": "string",
-              "description": "The copyright license. Example: 'Apache-2.0'."
-            },
-            "summary": {
-              "type": "string",
-              "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
-            },
-            "version": {
-              "type": "string",
-              "description": "The version of the baseline."
-            },
-            "supports": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/Supported_Platform"
-              },
-              "description": "The set of supported platform targets."
-            },
-            "status": {
-              "type": "string",
-              "description": "The status. Example: 'loaded'."
-            },
-            "labels": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "string"
-              },
-              "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
-            }
-          },
-          "examples": [
-            {
-              "name": "rhel-9-stig-baseline",
-              "title": "Red Hat Enterprise Linux 9 STIG Baseline",
-              "maintainer": "MITRE SAF Team",
-              "copyright": "The MITRE Corporation",
-              "copyrightEmail": "saf@mitre.org",
-              "license": "Apache-2.0",
-              "summary": "InSpec baseline for RHEL 9 STIG compliance",
-              "version": "1.0.0",
-              "supports": [
-                {
-                  "platformName": "redhat",
-                  "platformFamily": "redhat",
-                  "release": "9"
-                }
-              ],
-              "status": "loaded"
-            }
-          ],
-          "description": "Shared metadata fields for baselines. Used in both standalone baseline documents and evaluated baseline results.",
-          "title": "Baseline Metadata"
-        },
-        "Requirement_Core": {
-          "type": "object",
-          "properties": {
-            "id": {
-              "type": "string",
-              "description": "The requirement identifier. Example: 'SV-238196'."
-            },
-            "title": {
-              "type": "string",
-              "description": "The title - is nullable."
-            },
-            "descriptions": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "unevaluatedProperties": false,
-                "required": [
-                  "label",
-                  "data"
-                ],
-                "properties": {
-                  "label": {
-                    "type": "string",
-                    "description": "Description category. The 'default' label is required for the primary description. Common labels: 'default', 'check', 'fix', 'rationale'. Tools may use custom labels."
-                  },
-                  "data": {
-                    "type": "string",
-                    "description": "The description text content."
-                  }
-                }
-              },
-              "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
-            },
-            "impact": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1,
-              "description": "The impactfulness or severity (0.0 to 1.0)."
-            },
-            "refs": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/Reference"
-              },
-              "description": "The set of references to external documents."
-            },
-            "tags": {
-              "type": "object",
-              "additionalProperties": true,
-              "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
-            },
-            "code": {
-              "type": "string",
-              "description": "The raw source code of the requirement. Set to null for manual-only requirements or requirements not yet implemented; use verificationMethod to disambiguate manual-by-design from manual-pending-automation. Note that if this is an overlay, it does not include the underlying source code."
-            },
-            "sourceLocation": {
-              "$ref": "#/$defs/Source_Location",
-              "description": "The explicit location of the requirement within the source code."
-            },
-            "controlType": {
-              "type": "string",
-              "title": "Control Type",
-              "enum": [
-                "policy",
-                "procedure",
-                "technical",
-                "management",
-                "operational"
-              ],
-              "description": "Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A categories. 'policy' = an authored governance statement; 'procedure' = a documented process; 'technical' = an enforced technical configuration; 'management' = a programmatic/management activity; 'operational' = a recurring operational activity (e.g. AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from family/id but should not assume a default."
-            },
-            "verificationMethod": {
-              "$ref": "#/$defs/Verification_Method_Enum",
-              "description": "How this requirement is intended to be verified. Disambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual. Optional: when omitted, consumers should not infer a default."
-            },
-            "applicability": {
-              "type": "string",
-              "title": "Applicability",
-              "enum": [
-                "required",
-                "optional",
-                "advisory"
-              ],
-              "description": "Whether the requirement is mandatory within its baseline. Distinct from severity (risk weight) and status (lifecycle state). Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop, FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}). Optional: when omitted, consumers should treat the requirement as 'required' by convention."
-            }
-          },
-          "examples": [
-            {
-              "$comment": "v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape under v3.4.0 (backward compatibility).",
-              "id": "SV-238196",
-              "title": "The Ubuntu operating system must enforce password complexity",
-              "impact": 0.5,
-              "tags": {
-                "nist": [
-                  "IA-5"
-                ],
-                "severity": "medium",
-                "cci": [
-                  "CCI-000192"
-                ]
-              },
-              "refs": [
-                {
-                  "url": "https://public.cyber.mil/stigs/"
-                }
-              ],
-              "descriptions": [
-                {
-                  "label": "default",
-                  "data": "Use of a complex password helps to increase the time and resources required to compromise the password."
-                },
-                {
-                  "label": "check",
-                  "data": "Verify the value of 'minlen' in /etc/security/pwquality.conf."
-                }
-              ]
-            },
-            {
-              "$comment": "v3.2 example populating all three classification fields. controlType=technical because AC-3 is enforced via configuration, not policy text. verificationMethod=automated because a check exists. applicability=required because this is a CORE control in the source baseline.",
-              "id": "AC-3",
-              "title": "Access Enforcement",
-              "impact": 0.7,
-              "tags": {
-                "nist": [
-                  "AC-3"
-                ],
-                "severity": "high"
-              },
-              "descriptions": [
-                {
-                  "label": "default",
-                  "data": "The information system enforces approved authorizations for logical access to information and system resources."
-                }
-              ],
-              "code": "control 'AC-3' do; impact 0.7; end",
-              "controlType": "technical",
-              "verificationMethod": "automated",
-              "applicability": "required"
-            },
-            {
-              "$comment": "v3.2 example for a manual-by-design requirement. FedRAMP 20x KSIs are statement-form: code is omitted (not null) and verificationMethod=manual-by-design distinguishes this from 'automation could exist but doesn't yet'. controlType=policy because this is an authored governance statement.",
-              "id": "KSI-CNA-01",
-              "title": "Cyber Security Plan documents the system",
-              "impact": 0.5,
-              "tags": {
-                "ksi": [
-                  "KSI-CNA"
-                ]
-              },
-              "descriptions": [
-                {
-                  "label": "default",
-                  "data": "The Cyber Security Plan documents the system, its boundary, and its components."
-                }
-              ],
-              "controlType": "policy",
-              "verificationMethod": "manual-by-design",
-              "applicability": "required"
-            },
-            {
-              "$comment": "v3.2 example for a STIG rule lacking a <fix>. Differs from manual-by-design: automation should exist, just not yet. applicability=advisory used here because the source format flagged it as recommended-but-not-mandatory; CIS-style IG memberships and FedRAMP 'Optional:' markers map onto applicability=optional or advisory similarly.",
-              "id": "SV-999999",
-              "title": "Example STIG rule pending automation",
-              "impact": 0.3,
-              "tags": {
-                "stig_id": "SV-999999"
-              },
-              "descriptions": [
-                {
-                  "label": "default",
-                  "data": "Example requirement that is intended to be automated but currently lacks a fix block."
-                },
-                {
-                  "label": "check",
-                  "data": "Manual review of system configuration is required."
-                }
-              ],
-              "verificationMethod": "manual-pending-automation",
-              "applicability": "advisory"
-            }
-          ],
-          "description": "Core requirement fields shared between baseline requirements and evaluated requirements. Contains the fundamental requirement definition without assessment results.",
-          "title": "Requirement Core"
-        },
-        "Verification_Method_Enum": {
-          "type": "string",
-          "enum": [
-            "automated",
-            "manual-by-design",
-            "manual-pending-automation",
-            "hybrid"
-          ],
-          "description": "How a requirement is intended to be verified. Disambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual. Named '_Enum' to disambiguate from the unrelated Verification_Method DID-context struct.",
-          "title": "Verification Method Enum"
-        },
-        "Severity": {
-          "type": "string",
-          "enum": [
-            "critical",
-            "high",
-            "medium",
-            "low",
-            "informational"
-          ],
-          "description": "Severity rating for a requirement. Typically derived from the numeric impact score.",
-          "title": "Severity"
-        },
-        "Cloud_Provider": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "enum": [
-            "aws",
-            "azure",
-            "gcp",
-            "oci",
-            "other",
-            null
-          ],
-          "description": "Cloud service provider identifier.",
-          "title": "Cloud Provider"
-        }
-      }
-    },
     "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0",
@@ -1926,6 +2075,13 @@
             }
           ],
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/External_Reference"
+              },
+              "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object or CTI feed motivating an E:A riskAdjustment). Inert context distinct from `evidence`; see External_Reference. Symmetric with Standalone_Override.externalReferences for the inline (results-embedded) override carrier."
+            },
             "type": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Override_Type",
               "description": "The type of override applied to this requirement."
@@ -2005,6 +2161,34 @@
               },
               "appliedAt": "2026-04-14T10:00:00Z",
               "expiresAt": "2026-10-14T00:00:00Z"
+            },
+            {
+              "$comment": "Inline riskAdjustment carrying the STIX source that motivated it via externalReferences (the enrichment envelope, with the raw sighting embedded losslessly in document). This is the shape the enrich pass writes onto Evaluated_Requirement.overrides[] for the E:A recompute.",
+              "type": "riskAdjustment",
+              "impact": {
+                "value": 0.9
+              },
+              "reason": "CVE-2021-44228 actively exploited in the wild per STIX threat intelligence",
+              "appliedBy": {
+                "identifier": "secops@agency.gov",
+                "type": "email"
+              },
+              "appliedAt": "2026-07-27T00:00:00Z",
+              "expiresAt": "2026-10-25T00:00:00Z",
+              "externalReferences": [
+                {
+                  "sourceName": "stix",
+                  "externalId": "sighting--a1b2c3d4-0000-4a2b-9c3d-000000000002",
+                  "kind": "threat-intel",
+                  "rel": "evidence",
+                  "document": {
+                    "type": "sighting",
+                    "spec_version": "2.1",
+                    "id": "sighting--a1b2c3d4-0000-4a2b-9c3d-000000000002",
+                    "sighting_of_ref": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001"
+                  }
+                }
+              ]
             },
             {
               "type": "falsePositive",
@@ -2413,6 +2597,13 @@
             ]
           },
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/External_Reference"
+              },
+              "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object, advisory, or CTI feed that motivated it). Inert context distinct from `evidence`; see External_Reference."
+            },
             "type": {
               "$ref": "#/$defs/Override_Type",
               "description": "The type of amendment."
@@ -4413,6 +4604,13 @@
         "baselines"
       ],
       "properties": {
+        "externalReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/External_Reference"
+          },
+          "description": "Optional references to external artifacts (CTI/STIX, BOMs, advisories, runbooks, or any URI-addressable artifact) relevant to this assessment as a whole. Inert context; see External_Reference."
+        },
         "id": {
           "type": "string",
           "format": "uuid",

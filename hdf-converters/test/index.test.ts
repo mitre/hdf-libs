@@ -60,6 +60,9 @@ import {
   convertOscalPoamToHdf,
   convertOscalSarToHdf,
   detectOscalDocumentType,
+  enrichStix,
+  detectStixBundle,
+  parseStixBundle,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -392,5 +395,52 @@ describe('Main exports', () => {
     };
 
     expect(isHDFV1(v2Data)).toBe(false);
+  });
+
+  it('should export the STIX enrichment helpers from main index', () => {
+    expect(typeof enrichStix).toBe('function');
+    expect(typeof detectStixBundle).toBe('function');
+    expect(typeof parseStixBundle).toBe('function');
+  });
+
+  it('enrichStix from the main export attaches a STIX object to a matching finding', () => {
+    const results = JSON.stringify({
+      baselines: [
+        {
+          name: 'B',
+          checksum: { algorithm: 'sha256', value: 'abc' },
+          requirements: [
+            {
+              id: 'CVE-2021-44228',
+              descriptions: [{ label: 'default', data: 'd' }],
+              impact: 0.9,
+              tags: {},
+              results: [{ status: 'failed', codeDesc: 'x', startTime: '2025-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+      components: [],
+      statistics: {},
+    });
+    const bundle = JSON.stringify({
+      type: 'bundle',
+      id: 'bundle--1',
+      objects: [
+        {
+          type: 'vulnerability',
+          spec_version: '2.1',
+          id: 'vulnerability--1',
+          name: 'CVE-2021-44228',
+          external_references: [{ source_name: 'cve', external_id: 'CVE-2021-44228' }],
+        },
+      ],
+    });
+    const out = JSON.parse(enrichStix(results, bundle));
+    const req = out.baselines[0].requirements[0];
+    expect(req.externalReferences).toHaveLength(1);
+    expect(req.externalReferences[0].sourceName).toBe('stix');
+    expect(req.externalReferences[0].document.id).toBe('vulnerability--1');
+    expect(detectStixBundle(bundle)).toBe(true);
   });
 });

@@ -10,6 +10,13 @@
     "assessments"
   ],
   "properties": {
+    "externalReferences": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/External_Reference"
+      },
+      "description": "Optional references to external artifacts relevant to this assessment plan (CTI/STIX, advisories, methodology docs, or any URI-addressable artifact). Inert context; see External_Reference."
+    },
     "planId": {
       "type": "string",
       "format": "uuid",

@@ -10,6 +10,13 @@
     "components"
   ],
   "properties": {
+    "externalReferences": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/External_Reference"
+      },
+      "description": "Optional references to external artifacts describing this system's threat environment or context (CTI/STIX, BOMs, advisories, or any URI-addressable artifact). Inert context; see External_Reference."
+    },
     "systemId": {
       "type": "string",
       "format": "uuid",
@@ -157,6 +164,134 @@
       "title": "HDF Common Primitives",
       "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
       "$defs": {
+        "External_Reference": {
+          "type": "object",
+          "title": "External Reference",
+          "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property. Purpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category. `sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible. A reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
+          "required": [
+            "sourceName"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "externalId"
+              ]
+            },
+            {
+              "required": [
+                "href"
+              ]
+            },
+            {
+              "required": [
+                "description"
+              ]
+            }
+          ],
+          "properties": {
+            "sourceName": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Name of the external system/source being referenced (e.g., 'cve', 'mitre-att&ck', 'stix', 'taxii', or any vendor label). Open string — not a closed enum. Use the `x-` prefix convention for custom/experimental sources, mirroring `bomType`."
+            },
+            "externalId": {
+              "type": "string",
+              "description": "Identifier of the artifact within `sourceName` (e.g., 'CVE-2021-44228' for source 'cve', 'T1059' for 'mitre-att&ck'). Cite by id without needing a URL. Together with `sourceName` this is a URN."
+            },
+            "href": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Location of the artifact. `uri-reference` (not `uri`) so a bare internal `#fragment`/`#uuid` reference is expressible alongside absolute URLs. `checksum`/`mediaType` apply only to a retrievable `href`."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of what is referenced. Satisfies the at-least-one rule on its own when neither id nor href is available."
+            },
+            "rel": {
+              "type": "string",
+              "description": "Open relationship token describing how this reference relates to the referencing object. Deliberately open (cf. OSCAL `rel` allow-other, RFC 8288 extension relations). Documented starter vocabulary: 'reference' (generic), 'definition' (defines the concept), 'evidence' (supporting evidence), 'investigate' (a live pivot to investigate), 'canonical' (the authoritative source)."
+            },
+            "mediaType": {
+              "type": "string",
+              "description": "IANA media type of the referenced artifact when retrievable (RFC 6838), e.g., 'application/json'. Meaningful only with `href`."
+            },
+            "checksum": {
+              "$ref": "#/$defs/Checksum",
+              "description": "Integrity hash of the referenced artifact. Reuses the HDF `Checksum` primitive (not STIX `hashes`). Meaningful only with a retrievable `href`."
+            },
+            "addedBy": {
+              "$ref": "#/$defs/Identity",
+              "description": "Who attached this reference. Lightweight, flat attribution — a reference overrides nothing, so it has no chaining/superseding/disposition."
+            },
+            "addedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When this reference was attached (RFC 3339 / trimmed-UTC per HDF timestamp convention)."
+            },
+            "kind": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Open token classifying the referenced/embedded payload, turning a bare reference into an enrichment envelope. Deliberately open (like `sourceName`/`rel`), not a closed enum. Documented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory' (vendor/security advisory). Use the `x-` prefix for custom kinds."
+            },
+            "document": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim. Composes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed. HDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
+            }
+          },
+          "unevaluatedProperties": false,
+          "examples": [
+            {
+              "$comment": "By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228.",
+              "sourceName": "cve",
+              "externalId": "CVE-2021-44228",
+              "rel": "definition"
+            },
+            {
+              "$comment": "By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL.",
+              "sourceName": "mitre-att&ck",
+              "externalId": "T1059",
+              "href": "https://attack.mitre.org/techniques/T1059/",
+              "rel": "canonical"
+            },
+            {
+              "$comment": "By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution.",
+              "sourceName": "stix",
+              "href": "https://cti.example.org/bundles/log4shell.json",
+              "rel": "investigate",
+              "mediaType": "application/json",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "addedBy": {
+                "type": "email",
+                "identifier": "analyst@agency.gov"
+              },
+              "addedAt": "2026-07-26T00:00:00Z"
+            },
+            {
+              "$comment": "Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields.",
+              "sourceName": "stix",
+              "externalId": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+              "href": "https://cti.example.org/bundles/log4shell.json#vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+              "rel": "investigate",
+              "kind": "threat-intel",
+              "document": {
+                "type": "vulnerability",
+                "spec_version": "2.1",
+                "id": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+                "name": "CVE-2021-44228",
+                "external_references": [
+                  {
+                    "source_name": "cve",
+                    "external_id": "CVE-2021-44228"
+                  }
+                ]
+              }
+            }
+          ]
+        },
         "Hash_Algorithm": {
           "type": "string",
           "enum": [
@@ -780,6 +915,13 @@
         "Baseline_Metadata": {
           "type": "object",
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/External_Reference"
+              },
+              "description": "Optional references to external artifacts relevant to this baseline (CTI/STIX, advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline definition. Inert context; see External_Reference."
+            },
             "name": {
               "type": "string",
               "description": "The name - must be unique."
@@ -857,6 +999,13 @@
         "Requirement_Core": {
           "type": "object",
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/External_Reference"
+              },
+              "description": "Optional references to external artifacts relevant to this requirement (CTI/STIX correlation, advisories, control/definition sources, or any URI-addressable artifact). Applies to both baseline requirement definitions and evaluated requirements. Inert context; see External_Reference."
+            },
             "id": {
               "type": "string",
               "description": "The requirement identifier. Example: 'SV-238196'."
@@ -2592,6 +2741,13 @@
             }
           ],
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/External_Reference"
+              },
+              "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object or CTI feed motivating an E:A riskAdjustment). Inert context distinct from `evidence`; see External_Reference. Symmetric with Standalone_Override.externalReferences for the inline (results-embedded) override carrier."
+            },
             "type": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Override_Type",
               "description": "The type of override applied to this requirement."
@@ -2671,6 +2827,34 @@
               },
               "appliedAt": "2026-04-14T10:00:00Z",
               "expiresAt": "2026-10-14T00:00:00Z"
+            },
+            {
+              "$comment": "Inline riskAdjustment carrying the STIX source that motivated it via externalReferences (the enrichment envelope, with the raw sighting embedded losslessly in document). This is the shape the enrich pass writes onto Evaluated_Requirement.overrides[] for the E:A recompute.",
+              "type": "riskAdjustment",
+              "impact": {
+                "value": 0.9
+              },
+              "reason": "CVE-2021-44228 actively exploited in the wild per STIX threat intelligence",
+              "appliedBy": {
+                "identifier": "secops@agency.gov",
+                "type": "email"
+              },
+              "appliedAt": "2026-07-27T00:00:00Z",
+              "expiresAt": "2026-10-25T00:00:00Z",
+              "externalReferences": [
+                {
+                  "sourceName": "stix",
+                  "externalId": "sighting--a1b2c3d4-0000-4a2b-9c3d-000000000002",
+                  "kind": "threat-intel",
+                  "rel": "evidence",
+                  "document": {
+                    "type": "sighting",
+                    "spec_version": "2.1",
+                    "id": "sighting--a1b2c3d4-0000-4a2b-9c3d-000000000002",
+                    "sighting_of_ref": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001"
+                  }
+                }
+              ]
             },
             {
               "type": "falsePositive",
@@ -3079,6 +3263,13 @@
             ]
           },
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/External_Reference"
+              },
+              "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object, advisory, or CTI feed that motivated it). Inert context distinct from `evidence`; see External_Reference."
+            },
             "type": {
               "$ref": "#/$defs/Override_Type",
               "description": "The type of amendment."

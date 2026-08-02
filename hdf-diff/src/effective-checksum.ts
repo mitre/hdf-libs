@@ -1,4 +1,4 @@
-import { governingOverrideIndex, sha256 } from '@mitre/hdf-utilities';
+import { governingOverrideIndex, sha256, type StatusOverrideInput } from '@mitre/hdf-utilities';
 import { computeEffectiveStatus } from './status.js';
 
 interface ImpactOverrideLike {
@@ -20,7 +20,7 @@ export interface EffectiveChecksum {
 
 /** Maps overrides onto the shared neutral selection shape (applied/expiry
  * window only; eligibility is passed separately). */
-function overrideWindows(overrides: readonly OverrideLike[]) {
+function overrideWindows(overrides: readonly OverrideLike[]): StatusOverrideInput[] {
   return overrides.map((o) => ({ appliedAt: o.appliedAt, expiresAt: o.expiresAt }));
 }
 

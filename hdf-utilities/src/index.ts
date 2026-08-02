@@ -51,8 +51,9 @@ export { findValuesByKey, extractColumn, findRows } from './object/index.js';
 export { stripHtml, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps } from './string/index.js';
 
 // Severity/impact mapping
-export { severityToImpact, impactToSeverity, cvssScoreToSeverity } from './severity/index.js';
+export { severityToImpact, impactToSeverity, cvssScoreToSeverity, roundImpact } from './severity/index.js';
 
+// Canonical status ordering + effective-status computation
 export {
   STATUS_SEVERITY_ORDER,
   statusRank,
@@ -65,12 +66,16 @@ export {
   type EffectiveStatusInput,
 } from './status/index.js';
 
-// CVSS vector parsing + validation
+// CVSS vector parsing + validation + score compute
 export {
   parseCvssVector,
   validateCvssVector,
+  computeCvssScore,
+  computeCvss40Score,
+  cvss40MacroVector,
   type ParsedCvssVector,
   type CvssValidationResult,
+  type CvssScore,
 } from './cvss/index.js';
 
 // CPE 2.3 URI parser

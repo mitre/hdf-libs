@@ -1,0 +1,231 @@
+import { computeCvssScore, roundImpact } from '@mitre/hdf-utilities';
+import { validateInputSize } from './converterutil.js';
+import {
+  parseStixBundle,
+  stixObjectCVEs,
+  stixObjectId,
+  type StixBundle,
+  type StixObject,
+} from './stix.js';
+
+type Doc = Record<string, unknown>;
+
+/** Options for the enrich pass. The empty object is the informational-only pass. */
+export interface EnrichOptions {
+  /** Enable the opt-in E:H CVSS Threat recompute (Phase 5). Off by default. */
+  recomputeCvss?: boolean;
+  /** appliedAt for authored overrides; expiresAt = asOf + review horizon. Default: now. */
+  asOf?: Date;
+  /** Review horizon in ms before an authored riskAdjustment expires. Default: 90 days. */
+  reviewHorizonMs?: number;
+}
+
+const DEFAULT_REVIEW_HORIZON_MS = 90 * 24 * 60 * 60 * 1000;
+
+/** Format a Date as canonical trimmed-UTC RFC3339 (seconds precision, matching Go's time.RFC3339). */
+function toRfc3339(d: Date): string {
+  return d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
+/**
+ * Overlay a STIX 2.1 bundle onto an existing HDF results document, attaching
+ * each STIX object as an inert externalReferences[] entry: a CVE-bearing object
+ * attaches to the finding whose requirementId is that CVE (fanning out to every
+ * match), and everything else — non-CVE objects and CVEs with no matching
+ * finding — attaches to the results root. Each entry carries the raw STIX object
+ * losslessly in `document`.
+ *
+ * Informational only: authors no overrides and fabricates no status/impact (the
+ * E:A recompute is a separate, opt-in step). The results document is preserved
+ * verbatim except for the appended references — manipulated structurally so
+ * every pre-existing field, including timestamp strings, round-trips unchanged.
+ * TypeScript peer of shared/go/enrich_stix.go (kept at parity).
+ */
+export function enrichStix(resultsInput: string, bundleInput: string, opts?: EnrichOptions): string {
+  validateInputSize(resultsInput, 'enrich-stix');
+  validateInputSize(bundleInput, 'enrich-stix');
+  if (!resultsInput) throw new Error('enrich-stix: empty results input');
+
+  const bundle = parseStixBundle(bundleInput);
+
+  let doc: Doc;
+  try {
+    doc = JSON.parse(resultsInput) as Doc;
+  } catch (e) {
+    throw new Error(`enrich-stix: parsing results: ${(e as Error).message}`);
+  }
+
+  const reqById = indexRequirementsById(doc);
+
+  for (const obj of bundle.objects) {
+    let matched = false;
+    for (const cve of stixObjectCVEs(obj)) {
+      for (const req of reqById.get(cve) ?? []) {
+        appendExternalReference(req, buildStixRef(obj, 'investigate'));
+        matched = true;
+      }
+    }
+    if (!matched) appendExternalReference(doc, buildStixRef(obj, 'reference'));
+  }
+
+  if (opts?.recomputeCvss) recomputeExploitation(bundle, reqById, opts);
+
+  return JSON.stringify(doc, null, 2);
+}
+
+/**
+ * Author an inline riskAdjustment on each CVE-matched finding that has a 3.1 base
+ * vector and whose CVE carries a structural exploitation signal in the bundle.
+ * Applies CVSS Exploit Maturity E:H (the 3.1 analog of 4.0 E:A) and recomputes
+ * the Threat score. Skips (no fabrication) when a base vector is absent or non-3.1.
+ * TypeScript peer of recomputeExploitation in enrich_stix.go.
+ */
+function recomputeExploitation(bundle: StixBundle, reqById: Map<string, Doc[]>, opts: EnrichOptions): void {
+  const appliedAt = opts.asOf ?? new Date();
+  const expiresAt = new Date(appliedAt.getTime() + (opts.reviewHorizonMs ?? DEFAULT_REVIEW_HORIZON_MS));
+
+  for (const [cve, src] of exploitedCves(bundle)) {
+    for (const req of reqById.get(cve) ?? []) {
+      const entry = findBaseVectorEntry(req, cve);
+      if (!entry) continue; // no base vector → cannot recompute honestly; skip
+      const baseVector = entry.baseVector as string;
+      let score: { baseScore: number; temporalScore: number };
+      try {
+        score = computeCvssScore(`${baseVector}/E:H`);
+      } catch {
+        continue; // non-3.1 (e.g. 4.0) or unparseable → skip, never fabricate
+      }
+      const ov = buildRiskAdjustment(cve, baseVector, score, src, appliedAt, expiresAt);
+      const existing = Array.isArray(req.statusOverrides) ? req.statusOverrides : [];
+      req.statusOverrides = [...existing, ov];
+    }
+  }
+}
+
+/**
+ * Map each CVE with a structural exploitation signal in the bundle to the STIX
+ * object providing it: a sighting (sighting_of_ref), a targets/exploits
+ * relationship (target_ref), or an indicator/report (object_refs).
+ */
+function exploitedCves(bundle: StixBundle): Map<string, Doc> {
+  const vulnCve = new Map<string, string>();
+  for (const o of bundle.objects) {
+    if (o.type === 'vulnerability') {
+      for (const cve of stixObjectCVEs(o)) vulnCve.set(stixObjectId(o), cve);
+    }
+  }
+  const exploited = new Map<string, Doc>();
+  const mark = (vulnId: string, src: Doc): void => {
+    const cve = vulnCve.get(vulnId);
+    if (cve && !exploited.has(cve)) exploited.set(cve, src);
+  };
+  for (const o of bundle.objects) {
+    if (o.type === 'sighting' && typeof o.sighting_of_ref === 'string') {
+      mark(o.sighting_of_ref, o);
+    } else if (
+      o.type === 'relationship' &&
+      (o.relationship_type === 'targets' || o.relationship_type === 'exploits') &&
+      typeof o.target_ref === 'string'
+    ) {
+      mark(o.target_ref, o);
+    } else if ((o.type === 'indicator' || o.type === 'report') && Array.isArray(o.object_refs)) {
+      for (const r of o.object_refs) if (typeof r === 'string') mark(r, o);
+    }
+  }
+  return exploited;
+}
+
+/** The finding's cvss[] entry carrying a base vector for the CVE (or a version-agnostic entry). */
+function findBaseVectorEntry(req: Doc, cve: string): Doc | undefined {
+  const arr = req.cvss;
+  if (!Array.isArray(arr)) return undefined;
+  for (const e of arr) {
+    const m = e as Doc;
+    const bv = m.baseVector;
+    if (typeof bv === 'string' && bv) {
+      const id = m.id;
+      if (id === undefined || id === cve) return m;
+    }
+  }
+  return undefined;
+}
+
+/** Build the inline riskAdjustment recording the E:H-recomputed Threat score + STIX source. */
+function buildRiskAdjustment(
+  cve: string,
+  baseVector: string,
+  score: { baseScore: number; temporalScore: number },
+  src: Doc,
+  appliedAt: Date,
+  expiresAt: Date,
+): Doc {
+  return {
+    type: 'riskAdjustment',
+    reason: `${cve} actively exploited per STIX threat intelligence (${stixObjectId(src)}); CVSS Threat recomputed with Exploit Maturity E:H.`,
+    impact: { value: roundImpact(score.temporalScore / 10) },
+    appliedBy: { type: 'other', identifier: 'hdf-enrich' },
+    appliedAt: toRfc3339(appliedAt),
+    expiresAt: toRfc3339(expiresAt),
+    cvss: {
+      version: '3.1',
+      id: cve,
+      baseVector,
+      baseScore: score.baseScore,
+      threatVector: 'E:H',
+      threatScore: score.temporalScore,
+      computedScore: score.temporalScore,
+    },
+    externalReferences: [buildStixRef(src, 'evidence')],
+  };
+}
+
+/** Map each finding id to the requirement objects carrying it (fan-out across baselines). */
+function indexRequirementsById(doc: Doc): Map<string, Doc[]> {
+  const index = new Map<string, Doc[]>();
+  const baselines = Array.isArray(doc.baselines) ? doc.baselines : [];
+  for (const b of baselines) {
+    const reqs = (b as Doc)?.requirements;
+    if (!Array.isArray(reqs)) continue;
+    for (const r of reqs) {
+      const req = r as Doc;
+      if (typeof req.id === 'string' && req.id) {
+        const list = index.get(req.id) ?? [];
+        list.push(req);
+        index.set(req.id, list);
+      }
+    }
+  }
+  return index;
+}
+
+/** Build an External_Reference envelope carrying the raw STIX object in `document`. `rel` is an open token. */
+function buildStixRef(obj: StixObject, rel: string): Doc {
+  const ref: Doc = {
+    sourceName: 'stix',
+    kind: 'threat-intel',
+    rel,
+    document: obj,
+  };
+  const id = stixObjectId(obj);
+  if (id) {
+    ref.externalId = id;
+  } else {
+    // No id → satisfy External_Reference's anyOf(externalId/href/description).
+    ref.description = stixFallbackDescription(obj);
+  }
+  return ref;
+}
+
+/** Human-readable description for an id-less STIX object: its name, else a
+ *  type-derived label, else a generic one — so its reference satisfies anyOf. */
+function stixFallbackDescription(obj: StixObject): string {
+  if (typeof obj.name === 'string' && obj.name) return obj.name;
+  if (typeof obj.type === 'string' && obj.type) return `STIX ${obj.type} object`;
+  return 'STIX object';
+}
+
+/** Append a reference to a container's externalReferences[], creating it if absent. */
+function appendExternalReference(container: Doc, ref: Doc): void {
+  const existing = Array.isArray(container.externalReferences) ? container.externalReferences : [];
+  container.externalReferences = [...existing, ref];
+}

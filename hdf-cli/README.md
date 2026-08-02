@@ -18,6 +18,7 @@ HDF (Heimdall Data Format) is a standardized JSON format for security assessment
   - [system](#system) -- View and manage HDF system documents
   - [plan](#plan) -- View and manage HDF assessment plans
   - [amend](#amend) -- Apply, list, and verify amendments (waivers/attestations)
+  - [enrich](#enrich) -- Attach external context (STIX CTI) to results
   - [evidence](#evidence) -- Build and inspect evidence packages
   - [label](#label) -- Add, remove, or show labels on components
   - [generate](#generate) -- Generate InSpec profiles, thresholds, and baseline upgrades
@@ -470,6 +471,30 @@ Expired:         0
 
 All amendments are valid.
 ```
+
+### enrich
+
+Overlay an **enrichment source** onto an HDF results document, attaching inert `externalReferences[]` to findings (matched by CVE) or to the results root. Enrichment is informational — it adds context and never changes a finding's status or impact. Positional parity with `convert`: `<results> <source>`, with `--from` as the optional format assertion.
+
+```
+USAGE
+  hdf enrich <results> <source> [flags]
+
+FLAGS
+  --from string           Enrichment source format (auto-detected if omitted; e.g. stix)
+  --recompute-cvss        Also author an E:H CVSS riskAdjustment on exploited, 3.1-base-vector findings
+  -o, --output string     Output file (default: stdout)
+
+EXAMPLES
+  hdf enrich results.json log4shell-bundle.json -o enriched.json       # auto-detect STIX
+  hdf enrich results.json feed.json --from stix -o enriched.json        # assert the format
+  hdf enrich results.json bundle.json --recompute-cvss -o enriched.json # + CVSS E:H recompute
+  hdf enrich results.json bundle.json                                   # write to stdout
+```
+
+Supported sources: **stix** (a STIX 2.1 bundle, `{type:"bundle", objects:[…]}`). A CVE-bearing STIX object attaches to the finding whose requirement ID is that CVE; everything else (non-CVE objects, and CVEs with no matching finding) attaches to the results root. Each reference carries the raw STIX object losslessly in `document`.
+
+With **`--recompute-cvss`**, when a matched STIX object shows active exploitation (a sighting, a `targets`/`exploits` relationship, or an indicator/report reference) and the finding carries a CVSS **3.1** base vector, an inline `riskAdjustment` is authored: Exploit Maturity `E:H` is applied and the Threat score recomputed via the CVSS engine, with `impact.value = computedScore/10` and an `externalReferences[]` back to the STIX source. Findings with no base vector, or a CVSS **4.0** base vector, are left unchanged (no fabrication). Enrichment without `--recompute-cvss` never changes status or impact.
 
 ### evidence
 

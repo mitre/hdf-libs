@@ -27,6 +27,13 @@
         }
       ],
       "properties": {
+        "externalReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/External_Reference"
+          },
+          "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object or CTI feed motivating an E:A riskAdjustment). Inert context distinct from `evidence`; see External_Reference. Symmetric with Standalone_Override.externalReferences for the inline (results-embedded) override carrier."
+        },
         "type": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Override_Type",
           "description": "The type of override applied to this requirement."
@@ -106,6 +113,32 @@
           },
           "appliedAt": "2026-04-14T10:00:00Z",
           "expiresAt": "2026-10-14T00:00:00Z"
+        },
+        {
+          "$comment": "Inline riskAdjustment carrying the STIX source that motivated it via externalReferences (the enrichment envelope, with the raw sighting embedded losslessly in document). This is the shape the enrich pass writes onto Evaluated_Requirement.overrides[] for the E:A recompute.",
+          "type": "riskAdjustment",
+          "impact": { "value": 0.9 },
+          "reason": "CVE-2021-44228 actively exploited in the wild per STIX threat intelligence",
+          "appliedBy": {
+            "identifier": "secops@agency.gov",
+            "type": "email"
+          },
+          "appliedAt": "2026-07-27T00:00:00Z",
+          "expiresAt": "2026-10-25T00:00:00Z",
+          "externalReferences": [
+            {
+              "sourceName": "stix",
+              "externalId": "sighting--a1b2c3d4-0000-4a2b-9c3d-000000000002",
+              "kind": "threat-intel",
+              "rel": "evidence",
+              "document": {
+                "type": "sighting",
+                "spec_version": "2.1",
+                "id": "sighting--a1b2c3d4-0000-4a2b-9c3d-000000000002",
+                "sighting_of_ref": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001"
+              }
+            }
+          ]
         },
         {
           "type": "falsePositive",
