@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -58,10 +59,13 @@ type ScanSummary struct {
 	Description string      `json:"description"`
 }
 
-// ScanResults wraps the type and data of a scan result.
+// ScanResults wraps the type and data of a scan result. Data is kept raw so that
+// non-dependency scan types (community, vulnerability, license, virus, …) — whose
+// data shape is not the dependency tree — are preserved verbatim rather than
+// dropped by a dependency-only struct.
 type ScanResults struct {
-	Type string   `json:"type"`
-	Data ScanData `json:"data"`
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
 }
 
 // ScanData holds the dependency data from a dependency scan.
@@ -210,6 +214,103 @@ func marshalDependencyCode(dep Dependency) string {
 	return strings.TrimSuffix(buf.String(), "\n")
 }
 
+// buildScanCode renders a non-dependency scan's raw result data as the indented
+// JSON blob carried in the requirement's code field. json.Indent re-formats the
+// original bytes in place, preserving the source key order so the output is
+// byte-identical to the TypeScript twin's JSON.stringify(data, null, 2).
+func buildScanCode(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return "{}"
+	}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, raw, "", "  "); err != nil {
+		return "{}"
+	}
+	return buf.String()
+}
+
+// titleCaseFirst upper-cases the first rune of s (ASCII only), leaving the rest.
+func titleCaseFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+// buildScanRequirement builds the single inventory requirement emitted for a
+// non-dependency scan summary. The scan's serializable result data is preserved
+// in the code field (the ionchannel dependency pattern), and scan identity lands
+// in tags.
+func buildScanRequirement(scan ScanSummary) hdf.EvaluatedRequirement {
+	title := scan.Description
+	if title == "" {
+		title = titleCaseFirst(scan.Name) + " scan"
+	}
+
+	desc := scan.Summary
+	if desc == "" {
+		desc = titleCaseFirst(scan.Name) + " scan summary"
+	}
+
+	return hdf.EvaluatedRequirement{
+		ID:    "scan-" + scan.Name,
+		Title: hdfutil.Ptr(title),
+		Descriptions: []hdf.Description{
+			{Label: "default", Data: desc},
+		},
+		Impact: 0.0,
+		Tags: map[string]interface{}{
+			"name": scan.Name,
+			"type": scan.Results.Type,
+		},
+		Code: hdfutil.Ptr(buildScanCode(scan.Results.Data)),
+		Results: []hdf.RequirementResult{
+			{
+				Status:    hdf.NotReviewed,
+				CodeDesc:  scan.Name + " scan summary",
+				StartTime: time.Time{},
+			},
+		},
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+}
+
+// verdictDescription renders the analysis-level ruleset verdict as prose.
+func verdictDescription(a IonChannelAnalysis) string {
+	outcome := "PASSED"
+	if !a.Passed {
+		outcome = "FAILED"
+	}
+	desc := fmt.Sprintf("Ion Channel analysis verdict: %s", outcome)
+	if a.Risk != "" {
+		desc += fmt.Sprintf(" (risk: %s)", a.Risk)
+	}
+	if a.RulesetName != "" {
+		desc += fmt.Sprintf(". Ruleset: %s", a.RulesetName)
+		if a.RulesetID != "" {
+			desc += fmt.Sprintf(" (%s)", a.RulesetID)
+		}
+	}
+	return desc + "."
+}
+
+// verdictLabels surfaces the structured analysis-level verdict fields as
+// queryable baseline labels (well-known-key grouping map). Values are strings;
+// only non-empty fields are included, and passed is always present.
+func verdictLabels(a IonChannelAnalysis) map[string]string {
+	labels := map[string]string{"passed": strconv.FormatBool(a.Passed)}
+	if a.Risk != "" {
+		labels["risk"] = a.Risk
+	}
+	if a.RulesetName != "" {
+		labels["ruleset_name"] = a.RulesetName
+	}
+	if a.RulesetID != "" {
+		labels["ruleset_id"] = a.RulesetID
+	}
+	return labels
+}
+
 // ConvertIonChannelToHDF converts Ion Channel analysis JSON to HDF format.
 func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	if len(input) == 0 {
@@ -228,13 +329,22 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		return nil, fmt.Errorf("ion channel: scan_summaries is missing")
 	}
 
-	// Extract dependencies from the dependency scan summary
+	// Extract dependencies from the dependency scan summary; collect every other
+	// scan summary for its own baseline.
 	var allDeps []Dependency
+	var nonDepScans []ScanSummary
+	foundDep := false
 	for _, scan := range analysis.ScanSummaries {
-		if scan.Name == "dependency" {
-			allDeps = scan.Results.Data.Dependencies
-			break
+		if scan.Name == "dependency" && !foundDep {
+			var data ScanData
+			if err := json.Unmarshal(scan.Results.Data, &data); err != nil {
+				return nil, fmt.Errorf("ion channel: invalid dependency scan data: %w", err)
+			}
+			allDeps = data.Dependencies
+			foundDep = true
+			continue
 		}
+		nonDepScans = append(nonDepScans, scan)
 	}
 
 	// Flatten and contextualize
@@ -279,12 +389,31 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		Name:         "Ion Channel SBOM Analysis",
 		Title:        hdfutil.Ptr(baselineTitle),
 		Summary:      hdfutil.Ptr(analysis.Summary),
+		Description:  hdfutil.Ptr(verdictDescription(analysis)),
+		Labels:       verdictLabels(analysis),
 		Maintainer:   hdfutil.Ptr("saf@groups.mitre.org"),
 		Supports:     []hdf.SupportedPlatform{},
 		Groups:       []hdf.RequirementGroup{},
 		Requirements: requirements,
 		Integrity:    integrity,
 		Status:       hdfutil.Ptr("loaded"),
+	}
+
+	baselines := []hdf.EvaluatedBaseline{baseline}
+
+	// One baseline per non-dependency scan summary, grouped by scan-summary name.
+	for _, scan := range nonDepScans {
+		baselines = append(baselines, hdf.EvaluatedBaseline{
+			Name:         "Ion Channel " + scan.Name + " Scan",
+			Title:        hdfutil.Ptr(baselineTitle),
+			Summary:      hdfutil.Ptr(scan.Summary),
+			Maintainer:   hdfutil.Ptr("saf@groups.mitre.org"),
+			Supports:     []hdf.SupportedPlatform{},
+			Groups:       []hdf.RequirementGroup{},
+			Requirements: []hdf.EvaluatedRequirement{buildScanRequirement(scan)},
+			Integrity:    integrity,
+			Status:       hdfutil.Ptr("loaded"),
+		})
 	}
 
 	now := time.Now()
@@ -294,7 +423,7 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		ConverterVersion: converterVersion,
 		ToolName:         "Ion Channel",
 		ToolFormat:       "JSON",
-		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Baselines:        baselines,
 		Timestamp:        &now,
 	}), nil
 }

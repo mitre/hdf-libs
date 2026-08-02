@@ -17,12 +17,12 @@ function loadFixture(name: string): string {
 }
 
 // Derive the ground-truth requirement count directly from the raw JSON,
-// independent of the converter: recursively flatten the "dependency" scan tree
-// and count each distinct org/name once — mirroring the emission unit (one
-// requirement per deduped, flattened dependency). A generic key count would
-// over-count when a package appears in two subtrees, so the dedup is re-derived
-// here rather than reusing the converter's traversal.
-function countDistinctFlattenedDeps(input: string): number {
+// independent of the converter. The emission model is: one requirement per
+// distinct org/name in the flattened "dependency" scan tree, PLUS one per
+// non-dependency scan summary. A generic key count would over-count when a
+// package appears in two subtrees, so the dedup is re-derived here rather than
+// reusing the converter's traversal.
+function countEmittedRequirements(input: string): number {
   const doc = JSON.parse(input) as {
     scan_summaries?: Array<{
       name?: string;
@@ -36,12 +36,15 @@ function countDistinctFlattenedDeps(input: string): number {
     seen.add(`${String(dep.org)}/${String(dep.name)}`);
     for (const sub of dep.dependencies ?? []) walk(sub);
   };
+  let nonDep = 0;
   for (const scan of doc.scan_summaries ?? []) {
     if (scan.name === 'dependency') {
       for (const dep of scan.results?.data?.dependencies ?? []) walk(dep);
+    } else {
+      nonDep++;
     }
   }
-  return seen.size;
+  return seen.size + nonDep;
 }
 
 runConverterContractTests({
@@ -58,8 +61,8 @@ describe('ionchannel-to-hdf ground-truth anchor', () => {
       const input = loadFixture(name);
       assertRequirementCount(
         await convertIonchannelToHdf(input),
-        countDistinctFlattenedDeps(input),
-        `${name}: one requirement per distinct flattened dependency`,
+        countEmittedRequirements(input),
+        `${name}: one requirement per distinct flattened dependency plus one per non-dependency scan`,
       );
     },
   );
@@ -214,10 +217,39 @@ describe('ionchannel to HDF converter', async () => {
       expect(req?.title).toBe('Dependency internal-lib from example-corp (Required >=0.5.0)');
     });
 
-    it('should ignore non-dependency scan summaries', async () => {
+    it('should keep the dependency baseline to its 3 deps', async () => {
       const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
-      // Only 3 deps from the dependency scan, community scan is ignored
-      expect(hdf.baselines[0]!.requirements).toHaveLength(3);
+      const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis');
+      expect(dep?.requirements).toHaveLength(3);
+    });
+
+    it('should emit a baseline + requirement for the community scan', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
+      const community = hdf.baselines.find((b) => b.name === 'Ion Channel community Scan');
+      expect(community?.requirements).toHaveLength(1);
+
+      const req = community!.requirements[0]!;
+      expect(req.id).toBe('scan-community');
+      expect(req.title).toBe('Community analysis');
+      expect(req.descriptions?.[0]?.data).toBe('Community scan completed');
+      expect(req.tags?.name).toBe('community');
+      expect(req.tags?.type).toBe('community');
+      expect(req.results[0]!.status).toBe('notReviewed');
+      // Serializable scan data is preserved in the code field.
+      expect(req.code).toContain('"committers": 5');
+      expect(req.code).toContain('"stars": 42');
+    });
+
+    it('should surface the analysis verdict on the primary baseline', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
+      const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis')!;
+      expect(dep.description).toContain('FAILED');
+      expect(dep.description).toContain('medium');
+      expect(dep.description).toContain('strict');
+      expect(dep.labels?.passed).toBe('false');
+      expect(dep.labels?.risk).toBe('medium');
+      expect(dep.labels?.ruleset_name).toBe('strict');
+      expect(dep.labels?.ruleset_id).toBe('ruleset-002');
     });
   });
 });
