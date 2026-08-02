@@ -148,6 +148,20 @@ describe('gosec to HDF converter', async () => {
       expect(codeDesc).toContain('go-ethereum-master');
     });
 
+    it('should set requirement.code to the first issue\'s literal source (CODE tab)', async () => {
+      const input = loadFixture('ethereum.json');
+      const doc = JSON.parse(input) as { Issues: Array<{ rule_id: string; code: string }> };
+      const firstCode = new Map<string, string>();
+      for (const iss of doc.Issues) {
+        if (!firstCode.has(iss.rule_id)) firstCode.set(iss.rule_id, iss.code);
+      }
+
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.code, `requirement ${req.id} missing code`).toBe(firstCode.get(req.id));
+      }
+    });
+
     it('should include a default description with rule details text', async () => {
       const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
       const g304 = hdf.baselines[0]!.requirements.find(r => r.id === 'G304');

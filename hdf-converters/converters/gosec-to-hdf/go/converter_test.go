@@ -139,6 +139,33 @@ func TestConvertGosecToHDF_RequirementTitle(t *testing.T) {
 	}
 }
 
+// ---- requirement.code (CODE tab; dggj) ----
+
+func TestConvertGosecToHDF_RequirementCode(t *testing.T) {
+	input := loadFixture(t, "input/ethereum.json")
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// The representative code is the literal source of the first issue in each
+	// rule group — exactly what Heimdall's CODE tab renders.
+	var report GosecReport
+	require.NoError(t, json.Unmarshal(input, &report))
+	firstCode := map[string]string{}
+	for _, iss := range report.Issues {
+		if _, seen := firstCode[iss.RuleID]; !seen {
+			firstCode[iss.RuleID] = iss.Code
+		}
+	}
+
+	for i := range result.Baselines[0].Requirements {
+		req := &result.Baselines[0].Requirements[i]
+		want, ok := firstCode[req.ID]
+		require.True(t, ok, "unexpected requirement %s", req.ID)
+		require.NotNil(t, req.Code, "requirement %s missing code (CODE tab empty)", req.ID)
+		assert.Equal(t, want, *req.Code, "requirement %s code should be the literal source snippet", req.ID)
+	}
+}
+
 // ---- Impact mapping ----
 
 func TestConvertGosecToHDF_ImpactHigh(t *testing.T) {

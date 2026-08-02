@@ -192,6 +192,7 @@ func buildRequirement(ruleID string, issues []GosecIssue, startTime time.Time) h
 		Tags:               tags,
 		Descriptions:       descriptions,
 		Results:            results,
+		Code:               hdfutil.Ptr(rep.Code),
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}

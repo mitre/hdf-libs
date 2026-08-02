@@ -134,6 +134,7 @@ function buildRequirement(ruleId: string, issues: GosecIssue[], scanTime: Date):
   ];
 
   const req = createRequirement(ruleId, rep.details, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+  req.code = rep.code;
   req.verificationMethod = VerificationMethodEnum.Automated;
   const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {
