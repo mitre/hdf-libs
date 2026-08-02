@@ -54,27 +54,43 @@ export function createMinimalBaseline(name, requirements, options = {}) {
 /**
  * Create a minimal valid EvaluatedRequirement
  * @param {string} id - Unique requirement identifier
- * @param {string} title - Human-readable title
+ * @param {string|null|undefined} title - Human-readable title. Pass null/undefined
+ *   to omit it (some controls legitimately have no title).
  * @param {import('../dist/ts/hdf-results.js').Description[]} descriptions - Array of descriptions
  * @param {number} impact - Impact score (0.0 to 1.0)
  * @param {import('../dist/ts/hdf-results.js').RequirementResult[]} results - Array of test results
- * @param {Object} [options] - Optional fields
+ * @param {Object} [options] - Optional fields: sourceLocation, code, tags;
+ *   amendment fields (effectiveStatus, effectiveImpact, disposition, statusOverrides, poams);
+ *   vulnerability fields (cwe, cvss, refs, affectedPackages, epss, kev).
  * @returns {import('../dist/ts/hdf-results.js').EvaluatedRequirement}
  */
 export function createRequirement(id, title, descriptions, impact, results, options = {}) {
   const req = {
     id,
-    title,
     descriptions,
     impact,
     results,
     tags: options.tags || {},
   };
 
-  // Only include sourceLocation if it's provided
-  if (options.sourceLocation) {
-    req.sourceLocation = options.sourceLocation;
-  }
+  if (title != null) req.title = title;
+  if (options.sourceLocation) req.sourceLocation = options.sourceLocation;
+  if (options.code != null) req.code = options.code;
+
+  // Amendment fields
+  if (options.effectiveStatus) req.effectiveStatus = options.effectiveStatus;
+  if (options.effectiveImpact != null) req.effectiveImpact = options.effectiveImpact;
+  if (options.disposition) req.disposition = options.disposition;
+  if (options.statusOverrides) req.statusOverrides = options.statusOverrides;
+  if (options.poams) req.poams = options.poams;
+
+  // Vulnerability fields
+  if (options.cwe) req.cwe = options.cwe;
+  if (options.cvss) req.cvss = options.cvss;
+  if (options.refs) req.refs = options.refs;
+  if (options.affectedPackages) req.affectedPackages = options.affectedPackages;
+  if (options.epss) req.epss = options.epss;
+  if (options.kev) req.kev = options.kev;
 
   return req;
 }
@@ -107,6 +123,8 @@ export function createResult(status, message, options = {}) {
     runTime: options.runTime,
     backtrace: options.backtrace,
     exception: options.exception,
+    ...(options.resource ? { resource: options.resource } : {}),
+    ...(options.resourceId ? { resourceId: options.resourceId } : {}),
   };
 }
 
@@ -142,6 +160,68 @@ export function createSupportedPlatform(platform, release) {
  */
 export function createSourceLocation(ref, line) {
   return { ref, line };
+}
+
+/**
+ * Create a minimal valid inline Status_Override (requirement.statusOverrides[]).
+ * The schema requires one of status/impact; when neither is supplied this
+ * defaults status to 'notApplicable' so the built override stays valid.
+ * @param {string} type - Override_Type (waiver, attestation, falsePositive, riskAdjustment, ...)
+ * @param {Object} [options] - reason, appliedBy, appliedAt, expiresAt, status, impact
+ * @returns {Object}
+ */
+export function createStatusOverride(type, options = {}) {
+  const override = {
+    type,
+    reason: options.reason || 'Test override',
+    appliedBy: options.appliedBy || { type: 'simple', identifier: 'test' },
+    appliedAt: options.appliedAt || '2025-01-01T00:00:00Z',
+    expiresAt: options.expiresAt || '2099-12-31T00:00:00Z',
+  };
+  if (options.status) override.status = options.status;
+  if (options.impact) override.impact = options.impact;
+  if (!override.status && !override.impact) override.status = 'notApplicable';
+  return override;
+}
+
+/**
+ * Create a minimal valid POA&M (requirement.poams[]). expiresAt is schema-
+ * required (a POA&M is time-boxed) and defaults to a far-future constant.
+ * @param {string} type - remediation | mitigation | riskAcceptance | vendorDependency
+ * @param {Object} [options] - explanation, appliedBy, appliedAt, expiresAt, milestones
+ * @returns {Object}
+ */
+export function createPoam(type, options = {}) {
+  const poam = {
+    type,
+    explanation: options.explanation || 'Remediation planned',
+    appliedBy: options.appliedBy || { type: 'simple', identifier: 'test' },
+    appliedAt: options.appliedAt || '2025-01-01T00:00:00Z',
+    expiresAt: options.expiresAt || '2099-12-31T00:00:00Z',
+  };
+  if (options.milestones) poam.milestones = options.milestones;
+  return poam;
+}
+
+/**
+ * Create a Cvss primitive. Only `version` is schema-required; every other CVSS
+ * field is passed through from options when present.
+ * @param {string} version - CVSS version (e.g. '3.1', '4.0')
+ * @param {Object} [options] - source, baseVector, baseScore, baseSeverity, threatVector,
+ *   threatScore, environmentalVector, environmentalScore, supplementalVector, computedScore, computedSeverity
+ * @returns {Object}
+ */
+export function createCvss(version, options = {}) {
+  const cvss = { version };
+  const fields = [
+    'source', 'baseVector', 'baseScore', 'baseSeverity',
+    'threatVector', 'threatScore', 'environmentalVector', 'environmentalScore',
+    'supplementalVector', 'computedScore', 'computedSeverity',
+  ];
+  for (const f of fields) {
+    if (options[f] != null) cvss[f] = options[f];
+  }
+  return cvss;
 }
 
 // Re-export severity mapping from @mitre/hdf-utilities (canonical location).
