@@ -127,6 +127,25 @@ export interface V2Result {
   [key: string]: unknown;
 }
 
+export interface V2StatusOverride {
+  type: string;
+  status?: string;
+  impact?: {value: number};
+  reason?: string;
+  appliedBy?: {type?: string; identifier?: string};
+  appliedAt?: string;
+  expiresAt?: string;
+  [key: string]: unknown;
+}
+
+export interface V2Poam {
+  type: string;
+  explanation?: string;
+  appliedBy?: {type?: string; identifier?: string};
+  appliedAt?: string;
+  [key: string]: unknown;
+}
+
 export interface V2Requirement {
   id: string;
   title?: string;
@@ -143,6 +162,12 @@ export interface V2Requirement {
   waiverData?: Record<string, unknown>;
   results?: V2Result[];
   effectiveStatus?: string;
+  effectiveImpact?: number;
+  disposition?: string;
+  statusOverrides?: V2StatusOverride[];
+  poams?: V2Poam[];
+  cwe?: string[];
+  cvss?: Array<{baseSeverity?: string}>;
   [key: string]: unknown;
 }
 
@@ -185,6 +210,18 @@ export interface V2Baseline {
   checksum?: {
     algorithm: string;
     value: string;
+  };
+  resultsChecksum?: {
+    algorithm?: string;
+    value?: string;
+  };
+  originalChecksum?: {
+    algorithm?: string;
+    value?: string;
+  };
+  integrity?: {
+    algorithm?: string;
+    checksum?: string;
   };
   depends?: V2Dependency[];
   parentBaseline?: string;
@@ -658,7 +695,295 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
  * // v2 = { baselines: [...], components: [{...}], statistics: {...} }
  * ```
  */
-export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
+// ===== V3 → V2 downgrade (modern → legacy Heimdall shape) =====
+//
+// Peer of the Go transform in hdf-converters/shared/go/hdfversion/hdf_version.go
+// (downgradeV3ToV2). Status-changing amendments (waiver/attestation/falsePositive/
+// inherited) are flattened into the control status with a waiver_data breadcrumb so
+// Heimdall shows the attested outcome; the raw results[].status verdict is preserved.
+// poam/operationalRequirement have no v2 equivalent and are returned as warnings.
+// There is no TypeScript CLI path for this transform (the CLI is Go-only) — it exists
+// to keep the two languages in parity so the amendment-flattening logic cannot drift.
+
+/**
+ * Map a modern status to a v1 InSpec exec-json result status. InSpec's
+ * ControlResultStatus enum is only passed/failed/error/skipped (what Heimdall
+ * accepts), so notApplicable/notReviewed (and anything else) collapse to skipped.
+ */
+function denormalizeStatus(status: string): string {
+  const map: Record<string, string> = {passed: 'passed', failed: 'failed', error: 'error'};
+  return map[status] ?? 'skipped';
+}
+
+/** Worst-wins rollup (error > failed > passed > notApplicable > notReviewed). */
+function rollupStatus(results: V2Result[]): string {
+  const rank: Record<string, number> = {error: 4, failed: 3, passed: 2, notApplicable: 1, notReviewed: 0};
+  let worst = 'notReviewed';
+  for (const r of results) {
+    if ((rank[r.status] ?? 0) > (rank[worst] ?? 0)) worst = r.status;
+  }
+  return worst;
+}
+
+/** Effective (post-amendment) status as a legacy status string, else the rollup. */
+function effectiveOrRollupV1(req: V2Requirement): string {
+  return denormalizeStatus(req.effectiveStatus ?? rollupStatus(req.results ?? []));
+}
+
+/** Base severity of the first CVSS entry that has one. */
+function firstCvssSeverity(cvss?: Array<{baseSeverity?: string}>): string | undefined {
+  for (const c of cvss ?? []) {
+    if (c.baseSeverity) return c.baseSeverity;
+  }
+  return undefined;
+}
+
+/** The most-recently-applied status-bearing override (the one driving effectiveStatus). */
+function governingOverride(req: V2Requirement): V2StatusOverride | undefined {
+  const now = Date.now();
+  let gov: V2StatusOverride | undefined;
+  for (const o of req.statusOverrides ?? []) {
+    if (o.status === undefined) continue;
+    // An expired override must not become the waiver_data breadcrumb.
+    if (o.expiresAt) {
+      const exp = parseTimestamp(o.expiresAt);
+      if (exp && exp.getTime() <= now) continue;
+    }
+    if (gov === undefined || (o.appliedAt ?? '') > (gov.appliedAt ?? '')) gov = o;
+  }
+  return gov;
+}
+
+/** Render the governing override (and any non-representable amendment) as a v1 waiver_data breadcrumb. */
+function buildWaiverData(req: V2Requirement): Record<string, unknown> | undefined {
+  const wd: Record<string, unknown> = {};
+  const gov = governingOverride(req);
+  if (gov) {
+    wd.skipped_due_to_waiver = true;
+    wd.override_type = gov.type;
+    wd.message = gov.reason;
+    wd.expiration_date = gov.expiresAt;
+    wd.applied_by = gov.appliedBy?.identifier;
+  }
+  const notRepresentable: string[] = [];
+  for (const p of req.poams ?? []) notRepresentable.push(`poam:${p.type}`);
+  for (const o of req.statusOverrides ?? []) {
+    if (o.type === 'operationalRequirement') notRepresentable.push('operationalRequirement');
+  }
+  if (notRepresentable.length > 0) wd.not_representable_in_v2 = notRepresentable;
+  return Object.keys(wd).length > 0 ? wd : undefined;
+}
+
+/** Amendments with no v2 equivalent: POA&Ms and operationalRequirement both leave a finding open. */
+function nonRepresentableWarnings(req: V2Requirement): string[] {
+  const w: string[] = [];
+  for (const p of req.poams ?? []) {
+    w.push(`control "${req.id}": POA&M (${p.type}) has no HDF v2 equivalent — its open/remediation-tracked state is not represented (breadcrumb in waiver_data)`);
+  }
+  for (const o of req.statusOverrides ?? []) {
+    if (o.type === 'operationalRequirement') {
+      w.push(`control "${req.id}": operationalRequirement amendment has no HDF v2 equivalent — its accepted-open-risk state is not represented (breadcrumb in waiver_data)`);
+    }
+  }
+  return w;
+}
+
+function convertResultToV1(r: V2Result): V1Result {
+  const v1: V1Result = {status: denormalizeStatus(r.status)};
+  if (r.codeDesc !== undefined) v1.code_desc = r.codeDesc;
+  if (r.runTime !== undefined) v1.run_time = r.runTime;
+  // start_time is required by the InSpec exec-json schema Heimdall loads; always present.
+  v1.start_time = r.startTime ?? '0001-01-01T00:00:00Z';
+  if (r.message !== undefined) v1.message = r.message;
+  if (r.exception !== undefined) v1.exception = r.exception;
+  if (r.backtrace !== undefined) v1.backtrace = r.backtrace;
+  // resource type → resource_class; resource_params has no v3 equivalent.
+  if (r.resource !== undefined) v1.resource_class = r.resource;
+  if (r.resourceId !== undefined) v1.resource_id = r.resourceId;
+  return v1;
+}
+
+function convertRequirementToV1Control(req: V2Requirement): {control: V1Control; warnings: string[]} {
+  const c: V1Control = {
+    id: req.id,
+    // riskAdjustment (any impact override) re-scores the displayed impact.
+    impact: req.effectiveImpact ?? req.impact,
+    results: (req.results ?? []).map(convertResultToV1),
+  };
+  if (req.title !== undefined) c.title = req.title;
+  if (req.code !== undefined) c.code = req.code;
+  if (req.descriptions !== undefined) {
+    c.descriptions = req.descriptions;
+    const def = req.descriptions.find((d) => d.label === 'default');
+    if (def) c.desc = def.data;
+  }
+  // source_location, refs, and tags are all required by the InSpec exec-json schema
+  // Heimdall loads (an empty object/array is valid, but the key must be present).
+  c.source_location = req.sourceLocation ?? {};
+  c.refs = req.refs ?? [];
+
+  // Mirror structured vulnerability fields (modern-only typed fields with no other v2
+  // carrier) into tags so they survive and display in Heimdall (tags.cweid / tags.severity).
+  // Never overwrite an existing tag.
+  const tags: Record<string, unknown> = req.tags ? { ...req.tags } : {};
+  const sev = firstCvssSeverity(req.cvss);
+  if (req.cwe && req.cwe.length > 0 && tags.cweid === undefined) tags.cweid = req.cwe;
+  if (sev && tags.severity === undefined) tags.severity = sev;
+  c.tags = tags;
+
+  // Control-level status carries the effective (attested) outcome; raw per-result verdict preserved above.
+  c.status = effectiveOrRollupV1(req);
+  const wd = buildWaiverData(req);
+  if (wd) c.waiver_data = wd;
+
+  return {control: c, warnings: nonRepresentableWarnings(req)};
+}
+
+/** Mirror the Go convertDependencyToV2: only name/url/path/git survive to the v1 profile. */
+function convertDependencyToV1(d: V2Dependency): V1Dependency {
+  const out: V1Dependency = {};
+  if (d.name !== undefined) out.name = d.name;
+  if (d.url !== undefined) out.url = d.url;
+  if (d.path !== undefined) out.path = d.path;
+  if (d.git !== undefined) out.git = d.git;
+  return out;
+}
+
+/**
+ * Restore the v1 profile fingerprint Heimdall matches on. Prefer the baseline
+ * integrity hash (where an inspec profile's sha256 round-trips), then the
+ * results/original checksums, else empty. Mirrors the Go downgrade.
+ */
+function baselineSha256(b: V2Baseline): string {
+  return b.integrity?.checksum || b.resultsChecksum?.value || b.originalChecksum?.value || '';
+}
+
+function convertBaselineToV1Profile(b: V2Baseline): {profile: V1Profile; warnings: string[]} {
+  // supports/attributes/groups (arrays) and sha256 (string) are required by the InSpec
+  // exec-json schema Heimdall loads — always present even when the modern baseline has none.
+  const p: V1Profile = {
+    name: b.name,
+    supports: [],
+    attributes: [],
+    groups: [],
+    sha256: baselineSha256(b),
+  };
+  if (b.version !== undefined) p.version = b.version;
+  if (b.title !== undefined) p.title = b.title;
+  if (b.maintainer !== undefined) p.maintainer = b.maintainer;
+  if (b.summary !== undefined) p.summary = b.summary;
+  if (b.license !== undefined) p.license = b.license;
+  if (b.copyright !== undefined) p.copyright = b.copyright;
+  if (b.copyrightEmail !== undefined) p.copyright_email = b.copyrightEmail;
+  if (b.groups !== undefined) {
+    p.groups = b.groups.map((g) => ({id: g.id, title: g.title, controls: g.requirements}));
+  }
+  if (b.depends !== undefined) p.depends = b.depends.map(convertDependencyToV1);
+  const warnings: string[] = [];
+  p.controls = (b.requirements ?? []).map((r) => {
+    const {control, warnings: w} = convertRequirementToV1Control(r);
+    warnings.push(...w);
+    return control;
+  });
+  return {profile: p, warnings};
+}
+
+/** Project modern statistics down to the v1 shape (duration only), matching Go V1Statistics. */
+function projectV1Statistics(stats: unknown): {duration?: number} {
+  const duration = (stats as {duration?: unknown} | undefined)?.duration;
+  return typeof duration === 'number' ? {duration} : {};
+}
+
+/** Reconstruct the legacy top-level version: source tool → generator → sentinel. */
+function downgradeV1Version(v2: HDFV2Results): string {
+  if (v2.tool?.version) return v2.tool.version;
+  const gen = v2.generator as {version?: string} | undefined;
+  if (gen?.version) return gen.version;
+  return '0.0.0';
+}
+
+/**
+ * Convert modern HDF (v2 in this file's legacy naming; v3 in the schema taxonomy)
+ * back to the legacy Heimdall shape, flattening amendments. Returns the legacy
+ * document and warnings for amendments that could not be represented in v2. This is
+ * the TypeScript peer of the Go `downgradeV3ToV2`; keep the two in sync.
+ */
+export function convertV2ToV1(v2Data: HDFV2Results): {hdf: HDFV1Results; warnings: string[]} {
+  const warnings: string[] = [];
+
+  // name + release are required by the InSpec exec-json schema Heimdall loads, so
+  // release is always present (empty string when no OS version is known).
+  const platform: V1Platform = {name: '', release: ''};
+  const components = v2Data.components as Array<{name?: string; osVersion?: string}> | undefined;
+  const t = components?.[0];
+  if (t) {
+    platform.name = t.name ?? '';
+    if (t.osVersion !== undefined) platform.release = t.osVersion;
+    if (t.name) platform.target_id = t.name;
+  }
+
+  const profiles = (v2Data.baselines ?? []).map((b) => {
+    const {profile, warnings: w} = convertBaselineToV1Profile(b);
+    warnings.push(...w);
+    return profile;
+  });
+
+  const hdf: HDFV1Results = {
+    version: downgradeV1Version(v2Data),
+    platform,
+    profiles,
+    // Mirror the Go V1Statistics: only the duration field survives to v1.
+    statistics: projectV1Statistics(v2Data.statistics),
+  };
+  return {hdf, warnings};
+}
+
+/** Parse the leading major-version integer; -1 when the string has none. */
+function inspecMajor(version: string): number {
+  const major = /^(\d+)/.exec(version ?? '')?.[1];
+  return major !== undefined ? parseInt(major, 10) : -1;
+}
+
+/**
+ * Map the source's top-level version to tool metadata. A genuine InSpec
+ * exec-json run carries the InSpec CLI version (major >= 2 for every modern
+ * release), so those flip the tool to InSpec/exec-json. A legacy HDF v1
+ * document with no InSpec provenance (e.g. a bare "1.0.0" format marker) keeps
+ * the historical label.
+ */
+function toolIdentity(version: string): { name: string; version?: string; format?: string } {
+  if (inspecMajor(version) >= 2) {
+    return { name: 'InSpec', version, format: 'exec-json' };
+  }
+  return { name: 'Heimdall Data Format v1' };
+}
+
+/**
+ * The assessment's execution time for the top-level timestamp. An explicit
+ * source timestamp wins; otherwise it is the latest (last-observed) result
+ * start_time — the assessment's effective as-of instant, the value
+ * `hdf events derive` consumes. Returns undefined only when the source carries
+ * no usable time; never the wall clock. Canonical trimmed-UTC form.
+ */
+function documentTimestamp(v1Data: HDFV1Results): string | undefined {
+  if (v1Data.timestamp) {
+    const t = parseTimestamp(v1Data.timestamp);
+    if (t) return formatTimestamp(t);
+  }
+  let latest: Date | undefined;
+  for (const profile of v1Data.profiles || []) {
+    for (const control of profile.controls || []) {
+      for (const result of control.results || []) {
+        if (!result.start_time) continue;
+        const t = parseTimestamp(result.start_time);
+        if (t && (!latest || t > latest)) latest = t;
+      }
+    }
+  }
+  return latest ? formatTimestamp(latest) : undefined;
+}
+
+export function convertV1ToV2(v1Data: HDFV1Results, converterVersion = '1.0.0'): HDFV2Results {
   validateInputSize(JSON.stringify(v1Data), 'legacyhdf-to-hdf');
   const v2: HDFV2Results = {
     baselines: (v1Data.profiles || []).map(convertProfile),
@@ -682,15 +1007,15 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
     v2.components = [component];
   }
 
-  // Copy optional fields
-  if (v1Data.generator) {
-    v2.generator = v1Data.generator;
-  }
+  // generator identifies the converter that produced this file; preserve an
+  // input-provided one, else stamp this converter.
+  v2.generator = v1Data.generator ?? { name: 'legacyhdf-to-hdf', version: converterVersion };
 
-  v2.tool = { name: 'Heimdall Data Format v1' };
+  v2.tool = toolIdentity(v1Data.version);
 
-  if (v1Data.timestamp) {
-    v2.timestamp = v1Data.timestamp;
+  const timestamp = documentTimestamp(v1Data);
+  if (timestamp) {
+    v2.timestamp = timestamp;
   }
 
   // Preserve any extension fields not part of core schema

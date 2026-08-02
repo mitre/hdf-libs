@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-cli",
-  "version": "3.4.3",
+  "version": "3.4.4",
   "description": "CLI tool for working with Heimdall Data Format (HDF) files",
   "private": true,
   "scripts": {

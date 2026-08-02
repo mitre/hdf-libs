@@ -1,6 +1,7 @@
 package legacyhdf
 
 import (
+	"strconv"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -498,20 +499,94 @@ func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
 	return v2
 }
 
+// inspecMajor parses the leading major-version integer from a version string,
+// returning -1 when the string does not begin with an integer.
+func inspecMajor(version string) int {
+	i := 0
+	for i < len(version) && version[i] >= '0' && version[i] <= '9' {
+		i++
+	}
+	if i == 0 {
+		return -1
+	}
+	n, err := strconv.Atoi(version[:i])
+	if err != nil {
+		return -1
+	}
+	return n
+}
+
+// toolIdentity maps the source's top-level version to tool metadata. A genuine
+// InSpec exec-json run carries the InSpec CLI version (major >= 2 for every
+// modern release), so those flip the tool to InSpec/exec-json. A legacy HDF v1
+// document with no InSpec provenance (e.g. a bare "1.0.0" format marker) keeps
+// the historical label.
+func toolIdentity(version string) *hdf.Tool {
+	if inspecMajor(version) >= 2 {
+		name := "InSpec"
+		v := version
+		format := "exec-json"
+		return &hdf.Tool{Name: &name, Version: &v, Format: &format}
+	}
+	name := "Heimdall Data Format v1"
+	return &hdf.Tool{Name: &name}
+}
+
+// documentTimestamp returns the assessment's execution time for the top-level
+// timestamp ("when this assessment was executed"). An explicit source timestamp
+// wins; otherwise it is the latest (last-observed) result start_time — the
+// assessment's effective as-of instant, and the value `hdf events derive`
+// consumes as the next document's occurrence time. Returns nil only when the
+// source carries no usable time; never the wall clock.
+func documentTimestamp(v1 *HDFV1Results) *time.Time {
+	if v1.Timestamp != nil {
+		if t := hdfutil.ParseTimestamp(*v1.Timestamp); !t.IsZero() {
+			return &t
+		}
+	}
+	var latest time.Time
+	for pi := range v1.Profiles {
+		controls := v1.Profiles[pi].Controls
+		for ci := range controls {
+			for ri := range controls[ci].Results {
+				st := controls[ci].Results[ri].StartTime
+				if st == nil {
+					continue
+				}
+				if t := hdfutil.ParseTimestamp(*st); !t.IsZero() && t.After(latest) {
+					latest = t
+				}
+			}
+		}
+	}
+	if latest.IsZero() {
+		return nil
+	}
+	return &latest
+}
+
 // ConvertV1ToV2 converts HDF v1.0 results to v2.0 format.
 //
 // Performs comprehensive transformation at all levels:
-//   - Top-level: version removed, profiles → baselines, platform → targets
+//   - Top-level: version → tool/generator/timestamp, profiles → baselines, platform → targets
 //   - Baselines: sha256 → checksum, controls → requirements, field renaming
 //   - Requirements: snake_case → camelCase, status → effectiveStatus
 //   - Results: snake_case → camelCase for all fields
-func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
-	toolName := "Heimdall Data Format v1"
+func ConvertV1ToV2(v1 *HDFV1Results, converterVersion string) *hdf.HDFResults {
+	if converterVersion == "" {
+		converterVersion = "1.0.0" // mirrors the TS convertV1ToV2 default
+	}
+	generator := v1.Generator
+	if generator == nil {
+		generator = &hdf.Generator{Name: "legacyhdf-to-hdf", Version: converterVersion}
+	}
 	v2 := &hdf.HDFResults{
 		Statistics: &hdf.Statistics{
 			Duration: v1.Statistics.Duration,
 		},
-		Tool: &hdf.Tool{Name: &toolName},
+		Tool:      toolIdentity(v1.Version),
+		Generator: generator,
+		Timestamp: documentTimestamp(v1),
 	}
 
 	// Convert profiles to baselines

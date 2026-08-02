@@ -46,9 +46,14 @@
       "osVersion": "1.0"
     }
   ],
+  "generator": {
+    "name": "legacyhdf-to-hdf",
+    "version": "1.0.0"
+  },
   "statistics": {
     "duration": 0.1
   },
+  "timestamp": "2024-01-01T00:00:00Z",
   "tool": {
     "name": "Heimdall Data Format v1"
   }

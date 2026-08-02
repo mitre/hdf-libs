@@ -386,14 +386,23 @@ describe('Grype Converter', async () => {
       expect(req?.kev?.dateAdded).toBeUndefined();
     });
 
-    it('should default to epoch time for start time', async () => {
+    it('anchors result start_time to the scan timestamp, falling back to Go zero time when absent', async () => {
       const input = loadFixture('amazon.json');
-      const output = await convertGrypeToHdf(input);
-      const hdf = parseJSON<HDFResults>(output);
+      const hdf = parseJSON<HDFResults>(await convertGrypeToHdf(input));
+      // amazon.json carries descriptor.timestamp 2024-08-29T13:47:41.623667-04:00 → UTC.
+      expect(hdf.baselines[0].requirements[0].results[0].startTime).toBe('2024-08-29T17:47:41.623Z');
 
+      // No descriptor.timestamp → schema-safe Go zero time.
+      const noTs = JSON.stringify({...JSON.parse(input), descriptor: {name: 'grype', version: '0.79.3'}});
+      const fallback = parseJSON<HDFResults>(await convertGrypeToHdf(noTs));
+      expect(fallback.baselines[0].requirements[0].results[0].startTime).toMatch(/^0001-01-01T00:00:00(\.000)?Z$/);
+    });
+
+    it('titles each requirement with the CVE and the scan target', async () => {
+      const input = loadFixture('amazon.json');
+      const hdf = parseJSON<HDFResults>(await convertGrypeToHdf(input));
       const req = hdf.baselines[0].requirements[0];
-      // StartTime format may include milliseconds (.000Z) depending on serialization
-      expect(req.results[0].startTime).toMatch(/^0001-01-01T00:00:00(\.000)?Z$/);
+      expect(req.title).toMatch(/^Grype found a vulnerability to .+ in cloudwatch_to_s3:latest$/);
     });
   });
 });
