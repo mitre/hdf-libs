@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -53,6 +54,45 @@ func TestConvertGrypeToHDF(t *testing.T) {
 			t.Error("Expected timestamp to be defined")
 		} else {
 			t.Errorf("Expected timestamp %q, got %q", expectedTime.Format(time.RFC3339Nano), hdfResults.Timestamp.Format(time.RFC3339Nano))
+		}
+	}
+}
+
+// Grype carries no literal source snippet, so requirement.code holds the raw
+// match object serialized as indented JSON. Pin that it is set and round-trips
+// byte-structurally back to the source match (Heimdall CODE-tab fidelity).
+func TestConvertGrypeToHDF_RequirementCode(t *testing.T) {
+	input := loadFixture(t, "input/amazon.json")
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+
+	var raw struct {
+		Matches []json.RawMessage `json:"matches"`
+	}
+	if err := json.Unmarshal(input, &raw); err != nil {
+		t.Fatalf("Failed to parse fixture: %v", err)
+	}
+
+	reqs := hdfResults.Baselines[0].Requirements
+	if len(reqs) != len(raw.Matches) {
+		t.Fatalf("Expected %d requirements, got %d", len(raw.Matches), len(reqs))
+	}
+
+	for i, req := range reqs {
+		if req.Code == nil {
+			t.Fatalf("requirement %d: Code is nil; Heimdall CODE tab would be empty", i)
+		}
+		var got, want interface{}
+		if err := json.Unmarshal([]byte(*req.Code), &got); err != nil {
+			t.Fatalf("requirement %d: Code is not valid JSON: %v", i, err)
+		}
+		if err := json.Unmarshal(raw.Matches[i], &want); err != nil {
+			t.Fatalf("match %d: %v", i, err)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("requirement %d: Code does not round-trip to source match object", i)
 		}
 	}
 }

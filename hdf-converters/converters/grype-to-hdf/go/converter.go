@@ -1,6 +1,7 @@
 package grype_to_hdf
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -46,6 +47,24 @@ type GrypeMatch struct {
 	RelatedVulnerabilities []GrypeRelatedVulnerability `json:"relatedVulnerabilities,omitempty"`
 	MatchDetails           []GrypeMatchDetail          `json:"matchDetails"`
 	Artifact               GrypeArtifact               `json:"artifact"`
+
+	// raw is the match exactly as Grype emitted it. Grype carries no literal
+	// source snippet, so requirement.code is the whole match re-indented in
+	// place — preserving source key order, every field the typed struct does
+	// not model, and the source number literals, so the output is byte-identical
+	// to the TypeScript twin's JSON.stringify(match, null, 2).
+	raw json.RawMessage
+}
+
+func (m *GrypeMatch) UnmarshalJSON(data []byte) error {
+	type plain GrypeMatch
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*m = GrypeMatch(p)
+	m.raw = append(json.RawMessage(nil), data...)
+	return nil
 }
 
 type GrypeVulnerability struct {
@@ -285,6 +304,21 @@ func buildCodeDesc(match GrypeMatch) string {
 	}
 
 	return strings.Join(parts, " | ")
+}
+
+// buildMatchCode renders the raw match as indented JSON for requirement.code.
+// json.Indent re-formats the original bytes in place, preserving source key
+// order so the output is byte-identical to the TypeScript twin's
+// JSON.stringify(match, null, 2).
+func buildMatchCode(match GrypeMatch) string {
+	if len(match.raw) == 0 {
+		return "{}"
+	}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, match.raw, "", "  "); err != nil {
+		return "{}"
+	}
+	return buf.String()
 }
 
 // cvssVersionToSchema maps a Grype-emitted CVSS version string to the schema
@@ -562,6 +596,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 	requirement := hdf.EvaluatedRequirement{
 		ID:                 requirementID,
 		Impact:             impact,
+		Code:               hdfutil.Ptr(buildMatchCode(match)),
 		Results:            []hdf.RequirementResult{result},
 		Tags:               tags,
 		Descriptions:       descriptions,

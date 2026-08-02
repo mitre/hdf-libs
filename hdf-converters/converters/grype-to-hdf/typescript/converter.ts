@@ -453,10 +453,13 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
   // Build tags object - only include cci if not empty
   const tags = buildNistCciTags(DEFAULT_STATIC_ANALYSIS_NIST_TAGS, cciTags);
 
-  // Build requirement
+  // Build requirement. Grype carries no literal source snippet, so code holds
+  // the whole match serialized as indented JSON (byte-identical to the Go twin's
+  // json.Indent output — same source key order, same fields).
   const requirement: EvaluatedRequirement = {
     id: isIgnored ? `Grype-Ignored-Match/${cveId}` : `Grype/${cveId}`,
     impact,
+    code: JSON.stringify(match, null, 2),
     results: [result],
     tags,
     descriptions: [

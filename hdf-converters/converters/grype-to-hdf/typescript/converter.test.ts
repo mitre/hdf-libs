@@ -37,6 +37,24 @@ describe('grype-to-hdf ground-truth anchor', () => {
   });
 });
 
+// Grype carries no literal source snippet, so requirement.code holds the raw
+// match object serialized as indented JSON. Pin that it is set and round-trips
+// back to the source match (Heimdall CODE-tab fidelity; must byte-match the Go
+// twin, enforced by the shared snapshot test).
+describe('grype-to-hdf requirement.code (CODE tab)', () => {
+  it('sets code to the serialized match that round-trips to source', async () => {
+    const input = loadFixture('amazon.json');
+    const result = parseJSON<HDFResults>(await convertGrypeToHdf(input));
+    const source = parseJSON<{matches: unknown[]}>(input);
+    const reqs = result.baselines[0]!.requirements;
+    expect(reqs.length).toBe(source.matches.length);
+    reqs.forEach((req, i) => {
+      expect(req.code, `requirement ${i}: code should be set`).toBeDefined();
+      expect(JSON.parse(req.code!)).toEqual(source.matches[i]);
+    });
+  });
+});
+
 describe('timestamp parse fallback', () => {
   it('falls back to conversion time when the descriptor timestamp is unparseable', async () => {
     const doc = JSON.parse(loadFixture('amazon.json'));
