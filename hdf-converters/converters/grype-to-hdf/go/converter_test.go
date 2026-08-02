@@ -627,3 +627,30 @@ func TestConvertGrypeToHDF_MatchesAnchor(t *testing.T) {
 	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "matches"),
 		"anchore_grype.json: one requirement per matches[] (no ignoredMatches)")
 }
+
+func TestBuildCvssEntries_MissingMetrics(t *testing.T) {
+	vuln := GrypeVulnerability{
+		ID: "CVE-2021-0001",
+		CVSS: []GrypeCVSS{
+			{Version: "3.1", Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}, // metrics absent
+			{Version: "3.1"}, // neither score nor vector -> dropped
+			{Version: "3.1", Vector: "CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:U/C:L/I:L/A:L", Metrics: &CVSSMetrics{BaseScore: 3.4}},
+		},
+	}
+	got := buildCvssEntries(vuln)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 cvss entries (neither-score-nor-vector dropped), got %d", len(got))
+	}
+	if got[0].BaseScore != nil {
+		t.Errorf("metrics-less entry must omit baseScore, got %v", *got[0].BaseScore)
+	}
+	if got[0].BaseSeverity != nil {
+		t.Errorf("metrics-less entry must omit baseSeverity")
+	}
+	if got[0].BaseVector == nil {
+		t.Errorf("metrics-less entry must preserve baseVector")
+	}
+	if got[1].BaseScore == nil || *got[1].BaseScore != 3.4 {
+		t.Errorf("entry with metrics must keep baseScore 3.4, got %v", got[1].BaseScore)
+	}
+}

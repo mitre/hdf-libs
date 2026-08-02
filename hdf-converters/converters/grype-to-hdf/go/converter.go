@@ -331,17 +331,23 @@ func buildCvssEntries(vuln GrypeVulnerability) []hdf.Cvss {
 	}
 	out := make([]hdf.Cvss, 0, len(vuln.CVSS))
 	for _, c := range vuln.CVSS {
-		var baseScore float64
+		var bs *float64
 		if c.Metrics != nil {
-			baseScore = c.Metrics.BaseScore
+			s := c.Metrics.BaseScore
+			bs = &s
 		}
-		bs := baseScore
-		out = append(out, shared.BuildCvss(shared.CvssInput{
+		entry := shared.BuildCvss(shared.CvssInput{
 			Version:    shared.CvssVersionFromString(c.Version),
-			BaseScore:  &bs,
+			BaseScore:  bs,
 			BaseVector: c.Vector,
 			Source:     vuln.ID,
-		}))
+		})
+		// Parity with the TS converter: an entry with neither score nor
+		// vector cannot satisfy the schema anyOf and is skipped.
+		if entry.BaseScore == nil && entry.BaseVector == nil {
+			continue
+		}
+		out = append(out, entry)
 	}
 	return out
 }
