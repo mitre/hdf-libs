@@ -124,6 +124,54 @@ function vulnMessage(vuln: NeuVectorVuln): string {
   return `Vulnerable package ${vuln.package_name} is at version ${vuln.package_version}. Update to fixed version ${vuln.fixed_version}.`;
 }
 
+// Collapses runs of ASCII whitespace to a single space; spelled out (not \s)
+// so Go and TS collapse identically.
+const WHITESPACE_RUN = /[ \t\n\r]+/g;
+const CODE_DESC_SNIPPET_RUNES = 100;
+
+/**
+ * Returns the CVSS score used in code_desc: CVSS v3 preferred, else v2.
+ */
+function cvssScore(vuln: NeuVectorVuln): number {
+  return vuln.score_v3 > 0 ? vuln.score_v3 : vuln.score;
+}
+
+/**
+ * Collapses the description to a single line and truncates it to
+ * CODE_DESC_SNIPPET_RUNES code points (Array.from matches Go's []rune).
+ */
+function descSnippet(description: string): string {
+  const collapsed = description.replace(WHITESPACE_RUN, ' ').trim();
+  const runes = Array.from(collapsed);
+  return runes.length > CODE_DESC_SNIPPET_RUNES
+    ? runes.slice(0, CODE_DESC_SNIPPET_RUNES).join('') + '…'
+    : collapsed;
+}
+
+/**
+ * Builds the pipe-joined result code_desc from the fields the vuln carries:
+ * package@version | name | CVSS score | description snippet. Only parts the
+ * source actually provides are included.
+ */
+function buildCodeDesc(vuln: NeuVectorVuln): string {
+  const parts: string[] = [];
+  if (vuln.package_name) {
+    parts.push(vuln.package_version ? `${vuln.package_name}@${vuln.package_version}` : vuln.package_name);
+  }
+  if (vuln.name) {
+    parts.push(vuln.name);
+  }
+  const score = cvssScore(vuln);
+  if (score > 0) {
+    parts.push(`CVSS ${score}`);
+  }
+  const snippet = descSnippet(vuln.description);
+  if (snippet) {
+    parts.push(snippet);
+  }
+  return parts.join(' | ');
+}
+
 /**
  * Builds a single EvaluatedRequirement from a NeuVector vulnerability.
  */
@@ -147,7 +195,7 @@ function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequire
 
   const results = [
     createResult(ResultStatus.Failed, vulnMessage(vuln), {
-      codeDesc: '',
+      codeDesc: buildCodeDesc(vuln),
       startTime: scanTime,
     }),
   ];
@@ -160,6 +208,7 @@ function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequire
     results,
     { tags }
   ) as EvaluatedRequirement;
+  req.code = JSON.stringify(vuln, null, 2);
   const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {
     req.controlType = controlType;

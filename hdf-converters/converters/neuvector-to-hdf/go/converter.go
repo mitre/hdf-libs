@@ -1,10 +1,12 @@
 package neuvector
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -14,6 +16,14 @@ import (
 )
 
 var cpe23Pattern = regexp.MustCompile(`^cpe:2\.3:[aho]:`)
+
+// whitespaceRun collapses runs of ASCII whitespace to a single space when
+// building the code_desc description snippet. The class is spelled out (rather
+// than \s) so Go and TS collapse identically.
+var whitespaceRun = regexp.MustCompile(`[ \t\n\r]+`)
+
+// codeDescSnippetRunes bounds the description snippet in code_desc.
+const codeDescSnippetRunes = 100
 
 // NeuVectorScan is the top-level NeuVector scan JSON output structure.
 type NeuVectorScan struct {
@@ -55,7 +65,7 @@ type NeuVectorVuln struct {
 	VectorsV3             string   `json:"vectors_v3"`
 	PublishedTimestamp    int64    `json:"published_timestamp"`
 	LastModifiedTimestamp int64    `json:"last_modified_timestamp"`
-	Cpes                  []string `json:"cpes"`
+	Cpes                  []string `json:"cpes,omitempty"`
 	Cves                  []string `json:"cves"`
 	FeedRating            string   `json:"feed_rating"`
 	InBaseImage           *bool    `json:"in_base_image,omitempty"`
@@ -119,6 +129,65 @@ func vulnMessage(vuln NeuVectorVuln) string {
 		vuln.PackageName, vuln.PackageVersion, vuln.FixedVersion)
 }
 
+// cvssScore returns the CVSS score used in code_desc: CVSS v3 preferred, else v2.
+func cvssScore(vuln NeuVectorVuln) float64 {
+	if vuln.ScoreV3 > 0 {
+		return vuln.ScoreV3
+	}
+	return vuln.Score
+}
+
+// descSnippet collapses the vulnerability description to a single line and
+// truncates it to codeDescSnippetRunes runes for the code_desc composite. Rune
+// counting (not bytes) matches the TS twin's Array.from(...).slice().
+func descSnippet(description string) string {
+	collapsed := strings.TrimSpace(whitespaceRun.ReplaceAllString(description, " "))
+	runes := []rune(collapsed)
+	if len(runes) > codeDescSnippetRunes {
+		return string(runes[:codeDescSnippetRunes]) + "…"
+	}
+	return collapsed
+}
+
+// buildCodeDesc builds the pipe-joined result code_desc from the fields the
+// vuln carries: package@version | name | CVSS score | description snippet. Only
+// parts the source actually provides are included.
+func buildCodeDesc(vuln NeuVectorVuln) string {
+	parts := make([]string, 0, 4)
+	if vuln.PackageName != "" {
+		if vuln.PackageVersion != "" {
+			parts = append(parts, vuln.PackageName+"@"+vuln.PackageVersion)
+		} else {
+			parts = append(parts, vuln.PackageName)
+		}
+	}
+	if vuln.Name != "" {
+		parts = append(parts, vuln.Name)
+	}
+	if score := cvssScore(vuln); score > 0 {
+		parts = append(parts, fmt.Sprintf("CVSS %g", score))
+	}
+	if snippet := descSnippet(vuln.Description); snippet != "" {
+		parts = append(parts, snippet)
+	}
+	return strings.Join(parts, " | ")
+}
+
+// marshalVulnCode renders the source vulnerability as the indented JSON blob
+// carried in the requirement's code field (the CODE tab). HTML escaping is off
+// so `<`, `>`, `&` in descriptions stay literal, matching the TS twin's
+// JSON.stringify(vuln, null, 2).
+func marshalVulnCode(vuln NeuVectorVuln) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(vuln); err != nil {
+		return "{}"
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
+}
+
 // buildRequirement converts a NeuVector vulnerability to an EvaluatedRequirement.
 func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequirement {
 	cweIDs := extractCWEs(vuln.Description)
@@ -139,7 +208,7 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequi
 	results := []hdf.RequirementResult{
 		{
 			Status:    hdf.Failed,
-			CodeDesc:  "",
+			CodeDesc:  buildCodeDesc(vuln),
 			Message:   &msg,
 			StartTime: scanTime,
 		},
@@ -153,6 +222,7 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequi
 		Tags:               tags,
 		Descriptions:       descriptions,
 		Results:            results,
+		Code:               hdfutil.Ptr(marshalVulnCode(vuln)),
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}

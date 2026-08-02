@@ -88,6 +88,29 @@ describe('neuvector to HDF converter', async () => {
     });
   });
 
+  describe('CODE tab / code_desc fidelity', async () => {
+    it('populates requirement.code with the source vuln as indented JSON that round-trips', async () => {
+      const input = loadFixture('minimal.json');
+      const sourceVuln = (JSON.parse(input) as {
+        report: { vulnerabilities: unknown[] };
+      }).report.vulnerabilities[0];
+
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.code).toBeTruthy();
+      expect(JSON.parse(req.code!)).toEqual(sourceVuln);
+    });
+
+    it('builds a pipe-joined composite code_desc (no longer empty)', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const cd = hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc;
+      expect(cd).toBeTruthy();
+      expect(cd).toBe(
+        'apk-tools@2.10.5-r1 | CVE-2021-36159 | CVSS 9.1 | libfetch before 2021-07-26, as used in apk-tools, xbps, and other products, mishandles numeric strin…',
+      );
+    });
+  });
+
   describe('generator and dataSource', async () => {
     it('should set generator name and version', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;

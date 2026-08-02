@@ -500,6 +500,44 @@ func countDistinctNeuVectorVulns(t *testing.T, input []byte) int {
 	return len(distinct)
 }
 
+// ---- CODE tab / code_desc fidelity ----
+
+// The requirement's code carries the source vulnerability object serialized as
+// indented JSON; it must round-trip back to the exact source vuln.
+func TestConvertNeuVector_RequirementCodeRoundTrips(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	var scan NeuVectorScan
+	require.NoError(t, json.Unmarshal(input, &scan))
+
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.NotNil(t, req.Code, "requirement.code must be populated (CODE tab)")
+	assert.NotEmpty(t, *req.Code)
+
+	var back NeuVectorVuln
+	require.NoError(t, json.Unmarshal([]byte(*req.Code), &back),
+		"requirement.code must parse back to the source vuln object")
+	assert.Equal(t, scan.Report.Vulnerabilities[0], back)
+}
+
+// code_desc is no longer hard-coded empty; it is a pipe-joined composite of the
+// fields the vuln carries.
+func TestConvertNeuVector_ResultCodeDescComposite(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1)
+	cd := req.Results[0].CodeDesc
+	assert.NotEmpty(t, cd, "code_desc must no longer be hard-coded empty")
+	assert.Equal(t,
+		"apk-tools@2.10.5-r1 | CVE-2021-36159 | CVSS 9.1 | libfetch before 2021-07-26, as used in apk-tools, xbps, and other products, mishandles numeric strin…",
+		cd)
+}
+
 // Ground-truth anchor (input-derived count; see shared/go/anchor.go). Golden
 // parity proves Go and TS agree, not that either is correct. NeuVector emits one
 // requirement per vulnerability distinct by name/package_name/package_version
