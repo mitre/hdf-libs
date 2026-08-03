@@ -187,6 +187,11 @@ export function validateInputSize(
   converterName: string,
   maxSize = DEFAULT_MAX_INPUT_SIZE,
 ): void {
+  // Mirror Go's ValidateJSONSize: a non-positive limit means "use the default"
+  // (so an explicitly-passed 0 or negative never rejects all non-empty input).
+  if (maxSize <= 0) {
+    maxSize = DEFAULT_MAX_INPUT_SIZE;
+  }
   if (input.length > maxSize) {
     throw new Error(
       `${converterName}: input exceeds maximum allowed size of ${maxSize} characters`,

@@ -73,6 +73,25 @@ var (
 	trufflehogCCI  = []string{"CCI-000202", "CCI-000203", "CCI-002367"}
 )
 
+// A verified secret is a confirmed-live credential (TruffleHog reached the
+// provider and the credential authenticated) and rates high; an unverified
+// candidate rates medium.
+const (
+	impactVerified   = 0.7
+	impactUnverified = 0.5
+)
+
+// groupImpact rates a requirement by its strongest signal: any verified finding
+// in the group elevates the whole requirement to the verified impact.
+func groupImpact(findings []TrufflehogFinding) float64 {
+	for _, f := range findings {
+		if f.Verified {
+			return impactVerified
+		}
+	}
+	return impactUnverified
+}
+
 // parseFindings attempts to parse input as JSON array, single object, or NDJSON.
 func parseFindings(input []byte) ([]TrufflehogFinding, error) {
 	// Try JSON array first
@@ -261,7 +280,7 @@ func buildRequirement(reqID string, findings []TrufflehogFinding) hdf.EvaluatedR
 	return hdf.EvaluatedRequirement{
 		ID:                 reqID,
 		Title:              &title,
-		Impact:             0.5,
+		Impact:             groupImpact(findings),
 		Tags:               tags,
 		ControlType:        shared.DeriveControlTypeFromTags(trufflehogNIST),
 		Descriptions:       descriptions,
@@ -304,16 +323,19 @@ func firstSourceName(findings []TrufflehogFinding) string {
 // ConvertTrufflehogToHDF converts TruffleHog output to HDF format.
 // Accepts JSON array, single JSON object, or NDJSON input.
 func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("trufflehog: empty input")
-	}
 	if err := shared.ValidateJSONSize(input, "trufflehog", 0); err != nil {
 		return nil, fmt.Errorf("trufflehog: %w", err)
 	}
 
-	findings, err := parseFindings(input)
-	if err != nil {
-		return nil, err
+	// A clean TruffleHog scan emits empty stdout (exit-code-first), not []. Treat
+	// empty/whitespace-only input as zero findings, like an explicit [].
+	var findings []TrufflehogFinding
+	if len(bytes.TrimSpace(input)) > 0 {
+		var err error
+		findings, err = parseFindings(input)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	checksum := shared.InputChecksum(input)
@@ -363,7 +385,6 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		GeneratorName:    "trufflehog-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "TruffleHog",
-		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       targets,
 		Timestamp:        &now,

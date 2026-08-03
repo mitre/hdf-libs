@@ -290,19 +290,33 @@ type ConverterContractSpec struct {
 	// InvalidInput is the bytes to use for the invalid input test.
 	// Defaults to "not valid json" if empty.
 	InvalidInput string
+	// AcceptsEmptyInput inverts the empty-input contract: when true, empty input
+	// must convert successfully (a valid "zero findings" signal) rather than
+	// error. Set this for converters of exit-code-first tools that emit no report
+	// on a clean run (e.g. TruffleHog). Defaults to false — every other converter
+	// must still reject empty input.
+	AcceptsEmptyInput bool
 }
 
 // RunConverterContractTests runs universal converter contract tests:
-// empty input fails, invalid input fails, minimal fixture converts
-// without error. Call this alongside RunSnapshotTests to cover both
-// the contract and the output correctness.
+// empty input fails (or succeeds, per spec.AcceptsEmptyInput), invalid input
+// fails, minimal fixture converts without error. Call this alongside
+// RunSnapshotTests to cover both the contract and the output correctness.
 func RunConverterContractTests(t *testing.T, spec ConverterContractSpec) {
 	t.Helper()
 
-	t.Run("rejects empty input", func(t *testing.T) {
-		_, err := spec.ConvertFn([]byte(""))
-		require.Error(t, err, "empty input should produce an error")
-	})
+	if spec.AcceptsEmptyInput {
+		t.Run("accepts empty input as zero findings", func(t *testing.T) {
+			result, err := spec.ConvertFn([]byte(""))
+			require.NoError(t, err, "empty input should convert as zero findings")
+			require.NotNil(t, result, "empty input should produce output")
+		})
+	} else {
+		t.Run("rejects empty input", func(t *testing.T) {
+			_, err := spec.ConvertFn([]byte(""))
+			require.Error(t, err, "empty input should produce an error")
+		})
+	}
 
 	t.Run("rejects invalid input", func(t *testing.T) {
 		invalid := spec.InvalidInput

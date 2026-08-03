@@ -5,6 +5,7 @@ import {
   awsConfigMappedRevisions,
   getCurrentNistRevision,
   isNistStrict,
+  DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import { deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import {
@@ -40,6 +41,17 @@ interface ConfigRule {
   Source: ConfigRuleSource;
   InputParameters: string;
   EvaluationResults: EvaluationResult[];
+  Remediation?: RemediationConfiguration;
+}
+
+// Mirrors AWS Config's RemediationConfiguration (the SSM Automation document
+// Config runs to remediate a rule). Optional — present only when a remediation
+// is attached, so a rule without one gets no fix description.
+interface RemediationConfiguration {
+  TargetType: string;    // e.g. 'SSM_DOCUMENT'
+  TargetId: string;      // the automation document name
+  TargetVersion?: string; // optional document version
+  Automatic?: boolean;   // auto-remediate on non-compliance
 }
 
 interface ConfigRuleSource {
@@ -130,6 +142,26 @@ function checkRevisionAlignment(rules: ConfigRule[]): void {
   console.warn(`WARNING: ${detail}`);
 }
 
+// Builds the "fix" description from a rule's attached remediation configuration
+// (the SSM Automation document Config runs). Empty when the rule carries no
+// remediation, so the fix description is omitted rather than fabricated.
+export function buildFixText(rule: ConfigRule): string {
+  const r = rule.Remediation;
+  if (!r || !r.TargetId) {
+    return '';
+  }
+  const trigger = r.Automatic ? 'automatically on non-compliance' : 'on demand';
+  const doc = r.TargetVersion ? `${r.TargetId} (version ${r.TargetVersion})` : r.TargetId;
+  return `Remediate via ${remediationTargetLabel(r.TargetType)} ${doc}, applied ${trigger}.`;
+}
+
+// Renders an AWS remediation TargetType as human text.
+function remediationTargetLabel(targetType: string): string {
+  if (targetType === 'SSM_DOCUMENT') return 'SSM Automation document';
+  if (!targetType) return 'automation document';
+  return `${targetType} document`;
+}
+
 function buildCheckText(rule: ConfigRule): string {
   const parts: string[] = [
     `ARN: ${rule.ConfigRuleArn || 'N/A'}`,
@@ -181,7 +213,7 @@ function buildResult(r: EvaluationResult): RequirementResult {
  * returned zero in-scope resources. The HDF schema requires `results` to have
  * minItems >= 1; this honestly signals to auditors that the rule's check ran
  * but had no scope in this account/region rather than vacuously claiming
- * "passed". See issue #80 bug 2.
+ * "passed".
  */
 function buildNotApplicableResult(rule: ConfigRule): RequirementResult {
   const codeDesc = `AWS Config rule ${rule.ConfigRuleName} evaluated zero in-scope resources in this account/region.`;
@@ -192,16 +224,23 @@ function buildNotApplicableResult(rule: ConfigRule): RequirementResult {
 }
 
 function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
-  const nist = buildNistTags(rule.Source.SourceIdentifier, rule.ConfigRuleName);
-  const tags: Record<string, unknown> = nist.length > 0 ? { nist } : {};
+  // A managed or custom rule the mapping tables don't cover still evaluates a
+  // configuration setting — fall back to CM-6 rather than emitting no NIST context.
+  const rawNist = buildNistTags(rule.Source.SourceIdentifier, rule.ConfigRuleName);
+  const nist = rawNist.length > 0 ? rawNist : DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS;
+  const tags: Record<string, unknown> = { nist };
 
   const descriptions: Description[] = [
     { label: 'default', data: rule.Description },
     { label: 'check',   data: buildCheckText(rule) },
   ];
+  const fix = buildFixText(rule);
+  if (fix) {
+    descriptions.push({ label: 'fix', data: fix });
+  }
 
   const title = `${getAccountId(rule.ConfigRuleArn)} - ${rule.ConfigRuleName}`;
-  // Issue #80 bug 2: a Config rule that was deployed and active but evaluated
+  // A Config rule that was deployed and active but evaluated
   // zero in-scope resources (e.g. rds-cluster-multi-az-enabled in an account
   // with no RDS clusters) returns an empty EvaluationResults from
   // GetComplianceDetailsByConfigRule. The HDF schema requires `results` to

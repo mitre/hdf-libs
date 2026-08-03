@@ -15,10 +15,15 @@ import (
 
 const (
 	nistReferenceName = "Standards Mapping - NIST Special Publication 800-53 Revision 4"
+	cweReferenceName  = "Standards Mapping - Common Weakness Enumeration"
 )
 
 // nistPattern matches NIST 800-53 control identifiers like "SI-10", "AC-2".
 var nistPattern = regexp.MustCompile(`[a-zA-Z]{2}-\d+`)
+
+// cweIDPattern matches the numeric CWE identifiers in a CWE reference title
+// such as "CWE ID 22, CWE ID 73".
+var cweIDPattern = regexp.MustCompile(`\d+`)
 
 // ConvertFortifyToHDF converts Fortify FVDL XML to HDF format.
 func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
@@ -125,8 +130,11 @@ func groupVulnsByClassID(vulns []Vulnerability) map[string][]Vulnerability {
 // buildRequirement creates an EvaluatedRequirement from a Description and
 // its associated vulnerabilities.
 func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[string]*Snippet, fvdl *FVDL) hdf.EvaluatedRequirement {
-	// Extract NIST tags from Description References
+	// Extract NIST tags from Description References, then merge in the NIST
+	// controls implied by the CWE mapping so tags.nist reflects both sources.
 	nistTags := extractNISTFromReferences(desc.References.Reference)
+	cweIDs := extractCWEFromReferences(desc.References.Reference)
+	nistTags = mergeCWENIST(nistTags, cweIDs)
 	if len(nistTags) == 0 {
 		nistTags = shared.DefaultStaticAnalysisNIST
 	}
@@ -153,16 +161,16 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 		})
 	}
 
-	// Impact from the first vulnerability's DefaultSeverity / 5
+	// Impact from the representative instance's per-instance severity / 5.
 	impact := 0.0
 	if len(vulns) > 0 {
-		impact = vulns[0].ClassInfo.DefaultSeverity / 5.0
+		impact = vulns[0].InstanceInfo.InstanceSeverity / 5.0
 	}
 
 	// Build results — one per vulnerability instance
 	results := buildResults(vulns, snippetMap, fvdl)
 
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 desc.ClassID,
 		Title:              &titleStr,
 		Impact:             impact,
@@ -172,6 +180,50 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+
+	if len(cweIDs) > 0 {
+		req.Cwe = cweIDs
+	}
+
+	// requirement.code = raw source snippet from the representative finding's
+	// primary trace (Heimdall CODE tab). Left unset when no snippet is present.
+	if code := buildRequirementCode(vulns, snippetMap); code != nil {
+		req.Code = code
+	}
+
+	return req
+}
+
+// buildRequirementCode extracts the raw source snippet text from the first
+// vulnerability's primary trace. Returns nil when no snippet is available.
+func buildRequirementCode(vulns []Vulnerability, snippetMap map[string]*Snippet) *string {
+	if len(vulns) == 0 {
+		return nil
+	}
+
+	var parts []string
+	for _, entry := range vulns[0].AnalysisInfo.Unified.Trace.Primary.Entries {
+		if entry.Node == nil {
+			continue
+		}
+		snippetID := entry.Node.SourceLocation.Snippet
+		if snippetID == "" {
+			continue
+		}
+		snippet, ok := snippetMap[snippetID]
+		if !ok {
+			continue
+		}
+		if text := strings.TrimSpace(snippet.Text); text != "" {
+			parts = append(parts, text)
+		}
+	}
+
+	if len(parts) == 0 {
+		return nil
+	}
+	code := strings.Join(parts, "\n")
+	return &code
 }
 
 // buildResults creates one RequirementResult per vulnerability instance.
@@ -243,6 +295,45 @@ func extractNISTFromReferences(refs []Reference) []string {
 		}
 	}
 	return nil
+}
+
+// extractCWEFromReferences pulls CWE identifiers from the Common Weakness
+// Enumeration reference and returns them in "CWE-NN" form (e.g. ["CWE-22",
+// "CWE-73"]). Returns nil when no CWE reference is present.
+func extractCWEFromReferences(refs []Reference) []string {
+	for _, ref := range refs {
+		if ref.Author != cweReferenceName {
+			continue
+		}
+		matches := cweIDPattern.FindAllString(ref.Title, -1)
+		if len(matches) == 0 {
+			continue
+		}
+		ids := make([]string, len(matches))
+		for i, m := range matches {
+			ids[i] = "CWE-" + m
+		}
+		return ids
+	}
+	return nil
+}
+
+// mergeCWENIST appends the NIST controls implied by cweIDs to the native NIST
+// tags, preserving native order and skipping duplicates.
+func mergeCWENIST(nist []string, cweIDs []string) []string {
+	for _, ctrl := range shared.MapCWEToNIST(cweIDs, nil) {
+		found := false
+		for _, existing := range nist {
+			if existing == ctrl {
+				found = true
+				break
+			}
+		}
+		if !found {
+			nist = append(nist, ctrl)
+		}
+	}
+	return nist
 }
 
 // parseCreatedTS converts a CreatedTS element into a time.Time.

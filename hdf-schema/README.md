@@ -17,7 +17,7 @@ npm install @mitre/hdf-schema
 
 ## Schema Types
 
-Seven document types covering the full security assessment lifecycle:
+Eight document types: seven covering the full security assessment lifecycle, plus a continuous-monitoring change-event stream.
 
 ### HDF Results (`hdf-results`)
 
@@ -47,6 +47,10 @@ Bundles references to all documents needed for a compliance review — results, 
 
 Output of the diff engine. Structural comparison between two or more HDF documents showing requirement-level changes, status transitions, and field diffs.
 
+### HDF Requirement Change Event (`hdf-requirement-change-event`)
+
+A continuous-monitoring event stream: one event per requirement whose posture changed between two results scans (`new`, `absent`, `updated`, `fixed`, `regressed`). Each event carries the full after-state, a thin before-state, and a per-key sequence, so a reconciled results document can be replayed from a seed. Produced by `hdf events derive`.
+
 ## Usage
 
 ### Importing Schemas
@@ -56,7 +60,7 @@ Schemas can be imported in two ways:
 ```typescript
 // Named exports from the barrel (all schemas + types available)
 import { hdfResultsSchema, hdfBaselineSchema, hdfSystemSchema } from '@mitre/hdf-schema';
-import type { HDFResults, HDFBaseline, HDFSystem, HDFPlan, HDFAmendments, HDFEvidencePackage, HDFComparison } from '@mitre/hdf-schema';
+import type { HDFResults, HDFBaseline, HDFSystem, HDFPlan, HDFAmendments, HDFEvidencePackage, HDFComparison, HDFRequirementChangeEvent } from '@mitre/hdf-schema';
 
 // Sub-path imports also work (all resolve to the same combined module)
 import type { HDFResults } from '@mitre/hdf-schema/hdf-results';
@@ -126,6 +130,7 @@ func main() {
 | `src/schemas/hdf-amendments.schema.json` | Waivers, attestations, POA&Ms |
 | `src/schemas/hdf-evidence-package.schema.json` | Bundle of references to all documents |
 | `src/schemas/hdf-comparison.schema.json` | Differential analysis between assessments |
+| `src/schemas/hdf-requirement-change-event.schema.json` | Continuous-monitoring per-requirement change-event stream |
 | `src/schemas/primitives/*.schema.json` | Shared type definitions |
 | `dist/schemas/*.schema.json` | Bundled schemas (self-contained, all $refs inlined) |
 
@@ -183,6 +188,14 @@ All schemas use **JSON Schema draft/2020-12**.
 
 Interactive schema reference documentation is published at:
 **<https://mitre.github.io/hdf-libs/schemas/>**
+
+### What's new in v3.5.0
+
+- **`hdf-requirement-change-event` document type** — a new schema for the continuous-monitoring change-event stream (ADR-0005): per-requirement events (`new`/`absent`/`updated`/`fixed`/`regressed`) with a full after-state, thin before-state, and per-key sequence, chained for deterministic replay from a seed. Produced by `hdf events derive`.
+- **`External_Reference` primitive + `externalReferences[]` wiring** — a generalized, STIX-2.1-aligned reference (required `sourceName` plus one of `externalId`/`href`/`description`, open `rel`/`kind`, optional lossless embedded `document`) wired across the document types, including on the inline `Status_Override`. Backs the STIX CTI enrichment feature (ADR-0006).
+- **`Change_Reason` gains `dispositionChanged` and `effectiveImpactChanged`** — the diff engine's amendment-axis change reasons are now part of the comparison vocabulary.
+- **POA&M `expiresAt` is now required** — a POA&M is a time-boxed acceptance of an open finding; the deadline is no longer optional. **Breaking:** previously-valid HDF documents with deadline-less POA&Ms now fail validation. Source a real remediation/vendor-fix date.
+- **Compatibility.** The additions are additive except the required POA&M `expiresAt`; v3.4.x documents without deadline-less POA&Ms validate cleanly under v3.5.0. See CHANGELOG.
 
 ### What's new in v3.4.0
 

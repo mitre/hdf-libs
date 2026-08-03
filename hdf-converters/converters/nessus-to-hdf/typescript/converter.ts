@@ -1,4 +1,4 @@
-import { parseXmlWithArrays, cvssScoreToSeverity, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
@@ -14,7 +14,8 @@ import type {
   Cvss,
   Epss,
 } from '@mitre/hdf-schema';
-import { ResultStatus, TargetType, createMinimalBaseline, CVSSSeverity, Version as CvssVersion } from '@mitre/hdf-schema';
+import { ResultStatus, TargetType, createMinimalBaseline, Version as CvssVersion } from '@mitre/hdf-schema';
+import { cvssSeverityFromScore } from '../../../shared/typescript/cvss.js';
 
 const CVE_SOURCE_RE = /^CVE-\d{4}-\d{4,}$/;
 const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
@@ -378,8 +379,7 @@ function buildCvssEntries(item: ReportItem): Cvss[] {
   if (baseVector) entry.baseVector = baseVector;
   if (baseScore !== undefined) {
     entry.baseScore = baseScore;
-    const baseSeverity = mapCvssSeverity(baseScore);
-    if (baseSeverity !== undefined) entry.baseSeverity = baseSeverity;
+    entry.baseSeverity = cvssSeverityFromScore(baseScore);
   }
   if (threatVector !== undefined && threatVector !== '') entry.threatVector = threatVector;
   if (threatScore !== undefined) {
@@ -387,8 +387,7 @@ function buildCvssEntries(item: ReportItem): Cvss[] {
     // Per the spec, the temporal score IS the post-threat-enrichment
     // computed score for both v2 and v3.
     entry.computedScore = threatScore;
-    const computedSeverity = mapCvssSeverity(threatScore);
-    if (computedSeverity !== undefined) entry.computedSeverity = computedSeverity;
+    entry.computedSeverity = cvssSeverityFromScore(threatScore);
   }
 
   return [entry];
@@ -427,17 +426,6 @@ function parseFloatOrUndef(s: string | undefined): number | undefined {
   if (s === undefined || s === '') return undefined;
   const f = Number.parseFloat(s);
   return Number.isFinite(f) ? f : undefined;
-}
-
-function mapCvssSeverity(score: number): CVSSSeverity | undefined {
-  switch (cvssScoreToSeverity(score)) {
-    case 'critical': return CVSSSeverity.Critical;
-    case 'high':     return CVSSSeverity.High;
-    case 'medium':   return CVSSSeverity.Medium;
-    case 'low':      return CVSSSeverity.Low;
-    case 'none':     return CVSSSeverity.None;
-    default:         return undefined;
-  }
 }
 
 /**

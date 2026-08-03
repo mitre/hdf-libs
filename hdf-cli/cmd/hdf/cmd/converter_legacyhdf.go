@@ -8,8 +8,9 @@ import (
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 )
 
-// legacyHDFConverter converts InSpec exec-json (the legacy HDF v1 format:
-// profiles/controls) to the current HDF format (baselines/requirements).
+// legacyHDFConverter converts InSpec exec-json (the legacy HDF v2 format:
+// profiles/controls, the shape Heimdall2 loads) to the current HDF format
+// (v3: baselines/requirements).
 type legacyHDFConverter struct{}
 
 // Name returns the human-readable name for this converter.
@@ -32,7 +33,7 @@ func (c *legacyHDFConverter) Convert(input []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to parse InSpec input: %w", err)
 	}
 
-	v2 := legacyhdf.ConvertV1ToV2(&v1)
+	v2 := legacyhdf.ConvertV1ToV2(&v1, version)
 
 	output, err := json.MarshalIndent(v2, "", "  ")
 	if err != nil {

@@ -87,12 +87,12 @@ hdf convert --from hdf-amendments --to oscal-poam amendments.json -o poam-export
 hdf convert --from oscal *.json -o converted/
 ```
 
-## 11. OSCAL SAR → Legacy HDF v1 (version specifier)
+## 11. OSCAL SAR → Legacy HDF v2 (version specifier)
 
-"I want legacy HDF v1 output from an OSCAL SAR."
+"I want legacy Heimdall HDF (v2, the InSpec exec-json shape Heimdall2 loads) output from an OSCAL SAR."
 
 ```bash
-hdf convert --from oscal-sar --to hdf@1 sar-fedramp.json -o legacy-sar.json
+hdf convert --from oscal-sar --to hdf@2 sar-fedramp.json -o legacy-sar.json
 ```
 
 ## Available OSCAL Conversions

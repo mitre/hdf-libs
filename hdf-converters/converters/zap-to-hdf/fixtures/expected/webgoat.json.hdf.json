@@ -3,6 +3,171 @@
     {
       "requirements": [
         {
+          "cwe": [
+            "CWE-16"
+          ],
+          "descriptions": [
+            {
+              "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.",
+              "label": "default"
+            },
+            {
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.\nThis issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: http://ciscobinary.openh264.org/openh264-macosx64-0410d336bb748149a4f560eb6108090f078254b1.zip | Method: GET | Param: X-Content-Type-Options",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "10021",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "confidence": "2",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "riskdesc": "Low (Medium)",
+            "wascid": "15"
+          },
+          "code": "GET http://ciscobinary.openh264.org/openh264-macosx64-0410d336bb748149a4f560eb6108090f078254b1.zip\nParam: X-Content-Type-Options",
+          "title": "X-Content-Type-Options Header Missing",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "ab32820fa4c510ded815dacd1e864f7254d4afb2a9cb309a489cbcec2e98f02d"
+      },
+      "name": "OWASP ZAP Scan: ciscobinary.openh264.org",
+      "labels": {
+        "component": "ciscobinary.openh264.org"
+      },
+      "summary": "ZAP Version 2.7.0",
+      "title": "OWASP ZAP Scan of http://ciscobinary.openh264.org"
+    },
+    {
+      "requirements": [
+        {
+          "cwe": [
+            "CWE-16"
+          ],
+          "descriptions": [
+            {
+              "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.",
+              "label": "default"
+            },
+            {
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.\nThis issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css | Method: GET | Param: X-Content-Type-Options",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "10021",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "confidence": "2",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "riskdesc": "Low (Medium)",
+            "wascid": "15"
+          },
+          "code": "GET http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css\nParam: X-Content-Type-Options",
+          "title": "X-Content-Type-Options Header Missing",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "ab32820fa4c510ded815dacd1e864f7254d4afb2a9cb309a489cbcec2e98f02d"
+      },
+      "name": "OWASP ZAP Scan: code.jquery.com",
+      "labels": {
+        "component": "code.jquery.com"
+      },
+      "summary": "ZAP Version 2.7.0",
+      "title": "OWASP ZAP Scan of http://code.jquery.com"
+    },
+    {
+      "requirements": [
+        {
+          "cwe": [
+            "CWE-16"
+          ],
+          "descriptions": [
+            {
+              "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.",
+              "label": "default"
+            },
+            {
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.\nThis issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: http://detectportal.firefox.com/success.txt | Method: GET | Param: X-Content-Type-Options",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "10021",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "confidence": "2",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "riskdesc": "Low (Medium)",
+            "wascid": "15"
+          },
+          "code": "GET http://detectportal.firefox.com/success.txt\nParam: X-Content-Type-Options",
+          "title": "X-Content-Type-Options Header Missing",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "ab32820fa4c510ded815dacd1e864f7254d4afb2a9cb309a489cbcec2e98f02d"
+      },
+      "name": "OWASP ZAP Scan: detectportal.firefox.com",
+      "labels": {
+        "component": "detectportal.firefox.com"
+      },
+      "summary": "ZAP Version 2.7.0",
+      "title": "OWASP ZAP Scan of http://detectportal.firefox.com"
+    },
+    {
+      "requirements": [
+        {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: MKCOL. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -122,18 +287,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "MKCOL http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id",
           "controlType": "technical",
           "title": "Insecure HTTP Method - MKCOL",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-16"
+          ],
           "descriptions": [
             {
               "data": "A cookie has been set without the HttpOnly flag, which means that the cookie can be accessed by JavaScript. If a malicious script can be run on this page then the cookie will be accessible and can be transmitted to another site. If this is a session cookie then session hijacking may be possible.",
@@ -194,7 +362,6 @@
               "CCI-003173"
             ],
             "confidence": "2",
-            "cweid": "16",
             "nist": [
               "SA-11",
               "RA-5"
@@ -202,10 +369,14 @@
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/attack\nParam: JSESSIONID",
           "title": "Cookie No HttpOnly Flag",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-425"
+          ],
           "descriptions": [
             {
               "data": "A backup of the file was disclosed by the web server",
@@ -346,7 +517,6 @@
               "CCI-003173"
             ],
             "confidence": "2",
-            "cweid": "425",
             "nist": [
               "SA-11",
               "RA-5"
@@ -354,10 +524,14 @@
             "riskdesc": "Medium (Medium)",
             "wascid": "34"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old.baseUrl%\u003e\nAttack: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old.baseUrl%\u003e",
           "title": "Backup File Disclosure",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: COPY. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -477,18 +651,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "COPY http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923",
           "controlType": "technical",
           "title": "Insecure HTTP Method - COPY",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: MOVE. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -608,18 +785,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "MOVE http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss",
           "controlType": "technical",
           "title": "Insecure HTTP Method - MOVE",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This method was originally intended for file managemant operations. It is now most commonly used in REST services, PUT is most-often utilized for **update** capabilities, PUT-ing to a known resource URI with the request body containing the newly-updated representation of the original resource..",
@@ -739,18 +919,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Medium (Medium)",
             "wascid": "45"
           },
+          "code": "PUT http://mymac.com:8191/WebGoat/service/ixvsrz0hz5",
           "controlType": "technical",
           "title": "Insecure HTTP Method - PUT",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-352"
+          ],
           "descriptions": [
             {
               "data": "No Anti-CSRF tokens were found in a HTML submission form. A cross-site request forgery is an attack that involves forcing a victim to send an HTTP request to a target destination without their knowledge or intent in order to perform an action as the victim. The underlying cause is application functionality using predictable URL/form actions in a repeatable way. The nature of the attack is that CSRF exploits the trust that a web site has for a user. By contrast, cross-site scripting (XSS) exploits the trust that a user has for a web site. Like XSS, CSRF attacks are not necessarily cross-site, but they can be. Cross-site request forgery is also known as CSRF, XSRF, one-click attack, session riding, confused deputy, and sea surf. CSRF attacks are effective in a number of situations, including: * The victim has an active session on the target site. * The victim is authenticated via HTTP auth on the target site. * The victim is on the same local network as the target site. CSRF has primarily been used to perform an action against a target site using the victim's privileges, but recent techniques have been discovered to disclose information by gaining access to the response. The risk of information disclosure is dramatically increased when the target site is vulnerable to XSS, because XSS can be used as a platform for CSRF, allowing the attack to operate within the bounds of the same-origin policy.",
@@ -870,18 +1053,21 @@
               "CCI-000213"
             ],
             "confidence": "2",
-            "cweid": "352",
             "nist": [
               "AC-3"
             ],
             "riskdesc": "Low (Medium)",
             "wascid": "9"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson",
           "controlType": "technical",
           "title": "Absence of Anti-CSRF Tokens",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "The response appears to contain suspicious comments which may help an attacker.",
@@ -1001,18 +1187,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Informational (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson",
           "controlType": "technical",
           "title": "Information Disclosure - Suspicious Comments",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: PROPPATCH. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -1132,18 +1321,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "PROPPATCH http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922",
           "controlType": "technical",
           "title": "Insecure HTTP Method - PROPPATCH",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: PROPFIND. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -1263,18 +1455,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "PROPFIND http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson",
           "controlType": "technical",
           "title": "Insecure HTTP Method - PROPFIND",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "The response appeared to contain common error messages returned by platforms such as ASP.NET, and Web-servers such as IIS and Apache. You can configure the list of common debug messages.",
@@ -1324,18 +1519,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E",
           "controlType": "technical",
           "title": "Information Disclosure - Debug Error Messages",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "The response appeared to contain common error messages returned by platforms such as ASP.NET, and Web-servers such as IIS and Apache. You can configure the list of common debug messages.",
@@ -1385,18 +1583,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E",
           "controlType": "technical",
           "title": "Information Disclosure - Debug Error Messages",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "The response appeared to contain common error messages returned by platforms such as ASP.NET, and Web-servers such as IIS and Apache. You can configure the list of common debug messages.",
@@ -1446,18 +1647,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E",
           "controlType": "technical",
           "title": "Information Disclosure - Debug Error Messages",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This method is now most commonly used in REST services, PATCH is used for **modify** capabilities. The PATCH request only needs to contain the changes to the resource, not the complete resource.",
@@ -1577,18 +1781,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Medium (Medium)",
             "wascid": "45"
           },
+          "code": "PATCH http://mymac.com:8191/WebGoat/service/lessonoverview.mvc/eh79fr0hqg",
           "controlType": "technical",
           "title": "Insecure HTTP Method - PATCH",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: UNLOCK. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -1708,18 +1915,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "UNLOCK http://mymac.com:8191/WebGoat/service/lessonprogress.mvc",
           "controlType": "technical",
           "title": "Insecure HTTP Method - UNLOCK",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "The request appeared to contain sensitive information leaked in the URL. This can violate PCI and most organizational compliance policies. You can configure the list of strings for this check to add or remove values specific to your environment.",
@@ -1764,18 +1974,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Informational (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/challenge/6?confirm_password_reg=ZAP\u0026email_reg=foo-bar%40example.com\u0026password_reg=ZAP\u0026register-submit=Register+Now\u0026username_reg=ZAP\nParam: username_reg",
           "controlType": "technical",
           "title": "Information Disclosure - Sensitive Informations in URL",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This HTTP method is a WEBDAV method: LOCK. If this server is not offering any WEBDAV services, these methods should not be available.",
@@ -1895,18 +2108,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
+          "code": "LOCK http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson",
           "controlType": "technical",
           "title": "Insecure HTTP Method - LOCK",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "This page contains an error/warning message that may disclose sensitive information like the location of the file that produced the unhandled exception. This information can be used to launch further attacks against the web application. The alert could be a false positive if the error message is found inside a documentation page.",
@@ -1956,18 +2172,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Medium (Medium)",
             "wascid": "13"
           },
+          "code": "POST http://mymac.com:8191/WebGoat/IDOR/profile/alt-path",
           "controlType": "technical",
           "title": "Application Error Disclosure",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-541"
+          ],
           "descriptions": [
             {
               "data": "The source code for the current page was disclosed by the web server",
@@ -2000,7 +2219,6 @@
               "CCI-003173"
             ],
             "confidence": "1",
-            "cweid": "541",
             "nist": [
               "SA-11",
               "RA-5"
@@ -2008,10 +2226,14 @@
             "riskdesc": "High (Low)",
             "wascid": "34"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e/\u003c%=index%\u003e\nAttack: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e/.svn/text-base/\u003c%=index%\u003e.svn-base",
           "title": "Source Code Disclosure - SVN",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-933"
+          ],
           "descriptions": [
             {
               "data": "Web Browser XSS Protection is not enabled, or is disabled by the configuration of the 'X-XSS-Protection' HTTP response header on the web server",
@@ -2042,7 +2264,6 @@
               "CCI-003173"
             ],
             "confidence": "2",
-            "cweid": "933",
             "nist": [
               "SA-11",
               "RA-5"
@@ -2050,10 +2271,14 @@
             "riskdesc": "Low (Medium)",
             "wascid": "14"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E\nParam: X-XSS-Protection",
           "title": "Web Browser XSS Protection Not Enabled",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-352"
+          ],
           "descriptions": [
             {
               "data": "A cross-site request forgery is an attack that involves forcing a victim to send an HTTP request to a target destination without their knowledge or intent in order to perform an action as the victim. The underlying cause is application functionality using predictable URL/form actions in a repeatable way. The nature of the attack is that CSRF exploits the trust that a web site has for a user. By contrast, cross-site scripting (XSS) exploits the trust that a user has for a web site. Like XSS, CSRF attacks are not necessarily cross-site, but they can be. Cross-site request forgery is also known as CSRF, XSRF, one-click attack, session riding, confused deputy, and sea surf. CSRF attacks are effective in a number of situations, including: * The victim has an active session on the target site. * The victim is authenticated via HTTP auth on the target site. * The victim is on the same local network as the target site. CSRF has primarily been used to perform an action against a target site using the victim's privileges, but recent techniques have been discovered to disclose information by gaining access to the response. The risk of information disclosure is dramatically increased when the target site is vulnerable to XSS, because XSS can be used as a platform for CSRF, allowing the attack to operate within the bounds of the same-origin policy.",
@@ -2158,18 +2383,21 @@
               "CCI-000213"
             ],
             "confidence": "2",
-            "cweid": "352",
             "nist": [
               "AC-3"
             ],
             "riskdesc": "High (Medium)",
             "wascid": "9"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/WebWolf/landing/password-reset",
           "controlType": "technical",
           "title": "Anti CSRF Tokens Scanner",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-20"
+          ],
           "descriptions": [
             {
               "data": "Unspecified form action: HTTP parameter override attack potentially possible. This is a known problem with Java Servlets but other platforms may also be vulnerable.",
@@ -2199,18 +2427,21 @@
               "CCI-001310"
             ],
             "confidence": "1",
-            "cweid": "20",
             "nist": [
               "SI-10"
             ],
             "riskdesc": "Medium (Low)",
             "wascid": "20"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/js/libs/jquery.form.js",
           "controlType": "technical",
           "title": "HTTP Parameter Override",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-89"
+          ],
           "descriptions": [
             {
               "data": "SQL injection may be possible.",
@@ -2266,18 +2497,21 @@
               "CCI-001310"
             ],
             "confidence": "2",
-            "cweid": "89",
             "nist": [
               "SI-10"
             ],
             "riskdesc": "High (Medium)",
             "wascid": "19"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/service/debug/labels.mvc?query=query+ASC++--+\nParam: query\nAttack: query ASC  -- ",
           "controlType": "technical",
           "title": "SQL Injection",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-200"
+          ],
           "descriptions": [
             {
               "data": "A private IP (such as 10.x.x.x, 172.x.x.x, 192.168.x.x) or an Amazon EC2 private hostname (for example, ip-10-0-56-78) has been found in the HTTP response body. This information might be helpful for further attacks targeting internal systems.",
@@ -2307,18 +2541,21 @@
               "CCI-002418"
             ],
             "confidence": "2",
-            "cweid": "200",
             "nist": [
               "SC-8"
             ],
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/WebWolfIntroduction.lesson.lesson",
           "controlType": "technical",
           "title": "Private IP Disclosure",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-16"
+          ],
           "descriptions": [
             {
               "data": "This check identifies responses where the HTTP Content-Type header declares a charset different from the charset defined by the body of the HTML or XML. When there's a charset mismatch between the HTTP header and content body Web browsers can be forced into an undesirable content-sniffing mode to determine the content's correct character set. An attacker could manipulate content on the page to be interpreted in an encoding of their choice. For example, if an attacker can control content at the beginning of the page, they could inject script using UTF-7 encoded text and manipulate some browsers into interpreting that text.",
@@ -2344,7 +2581,6 @@
               "CCI-003173"
             ],
             "confidence": "1",
-            "cweid": "16",
             "nist": [
               "SA-11",
               "RA-5"
@@ -2352,6 +2588,7 @@
             "riskdesc": "Informational (Low)",
             "wascid": "15"
           },
+          "code": "GET http://mymac.com:8191/WebGoat/start.mvc",
           "title": "Charset Mismatch (Header Versus Meta Content-Type Charset)",
           "verificationMethod": "automated"
         }
@@ -2360,12 +2597,30 @@
         "algorithm": "sha256",
         "value": "ab32820fa4c510ded815dacd1e864f7254d4afb2a9cb309a489cbcec2e98f02d"
       },
-      "name": "OWASP ZAP Scan",
+      "name": "OWASP ZAP Scan: mymac.com",
+      "labels": {
+        "component": "mymac.com"
+      },
       "summary": "ZAP Version 2.7.0",
       "title": "OWASP ZAP Scan of http://mymac.com:8191"
     }
   ],
   "components": [
+    {
+      "name": "ciscobinary.openh264.org",
+      "type": "application",
+      "url": "http://ciscobinary.openh264.org"
+    },
+    {
+      "name": "code.jquery.com",
+      "type": "application",
+      "url": "http://code.jquery.com"
+    },
+    {
+      "name": "detectportal.firefox.com",
+      "type": "application",
+      "url": "http://detectportal.firefox.com"
+    },
     {
       "name": "mymac.com",
       "type": "application",
@@ -2378,7 +2633,6 @@
   },
   "timestamp": "2018-12-06T10:53:11Z",
   "tool": {
-    "format": "JSON",
     "name": "OWASP ZAP",
     "version": "2.7.0"
   }

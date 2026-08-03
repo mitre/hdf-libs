@@ -26,9 +26,9 @@ All libraries are available for both TypeScript (npm) and Go. See [Installation]
 
 | Package | Description |
 |---------|-------------|
-| [`hdf-schema`](./hdf-schema/README.md) | JSON schemas and generated TypeScript/Go types for all 7 HDF document types |
+| [`hdf-schema`](./hdf-schema/README.md) | JSON schemas and generated TypeScript/Go types for all 8 HDF document types |
 | [`hdf-converters`](./hdf-converters/README.md) | 40+ security tool format converters (Nessus, XCCDF, OSCAL, SARIF, Grype, etc.) |
-| [`hdf-validators`](./hdf-validators/README.md) | Schema validation for all 7 HDF document types with embedded schemas |
+| [`hdf-validators`](./hdf-validators/README.md) | Schema validation for all 8 HDF document types with embedded schemas |
 | [`hdf-parsers`](./hdf-parsers/README.md) | Parse and flatten HDF documents |
 | [`hdf-mappings`](./hdf-mappings/README.md) | CCI, NIST 800-53, CWE, OWASP, and tool-specific control mappings |
 | [`hdf-utilities`](./hdf-utilities/README.md) | XML, CSV, JSON parsing, SHA-256/SHA-512 hashing, string helpers |
@@ -40,7 +40,7 @@ All libraries are available for both TypeScript (npm) and Go. See [Installation]
 
 ## Schema Types
 
-HDF defines seven document types (all JSON Schema 2020-12):
+HDF defines eight document types (all JSON Schema 2020-12): seven assessment documents plus a continuous-monitoring change-event stream.
 
 ### HDF Results
 Assessment results from running security checks against a target system. Contains:
@@ -72,7 +72,12 @@ Waivers, attestations, and plans of action & milestones (POA&Ms). Captures risk 
 Bundle of references to all related HDF documents for a complete assessment record. Links results, baselines, system definitions, plans, and amendments.
 
 ### HDF Comparison
-Differential analysis between HDF documents (results, baselines, or systems). Produced by the hdf-diff library. All schemas are at v3.4.0.
+Differential analysis between HDF documents (results, baselines, or systems). Produced by the hdf-diff library.
+
+### HDF Requirement Change Event
+A continuous-monitoring stream of per-requirement change events (`new`, `absent`, `updated`, `fixed`, `regressed`) derived between two results scans. Each event carries the full after-state and a thin before-state, chained by per-key sequence so a reconciled results document can be replayed from a seed. Produced by `hdf events derive` and the hdf-diff kernel.
+
+All schemas are at v3.5.0.
 
 ## Installation
 

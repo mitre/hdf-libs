@@ -53,6 +53,77 @@ The practical boundary: the destination SIEM index inherits the sensitivity of t
 - If specific fields must be withheld from the SIEM, filter or redact the HDF document **before** export. The exporters will not do it for you — they are lossless by design.
 - The promoted flat fields (the verdict, suppression, host, rule, and CVE scalars) are a projection *of* that same data, not an additional disclosure.
 
+## Projecting change events into interop vocabularies
+
+`hdf events derive` emits one `Requirement_Change_Event` per requirement whose
+effective posture moved between observations (state enum:
+`new | absent | updated | fixed | regressed`); a complete runnable
+walkthrough of the event loop lives at
+[mitre/hdf-conmon-demo](https://github.com/mitre/hdf-conmon-demo). Consumers feeding OCSF activity
+pipelines or SARIF baseline comparisons should use the following total
+mappings rather than inventing their own. One rule frames both tables: a
+steady-state control emits **no event**, so "unchanged" is the *absence* of an
+event — never a mapped value.
+
+### Event state to OCSF `activity_id`
+
+Target: Compliance Finding (class 2003), OCSF 1.8.0
+([schema.ocsf.io](https://schema.ocsf.io/1.8.0/classes/compliance_finding)).
+
+| Event state | `activity_id` | Activity |
+|---|---|---|
+| `new` | `1` | Create |
+| `updated` | `2` | Update |
+| `fixed` | `2` | Update |
+| `regressed` | `2` | Update |
+| `absent` | `3` | Close |
+
+Recompute `type_uid` alongside (`class_uid × 100 + activity_id`: `200301` /
+`200302` / `200303`). The direction a plain Update cannot carry stays visible
+in OCSF through `compliance.status_id` flipping (Pass ↔ Fail) and the
+original event travels losslessly in `unmapped`.
+
+`fixed` maps to Update, not Close: under the [raw-primary model](#the-raw-primary-status-model)
+the control remains a tracked compliance finding whose verdict changed — only
+`absent` (the requirement left the assessment scope) closes it. A
+finding-lifecycle consumer that tracks *only failing* findings may reasonably
+treat `fixed` as Close; that is a policy choice in the consumer, not the
+default projection.
+
+Note the batch exporter (`hdf convert --from hdf --to ocsf`) emits
+`activity_id: 1` (Create) for every finding: a single document carries no
+change context. The event stream is precisely what makes Update and Close
+projectable.
+
+### Event state to SARIF `baselineState`
+
+Target: the closed four-value `baselineState` property
+(`new | unchanged | updated | absent`), SARIF 2.1.0
+[§3.27.24](https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/sarif-v2.1.0-errata01-os-complete.html#_Toc141790912).
+
+| Event state | `baselineState` | Lossy? |
+|---|---|---|
+| `new` | `new` | no |
+| `updated` | `updated` | no |
+| `fixed` | `updated` | **yes** — direction lost |
+| `regressed` | `updated` | **yes** — direction lost |
+| `absent` | `absent` | no |
+
+The loss is structural: `baselineState` records *that* a result changed, never
+*which way*. `fixed` and `regressed` — opposite triage outcomes — collapse
+into the same `updated`. HDF carries the direction SARIF cannot; a consumer
+that needs it must keep the event `state` (or `changeReasons`) alongside the
+projection.
+
+`fixed` maps to `updated`, not `absent`, because HDF requirement rows persist
+across status flips: like a SARIF run using `kind: pass`/`fail`, a control
+that starts passing is still *present* in the current observation with a
+changed result — it has not left the run. The alternative applies only to a
+problems-only SARIF stream (failures are the sole results): there a `fixed`
+control's result disappears (`absent`) and a `regressed` control's failure
+first appears (`new`). Use that variant only when the consuming pipeline
+genuinely reports failures alone, and say so where the projection is defined.
+
 ## See also
 
 - [HDF Status Determination](../architecture/status-determination.md) — the two-axis verdict/acceptance model and its standards grounding.

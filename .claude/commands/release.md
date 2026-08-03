@@ -81,7 +81,7 @@ Before touching any version, run a multi-agent review of everything merged since
 2. **DRY / cross-library duplication (weighted heaviest).** For each new/changed function, ask: does an equivalent already exist in a shared package? Hotspots to check against: severity↔impact (`hdf-utilities/severity`), timestamp parse/normalize (`hdf-utilities`, `hdf-parsers.normalizeTimestamps`), CWE/CCI/NIST mapping (`hdf-mappings`), checksum/integrity + JSON-size/XML validation + HTML strip + CWE→NIST + control-type derivation (`hdf-converters/shared`), CVSS. Also flag a Go or TS converter that re-implements logic its language-peer or shared builder already owns (the legacyhdf/checklist class of divergence). Every hit = a finding citing the exact existing symbol to import.
 3. **TypeScript best practices** — no unjustified `any`/`as`; exhaustive switches; no floating promises; ESM import correctness; closed-shape outputs (no schema-invalid passthroughs); matches the eslint config's intent.
 4. **Go best practices** — error wrapping (`%w`), no swallowed errors, `omitempty` consistency, struct-tag correctness, context usage, no goroutine leaks; matches the 39-linter `golangci-lint` intent.
-5. **Cross-PR consistency & regression** — for the PRs merged since `BASE`: did any two touch the same area inconsistently? Are shared-code changes reflected in *all* consumers? Is Go↔TS parity preserved where both exist? Did any PR reintroduce something another removed, or silently regress a third? Does the CHANGELOG cover all of them?
+5. **Cross-PR consistency & regression** — for the PRs merged since `BASE`: did any two touch the same area inconsistently? Are shared-code changes reflected in *all* consumers? Is Go↔TS parity preserved where both exist? Did any PR reintroduce something another removed, or silently regress a third? **Do NOT flag the CHANGELOG as missing/out-of-date — the new-version section is authored later, in Phase 5, so its absence at review time is by design, not a finding.** The one CHANGELOG-adjacent thing worth surfacing is a *consumer-visible behavior change* that Phase 5 must call out loudly (report it as a low-severity note so Phase 5 remembers it — not as a blocking gap).
 6. **Docs / README accuracy (full-surface, not diff-scoped).** For every package `README.md` (root, `hdf-cli`, `hdf-diff`, and each `@mitre/hdf-*` package), verify what it documents still matches reality: every documented command/subcommand and flag actually exists in the current CLI (`hdf <cmd> --help`) or public API; no *removed* command or renamed syntax is still shown; example invocations use real flags; and any embedded example output is faithful to a real run (statuses, counts, column headers, summary lines — not fabricated or stale). Because drift here predates the release window, this dimension inspects the **current** binary/API surface, not just `BASE..HEAD`. Every mismatch = a finding naming the README, the stale claim, and the correct current form.
 
 **Orchestration** — use the `Workflow` tool (this instruction is the multi-agent opt-in). Fan out one finder per dimension (shard dimension×package when the diff is large), adversarially verify each finding with an independent skeptic prompted to *refute* (drop unless it survives — this kills best-practice nitpicks and hallucinated issues), then synthesize a deduped report grouped by dimension and severity. Pass `BASE`, the changed-file list, and the PR list in via `args`. Skeleton:
@@ -106,7 +106,7 @@ const DIMENSIONS = [
   { key: 'dry',      prompt: `${ctx}\n\nReport cross-library DUPLICATION: new code re-implementing functionality that already exists in hdf-utilities / hdf-converters/shared / hdf-mappings / hdf-parsers (or a Go/TS converter diverging from its shared builder or language-peer). For each, name the existing symbol that should be imported. Inspect the shared packages, not just the diff.` },
   { key: 'ts',       prompt: `${ctx}\n\nReport TypeScript best-practice violations in the changed .ts files (unjustified any/as, non-exhaustive switch, floating promises, bad ESM imports, schema-invalid passthroughs).` },
   { key: 'go',       prompt: `${ctx}\n\nReport Go best-practice violations in the changed .go files (unwrapped/swallowed errors, omitempty drift, struct-tag errors, context misuse, goroutine leaks).` },
-  { key: 'crosspr',  prompt: `${ctx}\n\nPRs merged since ${args.base}:\n${args.prs}\n\nReport cross-PR inconsistencies/regressions: same area touched inconsistently, shared-code change not reflected in all consumers, broken Go/TS parity, one PR reverting/regressing another, CHANGELOG gaps.` },
+  { key: 'crosspr',  prompt: `${ctx}\n\nPRs merged since ${args.base}:\n${args.prs}\n\nReport cross-PR inconsistencies/regressions: same area touched inconsistently, shared-code change not reflected in all consumers, broken Go/TS parity, one PR reverting/regressing another. Do NOT report a missing or out-of-date CHANGELOG — its new-version section is written later in Phase 5, so its absence now is expected. The only CHANGELOG-adjacent finding worth raising is a consumer-visible BEHAVIOR CHANGE Phase 5 must document loudly — report that as a low-severity note, not a blocking gap.` },
   { key: 'docs',     prompt: `Ignore the diff scope for this one — audit the CURRENT state. For every package README.md (root, hdf-cli, hdf-diff, each @mitre/hdf-* package), verify documented commands/subcommands/flags still exist in the real CLI (build ./hdf and run 'hdf <cmd> --help') or public API, that no removed/renamed command or syntax is still shown, and that any embedded example output is faithful to a real run (status labels, counts, headers, summary lines). Report each mismatch with the README path, the stale claim, and the correct current form.` },
 ]
 
@@ -140,6 +140,45 @@ Beads close when their fix is **merged**, not when the release ships — do this
 6. `bd dolt push`.
 
 Then present a one-line-per-card summary of what remains open, grouped by whether it is a **release-blocking bug** vs. **patchable / enhancement / future** — this is the "what's left before we can cut the release" view. Only genuine correctness regressions in *this release's* surface should block; pre-existing narrow bugs and hardening/enhancement cards are candidates for a fast-follow patch series, at the user's call.
+
+### Phase 1.6 — Suppression & deferral review (retire what's no longer needed)
+
+The repo carries several **deliberate-suppression / "don't-bump" mechanisms**, each valid when added but each with a *condition under which it should be revisited* — and nothing else tracks those conditions, so they silently rot (a pinned "patched" version becomes the new vulnerable floor; a suppressed advisory that now has a fix stays suppressed; an ignore rule outlives the incompatibility that motivated it). The release is the periodic checkpoint. Walk each system and either confirm it's still needed or retire/refresh it — this phase runs for **every** release, patch included.
+
+1. **`pnpm-workspace.yaml` `overrides`** (forced transitive versions for the security gate). Re-run `pnpm audit --prod --audit-level=moderate` and `pnpm audit --dev --audit-level=high`; for each pinned override confirm it's still the advisory's *current* patched floor (an escalated advisory turns the pin itself into the vulnerable floor). Bump stale pins, verifying the target version actually exists on the registry. Full procedure: `site/docs/contributing/developer-guide.md` → Dependency Audit Overrides.
+2. **`pnpm-workspace.yaml` `auditConfig.ignoreGhsas`** (suppressed advisories). For each GHSA, check whether a patched version now exists; if so, drop the suppression and take the fix instead.
+3. **`.github/dependabot.yml` `ignore` rules** (held bumps). For each rule, check whether its blocking condition still holds (e.g. a `typescript` major hold is gated on typescript-eslint adding support — `typescript-eslint#10940`). Lift the rule once the condition clears so the bump can flow.
+4. **Spot-check code-level suppressions** *(lighter touch — these track the code, so only sweep when the diff touched them)*: `//nolint` (Go) and `/* c8 ignore */` (TS) directives added since `BASE` — confirm each still describes a genuinely-unreachable or justified case, not a masked new gap.
+
+Retirements are their own small commits/PRs (they change behavior — a dropped override or lifted ignore can surface a real advisory or bump), not folded into the version-bump commit. Anything that can't be retired yet: leave it, and note the still-blocking condition so the next release re-checks it.
+
+### Phase 1.7 — Vendored external-schema freshness *(minor/major only)*
+
+Converters that emit a format with a published schema validate their output
+against a **vendored copy** of that schema (see `converters/*/schemas/` and
+sibling `*/fixtures/*schema*.json`, each with a `PROVENANCE.md`). Vendoring keeps
+the tests hermetic and pins validation to the exact schema version the converter
+claims — but the copy can drift from upstream. This phase is the checkpoint.
+**Minor/major only** — the schemas don't change between patches, so this must not
+hold up a patch release.
+
+For each vendored external schema (JSON Schema or XSD) with a `PROVENANCE.md`:
+
+1. Re-fetch the pinned source URL and compare its SHA-256 against the value
+   recorded in the schema's `PROVENANCE.md`.
+2. **Match** → still current; done.
+3. **Mismatch** → upstream changed the artifact in place. Investigate: for a
+   *versioned* spec (XCCDF 1.2, OSCAL 1.1.2, CSAF 2.0) an in-place change is rare
+   and worth scrutiny; for a date-stamped one (e.g. FIRST.org CVSS) it may be a
+   routine re-stamp. Refresh the vendored file, re-run that converter's
+   output-validation test, re-apply any local edits the provenance documents
+   (e.g. XCCDF `schemaLocation` rewrites), and update the recorded SHA-256.
+4. **Fetch fails / URL moved** → note it; the pin still validates offline, but
+   record the new canonical URL in `PROVENANCE.md`.
+
+A drift or a new upstream schema version can surface real converter
+conformance gaps — treat any resulting fix as its own commit, not folded into the
+version bump. If nothing drifted, this phase is a no-op confirmation.
 
 ### Phase 2 — Mechanical version sweep *(minor/major only)*
 
@@ -213,13 +252,14 @@ For removed/deprecated fields, the same walk applies in reverse: remove the row,
 ### Phase 5 — CHANGELOG
 
 1. Open `CHANGELOG.md`. Insert a new `## [NEW_VERSION] - YYYY-MM-DD` block at the top (rename the existing `## [Unreleased]` block if the changes are already drafted there).
-2. Sections to fill in (skip empty ones):
+2. **Actively derive the breaking changes — do not leave them implied by the version bump.** A minor bump signals *"the schema changed"* but never explains *what broke*; that explanation is this section's job, and consumers cannot infer it from a version number. Walk the diff since `BASE` and enumerate every change that could break a downstream consumer, **excluding genuinely new/additive features** (a new optional field or new converter is a New Feature, not a breaking change). Concretely, treat as breaking and explain each in plain English (what changed, why, and the migration): schema field renames or removals; enum value removals; tightened/added validation (previously-valid docs now rejected); changed defaults; renamed/re-numbered CLI flags, arguments, or version identifiers; changed output shape or semantics of an existing command; and any consumer-visible behavior change (even one shipping in a patch). If the walk finds none, state "No breaking changes" explicitly rather than omitting the section. Sources for the walk: `git diff BASE..HEAD -- hdf-schema/src/schemas/`, the Phase 1 crosspr behavior-change note, and CLI help/output deltas.
+3. Sections to fill in (skip empty ones, but never skip Breaking Changes silently — see step 2):
    - **New Features**
-   - **Breaking Changes / Notable behavior changes** (call out field renames, enum removals, schema-validation tightening — *and* any consumer-visible behavior change shipping in a patch, prominently).
+   - **Breaking Changes / Notable behavior changes** (each item explained, not just named: field renames, enum removals, schema-validation tightening, changed defaults, renamed/re-numbered CLI flags or version identifiers, changed command output/semantics — *and* any consumer-visible behavior change shipping in a patch, prominently).
    - **Architecture Changes** (for minor/major, note the schema `$id` bump explicitly: *"Schema version bumped from vOLD to vNEW across all `$id`/`$ref` URLs"*).
    - **Compatibility** (state backward-compat posture; "v(OLD-1).x documents validate cleanly under vNEW" is the typical line for additive minors).
    - **Internal consumer notes** if quicktype-generated Go names changed (constant-name collisions etc.)
-3. **Do not touch any earlier `## [vX]` entry.** Those are factual history.
+4. **Do not touch any earlier `## [vX]` entry.** Those are factual history.
 
 ### Phase 6 — Build / lint / test gate
 
@@ -268,6 +308,8 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 
 - [ ] Phase 1 swarm review run (incl. docs/README-accuracy dimension); critical/high findings resolved or waived; deferrals filed as beads
 - [ ] Phase 1.5 pre-release bead reconciliation: every delivered open/in_progress bead verified against the code and closed citing its PR; remaining-open cards triaged as blocking-bug vs. patchable
+- [ ] Phase 1.6 suppression review: pnpm overrides re-validated against current advisory floors; `ignoreGhsas` checked for now-available fixes; dependabot `ignore` rules checked against their still-blocking conditions; retirements filed as their own commits
+- [ ] *(minor/major)* Phase 1.7 vendored external-schema freshness: each `converters/*/schemas/**` (and sibling fixture schema) re-fetched and SHA-256-compared against its `PROVENANCE.md`; drift refreshed + revalidated, or confirmed no-op
 - [ ] 10 `package.json` files at NEW
 - [ ] 5 `go.mod` files: every `hdf-libs/<x>/v3 vNEW` (no stragglers)
 - [ ] *(minor/major)* 7 schema `$id` URLs at NEW
@@ -277,6 +319,7 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] *(minor/major)* `site/docs/contributing/developer-guide.md` `$ref` URI pattern at NEW
 - [ ] *(minor/major)* `hdf-cli/README.md` archive example at NEW
 - [ ] *(minor/major)* `hdf-schema/README.md` new "What's new in vNEW" section added
+- [ ] Breaking changes actively derived from the `BASE..HEAD` diff (excluding new/additive features) and each explained in the CHANGELOG's Breaking Changes section — or "No breaking changes" stated explicitly (never left implied by the version bump)
 - [ ] `CHANGELOG.md` has a new `## [NEW] - YYYY-MM-DD` entry; historical entries untouched
 - [ ] `pnpm check` (build + lint + test + security) all green
 - [ ] `git status` shows no `go.work.sum`, `node_modules/`, `dist/`, or unrelated files staged

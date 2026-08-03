@@ -61,6 +61,22 @@ export async function convertHdfToOscalSar(input: string): Promise<string> {
 }
 
 /**
+ * Human-readable assessment-tool label from the HDF tool/generator identity,
+ * falling back when neither is present.
+ */
+function toolPartyName(hdfResults: HDFResults): string {
+  const tool = hdfResults.tool;
+  if (tool?.name) {
+    return tool.version ? `${tool.name} ${tool.version}` : tool.name;
+  }
+  const gen = hdfResults.generator;
+  if (gen?.name) {
+    return gen.version ? `${gen.name} ${gen.version}` : gen.name;
+  }
+  return 'HDF Assessment Tool';
+}
+
+/**
  * Constructs the full OSCAL assessment-results document from HDF results.
  */
 function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
@@ -71,11 +87,17 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
     timestamp = formatTimestampSeconds(documentTime);
   }
 
+  // Define the assessment tool once for the whole document and reference its
+  // single UUID from every characterization origin, so each actor-uuid resolves
+  // to a party defined in the same document (OSCAL referential integrity, which
+  // the JSON schema alone does not enforce). Sourced from the HDF tool identity.
+  const toolActorUuid = crypto.randomUUID();
   const metadata = {
     title: 'HDF Assessment Results Export',
     'last-modified': timestamp,
     version: '1.0.0',
     'oscal-version': OSCAL_VERSION,
+    parties: [{ uuid: toolActorUuid, type: 'organization', name: toolPartyName(hdfResults) }],
   } as unknown as DocumentMetadata;
 
   let importAP: ImportAssessmentPlan;
@@ -87,7 +109,7 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
 
   const results: AssessmentResult[] = [];
   for (const baseline of hdfResults.baselines) {
-    results.push(baselineToResult(baseline, timestamp));
+    results.push(baselineToResult(baseline, timestamp, toolActorUuid));
   }
 
   return {
@@ -149,7 +171,7 @@ function assessmentStart(baseline: EvaluatedBaseline, fallback: string): string 
 /**
  * Converts a single EvaluatedBaseline to an OSCAL Result.
  */
-function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): AssessmentResult {
+function baselineToResult(baseline: EvaluatedBaseline, timestamp: string, toolActorUuid: string): AssessmentResult {
   let title = baseline.name;
   if (baseline.title && baseline.title !== '') {
     title = baseline.title;
@@ -164,8 +186,13 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Asses
   const observations: Observation[] = [];
   const risks: IdentifiedRisk[] = [];
 
+  // OSCAL requires result.reviewed-controls: the set of controls assessed.
+  // Populate it from the control each requirement targets (deduped).
+  const includeControls: Array<{ 'control-id': string }> = [];
+  const seenControl = new Set<string>();
+
   for (const req of baseline.requirements) {
-    const { finding, observation, risk } = requirementToFindingSet(req, timestamp);
+    const { finding, observation, risk } = requirementToFindingSet(req, timestamp, toolActorUuid);
     findings.push(finding);
     if (observation) {
       observations.push(observation);
@@ -173,13 +200,22 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Asses
     if (risk) {
       risks.push(risk);
     }
+    const cid = nistTagToControlId(req.id);
+    if (cid !== '' && !seenControl.has(cid)) {
+      seenControl.add(cid);
+      includeControls.push({ 'control-id': cid });
+    }
   }
+
+  // Match Go's omitempty: an empty include-controls list collapses to {}.
+  const controlSelection = includeControls.length > 0 ? { 'include-controls': includeControls } : {};
 
   const result = {
     uuid: crypto.randomUUID(),
     title,
     description,
     start: assessmentStart(baseline, timestamp),
+    'reviewed-controls': { 'control-selections': [controlSelection] },
     findings,
     observations,
     risks,
@@ -194,30 +230,41 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Asses
 function requirementToFindingSet(
   req: EvaluatedRequirement,
   timestamp: string,
+  toolActorUuid: string,
 ): { finding: Finding; observation: Observation | undefined; risk: IdentifiedRisk | undefined } {
   const controlID = nistTagToControlId(req.id);
-  const { state, reason } = aggregateStatus(req.results);
-  const findingDesc = extractDefaultDescription(req.descriptions);
+  // results/descriptions are optional and absent on real minimal HDF; normalize
+  // to arrays so this converter matches the Go implementation, which ranges nil
+  // slices safely rather than throwing.
+  const results = req.results ?? [];
+  const descriptions = req.descriptions ?? [];
+  const { state, reason } = aggregateStatus(results);
+  const findingDesc = extractDefaultDescription(descriptions);
 
   // Build props from control mappings (nist/cci), source code, non-default
   // descriptions (check/fix/rationale), and v3.2 classification fields.
+  // OSCAL prop values must be non-empty strings, so skip any empty value
+  // (e.g. an empty source `code`) rather than emitting a schema-invalid value: ''.
   const props: Property[] = [];
+  const addProp = (name: string, value: string): void => {
+    if (value !== '') props.push({ name, value });
+  };
   const pushTagValues = (key: string): void => {
     const raw = req.tags?.[key];
     if (Array.isArray(raw)) {
-      for (const v of raw) if (typeof v === 'string') props.push({ name: key, value: v });
+      for (const v of raw) if (typeof v === 'string') addProp(key, v);
     }
   };
   pushTagValues('nist');
   pushTagValues('cci');
-  if (req.code) props.push({ name: 'code', value: req.code });
+  if (req.code != null) addProp('code', req.code);
   for (const label of ['check', 'fix', 'rationale']) {
-    const d = req.descriptions.find((x) => x.label === label);
-    if (d) props.push({ name: label, value: d.data });
+    const d = descriptions.find((x) => x.label === label);
+    addProp(label, d ? d.data : '');
   }
-  if (req.controlType) props.push({ name: 'control-type', value: req.controlType });
-  if (req.verificationMethod) props.push({ name: 'verification-method', value: req.verificationMethod });
-  if (req.applicability) props.push({ name: 'applicability', value: req.applicability });
+  if (req.controlType) addProp('control-type', req.controlType);
+  if (req.verificationMethod) addProp('verification-method', req.verificationMethod);
+  if (req.applicability) addProp('applicability', req.applicability);
 
   // refs: url/uri become OSCAL links; a plain string ref becomes a prop (not a valid href).
   const links: Link[] = [];
@@ -249,7 +296,9 @@ function requirementToFindingSet(
   const finding = {
     uuid: crypto.randomUUID(),
     title,
-    description: findingDesc || '',
+    // OSCAL requires a non-empty finding description; fall back to the title
+    // when the requirement carries no description of its own.
+    description: findingDesc || title,
     props: props.length > 0 ? props : undefined,
     links: links.length > 0 ? links : undefined,
     target,
@@ -257,16 +306,16 @@ function requirementToFindingSet(
 
   // Build observation from requirement results
   let observation: Observation | undefined;
-  if (req.results.length > 0) {
+  if (results.length > 0) {
     const obsUUID = crypto.randomUUID();
-    const obsDesc = buildObservationDescription(req.results);
+    const obsDesc = buildObservationDescription(results);
     observation = {
       uuid: obsUUID,
       description: obsDesc,
       methods: ['TEST'],
       // When the evidence was gathered — the scan time for this requirement, not
       // when the file was converted.
-      collected: formatAssessmentTime(earliestResultTime(req.results), timestamp),
+      collected: formatAssessmentTime(earliestResultTime(results), timestamp),
     } as unknown as Observation;
     finding['related-observations'] = [{ 'observation-uuid': obsUUID }];
   }
@@ -284,6 +333,12 @@ function requirementToFindingSet(
       status: riskStatusFromState(state),
       characterizations: [
         {
+          // OSCAL requires characterization.origin. Reference the single
+          // document-level tool party so the actor-uuid resolves to a defined
+          // party (referential integrity), not a dangling per-risk UUID.
+          origin: {
+            actors: [{ type: 'party', 'actor-uuid': toolActorUuid }],
+          },
           facets: [
             {
               name: 'impact',

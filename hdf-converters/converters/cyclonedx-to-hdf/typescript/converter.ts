@@ -6,12 +6,19 @@ import {
 import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { parseBom, buildBom, BOMType, type BuildBomParts } from '../../../shared/typescript/bom/index.js';
 import { canonicalize } from '../../../shared/typescript/exportmap.js';
+import {
+  buildCvss,
+  cvssVersionFromVector,
+  cvssVersionFromString,
+} from '../../../shared/typescript/cvss.js';
 import type {
   Component,
+  Cvss,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
   RequirementResult,
+  Version as CvssVersion,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -134,12 +141,52 @@ function maxImpact(ratings: CycloneDXRating[]): number {
 
 
 /**
- * Formats the ratings as a human-readable tag string.
+ * Assembles structured requirement.cvss[] entries from the CycloneDX ratings. A
+ * rating contributes an entry only when it carries a CVSS method
+ * (CVSSv2/v3/v31/v4) and at least a score or a vector — ratings that only state a
+ * qualitative severity (method "other") carry no CVSS metrics and are left out,
+ * their severity already reflected in the requirement impact.
  */
-function formatRatingsTag(ratings: CycloneDXRating[]): string {
-  return ratings
-    .map((r) => `${r.source?.name ?? 'Unknown'} - ${r.severity ?? 'unrated'}`)
-    .join(', ');
+// Derive the CVSS version, preferring an explicit "CVSS:x.y/" vector prefix
+// (the precise 3.0-vs-3.1 signal) and using the CycloneDX rating method to
+// rescue the prefix-less v2/v4 vectors that would otherwise default to 3.1.
+function cvssVersionFromMethod(
+  method: string | undefined,
+  vector: string | undefined
+): CvssVersion {
+  if (vector !== undefined && vector.startsWith('CVSS:')) {
+    return cvssVersionFromVector(vector);
+  }
+  switch (method) {
+    case 'CVSSv2':
+      return cvssVersionFromString('2.0');
+    case 'CVSSv4':
+      return cvssVersionFromString('4.0');
+    default:
+      return cvssVersionFromVector(vector);
+  }
+}
+
+function buildCvssEntries(ratings: CycloneDXRating[]): Cvss[] {
+  const entries: Cvss[] = [];
+  for (const r of ratings) {
+    const hasCvssMethod = r.method !== undefined && CVSS_METHODS.has(r.method);
+    const hasMetric =
+      (r.score !== undefined && r.score !== null) ||
+      (r.vector !== undefined && r.vector !== '');
+    if (!hasCvssMethod || !hasMetric) {
+      continue;
+    }
+    entries.push(
+      buildCvss({
+        version: cvssVersionFromMethod(r.method, r.vector),
+        baseScore: r.score,
+        baseVector: r.vector,
+        source: r.source?.name,
+      })
+    );
+  }
+  return entries;
 }
 
 /**
@@ -278,13 +325,10 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
       cci: cciTags,
     };
 
-    if (cwes.length > 0) {
-      tags['cweid'] = cwes.map((c) => `CWE-${c}`);
-    }
-
-    if (ratings.length > 0) {
-      tags['ratings'] = formatRatingsTag(ratings);
-    }
+    // CWE identifiers are first-class on requirement.cwe[]; the CWE→NIST mapping
+    // is retained in tags.nist.
+    const cweIds = cwes.map((c) => `CWE-${c}`);
+    const cvssEntries = buildCvssEntries(ratings);
 
     // Build descriptions (must always include a 'default' label per HDF schema)
     const descriptions: Description[] = [];
@@ -337,6 +381,12 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
     // cannot reliably distinguish the two, so stamping "automated" would
     // misclassify VEX-derived requirements.
     const req = createRequirement(vuln.id, title, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+    if (cvssEntries.length > 0) {
+      req.cvss = cvssEntries;
+    }
+    if (cweIds.length > 0) {
+      req.cwe = cweIds;
+    }
     const controlType = deriveControlTypeFromTags(nist);
     if (controlType !== undefined) {
       req.controlType = controlType;
@@ -378,7 +428,6 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
     generatorName: 'cyclonedx-to-hdf',
     converterVersion,
     toolName: 'CycloneDX',
-    toolFormat: 'JSON',
     baselines: [baseline],
     components: [{ ...targetComponent, boms: [componentBom] }],
     timestamp: scanTime,

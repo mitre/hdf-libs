@@ -127,7 +127,7 @@ describe('ScoutSuite to HDF Converter', () => {
       const out = parseOutput(await convertScoutsuiteToHdf(input));
       const ds = out.tool as Record<string, unknown>;
       expect(ds.name).toBe('ScoutSuite');
-      expect(ds.format).toBe('JSON');
+      expect(ds.format).toBeUndefined() // serialization structures are not formats (kpvj);
       expect(ds.version).toBe('5.10.2');
     });
 

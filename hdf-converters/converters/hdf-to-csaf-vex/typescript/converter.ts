@@ -358,7 +358,9 @@ function buildDocument(
       csaf_version: '2.0',
       title,
       ...(notes.length > 0 && { notes }),
-      publisher: { category: 'other', name: publisherName },
+      // CSAF requires publisher.namespace: a URL under the issuing party's
+      // control serving as its globally unique identifier. SAF/HDF tool export.
+      publisher: { category: 'other', name: publisherName, namespace: 'https://saf.mitre.org' },
       tracking: {
         id: trackingId,
         status: 'final',

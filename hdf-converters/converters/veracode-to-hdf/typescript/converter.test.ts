@@ -255,3 +255,133 @@ describe('Veracode to HDF converter', () => {
     expect(sev0!.impact).toBe(0.0);
   });
 });
+
+describe('veracode structured scoring (CVSS / CWE)', () => {
+  it('populates cvss[] from the SCA vulnerability cvss_score with derived severity', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const reqs = output.baselines[0]!.requirements;
+
+    const medium = reqs.find(r => r.id === 'CVE-2012-5783')!;
+    expect(medium.cvss).toHaveLength(1);
+    expect(medium.cvss![0]!.baseScore).toBe(5.8);
+    expect(medium.cvss![0]!.version).toBe('3.1');
+    expect(medium.cvss![0]!.baseSeverity).toBe('medium');
+    expect(medium.cvss![0]!.baseVector).toBeUndefined();
+
+    const high = reqs.find(r => r.id === 'CVE-2021-42550')!;
+    expect(high.cvss![0]!.baseScore).toBe(8.5);
+    expect(high.cvss![0]!.baseSeverity).toBe('high');
+  });
+
+  it('does not emit a tags.cve duplicate (CVE is already the requirement id)', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    for (const req of output.baselines[0]!.requirements) {
+      expect(req.tags?.cve).toBeUndefined();
+    }
+  });
+
+  it('moves CWE to first-class cwe[] on static and SCA requirements, dropping the freetext tags', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const reqs = output.baselines[0]!.requirements;
+
+    const staticReq = reqs.find(r => r.id === '18')!;
+    expect(staticReq.cwe).toEqual(['CWE-78']);
+    expect(staticReq.tags?.cweid).toBeUndefined();
+    expect((staticReq.tags!.nist as string[]).length).toBeGreaterThan(0);
+
+    const cveReq = reqs.find(r => r.id === 'CVE-2012-5783')!;
+    expect(cveReq.cwe).toEqual(['CWE-20']);
+    expect(cveReq.tags?.cwe).toBeUndefined();
+    expect((cveReq.tags!.nist as string[]).length).toBeGreaterThan(0);
+
+    // A CVE vulnerability with an empty cwe_id emits no cwe[].
+    const noCwe = reqs.find(r => r.id === 'CVE-2014-3577')!;
+    expect(noCwe.cwe).toBeUndefined();
+    expect(noCwe.cvss![0]!.baseScore).toBe(5.8);
+  });
+
+  it('falls back to component max_cvss_score when the vulnerability carries no cvss_score', async () => {
+    const xml = `<?xml version="1.0" encoding="ISO-8859-1"?>
+<detailedreport xmlns="https://www.veracode.com/schema/reports/export/1.0" app_name="Fallback" first_build_submitted_date="2021-12-29 22:16:36 UTC">
+  <software_composition_analysis>
+    <vulnerable_components>
+      <component component_id="c1" file_name="lib.jar" vulnerabilities="1" max_cvss_score="6.4" version="1.0" library="lib" library_id="maven:lib:1.0:" vendor="lib">
+        <vulnerabilities>
+          <vulnerability cve_id="CVE-9999-0001" cvss_score="" severity="3" cwe_id="" first_found_date="2021-12-29 22:18:20 UTC" cve_summary="fallback" severity_desc="Medium"/>
+        </vulnerabilities>
+      </component>
+    </vulnerable_components>
+  </software_composition_analysis>
+</detailedreport>`;
+    const output: HDFResults = JSON.parse(await convert(xml));
+    const req = output.baselines[0]!.requirements.find(r => r.id === 'CVE-9999-0001')!;
+    expect(req.cvss).toHaveLength(1);
+    expect(req.cvss![0]!.baseScore).toBe(6.4);
+  });
+
+  it('emits no cvss[] when neither vulnerability nor component carries a score', async () => {
+    const xml = `<?xml version="1.0" encoding="ISO-8859-1"?>
+<detailedreport xmlns="https://www.veracode.com/schema/reports/export/1.0" app_name="NoScore" first_build_submitted_date="2021-12-29 22:16:36 UTC">
+  <software_composition_analysis>
+    <vulnerable_components>
+      <component component_id="c1" file_name="lib.jar" vulnerabilities="1" max_cvss_score="" version="1.0" library="lib" library_id="maven:lib:1.0:" vendor="lib">
+        <vulnerabilities>
+          <vulnerability cve_id="CVE-9999-0002" cvss_score="" severity="3" cwe_id="" first_found_date="2021-12-29 22:18:20 UTC" cve_summary="no score" severity_desc="Medium"/>
+        </vulnerabilities>
+      </component>
+    </vulnerable_components>
+  </software_composition_analysis>
+</detailedreport>`;
+    const output: HDFResults = JSON.parse(await convert(xml));
+    const req = output.baselines[0]!.requirements.find(r => r.id === 'CVE-9999-0002')!;
+    expect(req.cvss).toBeUndefined();
+  });
+
+  it('emits no cvss[] when the score is non-numeric', async () => {
+    const xml = `<?xml version="1.0" encoding="ISO-8859-1"?>
+<detailedreport xmlns="https://www.veracode.com/schema/reports/export/1.0" app_name="BadScore" first_build_submitted_date="2021-12-29 22:16:36 UTC">
+  <software_composition_analysis>
+    <vulnerable_components>
+      <component component_id="c1" file_name="lib.jar" vulnerabilities="1" max_cvss_score="" version="1.0" library="lib" library_id="maven:lib:1.0:" vendor="lib">
+        <vulnerabilities>
+          <vulnerability cve_id="CVE-9999-0003" cvss_score="not-a-number" severity="3" cwe_id="" first_found_date="2021-12-29 22:18:20 UTC" cve_summary="bad score" severity_desc="Medium"/>
+        </vulnerabilities>
+      </component>
+    </vulnerable_components>
+  </software_composition_analysis>
+</detailedreport>`;
+    const output: HDFResults = JSON.parse(await convert(xml));
+    const req = output.baselines[0]!.requirements.find(r => r.id === 'CVE-9999-0003')!;
+    expect(req.cvss).toBeUndefined();
+  });
+});
+
+describe('veracode requirement.code (CODE-tab fill)', () => {
+  it('sets a synthesized source-context code on static CWE requirements', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const cwe = output.baselines[0]!.requirements.find(r => r.id === '18');
+    expect(cwe!.code).toBeDefined();
+    expect(cwe!.code).toContain(
+      'java.lang.String ping(java.lang.String) at com/veracode/verademo/controller/ToolsController.java:53',
+    );
+  });
+
+  it('serializes the vulnerability/component entry as indented JSON on SCA CVE requirements', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const cve = output.baselines[0]!.requirements.find(r => r.id === 'CVE-2012-5783');
+    expect(cve!.code).toBeDefined();
+    const parsed = JSON.parse(cve!.code!) as {
+      cve_id: string;
+      cvss_score: string;
+      components: { library: string; file_paths: string[] }[];
+    };
+    expect(parsed.cve_id).toBe('CVE-2012-5783');
+    expect(parsed.cvss_score).toBe('5.8');
+    expect(parsed.components.length).toBeGreaterThan(0);
+  });
+});

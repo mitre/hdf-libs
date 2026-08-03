@@ -99,7 +99,7 @@ func TestConvertScoutsuiteToHDF_Tool(t *testing.T) {
 
 	require.NotNil(t, result.Tool)
 	assert.Equal(t, "ScoutSuite", *result.Tool.Name)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 	assert.Equal(t, "5.10.2", *result.Tool.Version)
 }
 

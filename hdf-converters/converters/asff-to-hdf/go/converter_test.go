@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -125,6 +126,34 @@ func TestConvertAsff_SecurityHubSample_IsSchemaValid(t *testing.T) {
 	require.NoError(t, err)
 	v := validators.ValidateResults(out)
 	assert.Truef(t, v.Valid, "converter output must pass HDF schema validation: %s", v.Error())
+}
+
+func TestConvertAsff_UnmappedConfigRuleFallsBackToCM6(t *testing.T) {
+	// A Security Hub finding backed by a Config rule the mapping tables don't cover
+	// (synthetic name so it stays unmapped) floors to CM-6 — the configuration-settings
+	// control — matching aws-config-to-hdf, not the SA-11/RA-5 static-analysis default.
+	input := []byte(`{"Findings":[{
+		"SchemaVersion":"2018-10-08",
+		"Id":"arn:aws:securityhub:us-east-1:123456789123:subscription/aws-foundational-security-best-practices/v/1.0.0/EXAMPLE.1/finding/abc",
+		"ProductArn":"arn:aws:securityhub:us-east-1::product/aws/securityhub",
+		"GeneratorId":"aws-foundational-security-best-practices/v/1.0.0/EXAMPLE.1",
+		"AwsAccountId":"123456789123",
+		"Types":["Software and Configuration Checks"],
+		"Severity":{"Label":"HIGH","Normalized":70},
+		"Title":"EXAMPLE.1 An unmapped config rule",
+		"Description":"A Security Hub control backed by a Config rule we do not map.",
+		"Resources":[{"Type":"AwsS3Bucket","Id":"arn:aws:s3:::some-bucket","Region":"us-east-1"}],
+		"ProductFields":{"RelatedAWSResources:0/name":"zzz-nonexistent-config-rule","RelatedAWSResources:0/type":"AWS::Config::ConfigRule","StandardsArn":"arn:aws:securityhub:::standards/aws-foundational-security-best-practices/v/1.0.0"},
+		"Compliance":{"Status":"FAILED"},
+		"RecordState":"ACTIVE"
+	}]}`)
+	result, err := ConvertAsffToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	nistRaw, ok := result.Baselines[0].Requirements[0].Tags["nist"].([]interface{})
+	require.True(t, ok, "an unmapped config-rule finding should still carry a nist tag")
+	assert.Equal(t, []interface{}{"CM-6"}, nistRaw)
 }
 
 func TestConvertAsff_EmptyFindings_SynthesizesPassedPlaceholder(t *testing.T) {
@@ -361,6 +390,40 @@ func TestConvertAsff_Trivy(t *testing.T) {
 	assert.Truef(t, validators.ValidateResults(out).Valid, "%s", validators.ValidateResults(out).Error())
 }
 
+func TestConvertAsff_TrivyMisconfigAndSecret(t *testing.T) {
+	result, err := ConvertAsffToHDF(loadFixture(t, "trivy_config_secret_sample.json"), converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	var messages []string
+	for _, req := range result.Baselines[0].Requirements {
+		require.Len(t, req.Results, 1)
+		assert.Equal(t, hdf.Failed, req.Results[0].Status, "req %s", req.ID)
+		if req.Results[0].Message != nil {
+			messages = append(messages, *req.Results[0].Message)
+		}
+	}
+	joined := strings.Join(messages, "\n")
+
+	// Misconfiguration: the remediation message and file location are surfaced
+	// (previously dropped — the finding still converted but lost its detail).
+	assert.Contains(t, joined, "Specify at least 1 USER command in Dockerfile with non-root user as argument (Dockerfile)")
+	// Secret: the file the secret was found in is surfaced.
+	assert.Contains(t, joined, "Secret detected in config.yaml.")
+
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	assert.Truef(t, validators.ValidateResults(out).Valid, "%s", validators.ValidateResults(out).Error())
+}
+
+func TestTrivyLocation(t *testing.T) {
+	assert.Equal(t, "Dockerfile", trivyLocation(map[string]string{"Filename": "Dockerfile", "StartLine": "0", "EndLine": "0"}))
+	assert.Equal(t, "main.tf:12", trivyLocation(map[string]string{"Filename": "main.tf", "StartLine": "12", "EndLine": "12"}))
+	assert.Equal(t, "main.tf:12-18", trivyLocation(map[string]string{"Filename": "main.tf", "StartLine": "12", "EndLine": "18"}))
+	// A line number with no filename is meaningless — return empty, not ":12".
+	assert.Equal(t, "", trivyLocation(map[string]string{"StartLine": "12"}))
+}
+
 // TestSnapshots asserts whole-document output against frozen goldens. The
 // TypeScript test asserts the SAME goldens, which is what keeps the two
 // implementations from drifting apart. Version is "1.0.0" to match the TS
@@ -406,4 +469,151 @@ func TestUnknownProducer_GenericPath(t *testing.T) {
 	// The compliance finding still groups by its control ref.
 	_, hasControl := byID["ACME.1"]
 	assert.True(t, hasControl, "a compliance finding groups by control ref")
+}
+
+// A generic ASFF vulnerability finding must surface its scoring data in
+// STRUCTURED HDF fields — requirement.cvss[] and tags.cve — not only in the
+// freetext result message, so Heimdall risk sort/filter can act on it.
+func TestUnknownProducer_StructuredScoring(t *testing.T) {
+	result, err := ConvertAsffToHDF(loadFixture(t, "unknown-producer.json"), "1.0.0")
+	require.NoError(t, err)
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range result.Baselines[0].Requirements {
+		byID[r.ID] = r
+	}
+
+	v1 := byID["acme/future-scanner/finding/0001"]
+	require.Len(t, v1.Cvss, 1)
+	require.NotNil(t, v1.Cvss[0].BaseScore)
+	assert.InDelta(t, 8.1, *v1.Cvss[0].BaseScore, 1e-9)
+	assert.Equal(t, hdf.The31, v1.Cvss[0].Version)
+	require.NotNil(t, v1.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityHigh, *v1.Cvss[0].BaseSeverity)
+	require.NotNil(t, v1.Cvss[0].Source)
+	assert.Equal(t, "NVD", *v1.Cvss[0].Source)
+	assert.Nil(t, v1.Cvss[0].BaseVector, "ASFF carries no CVSS vector")
+	assert.Equal(t, []string{"CVE-2099-0001"}, v1.Tags["cve"])
+	// ASFF lacks the EPSS percentile/date and KEV dates the schema requires, so
+	// neither structured field is emitted — no fabrication.
+	assert.Nil(t, v1.Epss)
+	assert.Nil(t, v1.Kev)
+
+	v2 := byID["acme/future-scanner/finding/0002"]
+	require.Len(t, v2.Cvss, 1)
+	require.NotNil(t, v2.Cvss[0].BaseScore)
+	assert.InDelta(t, 5.4, *v2.Cvss[0].BaseScore, 1e-9)
+	require.NotNil(t, v2.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityMedium, *v2.Cvss[0].BaseSeverity)
+	assert.Equal(t, []string{"CVE-2099-0002"}, v2.Tags["cve"])
+
+	// The compliance finding carries no vulnerability data: no cvss[], no tags.cve.
+	ctrl := byID["ACME.1"]
+	assert.Empty(t, ctrl.Cvss)
+	_, hasCVE := ctrl.Tags["cve"]
+	assert.False(t, hasCVE)
+}
+
+// FindingProviderFields.Severity is the finding provider's authoritative rating
+// and takes precedence over the top-level Severity that Security Hub may overwrite.
+func TestFindingImpact_FindingProviderFieldsPrecedence(t *testing.T) {
+	// FPF severity (LOW) overrides the top-level Severity (HIGH).
+	f := asffFinding{
+		Severity:              asffSeverity{Label: "HIGH"},
+		FindingProviderFields: &asffFindingProviderFields{Severity: asffSeverity{Label: "LOW"}},
+	}
+	assert.InDelta(t, 0.3, findingImpact(f, nil), 1e-9)
+
+	// An empty FPF label falls back to the top-level Severity.
+	f2 := asffFinding{
+		Severity:              asffSeverity{Label: "HIGH"},
+		FindingProviderFields: &asffFindingProviderFields{Severity: asffSeverity{}},
+	}
+	assert.InDelta(t, 0.7, findingImpact(f2, nil), 1e-9)
+}
+
+// vulnCvss maps each scored Cvss entry via the shared builder and skips scoreless
+// ones; vulnCVEs dedupes CVE ids and ignores empties. Both no-op on a finding
+// with no Vulnerabilities[], leaving the structured fields unset.
+func TestVulnCvssAndCVEs_Branches(t *testing.T) {
+	score := 9.8
+	f := asffFinding{Vulnerabilities: []asffVulnerability{
+		{ID: "CVE-1", Cvss: []asffCvss{
+			{Version: "3.0", BaseScore: &score, Source: "NVD"},
+			{Version: "3.1"}, // no BaseScore -> skipped
+		}},
+		{ID: "CVE-1"}, // duplicate id -> deduped
+		{ID: ""},      // empty id -> ignored
+		{ID: "CVE-2"},
+	}}
+	cvss := vulnCvss(f)
+	require.Len(t, cvss, 1)
+	assert.Equal(t, hdf.The30, cvss[0].Version)
+	assert.Equal(t, []string{"CVE-1", "CVE-2"}, vulnCVEs(f))
+
+	assert.Empty(t, vulnCvss(asffFinding{}))
+	assert.Empty(t, vulnCVEs(asffFinding{}))
+}
+
+// --- requirement.code (CODE-tab fill) ---
+
+// A real finding's requirement.code is the finding object re-indented in place,
+// preserving every source field and key order, and parses back to the source.
+func TestConvertAsff_RequirementCode_SerializesFinding(t *testing.T) {
+	result, err := ConvertAsffToHDF(loadFixture(t, "minimal.json"), converterVersion)
+	require.NoError(t, err)
+
+	afsbp := baselineByName(t, result, "AWS Foundational Security Best Practices v1.0.0")
+	var config1 hdf.EvaluatedRequirement
+	for _, req := range afsbp.Requirements {
+		if req.ID == "Config.1" {
+			config1 = req
+		}
+	}
+	require.NotNil(t, config1.Code, "requirement.code must be populated for a real finding")
+
+	// The code is valid indented JSON that round-trips to the source finding's fields.
+	var decoded map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(*config1.Code), &decoded))
+	assert.Equal(t, "arn:aws:securityhub:us-east-1::product/aws/securityhub", decoded["ProductArn"])
+	assert.Contains(t, *config1.Code, "\n  \"Id\":", "code must be 2-space indented")
+}
+
+// buildRequirementCode round-trips a crafted finding: indented output decodes
+// back to the same object it was built from.
+func TestBuildRequirementCode_RoundTrips(t *testing.T) {
+	src := []byte(`{"Id":"x","Severity":{"Label":"HIGH"},"Nested":{"a":1}}`)
+	var f asffFinding
+	require.NoError(t, json.Unmarshal(src, &f))
+
+	code := buildRequirementCode(f)
+	require.NotEmpty(t, code)
+	assert.Contains(t, code, "\n  \"Id\": \"x\"")
+
+	var got map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(code), &got))
+	var want map[string]interface{}
+	require.NoError(t, json.Unmarshal(src, &want))
+	assert.Equal(t, want, got)
+}
+
+// A finding with no captured raw source (constructed, never unmarshaled) yields
+// no code — the NOT-IN-SOURCE branch that leaves requirement.code unset.
+func TestBuildRequirementCode_EmptyRawUnset(t *testing.T) {
+	assert.Empty(t, buildRequirementCode(asffFinding{}))
+
+	req := buildRequirement("id-1", []asffFinding{{ID: "id-1", Title: "t"}})
+	assert.Nil(t, req.Code, "a raw-less finding must leave requirement.code unset")
+}
+
+// Defensive: malformed raw bytes cannot be re-indented, so no code is emitted.
+func TestBuildRequirementCode_InvalidRawUnset(t *testing.T) {
+	assert.Empty(t, buildRequirementCode(asffFinding{raw: json.RawMessage("{not-json")}))
+}
+
+// The raw-capturing UnmarshalJSON surfaces a decode error when a finding field
+// has the wrong shape, rather than swallowing it.
+func TestAsffFinding_UnmarshalJSON_TypeMismatchErrors(t *testing.T) {
+	var f asffFinding
+	err := json.Unmarshal([]byte(`{"Severity": 123}`), &f)
+	require.Error(t, err)
 }

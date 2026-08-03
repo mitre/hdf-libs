@@ -235,7 +235,7 @@ func TestReadFromFile_ExceedsSizeLimit(t *testing.T) {
 	}
 	require.NoError(t, os.WriteFile(bigFile, data, 0o600))
 
-	_, err := readFromFile(bigFile)
+	_, err := readFromFile(bigFile, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "file too large")
 }
@@ -251,7 +251,7 @@ func TestReadFromFile_PermissionDenied(t *testing.T) {
 	noReadFile := filepath.Join(tmpDir, "noperm.json")
 	require.NoError(t, os.WriteFile(noReadFile, []byte(`{}`), 0o000))
 
-	_, err := readFromFile(noReadFile)
+	_, err := readFromFile(noReadFile, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "permission denied")
 }
@@ -261,7 +261,7 @@ func TestReadFromFile_NotRegularFile(t *testing.T) {
 	// For a non-regular file we'd need a device file; that's platform-specific.
 	// Instead, test the directory branch explicitly.
 	tmpDir := t.TempDir()
-	_, err := readFromFile(tmpDir)
+	_, err := readFromFile(tmpDir, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "is a directory")
 }
@@ -277,7 +277,7 @@ func TestReadFromFile_SymlinkRejected(t *testing.T) {
 	noFollowSymlinks = true
 	defer func() { noFollowSymlinks = oldFlag }()
 
-	_, err := readFromFile(link)
+	_, err := readFromFile(link, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "refusing to follow symlink")
 }
@@ -288,7 +288,7 @@ func TestReadFromFile_SymlinkNonexistent(t *testing.T) {
 	noFollowSymlinks = true
 	defer func() { noFollowSymlinks = oldFlag }()
 
-	_, err := readFromFile("/nonexistent/does-not-exist.json")
+	_, err := readFromFile("/nonexistent/does-not-exist.json", false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "file not found")
 }
@@ -306,7 +306,7 @@ func TestReadFromStdin_EmptyStdin(t *testing.T) {
 	_ = w.Close() // close write end immediately → empty read
 	defer func() { os.Stdin = oldStdin }()
 
-	_, readErr := readFromStdin()
+	_, readErr := readFromStdin(false)
 	require.Error(t, readErr)
 	assert.Contains(t, readErr.Error(), "no input provided")
 }
@@ -332,7 +332,7 @@ func TestReadFromStdin_TooLarge(t *testing.T) {
 		_ = w.Close()
 	}()
 
-	_, readErr := readFromStdin()
+	_, readErr := readFromStdin(false)
 	require.Error(t, readErr)
 	assert.Contains(t, readErr.Error(), "input too large")
 }
@@ -349,7 +349,7 @@ func TestReadFromStdin_ValidData(t *testing.T) {
 		_ = w.Close()
 	}()
 
-	data, readErr := readFromStdin()
+	data, readErr := readFromStdin(false)
 	require.NoError(t, readErr)
 	assert.Equal(t, `{"valid": "json"}`, string(data))
 }

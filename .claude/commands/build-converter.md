@@ -17,6 +17,7 @@ Converters are multi-file, multi-language projects that span fixtures, tests, im
    - Check whether the tool supports common output formats (SARIF, JUnit, CycloneDX, XCCDF) — if so, plan format detection and routing.
    - Check heimdall2 and SAF CLI repos for existing fixtures and converter logic.
    - Read the exports of `hdf-schema`, `hdf-utilities`, `hdf-mappings`, and `hdf-validators` to know what's available — converters that reinvent library functionality will be rejected. **This audit is mandatory and happens BEFORE implementation**, not reactively after review feedback.
+   - **Maximize field coverage (Step 1a).** Plan a mapping for every source field that has a defensible HDF home — carry as much of the format into HDF as you can, not just the minimum. If you are unsure whether or how a field maps, STOP and ask the developer; never silently drop real data into freetext.
    - **Audit source-format fields against the HDF schema** (Step 1b). If you find a field with no HDF home, STOP and surface to the user — never silently add schema fields.
 3. Write a detailed plan covering:
    - Source format structure and field mappings to HDF
@@ -104,6 +105,33 @@ Before writing any code:
 
 ---
 
+## Step 1a — Maximize Source-Field Coverage (translate everything defensible)
+
+**The converter must carry as much of the source format into HDF as can be _defensibly_ mapped — not just the minimum to pass a smoke test.** A field-coverage sweep of the existing converters (epic `hdf-libs-j5hz`) found the same failure mode across dozens of them: real structured data flattened into freetext (`codeDesc`/`message`) or parsed into a struct and never emitted, even though HDF has a structured home for it.
+
+For **every** field the source carries, decide one of three and record the decision in the plan:
+
+1. **Map it** — it has an HDF home (a structured field, or a defensible `tags` entry). Do the mapping. This is the default and should cover the large majority of fields.
+2. **No HDF home** — genuinely inexpressible → go to Step 1b (surface to the developer; never silently invent a schema field).
+3. **Unsure** — you cannot tell whether/how a field maps, or the source shape is ambiguous (deeply nested, polymorphic, version-dependent) → **STOP and ask the developer.** Do not guess, and do not silently drop the field into `codeDesc`/`message` freetext.
+
+Never let real structured data land only in freetext when HDF has a home for it. Check explicitly for these recurring misses:
+- **CVSS** → full `cvss[]` (baseScore AND vector AND version), not just score→impact with the vector discarded.
+- **CWE** → first-class `requirement.cwe[]`, not only a `tags.cweid` string.
+- **CVE / EPSS / KEV** → structured `epss`, `kev`, and CVE identity, not buried in a description blob.
+- **Locations** → `sourceLocation{ref,line}` and `components[]` (host/image/OS/digest identity), not a file path concatenated into `codeDesc`.
+- **References** → external links into `refs[]` (the `Reference` type), not parsed-then-dropped.
+- **Remediation / fix / tips** → labeled `descriptions[]` entries.
+- **Triage / waiver / suppression** → reconstruct `statusOverrides[]` (+ `disposition`, `effectiveStatus`) with owner/date/reason when the source carries them — not a lossy status flip plus a tag.
+- **Raw source** → put the finding's raw source (or a serialized source object) in `requirement.code` so Heimdall's CODE tab renders (see `nessus`/`ionchannel`/`splunk` for the pattern).
+- **Timestamps** → derive the top-level `timestamp` and per-result `startTime` from the source's real scan/finding time; never `time.Now()`/`new Date()` when the source supplies a time.
+- **Categorization / metadata** → source taxonomy with no first-class field goes to `tags` passthrough, not dropped.
+- **Tool identity** → set `tool.version` from the source when present.
+
+A field "parsed into the struct but never emitted" is a bug, not a nicety: if you added a struct field, either map it or justify in the plan why it has no home. **When in doubt about any field, ask the developer rather than drop it.** Step 1b (below) governs the opposite risk — do not _over_-extend the schema; the two steps are complementary, and the answer to an "unsure" field is always to ask, never to silently add a field or silently discard data.
+
+---
+
 ## Step 1b — Audit Field Gaps Before Extending the Schema
 
 The HDF schema is stable enough that **additions are commitments** consumers will start depending on. Default posture when a converter author finds a source-format concept HDF can't express: **FLAG to the user**, never silently add schema fields.
@@ -178,7 +206,7 @@ Also read the heimdall2 converter source to understand what input format it actu
 
 **If the source tool has no static export format** (the heimdall2 converter calls a live API directly), this converter requires two modes:
 1. **File mode** — define a static JSON format that mirrors the API response, document how users produce it (e.g. `aws configservice describe-config-rules`), implement the converter against that format
-2. **Live fetch mode** — implement a fetcher in `hdf-cli/internal/fetchers/<name>.go` that calls the API, marshals to the same static format, and hands bytes to the existing converter
+2. **Live fetch mode** — implement a fetcher (via the `/build-fetcher` skill) in `hdf-converters/fetchers/<name>/` that calls the API, marshals to the same static format, and hands bytes to the existing converter
 
 See "Step 5b — Live Fetch Mode" below for details.
 
@@ -361,7 +389,10 @@ func Convert<Name>(input []byte, converterVersion string) (*hdf.HDFResults, erro
         },
         Tool: &hdf.Tool{
             Name:   shared.Ptr("<Source Tool Name>"),
-            Format: shared.Ptr("<Format>"), // e.g. "XML", "JSON", "CSV"
+            // Format names a FORMAT SPECIFICATION only (SARIF, XCCDF, FVDL,
+            // exec-json) — never a serialization structure. Omit for the
+            // tool's native output: "JSON"/"XML"/"CSV" are encodings, not
+            // formats, and are banned here (swept fleet-wide 2026-08-01).
         },
         Baselines:  baselines,
         Components: components,
@@ -1112,98 +1143,9 @@ For HDF-from converters (hdf → something), the `Convert` signature is the same
 
 ## Step 5b — Live Fetch Mode (API-pull converters only)
 
-Skip this step if the source tool exports a static file. Only needed for: aws-config, sonarqube, ionchannel, msft-secure-score, splunk.
+If the source is a live API rather than a static export file (aws-config, sonarqube, splunk, gitlab, aws-securityhub, and similar), the fetcher is built with the **`/build-fetcher`** skill — not here. Fetchers now live in `hdf-converters/fetchers/<tool>/{go,typescript}/` (next to their converter), are dual-language, and follow the two-constructor Go convention + auth-agnostic TS contract documented in `hdf-converters/fetchers/README.md`.
 
-### Fetcher location
-
-```
-hdf-cli/
-  internal/
-    fetchers/
-      <name>.go        # Fetcher implementation
-      <name>_test.go   # Tests using httptest.Server (no live credentials)
-```
-
-### Fetcher interface
-
-```go
-// Each fetcher implements this — takes its own params struct, returns
-// the same bytes the file-based converter already accepts.
-type Fetcher interface {
-    Fetch(ctx context.Context) ([]byte, error)
-}
-```
-
-### CLI integration
-
-In `converter_<snake>.go`, add a `--live` flag and fetcher-specific flags. At runtime:
-- If `--live` → instantiate fetcher, call `Fetch()`, get bytes
-- Else → read input file, get bytes
-- Either way → pass bytes to existing `Convert*()` function
-
-```go
-// Rough shape — adapt flags to the specific API
-var liveCmd = &cobra.Command{
-    Use:   "<source> to hdf [input] output",
-    RunE: func(cmd *cobra.Command, args []string) error {
-        var data []byte
-        if live, _ := cmd.Flags().GetBool("live"); live {
-            f := fetchers.NewXxxFetcher(/* flags */)
-            var err error
-            data, err = f.Fetch(cmd.Context())
-            if err != nil { return err }
-        } else {
-            var err error
-            data, err = os.ReadFile(args[0])
-            if err != nil { return err }
-        }
-        // ... convert and write output
-    },
-}
-```
-
-### Mocking API calls in tests
-
-**Never** require live credentials or a running service in tests. Use `httptest.NewServer`:
-
-```go
-func TestFetcher_Fetch(t *testing.T) {
-    srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // assert r.URL.Path, r.Header, query params as needed
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusOK)
-        _, _ = w.Write([]byte(`{ /* canned API response */ }`))
-    }))
-    defer srv.Close()
-
-    f := NewXxxFetcher(XxxParams{URL: srv.URL, Token: "test-token", /* ... */})
-    data, err := f.Fetch(context.Background())
-    require.NoError(t, err)
-    // assert data parses correctly
-}
-```
-
-For AWS (which uses the SDK rather than raw HTTP), use the AWS SDK's built-in mock transport or implement a `ConfigServiceClient` interface and inject a stub.
-
-### Dependencies
-
-- SonarQube, IonChannel, Splunk: standard `net/http` only, no new deps
-- AWS Config: `github.com/aws/aws-sdk-go-v2/service/configservice` (already approved — binary size increase accepted)
-- MS Secure Score: `golang.org/x/oauth2` for token exchange + standard `net/http` for Graph API (avoid full Azure SDK)
-
-### Security Review (mandatory for every fetcher)
-
-After implementing a fetcher and its tests, **task a security agent** to review it before considering the work done. The review prompt should cover:
-
-1. **Credential handling** — are secrets accepted as CLI flags (visible in `ps`, shell history, CI logs)? Prefer `--profile` (AWS), env vars, or token files over raw flag values. The AWS CLI itself does not accept `--secret-access-key` as a flag.
-2. **Input validation** — are API endpoint URLs or region strings validated before being interpolated into HTTP requests? Unvalidated strings passed to SDK endpoint constructors are an SSRF vector (see GHSA-3jcv-796g-cpjg / CVE-2026-22611).
-3. **Pagination safety** — are both pagination loops capped at a maximum page count? Uncapped loops can exhaust memory or loop forever on malformed continuation tokens.
-4. **Context cancellation** — is `ctx.Err()` checked at the top of each pagination loop iteration, not just propagated via the next API call?
-5. **Timeout** — does `Fetch()` apply a default deadline when the caller has not set one? A missing deadline blocks indefinitely on a hung endpoint.
-6. **Error messages** — do errors inadvertently include credential values?
-7. **TLS** — is TLS enforced? Document it in a comment if the SDK handles it automatically.
-
-The AWS Config fetcher (`hdf-cli/internal/fetchers/awsconfig.go`) is the reference implementation for all of the above patterns.
+Build the converter first (this skill); then build the fetcher that feeds it (`/build-fetcher`).
 
 ---
 
@@ -1304,7 +1246,7 @@ cat output.json | head -40
 
 **API-pull converters additionally (aws-config, sonarqube, ionchannel, msft-secure-score, splunk):**
 - [ ] Static format definition verified against real API documentation or heimdall2 source — not invented
-- [ ] Fetcher implemented (`hdf-cli/internal/fetchers/<name>.go`)
+- [ ] Fetcher implemented via `/build-fetcher` (`hdf-converters/fetchers/<name>/`)
 - [ ] Fetcher tests use `httptest.Server` (or SDK interface injection for AWS) — no live credentials required
 - [ ] Security agent review completed covering: credential handling, input validation, pagination caps, context cancellation, default timeout, error message safety
 - [ ] All security findings addressed before marking done
@@ -1342,6 +1284,12 @@ cat output.json | head -40
 - [ ] Step 4f done-checklist completed (see Step 4f for the full list)
 - [ ] Empty-input error path tested (fixture + Go test + TS test)
 - [ ] Sections N/A for amendment-output explicitly skipped (4c routing if not applicable, 4d classification fields, 4e passed-placeholder, Baseline.Name/Components)
+
+**All converters — field coverage (review Step 1a):**
+- [ ] Every source field has a logged disposition: mapped, no-HDF-home (Step 1b), or asked-the-developer — none silently dropped
+- [ ] Structured data lands in its structured HDF field, not freetext: `cvss[]` (score+vector), `cwe[]`, `epss`/`kev`, `sourceLocation`, `components[]`, `refs[]`, `statusOverrides[]`, `requirement.code`
+- [ ] Top-level `timestamp` / result `startTime` / `tool.version` come from the source when it supplies them (never `time.Now()`/`new Date()` as a substitute for a real source time)
+- [ ] No "parsed into the struct but never emitted" fields — each is mapped or justified in the plan
 
 **Schema-extension converters (review Step 1b):**
 - [ ] Field-gap audit performed BEFORE implementation; categories (a)/(b)/(c) logged in plan

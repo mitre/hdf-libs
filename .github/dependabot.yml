@@ -22,6 +22,14 @@ updates:
         dependency-type: "development"
       production-dependencies:
         dependency-type: "production"
+    ignore:
+      # typescript-eslint gates the maximum supported TypeScript version, so a TS
+      # major bump breaks linting until typescript-eslint catches up (it crashes
+      # with "typescript-eslint does not support TS <major>"). Hold TS majors and
+      # adopt them manually once typescript-eslint supports them
+      # (tracking: typescript-eslint#10940). Minor/patch TS updates still flow.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     open-pull-requests-limit: 10
 
   # GitHub Actions (already SHA-pinned; cooldown for new action releases)

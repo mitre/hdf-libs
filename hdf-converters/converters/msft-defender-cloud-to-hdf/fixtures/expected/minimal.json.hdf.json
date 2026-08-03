@@ -116,7 +116,6 @@
   },
   "timestamp": "2026-07-12T22:56:40.063755Z",
   "tool": {
-    "format": "JSON",
     "name": "Microsoft Defender for Cloud"
   }
 }

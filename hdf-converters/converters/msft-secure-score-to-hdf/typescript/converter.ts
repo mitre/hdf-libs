@@ -287,7 +287,6 @@ export async function convertMsftSecureScoreToHdf(input: string, converterVersio
     generatorName: 'msft-secure-score-to-hdf',
     converterVersion,
     toolName: 'Microsoft Secure Score',
-    toolFormat: 'JSON',
     baselines,
     components: [{
       name: `Azure Tenant: ${tenantId}`,

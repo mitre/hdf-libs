@@ -8,6 +8,7 @@ import {
   mapComplianceStatus,
   severityLabelToImpact,
   findingImpact,
+  trivyLocation,
 } from './converter.js';
 import type { HDFResults, EvaluatedBaseline } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
@@ -75,6 +76,36 @@ describe('asff-to-hdf converter', () => {
     }
   });
 
+  it('floors an unmapped Security Hub config-rule finding to CM-6, not SA-11/RA-5', async () => {
+    // Synthetic rule name so it stays unmapped; a Config-rule-backed finding we can't
+    // map is still a configuration-settings check → CM-6, matching aws-config-to-hdf.
+    const input = JSON.stringify({
+      Findings: [
+        {
+          SchemaVersion: '2018-10-08',
+          Id: 'arn:aws:securityhub:us-east-1:123456789123:subscription/aws-foundational-security-best-practices/v/1.0.0/EXAMPLE.1/finding/abc',
+          ProductArn: 'arn:aws:securityhub:us-east-1::product/aws/securityhub',
+          GeneratorId: 'aws-foundational-security-best-practices/v/1.0.0/EXAMPLE.1',
+          AwsAccountId: '123456789123',
+          Types: ['Software and Configuration Checks'],
+          Severity: { Label: 'HIGH', Normalized: 70 },
+          Title: 'EXAMPLE.1 An unmapped config rule',
+          Description: 'A Security Hub control backed by a Config rule we do not map.',
+          Resources: [{ Type: 'AwsS3Bucket', Id: 'arn:aws:s3:::some-bucket', Region: 'us-east-1' }],
+          ProductFields: {
+            'RelatedAWSResources:0/name': 'zzz-nonexistent-config-rule',
+            'RelatedAWSResources:0/type': 'AWS::Config::ConfigRule',
+            StandardsArn: 'arn:aws:securityhub:::standards/aws-foundational-security-best-practices/v/1.0.0',
+          },
+          Compliance: { Status: 'FAILED' },
+          RecordState: 'ACTIVE',
+        },
+      ],
+    });
+    const hdf = JSON.parse(await convertAsffToHdf(input)) as HDFResults;
+    expect(hdf.baselines[0]!.requirements[0]!.tags?.nist).toEqual(['CM-6']);
+  });
+
   it('emits one CloudAccount component per AWS account', async () => {
     const hdf = JSON.parse(await convertAsffToHdf(loadFixture('minimal.json'), '0.1.0')) as HDFResults;
     expect(hdf.components).toHaveLength(1);
@@ -131,6 +162,14 @@ describe('asff mapping helpers', () => {
     expect(severityLabelToImpact('MEDIUM')).toBeCloseTo(0.5, 5);
     expect(severityLabelToImpact('LOW')).toBeCloseTo(0.3, 5);
     expect(severityLabelToImpact('INFORMATIONAL')).toBeCloseTo(0.0, 5);
+  });
+
+  it('renders Trivy misconfiguration file locations, omitting line 0', () => {
+    expect(trivyLocation({ Filename: 'Dockerfile', StartLine: '0', EndLine: '0' })).toBe('Dockerfile');
+    expect(trivyLocation({ Filename: 'main.tf', StartLine: '12', EndLine: '12' })).toBe('main.tf:12');
+    expect(trivyLocation({ Filename: 'main.tf', StartLine: '12', EndLine: '18' })).toBe('main.tf:12-18');
+    // A line number with no filename is meaningless — return empty, not ':12'.
+    expect(trivyLocation({ StartLine: '12' })).toBe('');
   });
 
   it('forces suppressed findings to zero impact', () => {
@@ -321,6 +360,61 @@ describe('asff product special-cases', () => {
       expect(byId.has('acme/future-scanner/finding/0002')).toBe(true); // second CVE, own requirement
       expect(byId.has('ACME.1')).toBe(true); // compliance finding groups by control ref
     });
+
+    // Scoring data must land in STRUCTURED fields (requirement.cvss[], tags.cve),
+    // not only the freetext result message, so Heimdall risk sort/filter can act.
+    it('surfaces CVSS in requirement.cvss[] and the CVE in tags.cve, omitting EPSS/KEV', async () => {
+      const hdf = JSON.parse(await convertAsffToHdf(loadFixture('unknown-producer.json'), '1.0.0')) as HDFResults;
+      const byId = new Map(hdf.baselines[0]!.requirements.map((r) => [r.id, r]));
+
+      const v1 = byId.get('acme/future-scanner/finding/0001')!;
+      expect(v1.cvss).toEqual([{version: '3.1', baseScore: 8.1, baseSeverity: 'high', source: 'NVD'}]);
+      expect((v1.tags as Record<string, unknown>).cve).toEqual(['CVE-2099-0001']);
+      // ASFF lacks the EPSS percentile/date and KEV dates the schema requires.
+      expect(v1.epss).toBeUndefined();
+      expect(v1.kev).toBeUndefined();
+
+      const v2 = byId.get('acme/future-scanner/finding/0002')!;
+      expect(v2.cvss).toEqual([{version: '3.1', baseScore: 5.4, baseSeverity: 'medium', source: 'NVD'}]);
+      expect((v2.tags as Record<string, unknown>).cve).toEqual(['CVE-2099-0002']);
+
+      const ctrl = byId.get('ACME.1')!;
+      expect(ctrl.cvss).toBeUndefined();
+      expect((ctrl.tags as Record<string, unknown>).cve).toBeUndefined();
+    });
+  });
+
+  // FindingProviderFields.Severity — the provider's own rating — takes precedence
+  // over the top-level Severity that Security Hub may overwrite on ingest.
+  it('prefers FindingProviderFields.Severity over the top-level Severity for impact', () => {
+    expect(
+      findingImpact({ Severity: { Label: 'HIGH' }, FindingProviderFields: { Severity: { Label: 'LOW' } } })
+    ).toBeCloseTo(0.3, 9);
+    // An empty FPF label falls back to the top-level Severity.
+    expect(
+      findingImpact({ Severity: { Label: 'HIGH' }, FindingProviderFields: { Severity: {} } })
+    ).toBeCloseTo(0.7, 9);
+  });
+
+  // requirement.cvss[] carries one entry per scored Cvss; a scoreless entry
+  // contributes nothing, and multiple distinct CVEs all land in tags.cve.
+  it('emits one cvss[] entry per scored vulnerability and lists every CVE in tags.cve', async () => {
+    const input = JSON.stringify([{
+      Id: 'multi-1',
+      ProductArn: 'arn:aws:securityhub:us-east-1::product/acme/future-scanner',
+      Severity: { Label: 'HIGH' },
+      Vulnerabilities: [
+        { Id: 'CVE-2099-1111', Cvss: [{ Version: '3.0', BaseScore: 9.8, Source: 'NVD' }, { Version: '3.1' }] },
+        { Id: 'CVE-2099-2222', Cvss: [{ Version: '2.0', BaseScore: 4.0 }] },
+      ],
+    }]);
+    const hdf = JSON.parse(await convertAsffToHdf(input, '1.0.0')) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]!;
+    expect(req.cvss).toEqual([
+      { version: '3.0', baseScore: 9.8, baseSeverity: 'critical', source: 'NVD' },
+      { version: '2.0', baseScore: 4.0, baseSeverity: 'medium' },
+    ]);
+    expect((req.tags as Record<string, unknown>).cve).toEqual(['CVE-2099-1111', 'CVE-2099-2222']);
   });
 
 
@@ -340,6 +434,34 @@ describe('asff product special-cases', () => {
     expect(req.results[0]!.message).toContain('CVE-2099-9999');
     // the duplicate URL appears once
     expect(req.refs).toEqual([{ url: 'https://example.test/dup' }]);
+  });
+
+  // requirement.code carries the whole finding as indented JSON (CODE tab fill),
+  // preserving every source field and round-tripping to the source object.
+  it('populates requirement.code with the indented source finding', async () => {
+    const finding = {
+      Id: 'code-1',
+      ProductArn: 'arn:aws:securityhub:us-east-1::product/acme/future-scanner',
+      Compliance: { Status: 'FAILED' },
+      GeneratorId: 'acme/rule/CODE.1',
+      Severity: { Label: 'HIGH' },
+      Extra: { nested: ['a', 'b'] },
+    };
+    const hdf = JSON.parse(await convertAsffToHdf(JSON.stringify([finding]), '1.0.0')) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]! as { code?: string };
+    expect(req.code).toBeDefined();
+    // 2-space indented and byte-identical to the canonical serialization.
+    expect(req.code).toBe(JSON.stringify(finding, null, 2));
+    // parses back to the source finding, losing nothing (incl. unmodeled Extra).
+    expect(JSON.parse(req.code!)).toEqual(finding);
+  });
+
+  // A zero-finding document produces the no-findings placeholder requirement,
+  // which carries no source object → requirement.code stays unset (NOT-IN-SOURCE).
+  it('leaves requirement.code unset when there is no finding', async () => {
+    const hdf = JSON.parse(await convertAsffToHdf('{"Findings": []}', '1.0.0')) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]! as { code?: string };
+    expect(req.code).toBeUndefined();
   });
 
 });

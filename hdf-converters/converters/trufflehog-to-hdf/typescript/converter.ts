@@ -72,6 +72,22 @@ const TRUFFLEHOG_NIST = ['IA-5 (7)'];
 const TRUFFLEHOG_CCI = ['CCI-000202', 'CCI-000203', 'CCI-002367'];
 
 /**
+ * A verified secret is a confirmed-live credential (TruffleHog reached the
+ * provider and the credential authenticated) and rates high; an unverified
+ * candidate rates medium.
+ */
+const IMPACT_VERIFIED = 0.7;
+const IMPACT_UNVERIFIED = 0.5;
+
+/**
+ * Rate a requirement by its strongest signal: any verified finding in the group
+ * elevates the whole requirement to the verified impact.
+ */
+function groupImpact(findings: TrufflehogFinding[]): number {
+  return findings.some(f => f.Verified) ? IMPACT_VERIFIED : IMPACT_UNVERIFIED;
+}
+
+/**
  * Parse TruffleHog input as JSON array, single object, or NDJSON.
  */
 function parseFindings(input: string): TrufflehogFinding[] {
@@ -235,7 +251,7 @@ function buildRequirement(reqID: string, findings: TrufflehogFinding[]): Evaluat
     reqID,
     title,
     descriptions,
-    0.5,
+    groupImpact(findings),
     results,
     {
       tags,
@@ -260,12 +276,11 @@ function buildRequirement(reqID: string, findings: TrufflehogFinding[]): Evaluat
  * @returns HDF JSON string
  */
 export async function convertTrufflehogToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
-  if (!input || input.trim().length === 0) {
-    throw new Error('trufflehog: empty input');
-  }
   validateInputSize(input, 'trufflehog');
 
-  const findings = parseFindings(input);
+  // A clean TruffleHog scan emits empty stdout (exit-code-first), not []. Treat
+  // empty/whitespace-only input as zero findings, like an explicit [].
+  const findings = !input || input.trim().length === 0 ? [] : parseFindings(input);
 
   const resultsChecksum = await inputChecksum(input);
   const limitedFindings = limitArrayWithWarning(findings, 'finding');
@@ -299,7 +314,7 @@ export async function convertTrufflehogToHdf(input: string, converterVersion = '
     }
   ) as EvaluatedBaseline;
 
-  const tool: Tool = { name: 'TruffleHog', format: 'JSON' };
+  const tool: Tool = { name: 'TruffleHog' };
 
   const hdf: HDFResults = {
     baselines: [baseline],

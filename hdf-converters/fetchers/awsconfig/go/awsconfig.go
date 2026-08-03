@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"time"
 
@@ -55,6 +56,12 @@ type ConfigServiceClient interface {
 		params *configservice.GetComplianceDetailsByConfigRuleInput,
 		optFns ...func(*configservice.Options),
 	) (*configservice.GetComplianceDetailsByConfigRuleOutput, error)
+
+	DescribeRemediationConfigurations(
+		ctx context.Context,
+		params *configservice.DescribeRemediationConfigurationsInput,
+		optFns ...func(*configservice.Options),
+	) (*configservice.DescribeRemediationConfigurationsOutput, error)
 }
 
 // AWSConfigParams holds parameters for a live AWS Config fetch.
@@ -125,9 +132,12 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		defer cancel()
 	}
 
-	rules, err := f.fetchAllConfigRules(ctx)
+	rules, skippedServiceLinked, err := f.fetchAllConfigRules(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if skippedServiceLinked > 0 {
+		fmt.Fprintf(os.Stderr, "WARNING: aws-config: skipped %d service-linked rule(s) (owned by an AWS service, unreadable via the Config API — fetch their findings through the owning service, e.g. hdf fetch aws-securityhub)\n", skippedServiceLinked)
 	}
 
 	for i := range rules {
@@ -138,36 +148,64 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		rules[i].EvaluationResults = results
 	}
 
+	// Remediation is optional enrichment: merge in each rule's remediation
+	// configuration when present. Never fatal — a fetch must still succeed for
+	// accounts with no remediations, or when the remediation API is unavailable.
+	// Every fetched rule is customer-managed (service-linked ones were skipped),
+	// so all are remediation-eligible.
+	ruleNames := make([]string, len(rules))
+	for i := range rules {
+		ruleNames[i] = rules[i].ConfigRuleName
+	}
+	remediations := f.fetchRemediations(ctx, ruleNames)
+	for i := range rules {
+		if rc, ok := remediations[rules[i].ConfigRuleName]; ok {
+			rules[i].Remediation = rc
+		}
+	}
+
 	file := awsconfigconv.ConfigRulesFile{ConfigRules: rules}
 	return json.Marshal(file)
 }
 
-// fetchAllConfigRules pages through DescribeConfigRules and returns all rules.
-func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfigconv.ConfigRule, error) {
+// fetchAllConfigRules pages through DescribeConfigRules and returns the
+// customer-managed rules plus a count of the service-linked rules it skipped.
+// Service-linked rules (CreatedBy set — e.g. Security Hub, conformance packs,
+// Organizations) are owned by an AWS service: a customer principal cannot read
+// their compliance or remediation via the Config APIs (GetComplianceDetails and
+// DescribeRemediationConfigurations both reject them), so they are excluded
+// entirely. Their evaluations are available through the owning service's
+// fetcher instead (e.g. Security Hub via the aws-securityhub fetcher).
+func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfigconv.ConfigRule, int, error) {
 	limit := f.maxPages
 	if limit <= 0 {
 		limit = defaultMaxPages
 	}
 
 	var rules []awsconfigconv.ConfigRule
+	skipped := 0
 	var nextToken *string
 
 	for page := 0; ; page++ {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		if page >= limit {
-			return nil, fmt.Errorf("DescribeConfigRules: exceeded maximum page limit (%d)", limit)
+			return nil, 0, fmt.Errorf("DescribeConfigRules: exceeded maximum page limit (%d)", limit)
 		}
 
 		out, err := f.client.DescribeConfigRules(ctx, &configservice.DescribeConfigRulesInput{
 			NextToken: nextToken,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("DescribeConfigRules: %w", err)
+			return nil, 0, fmt.Errorf("DescribeConfigRules: %w", err)
 		}
 
 		for _, r := range out.ConfigRules {
+			if r.CreatedBy != nil {
+				skipped++
+				continue
+			}
 			rules = append(rules, convertSDKConfigRule(r))
 		}
 
@@ -177,7 +215,50 @@ func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfig
 		nextToken = out.NextToken
 	}
 
-	return rules, nil
+	return rules, skipped, nil
+}
+
+// maxRemediationBatch is the DescribeRemediationConfigurations limit on rule
+// names per request.
+const maxRemediationBatch = 25
+
+// fetchRemediations looks up remediation configurations for the given (already
+// remediation-eligible) rule names, keyed by rule name. Remediation is optional
+// enrichment: an API error never fails the fetch — the affected rules simply get
+// no remediation (and thus no fix description), with a warning to stderr.
+func (f *AWSConfigFetcher) fetchRemediations(ctx context.Context, ruleNames []string) map[string]*awsconfigconv.RemediationConfiguration {
+	out := make(map[string]*awsconfigconv.RemediationConfiguration)
+	for start := 0; start < len(ruleNames); start += maxRemediationBatch {
+		if ctx.Err() != nil {
+			break
+		}
+		end := start + maxRemediationBatch
+		if end > len(ruleNames) {
+			end = len(ruleNames)
+		}
+		batch := ruleNames[start:end]
+
+		resp, err := f.client.DescribeRemediationConfigurations(ctx, &configservice.DescribeRemediationConfigurationsInput{
+			ConfigRuleNames: batch,
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: aws-config: skipping remediation for %d rule(s): %v\n", len(batch), err)
+			continue
+		}
+		for _, rc := range resp.RemediationConfigurations {
+			name := aws.ToString(rc.ConfigRuleName)
+			if name == "" {
+				continue
+			}
+			out[name] = &awsconfigconv.RemediationConfiguration{
+				TargetType:    string(rc.TargetType),
+				TargetID:      aws.ToString(rc.TargetId),
+				TargetVersion: aws.ToString(rc.TargetVersion),
+				Automatic:     rc.Automatic,
+			}
+		}
+	}
+	return out
 }
 
 // fetchEvaluationResults pages through GetComplianceDetailsByConfigRule for one rule.

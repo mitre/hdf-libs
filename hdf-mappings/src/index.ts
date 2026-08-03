@@ -26,6 +26,7 @@ export {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   DEFAULT_REMEDIATION_NIST_TAGS,
   DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS,
+  DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS,
   DEFAULT_NIST_REVISION,
   SUPPORTED_NIST_REVISIONS,
   getCurrentNistRevision,
@@ -109,3 +110,13 @@ export {
 } from './awsconfig/index.js';
 
 export type { AwsConfigNistMapping, AwsConfigNistMappings } from './awsconfig/types.js';
+
+// Hipcheck exports
+export {
+  getHipcheckNistControls,
+  hipcheckAnalysisExists,
+  getAllHipcheckAnalyses,
+  getAllHipcheckMappings,
+} from './hipcheck/index.js';
+
+export type { HipcheckNistMapping, HipcheckNistMappings } from './hipcheck/types.js';

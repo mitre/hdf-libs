@@ -19,6 +19,8 @@ runConverterContractTests({
   converterName: 'trufflehog-to-hdf',
   convertFn: convertTrufflehogToHdf,
   minimalFixture: 'minimal.json',
+  // TruffleHog emits no report on a clean scan; empty input is zero findings.
+  acceptsEmptyInput: true,
 });
 
 // countDistinctTrufflehogGroups parses raw TruffleHog output generically — NOT
@@ -75,6 +77,26 @@ describe('trufflehog to HDF converter', async () => {
       expect(req.results[0]!.codeDesc).toContain('TruffleHog');
       expect(req.results[0]!.codeDesc).toContain('scanned');
     });
+
+    // A clean TruffleHog scan emits empty stdout, not []; empty/whitespace-only
+    // input must produce the same zero-findings placeholder as [].
+    it.each([
+      ['empty (0 chars)', ''],
+      ['whitespace-only', '  \n\t '],
+      ['empty array', '[]'],
+      ['empty-stdout.json fixture', loadFixture('empty-stdout.json')],
+    ])('treats %s input as zero findings', async (_name, input) => {
+      const output = await convertTrufflehogToHdf(input);
+      const hdf = JSON.parse(output) as HDFResults;
+
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('trufflehog-no-findings');
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('reported zero findings');
+    });
   });
 
   describe('minimal fixture (single object)', async () => {
@@ -94,9 +116,28 @@ describe('trufflehog to HDF converter', async () => {
       expect(hdf.baselines[0]!.name).toBe('TruffleHog Scan');
     });
 
-    it('should set impact to 0.5 for all findings', async () => {
+    it('should rate a verified secret at high impact (0.7)', async () => {
+      // minimal.json's single finding is Verified=true.
       const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('minimal.json'))) as HDFResults;
-      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.7);
+    });
+
+    it('should rate an unverified candidate at medium impact (0.5)', async () => {
+      // ndjson-input.ndjson findings are all Verified=false.
+      const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('ndjson-input.ndjson'))) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.impact).toBe(0.5);
+      }
+    });
+
+    it('should take the verified impact when a group mixes verified and unverified', async () => {
+      const mixed = JSON.stringify([
+        { DetectorName: 'AWS', DecoderName: 'PLAIN', Verified: false, Raw: 'a', Redacted: 'a' },
+        { DetectorName: 'AWS', DecoderName: 'PLAIN', Verified: true, Raw: 'b', Redacted: 'b' },
+      ]);
+      const hdf = JSON.parse(await convertTrufflehogToHdf(mixed)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.7);
     });
 
     it('should set NIST tag to IA-5 (7)', async () => {
@@ -151,10 +192,10 @@ describe('trufflehog to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set tool to TruffleHog/JSON', async () => {
+    it('should set tool to TruffleHog', async () => {
       const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('TruffleHog');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
 
     it('should set requirement ID to "AWS PLAIN"', async () => {

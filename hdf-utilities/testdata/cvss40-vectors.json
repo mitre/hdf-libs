@@ -1,0 +1,82 @@
+{
+  "_comment": "CVSS 4.0 reference vectors + expected scores. Scores produced by RUNNING the FIRST reference calculator algorithm (cvss_score.js) over each vector — i.e. these are the exact values the official FIRST v4.0 calculator returns. Provenance: https://github.com/FIRSTdotorg/cvss-v4-calculator . Shared by the Go (go/cvss_test.go) and TS (test/cvss.test.ts) tests so both assert identical values.",
+  "cases": [
+    {
+      "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H",
+      "macroVector": "000100",
+      "base": 10,
+      "temporal": 10,
+      "note": "all-max base, no safety (SC/SI/SA:H → eq4=1, macro 000100)"
+    },
+    {
+      "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+      "macroVector": "000200",
+      "base": 9.3,
+      "temporal": 9.3,
+      "note": "card's first-failing-test vector"
+    },
+    {
+      "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:N/SI:N/SA:N",
+      "macroVector": "002201",
+      "base": 0,
+      "temporal": 0,
+      "note": "no impact (all VC..SA = N) => 0.0"
+    },
+    {
+      "vector": "CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+      "macroVector": "100200",
+      "base": 8.5,
+      "temporal": 8.5,
+      "note": "local, low privileges"
+    },
+    {
+      "vector": "CVSS:4.0/AV:P/AC:H/AT:P/PR:H/UI:A/VC:L/VI:L/VA:L/SC:L/SI:L/SA:L",
+      "macroVector": "212201",
+      "base": 1,
+      "temporal": 1,
+      "note": "hardest-to-exploit, low impact (low end)"
+    },
+    {
+      "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:A",
+      "macroVector": "000100",
+      "base": 10,
+      "temporal": 10,
+      "note": "all-max + E:A (== base, worst-case E default)"
+    },
+    {
+      "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:P",
+      "macroVector": "000210",
+      "base": 9.3,
+      "temporal": 8.9,
+      "note": "E:P Proof-of-Concept lowers score"
+    },
+    {
+      "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:U",
+      "macroVector": "000220",
+      "base": 9.3,
+      "temporal": 8.1,
+      "note": "E:U Unreported lowers score further"
+    },
+    {
+      "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/CR:H/IR:H/AR:H",
+      "macroVector": "000200",
+      "base": 9.3,
+      "temporal": 9.3,
+      "note": "security requirements High (eq6=0)"
+    },
+    {
+      "vector": "CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:N/VC:L/VI:H/VA:L/SC:H/SI:H/SA:L",
+      "macroVector": "101100",
+      "base": 8.5,
+      "temporal": 8.5,
+      "note": "mixed impacts, subsequent-system high"
+    },
+    {
+      "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/MSI:S",
+      "macroVector": "000000",
+      "base": 10,
+      "temporal": 10,
+      "note": "Modified SI:Safety (eq4=0)"
+    }
+  ]
+}

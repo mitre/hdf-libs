@@ -11,6 +11,7 @@ Compares HDF documents (results, baselines, or system documents) and produces a 
 - **System drift** (`diffSystems`) — compare two HDF system documents for component, data flow, and configuration changes
 - **SBOM comparison** (`diffSboms`) — CycloneDX/SPDX package-level diffs (added, removed, updated)
 - **Amendment operations** (Go only, `amend` subpackage) — merge overrides into results, verify amendment chains, compute effectiveStatus/effectiveImpact/disposition
+- **Requirement change events** (`changeEventFromPrevious`, `applyChangeEvents`, `foldChangeEventsIntoComparison`) — the continuous-monitoring kernel (ADR-0005): derive a per-requirement change-event stream between two scans, fold a batch of events into a comparison, and replay events onto a seed to reassemble a reconciled results document (parity law: `applyChangeEvents(A, derive(A→B)) ≡ B` at requirement level). Dual Go + TS; wrapped by the `hdf events` CLI command group.
 
 Additional capabilities:
 - Multiple comparison modes: temporal, baseline, fleet, multi-source

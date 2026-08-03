@@ -1,6 +1,7 @@
 package awsconfig
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,6 +49,89 @@ func TestConvertAWSConfigToHDF_Minimal(t *testing.T) {
 	nistSlice, ok := nist.([]string)
 	assert.True(t, ok)
 	assert.NotEmpty(t, nistSlice)
+}
+
+func TestConvertAWSConfigToHDF_UnmappedRuleFallsBackToCM6(t *testing.T) {
+	// A managed-style rule the mapping tables don't cover (synthetic identifier so
+	// the test stays stable as AWS's real catalog gains coverage). It must still
+	// convert, carrying the CM-6 configuration-settings floor rather than no tags.
+	input := []byte(`{"ConfigRules":[{
+		"ConfigRuleName":"example-unmapped-rule",
+		"ConfigRuleArn":"arn:aws:config:us-east-1:123456789012:config-rule/config-rule-unmapped",
+		"Description":"A managed rule with no NIST mapping.",
+		"Source":{"Owner":"AWS","SourceIdentifier":"EXAMPLE_UNMAPPED_RULE"},
+		"EvaluationResults":[{
+			"EvaluationResultIdentifier":{"EvaluationResultQualifier":{"ConfigRuleName":"example-unmapped-rule","ResourceType":"AWS::S3::Bucket","ResourceId":"some-bucket"}},
+			"ComplianceType":"COMPLIANT",
+			"ConfigRuleInvokedTime":"2021-04-09T14:39:21Z",
+			"ResultRecordedTime":"2021-04-09T14:39:51.614Z"
+		}]
+	}]}`)
+	result, err := ConvertAWSConfigToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	nist, ok := req.Tags["nist"].([]string)
+	require.True(t, ok, "an unmapped rule should still carry a nist tag")
+	assert.Equal(t, []string{"CM-6"}, nist, "unmapped Config rule falls back to CM-6")
+	require.NotNil(t, req.ControlType)
+	assert.Equal(t, hdf.Operational, *req.ControlType, "CM-6 (Configuration Settings) is an operational control")
+}
+
+func TestConvertAWSConfigToHDF_Remediation(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "aws-config-to-hdf", "fixtures", "input", "remediation.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertAWSConfigToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	descByLabel := func(req hdf.EvaluatedRequirement, label string) (string, bool) {
+		for _, d := range req.Descriptions {
+			if d.Label == label {
+				return d.Data, true
+			}
+		}
+		return "", false
+	}
+
+	var withRem, withoutRem hdf.EvaluatedRequirement
+	for _, req := range result.Baselines[0].Requirements {
+		switch req.ID {
+		case "config-rule-rem001":
+			withRem = req
+		case "config-rule-rem002":
+			withoutRem = req
+		}
+	}
+
+	// Rule with an attached remediation → a fix description surfacing the SSM doc.
+	fix, ok := descByLabel(withRem, "fix")
+	require.True(t, ok, "rule with remediation should have a fix description")
+	assert.Contains(t, fix, "AWS-DisableS3BucketPublicReadWrite")
+	assert.Contains(t, fix, "SSM Automation document")
+	assert.Contains(t, fix, "automatically on non-compliance")
+
+	// Rule without a remediation → no fix description (graceful absence).
+	_, ok = descByLabel(withoutRem, "fix")
+	assert.False(t, ok, "rule without remediation must not get a fix description")
+
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	assert.Truef(t, validators.ValidateResults(out).Valid, "%s", validators.ValidateResults(out).Error())
+}
+
+func TestBuildFixText(t *testing.T) {
+	assert.Equal(t, "", buildFixText(ConfigRule{}), "no remediation → empty")
+	assert.Equal(t, "", buildFixText(ConfigRule{Remediation: &RemediationConfiguration{TargetType: "SSM_DOCUMENT"}}), "no target id → empty")
+	assert.Equal(t,
+		"Remediate via SSM Automation document Doc (version 2), applied on demand.",
+		buildFixText(ConfigRule{Remediation: &RemediationConfiguration{TargetType: "SSM_DOCUMENT", TargetID: "Doc", TargetVersion: "2"}}))
+	assert.Equal(t,
+		"Remediate via automation document Doc, applied automatically on non-compliance.",
+		buildFixText(ConfigRule{Remediation: &RemediationConfiguration{TargetID: "Doc", Automatic: true}}))
 }
 
 func TestConvertAWSConfigToHDF_Tool(t *testing.T) {
@@ -145,7 +230,7 @@ func TestConvertAWSConfigToHDF_EmptyRules(t *testing.T) {
 }
 
 // TestConvertAWSConfigToHDF_RuleWithEmptyEvaluationResults exercises the
-// live-AWS bug surfaced in issue #80 (bug 2): a Config rule that was deployed
+// live-AWS bug where a Config rule that was deployed
 // and active but evaluated zero in-scope resources (e.g.
 // rds-cluster-multi-az-enabled in an account with no RDS clusters) must still
 // produce a schema-valid requirement. The schema requires Results to have

@@ -92,10 +92,10 @@ describe('Dependency-Track to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set tool name to "Dependency-Track" and format to "JSON"', async () => {
+    it('should set tool name to "Dependency-Track" and format to "FPF"', async () => {
       const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Dependency-Track');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBe('FPF');
     });
   });
 
@@ -190,7 +190,7 @@ describe('Dependency-Track to HDF converter', async () => {
   });
 
   describe('tags', async () => {
-    it('should populate tags (cweIds, nist, cci)', async () => {
+    it('should retain nist/cci and retire the cweIds tag', async () => {
       const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
 
@@ -198,7 +198,71 @@ describe('Dependency-Track to HDF converter', async () => {
       expect((req.tags?.['nist'] as string[]).length).toBeGreaterThan(0);
       expect(req.tags?.['cci']).toBeDefined();
       expect((req.tags?.['cci'] as string[]).length).toBeGreaterThan(0);
-      expect(req.tags?.['cweIds']).toBeDefined();
+      // cweIds tag is retired — CWE now lives in the first-class cwe[] field.
+      expect(req.tags?.['cweIds']).toBeUndefined();
+    });
+  });
+
+  describe('CWE first-class field', async () => {
+    it('populates requirement.cwe[] from vulnerability.cwes', async () => {
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
+      // Both findings carry cwes:[{cweId:400}].
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.cwe).toEqual(['CWE-400']);
+      }
+    });
+
+    it('omits cwe[] and tags.cve when the source carries neither', async () => {
+      const input = JSON.stringify({
+        meta: {},
+        project: { uuid: 'p1', name: 'test' },
+        findings: [{
+          component: { name: 'comp' },
+          vulnerability: { severity: 'LOW' },
+          matrix: 'm1',
+        }],
+      });
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.cwe).toBeUndefined();
+      expect(req.tags?.['cve']).toBeUndefined();
+    });
+  });
+
+  describe('CVE tag', async () => {
+    it('maps aliases[].cveId to tags.cve, only where a CVE alias exists', async () => {
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
+
+      // Finding 1 (timespan) has no aliases → no tags.cve.
+      const first = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46'
+      )!;
+      expect(first.tags?.['cve']).toBeUndefined();
+
+      // Finding 2 (uglify-js) has aliases[0].cveId = CVE-2022-2053.
+      const second = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'ca4f2da9-0fad-4a13-92d7-f627f3168a56:979f87f5-eaf5-4095-9d38-cde17bf9228e:701a3953-666b-4b7a-96ca-e1e6a3e1def3'
+      )!;
+      expect(second.tags?.['cve']).toEqual(['CVE-2022-2053']);
+      // CVE must not leak into cwe[].
+      expect(second.cwe).not.toContain('CVE-2022-2053');
+    });
+
+    it('dedupes repeated cveIds and skips empty ones', async () => {
+      const input = JSON.stringify({
+        meta: {},
+        project: { uuid: 'p1', name: 'test' },
+        findings: [{
+          component: { name: 'comp' },
+          vulnerability: {
+            severity: 'LOW',
+            aliases: [{ cveId: 'CVE-2021-44228' }, { cveId: 'CVE-2021-44228' }, { ghsaId: 'GHSA-x' }],
+          },
+          matrix: 'm1',
+        }],
+      });
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.tags?.['cve']).toEqual(['CVE-2021-44228']);
     });
   });
 
@@ -222,6 +286,32 @@ describe('Dependency-Track to HDF converter', async () => {
       );
       expect(req).toBeDefined();
       expect(req!.results[0]?.codeDesc).toContain('Update to version 2.6.0 or later.');
+    });
+  });
+
+  describe('requirement code (Heimdall CODE tab)', async () => {
+    it('sets code to the raw finding object, round-tripping including dropped fields', async () => {
+      for (const name of ['fpf-default.json', 'fpf-info-vulnerability.json']) {
+        const input = loadFixture(name);
+        const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
+        const source = JSON.parse(input) as { findings: unknown[] };
+        const reqs = hdf.baselines[0]!.requirements;
+        expect(reqs).toHaveLength(source.findings.length);
+        reqs.forEach((req, i) => {
+          expect(req.code).toBeDefined();
+          expect(JSON.parse(req.code!)).toEqual(source.findings[i]);
+        });
+      }
+    });
+
+    it('preserves untyped fields (aliases, source, vulnId) in code', async () => {
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'ca4f2da9-0fad-4a13-92d7-f627f3168a56:979f87f5-eaf5-4095-9d38-cde17bf9228e:701a3953-666b-4b7a-96ca-e1e6a3e1def3'
+      );
+      expect(req!.code).toContain('CVE-2022-2053');
+      expect(req!.code).toContain('GHSA-95rf-557x-44g5');
+      expect(req!.code).toContain('"vulnId": "48"');
     });
   });
 
@@ -283,7 +373,8 @@ describe('Dependency-Track to HDF converter', async () => {
       });
       const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
-      // No CWE IDs → no cweIds tag
+      // No CWE IDs → no cwe[] field (and the retired cweIds tag stays absent)
+      expect(req.cwe).toBeUndefined();
       expect(req.tags?.['cweIds']).toBeUndefined();
     });
 

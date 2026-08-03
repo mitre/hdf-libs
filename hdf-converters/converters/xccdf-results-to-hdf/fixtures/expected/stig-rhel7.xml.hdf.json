@@ -4,6 +4,7 @@
       "name": "Red Hat Enterprise Linux 7 Security Technical Implementation Guide",
       "requirements": [
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:922\",\n    \"href\": \"U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -24,6 +25,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000048"
@@ -36,6 +38,7 @@
           "title": "The Red Hat Enterprise Linux operating system must display the Standard Mandatory DoD Notice and Consent Banner before granting local or remote access to the system via a graphical user logon."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:988\",\n    \"href\": \"U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -56,6 +59,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000056"
@@ -68,6 +72,7 @@
           "title": "The Red Hat Enterprise Linux operating system must enable a user session lock until that user re-establishes access using established identification and authentication procedures."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:95715\",\n    \"href\": \"U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -88,6 +93,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000192"
@@ -100,6 +106,7 @@
           "title": "The Red Hat Enterprise Linux operating system must be configured so that /etc/pam.d/passwd implements /etc/pam.d/system-auth when changing passwords."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:1229\",\n    \"href\": \"U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -120,6 +127,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -132,6 +140,7 @@
           "title": "The Red Hat Enterprise Linux operating system must not have accounts configured with blank or null passwords."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel7:def:108\",\n    \"href\": \"U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -152,6 +161,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-002617"

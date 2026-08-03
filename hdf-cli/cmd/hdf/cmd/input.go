@@ -35,15 +35,33 @@ func getMaxFileSize() int64 {
 }
 
 // readInputFile reads from a file path or stdin with security validations.
-// It enforces size limits and validates the input is a regular file.
+// It enforces size limits, validates the input is a regular file, and rejects
+// empty input. Use readInputFileAllowEmpty on paths (e.g. convert) that must
+// decide the empty-input policy themselves after resolving the target format.
 func readInputFile(path string) ([]byte, error) {
+	return readInput(path, false)
+}
+
+// readInputFileAllowEmpty is readInputFile without the empty-input rejection:
+// it returns empty (zero-length) data instead of erroring. Callers are then
+// responsible for the empty-input policy. Used by convert, where some formats
+// (exit-code-first scanners) treat empty input as a valid zero-findings signal.
+// All other size/type/symlink validations still apply.
+func readInputFileAllowEmpty(path string) ([]byte, error) {
+	return readInput(path, true)
+}
+
+// readInput reads from a file path or stdin with security validations. When
+// allowEmpty is false, empty input is rejected with "no input provided"; when
+// true, empty data is returned to the caller.
+func readInput(path string, allowEmpty bool) ([]byte, error) {
 	// Handle stdin
 	var data []byte
 	var err error
 	if path == "" || path == "-" {
-		data, err = readFromStdin()
+		data, err = readFromStdin(allowEmpty)
 	} else {
-		data, err = readFromFile(path)
+		data, err = readFromFile(path, allowEmpty)
 	}
 	if err != nil {
 		return nil, err
@@ -53,7 +71,7 @@ func readInputFile(path string) ([]byte, error) {
 	// converters, schema validation — sees clean bytes regardless of whether
 	// the file was produced on Windows.
 	data = bytes.TrimPrefix(data, utf8BOM)
-	if len(data) == 0 {
+	if len(data) == 0 && !allowEmpty {
 		// A file/stdin containing only a BOM passes the upstream non-empty
 		// checks but has no real content; report it clearly instead of letting
 		// downstream parsing emit a confusing "could not auto-detect" error.
@@ -62,8 +80,9 @@ func readInputFile(path string) ([]byte, error) {
 	return data, nil
 }
 
-// readFromStdin reads from stdin with a size limit.
-func readFromStdin() ([]byte, error) {
+// readFromStdin reads from stdin with a size limit. When allowEmpty is false,
+// empty stdin is rejected.
+func readFromStdin(allowEmpty bool) ([]byte, error) {
 	maxSize := getMaxFileSize()
 	limited := io.LimitReader(os.Stdin, maxSize+1)
 	data, err := io.ReadAll(limited)
@@ -75,15 +94,16 @@ func readFromStdin() ([]byte, error) {
 		return nil, fmt.Errorf("input too large: exceeds %d MB limit (use --max-size to increase)", maxSizeMB)
 	}
 
-	if len(data) == 0 {
+	if len(data) == 0 && !allowEmpty {
 		return nil, fmt.Errorf("no input provided")
 	}
 
 	return data, nil
 }
 
-// readFromFile reads a file with security validations.
-func readFromFile(path string) ([]byte, error) {
+// readFromFile reads a file with security validations. When allowEmpty is false,
+// a zero-byte file is rejected.
+func readFromFile(path string, allowEmpty bool) ([]byte, error) {
 	// Check for symlinks if --no-follow-symlinks is set
 	if noFollowSymlinks {
 		linkInfo, err := os.Lstat(path)
@@ -125,7 +145,7 @@ func readFromFile(path string) ([]byte, error) {
 		return nil, fmt.Errorf("%s is not a regular file", path)
 	}
 
-	if info.Size() == 0 {
+	if info.Size() == 0 && !allowEmpty {
 		return nil, fmt.Errorf("file is empty: %s", path)
 	}
 

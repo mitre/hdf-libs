@@ -178,7 +178,6 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		GeneratorName:    "nikto-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Nikto",
-		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       []hdf.Component{target},
 	})

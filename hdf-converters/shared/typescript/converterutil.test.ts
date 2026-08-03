@@ -196,6 +196,12 @@ describe('validateInputSize', () => {
     expect(() => validateInputSize(overByOne, 'test', 50)).toThrow('exceeds maximum');
   });
 
+  it('should treat a non-positive limit as the default (Go ValidateJSONSize parity)', () => {
+    // 0 and negative mean "use the default" — never reject all non-empty input.
+    expect(() => validateInputSize('normal input', 'test', 0)).not.toThrow();
+    expect(() => validateInputSize('normal input', 'test', -1)).not.toThrow();
+  });
+
   it('should export DEFAULT_MAX_INPUT_SIZE as 50MB', () => {
     expect(DEFAULT_MAX_INPUT_SIZE).toBe(50 * 1024 * 1024);
   });

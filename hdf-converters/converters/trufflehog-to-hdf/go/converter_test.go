@@ -30,6 +30,8 @@ func TestConverterContract(t *testing.T) {
 		ConverterName:  "trufflehog-to-hdf",
 		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertTrufflehogToHDF(input, testVersion) },
 		MinimalFixture: "minimal.json",
+		// TruffleHog emits no report on a clean scan; empty input is zero findings.
+		AcceptsEmptyInput: true,
 	})
 }
 
@@ -47,6 +49,31 @@ func TestConvertTrufflehogToHDF_EmptyFindings(t *testing.T) {
 	assert.Equal(t, hdf.Passed, req.Results[0].Status)
 	assert.Contains(t, req.Results[0].CodeDesc, "TruffleHog")
 	assert.Contains(t, req.Results[0].CodeDesc, "scanned")
+}
+
+// A clean TruffleHog scan emits empty stdout, not []; empty/whitespace-only
+// input must produce the same zero-findings placeholder as [].
+func TestConvertTrufflehogToHDF_EmptyOrWhitespaceInput(t *testing.T) {
+	for name, input := range map[string][]byte{
+		"empty (0 bytes)":           {},
+		"whitespace-only":           []byte("  \n\t "),
+		"empty array":               []byte("[]"),
+		"empty-stdout.json fixture": loadFixture(t, "input/empty-stdout.json"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			result, err := ConvertTrufflehogToHDF(input, testVersion)
+			require.NoError(t, err, "clean-scan input should convert as zero findings")
+
+			require.Len(t, result.Baselines, 1)
+			require.Len(t, result.Baselines[0].Requirements, 1)
+
+			req := result.Baselines[0].Requirements[0]
+			assert.Equal(t, "trufflehog-no-findings", req.ID)
+			require.Len(t, req.Results, 1)
+			assert.Equal(t, hdf.Passed, req.Results[0].Status)
+			assert.Contains(t, req.Results[0].CodeDesc, "reported zero findings")
+		})
+	}
 }
 
 // ---- Minimal fixture: single object ----
@@ -70,13 +97,41 @@ func TestConvertTrufflehogToHDF_BaselineName(t *testing.T) {
 	assert.Equal(t, "TruffleHog Scan", result.Baselines[0].Name)
 }
 
-func TestConvertTrufflehogToHDF_Impact(t *testing.T) {
+// A verified secret is a confirmed-live credential and must rate a higher impact
+// (0.7, high) than an unverified candidate (0.5, medium). minimal.json's single
+// finding is Verified=true.
+func TestConvertTrufflehogToHDF_ImpactVerified(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertTrufflehogToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	// All trufflehog findings are medium impact (0.5)
-	assert.InDelta(t, 0.5, result.Baselines[0].Requirements[0].Impact, 0.001)
+	assert.InDelta(t, 0.7, result.Baselines[0].Requirements[0].Impact, 0.001)
+}
+
+// ndjson-input.ndjson findings are all Verified=false → unverified impact (0.5).
+func TestConvertTrufflehogToHDF_ImpactUnverified(t *testing.T) {
+	input := loadFixture(t, "input/ndjson-input.ndjson")
+	result, err := ConvertTrufflehogToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		assert.InDelta(t, 0.5, req.Impact, 0.001,
+			"unverified findings should rate medium impact (req %s)", req.ID)
+	}
+}
+
+// A group with at least one verified finding elevates the whole requirement to
+// the verified impact, even when other findings in the group are unverified.
+func TestConvertTrufflehogToHDF_ImpactMixedGroupTakesVerified(t *testing.T) {
+	mixed := []byte(`[
+		{"DetectorName":"AWS","DecoderName":"PLAIN","Verified":false,"Raw":"a","Redacted":"a"},
+		{"DetectorName":"AWS","DecoderName":"PLAIN","Verified":true,"Raw":"b","Redacted":"b"}
+	]`)
+	result, err := ConvertTrufflehogToHDF(mixed, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	assert.InDelta(t, 0.7, result.Baselines[0].Requirements[0].Impact, 0.001)
 }
 
 func TestConvertTrufflehogToHDF_Tags(t *testing.T) {
@@ -245,8 +300,7 @@ func TestConvertTrufflehogToHDF_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Equal(t, "TruffleHog", *result.Tool.Name)
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 // ---- No target for filesystem sources ----
@@ -321,11 +375,12 @@ func TestConvertTrufflehogToHDF_ControlType(t *testing.T) {
 
 func TestSnapshots(t *testing.T) {
 	// ndjson-input carries no git commit timestamp, so its startTime is synthesized;
-	// mask only it. The JSON fixtures derive startTime from the commit time and are
-	// asserted.
+	// mask only it. empty-stdout.json is a clean-scan (zero-findings) input whose
+	// placeholder requirement carries a synthesized startTime; mask it too. The
+	// other JSON fixtures derive startTime from the commit time and are asserted.
 	shared.RunSnapshotTests(t, "trufflehog-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertTrufflehogToHDF(input, "1.0.0")
-	}, "ndjson-input.ndjson")
+	}, "ndjson-input.ndjson", "empty-stdout.json")
 }
 
 // countDistinctTrufflehogGroups parses raw TruffleHog output generically — NOT

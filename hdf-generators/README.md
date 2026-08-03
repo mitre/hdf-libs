@@ -35,9 +35,11 @@ import type { HDFBaseline } from '@mitre/hdf-schema';
 const baseline: HDFBaseline = JSON.parse(fs.readFileSync('baseline.json', 'utf8'));
 
 const profile = generateInSpecProfile(baseline, {
-  maintainer: 'MITRE SAF',
-  copyright: 'MITRE Corporation',
-  license: 'Apache-2.0',
+  metadata: {
+    maintainer: 'MITRE SAF',
+    copyright: 'MITRE Corporation',
+    license: 'Apache-2.0',
+  },
 });
 
 // profile.inspecYml — string content for inspec.yml
@@ -53,17 +55,19 @@ import { generateControlStub, generateInSpecYml, escapeQuotes } from '@mitre/hdf
 const ruby = generateControlStub(requirement);
 
 // Generate inspec.yml
-const yml = generateInSpecYml(baseline, { maintainer: 'Team', license: 'Apache-2.0' });
+const yml = generateInSpecYml(baseline, { metadata: { maintainer: 'Team', license: 'Apache-2.0' } });
 ```
 
 ## Usage (Go)
 
 ```go
-import generators "github.com/mitre/hdf-generators"
+import generators "github.com/mitre/hdf-libs/hdf-generators/go/v3"
 
-profile := generators.GenerateInSpecProfile(baseline, generators.ProfileMetadata{
-    Maintainer: "MITRE SAF",
-    License:    "Apache-2.0",
+profile := generators.GenerateInSpecProfile(baseline, &generators.GeneratorOptions{
+    Metadata: &generators.ProfileMetadata{
+        Maintainer: "MITRE SAF",
+        License:    "Apache-2.0",
+    },
 })
 // profile.InspecYml — string
 // profile.Controls  — map[string]string

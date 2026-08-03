@@ -1,6 +1,8 @@
 package awsconfig
 
 import (
+	"slices"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -267,9 +269,10 @@ func TestMappedRevisions(t *testing.T) {
 	if got := MappedRevisions("API_GW_SSL_ENABLED", "api-gw-ssl-enabled"); len(got) != 1 || got[0] != 5 {
 		t.Errorf("expected [5] for api-gw-ssl-enabled, got %v", got)
 	}
-	// secretsmanager-scheduled-rotation-success-check exists only in Rev 4.
-	if got := MappedRevisions("SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK", "secretsmanager-scheduled-rotation-success-check"); len(got) != 1 || got[0] != 4 {
-		t.Errorf("expected [4] for secretsmanager rule, got %v", got)
+	// emr-kerberos-enabled exists only in Rev 4 (not in the Config Rev5 docs or the
+	// Security Hub NIST r5 standard).
+	if got := MappedRevisions("EMR_KERBEROS_ENABLED", "emr-kerberos-enabled"); len(got) != 1 || got[0] != 4 {
+		t.Errorf("expected [4] for emr-kerberos-enabled, got %v", got)
 	}
 	// An unknown rule maps at no revision.
 	if got := MappedRevisions("NOPE", "no-such-rule"); len(got) != 0 {
@@ -351,4 +354,22 @@ func TestNISTControlsBySubstring(t *testing.T) {
 			t.Errorf("expected nil for empty name, got %v", got)
 		}
 	})
+}
+
+// TestRev4CollapsedControlsExpanded guards Rev-4 rows that once
+// carried collapsed NIST sub-parts (e.g. IA-5(1)(a)(d)(e)) that split('|') left
+// as single unreachable tokens. They must now resolve to sibling controls.
+func TestRev4CollapsedControlsExpanded(t *testing.T) {
+	controls := NISTControlsByIdentifierForRevision("IAM_PASSWORD_POLICY", 4)
+	for _, want := range []string{"IA-5(1)", "IA-5(a)", "IA-5(d)", "IA-5(e)"} {
+		if !slices.Contains(controls, want) {
+			t.Errorf("expected expanded sibling %q in %v", want, controls)
+		}
+	}
+	// No token may retain more than one parenthetical group (a collapsed form).
+	for _, c := range controls {
+		if strings.Count(c, "(") > 1 {
+			t.Errorf("collapsed token survived expansion: %q", c)
+		}
+	}
 }

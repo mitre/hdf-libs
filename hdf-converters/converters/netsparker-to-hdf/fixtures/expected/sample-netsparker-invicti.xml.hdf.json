@@ -3,6 +3,20 @@
     {
       "requirements": [
         {
+          "cvss": [
+            {
+              "baseScore": 6.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
+              "version": "3.0"
+            },
+            {
+              "baseScore": 6.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Invicti Enterprise detected that weak ciphers are enabled during secure communication (SSL). You should allow only strong ciphers on your web server to protect secure communication with your visitors.\nClassification: cwe=\u003e327, owasp=\u003eA6\nImpact: Attackers might decrypt SSL traffic between your server and your visitors.\nFirstSeenDate: 02/20/2023 05:03 PM\nLastSeenDate: 05/05/2023 05:07 PM\nCertainty: 100\nType: WeakCiphersDetected\nConfirmed: True",
@@ -35,6 +49,7 @@
             ],
             "owasp": "A6"
           },
+          "code": "[SSL Connection]",
           "controlType": "technical",
           "title": "Weak Ciphers Enabled",
           "verificationMethod": "automated"
@@ -70,6 +85,7 @@
             ],
             "owasp": "A5"
           },
+          "code": "GET / HTTP/1.1\nHost: mlrcommercial.vams-impl.cms.gov\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8\nAccept-Language: en-us,en;q=0.5\nCache-Control: no-cache\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36\n\n",
           "controlType": "technical",
           "title": "HTTP Strict Transport Security (HSTS) Errors and Warnings",
           "verificationMethod": "automated"
@@ -109,6 +125,7 @@
             ],
             "owasp": "A5"
           },
+          "code": "GET / HTTP/1.1\nHost: mlrcommercial.vams-impl.cms.gov\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8\nAccept-Language: en-us,en;q=0.5\nCache-Control: no-cache\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36\n\n",
           "controlType": "technical",
           "title": "Missing X-Frame-Options Header",
           "verificationMethod": "automated"
@@ -133,7 +150,6 @@
     "version": "1.0.0"
   },
   "tool": {
-    "format": "XML",
     "name": "Invicti"
   }
 }

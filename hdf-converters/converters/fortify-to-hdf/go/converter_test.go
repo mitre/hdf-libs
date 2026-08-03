@@ -3,6 +3,7 @@ package fortify
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -154,6 +155,81 @@ func TestConvertFortifyToHDF_RequirementFields(t *testing.T) {
 	}
 }
 
+// requirement.code drives Heimdall's CODE tab. It must carry the raw Fortify
+// source snippet (the FVDL <Snippet><Text>), not the codeDesc wrapper text.
+func TestConvertFortifyToHDF_RequirementCode(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+	pathManip := shared.MustFindRequirement(t, baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
+
+	require.NotNil(t, pathManip.Code, "requirement.code must carry the source snippet")
+	code := *pathManip.Code
+
+	// Raw source, not the "Path:/StartLine:/Code:" codeDesc wrapper.
+	assert.False(t, strings.HasPrefix(code, "Path:"), "code should be raw source, not the codeDesc wrapper")
+	assert.Contains(t, code, "System.out.println(MD5.getHashString(new File(element))")
+
+	// The snippet appears verbatim inside the result codeDesc.
+	require.NotEmpty(t, pathManip.Results)
+	assert.Contains(t, pathManip.Results[0].CodeDesc, code)
+
+	// Every requirement in this fixture has a primary-trace snippet.
+	for _, req := range baseline.Requirements {
+		assert.NotNil(t, req.Code, "requirement %q should have code populated", req.ID)
+	}
+}
+
+// A finding whose primary trace carries no snippet must leave code unset
+// (NOT-IN-SOURCE) rather than fabricating one.
+func TestConvertFortifyToHDF_RequirementCode_NoSnippet(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C3</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I3</InstanceID></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C3">
+  <Abstract>No trace</Abstract>
+  <Explanation>Explanation text</Explanation>
+</Description>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.Code, "code must be unset when the finding carries no snippet")
+}
+
+// Node-bearing trace entries that carry no usable snippet (missing snippet
+// attribute, or a snippet id absent from <Snippets>) must be skipped, leaving
+// code unset rather than emitting an empty or fabricated value.
+func TestConvertFortifyToHDF_RequirementCode_NodeWithoutSnippet(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C9</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I9</InstanceID></InstanceInfo>
+    <AnalysisInfo><Unified><Trace><Primary>
+      <Entry><Node isDefault="true"><SourceLocation path="a.java" line="1"/></Node></Entry>
+      <Entry><Node isDefault="false"><SourceLocation path="b.java" line="2" snippet="MISSING"/></Node></Entry>
+    </Primary></Trace></Unified></AnalysisInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C9"><Abstract>Crafted</Abstract><Explanation>Expl</Explanation></Description>
+<Snippets/>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.Code, "code must be unset when no trace node resolves to a snippet")
+}
+
 func TestConvertFortifyToHDF_NISTTags(t *testing.T) {
 	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
 
@@ -303,6 +379,116 @@ func TestConvertFortifyToHDF_DescriptionAnchor(t *testing.T) {
 	require.NoError(t, err)
 	shared.AssertRequirementCount(t, result, shared.CountXMLElements(t, input, "Description"),
 		"fortify_webgoat_results.fvdl: one requirement per FVDL <Description>")
+}
+
+// CWE identifiers carried by the FVDL "Standards Mapping - Common Weakness
+// Enumeration" reference must surface as first-class requirement.cwe[] entries
+// ("CWE-NN"), and their CWE->NIST mapping must merge into tags.nist.
+func TestConvertFortifyToHDF_CWE(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+
+	// Path Manipulation: "CWE ID 22, CWE ID 73" -> ["CWE-22","CWE-73"].
+	pathManip := shared.MustFindRequirement(t, baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
+	assert.Equal(t, []string{"CWE-22", "CWE-73"}, pathManip.Cwe)
+
+	// CWE-497 maps to NIST SI-11; the native reference is AC-4, so the merged
+	// tags.nist must carry BOTH controls.
+	sysInfo := shared.MustFindRequirement(t, baseline.Requirements, "FE4EADF2-7055-4C36-863E-5A01C4A0E1A4")
+	assert.Equal(t, []string{"CWE-497"}, sysInfo.Cwe)
+	nist := toStringSlice(t, sysInfo.Tags["nist"])
+	assert.Contains(t, nist, "AC-4", "native NIST control must be preserved")
+	assert.Contains(t, nist, "SI-11", "CWE->NIST mapping must be merged in")
+
+	// A CWE whose ID has no NIST mapping (CWE-561) still yields cwe[] but leaves
+	// the native NIST untouched.
+	deadCode := shared.MustFindRequirement(t, baseline.Requirements, "3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E")
+	assert.Equal(t, []string{"CWE-561"}, deadCode.Cwe)
+	assert.Equal(t, []string{"SA-11", "RA-5"}, toStringSlice(t, deadCode.Tags["nist"]))
+}
+
+func toStringSlice(t *testing.T, v interface{}) []string {
+	t.Helper()
+	raw, ok := v.([]string)
+	if ok {
+		return raw
+	}
+	ifaces, ok := v.([]interface{})
+	require.True(t, ok, "expected slice, got %T", v)
+	out := make([]string, len(ifaces))
+	for i, e := range ifaces {
+		out[i] = e.(string)
+	}
+	return out
+}
+
+// A finding whose Description carries no CWE reference must leave cwe unset.
+func TestConvertFortifyToHDF_CWE_Absent(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>CN</ClassID><DefaultSeverity>3.0</DefaultSeverity></ClassInfo>
+    <InstanceInfo><InstanceID>I</InstanceID><InstanceSeverity>3.0</InstanceSeverity></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="CN">
+  <Abstract>No CWE</Abstract><Explanation>e</Explanation>
+  <References>
+    <Reference><Title>SI-10</Title><Author>Standards Mapping - NIST Special Publication 800-53 Revision 4</Author></Reference>
+  </References>
+</Description>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.Cwe, "cwe must be unset when no CWE reference is present")
+	assert.Equal(t, []string{"SI-10"}, toStringSlice(t, req.Tags["nist"]))
+}
+
+// A CWE-authored reference whose title carries no numeric ID yields no cwe[].
+func TestConvertFortifyToHDF_CWE_NoNumericID(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>CX</ClassID><DefaultSeverity>3.0</DefaultSeverity></ClassInfo>
+    <InstanceInfo><InstanceID>I</InstanceID><InstanceSeverity>3.0</InstanceSeverity></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="CX">
+  <Abstract>a</Abstract><Explanation>e</Explanation>
+  <References>
+    <Reference><Title>Not applicable</Title><Author>Standards Mapping - Common Weakness Enumeration</Author></Reference>
+  </References>
+</Description>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.Cwe, "cwe must be unset when the CWE reference carries no numeric ID")
+}
+
+// Impact is derived from the per-instance InstanceSeverity, NOT the class-level
+// DefaultSeverity. When they diverge, the instance value wins.
+func TestConvertFortifyToHDF_InstanceSeverityImpact(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>CDIV</ClassID><DefaultSeverity>5.0</DefaultSeverity></ClassInfo>
+    <InstanceInfo><InstanceID>I</InstanceID><InstanceSeverity>1.0</InstanceSeverity></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="CDIV"><Abstract>Divergent</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, 0.2, req.Impact, "impact must use InstanceSeverity (1.0/5), not DefaultSeverity (5.0/5)")
 }
 
 func TestConvertFortifyToHDF_VerificationMethod(t *testing.T) {

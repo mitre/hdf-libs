@@ -90,10 +90,10 @@ describe('dbprotect to HDF converter', () => {
       expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
     });
 
-    it('should set tool name to "DBProtect" and format to "XML"', async () => {
+    it('should set tool name to "DBProtect" with no format', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
       expect(hdf.tool?.name).toBe('DBProtect');
-      expect(hdf.tool?.format).toBe('XML');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
 
     it('should have 6 unique requirements from 8 rows', async () => {
@@ -128,6 +128,38 @@ describe('dbprotect to HDF converter', () => {
       expect(defaultDesc).toBeDefined();
       expect(defaultDesc!.data).toContain('Task');
       expect(defaultDesc!.data).toContain('Check Category');
+    });
+  });
+
+  describe('requirement.code (Heimdall CODE tab)', () => {
+    it('serializes the source row as indented, sorted-key JSON', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
+      expect(req?.code).toBeTruthy();
+      const code = req!.code!;
+
+      // Two-space indented, not a compact blob.
+      expect(code).toContain('\n  "Check": "Schema ownership"');
+
+      // Round-trips back to the source row.
+      const row = JSON.parse(code) as Record<string, string>;
+      expect(row['Check']).toBe('Schema ownership');
+      expect(row['Check Category']).toBe('Improper Access Controls');
+      expect(row['Risk DV']).toBe('Medium');
+      expect(row['Details']).toBe('Schema name=DatabaseMailUserRole;Database=msdb;Owner name=DatabaseMailUserRole');
+
+      // Keys are emitted in sorted order (the byte-parity contract with the Go twin).
+      const sorted = JSON.stringify(row, Object.keys(row).sort(), 2);
+      expect(code).toBe(sorted);
+    });
+
+    it('populates code for every requirement in the Findings Detail report', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.code).toBeTruthy();
+        const row = JSON.parse(req.code!) as Record<string, string>;
+        expect(row['Check']).toBeTruthy();
+      }
     });
   });
 

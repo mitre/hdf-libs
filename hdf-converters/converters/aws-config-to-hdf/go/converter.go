@@ -27,13 +27,25 @@ type ConfigRulesFile struct {
 
 // ConfigRule represents an AWS Config rule and its compliance evaluation results.
 type ConfigRule struct {
-	ConfigRuleID      string             `json:"ConfigRuleId"`
-	ConfigRuleName    string             `json:"ConfigRuleName"`
-	ConfigRuleArn     string             `json:"ConfigRuleArn"`
-	Description       string             `json:"Description"`
-	Source            ConfigRuleSource   `json:"Source"`
-	InputParameters   string             `json:"InputParameters"`
-	EvaluationResults []EvaluationResult `json:"EvaluationResults"`
+	ConfigRuleID      string                    `json:"ConfigRuleId"`
+	ConfigRuleName    string                    `json:"ConfigRuleName"`
+	ConfigRuleArn     string                    `json:"ConfigRuleArn"`
+	Description       string                    `json:"Description"`
+	Source            ConfigRuleSource          `json:"Source"`
+	InputParameters   string                    `json:"InputParameters"`
+	EvaluationResults []EvaluationResult        `json:"EvaluationResults"`
+	Remediation       *RemediationConfiguration `json:"Remediation,omitempty"`
+}
+
+// RemediationConfiguration mirrors AWS Config's RemediationConfiguration
+// (DescribeRemediationConfigurations) — the SSM Automation document Config runs
+// to remediate a rule. Optional: the config-rules export carries it only when a
+// remediation is attached, so a rule without one simply gets no fix description.
+type RemediationConfiguration struct {
+	TargetType    string `json:"TargetType"`    // e.g. "SSM_DOCUMENT"
+	TargetID      string `json:"TargetId"`      // the automation document name
+	TargetVersion string `json:"TargetVersion"` // optional document version
+	Automatic     bool   `json:"Automatic"`     // auto-remediate on non-compliance
 }
 
 // ConfigRuleSource identifies who owns the rule and how to look up its NIST mappings.
@@ -143,17 +155,19 @@ func buildBaseline(rules []ConfigRule, resultsChecksum *hdf.Checksum) hdf.Evalua
 // buildRequirement creates one HDF requirement for a single AWS Config rule.
 func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 	nistControls := buildNISTTags(rule.Source.SourceIdentifier, rule.ConfigRuleName)
-	tags := map[string]interface{}{}
-	if len(nistControls) > 0 {
-		tags["nist"] = nistControls
+	if len(nistControls) == 0 {
+		// A managed or custom rule the mapping tables don't cover still evaluates a
+		// configuration setting — fall back to CM-6 rather than emitting no NIST context.
+		nistControls = shared.DefaultConfigManagementNIST
 	}
+	tags := map[string]interface{}{"nist": nistControls}
 
 	reqResults := make([]hdf.RequirementResult, 0, len(rule.EvaluationResults))
 	for _, r := range rule.EvaluationResults {
 		reqResults = append(reqResults, buildResult(r))
 	}
 	if len(reqResults) == 0 {
-		// Issue #80 bug 2: a Config rule that was deployed and active but
+		// A Config rule that was deployed and active but
 		// evaluated zero in-scope resources (e.g. rds-cluster-multi-az-enabled
 		// in an account with no RDS clusters) returns an empty
 		// EvaluationResults from GetComplianceDetailsByConfigRule. The HDF
@@ -168,6 +182,9 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 	descriptions := []hdf.Description{
 		{Label: "default", Data: rule.Description},
 		{Label: "check", Data: buildCheckText(rule)},
+	}
+	if fix := buildFixText(rule); fix != "" {
+		descriptions = append(descriptions, hdf.Description{Label: "fix", Data: fix})
 	}
 
 	return hdf.EvaluatedRequirement{
@@ -190,7 +207,7 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 // whose live evaluation returned zero in-scope resources. The HDF schema
 // requires Results.minItems >= 1; emitting this synthesized result honestly
 // signals to auditors that the rule's check ran but had no scope in this
-// account/region rather than vacuously claiming "passed". See issue #80 bug 2.
+// account/region rather than vacuously claiming "passed".
 func buildNotApplicableResult(rule ConfigRule) hdf.RequirementResult {
 	return hdf.RequirementResult{
 		Status:    hdf.NotApplicable,
@@ -310,6 +327,36 @@ func getRegion(arn string) string {
 		return "unknown"
 	}
 	return m[1]
+}
+
+// buildFixText builds the "fix" description from a rule's attached remediation
+// configuration (the SSM Automation document Config runs). Empty when the rule
+// carries no remediation, so the fix description is omitted rather than fabricated.
+func buildFixText(rule ConfigRule) string {
+	r := rule.Remediation
+	if r == nil || r.TargetID == "" {
+		return ""
+	}
+	trigger := "on demand"
+	if r.Automatic {
+		trigger = "automatically on non-compliance"
+	}
+	doc := r.TargetID
+	if r.TargetVersion != "" {
+		doc += " (version " + r.TargetVersion + ")"
+	}
+	return fmt.Sprintf("Remediate via %s %s, applied %s.", remediationTargetLabel(r.TargetType), doc, trigger)
+}
+
+// remediationTargetLabel renders an AWS remediation TargetType as human text.
+func remediationTargetLabel(targetType string) string {
+	if targetType == "SSM_DOCUMENT" {
+		return "SSM Automation document"
+	}
+	if targetType == "" {
+		return "automation document"
+	}
+	return targetType + " document"
 }
 
 // buildCheckText creates the "check" description content with ARN, source identifier, and params.

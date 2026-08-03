@@ -91,8 +91,10 @@ Output defaults to stdout if not specified.
 
 Use format@version to specify a format version:
   --from sarif@2.0    Convert SARIF 2.0 input
-  --from hdf@1        Convert from InSpec exec-json (legacy HDF v1)
-  --to hdf@1          Downgrade output to InSpec exec-json (legacy HDF v1)
+  --to hdf@3          Modern HDF (default)
+  --to hdf@2          Legacy Heimdall HDF schema (InSpec exec-json shape; loads in Heimdall2)
+  --from hdf@2        Convert from the legacy Heimdall HDF schema
+  (hdf@1 is not a distinct schema — raw InSpec; use --from inspec)
 
 Examples:
   hdf convert scan.nessus                              # Auto-detect, convert to HDF
@@ -116,6 +118,23 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	fromFormat, fromVersion := parseFormatVersion(fromFormat)
 	toFormat, toVersion := parseFormatVersion(toFormat)
 
+	// There is no distinct HDF v1 schema (v1 = raw InSpec, same shape as the v2
+	// legacy Heimdall schema). Map hdf@1 → v2 with a warning; hdf@2/@3 pass
+	// through silently. Guarded on the hdf format so a "1" version on another
+	// format (e.g. sarif@1) is left untouched.
+	if strings.EqualFold(fromFormat, "hdf") {
+		var warn string
+		if fromVersion, warn = hdfversion.NormalizeVersion(fromVersion); warn != "" {
+			fmt.Fprintln(os.Stderr, warn)
+		}
+	}
+	if strings.EqualFold(toFormat, "hdf") {
+		var warn string
+		if toVersion, warn = hdfversion.NormalizeVersion(toVersion); warn != "" {
+			fmt.Fprintln(os.Stderr, warn)
+		}
+	}
+
 	// Select the NIST revision converters emit control tags for, restoring the
 	// defaults afterward so one invocation can't leak into the next.
 	if reset, err := applyNistOptions(cmd); err != nil {
@@ -134,13 +153,25 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		}
 	}
 
-	// Read input
+	// Read input. Empty input is allowed through the read boundary so the convert
+	// path can honor converters that treat "no bytes" as a valid zero-findings
+	// signal (e.g. exit-code-first scanners that emit no report on a clean run).
+	// The empty-input policy is enforced below, once the resolved converter is
+	// known — every other read boundary still rejects empty via readInputFile.
 	printDebug("Reading input from %s", inputPath)
-	data, err := readInputFile(inputPath)
+	data, err := readInputFileAllowEmpty(inputPath)
 	if err != nil {
 		return err
 	}
 	printDebug("Read %d bytes", len(data))
+
+	// Empty input carries no bytes to fingerprint, so it is only meaningful with
+	// an explicit --from whose converter opts into empty input. Without --from,
+	// keep the standard "no input provided" error rather than a confusing
+	// auto-detect failure.
+	if len(data) == 0 && fromFormat == "" {
+		return fmt.Errorf("no input provided")
+	}
 
 	// Auto-detect source format if --from not provided
 	if fromFormat == "" {
@@ -183,6 +214,17 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	}
 	printDebug("Using converter: %s", converter.Name())
 
+	// Enforce the empty-input policy now that the converter is known: empty input
+	// is only valid for converters that explicitly accept it (EmptyInputAccepting,
+	// e.g. exit-code-first scanners). Everything else keeps the standard error.
+	if len(data) == 0 {
+		e, ok := converter.(EmptyInputAccepting)
+		if !ok || !e.AcceptsEmptyInput() {
+			return fmt.Errorf("no input provided")
+		}
+		printDebug("Empty input accepted by %s converter as zero findings", converter.Name())
+	}
+
 	// Run conversion with version handling
 	output, err := runVersionedConvert(converter, data, fromVersion, toVersion)
 	if err != nil {
@@ -215,6 +257,10 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 
 	// Write output (with schema validation if target is HDF and --no-validate not set)
 	if strings.EqualFold(toFormat, "hdf") {
+		output, err = stampConvertOutput(output)
+		if err != nil {
+			return err
+		}
 		return writeValidatedHDFOutput(cmd, output, outputPath)
 	}
 	return writeConvertOutput(output, outputPath)
@@ -246,12 +292,12 @@ func applyNistOptions(cmd *cobra.Command) (reset func(), err error) {
 	}, nil
 }
 
-// normalizeLegacyHDFInput upgrades legacy HDF v1 input (the InSpec exec-json
-// shape, which has no `baselines`) to modern HDF before a non-hdf export
-// converter consumes it. Conversions to hdf are left untouched — the hdf→hdf
-// converter handles version transforms itself. Returns the (possibly upgraded)
-// data along with the source format/version to use downstream; on upgrade the
-// source becomes plain modern hdf.
+// normalizeLegacyHDFInput upgrades legacy HDF (v2, the InSpec exec-json
+// profiles/platform shape, which has no `baselines`) to modern HDF (v3) before a
+// non-hdf export converter consumes it. Conversions to hdf are left untouched —
+// the hdf→hdf converter handles version transforms itself. Returns the
+// (possibly upgraded) data along with the source format/version to use
+// downstream; on upgrade the source becomes plain modern hdf.
 func normalizeLegacyHDFInput(data []byte, fromFormat, fromVersion, toFormat string) ([]byte, string, string, error) {
 	if strings.EqualFold(toFormat, "hdf") {
 		return data, fromFormat, fromVersion, nil
@@ -267,16 +313,16 @@ func normalizeLegacyHDFInput(data []byte, fromFormat, fromVersion, toFormat stri
 	if _, err := GetConverter("hdf", toFormat); err != nil {
 		return data, fromFormat, fromVersion, nil //nolint:nilerr // absence of a converter is not an error here; fall through to the standard not-found path
 	}
-	// Detect v1 by content so `--from hdf`, `--from hdf@1`, and auto-detected
-	// legacyhdf input are all handled; modern HDF is left untouched.
+	// Detect the legacy shape by content so `--from hdf`, `--from hdf@2`, and
+	// auto-detected legacyhdf input are all handled; modern HDF is left untouched.
 	if !legacyhdf.IsHDFV1(data) {
 		return data, fromFormat, fromVersion, nil
 	}
-	upgraded, err := hdfversion.TransformHDF(data, "1", "2")
+	upgraded, _, err := hdfversion.TransformHDF(data, hdfversion.LegacyVersion, hdfversion.ModernVersion)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("failed to upgrade legacy HDF v1 input for %s conversion: %w", toFormat, err)
+		return nil, "", "", fmt.Errorf("failed to upgrade legacy HDF (v2) input for %s conversion: %w", toFormat, err)
 	}
-	printDebug("Upgraded legacy HDF v1 input to modern HDF for %s conversion", toFormat)
+	printDebug("Upgraded legacy HDF (v2) input to modern HDF for %s conversion", toFormat)
 	return upgraded, "hdf", "", nil
 }
 
@@ -306,7 +352,7 @@ func runVersionedConvert(converter Converter, data []byte, fromVersion, toVersio
 
 	// Post-process: downgrade HDF version if --to hdf@N was specified
 	// (only for non-HDF→HDF converters; the hdf→hdf converter handles it internally)
-	if toVersion != "" && toVersion != "2" {
+	if toVersion != "" && toVersion != hdfversion.ModernVersion {
 		if _, isHDFVer := converter.(*hdfVersionConverter); !isHDFVer {
 			printDebug("Post-processing output to HDF version %s", toVersion)
 			output, err = PostProcessToVersion(output, toVersion)

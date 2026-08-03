@@ -1,0 +1,14 @@
+{
+  "_comment": "CVSS 3.1 reference vectors for the score-compute engine. Base scores are the values NVD/FIRST publish for these vectors; temporal (Threat) scores are computed per the FIRST CVSS v3.1 specification §7 (formula) and §7.4 roundup, using the documented Exploit Maturity / Remediation Level / Report Confidence constants. Provenance: https://www.first.org/cvss/v3.1/specification-document . Shared by the Go (go/cvss_test.go) and TS (test/cvss.test.ts) tests so both assert identical expected values.",
+  "cases": [
+    { "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", "base": 9.8, "temporal": 9.8, "note": "Critical, scope unchanged" },
+    { "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H", "base": 10.0, "temporal": 10.0, "note": "scope changed clamps to 10.0 (Log4Shell shape)" },
+    { "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N", "base": 5.9, "temporal": 5.9, "note": "high attack complexity, confidentiality only" },
+    { "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H", "base": 7.8, "temporal": 7.8, "note": "local privilege escalation" },
+    { "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N", "base": 6.1, "temporal": 6.1, "note": "reflected XSS, scope changed" },
+    { "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C", "base": 9.8, "temporal": 9.1, "note": "E:F(0.97) x RL:O(0.95) x RC:C(1.0) => roundup(9.0307)=9.1" },
+    { "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:U", "base": 9.8, "temporal": 9.0, "note": "E:U(0.91) => roundup(8.918)=9.0" },
+    { "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:H", "base": 9.8, "temporal": 9.8, "note": "E:H(1.0) => temporal equals base (the STIX exploitation bridge case)" },
+    { "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N", "base": 0.0, "temporal": 0.0, "note": "no impact (C/I/A all None) => ISS 0 => score 0.0" }
+  ]
+}

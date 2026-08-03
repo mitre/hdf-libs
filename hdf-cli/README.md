@@ -13,16 +13,19 @@ HDF (Heimdall Data Format) is a standardized JSON format for security assessment
   - [list](#list) -- Summarize a document, or list items with `--detail`
   - [query](#query) -- Search and filter requirements
   - [diff](#diff) -- Compare two HDF documents
+  - [events](#events) -- Derive, fold, and apply requirement-change events
   - [convert](#convert) -- Convert between formats
   - [system](#system) -- View and manage HDF system documents
   - [plan](#plan) -- View and manage HDF assessment plans
   - [amend](#amend) -- Apply, list, and verify amendments (waivers/attestations)
+  - [enrich](#enrich) -- Attach external context (STIX CTI) to results
   - [evidence](#evidence) -- Build and inspect evidence packages
   - [label](#label) -- Add, remove, or show labels on components
   - [generate](#generate) -- Generate InSpec profiles, thresholds, and baseline upgrades
   - [fetch](#fetch) -- Fetch from live APIs
     - [fetch aws-config](#fetch-aws-config) -- AWS Config compliance data
     - [fetch aws-securityhub](#fetch-aws-securityhub) -- AWS Security Hub ASFF findings
+    - [fetch defectdojo](#fetch-defectdojo) -- DefectDojo findings
     - [fetch gitlab](#fetch-gitlab) -- GitLab CI/CD security artifacts
     - [fetch sonarqube](#fetch-sonarqube) -- SonarQube issues
     - [fetch splunk](#fetch-splunk) -- Splunk HDF events
@@ -45,17 +48,21 @@ Download the latest release for your platform from [GitHub Releases](https://git
 - Linux (amd64, arm64)
 - Windows (amd64)
 
+Release assets are versioned, so set `VERSION` to the release you want (without the `v` prefix):
+
 ```bash
+VERSION=3.5.0
+
 # Example: download and install on macOS (Apple Silicon)
-curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_darwin_arm64.tar.gz | tar xz
+curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_darwin_arm64.tar.gz | tar xz
 sudo mv hdf /usr/local/bin/
 
 # Linux (amd64)
-curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_linux_amd64.tar.gz | tar xz
+curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_linux_amd64.tar.gz | tar xz
 sudo mv hdf /usr/local/bin/
 ```
 
-Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.4.0_darwin_arm64.tar.gz`).
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.5.0_darwin_arm64.tar.gz`).
 
 ### Build from source
 
@@ -96,7 +103,7 @@ USAGE
   hdf validate <file> [flags]
 
 FLAGS
-  -t, --type string    Schema type: results or baseline (default "results")
+  -t, --type string    Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package
   -q, --quiet          Suppress output on success (exit code only)
 
 EXAMPLES
@@ -118,6 +125,23 @@ $ echo '{"not":"hdf"}' | hdf validate -
   Use --type to specify: results, baseline, comparison, system, plan, amendments, evidence-package
 ```
 
+#### validate threshold
+
+Validate HDF results against compliance thresholds — the CI/CD compliance-gate companion to `hdf generate threshold`. Exit code 0 if all thresholds pass, 1 on any violation.
+
+```
+USAGE
+  hdf validate threshold <results.json> [flags]
+
+FLAGS
+  -T, --template string   Threshold YAML template file
+  -I, --inline string     Inline threshold (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
+
+EXAMPLES
+  hdf validate threshold results.json -T threshold.yaml
+  hdf validate threshold results.json -I "{compliance.min: 80}, {failed.total.max: 0}"
+```
+
 ### list
 
 Summarize any HDF document, or expand a section to item-level detail with `--detail`. The default summary reports document counts and, for results, the status breakdown — this replaces the former `info` and `stats` commands.
@@ -125,6 +149,7 @@ Summarize any HDF document, or expand a section to item-level detail with `--det
 ```
 USAGE
   hdf list <file> [file...] [--detail <section>] [flags]
+  (alias: hdf ls)
 
 DETAIL SECTIONS by document type
   results:           requirements, baselines, components
@@ -139,6 +164,7 @@ DETAIL SECTIONS by document type
 
 FLAGS
   -s, --status string    Filter requirements by status: passed, failed, error, not_applicable, not_reviewed
+  -a, --all              Show all details (expand every section)
 
 EXAMPLES
   hdf list results.json                              # summary (counts + status breakdown)
@@ -181,17 +207,20 @@ USAGE
   hdf query <file> [flags]
 
 FLAGS
-  -s, --status string      Filter by status: passed, failed, error, not_applicable, not_reviewed
-      --severity string    Filter by severity (repeatable, OR logic): critical, high, medium, low, informational
-      --impact string      Filter by impact value (e.g., ">0.5", ">=0.7", "0.5")
-      --cci string         Filter by CCI identifier (e.g., CCI-000366)
-      --nist string        Filter by NIST control (e.g., AC-2, CM-6*)
-      --id string          Filter by requirement ID, STIG ID, GID, or group title
-  -t, --tag string         Filter by tag key:value (e.g., severity:high)
-      --search string      Search in control title and description
-  -p, --baseline string    Filter by profile name
-  -c, --count              Show only the count of matching controls
-  -l, --limit int          Limit number of results (0 = unlimited)
+  -s, --status stringArray     Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed
+      --severity stringArray   Filter by severity (repeatable, OR logic): critical, high, medium, low, informational
+      --impact string          Filter by impact value (e.g., ">0.5", ">=0.7", "0.5")
+      --cci stringArray        Filter by CCI identifier (repeatable, OR logic; e.g., CCI-000366)
+      --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
+      --id string              Filter by requirement ID, STIG ID, GID, or group title
+  -t, --tag stringArray        Filter by tag key:value (repeatable, OR logic; e.g., severity:high)
+      --search string          Search in control title and description
+  -p, --baseline string        Filter by profile name
+  -c, --count                  Show only the count of matching controls
+  -l, --limit int              Limit number of results (0 = unlimited)
+
+Repeatable filters (`--status`, `--severity`, `--cci`, `--nist`, `--tag`) OR their own
+values together; different filter types combine with AND.
 
 EXAMPLES
   hdf query results.json --status failed
@@ -233,8 +262,13 @@ USAGE
 
 FLAGS
   -f, --format string      Output format: table, json, markdown (default "table")
+  -o, --output string      Write output to file instead of stdout
       --stat               Summary counts only (like git diff --stat)
+      --all                Include unchanged requirements/components in output
+      --name-only          List only changed requirement IDs
+      --group-by string    Group results by label key (e.g., baseline)
       --regressed          Show only regressions (also --fixed, --new, --absent)
+  -q, --quiet              Suppress output, return exit code only (implies --exit-code)
       --exit-code          POSIX diff exit codes: 0=identical, 1=differences, 2=error
       --detailed-exitcode  Nuanced codes: 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift
       --system string      System document for component-aware comparison
@@ -242,8 +276,10 @@ FLAGS
 
 EXAMPLES
   hdf diff old-scan.json new-scan.json
-  hdf diff old-scan.json new-scan.json -f markdown
+  hdf diff old-scan.json new-scan.json -f markdown -o report.md
   hdf diff old-scan.json new-scan.json --regressed
+  hdf diff old-scan.json new-scan.json --name-only
+  hdf diff old-scan.json new-scan.json --group-by baseline
   hdf diff old-scan.json new-scan.json --detailed-exitcode   # exit code encodes outcome
   hdf diff --sbom old.cdx.json new.cdx.json
 ```
@@ -262,6 +298,55 @@ REQ-002  Audit logging must be enabled  -           passed      new
 Summary: 0 fixed, 1 regressed, 1 new, 0 absent, 0 unchanged, 0 updated (2 total)
 ```
 
+### events
+
+Batch operations over the HDF requirement-change-event stream (continuous monitoring): `derive` emits one NDJSON `Requirement_Change_Event` per requirement whose effective posture moved between two same-target results documents; `fold` materializes an event batch into a `systemDrift` hdf-comparison; `apply` reassembles the reconciled hdf-results (seed + events), stamped with a `derivation` block so it never masquerades as scanner output.
+
+Every invocation is stateless and deterministic: event identity is a UUIDv5 over the entity key + sequence + the next document's timestamp — identical inputs produce byte-identical events. Sequencing across repeated derive runs is the caller's job (`--start-sequence`); fold and apply read events from any number of batch-file arguments or stdin, in any order — the fold contract ((source, eventId) dedup, per-key sequence as the only ordering authority) makes multi-batch delivery order-independent. Chain anomalies (gaps, duplicate keys, unknown tombstones) are warnings on stderr, never silent and never fatal.
+
+```
+USAGE
+  hdf events derive --prev <results.json> --next <results.json> [flags]
+  hdf events fold   --seed <results.json> [events.ndjson ...] [flags]
+  hdf events apply  --seed <results.json> [events.ndjson ...] [flags]
+
+DERIVE FLAGS
+      --system-ref string      System document reference for the entity key (required)
+      --component-id string    Component UUID (default: the next document's sole component)
+      --source string          Producer URI recorded in the envelope
+      --start-sequence int     Sequence assigned to the first emitted event (default 1)
+      --schema-ref string      Optional schemaRef URI stamped on every event
+  -o, --output string          Output file (default: stdout)
+
+FOLD / APPLY FLAGS
+  -o, --output string          Output file (default: stdout)
+      --seed-uri string        (apply) Seed URI for the derivation block (default: the --seed path)
+      --source string          (apply) Stream source for the derivation block (default: first event's source)
+
+EXAMPLES
+  hdf events derive --prev monday.hdf.json --next tuesday.hdf.json \
+    --system-ref prod.hdf-system.json --component-id 6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60 \
+    -o events.ndjson
+  hdf events fold --seed monday.hdf.json events.ndjson -o drift.comparison.json
+  hdf events apply --seed monday.hdf.json batch-1.ndjson batch-2.ndjson -o reconciled.hdf.json
+  cat events.ndjson | hdf events apply --seed monday.hdf.json -o reconciled.hdf.json
+```
+
+A complete runnable example — a live container scanned with a MITRE SAF STIG baseline, driven through seed → drift → derive → apply → amendment → chaos → re-center — lives at [mitre/hdf-conmon-demo](https://github.com/mitre/hdf-conmon-demo).
+
+Example loop (real output):
+
+```console
+$ hdf events derive --prev scan-before.json --next scan-after.json \
+    --system-ref prod.hdf-system.json --component-id 6e0f2a3b-... -o events.ndjson
+$ cut -c1-80 events.ndjson | head -2
+{"after":{"descriptions":[{"data":"The system must disable root SSH login","labe
+{"after":{"descriptions":[{"data":"The audit subsystem must be active","label":"
+$ hdf events apply --seed scan-before.json events.ndjson -o reconciled.hdf.json
+$ hdf validate reconciled.hdf.json
+✓ reconciled.hdf.json is a valid HDF results file
+```
+
 ### convert
 
 Convert security assessment data between HDF and other formats. Supports auto-detection, explicit `--from`/`--to` flags, stdin, and stdout.
@@ -278,8 +363,20 @@ INPUT/OUTPUT
   <file>      File path or "-" for stdin
   -o <output> Output file path; defaults to stdout if omitted
 
+FLAGS
+      --from string           Source format (auto-detected if omitted)
+      --to string             Destination format (default: hdf)
+      --catalog string        OSCAL catalog JSON path (required for oscal-profile → HDF Baseline)
+      --component-id string   Set componentId on all components in the output
+      --labels strings        Labels applied to all targets (key=value, e.g. --labels system=Portal,env=prod)
+      --nist-rev int          NIST 800-53 revision for emitted control tags (4 or 5; default 5)
+      --nist-strict           Fail if input references rules mapped only at a different NIST revision
+      --no-validate           Skip schema validation of converter output before writing
+  -f, --force                 Allow overwriting the input file with output
+
 EXAMPLES
   hdf convert scan.nessus -o results.json
+  hdf convert --from oscal-profile profile.json --catalog catalog.json -o baseline.json
   hdf convert --from nessus scan.nessus -o results.json
   hdf convert --from sarif findings.sarif -o results.json
   hdf convert --from gosec gosec-output.json -o results.json
@@ -420,6 +517,30 @@ Expired:         0
 All amendments are valid.
 ```
 
+### enrich
+
+Overlay an **enrichment source** onto an HDF results document, attaching inert `externalReferences[]` to findings (matched by CVE) or to the results root. Enrichment is informational — it adds context and never changes a finding's status or impact. Positional parity with `convert`: `<results> <source>`, with `--from` as the optional format assertion.
+
+```
+USAGE
+  hdf enrich <results> <source> [flags]
+
+FLAGS
+  --from string           Enrichment source format (auto-detected if omitted; e.g. stix)
+  --recompute-cvss        Also author an E:H CVSS riskAdjustment on exploited, 3.1-base-vector findings
+  -o, --output string     Output file (default: stdout)
+
+EXAMPLES
+  hdf enrich results.json log4shell-bundle.json -o enriched.json       # auto-detect STIX
+  hdf enrich results.json feed.json --from stix -o enriched.json        # assert the format
+  hdf enrich results.json bundle.json --recompute-cvss -o enriched.json # + CVSS E:H recompute
+  hdf enrich results.json bundle.json                                   # write to stdout
+```
+
+Supported sources: **stix** (a STIX 2.1 bundle, `{type:"bundle", objects:[…]}`). A CVE-bearing STIX object attaches to the finding whose requirement ID is that CVE; everything else (non-CVE objects, and CVEs with no matching finding) attaches to the results root. Each reference carries the raw STIX object losslessly in `document`.
+
+With **`--recompute-cvss`**, when a matched STIX object shows active exploitation (a sighting, a `targets`/`exploits` relationship, or an indicator/report reference) and the finding carries a CVSS **3.1** base vector, an inline `riskAdjustment` is authored: Exploit Maturity `E:H` is applied and the Threat score recomputed via the CVSS engine, with `impact.value = computedScore/10` and an `externalReferences[]` back to the STIX source. Findings with no base vector, or a CVSS **4.0** base vector, are left unchanged (no fabrication). Enrichment without `--recompute-cvss` never changes status or impact.
+
 ### evidence
 
 Build and inspect HDF **evidence packages** — bundles of references to all HDF documents for audit, authorization, and compliance review.
@@ -527,6 +648,8 @@ Fetch security data from a live API and convert to HDF in a single step. No inte
 
 All fetch subcommands support `--format raw` to skip HDF conversion and return the tool's native output, and `--output` / `-o` to write to a file instead of stdout.
 
+For endpoints behind a custom TLS chain, every fetch subcommand accepts `--ca-cert <pem>` (a PEM CA bundle for corporate/custom CAs) and `--insecure` (skip TLS verification — prints a warning; use only against trusted hosts).
+
 Credentials are resolved from environment variables or tool-specific config files. See [Credential Handling](#credential-handling).
 
 #### fetch aws-config
@@ -534,6 +657,10 @@ Credentials are resolved from environment variables or tool-specific config file
 Fetch AWS Config compliance evaluation results and convert to HDF.
 
 Credentials are resolved via the standard AWS credential chain: environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`), shared credentials file (`~/.aws/credentials`), or IAM instance role.
+
+**Service-linked rules are excluded.** Config rules owned by an AWS service (`CreatedBy` set — Security Hub, conformance packs, Organizations) can't be read via the Config API by a customer principal, so they're skipped (a `WARNING: skipped N service-linked rule(s)` is printed to stderr). Fetch their findings through the owning service instead — e.g. `hdf fetch aws-securityhub` for Security Hub controls.
+
+**Remediation surfaces as a `fix` description.** A customer-managed rule with an attached remediation configuration (SSM Automation document) gains a `fix` description in its HDF requirement describing the remediation.
 
 ```
 USAGE
@@ -543,12 +670,13 @@ FLAGS
   -r, --region string     (required) AWS region (e.g., us-east-1)
   -p, --profile string    AWS CLI named profile
       --format string     Output format: hdf or raw (default "hdf")
+      --no-validate       Skip schema validation of converter output before writing
   -o, --output string     Output file path (default: stdout)
 
 EXAMPLES
   hdf fetch aws-config --region us-east-1 output.json
   hdf fetch aws-config --region us-east-1 --profile my-audit-account output.json
-  hdf fetch aws-config --region us-east-1 --format raw | jq '.rules | length'
+  hdf fetch aws-config --region us-east-1 --format raw | jq '.ConfigRules | length'
   hdf fetch aws-config --region us-east-1 | jq '.baselines[0].requirements | length'
 ```
 
@@ -567,6 +695,7 @@ FLAGS
   -p, --profile string      AWS CLI named profile
       --format string       Output format: hdf or raw (default "hdf")
       --filter-json string  Path to a JSON file with an ASFF AwsSecurityFindingFilters object
+      --no-validate         Skip schema validation of converter output before writing
   -o, --output string       Output file path (default: stdout)
       --check               Verify credentials only; skip findings download
 
@@ -640,6 +769,38 @@ The [`AwsSecurityFindingFilters` reference](https://docs.aws.amazon.com/security
 lists every filterable field (product, account, standard, resource type, and
 more) — `--filter-json` accepts any of them.
 
+#### fetch defectdojo
+
+Fetch findings from a DefectDojo instance and convert to HDF.
+
+Token must be set via the `DEFECTDOJO_API_TOKEN` environment variable.
+
+Findings are grouped into HDF baselines by their underlying scanner (test_type),
+and risk-accepted findings carry a full HDF status override (who accepted the
+risk, when, why, and when it expires) reconstructed from the finding's inline
+risk-acceptance provenance.
+
+```
+USAGE
+  hdf fetch defectdojo [output] [flags]
+
+FLAGS
+  -u, --url string            (required) DefectDojo instance URL
+      --product-name string   Filter findings to a product by name
+      --engagement string     Filter findings to an engagement by id
+      --test string           Filter findings to a single test by id
+      --format string         Output format: hdf or raw (default "hdf")
+      --check                 Verify credentials only; skip findings download
+      --no-validate           Skip schema validation of converter output before writing
+  -o, --output string         Output file path (default: stdout)
+
+EXAMPLES
+  export DEFECTDOJO_API_TOKEN=<your-token>
+  hdf fetch defectdojo --url https://defectdojo.example.com -o output.json
+  hdf fetch defectdojo --url https://defectdojo.example.com --product-name "My App" -o output.json
+  hdf fetch defectdojo --url https://defectdojo.example.com --check
+```
+
 #### fetch gitlab
 
 Fetch a GitLab CI/CD security scan artifact (SAST, DAST, secret detection, etc.) and convert to HDF.
@@ -692,13 +853,15 @@ USAGE
   hdf fetch sonarqube [output] [flags]
 
 FLAGS
-  -u, --url string             (required) SonarQube server URL
-  -k, --project-key string    (required) SonarQube project key
-      --branch string          Branch name
-      --pull-request string    Pull request ID
-      --organization string    SonarCloud organization key
-      --format string          Output format: hdf or raw (default "hdf")
-  -o, --output string          Output file path (default: stdout)
+  -u, --url string                (required) SonarQube server URL
+      --project-key string        (required) SonarQube project key
+      --branch string             Branch name
+      --pull-request string       Pull request ID
+      --organization string       SonarCloud organization key
+      --sonarqube-version string  SonarQube server version (auto-detected if omitted; affects auth method)
+      --format string             Output format: hdf or raw (default "hdf")
+      --no-validate               Skip schema validation of converter output before writing
+  -o, --output string             Output file path (default: stdout)
 
 NOTE
   --branch and --pull-request are mutually exclusive.
@@ -726,6 +889,7 @@ FLAGS
   -u, --url string       (required) Splunk server URL
   -i, --index string     (required) Splunk index name
   -g, --guid string      (required) Evaluation GUID to fetch
+      --no-validate      Skip schema validation of converter output before writing
   -o, --output string    Output file path (default: stdout)
 
 EXAMPLES
@@ -778,11 +942,13 @@ These flags apply to all commands.
 | `cyclonedx` | | CycloneDX SBOM (JSON) — VEX-bearing BOMs auto-route to cyclonedx-vex |
 | `cyclonedx-vex` | | CycloneDX BOM with VEX analysis statements → HDF Amendments (JSON) |
 | `dbprotect` | | DbProtect database scanner (XML) |
+| `defectdojo` | | DefectDojo findings export via API (JSON) |
 | `deptrack` | `dependency-track` | Dependency-Track vulnerability audit (JSON) |
 | `fortify` | | Micro Focus Fortify SAST (FVDL XML) |
 | `gitlab` | `gitlab-sast`, `gitlab-dast` | GitLab CI/CD security scan reports (JSON) |
 | `gosec` | | gosec Go security checker (JSON or SARIF) |
 | `grype` | | Anchore Grype vulnerability scan (JSON) |
+| `hipcheck` | | MITRE Hipcheck supply-chain risk report (`hc check --format json`) |
 | `ionchannel` | | Ion Channel supply chain analysis (JSON) |
 | `jfrog-xray` | `xray` | JFrog Xray SCA scan (JSON) |
 | `junit` | | JUnit XML test results |
@@ -798,8 +964,10 @@ These flags apply to all commands.
 | `openvex` | | OpenVEX statements → HDF Amendments (JSON) |
 | `oscal` | | OSCAL document (auto-detect type) |
 | `oscal-sar` | `oscal-assessment-results` | OSCAL Assessment Results → HDF Results |
+| `oscal-assessment-plan` | | OSCAL Assessment Plan → HDF Plan |
 | `oscal-catalog` | | OSCAL Catalog → HDF Baseline |
 | `oscal-component-definition` | | OSCAL Component Definition → HDF Baseline |
+| `oscal-profile` | | OSCAL Profile → HDF Baseline (requires `--catalog`) |
 | `oscal-ssp` | | OSCAL System Security Plan → HDF System |
 | `oscal-poam` | | OSCAL Plan of Action and Milestones → HDF Amendments |
 | `prisma` | | Prisma Cloud/Twistlock container scan (JSON) |
@@ -842,6 +1010,7 @@ The `fetch` commands connect to live APIs. Credentials are **never** accepted as
 | Service | Environment Variable | Config File Fallback |
 |---------|---------------------|---------------------|
 | AWS Config | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` | `~/.aws/credentials` (via AWS SDK credential chain) |
+| DefectDojo | `DEFECTDOJO_API_TOKEN` | None |
 | GitLab | `GITLAB_TOKEN` or `GLAB_TOKEN` | glab CLI config (`glab auth login`) |
 | SonarQube | `SONARQUBE_TOKEN` | None |
 | Splunk | `SPLUNK_TOKEN` | None |

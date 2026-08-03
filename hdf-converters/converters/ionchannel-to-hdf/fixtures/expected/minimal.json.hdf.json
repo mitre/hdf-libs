@@ -1,6 +1,7 @@
 {
   "baselines": [
     {
+      "description": "Ion Channel analysis verdict: PASSED (risk: low). Ruleset: default (ruleset-001).",
       "integrity": {
         "algorithm": "sha256",
         "checksum": "1a108aa1e84b0bcf77bb20fe87cb84d36ab431a55a98bc7aebcd5994246f5ce9"
@@ -113,6 +114,12 @@
         }
       ],
       "name": "Ion Channel SBOM Analysis",
+      "labels": {
+        "passed": "true",
+        "risk": "low",
+        "ruleset_id": "ruleset-001",
+        "ruleset_name": "default"
+      },
       "maintainer": "saf@groups.mitre.org",
       "status": "loaded",
       "summary": "All dependencies are up to date",
@@ -123,9 +130,8 @@
     "name": "ionchannel-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T19:40:22.571296-04:00",
+  "timestamp": "2026-08-01T20:08:49.79279-04:00",
   "tool": {
-    "format": "JSON",
     "name": "Ion Channel"
   }
 }

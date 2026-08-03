@@ -1,0 +1,56 @@
+[
+  {
+    "Analysis": "activity",
+    "NIST-ID": "SR-3|SR-4",
+    "Rev": 5,
+    "Rationale": "Project maintenance/staleness is a supply-chain risk factor (SR-3) bearing on component provenance and continued viability (SR-4)."
+  },
+  {
+    "Analysis": "affiliation",
+    "NIST-ID": "SR-6",
+    "Rev": 5,
+    "Rationale": "Contributor org/nation-of-concern affiliation is a supplier assessment and review concern."
+  },
+  {
+    "Analysis": "binary",
+    "NIST-ID": "SI-7|SR-4",
+    "Rev": 5,
+    "Rationale": "Unreviewable committed binaries are a software-integrity risk (SI-7) of unknown provenance (SR-4)."
+  },
+  {
+    "Analysis": "churn",
+    "NIST-ID": "SI-7|SR-4",
+    "Rev": 5,
+    "Rationale": "Anomalous code-change volume is a tamper/injection integrity signal (SI-7); alteration detection relates to provenance (SR-4)."
+  },
+  {
+    "Analysis": "entropy",
+    "NIST-ID": "SI-7|SR-4",
+    "Rev": 5,
+    "Rationale": "Obfuscated/high-entropy commit content is an integrity-of-content signal (SI-7); alteration relates to provenance (SR-4)."
+  },
+  {
+    "Analysis": "fuzz",
+    "NIST-ID": "SA-11",
+    "Rev": 5,
+    "Rationale": "Fuzz testing is a developer security testing and evaluation practice."
+  },
+  {
+    "Analysis": "identity",
+    "NIST-ID": "AC-5",
+    "Rev": 5,
+    "Rationale": "A pull request whose author is also its merger is a separation-of-duties gap in the change-approval path."
+  },
+  {
+    "Analysis": "review",
+    "NIST-ID": "SA-15",
+    "Rev": 5,
+    "Rationale": "Peer-review-before-merge discipline is a development-process and standards practice."
+  },
+  {
+    "Analysis": "typo",
+    "NIST-ID": "SR-11|SR-4",
+    "Rev": 5,
+    "Rationale": "Typosquatted dependencies are a component-authenticity failure (SR-11) delivering a component of false provenance (SR-4)."
+  }
+]

@@ -345,7 +345,6 @@ export async function convertConveyorToHdf(input: string, converterVersion = '1.
     generatorName: 'conveyor-to-hdf',
     converterVersion,
     toolName: 'Conveyor',
-    toolFormat: 'JSON',
     baselines,
     components: [{ name: targetName, type: TargetType.Application }],
     timestamp: new Date(),

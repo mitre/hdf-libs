@@ -4,6 +4,7 @@
       "name": "Red Hat Enterprise Linux 8 Security Technical Implementation Guide",
       "requirements": [
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:100\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -24,6 +25,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -36,6 +38,7 @@
           "title": "RHEL 8 must be a vendor-supported release."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:101\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -56,6 +59,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000068"
@@ -68,6 +72,7 @@
           "title": "RHEL 8 must implement NIST FIPS-validated cryptography for the following: to provision digital signatures, to generate cryptographic hashes, and to protect data requiring data-at-rest protections in accordance with applicable federal laws, Executive Orders, directives, policies, regulations, and standards."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:103\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -88,6 +93,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000196"
@@ -100,6 +106,7 @@
           "title": "RHEL 8 must encrypt all stored passwords with a FIPS 140-2 approved cryptographic hashing algorithm."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:104\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -120,6 +127,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000196"
@@ -132,6 +140,7 @@
           "title": "RHEL 8 must employ FIPS 140-2 approved cryptographic hashing algorithms for all stored passwords."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:105\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -152,6 +161,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000196"
@@ -164,6 +174,7 @@
           "title": "The RHEL 8 password-auth file must be configured to use a sufficient number of hashing rounds."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:106\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -184,6 +195,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -196,6 +208,7 @@
           "title": "RHEL 8 operating systems booted with United Extensible Firmware Interface (UEFI) must require authentication upon booting into single-user mode and maintenance."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:107\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -216,6 +229,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -228,6 +242,7 @@
           "title": "RHEL 8 operating systems booted with a BIOS must require authentication upon booting into single-user and maintenance modes."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:108\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -248,6 +263,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000213"
@@ -260,6 +276,7 @@
           "title": "RHEL 8 operating systems must require authentication upon booting into rescue mode."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:109\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -280,6 +297,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000803"
@@ -292,6 +310,7 @@
           "title": "The RHEL 8 pam_unix.so module must be configured in the password-auth file to use a FIPS 140-2 approved cryptographic hashing algorithm for system authentication."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:110\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -312,6 +331,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000803"
@@ -324,6 +344,7 @@
           "title": "RHEL 8 must prevent system daemons from using Kerberos for authentication."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:111\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -344,6 +365,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000803"
@@ -356,6 +378,7 @@
           "title": "The krb5-workstation package must not be installed on RHEL 8."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:112\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -376,6 +399,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-001084"
@@ -388,6 +412,7 @@
           "title": "RHEL 8 must have policycoreutils package installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:115\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -408,6 +433,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001133"
@@ -420,6 +446,7 @@
           "title": "RHEL 8 must be configured so that all network connections associated with SSH traffic are terminated at the end of the session or after 10 minutes of inactivity, except to fulfill documented and validated mission requirements."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:116\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -440,6 +467,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001314"
@@ -453,6 +481,7 @@
           "title": "The RHEL 8 /var/log/messages file must have mode 0640 or less permissive."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:117\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -473,6 +502,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001314"
@@ -486,6 +516,7 @@
           "title": "The RHEL 8 /var/log/messages file must be owned by root."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:118\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -506,6 +537,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001314"
@@ -519,6 +551,7 @@
           "title": "The RHEL 8 /var/log/messages file must be group-owned by root."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:119\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -539,6 +572,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001314"
@@ -552,6 +586,7 @@
           "title": "The RHEL 8 /var/log directory must have mode 0755 or less permissive."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:120\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -572,6 +607,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001314"
@@ -585,6 +621,7 @@
           "title": "The RHEL 8 /var/log directory must be owned by root."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:121\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -605,6 +642,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001314"
@@ -618,6 +656,7 @@
           "title": "The RHEL 8 /var/log directory must be group-owned by root."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:122\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -638,6 +677,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -650,6 +690,7 @@
           "title": "RHEL 8 must ensure the SSH server uses strong entropy."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:123\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -670,6 +711,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001453"
@@ -682,6 +724,7 @@
           "title": "The RHEL 8 operating system must implement DoD-approved TLS encryption in the OpenSSL package."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:124\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -702,6 +745,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001499"
@@ -714,6 +758,7 @@
           "title": "RHEL 8 system commands must have mode 0755 or less permissive."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:125\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -734,6 +779,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001499"
@@ -746,6 +792,7 @@
           "title": "RHEL 8 system commands must be owned by root."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:126\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -766,6 +813,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001499"
@@ -778,6 +826,7 @@
           "title": "RHEL 8 system commands must be group-owned by root or a system account."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:130\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -798,6 +847,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-001749"
@@ -809,6 +859,7 @@
           "title": "RHEL 8 must prevent the installation of software, patches, service packs, device drivers, or operating system components from a repository without verification they have been digitally signed using a certificate that is issued by a Certificate Authority (CA) that is recognized and approved by the organization."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:131\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -829,6 +880,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-001749"
@@ -840,6 +892,7 @@
           "title": "RHEL 8 must prevent the installation of software, patches, service packs, device drivers, or operating system components of local packages without verification they have been digitally signed using a certificate that is issued by a Certificate Authority (CA) that is recognized and approved by the organization."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:132\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -860,6 +913,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001749"
@@ -871,6 +925,7 @@
           "title": "RHEL 8 must prevent the loading of a new kernel for later execution."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:133\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -891,6 +946,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002165"
@@ -902,6 +958,7 @@
           "title": "RHEL 8 must enable kernel parameters to enforce discretionary access control on symlinks."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:134\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -922,6 +979,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002165"
@@ -933,6 +991,7 @@
           "title": "RHEL 8 must enable kernel parameters to enforce discretionary access control on hardlinks."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:135\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -953,6 +1012,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-001090"
@@ -965,6 +1025,7 @@
           "title": "RHEL 8 must restrict access to the kernel message buffer."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:136\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -985,6 +1046,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-001090"
@@ -997,6 +1059,7 @@
           "title": "RHEL 8 must prevent kernel profiling by unprivileged users."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:137\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1017,6 +1080,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002038"
@@ -1028,6 +1092,7 @@
           "title": "RHEL 8 must require users to provide a password for privilege escalation."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:138\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1048,6 +1113,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002038"
@@ -1059,6 +1125,7 @@
           "title": "RHEL 8 must require users to reauthenticate for privilege escalation."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:139\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1079,6 +1146,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001948"
@@ -1090,6 +1158,7 @@
           "title": "RHEL 8 must have the packages required for multifactor authentication installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:145\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1110,6 +1179,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-002617"
@@ -1121,6 +1191,7 @@
           "title": "YUM must remove all software components after updated versions have been installed on RHEL 8."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:146\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1141,6 +1212,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002696"
@@ -1152,6 +1224,7 @@
           "title": "RHEL 8 must enable the SELinux targeted policy."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:147\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1172,6 +1245,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1184,6 +1258,7 @@
           "title": "There must be no shosts.equiv files on the RHEL 8 operating system."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:148\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1204,6 +1279,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1216,6 +1292,7 @@
           "title": "There must be no .shosts files on the RHEL 8 operating system."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:149\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1236,6 +1313,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1248,6 +1326,7 @@
           "title": "The RHEL 8 SSH public host key files must have mode 0644 or less permissive."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:150\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1268,6 +1347,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1280,6 +1360,7 @@
           "title": "The RHEL 8 SSH private host key files must have mode 0600 or less permissive."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:151\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1300,6 +1381,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1312,6 +1394,7 @@
           "title": "The RHEL 8 SSH daemon must perform strict mode checking of home directory configuration files."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:152\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1332,6 +1415,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1344,6 +1428,7 @@
           "title": "The RHEL 8 SSH daemon must not allow compression or must only allow compression after successful authentication."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:153\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1364,6 +1449,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1376,6 +1462,7 @@
           "title": "The RHEL 8 SSH daemon must not allow authentication using known host's authentication."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:154\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1396,6 +1483,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1408,6 +1496,7 @@
           "title": "The RHEL 8 SSH daemon must not allow Kerberos authentication, except to fulfill documented and validated mission requirements."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:155\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1428,6 +1517,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1440,6 +1530,7 @@
           "title": "RHEL 8 must use a separate file system for /var."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:156\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1460,6 +1551,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1472,6 +1564,7 @@
           "title": "RHEL 8 must use a separate file system for /var/log."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:157\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1492,6 +1585,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1504,6 +1598,7 @@
           "title": "RHEL 8 must use a separate file system for the system audit data path."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:158\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1524,6 +1619,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1536,6 +1632,7 @@
           "title": "A separate RHEL 8 filesystem must be used for the /tmp directory."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:159\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -1556,6 +1653,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000770"
@@ -1569,6 +1667,7 @@
           "title": "RHEL 8 must not permit direct logons to the root account using remote access via SSH."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:160\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1589,6 +1688,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1601,6 +1701,7 @@
           "title": "The auditd service must be running in RHEL 8."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:161\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1621,6 +1722,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1633,6 +1735,7 @@
           "title": "The rsyslog service must be running in RHEL 8."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:162\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1653,6 +1756,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1665,6 +1769,7 @@
           "title": "RHEL 8 must prevent files with the setuid and setgid bit set from being executed on the /boot directory."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:163\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1685,6 +1790,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1697,6 +1803,7 @@
           "title": "RHEL 8 must prevent special devices on non-root local partitions."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:165\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1717,6 +1824,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1729,6 +1837,7 @@
           "title": "RHEL 8 must prevent code from being executed on file systems that are imported via Network File System (NFS)."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:166\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1749,6 +1858,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1761,6 +1871,7 @@
           "title": "RHEL 8 must prevent special devices on file systems that are imported via Network File System (NFS)."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:167\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1781,6 +1892,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1793,6 +1905,7 @@
           "title": "RHEL 8 must prevent files with the setuid and setgid bit set from being executed on file systems that are imported via Network File System (NFS)."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:168\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1813,6 +1926,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1825,6 +1939,7 @@
           "title": "RHEL 8 must disable the kernel.core_pattern."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:169\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1845,6 +1960,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1857,6 +1973,7 @@
           "title": "RHEL 8 must disable core dumps for all users."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:170\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1877,6 +1994,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1889,6 +2007,7 @@
           "title": "RHEL 8 must disable storing core dumps."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:171\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1909,6 +2028,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1921,6 +2041,7 @@
           "title": "RHEL 8 must disable core dump backtraces."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:177\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1941,6 +2062,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1953,6 +2075,7 @@
           "title": "All RHEL 8 local interactive user accounts must be assigned a home directory upon creation."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:179\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -1973,6 +2096,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -1985,6 +2109,7 @@
           "title": "RHEL 8 must not allow users to override SSH environment variables."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:180\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2005,6 +2130,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2017,6 +2143,7 @@
           "title": "RHEL 8 must automatically lock an account when three unsuccessful logon attempts occur."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:181\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2037,6 +2164,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2049,6 +2177,7 @@
           "title": "RHEL 8 must automatically lock an account when three unsuccessful logon attempts occur."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:182\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2069,6 +2198,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2081,6 +2211,7 @@
           "title": "RHEL 8 must automatically lock an account when three unsuccessful logon attempts occur during a 15-minute time period."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:183\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2101,6 +2232,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2113,6 +2245,7 @@
           "title": "RHEL 8 must automatically lock an account when three unsuccessful logon attempts occur during a 15-minute time period."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:184\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2133,6 +2266,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2145,6 +2279,7 @@
           "title": "RHEL 8 must automatically lock an account until the locked account is released by an administrator when three unsuccessful logon attempts occur during a 15-minute time period."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:185\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2165,6 +2300,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2177,6 +2313,7 @@
           "title": "RHEL 8 must automatically lock an account until the locked account is released by an administrator when three unsuccessful logon attempts occur during a 15-minute time period."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:186\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2197,6 +2334,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2209,6 +2347,7 @@
           "title": "RHEL 8 must prevent system messages from being presented when three unsuccessful logon attempts occur."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:187\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2229,6 +2368,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2241,6 +2381,7 @@
           "title": "RHEL 8 must prevent system messages from being presented when three unsuccessful logon attempts occur."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:188\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2261,6 +2402,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2273,6 +2415,7 @@
           "title": "RHEL 8 must log user name information when unsuccessful logon attempts occur."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:189\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2293,6 +2436,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2305,6 +2449,7 @@
           "title": "RHEL 8 must log user name information when unsuccessful logon attempts occur."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:190\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2325,6 +2470,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2337,6 +2483,7 @@
           "title": "RHEL 8 must include root when automatically locking an account until the locked account is released by an administrator when three unsuccessful logon attempts occur during a 15-minute time period."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:191\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2357,6 +2504,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000044"
@@ -2369,6 +2517,7 @@
           "title": "RHEL 8 must include root when automatically locking an account until the locked account is released by an administrator when three unsuccessful logon attempts occur during a 15-minute time period."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:192\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2389,6 +2538,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000054"
@@ -2401,6 +2551,7 @@
           "title": "RHEL 8 must limit the number of concurrent sessions to ten for all accounts and/or account types."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:193\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2421,6 +2572,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000056"
@@ -2433,6 +2585,7 @@
           "title": "RHEL 8 must enable a user session lock until that user re-establishes access using established identification and authentication procedures for command line sessions."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:194\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2453,6 +2606,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000056"
@@ -2465,6 +2619,7 @@
           "title": "RHEL 8 must ensure session control is automatically started at shell initialization."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:195\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2485,6 +2640,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000056"
@@ -2497,6 +2653,7 @@
           "title": "RHEL 8 must prevent users from disabling session control mechanisms."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:196\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2517,6 +2674,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000192"
@@ -2529,6 +2687,7 @@
           "title": "RHEL 8 must ensure a password complexity module is enabled."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:197\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2549,6 +2708,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000192"
@@ -2561,6 +2721,7 @@
           "title": "RHEL 8 must enforce password complexity by requiring that at least one uppercase character be used."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:198\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2581,6 +2742,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000193"
@@ -2593,6 +2755,7 @@
           "title": "RHEL 8 must enforce password complexity by requiring that at least one lower-case character be used."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:199\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2613,6 +2776,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000194"
@@ -2625,6 +2789,7 @@
           "title": "RHEL 8 must enforce password complexity by requiring that at least one numeric character be used."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:200\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2645,6 +2810,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -2657,6 +2823,7 @@
           "title": "RHEL 8 must require the maximum number of repeating characters of the same character class be limited to four when passwords are changed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:201\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2677,6 +2844,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -2689,6 +2857,7 @@
           "title": "RHEL 8 must require the maximum number of repeating characters be limited to three when passwords are changed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:202\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2709,6 +2878,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -2721,6 +2891,7 @@
           "title": "RHEL 8 must require the change of at least four character classes when passwords are changed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:203\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2741,6 +2912,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000195"
@@ -2753,6 +2925,7 @@
           "title": "RHEL 8 must require the change of at least 8 characters when passwords are changed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:204\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2773,6 +2946,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000198"
@@ -2785,6 +2959,7 @@
           "title": "RHEL 8 passwords must have a 24 hours/1 day minimum password lifetime restriction in /etc/shadow."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:205\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2805,6 +2980,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000198"
@@ -2817,6 +2993,7 @@
           "title": "RHEL 8 passwords for new users or password changes must have a 24 hours/1 day minimum password lifetime restriction in /etc/logins.def."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:206\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2837,6 +3014,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000199"
@@ -2849,6 +3027,7 @@
           "title": "RHEL 8 user account passwords must have a 60-day maximum password lifetime restriction."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:207\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2869,6 +3048,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000199"
@@ -2881,6 +3061,7 @@
           "title": "RHEL 8 user account passwords must be configured so that existing passwords are restricted to a 60-day maximum lifetime."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:208\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2901,6 +3082,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000200"
@@ -2913,6 +3095,7 @@
           "title": "RHEL 8 passwords must be prohibited from reuse for a minimum of five generations."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:209\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2933,6 +3116,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000205"
@@ -2945,6 +3129,7 @@
           "title": "RHEL 8 passwords must have a minimum of 15 characters."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:210\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2965,6 +3150,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000205"
@@ -2977,6 +3163,7 @@
           "title": "RHEL 8 passwords for new users must have a minimum of 15 characters."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:211\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -2997,6 +3184,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000795"
@@ -3009,6 +3197,7 @@
           "title": "RHEL 8 account identifiers (individuals, groups, roles, and devices) must be disabled after 35 days of inactivity."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:212\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -3029,6 +3218,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001619"
@@ -3041,6 +3231,7 @@
           "title": "All RHEL 8 passwords must contain at least one special character."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:214\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3061,6 +3252,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -3073,6 +3265,7 @@
           "title": "RHEL 8 must prevent the use of dictionary words for passwords."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:215\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3093,6 +3286,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -3105,6 +3299,7 @@
           "title": "RHEL 8 must enforce a delay of at least four seconds between logon prompts following a failed logon attempt."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:216\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3125,6 +3320,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -3137,6 +3333,7 @@
           "title": "RHEL 8 must not allow accounts configured with blank or null passwords."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:218\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3157,6 +3354,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -3169,6 +3367,7 @@
           "title": "RHEL 8 must display the date and time of the last successful account logon upon an SSH logon."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:219\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3189,6 +3388,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -3201,6 +3401,7 @@
           "title": "RHEL 8 must define default permissions for all authenticated users in such a way that the user can only read and modify their own files."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:220\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -3221,6 +3422,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002233"
@@ -3232,6 +3434,7 @@
           "title": "The RHEL 8 audit system must be configured to audit the execution of privileged functions and prevent all software from executing at higher privilege levels than users executing the software."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:222\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3252,6 +3455,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000139"
@@ -3264,6 +3468,7 @@
           "title": "The RHEL 8 System Administrator (SA) and Information System Security Officer (ISSO) (at a minimum) must be alerted of an audit processing failure event."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:223\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3284,6 +3489,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000140"
@@ -3296,6 +3502,7 @@
           "title": "The RHEL 8 System must take appropriate action when an audit processing failure occurs."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:224\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3316,6 +3523,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000140"
@@ -3328,6 +3536,7 @@
           "title": "The RHEL 8 System Administrator (SA) and Information System Security Officer (ISSO) (at a minimum) must be alerted when the audit storage volume is full."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:225\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3348,6 +3557,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000140"
@@ -3360,6 +3570,7 @@
           "title": "The RHEL 8 audit system must take appropriate action when the audit storage volume is full."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:226\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3380,6 +3591,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -3392,6 +3604,7 @@
           "title": "The RHEL 8 audit system must audit local events."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:227\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3412,6 +3625,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -3423,6 +3637,7 @@
           "title": "RHEL 8 must label all off-loaded audit logs before sending them to the central log server."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:228\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3443,6 +3658,7 @@
               "status": "passed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -3455,6 +3671,7 @@
           "title": "RHEL 8 must resolve audit information before writing to disk."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:229\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3475,6 +3692,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000162"
@@ -3487,6 +3705,7 @@
           "title": "RHEL 8 audit logs must have a mode of 0600 or less permissive to prevent unauthorized read access."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:230\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3507,6 +3726,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000162"
@@ -3519,6 +3739,7 @@
           "title": "RHEL 8 audit logs must be owned by root to prevent unauthorized read access."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:231\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3539,6 +3760,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000162"
@@ -3551,6 +3773,7 @@
           "title": "RHEL 8 audit logs must be group-owned by root to prevent unauthorized read access."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:232\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3571,6 +3794,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000162"
@@ -3583,6 +3807,7 @@
           "title": "RHEL 8 audit log directory must be owned by root to prevent unauthorized read access."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:233\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3603,6 +3828,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000162"
@@ -3615,6 +3841,7 @@
           "title": "RHEL 8 audit log directory must be group-owned by root to prevent unauthorized read access."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:234\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3635,6 +3862,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000162"
@@ -3647,6 +3875,7 @@
           "title": "RHEL 8 audit log directory must have a mode of 0700 or less permissive to prevent unauthorized read access."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:235\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3667,6 +3896,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000162"
@@ -3679,6 +3909,7 @@
           "title": "RHEL 8 audit system must protect auditing rules from unauthorized change."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:236\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3699,6 +3930,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000162"
@@ -3711,6 +3943,7 @@
           "title": "RHEL 8 audit system must protect logon UIDs from unauthorized change."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:237\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3731,6 +3964,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -3743,6 +3977,7 @@
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/shadow."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:238\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3763,6 +3998,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -3775,6 +4011,7 @@
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/security/opasswd."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:239\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3795,6 +4032,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -3807,6 +4045,7 @@
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/passwd."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:240\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3827,6 +4066,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -3839,6 +4079,7 @@
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/gshadow."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:241\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3859,6 +4100,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -3871,6 +4113,7 @@
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/group."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:242\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3891,6 +4134,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -3903,6 +4147,7 @@
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/sudoers."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:243\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3923,6 +4168,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -3935,6 +4181,7 @@
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/sudoers.d/."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:244\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3955,6 +4202,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -3967,6 +4215,7 @@
           "title": "The RHEL 8 audit package must be installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:245\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -3987,6 +4236,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -3999,6 +4249,7 @@
           "title": "Successful/unsuccessful uses of the su command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:246\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4019,6 +4270,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4031,6 +4283,7 @@
           "title": "The RHEL 8 audit system must be configured to audit any usage of the lremovexattr system call."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:247\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4051,6 +4304,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4063,6 +4317,7 @@
           "title": "The RHEL 8 audit system must be configured to audit any usage of the removexattr system call."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:248\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4083,6 +4338,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4095,6 +4351,7 @@
           "title": "The RHEL 8 audit system must be configured to audit any usage of the lsetxattr system call."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:249\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4115,6 +4372,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4127,6 +4385,7 @@
           "title": "The RHEL 8 audit system must be configured to audit any usage of the fsetxattr system call."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:250\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4147,6 +4406,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4159,6 +4419,7 @@
           "title": "The RHEL 8 audit system must be configured to audit any usage of the fremovexattr system call."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:251\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4179,6 +4440,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4191,6 +4453,7 @@
           "title": "Successful/unsuccessful uses of the chage command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:252\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4211,6 +4474,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4223,6 +4487,7 @@
           "title": "Successful/unsuccessful uses of the chcon command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:253\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4243,6 +4508,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4255,6 +4521,7 @@
           "title": "The RHEL 8 audit system must be configured to audit any usage of the setxattr system call."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:254\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4275,6 +4542,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4287,6 +4555,7 @@
           "title": "Successful/unsuccessful uses of the ssh-agent in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:255\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4307,6 +4576,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4319,6 +4589,7 @@
           "title": "Successful/unsuccessful uses of the passwd command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:256\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4339,6 +4610,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4351,6 +4623,7 @@
           "title": "Successful/unsuccessful uses of the mount command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:257\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4371,6 +4644,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4383,6 +4657,7 @@
           "title": "Successful/unsuccessful uses of the umount command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:258\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4403,6 +4678,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4415,6 +4691,7 @@
           "title": "Successful/unsuccessful uses of the mount syscall in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:259\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4435,6 +4712,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4447,6 +4725,7 @@
           "title": "Successful/unsuccessful uses of the unix_update in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:260\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4467,6 +4746,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4479,6 +4759,7 @@
           "title": "Successful/unsuccessful uses of postdrop in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:261\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4499,6 +4780,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4511,6 +4793,7 @@
           "title": "Successful/unsuccessful uses of postqueue in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:262\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4531,6 +4814,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4543,6 +4827,7 @@
           "title": "Successful/unsuccessful uses of semanage in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:263\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4563,6 +4848,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4575,6 +4861,7 @@
           "title": "Successful/unsuccessful uses of setfiles in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:264\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4595,6 +4882,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4607,6 +4895,7 @@
           "title": "Successful/unsuccessful uses of userhelper in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:265\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4627,6 +4916,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4639,6 +4929,7 @@
           "title": "Successful/unsuccessful uses of setsebool in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:266\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4659,6 +4950,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4671,6 +4963,7 @@
           "title": "Successful/unsuccessful uses of unix_chkpwd in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:267\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4691,6 +4984,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4703,6 +4997,7 @@
           "title": "Successful/unsuccessful uses of the ssh-keysign in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:268\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4723,6 +5018,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4735,6 +5031,7 @@
           "title": "Successful/unsuccessful uses of the setfacl command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:269\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4755,6 +5052,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4767,6 +5065,7 @@
           "title": "Successful/unsuccessful uses of the pam_timestamp_check command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:270\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4787,6 +5086,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4799,6 +5099,7 @@
           "title": "Successful/unsuccessful uses of the newgrp command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:271\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4819,6 +5120,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4831,6 +5133,7 @@
           "title": "Successful/unsuccessful uses of the init_module command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:272\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4851,6 +5154,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4863,6 +5167,7 @@
           "title": "Successful/unsuccessful uses of the rename command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:273\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4883,6 +5188,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4895,6 +5201,7 @@
           "title": "Successful/unsuccessful uses of the renameat command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:274\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4915,6 +5222,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4927,6 +5235,7 @@
           "title": "Successful/unsuccessful uses of the rmdir command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:275\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4947,6 +5256,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4959,6 +5269,7 @@
           "title": "Successful/unsuccessful uses of the unlink command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:276\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -4979,6 +5290,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -4991,6 +5303,7 @@
           "title": "Successful/unsuccessful uses of the unlinkat command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:277\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5011,6 +5324,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5023,6 +5337,7 @@
           "title": "Successful/unsuccessful uses of the gpasswd command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:278\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5043,6 +5358,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5055,6 +5371,7 @@
           "title": "Successful/unsuccessful uses of the finit_module command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:279\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5075,6 +5392,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5087,6 +5405,7 @@
           "title": "Successful/unsuccessful uses of the delete_module command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:280\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5107,6 +5426,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5119,6 +5439,7 @@
           "title": "Successful/unsuccessful uses of the crontab command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:281\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5139,6 +5460,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5151,6 +5473,7 @@
           "title": "Successful/unsuccessful uses of the chsh command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:282\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5171,6 +5494,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5183,6 +5507,7 @@
           "title": "Successful/unsuccessful uses of the truncate command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:283\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5203,6 +5528,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5215,6 +5541,7 @@
           "title": "Successful/unsuccessful uses of the openat system call in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:284\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5235,6 +5562,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5247,6 +5575,7 @@
           "title": "Successful/unsuccessful uses of the open system call in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:285\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5267,6 +5596,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5279,6 +5609,7 @@
           "title": "Successful/unsuccessful uses of the open_by_handle_at system call in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:286\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5299,6 +5630,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5311,6 +5643,7 @@
           "title": "Successful/unsuccessful uses of the ftruncate command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:287\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5331,6 +5664,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5343,6 +5677,7 @@
           "title": "Successful/unsuccessful uses of the creat system call in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:288\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5363,6 +5698,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5375,6 +5711,7 @@
           "title": "Successful/unsuccessful uses of the chown command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:289\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5395,6 +5732,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5407,6 +5745,7 @@
           "title": "Successful/unsuccessful uses of the chmod command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:290\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5427,6 +5766,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5439,6 +5779,7 @@
           "title": "Successful/unsuccessful uses of the lchown system call in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:291\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5459,6 +5800,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5471,6 +5813,7 @@
           "title": "Successful/unsuccessful uses of the fchownat system call in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:292\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5491,6 +5834,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5503,6 +5847,7 @@
           "title": "Successful/unsuccessful uses of the fchown system call in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:293\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5523,6 +5868,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5535,6 +5881,7 @@
           "title": "Successful/unsuccessful uses of the fchmodat system call in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:294\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5555,6 +5902,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5567,6 +5915,7 @@
           "title": "Successful/unsuccessful uses of the fchmod system call in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:295\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5587,6 +5936,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5599,6 +5949,7 @@
           "title": "Successful/unsuccessful uses of the sudo command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:296\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5619,6 +5970,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5631,6 +5983,7 @@
           "title": "Successful/unsuccessful uses of the usermod command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:297\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5651,6 +6004,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5663,6 +6017,7 @@
           "title": "Successful/unsuccessful uses of the chacl command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:298\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5683,6 +6038,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5695,6 +6051,7 @@
           "title": "Successful/unsuccessful uses of the kmod command in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:299\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5715,6 +6072,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000169"
@@ -5727,6 +6085,7 @@
           "title": "Successful/unsuccessful modifications to the lastlog file in RHEL 8 must generate an audit record."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:303\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5747,6 +6106,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000171"
@@ -5759,6 +6119,7 @@
           "title": "RHEL 8 must allow only the Information System Security Manager (ISSM) (or individuals or roles appointed by the ISSM) to select which auditable events are to be audited."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:304\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5779,6 +6140,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001493"
@@ -5791,6 +6153,7 @@
           "title": "RHEL 8 audit tools must have a mode of 0755 or less permissive."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:305\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5811,6 +6174,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001493"
@@ -5823,6 +6187,7 @@
           "title": "RHEL 8 audit tools must be owned by root."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:306\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5843,6 +6208,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001493"
@@ -5855,6 +6221,7 @@
           "title": "RHEL 8 audit tools must be group-owned by root."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:412\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5875,6 +6242,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5887,6 +6255,7 @@
           "title": "RHEL 8 must have the packages required for offloading audit logs installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:307\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5907,6 +6276,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -5919,6 +6289,7 @@
           "title": "RHEL 8 must have the packages required for encrypting offloaded audit logs installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:308\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5939,6 +6310,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001851"
@@ -5950,6 +6322,7 @@
           "title": "RHEL 8 must take appropriate action when the internal event queue is full."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:309\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -5970,6 +6343,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001855"
@@ -5981,6 +6355,7 @@
           "title": "RHEL 8 must take action when allocated audit record storage volume reaches 75 percent of the repository maximum audit record storage capacity."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:310\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6001,6 +6376,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6014,6 +6390,7 @@
           "title": "RHEL 8 must disable the chrony daemon from acting as a server."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:311\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6034,6 +6411,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6047,6 +6425,7 @@
           "title": "RHEL 8 must disable network management of the chrony daemon."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:312\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6067,6 +6446,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6080,6 +6460,7 @@
           "title": "RHEL 8 must not have the telnet-server package installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:313\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6100,6 +6481,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6113,6 +6495,7 @@
           "title": "RHEL 8 must not have any automated bug reporting tools installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:314\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6133,6 +6516,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6146,6 +6530,7 @@
           "title": "RHEL 8 must not have the sendmail package installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:317\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6166,6 +6551,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6179,6 +6565,7 @@
           "title": "RHEL 8 must not have the rsh-server package installed."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:318\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6199,6 +6586,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6212,6 +6600,7 @@
           "title": "RHEL 8 must disable the asynchronous transfer mode (ATM) protocol."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:319\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6232,6 +6621,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6245,6 +6635,7 @@
           "title": "RHEL 8 must disable the controller area network (CAN) protocol."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:320\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6265,6 +6656,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6278,6 +6670,7 @@
           "title": "RHEL 8 must disable the stream control transmission protocol (SCTP)."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:321\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6298,6 +6691,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6311,6 +6705,7 @@
           "title": "RHEL 8 must disable the transparent inter-process communication (TIPC) protocol."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:322\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6331,6 +6726,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6344,6 +6740,7 @@
           "title": "RHEL 8 must disable mounting of cramfs."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:323\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6364,6 +6761,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -6377,6 +6775,7 @@
           "title": "RHEL 8 must disable IEEE 1394 (FireWire) Support."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:325\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -6397,6 +6796,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000778"
@@ -6409,6 +6809,7 @@
           "title": "RHEL 8 must be configured to disable USB mass storage."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:326\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -6429,6 +6830,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001443"
@@ -6441,6 +6843,7 @@
           "title": "RHEL 8 Bluetooth must be disabled."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:327\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6461,6 +6864,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6472,6 +6876,7 @@
           "title": "RHEL 8 must mount /dev/shm with the nodev option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:328\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6492,6 +6897,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6503,6 +6909,7 @@
           "title": "RHEL 8 must mount /dev/shm with the nosuid option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:329\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6523,6 +6930,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6534,6 +6942,7 @@
           "title": "RHEL 8 must mount /dev/shm with the noexec option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:330\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6554,6 +6963,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6565,6 +6975,7 @@
           "title": "RHEL 8 must mount /tmp with the nodev option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:331\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6585,6 +6996,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6596,6 +7008,7 @@
           "title": "RHEL 8 must mount /tmp with the nosuid option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:332\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6616,6 +7029,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6627,6 +7041,7 @@
           "title": "RHEL 8 must mount /tmp with the noexec option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:333\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6647,6 +7062,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6658,6 +7074,7 @@
           "title": "RHEL 8 must mount /var/log with the nodev option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:334\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6678,6 +7095,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6689,6 +7107,7 @@
           "title": "RHEL 8 must mount /var/log with the nosuid option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:335\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6709,6 +7128,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6720,6 +7140,7 @@
           "title": "RHEL 8 must mount /var/log with the noexec option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:336\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6740,6 +7161,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6751,6 +7173,7 @@
           "title": "RHEL 8 must mount /var/log/audit with the nodev option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:337\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6771,6 +7194,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6782,6 +7206,7 @@
           "title": "RHEL 8 must mount /var/log/audit with the nosuid option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:338\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6802,6 +7227,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6813,6 +7239,7 @@
           "title": "RHEL 8 must mount /var/log/audit with the noexec option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:339\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6833,6 +7260,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6844,6 +7272,7 @@
           "title": "RHEL 8 must mount /var/tmp with the nodev option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:340\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6864,6 +7293,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6875,6 +7305,7 @@
           "title": "RHEL 8 must mount /var/tmp with the nosuid option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:341\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6895,6 +7326,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-001764"
@@ -6906,6 +7338,7 @@
           "title": "RHEL 8 must mount /var/tmp with the noexec option."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:342\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -6926,6 +7359,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002418"
@@ -6937,6 +7371,7 @@
           "title": "All RHEL 8 networked systems must have and implement SSH to protect the confidentiality and integrity of transmitted and received information, as well as information during preparation for transmission."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:343\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -6957,6 +7392,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000068"
@@ -6969,6 +7405,7 @@
           "title": "RHEL 8 must force a frequent session key renegotiation for SSH connections to the server."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:345\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -6989,6 +7426,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7001,6 +7439,7 @@
           "title": "The systemd Ctrl-Alt-Delete burst key sequence in RHEL 8 must be disabled."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:346\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7021,6 +7460,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7033,6 +7473,7 @@
           "title": "The Trivial File Transfer Protocol (TFTP) server package must not be installed if not required for RHEL 8 operational support."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:347\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7053,6 +7494,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7065,6 +7507,7 @@
           "title": "The root account must be the only account having unrestricted access to the RHEL 8 system."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:348\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7085,6 +7528,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7097,6 +7541,7 @@
           "title": "RHEL 8 must prevent IPv6 Internet Control Message Protocol (ICMP) redirect messages from being accepted."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:349\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7117,6 +7562,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7129,6 +7575,7 @@
           "title": "RHEL 8 must not send Internet Control Message Protocol (ICMP) redirects."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:350\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7149,6 +7596,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7161,6 +7609,7 @@
           "title": "RHEL 8 must not respond to Internet Control Message Protocol (ICMP) echoes sent to a broadcast address."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:351\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7181,6 +7630,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7193,6 +7643,7 @@
           "title": "RHEL 8 must not forward IPv6 source-routed packets."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:352\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7213,6 +7664,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7225,6 +7677,7 @@
           "title": "RHEL 8 must not forward IPv6 source-routed packets by default."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:353\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7245,6 +7698,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7257,6 +7711,7 @@
           "title": "RHEL 8 must not be performing packet forwarding unless the system is a router."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:354\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7277,6 +7732,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7289,6 +7745,7 @@
           "title": "RHEL 8 must not accept router advertisements on all IPv6 interfaces."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:355\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7309,6 +7766,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7321,6 +7779,7 @@
           "title": "RHEL 8 must not accept router advertisements on all IPv6 interfaces by default."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:356\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7341,6 +7800,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7353,6 +7813,7 @@
           "title": "RHEL 8 must not allow interfaces to perform Internet Control Message Protocol (ICMP) redirects by default."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:357\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7373,6 +7834,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7385,6 +7847,7 @@
           "title": "RHEL 8 must ignore IPv6 Internet Control Message Protocol (ICMP) redirect messages."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:358\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7405,6 +7868,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7417,6 +7881,7 @@
           "title": "RHEL 8 must disable access to network bpf syscall from unprivileged processes."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:359\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7437,6 +7902,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7449,6 +7915,7 @@
           "title": "RHEL 8 must restrict usage of ptrace to descendant  processes."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:360\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7469,6 +7936,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7481,6 +7949,7 @@
           "title": "RHEL 8 must restrict exposed kernel pointer addresses access."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:361\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7501,6 +7970,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7513,6 +7983,7 @@
           "title": "RHEL 8 must disable the use of user namespaces."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:362\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7533,6 +8004,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7545,6 +8017,7 @@
           "title": "RHEL 8 must use reverse path filtering on all IPv4 interfaces."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:363\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7565,6 +8038,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7577,6 +8051,7 @@
           "title": "RHEL 8 must be configured to prevent unrestricted mail relaying."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:364\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7597,6 +8072,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7609,6 +8085,7 @@
           "title": "RHEL 8 remote X connections for interactive users must be disabled unless to fulfill documented and validated mission requirements."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:365\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7629,6 +8106,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7641,6 +8119,7 @@
           "title": "The RHEL 8 SSH daemon must prevent remote hosts from connecting to the proxy display."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:366\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7661,6 +8140,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7673,6 +8153,7 @@
           "title": "If the Trivial File Transfer Protocol (TFTP) server is required, the RHEL 8 TFTP daemon must be configured to operate in secure mode."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:367\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7693,6 +8174,7 @@
               "status": "passed"
             }
           ],
+          "severity": "high",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7705,6 +8187,7 @@
           "title": "A File Transfer Protocol (FTP) server package must not be installed unless mission essential on RHEL 8."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:368\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7725,6 +8208,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000381"
@@ -7738,6 +8222,7 @@
           "title": "The gssproxy package must not be installed unless mission essential on RHEL 8."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:369\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7758,6 +8243,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7770,6 +8256,7 @@
           "title": "The iprutils package must not be installed unless mission essential on RHEL 8."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:370\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7790,6 +8277,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7802,6 +8290,7 @@
           "title": "The tuned package must not be installed unless mission essential on RHEL 8."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:413\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -7822,6 +8311,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000803"
@@ -7834,6 +8324,7 @@
           "title": "The krb5-server package must not be installed on RHEL 8."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:414\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "operational",
           "descriptions": [
             {
@@ -7854,6 +8345,7 @@
               "status": "passed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-000366"
@@ -7866,6 +8358,7 @@
           "title": "RHEL 8 must restrict privilege elevation to authorized personnel."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:415\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -7886,6 +8379,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002227"
@@ -7897,6 +8391,7 @@
           "title": "RHEL 8 must use the invoking user's password for privilege escalation when using \"sudo\"."
         },
         {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:mil.disa.stig.rhel8:def:416\",\n    \"href\": \"U_RHEL_8_V1R2_STIG_SCAP_1-2_Benchmark-oval.xml\"\n  }\n}",
           "controlType": "technical",
           "descriptions": [
             {
@@ -7917,6 +8412,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "tags": {
             "cci": [
               "CCI-002038"

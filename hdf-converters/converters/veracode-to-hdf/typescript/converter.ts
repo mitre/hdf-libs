@@ -14,10 +14,12 @@
 import { parseXml, parseTimestamp } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildCvss, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Cvss,
   Description,
   RequirementResult,
 } from '@mitre/hdf-schema';
@@ -111,26 +113,6 @@ function formatRecommendations(rec: Record<string, unknown> | undefined): string
   return parts.join('\n');
 }
 
-/** Format CWE data for the cweid tag. */
-function formatCWEData(cwes: Record<string, unknown>[]): string {
-  return cwes.map(c => {
-    let entry = `CWE-${attr(c, 'cweid')}: ${attr(c, 'cwename')}`;
-    const categories: [string, string][] = [
-      ['pcrirelated', attr(c, 'pcirelated')],
-      ['owasp', attr(c, 'owasp')],
-      ['sans', attr(c, 'sans')],
-      ['certc', attr(c, 'certc')],
-      ['certcpp', attr(c, 'certcpp')],
-      ['certjava', attr(c, 'certjava')],
-      ['owaspmobile', attr(c, 'owaspmobile')],
-    ];
-    for (const [name, val] of categories) {
-      if (val) entry += `${name}: ${val}\n`;
-    }
-    return entry;
-  }).join('\n');
-}
-
 /** Format CWE descriptions for the cweDescription tag. */
 function formatCWEDesc(cwes: Record<string, unknown>[]): string {
   return cwes.map(c => {
@@ -208,6 +190,58 @@ function formatSCACodeDesc(comp: Record<string, unknown>): string {
   return parts.join('\n');
 }
 
+/**
+ * Synthesize a static flaw's source-context locus from its function prototype
+ * and source-file position. Returns '' when the flaw carries neither a prototype
+ * nor a source location (the NOT-IN-SOURCE case).
+ */
+function synthesizeFlawCode(flaw: Record<string, unknown>): string {
+  let locus = attr(flaw, 'sourcefilepath') + attr(flaw, 'sourcefile');
+  const line = attr(flaw, 'line');
+  if (locus && line) locus += `:${line}`;
+  const proto = attr(flaw, 'functionprototype');
+  if (proto && locus) return `${proto} at ${locus}`;
+  if (proto) return proto;
+  return locus;
+}
+
+/**
+ * Serialize a CVE and its affected components as indented JSON. Field order is
+ * load-bearing: it must match the Go twin's struct declaration order so the two
+ * `code` strings are byte-identical.
+ */
+function buildSCACode(vuln: Record<string, unknown>, components: Record<string, unknown>[]): string {
+  const entry = {
+    cve_id: attr(vuln, 'cve_id'),
+    cvss_score: attr(vuln, 'cvss_score'),
+    severity: attr(vuln, 'severity'),
+    cwe_id: attr(vuln, 'cwe_id'),
+    first_found_date: attr(vuln, 'first_found_date'),
+    cve_summary: attr(vuln, 'cve_summary'),
+    severity_desc: attr(vuln, 'severity_desc'),
+    components: components.map(comp => {
+      const filePathsElem = comp.file_paths as Record<string, unknown> | undefined;
+      const fps = filePathsElem
+        ? ensureArray(filePathsElem.file_path as Record<string, unknown> | Record<string, unknown>[])
+        : [];
+      return {
+        component_id: attr(comp, 'component_id'),
+        file_name: attr(comp, 'file_name'),
+        sha1: attr(comp, 'sha1'),
+        version: attr(comp, 'version'),
+        library: attr(comp, 'library'),
+        library_id: attr(comp, 'library_id'),
+        vendor: attr(comp, 'vendor'),
+        description: attr(comp, 'description'),
+        max_cvss_score: attr(comp, 'max_cvss_score'),
+        added_date: attr(comp, 'added_date'),
+        file_paths: fps.map(fp => attr(fp, 'value')),
+      };
+    }),
+  };
+  return JSON.stringify(entry, null, 2);
+}
+
 // ---- Requirement builders ----
 
 /** Build CWE-based requirements from severity categories. */
@@ -237,12 +271,14 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
 
   // Build tags
   const extras: Record<string, unknown> = {};
-  const cweData = formatCWEData(cwes);
-  if (cweData) extras.cweid = cweData;
   const cweDescStr = formatCWEDesc(cwes);
   if (cweDescStr) extras.cweDescription = cweDescStr;
 
   const tags = buildNistCciTags(nist, cciTags, extras);
+
+  // First-class CWE identifiers ("CWE-NN"). The category cweid attributes are
+  // bare numbers; prefix them to match the schema's CWE-N convention.
+  const cweList = cweIDs.map(id => `CWE-${id}`);
 
   // Build descriptions
   const descriptions: Description[] = [
@@ -268,6 +304,15 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     return flaws.map(flaw => attr(flaw, 'sourcefile')).filter(Boolean);
   }).join('\n');
 
+  // Static findings carry no raw snippet; the code-locus (function prototype at
+  // source-file:line) is the richest source context Veracode provides. Leave
+  // code unset when no flaw carries either (NOT-IN-SOURCE).
+  const codeLines = cwes.flatMap(c => {
+    const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
+    const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
+    return flaws.map(flaw => synthesizeFlawCode(flaw)).filter(Boolean);
+  });
+
   const req = createRequirement(
     attr(cat, 'categoryid'),
     attr(cat, 'categoryname'),
@@ -282,6 +327,12 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+  if (cweList.length > 0) {
+    req.cwe = cweList;
+  }
+  if (codeLines.length > 0) {
+    req.code = codeLines.join('\n');
+  }
 
   return req;
 }
@@ -336,6 +387,30 @@ function buildCVERequirements(
   });
 }
 
+/**
+ * Assemble the structured CVSS entry for an SCA CVE. Veracode reports a bare
+ * numeric base score (no vector, no version), so the version defaults to 3.1 via
+ * the shared helper. When the vulnerability itself carries no cvss_score, the
+ * first affected component's max_cvss_score is used as a fallback. A missing or
+ * non-numeric score yields no entry.
+ */
+function buildVeracodeCvss(vuln: Record<string, unknown>, components: Record<string, unknown>[]): Cvss[] {
+  let scoreStr = attr(vuln, 'cvss_score');
+  if (!scoreStr) {
+    for (const comp of components) {
+      const max = attr(comp, 'max_cvss_score');
+      if (max) {
+        scoreStr = max;
+        break;
+      }
+    }
+  }
+  if (!scoreStr) return [];
+  const score = Number(scoreStr);
+  if (!Number.isFinite(score)) return [];
+  return [buildCvss({ version: cvssVersionFromString(undefined), baseScore: score })];
+}
+
 /** Build a single CVE-based requirement. */
 function buildCVERequirement(
   vuln: Record<string, unknown>,
@@ -353,9 +428,7 @@ function buildCVERequirement(
     nist = DEFAULT_REMEDIATION_NIST_TAGS;
   }
   const cciTags = nistToCci(nist);
-  const extras: Record<string, unknown> = {};
-  if (cweID) extras.cwe = cweID;
-  const tags = buildNistCciTags(nist, cciTags, extras);
+  const tags = buildNistCciTags(nist, cciTags, {});
 
   // One result per affected component
   const startTime = parseVeracodeTimestamp(firstBuildDate) ?? new Date();
@@ -390,6 +463,22 @@ function buildCVERequirement(
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  const cvss = buildVeracodeCvss(vuln, components);
+  if (cvss.length > 0) {
+    req.cvss = cvss;
+  }
+
+  // CVE is already the requirement.id, so no interim tags.cve is emitted; the
+  // CWE moves to the first-class cwe[] (already in "CWE-NN" form on SCA vulns).
+  if (cweID) {
+    req.cwe = [cweID];
+  }
+
+  // SCA vulnerabilities have no source snippet or function prototype; the richest
+  // faithful representation is the vulnerability/component entry serialized as
+  // indented JSON (the ionchannel/nessus pattern).
+  req.code = buildSCACode(vuln, components);
 
   return req;
 }
@@ -483,7 +572,6 @@ export async function convertVeracodeToHdf(input: string, converterVersion = '1.
     generatorName: 'veracode-to-hdf',
     converterVersion,
     toolName: 'Veracode',
-    toolFormat: 'XML',
     baselines: [baseline],
     components: [{ name: targetName, type: TargetType.Application }],
     timestamp,
