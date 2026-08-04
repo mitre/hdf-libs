@@ -34,6 +34,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/alerts/da637472900382838869_1364969609"
+            }
+          ],
           "title": "Suspicious process executed",
           "verificationMethod": "automated"
         },
@@ -68,6 +73,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/alerts/da637472900382838870_9876543210"
+            }
+          ],
           "title": "Suspicious remote WMI execution",
           "verificationMethod": "automated"
         },
@@ -101,6 +111,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/alerts/da637472900382838871_1111111111"
+            }
+          ],
           "title": "Unusual network connection established",
           "verificationMethod": "automated"
         },
@@ -138,6 +153,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/alerts/da637472900382838872_2222222222"
+            }
+          ],
           "title": "Malware detected and quarantined",
           "verificationMethod": "automated"
         }

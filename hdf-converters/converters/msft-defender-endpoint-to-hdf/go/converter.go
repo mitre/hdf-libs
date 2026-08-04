@@ -202,6 +202,12 @@ func alertToRequirement(alert mdeAlert, scanTime time.Time) hdf.EvaluatedRequire
 		})
 	}
 
+	var refs []hdf.Reference
+	if alert.AlertWebURL != "" {
+		url := alert.AlertWebURL
+		refs = []hdf.Reference{{URL: &url}}
+	}
+
 	title := alert.Title
 	return hdf.EvaluatedRequirement{
 		ID:                 alert.ID,
@@ -209,6 +215,7 @@ func alertToRequirement(alert mdeAlert, scanTime time.Time) hdf.EvaluatedRequire
 		Impact:             impact,
 		Tags:               buildTags(alert),
 		Descriptions:       descriptions,
+		Refs:               refs,
 		Results:            []hdf.RequirementResult{result},
 		ControlType:        shared.DeriveControlTypeFromTags(shared.DefaultStaticAnalysisNIST),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),

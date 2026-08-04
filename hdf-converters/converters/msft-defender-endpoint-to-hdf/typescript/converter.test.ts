@@ -217,6 +217,23 @@ describe('msft-defender-endpoint to HDF converter', async () => {
     });
   });
 
+  describe('refs from alertWebUrl', async () => {
+    it('should emit a Reference{url} from alertWebUrl', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const refs = hdf.baselines[0]!.requirements[0]!.refs!;
+      expect(refs).toHaveLength(1);
+      expect(refs[0]!.url).toBe('https://security.microsoft.com/alerts/da637472900382838869_1364969609');
+      expect(refs[0]!.uri).toBeUndefined();
+      expect(refs[0]!.ref).toBeUndefined();
+    });
+
+    it('should omit refs when the alert carries no alertWebUrl', async () => {
+      // empty.json → no alerts → no-findings requirement has no alertWebUrl.
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('empty.json'))) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.refs).toBeUndefined();
+    });
+  });
+
   describe('evidence in code_desc', async () => {
     it('should include device and process evidence in code_desc', async () => {
       const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('minimal.json'))) as HDFResults;

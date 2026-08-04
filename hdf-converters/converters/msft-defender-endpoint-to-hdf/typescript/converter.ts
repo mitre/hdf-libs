@@ -6,6 +6,7 @@ import type {
   RequirementResult,
   Checksum,
   Component,
+  Reference,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -269,6 +270,10 @@ function alertToRequirement(alert: MdeAlert, scanTime: Date): EvaluatedRequireme
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+  if (alert.alertWebUrl) {
+    const refs: Reference[] = [{ url: alert.alertWebUrl }];
+    req.refs = refs;
+  }
   return req;
 }
 

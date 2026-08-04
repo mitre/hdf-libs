@@ -35,6 +35,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/alerts/da637472900382838869_1364969609"
+            }
+          ],
           "title": "Low-reputation arbitrary code executed by signed executable",
           "verificationMethod": "automated"
         }

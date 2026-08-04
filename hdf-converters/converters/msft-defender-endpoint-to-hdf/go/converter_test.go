@@ -251,6 +251,31 @@ func TestConvert_Descriptions(t *testing.T) {
 	assert.Contains(t, req.Descriptions[1].Data, "Collect artifacts")
 }
 
+// ---- Refs from alertWebUrl ----
+
+func TestConvert_Refs_FromAlertWebURL(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Refs, 1)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://security.microsoft.com/alerts/da637472900382838869_1364969609", *req.Refs[0].URL)
+	assert.Nil(t, req.Refs[0].URI)
+	assert.Nil(t, req.Refs[0].Ref)
+}
+
+func TestConvert_Refs_Absent(t *testing.T) {
+	// empty.json → no alerts → the no-findings requirement carries no alertWebUrl → no refs.
+	input := loadFixture(t, "input/empty.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Empty(t, req.Refs)
+}
+
 // ---- Evidence in code_desc ----
 
 func TestConvert_EvidenceInCodeDesc(t *testing.T) {
