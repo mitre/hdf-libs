@@ -10,3 +10,20 @@ export { detect, type HdfDocType } from './detect.js';
 
 // Query engine (peer of hdf-engine/go/filter.go).
 export { filter, type FilterOptions, type Match } from './query.js';
+
+// Compliance & threshold engine (peer of hdf-engine/go/compliance.go).
+export {
+  countControlsByStatusSeverity,
+  mapControlIDs,
+  calculateCompliance,
+  validateThresholds,
+  overallStatus,
+  deriveSeverity,
+  type StatusCounts,
+  type SeverityCounts,
+  type ControlIDMapping,
+  type ThresholdConfig,
+  type ThresholdSeverity,
+  type ThresholdBound,
+  type ComplianceBound,
+} from './compliance.js';

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -94,7 +96,7 @@ func TestCalculateCompliance(t *testing.T) {
 		Passed: SeverityCounts{Total: 2},
 		Failed: SeverityCounts{Total: 1},
 	}
-	compliance := calculateCompliance(counts)
+	compliance := hdfengine.CalculateCompliance(counts)
 	assert.InDelta(t, 66.67, compliance, 0.01)
 }
 
@@ -102,14 +104,14 @@ func TestCalculateCompliance_AllPassed(t *testing.T) {
 	counts := &StatusCounts{
 		Passed: SeverityCounts{Total: 10},
 	}
-	assert.Equal(t, 100.0, calculateCompliance(counts))
+	assert.Equal(t, 100.0, hdfengine.CalculateCompliance(counts))
 }
 
 func TestCalculateCompliance_NoneRelevant(t *testing.T) {
 	counts := &StatusCounts{
 		NoImpact: SeverityCounts{Total: 5},
 	}
-	assert.Equal(t, 0.0, calculateCompliance(counts))
+	assert.Equal(t, 0.0, hdfengine.CalculateCompliance(counts))
 }
 
 // --- Generate threshold tests ---
