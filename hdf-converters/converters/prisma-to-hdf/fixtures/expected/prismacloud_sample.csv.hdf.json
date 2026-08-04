@@ -107,6 +107,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2019-19927"
+            }
+          ],
           "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -155,6 +160,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2016-2226"
+            }
+          ],
           "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -203,6 +213,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2020-28367"
+            }
+          ],
           "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -251,6 +266,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2016-1938"
+            }
+          ],
           "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -299,6 +319,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2016-1583"
+            }
+          ],
           "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -387,6 +412,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2021-28964"
+            }
+          ],
           "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -435,6 +465,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2017-5897"
+            }
+          ],
           "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -483,6 +518,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2016-1583"
+            }
+          ],
           "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -571,6 +611,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2021-20316"
+            }
+          ],
           "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -619,6 +664,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2021-43566"
+            }
+          ],
           "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -668,6 +718,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/errata/RHSA-2022:0328"
+            }
+          ],
           "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -717,6 +772,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-29923"
+            }
+          ],
           "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -835,6 +895,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2021-43566"
+            }
+          ],
           "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -883,6 +948,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2021-20316"
+            }
+          ],
           "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -932,6 +1002,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/errata/RHSA-2022:0328"
+            }
+          ],
           "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -1021,6 +1096,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-41772"
+            }
+          ],
           "title": "my-fake-host-5.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -1070,6 +1150,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-38297"
+            }
+          ],
           "title": "my-fake-host-5.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -1188,6 +1273,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2015-1258"
+            }
+          ],
           "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -1236,6 +1326,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2017-13194"
+            }
+          ],
           "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -1285,6 +1380,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-44716"
+            }
+          ],
           "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -1374,6 +1474,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-33197"
+            }
+          ],
           "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -1423,6 +1528,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-38297"
+            }
+          ],
           "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -1472,6 +1582,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-44716"
+            }
+          ],
           "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -1520,6 +1635,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2016-1583"
+            }
+          ],
           "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -1639,6 +1759,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2020-15586"
+            }
+          ],
           "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -1688,6 +1813,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-39293"
+            }
+          ],
           "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -1737,6 +1867,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-38297"
+            }
+          ],
           "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -1855,6 +1990,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2018-18606"
+            }
+          ],
           "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -1903,6 +2043,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2018-20673"
+            }
+          ],
           "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -1952,6 +2097,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/errata/RHSA-2022:0328"
+            }
+          ],
           "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -2160,6 +2310,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2019-9704"
+            }
+          ],
           "title": "localhost-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2208,6 +2363,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2019-9705"
+            }
+          ],
           "title": "localhost-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2257,6 +2417,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/errata/RHSA-2022:0328"
+            }
+          ],
           "title": "localhost-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2306,6 +2471,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-41772"
+            }
+          ],
           "title": "localhost-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2355,6 +2525,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-38297"
+            }
+          ],
           "title": "localhost-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2404,6 +2579,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2020-24553"
+            }
+          ],
           "title": "localhost-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -2522,6 +2702,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2018-20622"
+            }
+          ],
           "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2570,6 +2755,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2021-3467"
+            }
+          ],
           "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2618,6 +2808,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2017-15118"
+            }
+          ],
           "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2667,6 +2862,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/errata/RHSA-2022:0328"
+            }
+          ],
           "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -2725,6 +2925,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2017-9936"
+            }
+          ],
           "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2773,6 +2978,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2017-9935"
+            }
+          ],
           "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2821,6 +3031,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2017-9815"
+            }
+          ],
           "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2870,6 +3085,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2020-16845"
+            }
+          ],
           "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2918,6 +3138,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2016-1583"
+            }
+          ],
           "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -2967,6 +3192,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/errata/RHSA-2022:0328"
+            }
+          ],
           "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -3085,6 +3315,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2021-3981"
+            }
+          ],
           "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -3133,6 +3368,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2021-3408"
+            }
+          ],
           "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -3181,6 +3421,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2021-4155"
+            }
+          ],
           "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -3230,6 +3475,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2020-28362"
+            }
+          ],
           "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -3348,6 +3598,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2018-8740"
+            }
+          ],
           "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -3396,6 +3651,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2017-7000"
+            }
+          ],
           "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -3444,6 +3704,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2016-1583"
+            }
+          ],
           "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -3493,6 +3758,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2020-29652"
+            }
+          ],
           "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -3542,6 +3812,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-38297"
+            }
+          ],
           "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -3660,6 +3935,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2015-3218"
+            }
+          ],
           "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -3708,6 +3988,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2015-3255"
+            }
+          ],
           "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -3757,6 +4042,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-38297"
+            }
+          ],
           "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -3805,6 +4095,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-33194"
+            }
+          ],
           "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -3853,6 +4148,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2016-1568"
+            }
+          ],
           "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }
@@ -3971,6 +4271,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2016-4476"
+            }
+          ],
           "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -4019,6 +4324,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2022-23304"
+            }
+          ],
           "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -4068,6 +4378,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-41772"
+            }
+          ],
           "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -4117,6 +4432,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/detail/CVE-2021-38297"
+            }
+          ],
           "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         },
@@ -4165,6 +4485,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://somewhere.cloud/security/cve/CVE-2018-14619"
+            }
+          ],
           "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image",
           "verificationMethod": "automated"
         }

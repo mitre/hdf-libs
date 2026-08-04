@@ -254,7 +254,20 @@ func buildRequirement(rec prismaRecord, scanTime time.Time) hdf.EvaluatedRequire
 			req.AffectedPackages = []hdf.AffectedPackage{*pkg}
 		}
 	}
+	if refs := buildRefs(rec); refs != nil {
+		req.Refs = refs
+	}
 	return req
+}
+
+// buildRefs maps the "Vulnerability Link" CSV column to a single external
+// Reference URL. Omitted (nil) when the column is blank.
+func buildRefs(rec prismaRecord) []hdf.Reference {
+	url := strings.TrimSpace(rec.VulnerabilityLink)
+	if url == "" {
+		return nil
+	}
+	return []hdf.Reference{{URL: &url}}
 }
 
 // buildCvssEntries maps the CSV CVSS column to a structured cvss[] entry.
