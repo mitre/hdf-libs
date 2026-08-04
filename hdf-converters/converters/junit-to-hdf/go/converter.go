@@ -34,12 +34,23 @@ type junitTestSuite struct {
 }
 
 type junitTestCase struct {
-	ClassName string        `xml:"classname,attr"`
-	Name      string        `xml:"name,attr"`
-	Time      string        `xml:"time,attr"`
-	Failure   *junitFailure `xml:"failure"`
-	Error     *junitError   `xml:"error"`
-	Skipped   *junitSkipped `xml:"skipped"`
+	ClassName     string        `xml:"classname,attr"`
+	Name          string        `xml:"name,attr"`
+	Time          string        `xml:"time,attr"`
+	Failure       *junitFailure `xml:"failure"`
+	Error         *junitError   `xml:"error"`
+	Skipped       *junitSkipped `xml:"skipped"`
+	SystemOut     string        `xml:"system-out"`
+	SystemErr     string        `xml:"system-err"`
+	FlakyFailures []junitFlaky  `xml:"flakyFailure"`
+	FlakyErrors   []junitFlaky  `xml:"flakyError"`
+}
+
+// junitFlaky captures a Surefire flaky/rerun retry element. Each retry can carry
+// its own captured stdout/stderr for the attempt.
+type junitFlaky struct {
+	SystemOut string `xml:"system-out"`
+	SystemErr string `xml:"system-err"`
 }
 
 type junitFailure struct {
@@ -208,6 +219,13 @@ func testCaseToRequirement(tc junitTestCase, scanTime time.Time) hdf.EvaluatedRe
 			Data:  fmt.Sprintf("JUnit test: %s in %s", tc.Name, className),
 		},
 	}
+	systemOut, systemErr := collectSystemStreams(tc)
+	if systemOut != "" {
+		descriptions = append(descriptions, hdf.Description{Label: "system-out", Data: systemOut})
+	}
+	if systemErr != "" {
+		descriptions = append(descriptions, hdf.Description{Label: "system-err", Data: systemErr})
+	}
 
 	return hdf.EvaluatedRequirement{
 		ID:                 id,
@@ -219,6 +237,31 @@ func testCaseToRequirement(tc junitTestCase, scanTime time.Time) hdf.EvaluatedRe
 		ControlType:        shared.DeriveControlTypeFromTags(defaultNIST),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+}
+
+// collectSystemStreams gathers captured stdout/stderr for a test case: any
+// direct <system-out>/<system-err> children plus those nested inside Surefire
+// flakyFailure/flakyError retry elements, in document order. Each block is
+// trimmed of wrapping whitespace and empty blocks are dropped; multiple blocks
+// are joined with a newline so each stream yields one description.
+func collectSystemStreams(tc junitTestCase) (systemOut, systemErr string) {
+	var outs, errs []string
+	add := func(out, err string) {
+		if s := strings.TrimSpace(out); s != "" {
+			outs = append(outs, s)
+		}
+		if s := strings.TrimSpace(err); s != "" {
+			errs = append(errs, s)
+		}
+	}
+	add(tc.SystemOut, tc.SystemErr)
+	for _, f := range tc.FlakyFailures {
+		add(f.SystemOut, f.SystemErr)
+	}
+	for _, f := range tc.FlakyErrors {
+		add(f.SystemOut, f.SystemErr)
+	}
+	return strings.Join(outs, "\n"), strings.Join(errs, "\n")
 }
 
 // buildID constructs a unique requirement ID from classname and test name.

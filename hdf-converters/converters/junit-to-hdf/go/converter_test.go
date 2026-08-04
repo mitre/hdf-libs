@@ -261,7 +261,68 @@ func TestDescription(t *testing.T) {
 	assert.Contains(t, defaultDesc.Data, "surefire.MyTest")
 }
 
-// --- Helper ---
+// --- system-out / system-err descriptions ---
+
+func findDescription(descs []hdf.Description, label string) *hdf.Description {
+	for i := range descs {
+		if descs[i].Label == label {
+			return &descs[i]
+		}
+	}
+	return nil
+}
+
+// testFlaky's captured stdout/stderr live inside Surefire flakyFailure/flakyError
+// retry elements in surefire-flaky.xml. They should surface as system-out /
+// system-err descriptions on the requirement.
+func TestSystemOutErrDescriptions_Flaky(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-flaky.xml"), converterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "org.acme.FlakyTest.testFlaky")
+
+	out := findDescription(req.Descriptions, "system-out")
+	require.NotNil(t, out, "testFlaky should carry a system-out description")
+	assert.Contains(t, out.Data, "code-with-quarkus 1.0.0-SNAPSHOT on JVM")
+	assert.Contains(t, out.Data, "Installed features: [cdi, resteasy-reactive")
+
+	errDesc := findDescription(req.Descriptions, "system-err")
+	require.NotNil(t, errDesc, "testFlaky should carry a system-err description")
+	assert.Equal(t, "Test system.err", errDesc.Data)
+}
+
+// testStable has no captured output — neither description should be emitted.
+func TestSystemOutErrDescriptions_Absent(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-flaky.xml"), converterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "org.acme.FlakyTest.testStable")
+	assert.Nil(t, findDescription(req.Descriptions, "system-out"))
+	assert.Nil(t, findDescription(req.Descriptions, "system-err"))
+}
+
+func TestCollectSystemStreams_DirectChildren(t *testing.T) {
+	tc := junitTestCase{SystemOut: "  hello out\n", SystemErr: "\nhello err "}
+	out, errs := collectSystemStreams(tc)
+	assert.Equal(t, "hello out", out)
+	assert.Equal(t, "hello err", errs)
+}
+
+func TestCollectSystemStreams_Empty(t *testing.T) {
+	out, errs := collectSystemStreams(junitTestCase{Name: "x"})
+	assert.Empty(t, out)
+	assert.Empty(t, errs)
+}
+
+func TestCollectSystemStreams_JoinsRetriesInOrder(t *testing.T) {
+	tc := junitTestCase{
+		FlakyFailures: []junitFlaky{{SystemOut: "a"}, {SystemOut: "  b  "}},
+		FlakyErrors:   []junitFlaky{{SystemOut: "c", SystemErr: "e"}},
+	}
+	out, errs := collectSystemStreams(tc)
+	assert.Equal(t, "a\nb\nc", out)
+	assert.Equal(t, "e", errs)
+}
 
 // --- Testsuites root with mixed statuses (schema-validated against Windyroad XSD) ---
 

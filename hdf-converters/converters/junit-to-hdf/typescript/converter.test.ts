@@ -279,6 +279,57 @@ describe('junit to HDF converter', async () => {
       expect(req).toBeDefined();
       expect(req?.results[0]?.status).toBe(ResultStatus.Passed);
     });
+
+    it('should surface flaky retry system-out/system-err as descriptions', async () => {
+      const hdf = await parseHdf('surefire-flaky.xml');
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'org.acme.FlakyTest.testFlaky'
+      );
+      expect(req).toBeDefined();
+
+      const out = req?.descriptions?.find((d) => d.label === 'system-out');
+      expect(out).toBeDefined();
+      expect(out?.data).toContain('code-with-quarkus 1.0.0-SNAPSHOT on JVM');
+      expect(out?.data).toContain('Installed features: [cdi, resteasy-reactive');
+
+      const err = req?.descriptions?.find((d) => d.label === 'system-err');
+      expect(err).toBeDefined();
+      expect(err?.data).toBe('Test system.err');
+    });
+
+    it('should not emit system-out/system-err descriptions when absent', async () => {
+      const hdf = await parseHdf('surefire-flaky.xml');
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'org.acme.FlakyTest.testStable'
+      );
+      expect(req).toBeDefined();
+      expect(req?.descriptions?.find((d) => d.label === 'system-out')).toBeUndefined();
+      expect(req?.descriptions?.find((d) => d.label === 'system-err')).toBeUndefined();
+    });
+
+    it('should map direct testcase-level system-out/system-err children', async () => {
+      const xml =
+        '<?xml version="1.0"?>' +
+        '<testsuite name="S"><testcase classname="C" name="t">' +
+        '<system-out>  captured stdout\n</system-out>' +
+        '<system-err>captured stderr</system-err>' +
+        '</testcase></testsuite>';
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'C.t');
+      expect(req?.descriptions?.find((d) => d.label === 'system-out')?.data).toBe('captured stdout');
+      expect(req?.descriptions?.find((d) => d.label === 'system-err')?.data).toBe('captured stderr');
+    });
+
+    it('should omit whitespace-only system-out/system-err', async () => {
+      const xml =
+        '<?xml version="1.0"?>' +
+        '<testsuite name="S"><testcase classname="C" name="t">' +
+        '<system-out>   \n  </system-out>' +
+        '</testcase></testsuite>';
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'C.t');
+      expect(req?.descriptions?.find((d) => d.label === 'system-out')).toBeUndefined();
+    });
   });
 
   // --- Testsuites root with mixed statuses (schema-validated against Windyroad XSD) ---
