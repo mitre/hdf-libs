@@ -3,6 +3,7 @@ package netsparker
 import (
 	"encoding/xml"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -242,6 +243,26 @@ func buildNetsparkerCvss(c NetsparkerClassification) []hdf.Cvss {
 	return out
 }
 
+// hrefPattern extracts the URL from each anchor tag in Netsparker's
+// <external-references> HTML blob (single- or double-quoted href).
+var hrefPattern = regexp.MustCompile(`href=['"]([^'"]+)['"]`)
+
+// buildRefs turns Netsparker's <external-references> HTML anchor blob into one
+// hdf.Reference per external URL. Returns nil when the field is empty or carries
+// no links, so refs[] is omitted entirely.
+func buildRefs(externalReferences string) []hdf.Reference {
+	matches := hrefPattern.FindAllStringSubmatch(externalReferences, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+	refs := make([]hdf.Reference, 0, len(matches))
+	for _, m := range matches {
+		url := m[1]
+		refs = append(refs, hdf.Reference{URL: &url})
+	}
+	return refs
+}
+
 // buildRequirement converts a single vulnerability into an EvaluatedRequirement.
 func buildRequirement(vuln *NetsparkerVuln, initiated string) hdf.EvaluatedRequirement {
 	cweID := vuln.Classification.CWE
@@ -337,6 +358,10 @@ func buildRequirement(vuln *NetsparkerVuln, initiated string) hdf.EvaluatedRequi
 	if cvss := buildNetsparkerCvss(vuln.Classification); len(cvss) > 0 {
 		req.Cvss = cvss
 	}
+
+	// requirement.refs = external reference links Netsparker carries in the
+	// <external-references> HTML blob. Left unset when the vuln carries none.
+	req.Refs = buildRefs(vuln.ExternalReferences)
 
 	return req
 }

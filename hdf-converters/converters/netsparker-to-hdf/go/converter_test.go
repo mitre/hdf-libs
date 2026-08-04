@@ -268,6 +268,62 @@ func TestConvertNetsparker_Descriptions(t *testing.T) {
 	_ = check
 }
 
+// ---- External references → refs[] ----
+
+func TestConvertNetsparker_Refs(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
+
+	// First vuln's <external-references> carries five anchor links.
+	require.Len(t, req.Refs, 5)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://wiki.owasp.org/index.php/Insecure_Configuration_Management", *req.Refs[0].URL)
+	require.NotNil(t, req.Refs[4].URL)
+	assert.Equal(t, "https://syslink.pl/cipherlist/", *req.Refs[4].URL)
+}
+
+func TestConvertNetsparker_RefsAbsent(t *testing.T) {
+	// Crafted vuln with no <external-references> element → refs must stay unset.
+	xml := `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-refs</LookupId>
+			<name>No Refs Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`
+
+	result, err := ConvertNetsparkerToHDF([]byte(xml), testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "no-refs")
+	assert.Empty(t, req.Refs, "refs should be unset when the vuln carries no external-references")
+}
+
+func TestBuildRefs(t *testing.T) {
+	t.Run("empty input", func(t *testing.T) {
+		assert.Nil(t, buildRefs(""))
+	})
+	t.Run("no anchors", func(t *testing.T) {
+		assert.Nil(t, buildRefs("<div>plain text, no links</div>"))
+	})
+	t.Run("double-quoted href", func(t *testing.T) {
+		refs := buildRefs(`<a href="https://example.com/x">x</a>`)
+		require.Len(t, refs, 1)
+		require.NotNil(t, refs[0].URL)
+		assert.Equal(t, "https://example.com/x", *refs[0].URL)
+	})
+}
+
 // ---- Status: all results Failed ----
 
 func TestConvertNetsparker_AllResultsFailed(t *testing.T) {

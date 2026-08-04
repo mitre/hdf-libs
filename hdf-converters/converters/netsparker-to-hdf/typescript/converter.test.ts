@@ -210,6 +210,35 @@ describe('Netsparker to HDF converter', () => {
     expect(fix!.data.length).toBeGreaterThan(0);
   });
 
+  // ---- External references → refs[] ----
+
+  it('maps <external-references> anchor links to refs[]', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'e8b418ae-a532-4b43-5d9b-af9b04bbbca3');
+    expect(req?.refs).toBeDefined();
+    expect(req!.refs).toHaveLength(5);
+    expect(req!.refs![0]!.url).toBe('https://wiki.owasp.org/index.php/Insecure_Configuration_Management');
+    expect(req!.refs![4]!.url).toBe('https://syslink.pl/cipherlist/');
+  });
+
+  it('omits refs[] when the vuln carries no external-references', async () => {
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target><url>https://example.com/</url></target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-refs</LookupId>
+			<name>No Refs Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'no-refs');
+    expect(req?.refs).toBeUndefined();
+  });
+
   // ---- All results are Failed ----
 
   it('should mark all results as failed', async () => {

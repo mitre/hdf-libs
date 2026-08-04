@@ -51,6 +51,23 @@
           },
           "code": "[SSL Connection]",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://wiki.owasp.org/index.php/Insecure_Configuration_Management"
+            },
+            {
+              "url": "https://www.owasp.org/index.php/Top_10-2017_A3-Sensitive_Data_Exposure"
+            },
+            {
+              "url": "https://www.tripwire.com/state-of-security/vulnerability-management/zombie-poodle-goldendoodle/"
+            },
+            {
+              "url": "https://ssl-config.mozilla.org/"
+            },
+            {
+              "url": "https://syslink.pl/cipherlist/"
+            }
+          ],
           "title": "Weak Ciphers Enabled",
           "verificationMethod": "automated"
         },
@@ -87,6 +104,17 @@
           },
           "code": "GET / HTTP/1.1\nHost: mlrcommercial.vams-impl.cms.gov\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8\nAccept-Language: en-us,en;q=0.5\nCache-Control: no-cache\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36\n\n",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://www.netsparker.com/whitepaper-http-security-headers/#HTTPStrictTransportSecurityHSTSHTTPHeader"
+            },
+            {
+              "url": "https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security#Implementation"
+            },
+            {
+              "url": "https://hstspreload.org/"
+            }
+          ],
           "title": "HTTP Strict Transport Security (HSTS) Errors and Warnings",
           "verificationMethod": "automated"
         },
@@ -127,6 +155,17 @@
           },
           "code": "GET / HTTP/1.1\nHost: mlrcommercial.vams-impl.cms.gov\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8\nAccept-Language: en-us,en;q=0.5\nCache-Control: no-cache\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36\n\n",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://owasp.org/www-community/attacks/Clickjacking"
+            },
+            {
+              "url": "http://caniuse.com/#search=X-Frame-Options"
+            },
+            {
+              "url": "https://www.netsparker.com/whitepaper-http-security-headers/#XFrameOptionsHTTPHeader"
+            }
+          ],
           "title": "Missing X-Frame-Options Header",
           "verificationMethod": "automated"
         }

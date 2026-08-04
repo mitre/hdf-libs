@@ -23,6 +23,7 @@ import type {
   Checksum,
   Cvss,
   Description,
+  Reference,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -263,6 +264,26 @@ function mapNISTFromCWEAndOWASP(cweID: string, owaspID: string): string[] {
     : [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS];
 }
 
+// Extracts the URL from each anchor tag in Netsparker's <external-references>
+// HTML blob (single- or double-quoted href).
+const HREF_PATTERN = /href=['"]([^'"]+)['"]/g;
+
+/**
+ * Turns Netsparker's <external-references> HTML anchor blob into one Reference
+ * per external URL. Returns undefined when the field is empty or carries no
+ * links, so refs[] is omitted entirely.
+ */
+function buildRefs(externalReferences: string | undefined): Reference[] | undefined {
+  if (!externalReferences) {
+    return undefined;
+  }
+  const refs: Reference[] = [];
+  for (const match of externalReferences.matchAll(HREF_PATTERN)) {
+    refs.push({ url: match[1] });
+  }
+  return refs.length > 0 ? refs : undefined;
+}
+
 /**
  * Builds a single EvaluatedRequirement from a vulnerability.
  */
@@ -358,6 +379,13 @@ function buildRequirement(
   const cvss = buildNetsparkerCvss(vuln.classification);
   if (cvss.length > 0) {
     req.cvss = cvss;
+  }
+
+  // requirement.refs = external reference links Netsparker carries in the
+  // <external-references> HTML blob. Left unset when the vuln carries none.
+  const refs = buildRefs(vuln['external-references']);
+  if (refs !== undefined) {
+    req.refs = refs;
   }
 
   return req;
