@@ -317,6 +317,14 @@ func buildDescriptions(item *ReportItem, isCompliance bool) []hdf.Description {
 		})
 	}
 
+	// Short summary of the finding (Nessus synopsis element).
+	if item.Synopsis != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "synopsis",
+			Data:  parseHTML(item.Synopsis),
+		})
+	}
+
 	// Fix/solution description
 	solution := item.Solution
 	if isCompliance {

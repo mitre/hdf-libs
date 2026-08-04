@@ -503,6 +503,14 @@ function buildDescriptions(item: ReportItem, isCompliance: boolean): Description
     });
   }
 
+  // Short summary of the finding (Nessus synopsis element).
+  if (item.synopsis) {
+    descriptions.push({
+      label: 'synopsis',
+      data: parseHtml(item.synopsis),
+    });
+  }
+
   // Fix/solution description
   const solution = isCompliance ? item['compliance-solution'] : item.solution;
   if (solution && solution !== 'n/a') {

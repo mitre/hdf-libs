@@ -9,6 +9,10 @@
               "label": "default"
             },
             {
+              "data": "It was possible to enumerate CPE names that matched on the remote system.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -52,6 +56,10 @@
               "label": "default"
             },
             {
+              "data": "The remote host is missing several patches.",
+              "label": "synopsis"
+            },
+            {
               "data": "Install the patches listed below.",
               "label": "fix"
             }
@@ -86,6 +94,10 @@
             {
               "data": "Plugin Family: Settings; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "This plugin displays information about the Nessus scan.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -123,6 +135,10 @@
               "label": "default"
             },
             {
+              "data": "Valid credentials were provided for an available authentication protocol.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -156,6 +172,10 @@
               "label": "default"
             },
             {
+              "data": "Nessus was able to log in to the remote host using the provided credentials, but encountered difficulty running commands used to find unmanaged software.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -187,6 +207,10 @@
             {
               "data": "Plugin Family: Settings; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "Nessus was able to log in to the remote host using the provided credentials and enumerate OS security patch levels.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -224,6 +248,10 @@
               "label": "default"
             },
             {
+              "data": "Nessus was able to log in to the remote host using the provided credentials. No issues were reported with access, privilege, or intermittent failure.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -257,6 +285,10 @@
             {
               "data": "Plugin Family: Misc.; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "Apache Log4j, a logging API, is installed on the remote Linux / Unix host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -308,6 +340,10 @@
             {
               "data": "Plugin Family: Misc.; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote host is affected by multiple vulnerabilities.",
+              "label": "synopsis"
             },
             {
               "data": "Apply the appropriate patch according to the January 2022 Oracle Critical Patch Update advisory.",
@@ -366,6 +402,10 @@
               "label": "default"
             },
             {
+              "data": "The remote host is affected by multiple vulnerabilities.",
+              "label": "synopsis"
+            },
+            {
               "data": "Apply the appropriate patch according to the October 2021 Oracle Critical Patch Update advisory.",
               "label": "fix"
             }
@@ -407,6 +447,10 @@
             {
               "data": "Plugin Family: Misc.; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote host contains one or more versions of the Oracle Java JRE that require long-term support.",
+              "label": "synopsis"
             },
             {
               "data": "To continue receiving updates and security fixes, contact the vendor regarding Premier Support or Extended Support contracts.",
@@ -453,6 +497,10 @@
               "label": "default"
             },
             {
+              "data": "The Java runtime environment is installed on the remote Unix host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -489,6 +537,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "Java is installed on the remote Linux / Unix host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -529,6 +581,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to guess the remote device type.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -564,6 +620,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to guess the remote operating system.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -597,6 +657,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "Nessus has detected potential virtual hosts.",
+              "label": "synopsis"
             },
             {
               "data": "If you want to test them, re-scan using the special vhost syntax, such as :\n\nwww.example.com[192.0.32.10]",
@@ -637,6 +701,10 @@
               "label": "default"
             },
             {
+              "data": "The 'commonName' (CN) attribute in the SSL certificate does not match the hostname.",
+              "label": "synopsis"
+            },
+            {
               "data": "If the machine has several names, make sure that users connect to the service through the DNS hostname that matches the common name in the certificate.",
               "label": "fix"
             }
@@ -671,6 +739,10 @@
             {
               "data": "Plugin Family: General; Port: 8834; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The SSL certificate for this service cannot be trusted.",
+              "label": "synopsis"
             },
             {
               "data": "Purchase or generate a proper SSL certificate for this service.",
@@ -719,6 +791,10 @@
               "label": "default"
             },
             {
+              "data": "Libgcrypt is installed on this host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -755,6 +831,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "Docker was detected on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -795,6 +875,10 @@
               "label": "default"
             },
             {
+              "data": "The system has been started.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -828,6 +912,10 @@
             {
               "data": "Plugin Family: Misc.; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The manufacturer can be identified from the Ethernet OUI.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -871,6 +959,10 @@
               "label": "default"
             },
             {
+              "data": "Nessus was able to enumerate the IPv4 interfaces on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "Disable any unused IPv4 interfaces.",
               "label": "fix"
             }
@@ -904,6 +996,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "This plugin gathers MAC addresses from various sources and consolidates them into a list.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -941,6 +1037,10 @@
               "label": "default"
             },
             {
+              "data": "Nessus was able to enumerate the IPv6 interfaces on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "Disable IPv6 if you are not actually using it. Otherwise, disable any unused IPv6 interfaces.",
               "label": "fix"
             }
@@ -976,6 +1076,10 @@
               "label": "default"
             },
             {
+              "data": "Nessus was able to enumerate MAC addresses on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "Disable any unused interfaces.",
               "label": "fix"
             }
@@ -1009,6 +1113,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "Uses /bin/ps auxww command to obtain the list of running processes on the target machine at scan time.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -1047,6 +1155,10 @@
               "label": "default"
             },
             {
+              "data": "Nessus was able to enumerate local users and groups on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "None",
               "label": "fix"
             }
@@ -1083,6 +1195,10 @@
               "label": "default"
             },
             {
+              "data": "At least one local user has a password that never expires.",
+              "label": "synopsis"
+            },
+            {
               "data": "Allow or require users to change their passwords regularly.",
               "label": "fix"
             }
@@ -1114,6 +1230,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "It was possible to enumerate installed software on the remote host via SSH.",
+              "label": "synopsis"
             },
             {
               "data": "Remove any software that is not in compliance with your organization's acceptable use and security policies.",
@@ -1149,6 +1269,10 @@
             {
               "data": "Plugin Family: Misc.; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "An NVIDIA graphics card driver is installed on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -1189,6 +1313,10 @@
               "label": "default"
             },
             {
+              "data": "It was possible to determine the remote system hostname.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -1224,6 +1352,10 @@
               "label": "default"
             },
             {
+              "data": "Information about the remote host can be disclosed via an authenticated session.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -1257,6 +1389,10 @@
             {
               "data": "Plugin Family: General; Port: 8834; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service supports the use of SSL Perfect Forward Secrecy ciphers, which maintain confidentiality even if the key is stolen.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -1307,6 +1443,10 @@
               "label": "default"
             },
             {
+              "data": "The remote service encrypts traffic using a version of TLS.",
+              "label": "synopsis"
+            },
+            {
               "data": "N/A",
               "label": "fix"
             }
@@ -1345,6 +1485,10 @@
               "label": "default"
             },
             {
+              "data": "The remote service encrypts traffic using a version of TLS.",
+              "label": "synopsis"
+            },
+            {
               "data": "N/A",
               "label": "fix"
             }
@@ -1381,6 +1525,10 @@
             {
               "data": "Plugin Family: General; Port: 8834; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service encrypts communications using SSL.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -1428,6 +1576,10 @@
               "label": "default"
             },
             {
+              "data": "This plugin displays the SSL certificate.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -1462,6 +1614,10 @@
             {
               "data": "Plugin Family: General; Port: 8834; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service encrypts communications.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -1501,6 +1657,10 @@
               "label": "default"
             },
             {
+              "data": "Some information about the remote HTTP configuration can be extracted.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -1534,6 +1694,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 8834; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "A Nessus daemon is listening on the remote port.",
+              "label": "synopsis"
             },
             {
               "data": "Ensure that the remote Nessus installation has been authorized.",
@@ -1574,6 +1738,10 @@
               "label": "default"
             },
             {
+              "data": "The remote web server implements Strict Transport Security.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -1612,6 +1780,10 @@
               "label": "default"
             },
             {
+              "data": "A web server is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -1647,6 +1819,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to obtain information about the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "Filter incoming traffic to UDP port 5353, if desired.",
               "label": "fix"
             }
@@ -1678,6 +1854,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 8834; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service could be identified.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -1715,6 +1895,10 @@
               "label": "default"
             },
             {
+              "data": "The remote service could be identified.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -1748,6 +1932,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "It was possible to resolve the name of the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -1785,6 +1973,10 @@
               "label": "default"
             },
             {
+              "data": "The remote host is running an unnecessary service.",
+              "label": "synopsis"
+            },
+            {
               "data": "Disable this service.",
               "label": "fix"
             }
@@ -1817,6 +2009,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 36820; Protocol: udp;",
               "label": "default"
+            },
+            {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -1854,6 +2050,10 @@
               "label": "default"
             },
             {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -1887,6 +2087,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 111; Protocol: udp;",
               "label": "default"
+            },
+            {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -1924,6 +2128,10 @@
               "label": "default"
             },
             {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -1957,6 +2165,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 2049; Protocol: udp;",
               "label": "default"
+            },
+            {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -1994,6 +2206,10 @@
               "label": "default"
             },
             {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -2027,6 +2243,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 111; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -2064,6 +2284,10 @@
               "label": "default"
             },
             {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -2097,6 +2321,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 35959; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -2134,6 +2362,10 @@
               "label": "default"
             },
             {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -2167,6 +2399,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 2049; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -2204,6 +2440,10 @@
               "label": "default"
             },
             {
+              "data": "An ONC RPC service is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -2237,6 +2477,10 @@
             {
               "data": "Plugin Family: RPC; Port: 111; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "An ONC RPC portmapper is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -2282,6 +2526,10 @@
               "label": "default"
             },
             {
+              "data": "An ONC RPC portmapper is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -2318,6 +2566,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to determine which TCP ports are open.",
+              "label": "synopsis"
+            },
+            {
               "data": "Protect your target with an IP filter.",
               "label": "fix"
             }
@@ -2351,6 +2603,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to determine which TCP ports are open.",
+              "label": "synopsis"
+            },
+            {
               "data": "Protect your target with an IP filter.",
               "label": "fix"
             }
@@ -2382,6 +2638,10 @@
             {
               "data": "Plugin Family: Port scanners; Port: 111; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "It is possible to determine which TCP ports are open.",
+              "label": "synopsis"
             },
             {
               "data": "Protect your target with an IP filter.",
@@ -2429,6 +2689,10 @@
               "label": "default"
             },
             {
+              "data": "Nessus was unable to log into the detected authentication protocol, using the provided credentials, in order to perform credentialed checks.",
+              "label": "synopsis"
+            },
+            {
               "data": "Address the reported problem(s) so that credentialed checks can be executed.",
               "label": "fix"
             }
@@ -2462,6 +2726,10 @@
               "label": "default"
             },
             {
+              "data": "Errors prevented OS Security Patch Assessment.",
+              "label": "synopsis"
+            },
+            {
               "data": "Fix the problem(s) so that OS Security Patch Assessment is possible.",
               "label": "fix"
             }
@@ -2493,6 +2761,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "It was possible to enumerate CPE names that matched on the remote system.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -2538,6 +2810,10 @@
               "label": "default"
             },
             {
+              "data": "This plugin displays information about the Nessus scan.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -2571,6 +2847,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "It is possible to guess the remote device type.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -2608,6 +2888,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to guess the remote operating system.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -2643,6 +2927,10 @@
               "label": "default"
             },
             {
+              "data": "This plugin gathers MAC addresses from various sources and consolidates them into a list.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -2676,6 +2964,10 @@
             {
               "data": "Plugin Family: Web Servers; Port: 8000; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "An infrastructure monitoring tool is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -2714,6 +3006,10 @@
             {
               "data": "Plugin Family: Web Servers; Port: 8089; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "An infrastructure monitoring tool is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "Limit incoming traffic to this port if desired.",
@@ -2763,6 +3059,10 @@
               "label": "default"
             },
             {
+              "data": "An infrastructure monitoring tool is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "Limit incoming traffic to this port if desired.",
               "label": "fix"
             }
@@ -2808,6 +3108,10 @@
             {
               "data": "Plugin Family: Web Servers; Port: 8089; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "This plugin determines which HTTP methods are allowed on various CGI directories.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -2856,6 +3160,10 @@
               "label": "default"
             },
             {
+              "data": "A web server is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -2889,6 +3197,10 @@
             {
               "data": "Plugin Family: Web Servers; Port: 8000; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "A web server is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -2926,6 +3238,10 @@
               "label": "default"
             },
             {
+              "data": "The remote web server is embedded.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -2958,6 +3274,10 @@
               "label": "default"
             },
             {
+              "data": "The remote web server is embedded.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -2988,6 +3308,10 @@
             {
               "data": "Plugin Family: General; Port: 22; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "A SSH server is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -3027,6 +3351,10 @@
               "label": "default"
             },
             {
+              "data": "The SSH server on the remote host accepts password authentication.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3064,6 +3392,10 @@
               "label": "default"
             },
             {
+              "data": "The remote SSH server is configured to enable SHA-1 HMAC algorithms.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3095,6 +3427,10 @@
             {
               "data": "Plugin Family: Misc.; Port: 22; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "An SSH server is listening on this port.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -3134,6 +3470,10 @@
               "label": "default"
             },
             {
+              "data": "An SSH server is listening on this port.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3168,6 +3508,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 8089; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service could be identified.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -3205,6 +3549,10 @@
               "label": "default"
             },
             {
+              "data": "The remote service could be identified.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3238,6 +3586,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 22; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service could be identified.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -3275,6 +3627,10 @@
               "label": "default"
             },
             {
+              "data": "The remote service could be identified.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3310,6 +3666,10 @@
               "label": "default"
             },
             {
+              "data": "It was possible to obtain traceroute information.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3343,6 +3703,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service implements TCP timestamps.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -3397,6 +3761,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to determine the exact time set on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "Filter out the ICMP timestamp requests (13), and the outgoing ICMP timestamp replies (14).",
               "label": "fix"
             }
@@ -3435,6 +3803,10 @@
               "label": "default"
             },
             {
+              "data": "It was possible to resolve the name of the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3470,6 +3842,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to determine which TCP ports are open.",
+              "label": "synopsis"
+            },
+            {
               "data": "Protect your target with an IP filter.",
               "label": "fix"
             }
@@ -3501,6 +3877,10 @@
             {
               "data": "Plugin Family: Port scanners; Port: 2181; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "It is possible to determine which TCP ports are open.",
+              "label": "synopsis"
             },
             {
               "data": "Protect your target with an IP filter.",
@@ -3536,6 +3916,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to determine which TCP ports are open.",
+              "label": "synopsis"
+            },
+            {
               "data": "Protect your target with an IP filter.",
               "label": "fix"
             }
@@ -3567,6 +3951,10 @@
             {
               "data": "Plugin Family: Port scanners; Port: 22; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "It is possible to determine which TCP ports are open.",
+              "label": "synopsis"
             },
             {
               "data": "Protect your target with an IP filter.",
@@ -3614,6 +4002,10 @@
               "label": "default"
             },
             {
+              "data": "Nessus was unable to log into the detected authentication protocol, using the provided credentials, in order to perform credentialed checks.",
+              "label": "synopsis"
+            },
+            {
               "data": "Address the reported problem(s) so that credentialed checks can be executed.",
               "label": "fix"
             }
@@ -3645,6 +4037,10 @@
             {
               "data": "Plugin Family: Settings; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "Errors prevented OS Security Patch Assessment.",
+              "label": "synopsis"
             },
             {
               "data": "Fix the problem(s) so that OS Security Patch Assessment is possible.",
@@ -3680,6 +4076,10 @@
               "label": "default"
             },
             {
+              "data": "This plugin displays information about the Nessus scan.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3713,6 +4113,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "It was possible to enumerate CPE names that matched on the remote system.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -3758,6 +4162,10 @@
               "label": "default"
             },
             {
+              "data": "Security patches are backported.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3799,6 +4207,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to guess the remote device type.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3832,6 +4244,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The operating system running on the remote host is no longer supported.",
+              "label": "synopsis"
             },
             {
               "data": "Upgrade to a version of the Unix operating system that is currently supported.",
@@ -3869,6 +4285,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to guess the remote operating system.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3902,6 +4322,10 @@
             {
               "data": "Plugin Family: Web Servers; Port: 443; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "Some information about the remote HTTP configuration can be extracted.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -3939,6 +4363,10 @@
               "label": "default"
             },
             {
+              "data": "Some information about the remote HTTP configuration can be extracted.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -3972,6 +4400,10 @@
             {
               "data": "Plugin Family: General; Port: 443; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service supports the use of SSL Cipher Block Chaining ciphers, which combine previous blocks with subsequent ones.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -4022,6 +4454,10 @@
               "label": "default"
             },
             {
+              "data": "The remote service supports the use of SSL Perfect Forward Secrecy ciphers, which maintain confidentiality even if the key is stolen.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -4070,6 +4506,10 @@
               "label": "default"
             },
             {
+              "data": "The remote host advertises discouraged SSL/TLS ciphers.",
+              "label": "synopsis"
+            },
+            {
               "data": "Only enable support for recommened cipher suites.",
               "label": "fix"
             }
@@ -4109,6 +4549,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 443; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service encrypts traffic using an older version of TLS.",
+              "label": "synopsis"
             },
             {
               "data": "Enable support for TLS 1.2 and 1.3, and disable support for TLS 1.0.",
@@ -4155,6 +4599,10 @@
               "label": "default"
             },
             {
+              "data": "The remote service encrypts traffic using a version of TLS.",
+              "label": "synopsis"
+            },
+            {
               "data": "N/A",
               "label": "fix"
             }
@@ -4191,6 +4639,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 443; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service encrypts traffic using an older version of TLS.",
+              "label": "synopsis"
             },
             {
               "data": "Enable support for TLS 1.2 and/or 1.3, and disable support for TLS 1.1.",
@@ -4238,6 +4690,10 @@
               "label": "default"
             },
             {
+              "data": "The remote service encrypts communications using SSL.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -4283,6 +4739,10 @@
               "label": "default"
             },
             {
+              "data": "The remote web server is not enforcing HSTS.",
+              "label": "synopsis"
+            },
+            {
               "data": "Configure the remote web server to use HSTS.",
               "label": "fix"
             }
@@ -4325,6 +4785,10 @@
               "label": "default"
             },
             {
+              "data": "A web server is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -4358,6 +4822,10 @@
             {
               "data": "Plugin Family: Web Servers; Port: 80; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "A web server is running on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -4395,6 +4863,10 @@
               "label": "default"
             },
             {
+              "data": "The remote web server does not return 404 error codes.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -4426,6 +4898,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 443; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service appears to use OpenSSL to encrypt traffic.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -4465,6 +4941,10 @@
               "label": "default"
             },
             {
+              "data": "The 'commonName' (CN) attribute in the SSL certificate does not match the hostname.",
+              "label": "synopsis"
+            },
+            {
               "data": "If the machine has several names, make sure that users connect to the service through the DNS hostname that matches the common name in the certificate.",
               "label": "fix"
             }
@@ -4499,6 +4979,10 @@
             {
               "data": "Plugin Family: General; Port: 443; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The SSL certificate chain for this service ends in an unrecognized self-signed certificate.",
+              "label": "synopsis"
             },
             {
               "data": "Purchase or generate a proper SSL certificate for this service.",
@@ -4536,6 +5020,10 @@
             {
               "data": "Plugin Family: General; Port: 443; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The SSL certificate for this service cannot be trusted.",
+              "label": "synopsis"
             },
             {
               "data": "Purchase or generate a proper SSL certificate for this service.",
@@ -4584,6 +5072,10 @@
               "label": "default"
             },
             {
+              "data": "The manufacturer can be identified from the Ethernet OUI.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -4625,6 +5117,10 @@
               "label": "default"
             },
             {
+              "data": "This plugin gathers MAC addresses from various sources and consolidates them into a list.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -4658,6 +5154,10 @@
             {
               "data": "Plugin Family: General; Port: 443; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "This plugin displays the SSL certificate.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -4694,6 +5194,10 @@
             {
               "data": "Plugin Family: General; Port: 443; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service encrypts communications.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -4733,6 +5237,10 @@
               "label": "default"
             },
             {
+              "data": "A SSH server is running on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -4770,6 +5278,10 @@
               "label": "default"
             },
             {
+              "data": "The remote SSH server is configured to enable SHA-1 HMAC algorithms.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -4801,6 +5313,10 @@
             {
               "data": "Plugin Family: Misc.; Port: 22; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote SSH server is configured to allow weak key exchange algorithms.",
+              "label": "synopsis"
             },
             {
               "data": "Contact the vendor or consult product documentation to disable the weak algorithms.",
@@ -4846,6 +5362,10 @@
               "label": "default"
             },
             {
+              "data": "An SSH server is listening on this port.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -4881,6 +5401,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 22; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The SSH server on the remote host accepts password authentication.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -4920,6 +5444,10 @@
               "label": "default"
             },
             {
+              "data": "An SSH server is listening on this port.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -4954,6 +5482,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 443; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service could be identified.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -4991,6 +5523,10 @@
               "label": "default"
             },
             {
+              "data": "The remote service could be identified.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -5024,6 +5560,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 22; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service could be identified.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -5061,6 +5601,10 @@
               "label": "default"
             },
             {
+              "data": "The remote service could be identified.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -5096,6 +5640,10 @@
               "label": "default"
             },
             {
+              "data": "It was possible to obtain traceroute information.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -5129,6 +5677,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "The remote service implements TCP timestamps.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -5169,6 +5721,10 @@
             {
               "data": "Plugin Family: Service detection; Port: 123; Protocol: udp;",
               "label": "default"
+            },
+            {
+              "data": "An NTP server is listening on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -5224,6 +5780,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to determine the exact time set on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "Filter out the ICMP timestamp requests (13), and the outgoing ICMP timestamp replies (14).",
               "label": "fix"
             }
@@ -5262,6 +5822,10 @@
               "label": "default"
             },
             {
+              "data": "Nessus was able to obtain version information on the remote DNS server.",
+              "label": "synopsis"
+            },
+            {
               "data": "n/a",
               "label": "fix"
             }
@@ -5293,6 +5857,10 @@
             {
               "data": "Plugin Family: General; Port: 0; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "It was possible to resolve the name of the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "n/a",
@@ -5328,6 +5896,10 @@
             {
               "data": "Plugin Family: DNS; Port: 53; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "A DNS server is listening on the remote host.",
+              "label": "synopsis"
             },
             {
               "data": "Disable this service if it is not needed or restrict access to internal hosts only if the service is available externally.",
@@ -5367,6 +5939,10 @@
               "label": "default"
             },
             {
+              "data": "A DNS server is listening on the remote host.",
+              "label": "synopsis"
+            },
+            {
               "data": "Disable this service if it is not needed or restrict access to internal hosts only if the service is available externally.",
               "label": "fix"
             }
@@ -5404,6 +5980,10 @@
               "label": "default"
             },
             {
+              "data": "The remote DHCP server may expose information about the associated network.",
+              "label": "synopsis"
+            },
+            {
               "data": "Apply filtering to keep this information off the network and remove any options that are not in use.",
               "label": "fix"
             }
@@ -5436,6 +6016,10 @@
             {
               "data": "Plugin Family: Port scanners; Port: 22; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "It is possible to determine which TCP ports are open.",
+              "label": "synopsis"
             },
             {
               "data": "Protect your target with an IP filter.",
@@ -5471,6 +6055,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to determine which TCP ports are open.",
+              "label": "synopsis"
+            },
+            {
               "data": "Protect your target with an IP filter.",
               "label": "fix"
             }
@@ -5504,6 +6092,10 @@
               "label": "default"
             },
             {
+              "data": "It is possible to determine which TCP ports are open.",
+              "label": "synopsis"
+            },
+            {
               "data": "Protect your target with an IP filter.",
               "label": "fix"
             }
@@ -5535,6 +6127,10 @@
             {
               "data": "Plugin Family: Port scanners; Port: 443; Protocol: tcp;",
               "label": "default"
+            },
+            {
+              "data": "It is possible to determine which TCP ports are open.",
+              "label": "synopsis"
             },
             {
               "data": "Protect your target with an IP filter.",

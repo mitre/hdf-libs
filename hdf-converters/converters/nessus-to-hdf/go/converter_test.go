@@ -680,6 +680,63 @@ func TestEpssDate_FallsBackToToday(t *testing.T) {
 	assert.Equal(t, "-", got[7:8])
 }
 
+// TestConvertNessusToHDF_Synopsis verifies the Nessus <synopsis> short summary
+// is carried through as a descriptions[] entry labelled "synopsis" for both
+// vulnerability and compliance findings, and is omitted when the source has
+// no synopsis element.
+func TestConvertNessusToHDF_Synopsis(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	// Plugin 10114 (ICMP Timestamp) has a synopsis in the source.
+	req := findReqAcrossBaselines(result, "10114")
+	require.NotNil(t, req, "plugin 10114 should be present")
+	syn := findDescription(req.Descriptions, "synopsis")
+	require.NotNil(t, syn, "vulnerability finding should carry a synopsis description")
+	assert.Equal(t, "It is possible to determine the exact time set on the remote host.", syn.Data)
+}
+
+func TestConvertNessusToHDF_SynopsisCompliance(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "compliance.nessus")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "V-71849")
+	syn := findDescription(req.Descriptions, "synopsis")
+	require.NotNil(t, syn, "compliance finding should carry a synopsis description")
+	assert.Equal(t, "The remote Red Hat Enterprise Linux host does not comply with DISA STIG requirements.", syn.Data)
+}
+
+// TestBuildDescriptions_SynopsisAbsent covers the branch where the source item
+// carries no synopsis element: no "synopsis" description is emitted.
+func TestBuildDescriptions_SynopsisAbsent(t *testing.T) {
+	descs := buildDescriptions(&ReportItem{PluginFamily: "General", Port: "0", Protocol: "tcp"}, false)
+	assert.Nil(t, findDescription(descs, "synopsis"), "no synopsis element => no synopsis description")
+
+	// Present-branch parity at the unit level, including HTML stripping.
+	descs = buildDescriptions(&ReportItem{Synopsis: "<b>Summary</b> text."}, false)
+	syn := findDescription(descs, "synopsis")
+	require.NotNil(t, syn)
+	assert.Equal(t, "Summary text.", syn.Data)
+}
+
+// findDescription returns the first description with the given label, or nil.
+func findDescription(descs []hdf.Description, label string) *hdf.Description {
+	for i := range descs {
+		if descs[i].Label == label {
+			return &descs[i]
+		}
+	}
+	return nil
+}
+
 // findReqAcrossBaselines searches all baselines for a requirement by ID.
 func findReqAcrossBaselines(result *hdf.HDFResults, id string) *hdf.EvaluatedRequirement {
 	for bi := range result.Baselines {
