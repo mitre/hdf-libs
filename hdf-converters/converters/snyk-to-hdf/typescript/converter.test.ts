@@ -256,6 +256,78 @@ describe('snyk to HDF converter', async () => {
     });
   });
 
+  describe('external references (refs[])', async () => {
+    it('emits one Reference{url} per source reference url', async () => {
+      const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'SNYK-JS-ADMZIP-1065796');
+      expect(req).toBeDefined();
+      expect(req!.refs).toHaveLength(1);
+      expect(req!.refs![0]!.url).toBe('https://github.com/cthackers/adm-zip/commit/119dcad6599adccc77982feb14a0c7440fa63013');
+    });
+
+    it('omits refs[] when the vulnerability carries no references', async () => {
+      const input = JSON.stringify({
+        ok: false,
+        packageManager: 'npm',
+        projectName: 'test',
+        vulnerabilities: [
+          {
+            id: 'SNYK-NOREF',
+            title: 't',
+            description: 'd',
+            severity: 'low',
+            identifiers: {},
+            from: [],
+            // references field absent
+          },
+        ],
+      });
+      const out = JSON.parse(await convertSnykToHdf(input)) as HDFResults;
+      expect(out.baselines[0]!.requirements[0]!.refs).toBeUndefined();
+    });
+
+    it('skips title-only references that carry no url', async () => {
+      const input = JSON.stringify({
+        ok: false,
+        packageManager: 'npm',
+        projectName: 'test',
+        vulnerabilities: [
+          {
+            id: 'SNYK-TITLEONLY',
+            title: 't',
+            description: 'd',
+            severity: 'low',
+            identifiers: {},
+            from: [],
+            references: [{ title: 'no link' }, { title: 'link', url: 'https://example.com/x' }],
+          },
+        ],
+      });
+      const out = JSON.parse(await convertSnykToHdf(input)) as HDFResults;
+      const refs = out.baselines[0]!.requirements[0]!.refs;
+      expect(refs).toHaveLength(1);
+      expect(refs![0]!.url).toBe('https://example.com/x');
+    });
+  });
+
+  describe('upgradePath remediation description', async () => {
+    it('joins the upgradePath package chain into an upgradePath description', async () => {
+      const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
+      // SNYK-JS-ADMZIP-1065796 upgradePath is [false, "adm-zip@0.5.2"]
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'SNYK-JS-ADMZIP-1065796');
+      const desc = req?.descriptions?.find(d => d.label === 'upgradePath');
+      expect(desc).toBeDefined();
+      expect(desc!.data).toBe('adm-zip@0.5.2');
+    });
+
+    it('omits the upgradePath description when upgradePath is empty', async () => {
+      const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
+      // SNYK-JS-HBS-1566555 has an empty upgradePath
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'SNYK-JS-HBS-1566555');
+      expect(req?.descriptions?.find(d => d.label === 'upgradePath')).toBeUndefined();
+    });
+  });
+
   describe('target', async () => {
     it('should include project name as target', async () => {
       const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;

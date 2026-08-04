@@ -13,6 +13,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Reference,
 } from '@mitre/hdf-schema';
 import {
   Ecosystem,
@@ -57,6 +58,12 @@ interface SnykVuln {
   upgradePath?: unknown[];
   fixedIn?: string[];
   exploit?: string;
+  references?: SnykReference[];
+}
+
+interface SnykReference {
+  title?: string;
+  url?: string;
 }
 
 interface SnykIdentifiers {
@@ -115,6 +122,33 @@ export function buildSnykCvss(vuln: SnykVuln): Cvss[] {
   })];
 }
 
+/**
+ * Emits one Reference{url} per source reference that carries a URL. Returns
+ * undefined when the vulnerability carries no linkable references so refs[] is
+ * omitted. Snyk reference titles are not a Reference schema field, so only the
+ * url carries through.
+ */
+function buildSnykRefs(refs: SnykReference[] | undefined): Reference[] | undefined {
+  if (!refs) return undefined;
+  const out: Reference[] = [];
+  for (const r of refs) {
+    if (r.url) out.push({ url: r.url });
+  }
+  return out.length > 0 ? out : undefined;
+}
+
+/**
+ * Renders Snyk's upgradePath into readable remediation text. The array leads
+ * with a boolean (whether the top-level dependency itself is upgradable)
+ * followed by the `pkg@version` chain to upgrade to. Only the string chain is
+ * meaningful; returns undefined when it carries no package steps.
+ */
+function formatUpgradePath(path: unknown[] | undefined): string | undefined {
+  if (!path) return undefined;
+  const steps = path.filter((e): e is string => typeof e === 'string' && e.length > 0);
+  return steps.length > 0 ? steps.join(' > ') : undefined;
+}
+
 function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, packageManager?: string): EvaluatedRequirement {
   const rep = vulns[0]!;
   const cweIDs = rep.identifiers.CWE ?? [];
@@ -138,6 +172,10 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, pac
   const descriptions: Description[] = [
     { label: 'default', data: rep.description },
   ];
+  const upgradePath = formatUpgradePath(rep.upgradePath);
+  if (upgradePath !== undefined) {
+    descriptions.push({ label: 'upgradePath', data: upgradePath });
+  }
 
   const results = vulns.map(vuln => {
     const result = createResult(ResultStatus.Failed, undefined, {
@@ -169,6 +207,11 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, pac
   }
   if (cweIDs.length > 0) {
     req.cwe = cweIDs;
+  }
+
+  const refs = buildSnykRefs(rep.references);
+  if (refs) {
+    req.refs = refs;
   }
 
   const name = rep.packageName ?? rep.moduleName;

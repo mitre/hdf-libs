@@ -43,6 +43,14 @@ type SnykVuln struct {
 	UpgradePath []interface{}   `json:"upgradePath"`
 	FixedIn     []string        `json:"fixedIn"`
 	Exploit     string          `json:"exploit"`
+	References  []SnykReference `json:"references"`
+}
+
+// SnykReference is an external link Snyk attaches to a vulnerability. Only the
+// url carries into HDF (Reference.url); title is not a schema field.
+type SnykReference struct {
+	Title string `json:"title"`
+	URL   string `json:"url"`
 }
 
 // SnykIdentifiers holds the CVE, CWE, and GHSA identifiers for a vulnerability.
@@ -125,6 +133,38 @@ func buildSnykCvss(v SnykVuln) []hdf.Cvss {
 	})}
 }
 
+// buildSnykRefs emits one hdf.Reference{URL} per source reference that carries
+// a URL. Returns nil when the vulnerability carries no linkable references so
+// the refs[] field is omitted.
+func buildSnykRefs(refs []SnykReference) []hdf.Reference {
+	var out []hdf.Reference
+	for _, r := range refs {
+		if r.URL == "" {
+			continue
+		}
+		url := r.URL
+		out = append(out, hdf.Reference{URL: &url})
+	}
+	return out
+}
+
+// formatUpgradePath renders Snyk's upgradePath into readable remediation text.
+// The array leads with a boolean (whether the top-level dependency itself is
+// upgradable) followed by the `pkg@version` chain to upgrade to. Only the
+// string chain is meaningful; returns "" when it carries no package steps.
+func formatUpgradePath(path []interface{}) string {
+	var steps []string
+	for _, elem := range path {
+		if s, ok := elem.(string); ok && s != "" {
+			steps = append(steps, s)
+		}
+	}
+	if len(steps) == 0 {
+		return ""
+	}
+	return strings.Join(steps, " > ")
+}
+
 // buildRequirement converts a group of vulnerabilities sharing an ID into one
 // EvaluatedRequirement with multiple results.
 func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageManager string) hdf.EvaluatedRequirement {
@@ -146,6 +186,9 @@ func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageMan
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: rep.Description},
+	}
+	if upgrade := formatUpgradePath(rep.UpgradePath); upgrade != "" {
+		descriptions = append(descriptions, hdf.Description{Label: "upgradePath", Data: upgrade})
 	}
 
 	results := make([]hdf.RequirementResult, len(vulns))
@@ -174,6 +217,9 @@ func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageMan
 	}
 	if len(rep.Identifiers.CWE) > 0 {
 		req.Cwe = rep.Identifiers.CWE
+	}
+	if refs := buildSnykRefs(rep.References); len(refs) > 0 {
+		req.Refs = refs
 	}
 
 	name := rep.PackageName
