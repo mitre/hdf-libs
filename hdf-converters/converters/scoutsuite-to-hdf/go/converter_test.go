@@ -283,6 +283,30 @@ func TestConvertScoutsuiteToHDF_FixDescription(t *testing.T) {
 	assert.Contains(t, desc.Data, "CloudWatch Logs group")
 }
 
+// --- Refs (external references) ---
+
+func TestConvertScoutsuiteToHDF_Refs(t *testing.T) {
+	input := loadFixture(t, "input/scoutsuite_sample.js")
+	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// cloudtrail-not-configured carries one references[] URL
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
+	require.Len(t, req.Refs, 1)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/best-practices-security.html", *req.Refs[0].URL)
+}
+
+func TestConvertScoutsuiteToHDF_RefsAbsent(t *testing.T) {
+	input := loadFixture(t, "input/scoutsuite_sample.js")
+	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// cloudtrail-no-cloudwatch-integration has references: null -> no refs emitted
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-no-cloudwatch-integration")
+	assert.Nil(t, req.Refs)
+}
+
 // --- Title ---
 
 func TestConvertScoutsuiteToHDF_RequirementTitle(t *testing.T) {

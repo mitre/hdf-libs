@@ -270,6 +270,28 @@ describe('ScoutSuite to HDF Converter', () => {
       expect(fixDesc!.data).toContain('CloudWatch Logs group');
     });
 
+    it('should map references[] to refs[]', async () => {
+      const input = loadFixture('input/scoutsuite_sample.js');
+      const out = parseOutput(await convertScoutsuiteToHdf(input));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, 'cloudtrail-not-configured');
+      expect(req).toBeDefined();
+      const refs = req!.refs as Array<Record<string, unknown>>;
+      expect(refs).toHaveLength(1);
+      expect(refs[0].url).toBe(
+        'https://docs.aws.amazon.com/awscloudtrail/latest/userguide/best-practices-security.html',
+      );
+    });
+
+    it('should omit refs[] when references is null', async () => {
+      const input = loadFixture('input/scoutsuite_sample.js');
+      const out = parseOutput(await convertScoutsuiteToHdf(input));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, 'cloudtrail-no-cloudwatch-integration');
+      expect(req).toBeDefined();
+      expect(req!.refs).toBeUndefined();
+    });
+
     it('should set requirement title from description field', async () => {
       const input = loadFixture('input/scoutsuite_sample.js');
       const out = parseOutput(await convertScoutsuiteToHdf(input));

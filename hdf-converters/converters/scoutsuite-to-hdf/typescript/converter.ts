@@ -8,6 +8,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Reference,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -192,6 +193,14 @@ function buildRequirement(
     descriptions.push({ label: 'fix', data: finding.remediation });
   }
 
+  // Build external references (ScoutSuite carries a list of URL strings)
+  const refs: Reference[] = [];
+  for (const url of finding.references ?? []) {
+    if (url) {
+      refs.push({ url });
+    }
+  }
+
   const status = getStatus(finding.checked_items, finding.flagged_items);
   const message = getMessage(finding.checked_items, finding.flagged_items, finding.items);
 
@@ -214,6 +223,10 @@ function buildRequirement(
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  if (refs.length > 0) {
+    req.refs = refs;
+  }
 
   return req;
 }

@@ -25,6 +25,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-concepts.html#cloudtrail-concepts-global-service-events"
+            }
+          ],
           "title": "Global Service Logging Duplicated",
           "verificationMethod": "automated"
         },
@@ -88,6 +93,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-data-events-with-cloudtrail.html"
+            }
+          ],
           "title": "Data Events Logging Not Configured",
           "verificationMethod": "automated"
         },
@@ -118,6 +128,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/encrypting-cloudtrail-log-files-with-aws-kms.html"
+            }
+          ],
           "title": "CloudTrail Logs Not Encrypted with KMS Customer Master Keys (CMKs)",
           "verificationMethod": "automated"
         },
@@ -147,6 +162,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-concepts.html#cloudtrail-concepts-global-service-events"
+            }
+          ],
           "title": "Global Service Logging Disabled",
           "verificationMethod": "automated"
         },
@@ -177,6 +197,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-intro.html"
+            }
+          ],
           "title": "Log File Validation Is Disabled",
           "verificationMethod": "automated"
         },
@@ -210,6 +235,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/best-practices-security.html"
+            }
+          ],
           "title": "Disabled Trails",
           "verificationMethod": "automated"
         },
@@ -239,6 +269,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/best-practices-security.html"
+            }
+          ],
           "title": "CloudTrail Service Not Configured",
           "verificationMethod": "automated"
         }

@@ -187,6 +187,16 @@ func buildRequirement(ruleID string, finding Finding, startTime string) hdf.Eval
 		})
 	}
 
+	// Build external references (ScoutSuite carries a list of URL strings)
+	var hdfRefs []hdf.Reference
+	for _, ref := range finding.References {
+		if ref == "" {
+			continue
+		}
+		urlCopy := ref
+		hdfRefs = append(hdfRefs, hdf.Reference{URL: &urlCopy})
+	}
+
 	// Determine status and message
 	status := getStatus(finding.CheckedItems, finding.FlaggedItems)
 	message := getMessage(finding.CheckedItems, finding.FlaggedItems, finding.Items)
@@ -219,6 +229,7 @@ func buildRequirement(ruleID string, finding Finding, startTime string) hdf.Eval
 		Tags:               tags,
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		Descriptions:       descriptions,
+		Refs:               hdfRefs,
 		Results:            []hdf.RequirementResult{result},
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
