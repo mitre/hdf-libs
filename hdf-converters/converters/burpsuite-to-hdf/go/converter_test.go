@@ -383,6 +383,60 @@ func TestConvertBurpsuiteToHDF_DefaultDescription(t *testing.T) {
 	require.NotNil(t, defaultDesc, "default description missing")
 }
 
+// --- External references (refs[]) ---
+
+func TestConvertBurpsuiteToHDF_Refs(t *testing.T) {
+	input := loadFixture(t, "input/zero.webappsecurity.com.xml")
+	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// Type 2098688 references CDATA HTML with one <a href> link.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
+	require.Len(t, req.Refs, 1)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "http://blog.portswigger.net/2016/10/exploiting-cors-misconfigurations-for.html", *req.Refs[0].URL)
+}
+
+func TestConvertBurpsuiteToHDF_RefsMultiple(t *testing.T) {
+	input := loadFixture(t, "input/zero.webappsecurity.com.xml")
+	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// Type 16777984 references three <a href> links.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "16777984")
+	require.Len(t, req.Refs, 3)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://developer.mozilla.org/en-US/docs/Web/Security/HTTP_strict_transport_security", *req.Refs[0].URL)
+	require.NotNil(t, req.Refs[1].URL)
+	assert.Equal(t, "http://www.thoughtcrime.org/software/sslstrip/", *req.Refs[1].URL)
+	require.NotNil(t, req.Refs[2].URL)
+	assert.Equal(t, "https://hstspreload.appspot.com/", *req.Refs[2].URL)
+}
+
+func TestConvertBurpsuiteToHDF_RefsAbsent(t *testing.T) {
+	input := loadFixture(t, "input/zero.webappsecurity.com.xml")
+	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// Type 4197376 ("Input returned in response") carries no references element.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "4197376")
+	assert.Nil(t, req.Refs, "requirement without a references field must omit refs[]")
+}
+
+func Test_extractReferenceURLs(t *testing.T) {
+	// href anchors (the common CDATA HTML case)
+	html := `<ul><li> <a href="http://example.com/a">A</a> </li><li><a href='https://example.org/b'>B</a></li></ul>`
+	assert.Equal(t, []string{"http://example.com/a", "https://example.org/b"}, extractReferenceURLs(html))
+
+	// plain-URL fallback (no anchors)
+	assert.Equal(t, []string{"https://plain.example/x", "http://plain.example/y"},
+		extractReferenceURLs("https://plain.example/x http://plain.example/y"))
+
+	// empty and non-URI inputs yield nil
+	assert.Nil(t, extractReferenceURLs(""))
+	assert.Nil(t, extractReferenceURLs("<ul><li>See the manual</li></ul>"))
+}
+
 // --- Title mapping ---
 
 func TestConvertBurpsuiteToHDF_RequirementTitle(t *testing.T) {

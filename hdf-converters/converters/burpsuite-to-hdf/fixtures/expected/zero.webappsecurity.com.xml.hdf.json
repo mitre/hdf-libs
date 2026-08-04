@@ -93,6 +93,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://blog.portswigger.net/2016/10/exploiting-cors-misconfigurations-for.html"
+            }
+          ],
           "title": "Cross-origin resource sharing",
           "verificationMethod": "automated"
         },
@@ -187,6 +192,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "http://blog.portswigger.net/2016/10/exploiting-cors-misconfigurations-for.html"
+            }
+          ],
           "title": "Cross-origin resource sharing: arbitrary origin trusted",
           "verificationMethod": "automated"
         },
@@ -365,6 +375,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://www.owasp.org/index.php/Review_Old,_Backup_and_Unreferenced_Files_for_Sensitive_Information_(OTG-CONFIG-004)"
+            }
+          ],
           "title": "Backup file",
           "verificationMethod": "automated"
         },
@@ -440,6 +455,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://wiki.mozilla.org/Security/Server_Side_TLS"
+            }
+          ],
           "title": "TLS certificate",
           "verificationMethod": "automated"
         },
@@ -556,6 +576,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy"
+            }
+          ],
           "title": "Cross-domain Referer leakage",
           "verificationMethod": "automated"
         },
@@ -600,6 +625,17 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://developer.mozilla.org/en-US/docs/Web/Security/HTTP_strict_transport_security"
+            },
+            {
+              "url": "http://www.thoughtcrime.org/software/sslstrip/"
+            },
+            {
+              "url": "https://hstspreload.appspot.com/"
+            }
+          ],
           "title": "Strict transport security not enforced",
           "verificationMethod": "automated"
         },
@@ -688,6 +724,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options"
+            }
+          ],
           "title": "Frameable response (potential Clickjacking)",
           "verificationMethod": "automated"
         },
@@ -762,6 +803,17 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://www.chromium.org/Home/chromium-security/marking-http-as-non-secure"
+            },
+            {
+              "url": "https://wiki.mozilla.org/Security/Server_Side_TLS"
+            },
+            {
+              "url": "https://developer.mozilla.org/en-US/docs/Web/Security/HTTP_strict_transport_security"
+            }
+          ],
           "title": "Unencrypted communications",
           "verificationMethod": "automated"
         }
