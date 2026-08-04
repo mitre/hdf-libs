@@ -17,6 +17,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Reference,
   RequirementResult,
   Version as CvssVersion,
 } from '@mitre/hdf-schema';
@@ -65,6 +66,8 @@ interface CycloneDXComponent {
 interface CycloneDXVulnerability {
   id: string;
   source?: CycloneDXSource;
+  references?: CycloneDXReference[];
+  advisories?: CycloneDXAdvisory[];
   ratings?: CycloneDXRating[];
   cwes?: number[];
   description?: string;
@@ -76,6 +79,16 @@ interface CycloneDXVulnerability {
 
 interface CycloneDXSource {
   name?: string;
+  url?: string;
+}
+
+interface CycloneDXReference {
+  id?: string;
+  source?: CycloneDXSource;
+}
+
+interface CycloneDXAdvisory {
+  title?: string;
   url?: string;
 }
 
@@ -187,6 +200,32 @@ function buildCvssEntries(ratings: CycloneDXRating[]): Cvss[] {
     );
   }
   return entries;
+}
+
+/**
+ * Collects the external reference links a vulnerability carries — the advisory
+ * source URL, each cross-reference's source URL, and each advisory URL —
+ * de-duplicated across all three in first-seen order. Returns undefined when the
+ * vulnerability carries no links.
+ */
+function buildRefs(vuln: CycloneDXVulnerability): Reference[] | undefined {
+  const seen = new Set<string>();
+  const refs: Reference[] = [];
+  const add = (url: string | undefined): void => {
+    if (!url || seen.has(url)) {
+      return;
+    }
+    seen.add(url);
+    refs.push({ url });
+  };
+  add(vuln.source?.url);
+  for (const r of vuln.references ?? []) {
+    add(r.source?.url);
+  }
+  for (const a of vuln.advisories ?? []) {
+    add(a.url);
+  }
+  return refs.length > 0 ? refs : undefined;
 }
 
 /**
@@ -386,6 +425,10 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
     }
     if (cweIds.length > 0) {
       req.cwe = cweIds;
+    }
+    const refs = buildRefs(vuln);
+    if (refs !== undefined) {
+      req.refs = refs;
     }
     const controlType = deriveControlTypeFromTags(nist);
     if (controlType !== undefined) {

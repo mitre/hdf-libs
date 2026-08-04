@@ -35,6 +35,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-5mg8-w23w-74h3 (GITHUB)"
         },
         {
@@ -67,6 +72,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-7g45-4rm6-3mm3 (GITHUB)"
         },
         {
@@ -97,6 +107,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-5p34-5m6p-p58g (GITHUB)"
         }
       ],

@@ -501,6 +501,94 @@ func TestConvertCycloneDX_DefaultDescription(t *testing.T) {
 	assert.Contains(t, desc.Data, "XXE Injection")
 }
 
+// ---- External references (refs[]) ----
+
+func refURLs(refs []hdf.Reference) []string {
+	out := make([]string, 0, len(refs))
+	for _, r := range refs {
+		if r.URL != nil {
+			out = append(out, *r.URL)
+		}
+	}
+	return out
+}
+
+func TestConvertCycloneDX_Refs(t *testing.T) {
+	// vex.json carries all three link sources: source.url, references[].source.url,
+	// and advisories[].url. Emitted de-duplicated in first-seen order.
+	input := loadFixture(t, "input/vex.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
+	assert.Equal(t, []string{
+		"https://nvd.nist.gov/vuln/detail/CVE-2020-25649",
+		"https://security.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-1048302",
+		"https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59",
+		"https://github.com/FasterXML/jackson-databind/issues/2589",
+		"https://bugzilla.redhat.com/show_bug.cgi?id=1887664",
+	}, refURLs(req.Refs))
+}
+
+func TestConvertCycloneDX_RefsSourceURLOnly(t *testing.T) {
+	// minimal-vulns.json carries only vuln.source.url (no references/advisories).
+	input := loadFixture(t, "input/minimal-vulns.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "GHSA-5mg8-w23w-74h3")
+	assert.Equal(t, []string{"https://github.com/advisories"}, refURLs(req.Refs))
+}
+
+func TestConvertCycloneDX_RefsAbsent(t *testing.T) {
+	// A vulnerability with no source, references, or advisories → refs[] omitted.
+	input := []byte(`{
+		"bomFormat": "CycloneDX",
+		"specVersion": "1.5",
+		"vulnerabilities": [{
+			"id": "TEST-NO-REFS",
+			"ratings": [{"severity": "high"}],
+			"affects": [{"ref": "comp-1"}]
+		}],
+		"components": [{"type": "library", "name": "test-lib", "bom-ref": "comp-1"}]
+	}`)
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+	assert.Nil(t, result.Baselines[0].Requirements[0].Refs)
+}
+
+func TestConvertCycloneDX_RefsDedupAndSkip(t *testing.T) {
+	// Exercises de-dup (source.url repeated as an advisory url), the empty-url
+	// skip, and a reference entry with no source.
+	input := []byte(`{
+		"bomFormat": "CycloneDX",
+		"specVersion": "1.5",
+		"vulnerabilities": [{
+			"id": "TEST-DEDUP",
+			"source": {"name": "NVD", "url": "https://example.com/a"},
+			"references": [
+				{"id": "REF-NO-SOURCE"},
+				{"id": "REF-1", "source": {"name": "SNYK", "url": "https://example.com/b"}}
+			],
+			"advisories": [
+				{"title": "dup", "url": "https://example.com/a"},
+				{"title": "empty", "url": ""},
+				{"title": "new", "url": "https://example.com/c"}
+			],
+			"affects": [{"ref": "comp-1"}]
+		}],
+		"components": [{"type": "library", "name": "test-lib", "bom-ref": "comp-1"}]
+	}`)
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{
+		"https://example.com/a",
+		"https://example.com/b",
+		"https://example.com/c",
+	}, refURLs(result.Baselines[0].Requirements[0].Refs))
+}
+
 // ---- Full fixture smoke test ----
 
 func TestConvertCycloneDX_FullFixture(t *testing.T) {

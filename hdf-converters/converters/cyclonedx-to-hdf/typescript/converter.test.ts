@@ -305,6 +305,79 @@ describe('cyclonedx to HDF converter', async () => {
     });
   });
 
+  describe('external references (refs[])', async () => {
+    it('should collect source.url, references[].source.url, and advisories[].url de-duplicated in order', async () => {
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('vex.json'))
+      ) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.refs?.map((r) => r.url)).toEqual([
+        'https://nvd.nist.gov/vuln/detail/CVE-2020-25649',
+        'https://security.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-1048302',
+        'https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59',
+        'https://github.com/FasterXML/jackson-databind/issues/2589',
+        'https://bugzilla.redhat.com/show_bug.cgi?id=1887664',
+      ]);
+    });
+
+    it('should emit a single ref when only source.url is present', async () => {
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
+      ) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'GHSA-5mg8-w23w-74h3'
+      );
+      expect(req!.refs?.map((r) => r.url)).toEqual(['https://github.com/advisories']);
+    });
+
+    it('should omit refs[] when the vulnerability carries no links', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'TEST-NO-REFS',
+            ratings: [{ severity: 'high' }],
+            affects: [{ ref: 'comp-1' }],
+          },
+        ],
+        components: [{ type: 'library', name: 'test-lib', 'bom-ref': 'comp-1' }],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.refs).toBeUndefined();
+    });
+
+    it('should de-dup across sources, skip empty urls, and tolerate references without a source', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'TEST-DEDUP',
+            source: { name: 'NVD', url: 'https://example.com/a' },
+            references: [
+              { id: 'REF-NO-SOURCE' },
+              { id: 'REF-1', source: { name: 'SNYK', url: 'https://example.com/b' } },
+            ],
+            advisories: [
+              { title: 'dup', url: 'https://example.com/a' },
+              { title: 'empty', url: '' },
+              { title: 'new', url: 'https://example.com/c' },
+            ],
+            affects: [{ ref: 'comp-1' }],
+          },
+        ],
+        components: [{ type: 'library', name: 'test-lib', 'bom-ref': 'comp-1' }],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.refs?.map((r) => r.url)).toEqual([
+        'https://example.com/a',
+        'https://example.com/b',
+        'https://example.com/c',
+      ]);
+    });
+  });
+
   describe('result code_desc', async () => {
     it('should format code_desc with group/name@version', async () => {
       const hdf = JSON.parse(

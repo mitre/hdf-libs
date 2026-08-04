@@ -49,21 +49,35 @@ type CDXComponent struct {
 
 // CDXVulnerability represents a single vulnerability entry.
 type CDXVulnerability struct {
-	ID             string       `json:"id"`
-	Source         *CDXSource   `json:"source"`
-	Ratings        []CDXRating  `json:"ratings"`
-	CWEs           []int        `json:"cwes"`
-	Description    string       `json:"description"`
-	Detail         string       `json:"detail"`
-	Recommendation string       `json:"recommendation"`
-	Affects        []CDXAffect  `json:"affects"`
-	Analysis       *CDXAnalysis `json:"analysis"`
+	ID             string         `json:"id"`
+	Source         *CDXSource     `json:"source"`
+	References     []CDXReference `json:"references"`
+	Advisories     []CDXAdvisory  `json:"advisories"`
+	Ratings        []CDXRating    `json:"ratings"`
+	CWEs           []int          `json:"cwes"`
+	Description    string         `json:"description"`
+	Detail         string         `json:"detail"`
+	Recommendation string         `json:"recommendation"`
+	Affects        []CDXAffect    `json:"affects"`
+	Analysis       *CDXAnalysis   `json:"analysis"`
 }
 
 // CDXSource identifies the advisory source.
 type CDXSource struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
+}
+
+// CDXReference is a cross-referenced vulnerability identifier and its source.
+type CDXReference struct {
+	ID     string     `json:"id"`
+	Source *CDXSource `json:"source"`
+}
+
+// CDXAdvisory is an external advisory link for a vulnerability.
+type CDXAdvisory struct {
+	Title string `json:"title"`
+	URL   string `json:"url"`
 }
 
 // CDXRating holds a vulnerability rating (CVSS score and/or severity).
@@ -176,6 +190,35 @@ func buildCvssEntries(ratings []CDXRating) []hdf.Cvss {
 		}))
 	}
 	return entries
+}
+
+// buildRefs collects the external reference links a vulnerability carries — the
+// advisory source URL, each cross-reference's source URL, and each advisory URL
+// — de-duplicated across all three in first-seen order. Returns nil when the
+// vulnerability carries no links.
+func buildRefs(vuln CDXVulnerability) []hdf.Reference {
+	seen := make(map[string]bool)
+	var refs []hdf.Reference
+	add := func(url string) {
+		if url == "" || seen[url] {
+			return
+		}
+		seen[url] = true
+		u := url
+		refs = append(refs, hdf.Reference{URL: &u})
+	}
+	if vuln.Source != nil {
+		add(vuln.Source.URL)
+	}
+	for _, r := range vuln.References {
+		if r.Source != nil {
+			add(r.Source.URL)
+		}
+	}
+	for _, a := range vuln.Advisories {
+		add(a.URL)
+	}
+	return refs
 }
 
 // formatCodeDesc formats a component reference as a code_desc string.
@@ -415,6 +458,7 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			Cwe:          cwes,
 			ControlType:  shared.DeriveControlTypeFromTags(nist),
 			Descriptions: descriptions,
+			Refs:         buildRefs(vuln),
 			Results:      results,
 		})
 	}

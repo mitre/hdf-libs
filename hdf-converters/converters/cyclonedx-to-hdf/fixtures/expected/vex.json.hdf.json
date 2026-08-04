@@ -57,6 +57,23 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2020-25649"
+            },
+            {
+              "url": "https://security.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-1048302"
+            },
+            {
+              "url": "https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59"
+            },
+            {
+              "url": "https://github.com/FasterXML/jackson-databind/issues/2589"
+            },
+            {
+              "url": "https://bugzilla.redhat.com/show_bug.cgi?id=1887664"
+            }
+          ],
           "title": "CVE-2020-25649 (NVD)"
         }
       ],
