@@ -116,6 +116,8 @@ importers:
         specifier: workspace:^
         version: link:../hdf-validators
 
+  hdf-engine: {}
+
   hdf-extension-graph:
     dependencies:
       '@mitre/hdf-schema':

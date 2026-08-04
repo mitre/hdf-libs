@@ -26,7 +26,8 @@ pnpm workspace with 11 packages + a VitePress schema documentation site:
 | `hdf-parsers` | Parse and flatten HDF documents | TS + Go |
 | `hdf-converters` | 40+ security tool converters (dual TS + Go) | TS + Go |
 | `hdf-generators` | Generate InSpec profiles from baselines | TS + Go |
-| `hdf-diff` | Structural diff engine for assessments | TS |
+| `hdf-diff` | Structural diff engine for assessments | TS + Go |
+| `hdf-engine` | Schema-typed read-side engines: document detection, query/filtering, compliance rollups | TS + Go |
 | `hdf-extension-graph` | InSpec overlay/extension chain resolution | TS + Go |
 | `hdf-fixtures` | Shared real-world HDF test data corpus (private; cross-package tests only) | TS + Go |
 | `hdf-cli` | Go CLI wrapping all of the above | Go |

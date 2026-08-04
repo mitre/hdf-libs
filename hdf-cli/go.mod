@@ -13,6 +13,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/mitre/hdf-libs/hdf-converters/v3 v3.5.0
 	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.5.0
 	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.5.0
 	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.5.0
 	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.5.0
@@ -101,5 +102,7 @@ replace github.com/mitre/hdf-libs/hdf-parsers/go/v3 => ../hdf-parsers/go
 replace github.com/mitre/hdf-libs/hdf-converters/v3 => ../hdf-converters
 
 replace github.com/mitre/hdf-libs/hdf-diff/go/v3 => ../hdf-diff/go
+
+replace github.com/mitre/hdf-libs/hdf-engine/go/v3 => ../hdf-engine/go
 
 replace github.com/mitre/hdf-libs/hdf-generators/go/v3 => ../hdf-generators/go
