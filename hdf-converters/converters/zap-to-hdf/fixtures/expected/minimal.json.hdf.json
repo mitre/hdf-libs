@@ -12,7 +12,11 @@
               "label": "default"
             },
             {
-              "data": "Ensure that the application/web server sets the Content-Type header appropriately.\nThis issue still applies to error type pages.",
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately.",
+              "label": "solution"
+            },
+            {
+              "data": "This issue still applies to error type pages.",
               "label": "check"
             }
           ],
@@ -39,6 +43,11 @@
             "wascid": "15"
           },
           "code": "GET https://example.com/login\nParam: X-Content-Type-Options",
+          "refs": [
+            {
+              "url": "http://msdn.microsoft.com/en-us/library/ie/gg622941%28v=vs.85%29.aspx"
+            }
+          ],
           "title": "X-Content-Type-Options Header Missing",
           "verificationMethod": "automated"
         },
@@ -50,7 +59,7 @@
             },
             {
               "data": "Review the source code.",
-              "label": "check"
+              "label": "solution"
             }
           ],
           "results": [

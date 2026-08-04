@@ -12,7 +12,11 @@
               "label": "default"
             },
             {
-              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.\nThis issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.",
+              "label": "solution"
+            },
+            {
+              "data": "This issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
               "label": "check"
             }
           ],
@@ -39,6 +43,14 @@
             "wascid": "15"
           },
           "code": "GET http://ciscobinary.openh264.org/openh264-macosx64-0410d336bb748149a4f560eb6108090f078254b1.zip\nParam: X-Content-Type-Options",
+          "refs": [
+            {
+              "url": "http://msdn.microsoft.com/en-us/library/ie/gg622941%28v=vs.85%29.aspx"
+            },
+            {
+              "url": "https://www.owasp.org/index.php/List_of_useful_HTTP_headers"
+            }
+          ],
           "title": "X-Content-Type-Options Header Missing",
           "verificationMethod": "automated"
         }
@@ -66,7 +78,11 @@
               "label": "default"
             },
             {
-              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.\nThis issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.",
+              "label": "solution"
+            },
+            {
+              "data": "This issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
               "label": "check"
             }
           ],
@@ -93,6 +109,14 @@
             "wascid": "15"
           },
           "code": "GET http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css\nParam: X-Content-Type-Options",
+          "refs": [
+            {
+              "url": "http://msdn.microsoft.com/en-us/library/ie/gg622941%28v=vs.85%29.aspx"
+            },
+            {
+              "url": "https://www.owasp.org/index.php/List_of_useful_HTTP_headers"
+            }
+          ],
           "title": "X-Content-Type-Options Header Missing",
           "verificationMethod": "automated"
         }
@@ -120,7 +144,11 @@
               "label": "default"
             },
             {
-              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.\nThis issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.",
+              "label": "solution"
+            },
+            {
+              "data": "This issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
               "label": "check"
             }
           ],
@@ -147,6 +175,14 @@
             "wascid": "15"
           },
           "code": "GET http://detectportal.firefox.com/success.txt\nParam: X-Content-Type-Options",
+          "refs": [
+            {
+              "url": "http://msdn.microsoft.com/en-us/library/ie/gg622941%28v=vs.85%29.aspx"
+            },
+            {
+              "url": "https://www.owasp.org/index.php/List_of_useful_HTTP_headers"
+            }
+          ],
           "title": "X-Content-Type-Options Header Missing",
           "verificationMethod": "automated"
         }
@@ -295,6 +331,11 @@
           },
           "code": "MKCOL http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Fingerprinting"
+            }
+          ],
           "title": "Insecure HTTP Method - MKCOL",
           "verificationMethod": "automated"
         },
@@ -309,7 +350,7 @@
             },
             {
               "data": "Ensure that the HttpOnly flag is set for all cookies.",
-              "label": "check"
+              "label": "solution"
             }
           ],
           "results": [
@@ -370,6 +411,11 @@
             "wascid": "13"
           },
           "code": "GET http://mymac.com:8191/WebGoat/attack\nParam: JSESSIONID",
+          "refs": [
+            {
+              "url": "http://www.owasp.org/index.php/HttpOnly"
+            }
+          ],
           "title": "Cookie No HttpOnly Flag",
           "verificationMethod": "automated"
         },
@@ -383,7 +429,11 @@
               "label": "default"
             },
             {
-              "data": "Do not edit files in-situ on the web server, and ensure that un-necessary files (including hidden files) are removed from the web server.\nhttp://mymac.com:8191/WebGoat/js/goatApp/templates/",
+              "data": "Do not edit files in-situ on the web server, and ensure that un-necessary files (including hidden files) are removed from the web server.",
+              "label": "solution"
+            },
+            {
+              "data": "http://mymac.com:8191/WebGoat/js/goatApp/templates/",
               "label": "check"
             }
           ],
@@ -525,6 +575,14 @@
             "wascid": "34"
           },
           "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old.baseUrl%\u003e\nAttack: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old.baseUrl%\u003e",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Predictable-Resource-Location"
+            },
+            {
+              "url": "http://cwe.mitre.org/data/definitions/425.html"
+            }
+          ],
           "title": "Backup File Disclosure",
           "verificationMethod": "automated"
         },
@@ -659,6 +717,11 @@
           },
           "code": "COPY http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Fingerprinting"
+            }
+          ],
           "title": "Insecure HTTP Method - COPY",
           "verificationMethod": "automated"
         },
@@ -793,6 +856,11 @@
           },
           "code": "MOVE http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Fingerprinting"
+            }
+          ],
           "title": "Insecure HTTP Method - MOVE",
           "verificationMethod": "automated"
         },
@@ -927,6 +995,11 @@
           },
           "code": "PUT http://mymac.com:8191/WebGoat/service/ixvsrz0hz5",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Fingerprinting"
+            }
+          ],
           "title": "Insecure HTTP Method - PUT",
           "verificationMethod": "automated"
         },
@@ -940,7 +1013,11 @@
               "label": "default"
             },
             {
-              "data": "Phase: Architecture and Design Use a vetted library or framework that does not allow this weakness to occur or provides constructs that make this weakness easier to avoid. For example, use anti-CSRF packages such as the OWASP CSRFGuard. Phase: Implementation Ensure that your application is free of cross-site scripting issues, because most CSRF defenses can be bypassed using attacker-controlled script. Phase: Architecture and Design Generate a unique nonce for each form, place the nonce into the form, and verify the nonce upon receipt of the form. Be sure that the nonce is not predictable (CWE-330). Note that this can be bypassed using XSS. Identify especially dangerous operations. When the user performs a dangerous operation, send a separate confirmation request to ensure that the user intended to perform that operation. Note that this can be bypassed using XSS. Use the ESAPI Session Management control. This control includes a component for CSRF. Do not use the GET method for any request that triggers a state change. Phase: Implementation Check the HTTP Referer header to see if the request originated from an expected page. This could break legitimate functionality, because users or proxies may have disabled sending the Referer for privacy reasons.\nNo known Anti-CSRF token [anticsrf, CSRFToken, __RequestVerificationToken, csrfmiddlewaretoken, authenticity_token, OWASP_CSRFTOKEN, anoncsrf] was found in the following HTML form: [Form 1: \"changeMe\" ].",
+              "data": "Phase: Architecture and Design Use a vetted library or framework that does not allow this weakness to occur or provides constructs that make this weakness easier to avoid. For example, use anti-CSRF packages such as the OWASP CSRFGuard. Phase: Implementation Ensure that your application is free of cross-site scripting issues, because most CSRF defenses can be bypassed using attacker-controlled script. Phase: Architecture and Design Generate a unique nonce for each form, place the nonce into the form, and verify the nonce upon receipt of the form. Be sure that the nonce is not predictable (CWE-330). Note that this can be bypassed using XSS. Identify especially dangerous operations. When the user performs a dangerous operation, send a separate confirmation request to ensure that the user intended to perform that operation. Note that this can be bypassed using XSS. Use the ESAPI Session Management control. This control includes a component for CSRF. Do not use the GET method for any request that triggers a state change. Phase: Implementation Check the HTTP Referer header to see if the request originated from an expected page. This could break legitimate functionality, because users or proxies may have disabled sending the Referer for privacy reasons.",
+              "label": "solution"
+            },
+            {
+              "data": "No known Anti-CSRF token [anticsrf, CSRFToken, __RequestVerificationToken, csrfmiddlewaretoken, authenticity_token, OWASP_CSRFTOKEN, anoncsrf] was found in the following HTML form: [Form 1: \"changeMe\" ].",
               "label": "check"
             }
           ],
@@ -1061,6 +1138,14 @@
           },
           "code": "GET http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Cross-Site-Request-Forgery"
+            },
+            {
+              "url": "http://cwe.mitre.org/data/definitions/352.html"
+            }
+          ],
           "title": "Absence of Anti-CSRF Tokens",
           "verificationMethod": "automated"
         },
@@ -1075,7 +1160,7 @@
             },
             {
               "data": "Remove all comments that return information that may help an attacker and fix any underlying problems they refer to.",
-              "label": "check"
+              "label": "solution"
             }
           ],
           "results": [
@@ -1329,6 +1414,11 @@
           },
           "code": "PROPPATCH http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Fingerprinting"
+            }
+          ],
           "title": "Insecure HTTP Method - PROPPATCH",
           "verificationMethod": "automated"
         },
@@ -1463,6 +1553,11 @@
           },
           "code": "PROPFIND http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Fingerprinting"
+            }
+          ],
           "title": "Insecure HTTP Method - PROPFIND",
           "verificationMethod": "automated"
         },
@@ -1477,7 +1572,7 @@
             },
             {
               "data": "Disable debugging messages before pushing to production.",
-              "label": "check"
+              "label": "solution"
             }
           ],
           "results": [
@@ -1541,7 +1636,7 @@
             },
             {
               "data": "Disable debugging messages before pushing to production.",
-              "label": "check"
+              "label": "solution"
             }
           ],
           "results": [
@@ -1605,7 +1700,7 @@
             },
             {
               "data": "Disable debugging messages before pushing to production.",
-              "label": "check"
+              "label": "solution"
             }
           ],
           "results": [
@@ -1789,6 +1884,11 @@
           },
           "code": "PATCH http://mymac.com:8191/WebGoat/service/lessonoverview.mvc/eh79fr0hqg",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Fingerprinting"
+            }
+          ],
           "title": "Insecure HTTP Method - PATCH",
           "verificationMethod": "automated"
         },
@@ -1923,6 +2023,11 @@
           },
           "code": "UNLOCK http://mymac.com:8191/WebGoat/service/lessonprogress.mvc",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Fingerprinting"
+            }
+          ],
           "title": "Insecure HTTP Method - UNLOCK",
           "verificationMethod": "automated"
         },
@@ -1936,7 +2041,11 @@
               "label": "default"
             },
             {
-              "data": "Do not pass sensitive information in URIs.\nThe URL contains potentially sensitive information.",
+              "data": "Do not pass sensitive information in URIs.",
+              "label": "solution"
+            },
+            {
+              "data": "The URL contains potentially sensitive information.",
               "label": "check"
             }
           ],
@@ -2116,6 +2225,11 @@
           },
           "code": "LOCK http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Fingerprinting"
+            }
+          ],
           "title": "Insecure HTTP Method - LOCK",
           "verificationMethod": "automated"
         },
@@ -2130,7 +2244,7 @@
             },
             {
               "data": "Review the source code of this page. Implement custom error pages. Consider implementing a mechanism to provide a unique error reference/identifier to the client (browser) while logging the details on the server side and not exposing them to the user.",
-              "label": "check"
+              "label": "solution"
             }
           ],
           "results": [
@@ -2193,7 +2307,11 @@
               "label": "default"
             },
             {
-              "data": "Ensure that SVN metadata files are not deployed to the web server or application server\nThe source code for [ ] was found at [http://mymac.com:8191/WebGoat/js/goatApp/templates/ /.svn/text-base/ .svn-base]",
+              "data": "Ensure that SVN metadata files are not deployed to the web server or application server",
+              "label": "solution"
+            },
+            {
+              "data": "The source code for [ ] was found at [http://mymac.com:8191/WebGoat/js/goatApp/templates/ /.svn/text-base/ .svn-base]",
               "label": "check"
             }
           ],
@@ -2227,6 +2345,14 @@
             "wascid": "34"
           },
           "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e/\u003c%=index%\u003e\nAttack: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e/.svn/text-base/\u003c%=index%\u003e.svn-base",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Predictable-Resource-Location"
+            },
+            {
+              "url": "http://cwe.mitre.org/data/definitions/425.html"
+            }
+          ],
           "title": "Source Code Disclosure - SVN",
           "verificationMethod": "automated"
         },
@@ -2240,7 +2366,11 @@
               "label": "default"
             },
             {
-              "data": "Ensure that the web browser's XSS filter is enabled, by setting the X-XSS-Protection HTTP response header to '1'.\nThe X-XSS-Protection HTTP response header allows the web server to enable or disable the web browser's XSS protection mechanism. The following values would attempt to enable it: X-XSS-Protection: 1; mode=block X-XSS-Protection: 1; report=http://www.example.com/xss The following values would disable it: X-XSS-Protection: 0 The X-XSS-Protection HTTP response header is currently supported on Internet Explorer, Chrome and Safari (WebKit). Note that this alert is only raised if the response body could potentially contain an XSS payload (with a text-based content type, with a non-zero length).",
+              "data": "Ensure that the web browser's XSS filter is enabled, by setting the X-XSS-Protection HTTP response header to '1'.",
+              "label": "solution"
+            },
+            {
+              "data": "The X-XSS-Protection HTTP response header allows the web server to enable or disable the web browser's XSS protection mechanism. The following values would attempt to enable it: X-XSS-Protection: 1; mode=block X-XSS-Protection: 1; report=http://www.example.com/xss The following values would disable it: X-XSS-Protection: 0 The X-XSS-Protection HTTP response header is currently supported on Internet Explorer, Chrome and Safari (WebKit). Note that this alert is only raised if the response body could potentially contain an XSS payload (with a text-based content type, with a non-zero length).",
               "label": "check"
             }
           ],
@@ -2272,6 +2402,14 @@
             "wascid": "14"
           },
           "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E\nParam: X-XSS-Protection",
+          "refs": [
+            {
+              "url": "https://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet"
+            },
+            {
+              "url": "https://blog.veracode.com/2014/03/guidelines-for-setting-security-headers/"
+            }
+          ],
           "title": "Web Browser XSS Protection Not Enabled",
           "verificationMethod": "automated"
         },
@@ -2286,7 +2424,7 @@
             },
             {
               "data": "Phase: Architecture and Design Use a vetted library or framework that does not allow this weakness to occur or provides constructs that make this weakness easier to avoid. For example, use anti-CSRF packages such as the OWASP CSRFGuard. Phase: Implementation Ensure that your application is free of cross-site scripting issues, because most CSRF defenses can be bypassed using attacker-controlled script. Phase: Architecture and Design Generate a unique nonce for each form, place the nonce into the form, and verify the nonce upon receipt of the form. Be sure that the nonce is not predictable (CWE-330). Note that this can be bypassed using XSS. Identify especially dangerous operations. When the user performs a dangerous operation, send a separate confirmation request to ensure that the user intended to perform that operation. Note that this can be bypassed using XSS. Use the ESAPI Session Management control. This control includes a component for CSRF. Do not use the GET method for any request that triggers a state change. Phase: Implementation Check the HTTP Referer header to see if the request originated from an expected page. This could break legitimate functionality, because users or proxies may have disabled sending the Referer for privacy reasons.",
-              "label": "check"
+              "label": "solution"
             }
           ],
           "results": [
@@ -2391,6 +2529,14 @@
           },
           "code": "GET http://mymac.com:8191/WebGoat/WebWolf/landing/password-reset",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Cross-Site-Request-Forgery"
+            },
+            {
+              "url": "http://cwe.mitre.org/data/definitions/352.html"
+            }
+          ],
           "title": "Anti CSRF Tokens Scanner",
           "verificationMethod": "automated"
         },
@@ -2405,7 +2551,7 @@
             },
             {
               "data": "All forms must specify the action URL.",
-              "label": "check"
+              "label": "solution"
             }
           ],
           "results": [
@@ -2435,6 +2581,11 @@
           },
           "code": "GET http://mymac.com:8191/WebGoat/js/libs/jquery.form.js",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://download.oracle.com/javaee-archive/servlet-spec.java.net/jsr340-experts/att-0317/OnParameterPollutionAttacks.pdf"
+            }
+          ],
           "title": "HTTP Parameter Override",
           "verificationMethod": "automated"
         },
@@ -2448,7 +2599,11 @@
               "label": "default"
             },
             {
-              "data": "Do not trust client side input, even if there is client side validation in place. In general, type check all data on the server side. If the application uses JDBC, use PreparedStatement or CallableStatement, with parameters passed by '?' If the application uses ASP, use ADO Command Objects with strong type checking and parameterized queries. If database Stored Procedures can be used, use them. Do *not* concatenate strings into queries in the stored procedure, or use 'exec', 'exec immediate', or equivalent functionality! Do not create dynamic SQL queries using simple string concatenation. Escape all data received from the client. Apply a 'whitelist' of allowed characters, or a 'blacklist' of disallowed characters in user input. Apply the principle of least privilege by using the least privileged database user possible. In particular, avoid using the 'sa' or 'db-owner' database users. This does not eliminate SQL injection, but minimizes its impact. Grant the minimum database access that is necessary for the application.\nThe original page results were successfully replicated using the \"ORDER BY\" expression [query ASC -- ] as the parameter value The parameter value being modified was stripped from the HTML output for the purposes of the comparison",
+              "data": "Do not trust client side input, even if there is client side validation in place. In general, type check all data on the server side. If the application uses JDBC, use PreparedStatement or CallableStatement, with parameters passed by '?' If the application uses ASP, use ADO Command Objects with strong type checking and parameterized queries. If database Stored Procedures can be used, use them. Do *not* concatenate strings into queries in the stored procedure, or use 'exec', 'exec immediate', or equivalent functionality! Do not create dynamic SQL queries using simple string concatenation. Escape all data received from the client. Apply a 'whitelist' of allowed characters, or a 'blacklist' of disallowed characters in user input. Apply the principle of least privilege by using the least privileged database user possible. In particular, avoid using the 'sa' or 'db-owner' database users. This does not eliminate SQL injection, but minimizes its impact. Grant the minimum database access that is necessary for the application.",
+              "label": "solution"
+            },
+            {
+              "data": "The original page results were successfully replicated using the \"ORDER BY\" expression [query ASC -- ] as the parameter value The parameter value being modified was stripped from the HTML output for the purposes of the comparison",
               "label": "check"
             }
           ],
@@ -2505,6 +2660,14 @@
           },
           "code": "GET http://mymac.com:8191/WebGoat/service/debug/labels.mvc?query=query+ASC++--+\nParam: query\nAttack: query ASC  -- ",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://www.owasp.org/index.php/Top_10_2010-A1"
+            },
+            {
+              "url": "https://www.owasp.org/index.php/SQL_Injection_Prevention_Cheat_Sheet"
+            }
+          ],
           "title": "SQL Injection",
           "verificationMethod": "automated"
         },
@@ -2518,7 +2681,11 @@
               "label": "default"
             },
             {
-              "data": "Remove the private IP address from the HTTP response body. For comments, use JSP/ASP/PHP comment instead of HTML/JavaScript comment which can be seen by client browsers.\n192.168.1.151:9090",
+              "data": "Remove the private IP address from the HTTP response body. For comments, use JSP/ASP/PHP comment instead of HTML/JavaScript comment which can be seen by client browsers.",
+              "label": "solution"
+            },
+            {
+              "data": "192.168.1.151:9090",
               "label": "check"
             }
           ],
@@ -2549,6 +2716,11 @@
           },
           "code": "GET http://mymac.com:8191/WebGoat/WebWolfIntroduction.lesson.lesson",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://tools.ietf.org/html/rfc1918"
+            }
+          ],
           "title": "Private IP Disclosure",
           "verificationMethod": "automated"
         },
@@ -2562,7 +2734,11 @@
               "label": "default"
             },
             {
-              "data": "Force UTF-8 for all text content in both the HTTP header and meta tags in HTML or encoding declarations in XML.\nThere was a charset mismatch between the HTTP Header and the META content-type encoding declarations: [UTF-8] and [ISO-8859-1] do not match.",
+              "data": "Force UTF-8 for all text content in both the HTTP header and meta tags in HTML or encoding declarations in XML.",
+              "label": "solution"
+            },
+            {
+              "data": "There was a charset mismatch between the HTTP Header and the META content-type encoding declarations: [UTF-8] and [ISO-8859-1] do not match.",
               "label": "check"
             }
           ],
@@ -2589,6 +2765,11 @@
             "wascid": "15"
           },
           "code": "GET http://mymac.com:8191/WebGoat/start.mvc",
+          "refs": [
+            {
+              "url": "http://code.google.com/p/browsersec/wiki/Part2#Character_set_handling_and_detection"
+            }
+          ],
           "title": "Charset Mismatch (Header Versus Meta Content-Type Charset)",
           "verificationMethod": "automated"
         }

@@ -434,22 +434,101 @@ func TestConvertZapToHDF_DefaultDescription(t *testing.T) {
 	require.NoError(t, err)
 
 	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
-	require.Len(t, req.Descriptions, 2)
+	require.Len(t, req.Descriptions, 3)
 	assert.Equal(t, "default", req.Descriptions[0].Label)
 	assert.NotContains(t, req.Descriptions[0].Data, "<p>")
 	assert.Contains(t, req.Descriptions[0].Data, "X-Content-Type-Options was not set to 'nosniff'")
 }
 
+// solution is ZAP's remediation guidance, homed under its own "solution" label
+// with the HTML stripped (value-pinned).
+func TestConvertZapToHDF_SolutionDescription(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
+	require.Len(t, req.Descriptions, 3)
+	assert.Equal(t, "solution", req.Descriptions[1].Label)
+	assert.Equal(t, "Ensure that the application/web server sets the Content-Type header appropriately.", req.Descriptions[1].Data)
+}
+
+// otherinfo stays under the "check" label; it no longer carries the solution text.
 func TestConvertZapToHDF_CheckDescription(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
 	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
-	require.Len(t, req.Descriptions, 2)
-	assert.Equal(t, "check", req.Descriptions[1].Label)
-	assert.Contains(t, req.Descriptions[1].Data, "Content-Type header")
-	assert.Contains(t, req.Descriptions[1].Data, "error type pages")
+	require.Len(t, req.Descriptions, 3)
+	assert.Equal(t, "check", req.Descriptions[2].Label)
+	assert.Equal(t, "This issue still applies to error type pages.", req.Descriptions[2].Data)
+	assert.NotContains(t, req.Descriptions[2].Data, "Content-Type header")
+}
+
+// When an alert carries no otherinfo, no "check" description is emitted; the
+// solution still lands as its own description.
+func TestConvertZapToHDF_SolutionWithoutOtherInfo(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// Alert 90022 in minimal.json has an empty otherinfo but a solution.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
+	labels := make([]string, len(req.Descriptions))
+	for i, d := range req.Descriptions {
+		labels[i] = d.Label
+	}
+	assert.Equal(t, []string{"default", "solution"}, labels)
+	assert.Equal(t, "Review the source code.", req.Descriptions[1].Data)
+}
+
+// --- External references (refs[]) ---
+
+// alert.reference is HTML-wrapped URLs; each real URL becomes a refs[] entry
+// (value-pinned).
+func TestConvertZapToHDF_Refs(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
+	require.Len(t, req.Refs, 1)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "http://msdn.microsoft.com/en-us/library/ie/gg622941%28v=vs.85%29.aspx", *req.Refs[0].URL)
+}
+
+// An empty reference field emits no refs[] (absent branch).
+func TestConvertZapToHDF_RefsAbsent(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// Alert 90022 in minimal.json has an empty reference.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
+	assert.Nil(t, req.Refs)
+}
+
+func Test_buildRefs(t *testing.T) {
+	assert.Nil(t, buildRefs(""), "empty reference -> nil")
+	assert.Nil(t, buildRefs("<p></p>"), "markup with no URL -> nil")
+
+	// Multiple <p>-wrapped URLs -> one Reference each, in order.
+	refs := buildRefs("<p>http://a.example/x</p><p>https://b.example/y</p>")
+	require.Len(t, refs, 2)
+	assert.Equal(t, "http://a.example/x", *refs[0].URL)
+	assert.Equal(t, "https://b.example/y", *refs[1].URL)
+
+	// An anchor tag: the href URL is pulled from the markup.
+	refs = buildRefs(`<a href="https://c.example/z">c</a>`)
+	require.Len(t, refs, 1)
+	assert.Equal(t, "https://c.example/z", *refs[0].URL)
+
+	// Whitespace-separated plain URLs.
+	refs = buildRefs("https://d.example/1 https://e.example/2")
+	require.Len(t, refs, 2)
+	assert.Equal(t, "https://d.example/1", *refs[0].URL)
+	assert.Equal(t, "https://e.example/2", *refs[1].URL)
 }
 
 // --- SARIF routing ---

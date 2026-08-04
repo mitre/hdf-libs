@@ -264,16 +264,82 @@ describe('ZAP Converter', () => {
       expect(defaultDesc?.data).toContain("X-Content-Type-Options was not set to 'nosniff'");
     });
 
-    it('should include check description from solution and otherinfo', async () => {
+    // solution is ZAP's remediation guidance, homed under its own "solution"
+    // label with HTML stripped (value-pinned).
+    it('should include solution description with HTML stripped', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
+      expect(req?.descriptions).toHaveLength(3);
+      const solutionDesc = req?.descriptions?.find(d => d.label === 'solution');
+      expect(solutionDesc?.data).toBe('Ensure that the application/web server sets the Content-Type header appropriately.');
+    });
+
+    // otherinfo stays under "check"; it no longer carries the solution text.
+    it('should include check description from otherinfo only', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       const checkDesc = req?.descriptions?.find(d => d.label === 'check');
-      expect(checkDesc).toBeDefined();
-      expect(checkDesc?.data).toContain('Content-Type header');
-      expect(checkDesc?.data).toContain('error type pages');
+      expect(checkDesc?.data).toBe('This issue still applies to error type pages.');
+      expect(checkDesc?.data).not.toContain('Content-Type header');
+    });
+
+    // An alert with no otherinfo emits no "check" description; solution still lands.
+    it('emits solution but no check when otherinfo is empty', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      // Alert 90022 in minimal.json has an empty otherinfo but a solution.
+      const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
+      expect(req?.descriptions?.map(d => d.label)).toEqual(['default', 'solution']);
+      const solutionDesc = req?.descriptions?.find(d => d.label === 'solution');
+      expect(solutionDesc?.data).toBe('Review the source code.');
+    });
+  });
+
+  describe('external references (refs)', () => {
+    // alert.reference is HTML-wrapped URLs; each real URL becomes a refs[] entry.
+    it('extracts external reference URLs into refs[]', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
+      expect(req?.refs).toHaveLength(1);
+      expect(req?.refs?.[0].url).toBe('http://msdn.microsoft.com/en-us/library/ie/gg622941%28v=vs.85%29.aspx');
+    });
+
+    // An empty reference field emits no refs[] (absent branch).
+    it('omits refs[] when the reference field is empty', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      // Alert 90022 in minimal.json has an empty reference.
+      const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
+      expect(req?.refs).toBeUndefined();
+    });
+
+    it('handles multiple URLs, anchor hrefs, and no-URL markup', async () => {
+      const zap = {
+        '@version': '2.7.0',
+        site: [{'@host': 'example.com', alerts: [
+          {pluginid: '1', name: 'multi', reference: '<p>http://a.example/x</p><p>https://b.example/y</p>'},
+          {pluginid: '2', name: 'anchor', reference: '<a href="https://c.example/z">c</a>'},
+          {pluginid: '3', name: 'none', reference: '<p></p>'},
+        ]}],
+      };
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(JSON.stringify(zap)));
+      const reqs = hdf.baselines[0].requirements;
+      expect(reqs.find(r => r.id === '1')?.refs?.map(x => x.url)).toEqual(['http://a.example/x', 'https://b.example/y']);
+      expect(reqs.find(r => r.id === '2')?.refs?.map(x => x.url)).toEqual(['https://c.example/z']);
+      expect(reqs.find(r => r.id === '3')?.refs).toBeUndefined();
     });
   });
 

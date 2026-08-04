@@ -3,6 +3,7 @@ package zap_to_hdf
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -186,26 +187,29 @@ func buildRequirementCode(alert ZapAlert) *string {
 	return &code
 }
 
-// --- Build check description ---
+// --- External references ---
 
-func buildCheckDescription(alert ZapAlert) string {
-	result := ""
-	if alert.Solution != "" {
-		stripped := hdfutil.StripHTML(alert.Solution)
-		if stripped != "" {
-			result = stripped
-		}
+// refURLRe extracts http(s) URLs from a ZAP alert's reference field. ZAP ships
+// reference as HTML — URLs wrapped in <p> tags, occasionally anchor tags — or as
+// whitespace-separated plain URLs; excluding whitespace, angle brackets and
+// quotes stops each match at the surrounding markup so the same pattern pulls the
+// real URIs from any of those shapes (including hrefs).
+var refURLRe = regexp.MustCompile(`https?://[^\s<>"']+`)
+
+// buildRefs turns a ZAP alert's reference field into one hdf.Reference per
+// external URL. Returns nil when the field carries no URL (empty, absent, or
+// markup with no link), so refs[] is omitted rather than emitted empty.
+func buildRefs(reference string) []hdf.Reference {
+	urls := refURLRe.FindAllString(reference, -1)
+	if len(urls) == 0 {
+		return nil
 	}
-	if alert.OtherInfo != "" {
-		stripped := hdfutil.StripHTML(alert.OtherInfo)
-		if stripped != "" {
-			if result != "" {
-				result += "\n"
-			}
-			result += stripped
-		}
+	refs := make([]hdf.Reference, 0, len(urls))
+	for _, u := range urls {
+		url := u
+		refs = append(refs, hdf.Reference{URL: &url})
 	}
-	return result
+	return refs
 }
 
 // --- Per-site labeling ---
@@ -282,7 +286,8 @@ func buildSiteRequirements(site *ZapSite) []hdf.EvaluatedRequirement {
 			}
 		}
 
-		// Build descriptions
+		// Build descriptions. solution is ZAP's remediation guidance (its own
+		// "solution" label); otherinfo is supplementary detail (kept as "check").
 		var descriptions []hdf.Description
 		if alert.Desc != "" {
 			descriptions = append(descriptions, hdf.Description{
@@ -290,11 +295,16 @@ func buildSiteRequirements(site *ZapSite) []hdf.EvaluatedRequirement {
 				Data:  hdfutil.StripHTML(alert.Desc),
 			})
 		}
-		checkDesc := buildCheckDescription(alert)
-		if checkDesc != "" {
+		if solution := hdfutil.StripHTML(alert.Solution); solution != "" {
+			descriptions = append(descriptions, hdf.Description{
+				Label: "solution",
+				Data:  solution,
+			})
+		}
+		if otherInfo := hdfutil.StripHTML(alert.OtherInfo); otherInfo != "" {
 			descriptions = append(descriptions, hdf.Description{
 				Label: "check",
-				Data:  checkDesc,
+				Data:  otherInfo,
 			})
 		}
 
@@ -310,6 +320,7 @@ func buildSiteRequirements(site *ZapSite) []hdf.EvaluatedRequirement {
 			ControlType:        shared.DeriveControlTypeFromTags(nistTags),
 			Code:               buildRequirementCode(alert),
 			Descriptions:       descriptions,
+			Refs:               buildRefs(alert.Reference),
 			VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 		}
 
