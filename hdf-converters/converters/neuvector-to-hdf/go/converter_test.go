@@ -287,6 +287,34 @@ func TestBuildCvssEntries_Branches(t *testing.T) {
 	})
 }
 
+// ---- External references (refs[]) ----
+
+// Value-pins the mapped vulnerability.link -> refs[0].url. The link is read
+// independently from the fixture so this catches a silent drop even if the
+// golden churns.
+func TestConvertNeuVector_RefsFromLink(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	require.Len(t, req.Refs, 1, "one Reference per link")
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-36159", *req.Refs[0].URL)
+	assert.Nil(t, req.Refs[0].Ref, "external link maps to url, not ref")
+	assert.Nil(t, req.Refs[0].URI, "external link maps to url, not uri")
+}
+
+// buildRefs branch coverage: no link -> no refs[].
+func TestBuildRefs_Absent(t *testing.T) {
+	assert.Nil(t, buildRefs(NeuVectorVuln{Link: ""}), "empty link contributes no refs")
+	out := buildRefs(NeuVectorVuln{Link: "https://example.test/adv"})
+	require.Len(t, out, 1)
+	require.NotNil(t, out[0].URL)
+	assert.Equal(t, "https://example.test/adv", *out[0].URL)
+}
+
 // ---- CVE tag (interim) ----
 
 func TestConvertNeuVector_CveTag(t *testing.T) {

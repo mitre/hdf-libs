@@ -239,6 +239,16 @@ func marshalVulnCode(vuln NeuVectorVuln) string {
 	return strings.TrimSuffix(buf.String(), "\n")
 }
 
+// buildRefs emits a single external Reference for the vulnerability's advisory
+// link. Returns nil when the source carries no link so refs[] is omitted.
+func buildRefs(vuln NeuVectorVuln) []hdf.Reference {
+	if vuln.Link == "" {
+		return nil
+	}
+	url := vuln.Link
+	return []hdf.Reference{{URL: &url}}
+}
+
 // buildRequirement converts a NeuVector vulnerability to an EvaluatedRequirement.
 func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequirement {
 	cweIDs := extractCWEs(vuln.Description)
@@ -283,6 +293,9 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequi
 	}
 	if cvss := buildCvssEntries(vuln); len(cvss) > 0 {
 		req.Cvss = cvss
+	}
+	if refs := buildRefs(vuln); len(refs) > 0 {
+		req.Refs = refs
 	}
 
 	// NeuVector scans container images; the package ecosystem isn't
