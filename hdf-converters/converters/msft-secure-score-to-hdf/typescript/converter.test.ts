@@ -207,6 +207,25 @@ describe('msft-secure-score to HDF converter', async () => {
     });
   });
 
+  describe('refs from profile actionUrl', async () => {
+    it('should emit a Reference url from the matching profile actionUrl', async () => {
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
+      expect(req?.refs).toHaveLength(1);
+      expect(req?.refs?.[0]?.url).toBe('https://security.microsoft.com/cloudapps/settings?tabid=discovery-autoUpload');
+
+      const req2 = hdf.baselines[0]!.requirements.find(r => r.id === 'Data:dlp_datalossprevention');
+      expect(req2?.refs).toHaveLength(1);
+      expect(req2?.refs?.[0]?.url).toBe('https://compliance.microsoft.com/datalossprevention?tid=12345678-1234-1234-1234-1234567890abcd');
+    });
+
+    it('should omit refs when no matching profile exists', async () => {
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:spo_idle_session_timeout');
+      expect(req?.refs).toBeUndefined();
+    });
+  });
+
   describe('NIST tags', async () => {
     it('should include default static analysis NIST tags', async () => {
       const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;

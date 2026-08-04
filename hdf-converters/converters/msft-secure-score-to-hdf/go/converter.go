@@ -61,6 +61,7 @@ type ProfileResponse struct {
 type SecureScoreControlProfile struct {
 	ID                string      `json:"id"`
 	AzureTenantID     string      `json:"azureTenantId"`
+	ActionURL         string      `json:"actionUrl"`
 	ControlCategory   string      `json:"controlCategory"`
 	Title             string      `json:"title"`
 	MaxScore          float64     `json:"maxScore"`
@@ -169,7 +170,14 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 
 	// Add fix description from profile remediation
 	matched := getProfiles(profiles, cs.ControlName)
+	var refs []hdf.Reference
 	if len(matched) > 0 {
+		for _, p := range matched {
+			if p.ActionURL != "" {
+				url := p.ActionURL
+				refs = append(refs, hdf.Reference{URL: &url})
+			}
+		}
 		remediations := make([]string, 0)
 		for _, p := range matched {
 			if p.Remediation != "" {
@@ -221,6 +229,7 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 		Impact:             impact,
 		Tags:               tags,
 		Descriptions:       descriptions,
+		Refs:               refs,
 		Results:            results,
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),

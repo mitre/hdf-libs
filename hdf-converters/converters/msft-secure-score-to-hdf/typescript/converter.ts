@@ -7,6 +7,7 @@ import type {
   Component,
   EvaluatedBaseline,
   EvaluatedRequirement,
+  Reference,
   RequirementResult,
   Checksum,
 } from '@mitre/hdf-schema';
@@ -66,6 +67,7 @@ interface ProfileResponse {
 interface SecureScoreControlProfile {
   id: string;
   azureTenantId?: string;
+  actionUrl?: string;
   controlCategory?: string;
   title?: string;
   maxScore?: number;
@@ -175,7 +177,14 @@ function buildRequirement(
 
   // Add fix description from profile remediation
   const matched = getMatchingProfiles(profiles, cs.controlName);
+  const refs: Reference[] = [];
   if (matched.length > 0) {
+    for (const url of matched
+      .map(p => p.actionUrl)
+      .filter((u): u is string => u !== undefined && u !== '')) {
+      refs.push({ url });
+    }
+
     const remediations = matched
       .map(p => p.remediation)
       .filter((r): r is string => r !== undefined && r !== '');
@@ -209,7 +218,7 @@ function buildRequirement(
     descriptions,
     impact,
     results,
-    { tags },
+    { tags, ...(refs.length > 0 ? { refs } : {}) },
   ) as EvaluatedRequirement;
   const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {

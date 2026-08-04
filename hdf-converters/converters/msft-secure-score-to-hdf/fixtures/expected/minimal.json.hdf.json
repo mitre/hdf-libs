@@ -57,6 +57,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/cloudapps/settings?tabid=discovery-autoUpload"
+            }
+          ],
           "title": "Deploy a log collector to discover shadow IT activity",
           "verificationMethod": "automated"
         },
@@ -90,6 +95,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://compliance.microsoft.com/datalossprevention?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure DLP policies are enabled",
           "verificationMethod": "automated"
         }

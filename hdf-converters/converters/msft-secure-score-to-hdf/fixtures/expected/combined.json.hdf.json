@@ -82,6 +82,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/cloudapps/settings?tabid=discovery-autoUpload"
+            }
+          ],
           "title": "Deploy a log collector to discover shadow IT activity",
           "verificationMethod": "automated"
         },
@@ -115,6 +120,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/cloudapps/policy/activity/create"
+            }
+          ],
           "title": "Create a custom activity policy to get alerts about suspicious usage patterns",
           "verificationMethod": "automated"
         },
@@ -148,6 +158,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/cloudapps/policy/discovery/create"
+            }
+          ],
           "title": "Create an app discovery policy to identify new and trending cloud apps in your org ",
           "verificationMethod": "automated"
         },
@@ -181,6 +196,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/cloudapps/policy/app-permission/create"
+            }
+          ],
           "title": "Create an OAuth app policy to notify you about new OAuth applications",
           "verificationMethod": "automated"
         },
@@ -214,6 +234,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/settings/identities?tabid=sensor"
+            }
+          ],
           "title": "Start your Defender for Identity deployment, installing Sensors on Domain Controllers and other eligible servers.",
           "verificationMethod": "automated"
         },
@@ -247,6 +272,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/safeattachmentv2?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Turn on Microsoft Defender for Office 365 in SharePoint, OneDrive, and Microsoft Teams",
           "verificationMethod": "automated"
         },
@@ -280,6 +310,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://compliance.microsoft.com/datalossprevention?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure DLP policies are enabled",
           "verificationMethod": "automated"
         },
@@ -313,6 +348,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://admin.exchange.microsoft.com/#/sharing"
+            }
+          ],
           "title": "Ensure 'External sharing' of calendars is not available",
           "verificationMethod": "automated"
         },
@@ -346,6 +386,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/safeattachmentv2?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Turn on Safe Documents for Office Clients",
           "verificationMethod": "automated"
         },
@@ -379,6 +424,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Don't add allowed IP addresses in the connection filter policy ",
           "verificationMethod": "automated"
         },
@@ -437,6 +487,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://go.microsoft.com/fwlink/?linkid=2095515"
+            }
+          ],
           "title": "Ensure the customer lockbox feature is enabled",
           "verificationMethod": "automated"
         },
@@ -470,6 +525,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/Exchange/clients-and-mobile-in-exchange-online/enable-or-disable-modern-authentication-in-exchange-online?redirectSourcePath=%252fen-us%252farticle%252fenable-or-disable-modern-authentication-in-exchange-online-58018196-f918-49cd-8238-56f57f38d662"
+            }
+          ],
           "title": "Ensure modern authentication for Exchange Online is enabled",
           "verificationMethod": "automated"
         },
@@ -503,6 +563,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/exchange/clients-and-mobile-in-exchange-online/mailtips/mailtips"
+            }
+          ],
           "title": "Ensure MailTips are enabled for end users",
           "verificationMethod": "automated"
         },
@@ -536,6 +601,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://admin.exchange.microsoft.com/#/transportrules"
+            }
+          ],
           "title": "Ensure Spam confidence level (SCL) is configured in mail transport rules with specific domains",
           "verificationMethod": "automated"
         },
@@ -594,6 +664,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/microsoft-365/compliance/audit-mailboxes?view=o365-worldwide"
+            }
+          ],
           "title": "Ensure mailbox auditing for all users is Enabled",
           "verificationMethod": "automated"
         },
@@ -627,6 +702,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://support.microsoft.com/en-us/topic/3rd-party-cloud-storage-services-supported-by-office-apps-fce12782-eccc-4cf5-8f4b-d1ebec513f72"
+            }
+          ],
           "title": "Ensure additional storage providers are restricted in Outlook on the web",
           "verificationMethod": "automated"
         },
@@ -660,6 +740,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://support.microsoft.com/en-us/topic/3rd-party-cloud-storage-services-supported-by-office-apps-fce12782-eccc-4cf5-8f4b-d1ebec513f72"
+            }
+          ],
           "title": "Ensure users installing Outlook add-ins is not allowed",
           "verificationMethod": "automated"
         },
@@ -768,6 +853,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/safeattachmentv2?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Turn on Safe Attachments in block mode",
           "verificationMethod": "automated"
         },
@@ -826,6 +916,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antimalwarev2?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure the Common Attachment Types Filter is enabled",
           "verificationMethod": "automated"
         },
@@ -909,6 +1004,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set action to take on high confidence spam detection",
           "verificationMethod": "automated"
         },
@@ -942,6 +1042,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set action to take on phishing detection",
           "verificationMethod": "automated"
         },
@@ -975,6 +1080,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set action to take on high confidence phishing detection",
           "verificationMethod": "automated"
         },
@@ -1008,6 +1118,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set action to take on bulk spam detection",
           "verificationMethod": "automated"
         },
@@ -1041,6 +1156,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Retain spam in quarantine for 30 days",
           "verificationMethod": "automated"
         },
@@ -1074,6 +1194,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure that no sender domains are allowed for anti-spam policies",
           "verificationMethod": "automated"
         },
@@ -1107,6 +1232,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set the email bulk complaint level (BCL) threshold to be 6 or lower",
           "verificationMethod": "automated"
         },
@@ -1165,6 +1295,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set automatic email forwarding rules to be system controlled",
           "verificationMethod": "automated"
         },
@@ -1198,6 +1333,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set maximum number of external recipients that a user can email per hour",
           "verificationMethod": "automated"
         },
@@ -1231,6 +1371,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set maximum number of internal recipients that a user can send to within an hour",
           "verificationMethod": "automated"
         },
@@ -1264,6 +1409,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set a daily message limit",
           "verificationMethod": "automated"
         },
@@ -1322,6 +1472,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antiphishing?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure that mailbox intelligence is enabled",
           "verificationMethod": "automated"
         },
@@ -1355,6 +1510,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antiphishing?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure that intelligence for impersonation protection is enabled",
           "verificationMethod": "automated"
         },
@@ -1388,6 +1548,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antiphishing?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Move messages that are detected as impersonated users by mailbox intelligence",
           "verificationMethod": "automated"
         },
@@ -1421,6 +1586,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antiphishing?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Enable impersonated domain protection",
           "verificationMethod": "automated"
         },
@@ -1454,6 +1624,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antiphishing?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set the phishing email level threshold at 2 or higher",
           "verificationMethod": "automated"
         },
@@ -1662,6 +1837,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/safe-attachments-policies-configure?view=o365-worldwide\u0026tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure Safe Attachments policy is enabled",
           "verificationMethod": "automated"
         },
@@ -1720,6 +1900,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/anti-phishing-policies-about?view=o365-worldwide\u0026tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure that an anti-phishing policy has been created",
           "verificationMethod": "automated"
         },
@@ -1753,6 +1938,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/exchange/policy-and-compliance/mail-flow-rules/mail-flow-rule-procedures?view=exchserver-2019\u0026tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure all forms of mail forwarding are blocked and/or disabled",
           "verificationMethod": "automated"
         },
@@ -1786,6 +1976,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://go.microsoft.com/fwlink/?linkid=2119526"
+            }
+          ],
           "title": "Ensure user consent to apps accessing company data on their behalf is not allowed",
           "verificationMethod": "automated"
         },
@@ -1869,6 +2064,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://go.microsoft.com/fwlink/?linkid=2095010"
+            }
+          ],
           "title": "Enable Conditional Access policies to block legacy authentication",
           "verificationMethod": "automated"
         },
@@ -1927,6 +2127,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://go.microsoft.com/fwlink/?linkid=2095010"
+            }
+          ],
           "title": "Ensure multifactor authentication is enabled for all users in administrative roles",
           "verificationMethod": "automated"
         },

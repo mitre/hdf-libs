@@ -262,6 +262,40 @@ func TestConvertMsftSecureScore_FixDescription(t *testing.T) {
 	assert.NotEmpty(t, fix.Data)
 }
 
+// ---- Refs from profile actionUrl ----
+
+func TestConvertMsftSecureScore_RefsFromActionURL(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// McasFirewallLogUpload profile carries actionUrl → one Reference{URL}.
+	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
+	require.Len(t, req.Refs, 1)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://security.microsoft.com/cloudapps/settings?tabid=discovery-autoUpload", *req.Refs[0].URL)
+
+	// dlp_datalossprevention profile carries a different actionUrl.
+	req2 := shared.MustFindRequirement(t, reqs, "Data:dlp_datalossprevention")
+	require.Len(t, req2.Refs, 1)
+	require.NotNil(t, req2.Refs[0].URL)
+	assert.Equal(t, "https://compliance.microsoft.com/datalossprevention?tid=12345678-1234-1234-1234-1234567890abcd", *req2.Refs[0].URL)
+}
+
+func TestConvertMsftSecureScore_RefsAbsentWhenNoProfile(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// spo_idle_session_timeout has no matching profile → refs omitted.
+	req := shared.MustFindRequirement(t, reqs, "Apps:spo_idle_session_timeout")
+	assert.Empty(t, req.Refs)
+}
+
 // ---- NIST tags (static analysis defaults) ----
 
 func TestConvertMsftSecureScore_NistTags(t *testing.T) {
