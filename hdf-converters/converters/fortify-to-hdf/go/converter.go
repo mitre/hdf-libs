@@ -161,6 +161,14 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 		})
 	}
 
+	// Tips description from the Description's <Tips><Tip> guidance text.
+	if tips := buildTipsData(desc.Tips.Tip); tips != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "tips",
+			Data:  tips,
+		})
+	}
+
 	// Impact from the representative instance's per-instance severity / 5.
 	impact := 0.0
 	if len(vulns) > 0 {
@@ -183,6 +191,14 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 
 	if len(cweIDs) > 0 {
 		req.Cwe = cweIDs
+	}
+
+	// External reference links: Fortify Description References carry an
+	// external URL in <Source>. Emit one hdf.Reference{URL} per distinct URL,
+	// preserving order. Standards-mapping references (NIST/CWE/etc.) carry no
+	// Source URL and are already handled via tags.
+	if refs := buildRefs(desc.References.Reference); len(refs) > 0 {
+		req.Refs = refs
 	}
 
 	// requirement.code = raw source snippet from the representative finding's
@@ -281,6 +297,44 @@ func buildCodeDesc(vuln *Vulnerability, snippetMap map[string]*Snippet) string {
 func formatSnippet(s *Snippet) string {
 	text := strings.TrimSpace(s.Text)
 	return fmt.Sprintf("Path: %s\nStartLine: %s, EndLine: %s\nCode:\n%s", s.File, s.StartLine, s.EndLine, text)
+}
+
+// buildTipsData strips markup from each <Tip> and joins the non-empty tips
+// into a single description body. Returns "" when there are no usable tips.
+func buildTipsData(tips []string) string {
+	var parts []string
+	for _, tip := range tips {
+		if text := hdfutil.StripHTML(tip); text != "" {
+			parts = append(parts, text)
+		}
+	}
+	return strings.Join(parts, "\n\n")
+}
+
+// buildRefs emits one hdf.Reference{URL} per distinct external URL carried in a
+// Description's References (<Source> element), preserving first-seen order.
+// Returns nil when no reference carries an external URL.
+func buildRefs(refs []Reference) []hdf.Reference {
+	var hdfRefs []hdf.Reference
+	seen := make(map[string]struct{})
+	for _, ref := range refs {
+		u := strings.TrimSpace(ref.Source)
+		if !isExternalURL(u) {
+			continue
+		}
+		if _, ok := seen[u]; ok {
+			continue
+		}
+		seen[u] = struct{}{}
+		urlCopy := u
+		hdfRefs = append(hdfRefs, hdf.Reference{URL: &urlCopy})
+	}
+	return hdfRefs
+}
+
+// isExternalURL reports whether s is an http(s) URL.
+func isExternalURL(s string) bool {
+	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
 
 // extractNISTFromReferences finds the NIST 800-53 reference in the Description

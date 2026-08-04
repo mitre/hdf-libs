@@ -21,6 +21,7 @@ import type {
   Checksum,
   Tool,
   Description,
+  Reference,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -114,6 +115,9 @@ interface FVDLDescription {
   Abstract?: string;
   Explanation?: string;
   Recommendations?: string;
+  Tips?: {
+    Tip?: string | string[];
+  };
   References?: {
     Reference?: FVDLReference | FVDLReference[];
   };
@@ -226,6 +230,38 @@ function mergeCweNist(nist: string[], cweIDs: string[]): string[] {
   return merged;
 }
 
+// Strip markup from each <Tip> and join the non-empty tips into a single
+// description body. Returns '' when there are no usable tips.
+function buildTipsData(tips: string[]): string {
+  const parts: string[] = [];
+  for (const tip of tips) {
+    const text = stripFvdlMarkup(tip);
+    if (text) parts.push(text);
+  }
+  return parts.join('\n\n');
+}
+
+// Reports whether s is an http(s) URL.
+function isExternalURL(s: string): boolean {
+  return s.startsWith('http://') || s.startsWith('https://');
+}
+
+// Emit one Reference{url} per distinct external URL carried in a Description's
+// References (<Source> element), preserving first-seen order. Returns undefined
+// when no reference carries an external URL.
+function buildRefs(refs: FVDLReference[]): Reference[] | undefined {
+  const hdfRefs: Reference[] = [];
+  const seen = new Set<string>();
+  for (const ref of refs) {
+    const url = (ref.Source ?? '').trim();
+    if (!isExternalURL(url)) continue;
+    if (seen.has(url)) continue;
+    seen.add(url);
+    hdfRefs.push({ url });
+  }
+  return hdfRefs.length > 0 ? hdfRefs : undefined;
+}
+
 function formatSnippet(snippet: FVDLSnippet): string {
   const text = (snippet.Text ?? '').trim();
   return `Path: ${snippet.File ?? ''}\nStartLine: ${snippet.StartLine ?? ''}, EndLine: ${snippet.EndLine ?? ''}\nCode:\n${text}`;
@@ -325,6 +361,12 @@ function buildRequirement(
     });
   }
 
+  // Tips description from the Description's <Tips><Tip> guidance text.
+  const tipsData = buildTipsData(ensureArray(desc.Tips?.Tip));
+  if (tipsData) {
+    descriptions.push({ label: 'tips', data: tipsData });
+  }
+
   // Impact from the representative instance's per-instance severity / 5.
   let impact = 0;
   if (vulns.length > 0) {
@@ -358,6 +400,12 @@ function buildRequirement(
 
   if (cweIDs.length > 0) {
     req.cwe = cweIDs;
+  }
+
+  // External reference links from Description References (<Source> URL).
+  const refsList = buildRefs(refs);
+  if (refsList !== undefined) {
+    req.refs = refsList;
   }
 
   const controlType = deriveControlTypeFromTags(nistTags);

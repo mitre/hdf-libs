@@ -216,6 +216,62 @@ describe('Fortify to HDF Converter', () => {
       expect(nist.length).toBeGreaterThan(0);
     });
 
+    it('should surface Description Tips as a "tips" description', async () => {
+      const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+
+      const pathManip = findRequirement(bl, '823FE039-A7FE-4AAD-B976-9EC53FFE4A59');
+      const descs = pathManip!.descriptions as Array<Record<string, unknown>>;
+      const tips = descs.find(d => d.label === 'tips');
+      expect(tips).toBeDefined();
+      const tipsData = tips!.data as string;
+      expect(tipsData).toContain('If the program is performing custom input validation');
+      // Multiple tips joined into one body.
+      expect(tipsData).toContain('Implementation of an effective blacklist');
+      expect(tipsData).toContain('\n\n');
+
+      // Entity-escaped markup (&lt;code&gt;) inside a Tip is stripped.
+      const exc = findRequirement(bl, '8843F319-8A22-4101-A378-C2B2F2597988');
+      const excDescs = exc!.descriptions as Array<Record<string, unknown>>;
+      const excTips = (excDescs.find(d => d.label === 'tips')!.data as string);
+      expect(excTips).toContain('Thread.sleep()');
+      expect(excTips).not.toContain('<code>');
+      expect(excTips).not.toContain('&lt;');
+    });
+
+    it('should leave a tips description off a Description without Tips', async () => {
+      const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const deadCode = findRequirement(bl, '3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E');
+      const descs = deadCode!.descriptions as Array<Record<string, unknown>>;
+      expect(descs.find(d => d.label === 'tips')).toBeUndefined();
+    });
+
+    it('should surface external-URL references as refs[]', async () => {
+      const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const pathManip = findRequirement(bl, '823FE039-A7FE-4AAD-B976-9EC53FFE4A59');
+      const refs = pathManip!.refs as Array<Record<string, unknown>>;
+      expect(refs).toHaveLength(2);
+      expect(refs[0]!.url).toBe(
+        'https://www.securecoding.cert.org/confluence/display/java/FIO00-J.+Do+not+operate+on+files+in+shared+directories',
+      );
+      expect(refs[1]!.url).toBe(
+        'http://www.oracle.com/technetwork/java/seccodeguide-139067.html#5',
+      );
+    });
+
+    it('should leave refs unset when no reference carries a URL', async () => {
+      const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const deadCode = findRequirement(bl, '3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E');
+      expect(deadCode!.refs).toBeUndefined();
+    });
+
     it('should set all result statuses to failed', async () => {
       const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
       const out = parseOutput(await convertFortifyToHdf(fvdl));

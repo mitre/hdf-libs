@@ -491,6 +491,82 @@ func TestConvertFortifyToHDF_InstanceSeverityImpact(t *testing.T) {
 	assert.Equal(t, 0.2, req.Impact, "impact must use InstanceSeverity (1.0/5), not DefaultSeverity (5.0/5)")
 }
 
+// The Description's <Tips><Tip> guidance text must surface as a descriptions[]
+// entry labelled "tips", with the individual tips joined and markup stripped.
+func TestConvertFortifyToHDF_TipsDescription(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+
+	// Path Manipulation carries 3 tips.
+	pathManip := shared.MustFindRequirement(t, baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
+	tips := findDescription(t, pathManip.Descriptions, "tips")
+	assert.Contains(t, tips, "If the program is performing custom input validation")
+	// Multiple tips are joined into one body.
+	assert.Contains(t, tips, "Implementation of an effective blacklist")
+	assert.Contains(t, tips, "\n\n", "multiple tips are joined with a blank-line separator")
+
+	// A Description carrying entity-escaped markup (&lt;code&gt;) inside a Tip
+	// must have that markup stripped.
+	exc := shared.MustFindRequirement(t, baseline.Requirements, "8843F319-8A22-4101-A378-C2B2F2597988")
+	excTips := findDescription(t, exc.Descriptions, "tips")
+	assert.Contains(t, excTips, "Thread.sleep()")
+	assert.NotContains(t, excTips, "<code>")
+	assert.NotContains(t, excTips, "&lt;")
+}
+
+// A Description with no <Tips> must not emit a "tips" description.
+func TestConvertFortifyToHDF_TipsAbsent(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	deadCode := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E")
+	for _, d := range deadCode.Descriptions {
+		assert.NotEqual(t, "tips", d.Label, "requirement without <Tips> must not emit a tips description")
+	}
+}
+
+// External-URL References (carried in <Source>) must surface as refs[] entries,
+// de-duplicated and order-preserving. Standards-mapping references carry no URL.
+func TestConvertFortifyToHDF_Refs(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+
+	pathManip := shared.MustFindRequirement(t, baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
+	require.Len(t, pathManip.Refs, 2, "Path Manipulation has two external-URL references")
+	require.NotNil(t, pathManip.Refs[0].URL)
+	assert.Equal(t, "https://www.securecoding.cert.org/confluence/display/java/FIO00-J.+Do+not+operate+on+files+in+shared+directories", *pathManip.Refs[0].URL)
+	require.NotNil(t, pathManip.Refs[1].URL)
+	assert.Equal(t, "http://www.oracle.com/technetwork/java/seccodeguide-139067.html#5", *pathManip.Refs[1].URL)
+}
+
+// A Description whose References carry no external URL must leave refs unset.
+func TestConvertFortifyToHDF_Refs_Absent(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	deadCode := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E")
+	assert.Nil(t, deadCode.Refs, "refs must be unset when no reference carries an external URL")
+}
+
+func findDescription(t *testing.T, descs []hdf.Description, label string) string {
+	t.Helper()
+	for _, d := range descs {
+		if d.Label == label {
+			return d.Data
+		}
+	}
+	t.Fatalf("no description with label %q", label)
+	return ""
+}
+
 func TestConvertFortifyToHDF_VerificationMethod(t *testing.T) {
 	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
 	result, err := ConvertFortifyToHDF(inputData, converterVersion)
