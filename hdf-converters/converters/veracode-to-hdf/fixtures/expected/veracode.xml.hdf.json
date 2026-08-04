@@ -14,6 +14,10 @@
             {
               "data": "Careful handling of all untrusted data is critical in preventing injection attacks.   Using one or more of the following techniques provides defense-in-depth and minimizes the likelihood of an vulnerability.\nIf possible, use library calls rather than external processes to recreate the desired functionality.\nValidate user-supplied input using positive filters (white lists) to ensure that it conforms to the expected format, using centralized data validation routines when possible. \nSelect safe API routines.  Some APIs that execute system commands take an array of strings as input rather than a single string, which protects against some forms of command injection by ensuring that a user-supplied argument cannot be interpreted as part of the command.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -59,6 +63,10 @@
             {
               "data": "Several techniques can be used to prevent SQL injection attacks. These techniques complement each other and address security at different points in the application. Using multiple techniques provides defense-in-depth and minimizes the likelihood of a SQL injection vulnerability.\nUse parameterized prepared statements rather than dynamically constructing SQL queries.  This will prevent the database from interpreting the contents of bind variables as part of the query and is the most effective defense against SQL injection.\nValidate user-supplied input using positive filters (white lists) to ensure that it conforms to the expected format, using centralized data validation routines when possible. \nNormalize all user-supplied data before applying filters or regular expressions, or submitting the data to a database. This means that all URL-encoded (%xx), HTML-encoded (\u0026#xx;), or other encoding schemes should be reduced to the internal character representation expected by the application. This prevents attackers from using alternate encoding schemes to bypass filters.\nWhen using database abstraction libraries such as Hibernate, do not assume that all methods exposed by the API will automatically prevent SQL injection attacks.  Most libraries contain methods that pass arbitrary queries to the database in an unsafe manner.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -166,6 +174,10 @@
             {
               "data": "Apply robust input filtering for all user-supplied data, using centralized data validation routines when possible.  Use output filters to sanitize all output derived from user-supplied input, replacing non-alphanumeric characters with their HTML entity equivalents.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -401,6 +413,10 @@
             {
               "data": "Avoid storing passwords in easily accessible locations, and never store any type of sensitive data in plaintext.  Avoid using hard-coded usernames, passwords, or hash constants whenever possible, particularly in relation to security-critical components.   Store passwords out-of-band from the application code.  Follow best practices for protecting credentials stored in alternate locations such as configuration or properties files.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -447,6 +463,10 @@
             {
               "data": "Several techniques can be used to prevent XSS attacks. These techniques complement each other and address security at different points in the application. Using multiple techniques provides defense-in-depth and minimizes the likelihood of a XSS vulnerability.\nUse output filtering to sanitize all output generated from user-supplied input, selecting the appropriate method of encoding based on the use case of the untrusted data.  For example, if the data is being written to the body of an HTML page, use HTML entity encoding.  However, if the data is being used to construct generated Javascript or if it is consumed by client-side methods that may interpret it as code (a common technique in Web 2.0 applications), additional restrictions may be necessary beyond simple HTML encoding.\nValidate user-supplied input using positive filters (white lists) to ensure that it conforms to the expected format, using centralized data validation routines when possible. \nDo not permit users to include HTML content in posts, notes, or other data that will be displayed by the application.  If users are permitted to include HTML tags, then carefully limit access to specific elements or attributes, and use strict validation filters to prevent abuse.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -664,6 +684,10 @@
             {
               "data": "Select the appropriate type of cryptography for the intended purpose.  Avoid proprietary encryption algorithms as they typically rely on \"security through obscurity\" rather than sound mathematics.  Select key sizes appropriate for the data being protected; for high assurance applications, 256-bit symmetric keys and 2048-bit asymmetric keys are sufficient.  Follow best practices for key storage, and ensure that plaintext data and key material are not inadvertently exposed.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -744,6 +768,10 @@
             {
               "data": "Assume all user-supplied input is malicious.  Validate all user-supplied input to ensure that it conforms to the expected format, using centralized data validation routines when possible.  When using black lists, be sure that the sanitizing routine performs a sufficient number of iterations to remove all instances of disallowed characters and ensure that the end result is not dangerous.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -804,6 +832,10 @@
             {
               "data": "The wide variance of encapsulation issues makes it impractical to generalize how these issues should be addressed, beyond stating that encapsulation boundaries should be well-defined and adhered to.  Refer to individual categories for specific recommendations. ",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -845,6 +877,10 @@
             {
               "data": "Validate input from untrusted sources before it is used. The untrusted data sources may include HTTP requests, file systems, databases, and any external systems that provide data to the application. In the case of HTTP requests, validate all parts of the request, including headers, form fields, cookies, and URL components that are used to transfer information from the browser to the server side application.\nDuplicate any client-side checks on the server side. This should be simple to implement in terms of time and difficulty, and will greatly reduce the likelihood of insecure parameter values being used in the application.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -895,6 +931,10 @@
             {
               "data": "When calling API functions, be sure to fully understand and adhere to the specifications to avoid introducing security vulnerabilities.  Do not make assumptions about trustworthiness of the data returned from API calls or use the data in a context that was unintended by that API.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -1016,6 +1056,10 @@
             {
               "data": "Select the appropriate type of cryptography for the intended purpose.  Avoid proprietary encryption algorithms as they typically rely on \"security through obscurity\" rather than sound mathematics.  Select key sizes appropriate for the data being protected; for high assurance applications, 256-bit symmetric keys and 2048-bit asymmetric keys are sufficient.  Follow best practices for key storage, and ensure that plaintext data and key material are not inadvertently exposed.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -1057,6 +1101,10 @@
             {
               "data": "Configure applications and servers to return generic error messages and to suppress stack traces from being displayed to end users.  Ensure that errors generated by the application do not provide insight into specific backend issues.  \nRemove all backup files, binary archives, alternate versions of files, and test files from web-accessible directories of production servers.  The only files that should be present in the application's web document root are files required by the application.  Ensure that deployment procedures include the removal of these file types by an administrator.  Keep web and application servers fully patched to minimize exposure to publicly-disclosed information leakage vulnerabilities.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -1313,6 +1361,10 @@
             {
               "data": "The wide variance of code quality issues makes it impractical to generalize how these issues should be addressed.  Refer to individual categories for specific recommendations. ",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -1439,6 +1491,10 @@
             {
               "data": "Compartmentalize the application and determine where the trust boundaries exist, then treat any input or control outside the trust boundary as potentially hostile.  In general, do not allow user-provided or otherwise untrusted data to control sensitive values.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [

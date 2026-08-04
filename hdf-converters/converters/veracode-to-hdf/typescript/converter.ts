@@ -123,6 +123,28 @@ function formatCWEDesc(cwes: Record<string, unknown>[]): string {
   }).join('\n');
 }
 
+/**
+ * Collect the distinct remediation_status values across a category's flaws, in
+ * order of first appearance. Returns '' when no flaw carries the field (the
+ * NOT-IN-SOURCE case).
+ */
+function formatRemediationStatus(cwes: Record<string, unknown>[]): string {
+  const statuses: string[] = [];
+  const seen = new Set<string>();
+  for (const c of cwes) {
+    const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
+    const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
+    for (const flaw of flaws) {
+      const status = attr(flaw, 'remediation_status');
+      if (status && !seen.has(status)) {
+        seen.add(status);
+        statuses.push(status);
+      }
+    }
+  }
+  return statuses.join('\n');
+}
+
 /** Format a static flaw as a code description. */
 function formatFlawCodeDesc(flaw: Record<string, unknown>): string {
   const sourcefilepath = attr(flaw, 'sourcefilepath');
@@ -287,6 +309,14 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
   const recText = formatRecommendations(cat.recommendations as Record<string, unknown> | undefined);
   if (recText) {
     descriptions.push({ label: 'fix', data: recText });
+  }
+
+  // Carry each flaw's remediation_status (e.g. "New", "Fixed", "Cannot Fix").
+  // Descriptions are requirement-level while the field is per-flaw, so the
+  // distinct values across the category's flaws are collected into one entry.
+  const remStatus = formatRemediationStatus(cwes);
+  if (remStatus) {
+    descriptions.push({ label: 'remediation_status', data: remStatus });
   }
 
   // Collect all flaws from all CWEs in this category

@@ -359,6 +359,35 @@ describe('veracode structured scoring (CVSS / CWE)', () => {
   });
 });
 
+describe('veracode remediation_status description', () => {
+  it('carries the flaws remediation_status as a requirement-level description', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const cwe = output.baselines[0]!.requirements.find(r => r.id === '18')!;
+    const remStatus = cwe.descriptions!.find(d => d.label === 'remediation_status');
+    expect(remStatus).toBeDefined();
+    expect(remStatus!.data).toBe('New');
+  });
+
+  it('omits the remediation_status description when no flaw carries it', async () => {
+    const xml = `<?xml version="1.0" encoding="ISO-8859-1"?>
+<detailedreport xmlns="https://www.veracode.com/schema/reports/export/1.0" app_name="NoStatus" first_build_submitted_date="2021-12-29 22:16:36 UTC">
+  <severity level="5">
+    <category categoryid="99" categoryname="No Status" pcirelated="false">
+      <cwe cweid="78" cwename="OS Command Injection" pcirelated="false">
+        <staticflaws>
+          <flaw severity="5" categoryname="No Status" count="1" issueid="1" module="app.war" type="exec" description="d" cweid="78" sourcefile="A.java" line="1" sourcefilepath="com/x/"/>
+        </staticflaws>
+      </cwe>
+    </category>
+  </severity>
+</detailedreport>`;
+    const output: HDFResults = JSON.parse(await convert(xml));
+    const req = output.baselines[0]!.requirements.find(r => r.id === '99')!;
+    expect(req.descriptions!.find(d => d.label === 'remediation_status')).toBeUndefined();
+  });
+});
+
 describe('veracode requirement.code (CODE-tab fill)', () => {
   it('sets a synthesized source-context code on static CWE requirements', async () => {
     const input = loadFixture('veracode.xml');

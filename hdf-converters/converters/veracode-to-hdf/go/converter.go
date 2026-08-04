@@ -433,6 +433,16 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 		})
 	}
 
+	// Carry each flaw's remediation_status (e.g. "New", "Fixed", "Cannot Fix").
+	// Descriptions are requirement-level while the field is per-flaw, so the
+	// distinct values across the category's flaws are collected into one entry.
+	if remStatus := formatRemediationStatus(cat.CWEs); remStatus != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "remediation_status",
+			Data:  remStatus,
+		})
+	}
+
 	// Collect all flaws from all CWEs under this category. Alongside each result
 	// synthesize its source-context locus for the requirement-level code string.
 	var results []hdf.RequirementResult
@@ -871,6 +881,23 @@ func formatSCACodeDesc(comp Component) string {
 	}
 
 	return strings.Join(parts, "\n")
+}
+
+// formatRemediationStatus collects the distinct remediation_status values across
+// a category's flaws, in order of first appearance. Returns "" when no flaw
+// carries the field (the NOT-IN-SOURCE case).
+func formatRemediationStatus(cwes []CWE) string {
+	var statuses []string
+	seen := map[string]bool{}
+	for _, c := range cwes {
+		for _, flaw := range c.StaticFlaws.Flaws {
+			if flaw.RemediationStatus != "" && !seen[flaw.RemediationStatus] {
+				seen[flaw.RemediationStatus] = true
+				statuses = append(statuses, flaw.RemediationStatus)
+			}
+		}
+	}
+	return strings.Join(statuses, "\n")
 }
 
 // formatSourceLocation collects source file paths from CWE flaws.

@@ -641,6 +641,72 @@ func TestBuildVeracodeCvss(t *testing.T) {
 	})
 }
 
+// A static CWE requirement carries its flaws' remediation_status as a
+// requirement-level description labeled "remediation_status". In the fixture
+// every flaw is "New".
+func TestConvertVeracodeToHDF_RemediationStatus(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	var cweControl *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "18" {
+			cweControl = &result.Baselines[0].Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, cweControl, "expected CWE control 18")
+
+	var found *hdf.Description
+	for i := range cweControl.Descriptions {
+		if cweControl.Descriptions[i].Label == "remediation_status" {
+			found = &cweControl.Descriptions[i]
+			break
+		}
+	}
+	require.NotNil(t, found, "CWE requirement should carry a remediation_status description")
+	assert.Equal(t, "New", found.Data)
+}
+
+// formatRemediationStatus branch coverage: distinct collection, and the
+// absent case (no flaw carries the field) yielding "" so no description is
+// emitted.
+func TestFormatRemediationStatus(t *testing.T) {
+	t.Run("distinct values in order", func(t *testing.T) {
+		cwes := []CWE{{StaticFlaws: StaticFlaws{Flaws: []Flaw{
+			{RemediationStatus: "New"},
+			{RemediationStatus: "New"},
+			{RemediationStatus: "Fixed"},
+		}}}}
+		assert.Equal(t, "New\nFixed", formatRemediationStatus(cwes))
+	})
+
+	t.Run("absent yields empty", func(t *testing.T) {
+		cwes := []CWE{{StaticFlaws: StaticFlaws{Flaws: []Flaw{{IssueID: "1"}}}}}
+		assert.Empty(t, formatRemediationStatus(cwes))
+	})
+}
+
+// A CWE requirement whose flaws carry no remediation_status emits no
+// remediation_status description (the absent branch).
+func TestBuildCWERequirement_NoRemediationStatus(t *testing.T) {
+	cat := Category{
+		CategoryID:   "99",
+		CategoryName: "No Status",
+		CWEs: []CWE{{
+			CWEID:       "78",
+			StaticFlaws: StaticFlaws{Flaws: []Flaw{{IssueID: "1", Severity: "5"}}},
+		}},
+	}
+	req := buildCWERequirement(cat, 0.9, "")
+	for _, d := range req.Descriptions {
+		assert.NotEqual(t, "remediation_status", d.Label,
+			"requirement with no remediation_status flaw must not emit the description")
+	}
+}
+
 func TestConvertVeracodeToHDF_VerificationMethod(t *testing.T) {
 	input := loadFixture(t, "veracode.xml")
 	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
