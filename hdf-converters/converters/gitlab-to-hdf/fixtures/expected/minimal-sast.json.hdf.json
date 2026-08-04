@@ -35,6 +35,14 @@
           },
           "code": "{\n  \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"name\": \"SQL Injection\",\n  \"description\": \"User input is concatenated into a SQL query without sanitization, allowing an attacker to execute arbitrary SQL commands.\",\n  \"severity\": \"Critical\",\n  \"solution\": \"Use parameterized queries or prepared statements instead of string concatenation.\",\n  \"identifiers\": [\n    {\n      \"type\": \"cwe\",\n      \"name\": \"CWE-89\",\n      \"value\": \"89\",\n      \"url\": \"https://cwe.mitre.org/data/definitions/89.html\"\n    }\n  ],\n  \"location\": {\n    \"file\": \"src/db/queries.py\",\n    \"start_line\": 42,\n    \"end_line\": 42,\n    \"class\": \"UserRepository\",\n    \"method\": \"find_by_name\"\n  },\n  \"links\": [\n    {\n      \"url\": \"https://owasp.org/www-community/attacks/SQL_Injection\"\n    }\n  ]\n}",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://owasp.org/www-community/attacks/SQL_Injection"
+            },
+            {
+              "url": "https://cwe.mitre.org/data/definitions/89.html"
+            }
+          ],
           "title": "SQL Injection",
           "verificationMethod": "automated"
         }

@@ -35,6 +35,11 @@
           },
           "code": "{\n  \"id\": \"d4e5f6a7-b8c9-0123-4567-890abcdef012\",\n  \"name\": \"Cross-Site Scripting (Reflected)\",\n  \"description\": \"The application reflects user input in the response without proper encoding, enabling reflected XSS attacks.\",\n  \"severity\": \"High\",\n  \"solution\": \"Encode all user input before including it in HTML responses.\",\n  \"identifiers\": [\n    {\n      \"type\": \"cwe\",\n      \"name\": \"CWE-79\",\n      \"value\": \"79\",\n      \"url\": \"https://cwe.mitre.org/data/definitions/79.html\"\n    }\n  ],\n  \"location\": {\n    \"hostname\": \"https://app.example.com\",\n    \"method\": \"GET\",\n    \"param\": \"q\",\n    \"path\": \"/search\"\n  },\n  \"links\": []\n}",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://cwe.mitre.org/data/definitions/79.html"
+            }
+          ],
           "title": "Cross-Site Scripting (Reflected)",
           "verificationMethod": "automated"
         }
