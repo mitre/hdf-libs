@@ -3,11 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -104,15 +101,6 @@ Examples:
 	return cmd
 }
 
-type queryResult struct {
-	ID       string  `json:"id"`
-	Title    string  `json:"title,omitempty"`
-	Status   string  `json:"status"`
-	Impact   float64 `json:"impact"`
-	Severity string  `json:"severity"`
-	Profile  string  `json:"baseline"`
-}
-
 func runQuery(_ *cobra.Command, args []string) error {
 	var filename string
 	if len(args) == 0 || args[0] == "-" {
@@ -135,59 +123,28 @@ func runQuery(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to parse HDF file: %w", err)
 	}
 
-	// Build filter chain and find matches
-	filters := buildFilters()
-	matches := findMatches(results, filters)
+	// Filtering is delegated to the shared hdf-engine library; the CLI supplies
+	// its display-status resolver so the engine stays convention-agnostic.
+	matches := hdfengine.Filter(results, hdfengine.Options{
+		Status:   queryStatus,
+		Severity: querySeverity,
+		Impact:   queryImpact,
+		CCI:      queryCCI,
+		NIST:     queryNIST,
+		ID:       querySTIGID,
+		Tag:      queryTag,
+		Search:   querySearch,
+		Baseline: queryProfile,
+		Limit:    queryLimit,
+		Count:    queryCount,
+		StatusOf: determineControlStatus,
+	})
 
-	// Output results
 	return outputQueryResults(matches)
 }
 
-// findMatches applies filters to all controls and returns matching results.
-func findMatches(results hdf.HDFResults, filters []filterFunc) []queryResult {
-	var matches []queryResult
-
-	for _, baseline := range results.Baselines {
-		// Baseline filter
-		if queryProfile != "" && !matchesGlob(baseline.Name, queryProfile) {
-			continue
-		}
-
-		for _, control := range baseline.Requirements {
-			// Check limit (unless counting)
-			if queryLimit > 0 && len(matches) >= queryLimit && !queryCount {
-				return matches
-			}
-
-			status := determineControlStatus(control)
-			severity := hdfutil.ImpactToSeverity(control.Impact)
-
-			// Apply all filters
-			if !applyFilters(control, status, severity, filters) {
-				continue
-			}
-
-			title := ""
-			if control.Title != nil {
-				title = *control.Title
-			}
-
-			matches = append(matches, queryResult{
-				ID:       control.ID,
-				Title:    title,
-				Status:   status,
-				Impact:   control.Impact,
-				Severity: severity,
-				Profile:  baseline.Name,
-			})
-		}
-	}
-
-	return matches
-}
-
 // outputQueryResults formats and prints query results.
-func outputQueryResults(matches []queryResult) error {
+func outputQueryResults(matches []hdfengine.Match) error {
 	if queryCount {
 		if jsonOutput {
 			output, _ := json.Marshal(map[string]int{"count": len(matches)})
@@ -238,149 +195,6 @@ func outputQueryResults(matches []queryResult) error {
 	return nil
 }
 
-type filterFunc func(control hdf.EvaluatedRequirement, status, severity string) bool
-
-func buildFilters() []filterFunc {
-	var filters []filterFunc
-
-	// Status filter (OR across values)
-	if len(queryStatus) > 0 {
-		statuses := make([]string, len(queryStatus))
-		for i, s := range queryStatus {
-			statuses[i] = strings.ToLower(s)
-		}
-		filters = append(filters, func(_ hdf.EvaluatedRequirement, s, _ string) bool {
-			for _, status := range statuses {
-				if s == status {
-					return true
-				}
-			}
-			return false
-		})
-	}
-
-	// Severity filter (OR across values)
-	if len(querySeverity) > 0 {
-		severities := make([]string, len(querySeverity))
-		for i, s := range querySeverity {
-			severities[i] = strings.ToLower(s)
-		}
-		filters = append(filters, func(_ hdf.EvaluatedRequirement, _, severity string) bool {
-			for _, sev := range severities {
-				if severity == sev {
-					return true
-				}
-			}
-			return false
-		})
-	}
-
-	// Impact filter (supports >, >=, <, <=, =)
-	if queryImpact != "" {
-		op, val := parseImpactFilter(queryImpact)
-		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-			return compareImpact(c.Impact, op, val)
-		})
-	}
-
-	// CCI filter (OR across values)
-	if len(queryCCI) > 0 {
-		ccis := make([]string, len(queryCCI))
-		for i, c := range queryCCI {
-			ccis[i] = strings.ToUpper(c)
-		}
-		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-			for _, cci := range ccis {
-				if tagContains(c.Tags, "cci", cci) {
-					return true
-				}
-			}
-			return false
-		})
-	}
-
-	// NIST filter (OR across values)
-	if len(queryNIST) > 0 {
-		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-			for _, nist := range queryNIST {
-				if tagMatchesGlob(c.Tags, "nist", nist) {
-					return true
-				}
-			}
-			return false
-		})
-	}
-
-	// STIG ID filter
-	if querySTIGID != "" {
-		stigID := querySTIGID
-		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-			// Check multiple possible tag names for STIG ID
-			return tagContains(c.Tags, "stig_id", stigID) ||
-				tagContains(c.Tags, "gid", stigID) ||
-				tagContains(c.Tags, "gtitle", stigID) ||
-				c.ID == stigID
-		})
-	}
-
-	// Generic tag filter (OR across values)
-	if len(queryTag) > 0 {
-		type tagFilter struct {
-			key, value string
-		}
-		var tagFilters []tagFilter
-		for _, t := range queryTag {
-			parts := strings.SplitN(t, ":", 2)
-			if len(parts) == 2 {
-				tagFilters = append(tagFilters, tagFilter{key: parts[0], value: parts[1]})
-			}
-		}
-		if len(tagFilters) > 0 {
-			filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-				for _, tf := range tagFilters {
-					if tagMatchesGlob(c.Tags, tf.key, tf.value) {
-						return true
-					}
-				}
-				return false
-			})
-		}
-	}
-
-	// Text search filter
-	if querySearch != "" {
-		search := strings.ToLower(querySearch)
-		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-			// Search in ID
-			if strings.Contains(strings.ToLower(c.ID), search) {
-				return true
-			}
-			// Search in title
-			if c.Title != nil && strings.Contains(strings.ToLower(*c.Title), search) {
-				return true
-			}
-			// Search in descriptions
-			for _, desc := range c.Descriptions {
-				if strings.Contains(strings.ToLower(desc.Data), search) {
-					return true
-				}
-			}
-			return false
-		})
-	}
-
-	return filters
-}
-
-func applyFilters(control hdf.EvaluatedRequirement, status, severity string, filters []filterFunc) bool {
-	for _, f := range filters {
-		if !f(control, status, severity) {
-			return false
-		}
-	}
-	return true
-}
-
 // Severity constants aligned with CVSS 3.x bands normalized to 0-1.
 // Bands: 0.9-1.0=critical, 0.7-0.8=high, 0.4-0.6=medium, 0.1-0.3=low, 0.0=informational.
 const (
@@ -406,130 +220,6 @@ func severityToLabel(severity string) string {
 	default:
 		return "NONE"
 	}
-}
-
-func parseImpactFilter(filter string) (string, float64) {
-	filter = strings.TrimSpace(filter)
-
-	// Check for operators
-	operators := []string{">=", "<=", ">", "<", "="}
-	for _, op := range operators {
-		if strings.HasPrefix(filter, op) {
-			valStr := strings.TrimSpace(filter[len(op):])
-			val, err := strconv.ParseFloat(valStr, 64)
-			if err != nil {
-				return "=", 0
-			}
-			return op, val
-		}
-	}
-
-	// No operator, treat as equality
-	val, err := strconv.ParseFloat(filter, 64)
-	if err != nil {
-		return "=", 0
-	}
-	return "=", val
-}
-
-func compareImpact(impact float64, op string, val float64) bool {
-	switch op {
-	case ">":
-		return impact > val
-	case ">=":
-		return impact >= val
-	case "<":
-		return impact < val
-	case "<=":
-		return impact <= val
-	case "=":
-		return impact == val
-	default:
-		return false
-	}
-}
-
-func tagContains(tags map[string]any, key, value string) bool {
-	if tags == nil {
-		return false
-	}
-
-	tagVal, ok := tags[key]
-	if !ok {
-		return false
-	}
-
-	// Handle different tag value types
-	switch v := tagVal.(type) {
-	case string:
-		return strings.EqualFold(v, value)
-	case []any:
-		for _, item := range v {
-			if str, ok := item.(string); ok {
-				if strings.EqualFold(str, value) {
-					return true
-				}
-			}
-		}
-	case []string:
-		for _, str := range v {
-			if strings.EqualFold(str, value) {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-func tagMatchesGlob(tags map[string]any, key, pattern string) bool {
-	if tags == nil {
-		return false
-	}
-
-	tagVal, ok := tags[key]
-	if !ok {
-		return false
-	}
-
-	// Handle different tag value types with safe regex matching
-	switch v := tagVal.(type) {
-	case string:
-		return safeGlobMatch(v, pattern)
-	case []any:
-		for _, item := range v {
-			if str, ok := item.(string); ok {
-				if safeGlobMatch(str, pattern) {
-					return true
-				}
-			}
-		}
-	case []string:
-		for _, str := range v {
-			if safeGlobMatch(str, pattern) {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-func matchesGlob(s, pattern string) bool {
-	return safeGlobMatch(s, pattern)
-}
-
-func globToRegex(glob string) string {
-	// Escape regex special chars except * and ?
-	special := []string{".", "+", "^", "$", "(", ")", "[", "]", "{", "}", "|", "\\"}
-	result := glob
-	for _, s := range special {
-		result = strings.ReplaceAll(result, s, "\\"+s)
-	}
-	// Convert glob wildcards to regex
-	result = strings.ReplaceAll(result, "*", ".*")
-	result = strings.ReplaceAll(result, "?", ".")
-	return "^" + result + "$"
 }
 
 func runQueryBulk(cmd *cobra.Command, files []string) error {

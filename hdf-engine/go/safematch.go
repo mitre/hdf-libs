@@ -1,6 +1,7 @@
-package cmd
+package hdfengine
 
 import (
+	"strings"
 	"time"
 
 	"github.com/dlclark/regexp2"
@@ -60,4 +61,19 @@ func safeGlobMatch(s, pattern string) bool {
 	regexPattern := globToRegex(pattern)
 	sr := compileSafeRegex(regexPattern)
 	return sr.matchString(s)
+}
+
+// globToRegex converts a glob pattern (with * and ? wildcards) to an anchored
+// regular expression, escaping all other regex metacharacters.
+func globToRegex(glob string) string {
+	// Escape regex special chars except * and ?
+	special := []string{".", "+", "^", "$", "(", ")", "[", "]", "{", "}", "|", "\\"}
+	result := glob
+	for _, s := range special {
+		result = strings.ReplaceAll(result, s, "\\"+s)
+	}
+	// Convert glob wildcards to regex
+	result = strings.ReplaceAll(result, "*", ".*")
+	result = strings.ReplaceAll(result, "?", ".")
+	return "^" + result + "$"
 }

@@ -3,6 +3,9 @@ module github.com/mitre/hdf-libs/hdf-engine/go/v3
 go 1.26.5
 
 require (
+	github.com/dlclark/regexp2 v1.12.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.5.0
 	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.5.0
 	github.com/stretchr/testify v1.11.1
 )
@@ -17,3 +20,7 @@ require (
 )
 
 replace github.com/mitre/hdf-libs/hdf-validators/go/v3 => ../../hdf-validators/go
+
+replace github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 => ../../hdf-schema/dist/go
+
+replace github.com/mitre/hdf-libs/hdf-utilities/go/v3 => ../../hdf-utilities/go

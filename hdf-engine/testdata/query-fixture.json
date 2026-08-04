@@ -1,0 +1,168 @@
+{
+  "baselines": [
+    {
+      "name": "RHEL9-STIG",
+      "title": "Web Server Security Baseline",
+      "version": "1.0.0",
+      "summary": "Security hardening checks for Apache HTTP Server",
+      "requirements": [
+        {
+          "id": "SV-230221",
+          "title": "Configure password complexity",
+          "impact": 1.0,
+          "tags": {
+            "nist": [
+              "AC-2",
+              "AC-2(1)"
+            ],
+            "cci": [
+              "CCI-000015"
+            ],
+            "stig_id": "RHEL-09-211010",
+            "gid": "V-230221"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "The password policy must enforce complexity"
+            }
+          ],
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "Configure password complexity",
+              "startTime": "2025-06-15T14:30:00Z",
+              "runTime": 0.042
+            }
+          ]
+        },
+        {
+          "id": "SV-230222",
+          "title": "Enable auditing",
+          "impact": 0.7,
+          "tags": {
+            "nist": [
+              "CM-6",
+              "CM-6(1)"
+            ],
+            "cci": [
+              "CCI-000366"
+            ],
+            "stig_id": "RHEL-09-212010"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "The system must enable audit logging"
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "codeDesc": "Enable auditing",
+              "startTime": "2025-06-15T14:30:00Z",
+              "runTime": 0.042
+            }
+          ]
+        },
+        {
+          "id": "SV-230223",
+          "title": "Configure remote logging",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "AU-12"
+            ],
+            "stig_id": "RHEL-09-213010"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Remote logging configuration"
+            }
+          ],
+          "results": [
+            {
+              "status": "notApplicable",
+              "codeDesc": "Configure remote logging",
+              "startTime": "2025-06-15T14:30:00Z",
+              "runTime": 0.042
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "web-hardening",
+      "title": "Web Server Security Baseline",
+      "version": "1.0.0",
+      "summary": "Security hardening checks for Apache HTTP Server",
+      "requirements": [
+        {
+          "id": "SV-100001",
+          "title": "TLS enforcement",
+          "impact": 0.3,
+          "tags": {
+            "nist": [
+              "SC-8"
+            ],
+            "cci": [
+              "CCI-002418"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Transport encryption must be enforced"
+            }
+          ],
+          "results": [
+            {
+              "status": "notReviewed",
+              "codeDesc": "TLS enforcement",
+              "startTime": "2025-06-15T14:30:00Z",
+              "runTime": 0.042
+            }
+          ]
+        },
+        {
+          "id": "SV-100002",
+          "title": "Static code review",
+          "impact": 0.0,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Developer code review process"
+            }
+          ],
+          "results": [
+            {
+              "status": "error",
+              "codeDesc": "Static code review",
+              "startTime": "2025-06-15T14:30:00Z",
+              "runTime": 0.042
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "application",
+      "name": "Apache HTTP Server 2.4"
+    }
+  ],
+  "generator": {
+    "name": "nikto-to-hdf",
+    "version": "1.0.0"
+  },
+  "tool": {
+    "name": "Nikto"
+  }
+}

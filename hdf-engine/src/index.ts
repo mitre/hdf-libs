@@ -7,3 +7,6 @@ export const engineVersion = '3.5.0';
 
 // Detection engine (peer of hdf-engine/go/detect.go).
 export { detect, type HdfDocType } from './detect.js';
+
+// Query engine (peer of hdf-engine/go/filter.go).
+export { filter, type FilterOptions, type Match } from './query.js';
