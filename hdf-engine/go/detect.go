@@ -1,8 +1,4 @@
-// Package hdfdetect fingerprints an HDF document by its root keys and returns
-// the schema type string. It has no cobra or CLI dependencies, so non-CLI
-// consumers (such as the MCP document loader) can classify HDF documents
-// without importing package cmd.
-package hdfdetect
+package hdfengine
 
 import (
 	"encoding/json"
@@ -12,7 +8,9 @@ import (
 
 // Detect fingerprints an HDF document by its root keys and returns the schema
 // type string (a validators.Type* value), or "" when the input is not JSON or
-// matches no known HDF document type.
+// matches no known HDF document type. Relocated verbatim from the CLI's
+// former internal/hdfdetect package (ADR-0007 engine-library revision) so both
+// the CLI and the MCP can classify documents from the shared engine library.
 func Detect(data []byte) string {
 	var doc map[string]json.RawMessage
 	if err := json.Unmarshal(data, &doc); err != nil {

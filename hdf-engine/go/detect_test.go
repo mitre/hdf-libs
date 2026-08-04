@@ -1,4 +1,4 @@
-package hdfdetect
+package hdfengine
 
 import (
 	"context"
@@ -17,6 +17,10 @@ import (
 // fabricating data. The example's "$comment" annotation is stripped because it
 // is documentation metadata, not part of the document (schemas are
 // unevaluatedProperties:false and would reject it).
+//
+// The TS port's parity test (src/detect.test.ts) reads the SAME schema examples
+// (from @mitre/hdf-schema) and asserts the SAME type→string mapping, so the two
+// implementations are held to one shared, schema-derived contract.
 func schemaExampleDoc(t *testing.T, st validators.SchemaType) []byte {
 	t.Helper()
 	raw, err := validators.SchemaBytes(st)
@@ -49,10 +53,10 @@ const minimalComparison = `{
   "requirementDiffs": []
 }`
 
-// TestDetect_AllEightDocTypes is the first failing test: every one of the eight
-// HDF document types — explicitly including requirement-change-event, which the
-// original CLI detector never returned — must be classified correctly from a
-// real, schema-valid document.
+// TestDetect_AllEightDocTypes classifies every one of the eight HDF document
+// types — explicitly including requirement-change-event — from a real,
+// schema-valid document. This is the Go side of the cross-language parity
+// contract; src/detect.test.ts mirrors it in TypeScript.
 func TestDetect_AllEightDocTypes(t *testing.T) {
 	cases := []struct {
 		name string
@@ -83,6 +87,25 @@ func TestDetect_AllEightDocTypes(t *testing.T) {
 	}
 }
 
+// TestDetect_KeyPrecedence locks the fixed check order for documents that carry
+// more than one discriminator key. This is load-bearing: a real results document
+// carries both baselines and components and must classify as results, and the
+// change-event quad must win over any other key. Guards against a future reorder
+// of the switch (which the card's decision-point forbids).
+func TestDetect_KeyPrecedence(t *testing.T) {
+	cases := []struct{ name, doc, want string }{
+		{"results before system", `{"baselines":[],"components":[]}`, "results"},
+		{"change-event quad before baselines", `{"requirementId":"x","state":"updated","before":{},"after":{},"baselines":[]}`, "requirement-change-event"},
+		{"evidence before results", `{"contents":[],"baselines":[]}`, "evidence-package"},
+		{"amendments before baseline", `{"overrides":[],"requirements":[]}`, "amendments"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, Detect([]byte(tc.doc)))
+		})
+	}
+}
+
 func TestDetect_UnrecognizedAndInvalid(t *testing.T) {
 	assert.Equal(t, "", Detect([]byte(`{}`)), "empty object is unrecognized")
 	assert.Equal(t, "", Detect([]byte(`not json`)), "invalid JSON is unrecognized")
@@ -90,10 +113,10 @@ func TestDetect_UnrecognizedAndInvalid(t *testing.T) {
 }
 
 // TestDetect_NoCobraDependency asserts the package's transitive build-import
-// graph contains no cobra — the reason detection is extracted out of package
-// cmd (AC1). Test-only imports are excluded from `go list -deps .`.
+// graph contains no cobra — hdf-engine is a cobra-free library both the CLI and
+// the MCP import. Test-only imports are excluded from `go list -deps .`.
 func TestDetect_NoCobraDependency(t *testing.T) {
 	out, err := exec.CommandContext(context.Background(), "go", "list", "-deps", ".").CombinedOutput()
 	require.NoErrorf(t, err, "go list failed: %s", out)
-	assert.NotContains(t, string(out), "spf13/cobra", "hdfdetect must not depend on cobra")
+	assert.NotContains(t, string(out), "spf13/cobra", "hdf-engine must not depend on cobra")
 }

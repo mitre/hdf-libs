@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdetect"
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
 // detectHDFDocumentType fingerprints an HDF document by its root keys and
 // returns the schema type string. Used by validate and diff for auto-detection
 // when no explicit --type is provided. The fingerprinting itself lives in the
-// cobra-free internal/hdfdetect package so non-CLI consumers can share it.
+// cobra-free hdf-engine library so the CLI and the MCP share one implementation.
 func detectHDFDocumentType(data []byte) string {
-	return hdfdetect.Detect(data)
+	return hdfengine.Detect(data)
 }
 
 // requireDocumentType reads raw JSON, detects its type, and returns an error
