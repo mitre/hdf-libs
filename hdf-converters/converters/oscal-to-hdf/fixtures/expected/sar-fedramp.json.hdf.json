@@ -16,6 +16,18 @@
             {
               "data": "[EXAMPLE]The AC policy existed, and had all the required elements.\n[EXAMPLE]The person interviewed knew about the policy and where to find it.",
               "label": "rationale"
+            },
+            {
+              "data": "This is a statement about the identified risk.\n\nTCW: Risk Statement..\n\nScans: N/A.\n\nPen Risk Statement.\n\nRET: Risk Statement.",
+              "label": "statement"
+            },
+            {
+              "data": "Remediation Title: A description of the recommended remediation.\n\nTCW: Assessor's recommended remediation (lifecycle=\\\"recommendation\\\").\n\nScans: Tool's recommended remediation (lifecycle=\\\"recommendation\\\")\n\nPen Test: Assessor's recommended remediation (lifecycle=\\\"recommendation\\\")\n\nRET: Assessor's recommended remediation (lifecycle=\\\"recommendation\\\").\n\nPOA\u0026M: CSP's intended remediation (no type flag).",
+              "label": "remediation"
+            },
+            {
+              "data": "Reviewed Policy\nThis describes the evidence, and adds relevant detail.\n\nFor example, this could cite where to find this information in interview notes.",
+              "label": "evidence"
             }
           ],
           "results": [
@@ -85,6 +97,10 @@
             {
               "data": "Undocumented devices found on network.",
               "label": "rationale"
+            },
+            {
+              "data": "Raw scanner tool output - discovery scan.",
+              "label": "evidence"
             }
           ],
           "results": [
@@ -113,6 +129,18 @@
             {
               "data": "[EXAMPLE]Scanner Output.\nProvide the justification for the operational requirement.\nDescribe the false positive here.\nDescribe the risk adjustment justification here.",
               "label": "rationale"
+            },
+            {
+              "data": "This is a statement about the identified risk as provided by the tool.\n\nThis field must be present, but may be blank (or state 'No Risk Statement' if no statement is provided by the tool.",
+              "label": "statement"
+            },
+            {
+              "data": "Tool's Recommendation: A description of the recommended remediation as provided by the tool.\n\nAssessor's Recommendation: A description of the recommended remediation as provided by the assessor.",
+              "label": "remediation"
+            },
+            {
+              "data": "Raw scanner tool output - Infrastructure and OS Scan.\nA screen shot showing the system impact when patch is applied.\nVendor detail describing why this happens.\nA screen shot showing the setting is correct\nDescribe the risk adjustment evidence here.",
+              "label": "evidence"
             }
           ],
           "results": [
@@ -131,6 +159,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://vendor.site/article/describing/something.htm"
+            }
+          ],
           "title": "[EXAMPLE]Infrastructure Scan Unique Vulnerability"
         },
         {
@@ -142,6 +175,10 @@
             {
               "data": "[EXAMPLE]Describe the finding.",
               "label": "rationale"
+            },
+            {
+              "data": "Penetration Test Report.",
+              "label": "evidence"
             }
           ],
           "results": [
@@ -170,6 +207,18 @@
             {
               "data": "[EXAMPLE]Describe the finding.",
               "label": "rationale"
+            },
+            {
+              "data": "This is a statement about the risk identified by penetration testing.",
+              "label": "statement"
+            },
+            {
+              "data": "Assessor's Recommendation: A description of the recommended remediation as provided by the assessor.",
+              "label": "remediation"
+            },
+            {
+              "data": "Penetration Test Report.",
+              "label": "evidence"
             }
           ],
           "results": [

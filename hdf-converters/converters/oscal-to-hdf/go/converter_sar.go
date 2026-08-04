@@ -158,8 +158,11 @@ func findingsToEvaluatedRequirement(
 	// Determine impact from related risks across all findings
 	impact := sarFindingsImpact(findings, riskMap)
 
-	// Build descriptions from findings and observations
-	descriptions := sarBuildDescriptions(findings, obsMap)
+	// Build descriptions from findings, observations, and related risks
+	descriptions := sarBuildDescriptions(findings, obsMap, riskMap)
+
+	// Build external references from observation relevant-evidence
+	refs := sarBuildRefs(findings, obsMap)
 
 	// Build results from each finding
 	results := make([]hdf.RequirementResult, 0, len(findings))
@@ -178,6 +181,7 @@ func findingsToEvaluatedRequirement(
 		Impact:       impact,
 		Tags:         tags,
 		Descriptions: descriptions,
+		Refs:         refs,
 		Results:      results,
 		ControlType:  shared.DeriveControlTypeFromTags([]string{nistTag}),
 	}
@@ -330,9 +334,12 @@ func sarFindingsImpact(findings []*Finding, riskMap map[string]*Risk) float64 {
 	return highestImpact
 }
 
-// sarBuildDescriptions creates HDF Description entries from findings and
-// their related observations.
-func sarBuildDescriptions(findings []*Finding, obsMap map[string]*Observation) []hdf.Description {
+// sarBuildDescriptions creates HDF Description entries from findings, their
+// related observations, and related risks. The "default" and "rationale"
+// labels come from finding/observation prose; "statement", "remediation", and
+// "evidence" carry the risk statement, recommended remediations, and
+// relevant-evidence prose that the source provides.
+func sarBuildDescriptions(findings []*Finding, obsMap map[string]*Observation, riskMap map[string]*Risk) []hdf.Description {
 	descriptions := make([]hdf.Description, 0, 2)
 
 	// Default description from finding descriptions
@@ -376,7 +383,161 @@ func sarBuildDescriptions(findings []*Finding, obsMap map[string]*Observation) [
 		})
 	}
 
+	// Risk statement text from related risks.
+	if statement := collectRiskStatements(findings, riskMap); statement != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "statement",
+			Data:  statement,
+		})
+	}
+
+	// Recommended remediation text from related risks.
+	if remediation := collectRemediations(findings, riskMap); remediation != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "remediation",
+			Data:  remediation,
+		})
+	}
+
+	// Relevant-evidence prose from related observations.
+	if evidence := collectEvidenceDescriptions(findings, obsMap); evidence != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "evidence",
+			Data:  evidence,
+		})
+	}
+
 	return descriptions
+}
+
+// collectRiskStatements gathers the risk `statement` prose from every related
+// risk (deduplicated by risk UUID), joined by newlines. Returns "" when no
+// related risk carries a statement.
+func collectRiskStatements(findings []*Finding, riskMap map[string]*Risk) string {
+	var statements []string
+	seen := make(map[string]bool)
+	for _, f := range findings {
+		for _, ref := range f.RelatedRisks {
+			if seen[ref.RiskUUID] {
+				continue
+			}
+			seen[ref.RiskUUID] = true
+			risk, ok := riskMap[ref.RiskUUID]
+			if !ok {
+				continue
+			}
+			if risk.Statement != "" {
+				statements = append(statements, risk.Statement)
+			}
+		}
+	}
+	return strings.Join(statements, "\n")
+}
+
+// collectRemediations gathers the recommended-remediation prose from every
+// related risk (deduplicated by risk UUID). Each remediation renders as
+// "title: description" (or whichever of the two the source provides). Entries
+// are separated by blank lines. Returns "" when no remediation carries text.
+func collectRemediations(findings []*Finding, riskMap map[string]*Risk) string {
+	var remediations []string
+	seen := make(map[string]bool)
+	for _, f := range findings {
+		for _, ref := range f.RelatedRisks {
+			if seen[ref.RiskUUID] {
+				continue
+			}
+			seen[ref.RiskUUID] = true
+			risk, ok := riskMap[ref.RiskUUID]
+			if !ok {
+				continue
+			}
+			for i := range risk.Remediations {
+				if text := remediationText(&risk.Remediations[i]); text != "" {
+					remediations = append(remediations, text)
+				}
+			}
+		}
+	}
+	return strings.Join(remediations, "\n\n")
+}
+
+// remediationText renders a single remediation as "title: description",
+// degrading to whichever field is present. Returns "" when both are empty.
+func remediationText(rem *Remediation) string {
+	switch {
+	case rem.Title != "" && rem.Description != "":
+		return rem.Title + ": " + rem.Description
+	case rem.Title != "":
+		return rem.Title
+	default:
+		return rem.Description
+	}
+}
+
+// collectEvidenceDescriptions gathers relevant-evidence prose from every
+// related observation (observations deduplicated by UUID, evidence prose
+// deduplicated by text), joined by newlines. Returns "" when none is present.
+func collectEvidenceDescriptions(findings []*Finding, obsMap map[string]*Observation) string {
+	var descs []string
+	seenObs := make(map[string]bool)
+	seenText := make(map[string]bool)
+	for _, f := range findings {
+		for _, ref := range f.RelatedObservations {
+			if seenObs[ref.ObservationUUID] {
+				continue
+			}
+			seenObs[ref.ObservationUUID] = true
+			obs, ok := obsMap[ref.ObservationUUID]
+			if !ok {
+				continue
+			}
+			for _, ev := range obs.RelevantEvidence {
+				if ev.Description == "" || seenText[ev.Description] {
+					continue
+				}
+				seenText[ev.Description] = true
+				descs = append(descs, ev.Description)
+			}
+		}
+	}
+	return strings.Join(descs, "\n")
+}
+
+// sarBuildRefs builds external HDF references from the relevant-evidence hrefs
+// of related observations. Only resolvable URLs (those carrying a scheme, e.g.
+// "https://…") become references; intra-document fragment hrefs ("#uuid") are
+// skipped. URLs are deduplicated. Returns nil when the source carries none.
+func sarBuildRefs(findings []*Finding, obsMap map[string]*Observation) []hdf.Reference {
+	var refs []hdf.Reference
+	seenObs := make(map[string]bool)
+	seenURL := make(map[string]bool)
+	for _, f := range findings {
+		for _, ref := range f.RelatedObservations {
+			if seenObs[ref.ObservationUUID] {
+				continue
+			}
+			seenObs[ref.ObservationUUID] = true
+			obs, ok := obsMap[ref.ObservationUUID]
+			if !ok {
+				continue
+			}
+			for _, ev := range obs.RelevantEvidence {
+				if !isResolvableURL(ev.Href) || seenURL[ev.Href] {
+					continue
+				}
+				seenURL[ev.Href] = true
+				url := ev.Href
+				refs = append(refs, hdf.Reference{URL: &url})
+			}
+		}
+	}
+	return refs
+}
+
+// isResolvableURL reports whether href is an absolute, resolvable URL (has a
+// "scheme://" prefix) rather than an intra-document fragment or empty value.
+func isResolvableURL(href string) bool {
+	return strings.Contains(href, "://")
 }
 
 // buildObservationMap creates a UUID → Observation lookup.

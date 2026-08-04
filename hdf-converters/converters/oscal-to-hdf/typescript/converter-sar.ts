@@ -18,6 +18,7 @@ import {
   createRequirement,
   createResult,
   type Description,
+  type Reference,
 } from '@mitre/hdf-schema';
 import type {
   Oscal,
@@ -26,6 +27,7 @@ import type {
   Finding,
   Observation,
   IdentifiedRisk,
+  RiskResponse,
 } from './types.js';
 import {
   controlIdToNistTag,
@@ -176,8 +178,11 @@ function findingsToEvaluatedRequirement(
   // Determine impact from related risks
   const impact = sarFindingsImpact(findings, riskMap);
 
-  // Build descriptions from findings and observations
-  const descriptions = sarBuildDescriptions(findings, obsMap);
+  // Build descriptions from findings, observations, and related risks
+  const descriptions = sarBuildDescriptions(findings, obsMap, riskMap);
+
+  // Build external references from observation relevant-evidence
+  const refs = sarBuildRefs(findings, obsMap);
 
   // Build results from each finding
   const results: RequirementResult[] = [];
@@ -189,7 +194,10 @@ function findingsToEvaluatedRequirement(
     nist: [nistTag],
   };
 
-  const req = createRequirement(nistTag, title, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+  const req = createRequirement(nistTag, title, descriptions, impact, results, {
+    tags,
+    ...(refs ? { refs } : {}),
+  }) as EvaluatedRequirement;
   const controlType = deriveControlTypeFromTags([nistTag]);
   if (controlType !== undefined) req.controlType = controlType;
   return req;
@@ -310,6 +318,7 @@ function sarFindingsImpact(
 function sarBuildDescriptions(
   findings: Finding[],
   obsMap: Map<string, Observation>,
+  riskMap: Map<string, IdentifiedRisk>,
 ): Description[] {
   const descriptions: Description[] = [];
 
@@ -346,7 +355,127 @@ function sarBuildDescriptions(
     });
   }
 
+  // Risk statement text from related risks.
+  const statement = collectRiskStatements(findings, riskMap);
+  if (statement) {
+    descriptions.push({ label: 'statement', data: statement });
+  }
+
+  // Recommended remediation text from related risks.
+  const remediation = collectRemediations(findings, riskMap);
+  if (remediation) {
+    descriptions.push({ label: 'remediation', data: remediation });
+  }
+
+  // Relevant-evidence prose from related observations.
+  const evidence = collectEvidenceDescriptions(findings, obsMap);
+  if (evidence) {
+    descriptions.push({ label: 'evidence', data: evidence });
+  }
+
   return descriptions;
+}
+
+function collectRiskStatements(
+  findings: Finding[],
+  riskMap: Map<string, IdentifiedRisk>,
+): string {
+  const statements: string[] = [];
+  const seen = new Set<string>();
+  for (const f of findings) {
+    for (const ref of f['related-risks'] ?? []) {
+      const riskUuid = ref['risk-uuid'];
+      if (!riskUuid || seen.has(riskUuid)) continue;
+      seen.add(riskUuid);
+      const risk = riskMap.get(riskUuid);
+      if (risk?.statement) {
+        statements.push(risk.statement);
+      }
+    }
+  }
+  return statements.join('\n');
+}
+
+function collectRemediations(
+  findings: Finding[],
+  riskMap: Map<string, IdentifiedRisk>,
+): string {
+  const remediations: string[] = [];
+  const seen = new Set<string>();
+  for (const f of findings) {
+    for (const ref of f['related-risks'] ?? []) {
+      const riskUuid = ref['risk-uuid'];
+      if (!riskUuid || seen.has(riskUuid)) continue;
+      seen.add(riskUuid);
+      const risk = riskMap.get(riskUuid);
+      for (const rem of risk?.remediations ?? []) {
+        const text = remediationText(rem);
+        if (text) remediations.push(text);
+      }
+    }
+  }
+  return remediations.join('\n\n');
+}
+
+function remediationText(rem: RiskResponse): string {
+  if (rem.title && rem.description) return rem.title + ': ' + rem.description;
+  if (rem.title) return rem.title;
+  return rem.description ?? '';
+}
+
+function collectEvidenceDescriptions(
+  findings: Finding[],
+  obsMap: Map<string, Observation>,
+): string {
+  const descs: string[] = [];
+  const seenObs = new Set<string>();
+  const seenText = new Set<string>();
+  for (const f of findings) {
+    for (const ref of f['related-observations'] ?? []) {
+      const obsUuid = ref['observation-uuid'];
+      if (!obsUuid || seenObs.has(obsUuid)) continue;
+      seenObs.add(obsUuid);
+      const obs = obsMap.get(obsUuid);
+      for (const ev of obs?.['relevant-evidence'] ?? []) {
+        if (!ev.description || seenText.has(ev.description)) continue;
+        seenText.add(ev.description);
+        descs.push(ev.description);
+      }
+    }
+  }
+  return descs.join('\n');
+}
+
+// Builds external references from observation relevant-evidence hrefs. Only
+// resolvable URLs (with a "scheme://" prefix) become references; intra-document
+// fragment hrefs ("#uuid") are skipped. URLs are deduplicated. Returns
+// undefined when the source carries none.
+function sarBuildRefs(
+  findings: Finding[],
+  obsMap: Map<string, Observation>,
+): Reference[] | undefined {
+  const refs: Reference[] = [];
+  const seenObs = new Set<string>();
+  const seenUrl = new Set<string>();
+  for (const f of findings) {
+    for (const ref of f['related-observations'] ?? []) {
+      const obsUuid = ref['observation-uuid'];
+      if (!obsUuid || seenObs.has(obsUuid)) continue;
+      seenObs.add(obsUuid);
+      const obs = obsMap.get(obsUuid);
+      for (const ev of obs?.['relevant-evidence'] ?? []) {
+        const href = ev.href;
+        if (!href || !isResolvableUrl(href) || seenUrl.has(href)) continue;
+        seenUrl.add(href);
+        refs.push({ url: href });
+      }
+    }
+  }
+  return refs.length > 0 ? refs : undefined;
+}
+
+function isResolvableUrl(href: string): boolean {
+  return href.includes('://');
 }
 
 function buildObservationMap(observations: Observation[]): Map<string, Observation> {

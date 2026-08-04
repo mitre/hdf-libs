@@ -636,16 +636,26 @@ type RelatedRef struct {
 
 // Observation records evidence from the assessment.
 type Observation struct {
-	UUID        string       `json:"uuid"`
-	Title       string       `json:"title,omitempty"`
-	Description string       `json:"description"`
-	Props       []Property   `json:"props,omitempty"`
-	Methods     []string     `json:"methods,omitempty"`
-	Types       []string     `json:"types,omitempty"`
-	Collected   string       `json:"collected"`
-	Expires     string       `json:"expires,omitempty"`
-	Remarks     string       `json:"remarks,omitempty"`
-	Subjects    []SubjectRef `json:"subjects,omitempty"`
+	UUID             string             `json:"uuid"`
+	Title            string             `json:"title,omitempty"`
+	Description      string             `json:"description"`
+	Props            []Property         `json:"props,omitempty"`
+	Methods          []string           `json:"methods,omitempty"`
+	Types            []string           `json:"types,omitempty"`
+	Collected        string             `json:"collected"`
+	Expires          string             `json:"expires,omitempty"`
+	Remarks          string             `json:"remarks,omitempty"`
+	Subjects         []SubjectRef       `json:"subjects,omitempty"`
+	RelevantEvidence []RelevantEvidence `json:"relevant-evidence,omitempty"`
+}
+
+// RelevantEvidence links an observation to supporting evidence. The href is a
+// resolvable URL when it points outside the document, or a document fragment
+// (e.g. "#uuid") when it references back-matter.
+type RelevantEvidence struct {
+	Href        string `json:"href,omitempty"`
+	Description string `json:"description"`
+	Remarks     string `json:"remarks,omitempty"`
 }
 
 // SubjectRef references an assessment subject.

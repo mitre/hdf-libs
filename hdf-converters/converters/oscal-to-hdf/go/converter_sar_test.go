@@ -3,6 +3,7 @@ package oscal
 import (
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -253,6 +254,155 @@ func TestSarBaselineName(t *testing.T) {
 			assert.Equal(t, tt.expected, sarBaselineName(result, sar))
 		})
 	}
+}
+
+// findReqByID returns the requirement with the given ID from the first
+// baseline, or nil if absent.
+func findReqByID(baseline *hdf.EvaluatedBaseline, id string) *hdf.EvaluatedRequirement {
+	for i := range baseline.Requirements {
+		if baseline.Requirements[i].ID == id {
+			return &baseline.Requirements[i]
+		}
+	}
+	return nil
+}
+
+// descByLabel returns the data of the first description with the given label,
+// and whether such a description exists.
+func descByLabel(req *hdf.EvaluatedRequirement, label string) (string, bool) {
+	for _, d := range req.Descriptions {
+		if d.Label == label {
+			return d.Data, true
+		}
+	}
+	return "", false
+}
+
+func TestConvertAssessmentResultsToHDF_StatementAndRemediation(t *testing.T) {
+	input, err := os.ReadFile("../fixtures/input/sar-fedramp.json")
+	require.NoError(t, err)
+
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0-test")
+	require.NoError(t, err)
+	require.NotEmpty(t, results.Baselines)
+	baseline := &results.Baselines[0]
+
+	// AC-1 findings relate to a risk carrying a statement and one remediation.
+	ac1 := findReqByID(baseline, "AC-1")
+	require.NotNil(t, ac1, "AC-1 requirement should exist")
+
+	statement, ok := descByLabel(ac1, "statement")
+	require.True(t, ok, "AC-1 should carry a 'statement' description")
+	assert.Equal(t,
+		"This is a statement about the identified risk.\n\nTCW: Risk Statement..\n\nScans: N/A.\n\nPen Risk Statement.\n\nRET: Risk Statement.",
+		statement)
+
+	remediation, ok := descByLabel(ac1, "remediation")
+	require.True(t, ok, "AC-1 should carry a 'remediation' description")
+	assert.True(t, strings.HasPrefix(remediation, "Remediation Title: A description of the recommended remediation."),
+		"remediation should render as 'title: description', got %q", remediation)
+}
+
+func TestConvertAssessmentResultsToHDF_MultipleRemediationsJoined(t *testing.T) {
+	input, err := os.ReadFile("../fixtures/input/sar-fedramp.json")
+	require.NoError(t, err)
+
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0-test")
+	require.NoError(t, err)
+	require.NotEmpty(t, results.Baselines)
+	baseline := &results.Baselines[0]
+
+	// CM-2.1's related risk carries two remediations (tool + assessor).
+	cm21 := findReqByID(baseline, "CM-2 (1)")
+	require.NotNil(t, cm21, "CM-2 (1) requirement should exist")
+
+	remediation, ok := descByLabel(cm21, "remediation")
+	require.True(t, ok, "CM-2 (1) should carry a 'remediation' description")
+	assert.Contains(t, remediation, "Tool's Recommendation: A description of the recommended remediation as provided by the tool.")
+	assert.Contains(t, remediation, "Assessor's Recommendation: A description of the recommended remediation as provided by the assessor.")
+	assert.Contains(t, remediation, "\n\n", "multiple remediations should be blank-line separated")
+}
+
+func TestConvertAssessmentResultsToHDF_EvidenceDescriptionsAndRefs(t *testing.T) {
+	input, err := os.ReadFile("../fixtures/input/sar-fedramp.json")
+	require.NoError(t, err)
+
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0-test")
+	require.NoError(t, err)
+	require.NotEmpty(t, results.Baselines)
+	baseline := &results.Baselines[0]
+
+	// CM-2.1's observations carry relevant-evidence with prose and a resolvable
+	// vendor URL (plus a duplicate URL that must be deduplicated).
+	cm21 := findReqByID(baseline, "CM-2 (1)")
+	require.NotNil(t, cm21, "CM-2 (1) requirement should exist")
+
+	evidence, ok := descByLabel(cm21, "evidence")
+	require.True(t, ok, "CM-2 (1) should carry an 'evidence' description")
+	assert.Contains(t, evidence, "A screen shot showing the system impact when patch is applied.")
+	assert.Contains(t, evidence, "Vendor detail describing why this happens.")
+
+	require.Len(t, cm21.Refs, 1, "duplicate evidence URLs should collapse to a single ref")
+	require.NotNil(t, cm21.Refs[0].URL)
+	assert.Equal(t, "https://vendor.site/article/describing/something.htm", *cm21.Refs[0].URL)
+	assert.Nil(t, cm21.Refs[0].Ref)
+	assert.Nil(t, cm21.Refs[0].URI)
+
+	// AC-1's evidence hrefs are intra-document fragments only → no refs, but the
+	// evidence prose is still captured.
+	ac1 := findReqByID(baseline, "AC-1")
+	require.NotNil(t, ac1)
+	_, hasEvidence := descByLabel(ac1, "evidence")
+	assert.True(t, hasEvidence, "AC-1 should still carry evidence prose from fragment-only observations")
+	assert.Nil(t, ac1.Refs, "AC-1 has only fragment hrefs → no external refs")
+}
+
+func TestConvertAssessmentResultsToHDF_AbsentRiskAndEvidenceBranches(t *testing.T) {
+	input, err := os.ReadFile("../fixtures/input/sar-fedramp.json")
+	require.NoError(t, err)
+
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0-test")
+	require.NoError(t, err)
+	require.NotEmpty(t, results.Baselines)
+	baseline := &results.Baselines[0]
+
+	// AU-1 relates to no risk and to an observation with no relevant-evidence.
+	au1 := findReqByID(baseline, "AU-1")
+	require.NotNil(t, au1, "AU-1 requirement should exist")
+
+	_, hasStatement := descByLabel(au1, "statement")
+	assert.False(t, hasStatement, "AU-1 should not carry a statement (no related risk)")
+	_, hasRemediation := descByLabel(au1, "remediation")
+	assert.False(t, hasRemediation, "AU-1 should not carry a remediation (no related risk)")
+	_, hasEvidence := descByLabel(au1, "evidence")
+	assert.False(t, hasEvidence, "AU-1 should not carry evidence (observation has none)")
+	assert.Nil(t, au1.Refs, "AU-1 should carry no refs")
+}
+
+func TestRemediationText(t *testing.T) {
+	tests := []struct {
+		name     string
+		rem      Remediation
+		expected string
+	}{
+		{"title and description", Remediation{Title: "T", Description: "D"}, "T: D"},
+		{"title only", Remediation{Title: "T"}, "T"},
+		{"description only", Remediation{Description: "D"}, "D"},
+		{"neither", Remediation{}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, remediationText(&tt.rem))
+		})
+	}
+}
+
+func TestIsResolvableURL(t *testing.T) {
+	assert.True(t, isResolvableURL("https://vendor.site/x.htm"))
+	assert.True(t, isResolvableURL("http://example.com"))
+	assert.False(t, isResolvableURL("#65fb91b1-f7dc-46bf-8b99-bd98f1a5293d"))
+	assert.False(t, isResolvableURL(""))
+	assert.False(t, isResolvableURL("relative/path"))
 }
 
 func TestMapFindingStatus(t *testing.T) {

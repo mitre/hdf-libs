@@ -482,6 +482,67 @@ describe('convertOscalSarToHdf', () => {
     }
   });
 
+  it('maps risk statement and remediation into descriptions', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    const reqs = results.baselines[0]!.requirements;
+
+    const ac1 = reqs.find(r => r.id === 'AC-1')!;
+    const statement = ac1.descriptions?.find(d => d.label === 'statement');
+    expect(statement?.data).toBe(
+      'This is a statement about the identified risk.\n\nTCW: Risk Statement..\n\nScans: N/A.\n\nPen Risk Statement.\n\nRET: Risk Statement.',
+    );
+    const remediation = ac1.descriptions?.find(d => d.label === 'remediation');
+    expect(remediation?.data).toMatch(/^Remediation Title: A description of the recommended remediation\./);
+  });
+
+  it('joins multiple remediations from a single risk', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    const cm2 = results.baselines[0]!.requirements.find(r => r.id === 'CM-2 (1)')!;
+
+    const remediation = cm2.descriptions?.find(d => d.label === 'remediation');
+    expect(remediation?.data).toContain(
+      "Tool's Recommendation: A description of the recommended remediation as provided by the tool.",
+    );
+    expect(remediation?.data).toContain(
+      "Assessor's Recommendation: A description of the recommended remediation as provided by the assessor.",
+    );
+    expect(remediation?.data).toContain('\n\n');
+  });
+
+  it('maps relevant-evidence prose and resolvable URLs into evidence/refs', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    const reqs = results.baselines[0]!.requirements;
+
+    const cm2 = reqs.find(r => r.id === 'CM-2 (1)')!;
+    const evidence = cm2.descriptions?.find(d => d.label === 'evidence');
+    expect(evidence?.data).toContain('A screen shot showing the system impact when patch is applied.');
+    expect(evidence?.data).toContain('Vendor detail describing why this happens.');
+
+    // Duplicate evidence URLs collapse to a single ref.
+    expect(cm2.refs).toHaveLength(1);
+    expect(cm2.refs![0]!.url).toBe('https://vendor.site/article/describing/something.htm');
+
+    // AC-1's evidence hrefs are intra-document fragments only → prose captured, no refs.
+    const ac1 = reqs.find(r => r.id === 'AC-1')!;
+    expect(ac1.descriptions?.some(d => d.label === 'evidence')).toBe(true);
+    expect(ac1.refs).toBeUndefined();
+  });
+
+  it('omits statement/remediation/evidence/refs when the source carries none', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    // AU-1 relates to no risk and to an observation with no relevant-evidence.
+    const au1 = results.baselines[0]!.requirements.find(r => r.id === 'AU-1')!;
+
+    expect(au1.descriptions?.some(d => d.label === 'statement')).toBe(false);
+    expect(au1.descriptions?.some(d => d.label === 'remediation')).toBe(false);
+    expect(au1.descriptions?.some(d => d.label === 'evidence')).toBe(false);
+    expect(au1.refs).toBeUndefined();
+  });
+
   it('falls back to conversion time when a result has no start', async () => {
     const doc = JSON.parse(loadFixture('sar-fedramp.json')) as {
       'assessment-results': { results: Array<Record<string, unknown>> };
