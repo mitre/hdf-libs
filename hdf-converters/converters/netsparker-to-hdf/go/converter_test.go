@@ -241,6 +241,44 @@ func TestConvertNetsparker_Tags(t *testing.T) {
 	assert.True(t, ok, "owasp tag should be present")
 }
 
+// ---- Classification tags (capec / wasc / iso27001 / pci32) ----
+
+func TestConvertNetsparker_ClassificationTags(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// Vuln 1: capec=217, wasc=4, iso27001=A.14.1.3, pci32=6.5.4 (all present).
+	v1 := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
+	assert.Equal(t, "217", v1.Tags["capec"])
+	assert.Equal(t, "4", v1.Tags["wasc"])
+	assert.Equal(t, "A.14.1.3", v1.Tags["iso27001"])
+	assert.Equal(t, "6.5.4", v1.Tags["pci32"])
+	// hipaa and owasppc are empty in every fixture vuln → never tagged.
+	_, hasHipaa := v1.Tags["hipaa"]
+	assert.False(t, hasHipaa, "hipaa is empty in source → tag omitted")
+	_, hasOwasppc := v1.Tags["owasppc"]
+	assert.False(t, hasOwasppc, "owasppc is empty in source → tag omitted")
+
+	// Vuln 2: wasc=15, iso27001=A.14.1.2; capec and pci32 empty → omitted.
+	v2 := shared.MustFindRequirement(t, reqs, "9c3a51bf-6c1f-47c9-4646-afb704bb8fb0")
+	assert.Equal(t, "15", v2.Tags["wasc"])
+	assert.Equal(t, "A.14.1.2", v2.Tags["iso27001"])
+	_, hasCapec := v2.Tags["capec"]
+	assert.False(t, hasCapec, "empty capec → tag omitted")
+	_, hasPci := v2.Tags["pci32"]
+	assert.False(t, hasPci, "empty pci32 → tag omitted")
+
+	// Vuln 3: capec=103, iso27001=A.14.2.5; wasc empty → omitted.
+	v3 := shared.MustFindRequirement(t, reqs, "8d8e6052-221d-41c4-8f1e-af9704473901")
+	assert.Equal(t, "103", v3.Tags["capec"])
+	assert.Equal(t, "A.14.2.5", v3.Tags["iso27001"])
+	_, hasWasc := v3.Tags["wasc"]
+	assert.False(t, hasWasc, "empty wasc → tag omitted")
+}
+
 // ---- Descriptions ----
 
 func TestConvertNetsparker_Descriptions(t *testing.T) {

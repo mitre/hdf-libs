@@ -69,6 +69,7 @@ type NetsparkerClassification struct {
 	WASC     string         `xml:"wasc"`
 	CWE      string         `xml:"cwe"`
 	CAPEC    string         `xml:"capec"`
+	PCI32    string         `xml:"pci32"`
 	ISO27001 string         `xml:"iso27001"`
 	CVSS     NetsparkerCVSS `xml:"cvss"`
 	CVSS31   NetsparkerCVSS `xml:"cvss31"`
@@ -277,6 +278,20 @@ func buildRequirement(vuln *NetsparkerVuln, initiated string) hdf.EvaluatedRequi
 	}
 	if owaspID != "" {
 		extras["owasp"] = owaspID
+	}
+	// Source-native categorization strings Netsparker/Invicti carries in
+	// <classification>. Each is single-valued; omit the tag when empty.
+	if capec := vuln.Classification.CAPEC; capec != "" {
+		extras["capec"] = capec
+	}
+	if wasc := vuln.Classification.WASC; wasc != "" {
+		extras["wasc"] = wasc
+	}
+	if iso := vuln.Classification.ISO27001; iso != "" {
+		extras["iso27001"] = iso
+	}
+	if pci := vuln.Classification.PCI32; pci != "" {
+		extras["pci32"] = pci
 	}
 
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)

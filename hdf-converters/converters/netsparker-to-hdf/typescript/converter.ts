@@ -83,6 +83,7 @@ interface NetsparkerClassification {
   wasc?: string;
   cwe?: string;
   capec?: string;
+  pci32?: string;
   iso27001?: string;
   cvss?: NetsparkerCvssBlock;
   cvss31?: NetsparkerCvssBlock;
@@ -303,6 +304,24 @@ function buildRequirement(
   }
   if (owaspID) {
     extras.owasp = owaspID;
+  }
+  // Source-native categorization strings Netsparker/Invicti carries in
+  // <classification>. Each is single-valued; omit the tag when empty.
+  const capec = vuln.classification?.capec;
+  if (capec) {
+    extras.capec = capec;
+  }
+  const wasc = vuln.classification?.wasc;
+  if (wasc) {
+    extras.wasc = wasc;
+  }
+  const iso27001 = vuln.classification?.iso27001;
+  if (iso27001) {
+    extras.iso27001 = iso27001;
+  }
+  const pci32 = vuln.classification?.pci32;
+  if (pci32) {
+    extras.pci32 = pci32;
   }
 
   const tags = buildNistCciTags(nist, cciTags, Object.keys(extras).length > 0 ? extras : undefined);
