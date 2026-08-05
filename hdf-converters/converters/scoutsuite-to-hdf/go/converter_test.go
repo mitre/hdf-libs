@@ -307,6 +307,38 @@ func TestConvertScoutsuiteToHDF_RefsAbsent(t *testing.T) {
 	assert.Nil(t, req.Refs)
 }
 
+// --- Compliance tags ---
+
+func TestConvertScoutsuiteToHDF_ComplianceTag(t *testing.T) {
+	input := loadFixture(t, "input/scoutsuite_sample.js")
+	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// cloudtrail-no-cloudwatch-integration carries 3 CIS compliance references
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-no-cloudwatch-integration")
+
+	complianceVal, ok := req.Tags["compliance"]
+	require.True(t, ok, "compliance tag missing")
+	complianceSlice, ok := complianceVal.([]string)
+	require.True(t, ok, "compliance tag not a []string")
+	assert.Equal(t, []string{
+		"CIS Amazon Web Services Foundations 2.4 (v1.0.0)",
+		"CIS Amazon Web Services Foundations 2.4 (v1.1.0)",
+		"CIS Amazon Web Services Foundations 2.4 (v1.2.0)",
+	}, complianceSlice)
+}
+
+func TestConvertScoutsuiteToHDF_ComplianceTagAbsent(t *testing.T) {
+	input := loadFixture(t, "input/scoutsuite_sample.js")
+	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// cloudtrail-not-configured has no compliance array -> tag omitted
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
+	_, ok := req.Tags["compliance"]
+	assert.False(t, ok, "compliance tag should be omitted when source has none")
+}
+
 // --- Title ---
 
 func TestConvertScoutsuiteToHDF_RequirementTitle(t *testing.T) {

@@ -67,6 +67,18 @@ interface ComplianceItem {
 }
 
 /**
+ * Renders a finding's compliance references as readable
+ * "<name> <reference> (v<version>)" strings, preserving source order.
+ * Returns an empty array when compliance is empty, absent, or null.
+ */
+function complianceStrings(compliance?: ComplianceItem[] | null): string[] {
+  if (!compliance || compliance.length === 0) {
+    return [];
+  }
+  return compliance.map((c) => `${c.name} ${c.reference} (v${c.version})`);
+}
+
+/**
  * Maps ScoutSuite level strings to HDF impact values.
  */
 function getImpact(level: string): number {
@@ -185,6 +197,12 @@ function buildRequirement(
   const nist = getNistControls(ruleID);
   const cciTags = nistToCci(nist);
   const tags = buildNistCciTags(nist, cciTags);
+
+  // Carry compliance framework references (CIS benchmark, etc.) into tags.
+  const compliance = complianceStrings(finding.compliance);
+  if (compliance.length > 0) {
+    tags.compliance = compliance;
+  }
 
   const descriptions: Description[] = [
     { label: 'default', data: finding.rationale },

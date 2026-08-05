@@ -63,6 +63,24 @@ type ComplianceItem struct {
 	Version   string `json:"version"`
 }
 
+// complianceStrings renders a finding's compliance references as readable
+// "<name> <reference> (v<version>)" strings, preserving source order. Returns
+// nil when the compliance array is empty, absent, or unparseable.
+func complianceStrings(raw json.RawMessage) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	var items []ComplianceItem
+	if err := json.Unmarshal(raw, &items); err != nil || len(items) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(items))
+	for _, c := range items {
+		out = append(out, fmt.Sprintf("%s %s (v%s)", c.Name, c.Reference, c.Version))
+	}
+	return out
+}
+
 // getImpact maps ScoutSuite level strings to HDF impact values.
 func getImpact(level string) float64 {
 	switch strings.ToLower(level) {
@@ -175,6 +193,11 @@ func buildRequirement(ruleID string, finding Finding, startTime string) hdf.Eval
 
 	cciTags := cci.NISTToCCI(nist)
 	tags := shared.BuildNISTCCITags(nist, cciTags)
+
+	// Carry compliance framework references (CIS benchmark, etc.) into tags.
+	if compliance := complianceStrings(finding.Compliance); len(compliance) > 0 {
+		tags["compliance"] = compliance
+	}
 
 	// Build descriptions
 	descriptions := []hdf.Description{

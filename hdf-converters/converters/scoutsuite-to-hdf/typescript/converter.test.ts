@@ -292,6 +292,30 @@ describe('ScoutSuite to HDF Converter', () => {
       expect(req!.refs).toBeUndefined();
     });
 
+    it('should map compliance references to the compliance tag', async () => {
+      const input = loadFixture('input/scoutsuite_sample.js');
+      const out = parseOutput(await convertScoutsuiteToHdf(input));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, 'cloudtrail-no-cloudwatch-integration');
+      expect(req).toBeDefined();
+      const tags = req!.tags as Record<string, unknown>;
+      expect(tags.compliance).toEqual([
+        'CIS Amazon Web Services Foundations 2.4 (v1.0.0)',
+        'CIS Amazon Web Services Foundations 2.4 (v1.1.0)',
+        'CIS Amazon Web Services Foundations 2.4 (v1.2.0)',
+      ]);
+    });
+
+    it('should omit the compliance tag when source has none', async () => {
+      const input = loadFixture('input/scoutsuite_sample.js');
+      const out = parseOutput(await convertScoutsuiteToHdf(input));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, 'cloudtrail-not-configured');
+      expect(req).toBeDefined();
+      const tags = req!.tags as Record<string, unknown>;
+      expect(tags.compliance).toBeUndefined();
+    });
+
     it('should set requirement title from description field', async () => {
       const input = loadFixture('input/scoutsuite_sample.js');
       const out = parseOutput(await convertScoutsuiteToHdf(input));

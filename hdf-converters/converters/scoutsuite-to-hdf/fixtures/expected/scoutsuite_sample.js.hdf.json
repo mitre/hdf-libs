@@ -58,6 +58,11 @@
             "cci": [
               "CCI-000172"
             ],
+            "compliance": [
+              "CIS Amazon Web Services Foundations 2.4 (v1.0.0)",
+              "CIS Amazon Web Services Foundations 2.4 (v1.1.0)",
+              "CIS Amazon Web Services Foundations 2.4 (v1.2.0)"
+            ],
             "nist": [
               "AU-12",
               "SI-4(2)"
@@ -123,6 +128,11 @@
           "id": "cloudtrail-no-encryption-with-kms",
           "impact": 0.7,
           "tags": {
+            "compliance": [
+              "CIS Amazon Web Services Foundations 2.7 (v1.0.0)",
+              "CIS Amazon Web Services Foundations 2.7 (v1.1.0)",
+              "CIS Amazon Web Services Foundations 2.7 (v1.2.0)"
+            ],
             "nist": [
               "AU-6"
             ]
@@ -192,6 +202,11 @@
           "id": "cloudtrail-no-log-file-validation",
           "impact": 0.7,
           "tags": {
+            "compliance": [
+              "CIS Amazon Web Services Foundations 2.2 (v1.0.0)",
+              "CIS Amazon Web Services Foundations 2.2 (v1.1.0)",
+              "CIS Amazon Web Services Foundations 2.2 (v1.2.0)"
+            ],
             "nist": [
               "AU-6"
             ]
@@ -229,6 +244,11 @@
           "tags": {
             "cci": [
               "CCI-000172"
+            ],
+            "compliance": [
+              "CIS Amazon Web Services Foundations 2.1 (v1.0.0)",
+              "CIS Amazon Web Services Foundations 2.1 (v1.1.0)",
+              "CIS Amazon Web Services Foundations 2.1 (v1.2.0)"
             ],
             "nist": [
               "AU-12"
