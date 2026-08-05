@@ -178,6 +178,9 @@ func buildRequirement(ruleID string, issues []GosecIssue, startTime time.Time) h
 	tags := map[string]interface{}{
 		"nist": nistIface,
 	}
+	if rep.Confidence != "" {
+		tags["confidence"] = rep.Confidence
+	}
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: rep.Details},

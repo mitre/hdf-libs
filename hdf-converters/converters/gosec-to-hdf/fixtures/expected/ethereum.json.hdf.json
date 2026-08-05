@@ -51,6 +51,7 @@
           "id": "G404",
           "impact": 0.7,
           "tags": {
+            "confidence": "MEDIUM",
             "nist": [
               "SC-13"
             ]
@@ -115,6 +116,7 @@
           "id": "G304",
           "impact": 0.5,
           "tags": {
+            "confidence": "HIGH",
             "nist": [
               "SI-10"
             ]
@@ -179,6 +181,7 @@
           "id": "G302",
           "impact": 0.5,
           "tags": {
+            "confidence": "HIGH",
             "nist": [
               "SI-2",
               "RA-5"
@@ -219,6 +222,7 @@
           "id": "G301",
           "impact": 0.5,
           "tags": {
+            "confidence": "HIGH",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1171,6 +1175,7 @@
           "id": "G104",
           "impact": 0.3,
           "tags": {
+            "confidence": "HIGH",
             "nist": [
               "SI-2",
               "RA-5"

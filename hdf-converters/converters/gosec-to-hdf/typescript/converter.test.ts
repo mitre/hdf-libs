@@ -177,6 +177,29 @@ describe('gosec to HDF converter', async () => {
       expect(checkDesc?.data).toContain('cwe.mitre.org');
     });
 
+    it('should tag the gosec confidence rating (G304 → HIGH)', async () => {
+      const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
+      const g304 = hdf.baselines[0]!.requirements.find(r => r.id === 'G304');
+      expect(g304?.tags?.['confidence']).toBe('HIGH');
+    });
+
+    it('should omit the confidence tag when source confidence is empty', async () => {
+      const input = JSON.stringify({
+        'Golang errors': {},
+        Issues: [{
+          severity: 'MEDIUM', confidence: '',
+          cwe: { id: '22', url: 'https://cwe.mitre.org/data/definitions/22.html' },
+          rule_id: 'G304', details: 'File inclusion',
+          file: '/app/main.go', code: 'f, _ := os.Open(x)\n',
+          line: '5', column: '2', nosec: false, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 10, nosec: 0, found: 1 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.tags?.['confidence']).toBeUndefined();
+    });
+
     it('should look up NIST tags from CWE (CWE-338 → SC-13)', async () => {
       const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
       const g404 = hdf.baselines[0]!.requirements.find(r => r.id === 'G404');

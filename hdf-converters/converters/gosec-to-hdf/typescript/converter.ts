@@ -132,6 +132,9 @@ function buildRequirement(ruleId: string, issues: GosecIssue[], scanTime: Date):
   const tags: Record<string, unknown> = {
     nist,
   };
+  if (rep.confidence) {
+    tags.confidence = rep.confidence;
+  }
 
   const results = issues.map((issue) => issueToResult(issue, scanTime));
 

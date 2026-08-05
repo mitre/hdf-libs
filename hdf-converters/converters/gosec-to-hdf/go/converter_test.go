@@ -431,6 +431,38 @@ func TestConvertGosecToHDF_NISTFallback(t *testing.T) {
 	assert.Equal(t, []string{"SI-2", "RA-5"}, nist)
 }
 
+func TestConvertGosecToHDF_ConfidenceTag(t *testing.T) {
+	input := loadFixture(t, "input/ethereum.json")
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// G304's representative (first) issue carries HIGH confidence in ethereum.json.
+	for _, req := range result.Baselines[0].Requirements {
+		if req.ID == "G304" {
+			assert.Equal(t, "HIGH", req.Tags["confidence"])
+		}
+	}
+}
+
+func TestConvertGosecToHDF_ConfidenceTagAbsentWhenEmpty(t *testing.T) {
+	input := []byte(`{
+		"Golang errors": {},
+		"Issues": [{
+			"severity": "MEDIUM", "confidence": "",
+			"cwe": {"id": "22", "url": "https://cwe.mitre.org/data/definitions/22.html"},
+			"rule_id": "G304", "details": "File inclusion",
+			"file": "/app/main.go", "code": "f, _ := os.Open(x)\n",
+			"line": "5", "column": "2", "nosec": false, "suppressions": null
+		}],
+		"Stats": {"files": 1, "lines": 10, "nosec": 0, "found": 1},
+		"GosecVersion": "2.18.0"
+	}`)
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+	_, has := result.Baselines[0].Requirements[0].Tags["confidence"]
+	assert.False(t, has, "confidence tag must be omitted when source confidence is empty")
+}
+
 func TestConvertGosecToHDF_CWEFirstClass(t *testing.T) {
 	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
