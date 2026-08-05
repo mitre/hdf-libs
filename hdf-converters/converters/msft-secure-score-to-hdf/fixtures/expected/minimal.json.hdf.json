@@ -22,7 +22,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false
           },
           "title": "Apps:spo_idle_session_timeout",
           "verificationMethod": "automated"
@@ -52,10 +53,20 @@
           "id": "Apps:McasFirewallLogUpload",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Moderate",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 82,
+            "service": "MCAS",
+            "threats": [
+              "Data Exfiltration"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Low"
           },
           "refs": [
             {
@@ -90,10 +101,17 @@
           "id": "Data:dlp_datalossprevention",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": true,
+            "rank": 128,
+            "service": "MIP",
+            "tier": "Core",
+            "user_impact": "High"
           },
           "refs": [
             {

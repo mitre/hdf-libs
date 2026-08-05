@@ -67,9 +67,11 @@ interface ProfileResponse {
 interface SecureScoreControlProfile {
   id: string;
   azureTenantId?: string;
+  actionType?: string;
   actionUrl?: string;
   controlCategory?: string;
   title?: string;
+  implementationCost?: string;
   maxScore?: number;
   rank?: unknown;
   remediation?: string;
@@ -198,6 +200,51 @@ function buildRequirement(
     if (impacts.length > 0) {
       descriptions.push({ label: 'rationale', data: stripHTML(impacts[0]!) });
     }
+
+    // Source categorization/metadata from the matched profile(s). Emit each tag
+    // only when a matched profile actually carries the value; preserve the
+    // source's natural JSON type (threats array, numeric rank, strings).
+    const threats = matched
+      .map(p => p.threats)
+      .find(t => Array.isArray(t) && t.length > 0);
+    if (threats !== undefined) {
+      tags.threats = threats;
+    }
+    const rank = matched
+      .map(p => p.rank)
+      .find(r => r !== undefined && r !== null);
+    if (rank !== undefined) {
+      tags.rank = rank;
+    }
+    const service = matched.map(p => p.service).find((s): s is string => !!s);
+    if (service !== undefined) {
+      tags.service = service;
+    }
+    const tier = matched.map(p => p.tier).find((s): s is string => !!s);
+    if (tier !== undefined) {
+      tags.tier = tier;
+    }
+    const userImpact = matched.map(p => p.userImpact).find((s): s is string => !!s);
+    if (userImpact !== undefined) {
+      tags.user_impact = userImpact;
+    }
+    const actionType = matched.map(p => p.actionType).find((s): s is string => !!s);
+    if (actionType !== undefined) {
+      tags.action_type = actionType;
+    }
+    const implementationCost = matched.map(p => p.implementationCost).find((s): s is string => !!s);
+    if (implementationCost !== undefined) {
+      tags.implementation_cost = implementationCost;
+    }
+  }
+
+  // `on` is carried on the control score itself as a "true"/"false" string
+  // (null/absent when Microsoft reports no enablement state). Map to a boolean;
+  // omit when neither literal is present.
+  if (cs.on === 'true') {
+    tags.on = true;
+  } else if (cs.on === 'false') {
+    tags.on = false;
   }
 
   // CodeDesc from implementationStatus

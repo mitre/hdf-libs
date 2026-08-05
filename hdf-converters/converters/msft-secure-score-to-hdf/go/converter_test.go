@@ -351,6 +351,71 @@ func TestConvertMsftSecureScore_Timestamp(t *testing.T) {
 	assert.NotNil(t, result.Timestamp)
 }
 
+// ---- Source categorization/metadata tags ----
+
+func TestConvertMsftSecureScore_SourceMetadataTags(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+
+	// dlp_datalossprevention: full profile metadata; threats is [] → omitted; on == "true".
+	dlp := shared.MustFindRequirement(t, reqs, "Data:dlp_datalossprevention")
+	assert.EqualValues(t, 128, dlp.Tags["rank"])
+	assert.Equal(t, "MIP", dlp.Tags["service"])
+	assert.Equal(t, "Core", dlp.Tags["tier"])
+	assert.Equal(t, "High", dlp.Tags["user_impact"])
+	assert.Equal(t, "Config", dlp.Tags["action_type"])
+	assert.Equal(t, "Medium", dlp.Tags["implementation_cost"])
+	assert.Equal(t, true, dlp.Tags["on"])
+	_, hasThreats := dlp.Tags["threats"]
+	assert.False(t, hasThreats, "empty threats array should be omitted")
+
+	// McasFirewallLogUpload: non-empty threats array; on == "false".
+	mcas := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
+	assert.Equal(t, []interface{}{"Data Exfiltration"}, mcas.Tags["threats"])
+	assert.EqualValues(t, 82, mcas.Tags["rank"])
+	assert.Equal(t, "MCAS", mcas.Tags["service"])
+	assert.Equal(t, "Advanced", mcas.Tags["tier"])
+	assert.Equal(t, "Low", mcas.Tags["user_impact"])
+	assert.Equal(t, "Config", mcas.Tags["action_type"])
+	assert.Equal(t, "Moderate", mcas.Tags["implementation_cost"])
+	assert.Equal(t, false, mcas.Tags["on"])
+}
+
+func TestConvertMsftSecureScore_SourceMetadataTagsAbsentWhenNoProfile(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+
+	// spo_idle_session_timeout has no matching profile → no profile-derived tags,
+	// but `on` is still emitted from the control score itself ("false").
+	req := shared.MustFindRequirement(t, reqs, "Apps:spo_idle_session_timeout")
+	for _, k := range []string{"threats", "rank", "service", "tier", "user_impact", "action_type", "implementation_cost"} {
+		_, ok := req.Tags[k]
+		assert.Falsef(t, ok, "tag %q should be absent when no profile matches", k)
+	}
+	assert.Equal(t, false, req.Tags["on"])
+}
+
+func TestConvertMsftSecureScore_OnTagOmittedWhenNull(t *testing.T) {
+	input := loadFixture(t, "input/combined.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	var sawPresent, sawOmitted bool
+	for _, req := range result.Baselines[0].Requirements {
+		if _, ok := req.Tags["on"]; ok {
+			sawPresent = true
+		} else {
+			sawOmitted = true
+		}
+	}
+	assert.True(t, sawPresent, "controls with a true/false on flag emit the tag")
+	assert.True(t, sawOmitted, "controls with null/absent on omit the tag")
+}
+
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "msft-secure-score-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertMsftSecureScoreToHDF(input, "1.0.0")

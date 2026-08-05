@@ -22,7 +22,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false
           },
           "title": "Apps:spo_idle_session_timeout",
           "verificationMethod": "automated"
@@ -47,7 +48,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false
           },
           "title": "Apps:spo_legacy_auth",
           "verificationMethod": "automated"
@@ -77,10 +79,20 @@
           "id": "Apps:McasFirewallLogUpload",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Moderate",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 82,
+            "service": "MCAS",
+            "threats": [
+              "Data Exfiltration"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Low"
           },
           "refs": [
             {
@@ -115,10 +127,22 @@
           "id": "Apps:McasCutomActivityPolicy",
           "impact": 0.2,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Low",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 80,
+            "service": "MCAS",
+            "threats": [
+              "Account Breach",
+              "Elevation of Privilege",
+              "Malicious Insider"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Moderate"
           },
           "refs": [
             {
@@ -153,10 +177,20 @@
           "id": "Apps:McasCloudAppNotification",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Low",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 75,
+            "service": "MCAS",
+            "threats": [
+              "Data Exfiltration"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Moderate"
           },
           "refs": [
             {
@@ -191,10 +225,22 @@
           "id": "Apps:McasOAuthAppNotification",
           "impact": 0.4,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Low",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 57,
+            "service": "MCAS",
+            "threats": [
+              "Account Breach",
+              "Elevation of Privilege",
+              "Malicious Insider"
+            ],
+            "tier": "Defense In Depth",
+            "user_impact": "Moderate"
           },
           "refs": [
             {
@@ -229,10 +275,17 @@
           "id": "Identity:AATP_DefenderForIdentityIsNotInstalled",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "high",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 59,
+            "service": "Azure ATP",
+            "tier": "Core",
+            "user_impact": "low"
           },
           "refs": [
             {
@@ -267,10 +320,17 @@
           "id": "Apps:mdo_atpprotection",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "High"
           },
           "refs": [
             {
@@ -305,10 +365,17 @@
           "id": "Data:dlp_datalossprevention",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": true,
+            "rank": 128,
+            "service": "MIP",
+            "tier": "Core",
+            "user_impact": "High"
           },
           "refs": [
             {
@@ -343,10 +410,17 @@
           "id": "Apps:exo_individualsharing",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 128,
+            "service": "EXO",
+            "tier": "Core",
+            "user_impact": "High"
           },
           "refs": [
             {
@@ -381,10 +455,17 @@
           "id": "Apps:mdo_safedocuments",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "High"
           },
           "refs": [
             {
@@ -419,10 +500,17 @@
           "id": "Apps:mdo_connectionfilter",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": true,
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -452,7 +540,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false
           },
           "title": "Data:mip_purviewlabelconsent",
           "verificationMethod": "automated"
@@ -482,10 +571,22 @@
           "id": "Apps:CustomerLockBoxEnabled",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Moderate",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 127,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration",
+              "Data Deletion",
+              "Data Spillage"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Moderate"
           },
           "refs": [
             {
@@ -520,10 +621,20 @@
           "id": "Apps:exo_oauth2clientprofileenabled",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "EXO",
+            "threats": [
+              "Account breach",
+              "Data Exfiltration"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -558,10 +669,20 @@
           "id": "Apps:exo_mailtipsenabled",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -596,10 +717,20 @@
           "id": "Apps:exo_transportrulesallowlistdomains",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": true,
+            "rank": 128,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -659,10 +790,19 @@
           "id": "Apps:exo_mailboxaudit",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core"
           },
           "refs": [
             {
@@ -697,10 +837,20 @@
           "id": "Apps:exo_storageproviderrestricted",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -735,10 +885,20 @@
           "id": "Apps:exo_outlookaddins",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -848,10 +1008,16 @@
           "id": "Apps:mdo_safeattachments",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "High"
           },
           "refs": [
             {
@@ -911,10 +1077,16 @@
           "id": "Apps:mdo_commonattachmentsfilter",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "High"
           },
           "refs": [
             {
@@ -999,10 +1171,16 @@
           "id": "Apps:mdo_highconfidencespamaction",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1037,10 +1215,16 @@
           "id": "Apps:mdo_phisspamacation",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1075,10 +1259,16 @@
           "id": "Apps:mdo_highconfidencephishaction",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1113,10 +1303,16 @@
           "id": "Apps:mdo_bulkspamaction",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1151,10 +1347,16 @@
           "id": "Apps:mdo_quarantineretentionperiod",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1189,10 +1391,16 @@
           "id": "Apps:mdo_allowedsenderscombined",
           "impact": 0.2,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1227,10 +1435,16 @@
           "id": "Apps:mdo_bulkthreshold",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1290,10 +1504,16 @@
           "id": "Apps:mdo_autoforwardingmode",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1328,10 +1548,16 @@
           "id": "Apps:mdo_recipientexternallimitperhour",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1366,10 +1592,16 @@
           "id": "Apps:mdo_recipientinternallimitperhour",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1404,10 +1636,16 @@
           "id": "Apps:mdo_recipientlimitperday",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1467,10 +1705,16 @@
           "id": "Apps:mdo_enablemailboxintelligence",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1505,10 +1749,16 @@
           "id": "Apps:mdo_mailboxintelligenceprotection",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1543,10 +1793,16 @@
           "id": "Apps:mdo_mailboxintelligenceprotectionaction",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1581,10 +1837,16 @@
           "id": "Apps:mdo_enabledomainstoprotect",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1619,10 +1881,16 @@
           "id": "Apps:mdo_phishthresholdlevel",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1832,10 +2100,20 @@
           "id": "Apps:mdo_safeattachmentpolicy",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "MDO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1895,10 +2173,21 @@
           "id": "Apps:mdo_antiphishingpolicies",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "MDO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach",
+              "Password Cracking"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1933,10 +2222,20 @@
           "id": "Apps:mdo_blockmailforward",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "MDO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
           "refs": [
             {
@@ -1971,10 +2270,21 @@
           "id": "Identity:IntegratedApps",
           "impact": 0.4,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Low",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 35,
+            "service": "AzureAD",
+            "threats": [
+              "Data Exfiltration",
+              "Data Spillage"
+            ],
+            "tier": "Defense In Depth",
+            "user_impact": "Moderate"
           },
           "refs": [
             {
@@ -2059,10 +2369,20 @@
           "id": "Identity:BlockLegacyAuthentication",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Moderate",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 68,
+            "service": "AzureAD",
+            "threats": [
+              "Password Cracking",
+              "Account Breach"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Moderate"
           },
           "refs": [
             {
@@ -2122,10 +2442,21 @@
           "id": "Identity:AdminMFAV2",
           "impact": 1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Low",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 1,
+            "service": "AzureAD",
+            "threats": [
+              "Password Cracking",
+              "Account Breach",
+              "Elevation of Privilege"
+            ],
+            "tier": "Core",
+            "user_impact": "Low"
           },
           "refs": [
             {

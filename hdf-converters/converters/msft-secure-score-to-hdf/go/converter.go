@@ -59,19 +59,21 @@ type ProfileResponse struct {
 
 // SecureScoreControlProfile represents a control profile with remediation details.
 type SecureScoreControlProfile struct {
-	ID                string      `json:"id"`
-	AzureTenantID     string      `json:"azureTenantId"`
-	ActionURL         string      `json:"actionUrl"`
-	ControlCategory   string      `json:"controlCategory"`
-	Title             string      `json:"title"`
-	MaxScore          float64     `json:"maxScore"`
-	Rank              interface{} `json:"rank"`
-	Remediation       string      `json:"remediation"`
-	RemediationImpact string      `json:"remediationImpact"`
-	Service           string      `json:"service"`
-	Threats           interface{} `json:"threats"`
-	Tier              string      `json:"tier"`
-	UserImpact        string      `json:"userImpact"`
+	ID                 string      `json:"id"`
+	AzureTenantID      string      `json:"azureTenantId"`
+	ActionType         string      `json:"actionType"`
+	ActionURL          string      `json:"actionUrl"`
+	ControlCategory    string      `json:"controlCategory"`
+	Title              string      `json:"title"`
+	ImplementationCost string      `json:"implementationCost"`
+	MaxScore           float64     `json:"maxScore"`
+	Rank               interface{} `json:"rank"`
+	Remediation        string      `json:"remediation"`
+	RemediationImpact  string      `json:"remediationImpact"`
+	Service            string      `json:"service"`
+	Threats            interface{} `json:"threats"`
+	Tier               string      `json:"tier"`
+	UserImpact         string      `json:"userImpact"`
 }
 
 // getProfiles returns all profiles matching a given control name.
@@ -204,6 +206,62 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 				Data:  impacts[0],
 			})
 		}
+
+		// Source categorization/metadata from the matched profile(s). Emit each
+		// tag only when a matched profile actually carries the value; preserve the
+		// source's natural JSON type (threats array, numeric rank, strings).
+		for _, p := range matched {
+			if arr, ok := p.Threats.([]interface{}); ok && len(arr) > 0 {
+				tags["threats"] = arr
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.Rank != nil {
+				tags["rank"] = p.Rank
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.Service != "" {
+				tags["service"] = p.Service
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.Tier != "" {
+				tags["tier"] = p.Tier
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.UserImpact != "" {
+				tags["user_impact"] = p.UserImpact
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.ActionType != "" {
+				tags["action_type"] = p.ActionType
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.ImplementationCost != "" {
+				tags["implementation_cost"] = p.ImplementationCost
+				break
+			}
+		}
+	}
+
+	// `on` is carried on the control score itself as a "true"/"false" string
+	// (null/absent when Microsoft reports no enablement state). Map to a boolean;
+	// omit when neither literal is present.
+	switch cs.On {
+	case "true":
+		tags["on"] = true
+	case "false":
+		tags["on"] = false
 	}
 
 	// CodeDesc from implementationStatus
