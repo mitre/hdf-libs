@@ -316,6 +316,40 @@ describe('xccdf-results-to-hdf converter', async () => {
     });
   });
 
+  // --- Rule/group identifier tags (stig_id, cce, legacy_id, gid, gtitle) ---
+
+  describe('rule/group identifier tags', () => {
+    it('carries stig_id, cce, legacy_id, gid, gtitle on grouped rules', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      const tags = findReq(hdf, 'SV-204393')!.tags as Record<string, unknown>;
+      expect(tags['stig_id']).toBe('RHEL-07-010030');
+      expect(tags['cce']).toBe('CCE-26970-4');
+      expect(tags['legacy_id']).toEqual(['V-71859', 'SV-86483']);
+      expect(tags['gid']).toBe('xccdf_mil.disa.stig_group_V-204393');
+      expect(tags['gtitle']).toBe('SRG-OS-000023-GPOS-00006');
+    });
+
+    it('emits stig_id + gid/gtitle but omits cce/legacy_id when absent (rhel8)', async () => {
+      const hdf = await parseHdf('xccdf-results-openscap-rhel8.xml');
+      const tags = findReq(hdf, 'SV-230221')!.tags as Record<string, unknown>;
+      expect(tags['stig_id']).toBe('RHEL-08-010000');
+      expect(tags['gid']).toBe('xccdf_mil.disa.stig_group_V-230221');
+      expect(tags['gtitle']).toBe('SRG-OS-000480-GPOS-00227');
+      expect('cce' in tags).toBe(false);
+      expect('legacy_id' in tags).toBe(false);
+    });
+
+    it('omits every identifier tag for un-grouped, version-less rules (minimal)', async () => {
+      const hdf = await parseHdf('minimal.xml');
+      for (const req of hdf.baselines[0]!.requirements) {
+        const tags = req.tags as Record<string, unknown>;
+        for (const key of ['stig_id', 'cce', 'legacy_id', 'gid', 'gtitle']) {
+          expect(key in tags).toBe(false);
+        }
+      }
+    });
+  });
+
   // --- Severity → impact mapping ---
 
   describe('severity to impact mapping', () => {

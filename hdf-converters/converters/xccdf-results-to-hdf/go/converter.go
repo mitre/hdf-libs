@@ -558,6 +558,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 	}
 
 	ruleMap := buildRuleMap(&benchmark)
+	groupMap := buildGroupMap(&benchmark)
 	startTime, duration := calculateTiming(&benchmark.TestResult)
 
 	limitedRuleResults := shared.LimitSliceWithWarning(benchmark.TestResult.RuleResults, 0, "rule result")
@@ -565,7 +566,8 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 	for i := range limitedRuleResults {
 		rr := &limitedRuleResults[i]
 		rule := ruleMap[rr.IDRef]
-		req := convertRuleResult(rr, rule, startTime)
+		group := groupMap[rr.IDRef]
+		req := convertRuleResult(rr, rule, group, startTime)
 		requirements = append(requirements, req)
 	}
 
@@ -828,10 +830,13 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 
 	// Build rule map from Benchmark (if found)
 	var ruleMap map[string]*Rule
+	var groupMap map[string]*Group
 	if benchmark != nil {
 		ruleMap = buildRuleMap(benchmark)
+		groupMap = buildGroupMap(benchmark)
 	} else {
 		ruleMap = make(map[string]*Rule)
+		groupMap = make(map[string]*Group)
 	}
 
 	// Build asset metadata map: asset ID -> ArfAsset
@@ -872,7 +877,8 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		for j := range limitedARFRuleResults {
 			rr := &limitedARFRuleResults[j]
 			rule := ruleMap[rr.IDRef]
-			req := convertRuleResult(rr, rule, startTime)
+			group := groupMap[rr.IDRef]
+			req := convertRuleResult(rr, rule, group, startTime)
 			requirements = append(requirements, req)
 		}
 
@@ -1035,6 +1041,18 @@ func buildRuleMap(benchmark *Benchmark) map[string]*Rule {
 	return ruleMap
 }
 
+// buildGroupMap builds a lookup from rule ID to the Group that contains it, at
+// any nesting depth. Top-level Benchmark rules have no Group and are absent from
+// the map, so the results path emits gid/gtitle only for grouped rules — the
+// same source-fidelity the baseline path already honors.
+func buildGroupMap(benchmark *Benchmark) map[string]*Group {
+	groupMap := make(map[string]*Group)
+	for _, gr := range flattenGroups(benchmark.Groups) {
+		groupMap[gr.rule.ID] = gr.group
+	}
+	return groupMap
+}
+
 // calculateTiming computes the start time and duration in seconds from the
 // TestResult start-time and end-time attributes.
 func calculateTiming(tr *TestResult) (time.Time, float64) {
@@ -1058,12 +1076,12 @@ func calculateTiming(tr *TestResult) (time.Time, float64) {
 
 // convertRuleResult converts a single XCCDF rule-result into an HDF
 // EvaluatedRequirement, enriching it with the Rule definition if available.
-func convertRuleResult(rr *RuleResult, rule *Rule, fallback time.Time) hdf.EvaluatedRequirement {
+func convertRuleResult(rr *RuleResult, rule *Rule, group *Group, fallback time.Time) hdf.EvaluatedRequirement {
 	id := determineID(rr, rule)
 	title := determineTitle(rr, rule)
 	impact := determineImpact(rr, rule)
 	descriptions := buildDescriptions(rule)
-	tags := buildTags(rr, rule)
+	tags := buildTags(rr, rule, group)
 	results := []hdf.RequirementResult{buildResult(rr, fallback)}
 
 	req := hdf.EvaluatedRequirement{
@@ -1185,21 +1203,29 @@ func extractVulnDiscussion(desc string) string {
 	return desc[startIdx : startIdx+endIdx]
 }
 
-// buildTags constructs the tags map from CCI idents found in the rule-result
-// and rule definition.
-func buildTags(rr *RuleResult, rule *Rule) map[string]interface{} {
+// buildTags constructs the tags map from the rule-result and rule definition.
+// It carries CCI/NIST plus the STIG rule/group identifiers the results path
+// formerly dropped: stig_id, cce, legacy_id, gid, gtitle. Each key is emitted
+// only when the source actually populates it, so a rule with no CCE/legacy ident
+// or no enclosing Group leaves those keys unset rather than fabricating one.
+func buildTags(rr *RuleResult, rule *Rule, group *Group) map[string]interface{} {
 	tags := make(map[string]interface{})
 
-	var cciIDs []string
-	allIdents := collectIdents(rr, rule)
-
-	for _, ident := range allIdents {
-		if isCCIIdent(ident) {
+	var cciIDs, cceIDs, legacyIDs []string
+	for _, ident := range collectIdents(rr, rule) {
+		switch {
+		case isCCIIdent(ident):
 			cciIDs = append(cciIDs, ident.Value)
+		case isCCEIdent(ident):
+			cceIDs = append(cceIDs, ident.Value)
+		case isLegacyIdent(ident):
+			legacyIDs = append(legacyIDs, ident.Value)
 		}
 	}
 
 	cciIDs = dedup(cciIDs)
+	cceIDs = dedup(cceIDs)
+	legacyIDs = dedup(legacyIDs)
 
 	if len(cciIDs) > 0 {
 		tags["cci"] = cciIDs
@@ -1208,7 +1234,35 @@ func buildTags(rr *RuleResult, rule *Rule) map[string]interface{} {
 		tags["nist"] = []string{}
 	}
 
+	if stigID := ruleVersion(rr, rule); stigID != "" {
+		tags["stig_id"] = stigID
+	}
+	// CCE is single-valued per STIG rule; emit the first (deduped) value.
+	if len(cceIDs) > 0 {
+		tags["cce"] = cceIDs[0]
+	}
+	if len(legacyIDs) > 0 {
+		tags["legacy_id"] = legacyIDs
+	}
+	if group != nil {
+		tags["gid"] = group.ID
+		tags["gtitle"] = group.Title
+	}
+
 	return tags
+}
+
+// ruleVersion returns the STIG ID (e.g. "RHEL-07-010010"), preferring the
+// rule-result @version (the value from the actual evaluation) and falling back
+// to the Rule definition's <version>. Returns "" when neither carries one.
+func ruleVersion(rr *RuleResult, rule *Rule) string {
+	if rr != nil && rr.Version != "" {
+		return rr.Version
+	}
+	if rule != nil {
+		return rule.Version
+	}
+	return ""
 }
 
 // collectIdents gathers idents from both the rule-result and the rule
@@ -1228,6 +1282,18 @@ func collectIdents(rr *RuleResult, rule *Rule) []Ident {
 // isCCIIdent checks whether an Ident's system attribute indicates a CCI.
 func isCCIIdent(ident Ident) bool {
 	return strings.Contains(strings.ToLower(ident.System), "cci")
+}
+
+// isCCEIdent checks whether an Ident is a CCE (e.g. system "http://cce.mitre.org").
+// "cce" is distinct from the CCI system ("cci"), so the two never collide.
+func isCCEIdent(ident Ident) bool {
+	return strings.Contains(strings.ToLower(ident.System), "cce")
+}
+
+// isLegacyIdent checks whether an Ident is a legacy DISA V-/SV- identifier
+// (system "http://cyber.mil/legacy").
+func isLegacyIdent(ident Ident) bool {
+	return strings.Contains(strings.ToLower(ident.System), "legacy")
 }
 
 // dedup returns a deduplicated copy of a string slice, preserving order.
