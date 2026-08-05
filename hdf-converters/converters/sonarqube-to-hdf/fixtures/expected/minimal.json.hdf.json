@@ -28,6 +28,10 @@
               "CCI-003173"
             ],
             "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
+            "lang": "java",
+            "langName": "Java",
             "nist": [
               "SA-11"
             ],
@@ -68,6 +72,10 @@
             "cwe": [
               "CWE-476"
             ],
+            "debt": "10min",
+            "effort": "10min",
+            "lang": "java",
+            "langName": "Java",
             "nist": [
               "SI-10"
             ],

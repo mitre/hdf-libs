@@ -24,17 +24,23 @@
           "id": "go:S3776",
           "impact": 0.7,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "FOCUSED",
+            "cleanCodeAttributeCategory": "ADAPTABLE",
             "cwe": [],
+            "debt": "27min",
+            "effort": "27min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
                 "severity": "HIGH"
               }
             ],
+            "lang": "go",
+            "langName": "Go",
             "legacySeverity": "critical",
             "nist": [
               "SA-11"
@@ -70,17 +76,23 @@
           "id": "javascript:S7772",
           "impact": 0.5,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "CONVENTIONAL",
+            "cleanCodeAttributeCategory": "CONSISTENT",
             "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
                 "severity": "MEDIUM"
               }
             ],
+            "lang": "js",
+            "langName": "JavaScript",
             "legacySeverity": "minor",
             "nist": [
               "SA-11"
@@ -116,17 +128,23 @@
           "id": "typescript:S7772",
           "impact": 0.5,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "CONVENTIONAL",
+            "cleanCodeAttributeCategory": "CONSISTENT",
             "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
                 "severity": "MEDIUM"
               }
             ],
+            "lang": "ts",
+            "langName": "TypeScript",
             "legacySeverity": "minor",
             "nist": [
               "SA-11"
@@ -162,11 +180,15 @@
           "id": "typescript:S7773",
           "impact": 0.5,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "CONVENTIONAL",
+            "cleanCodeAttributeCategory": "CONSISTENT",
             "cwe": [],
+            "debt": "2min",
+            "effort": "2min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
@@ -177,6 +199,8 @@
                 "severity": "MEDIUM"
               }
             ],
+            "lang": "ts",
+            "langName": "TypeScript",
             "legacySeverity": "minor",
             "nist": [
               "SA-11"
@@ -212,17 +236,23 @@
           "id": "typescript:S7776",
           "impact": 0.5,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "EFFICIENT",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
             "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
                 "severity": "MEDIUM"
               }
             ],
+            "lang": "ts",
+            "langName": "TypeScript",
             "legacySeverity": "minor",
             "nist": [
               "SA-11"
