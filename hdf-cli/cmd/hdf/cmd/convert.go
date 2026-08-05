@@ -11,6 +11,7 @@ import (
 	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/registry/all" // register all fingerprints via init()
+	convreg "github.com/mitre/hdf-libs/hdf-converters/v3/registry/convert"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/hdfversion"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 	"github.com/spf13/cobra"
@@ -207,6 +208,10 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		return err
 	}
 
+	// Sync the CLI --catalog flag into the lifted registry so the oscal-profile
+	// converter can read it (the registry owns the catalog path now, not cmd).
+	convreg.SetOSCALCatalogPath(oscalCatalogFlag)
+
 	// Get converter
 	converter, err := GetConverter(fromFormat, toFormat)
 	if err != nil {
@@ -353,9 +358,9 @@ func runVersionedConvert(converter Converter, data []byte, fromVersion, toVersio
 	// Post-process: downgrade HDF version if --to hdf@N was specified
 	// (only for non-HDF→HDF converters; the hdf→hdf converter handles it internally)
 	if toVersion != "" && toVersion != hdfversion.ModernVersion {
-		if _, isHDFVer := converter.(*hdfVersionConverter); !isHDFVer {
+		if !convreg.HandlesOutputVersionInternally(converter) {
 			printDebug("Post-processing output to HDF version %s", toVersion)
-			output, err = PostProcessToVersion(output, toVersion)
+			output, err = convreg.PostProcessToVersion(output, toVersion)
 			if err != nil {
 				return nil, err
 			}
