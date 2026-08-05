@@ -1,4 +1,4 @@
-package cmd
+package hdfutil
 
 import (
 	"bytes"
@@ -7,12 +7,12 @@ import (
 	"strings"
 )
 
-// jsonPathLineMap scans JSON data and builds a mapping from dotted JSON paths
+// JSONPathLineMap scans JSON data and builds a mapping from dotted JSON paths
 // (e.g. "baselines.0.name") to the line number where that key or value starts.
 // This enables annotating schema validation errors with source line numbers.
 //
 // Returns an empty map if the data is not valid JSON.
-func jsonPathLineMap(data []byte) map[string]int {
+func JSONPathLineMap(data []byte) map[string]int {
 	lineMap := make(map[string]int)
 
 	// Quick validity check — don't attempt to walk invalid JSON
@@ -132,14 +132,14 @@ func offsetToLine(lineOffsets []int, offset int) int {
 
 // Special field values from gojsonschema that don't map to real JSON paths.
 const (
-	fieldRoot  = "(root)"
-	fieldParse = "(parse)"
+	FieldRoot  = "(root)"
+	FieldParse = "(parse)"
 )
 
-// lookupLineNumber finds the best line number for a validation error field path.
+// LookupLineNumber finds the best line number for a validation error field path.
 // Tries exact match first, then progressively shorter prefixes.
-func lookupLineNumber(lineMap map[string]int, field string) int {
-	if field == "" || field == fieldRoot || field == fieldParse {
+func LookupLineNumber(lineMap map[string]int, field string) int {
+	if field == "" || field == FieldRoot || field == FieldParse {
 		return 0
 	}
 

@@ -83,3 +83,6 @@ export { parseCpe, type ParsedCpe, type CpePart } from './cpe/index.js';
 
 // PURL (Package URL) parser
 export { parsePurl, type ParsedPurl } from './purl/index.js';
+
+// Input-size guard (schema-free; used by the engine loader)
+export { validateInputSize, DEFAULT_MAX_INPUT_SIZE } from './size/index.js';

@@ -1,0 +1,671 @@
+{
+  "name": "microsoft-windows-server-2022-stig-baseline",
+  "title": "Microsoft Windows Server 2022 Security Technical Implementation Guide",
+  "version": "2.7.0",
+  "maintainer": "MITRE SAF Team",
+  "copyright": "MITRE",
+  "license": "Apache-2.0",
+  "summary": "InSpec profile aligned to STIG Guidance for Microsoft Windows Server",
+  "supports": [],
+  "groups": [],
+  "requirements": [
+    {
+      "tags": {
+        "check_id": "C-57723r848528_chk",
+        "severity": "medium",
+        "gid": "V-254238",
+        "rid": "SV-254238r991589_rule",
+        "stig_id": "WN22-00-000010",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "fix_id": "F-57674r848529_fix",
+        "cci": [
+          "CCI-000366"
+        ],
+        "nist": [
+          "CM-6 b"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Using a privileged account to perform routine functions makes the computer vulnerable to malicious software inadvertently introduced during a session that has been granted full privileges."
+        },
+        {
+          "label": "check",
+          "data": "Verify each user with administrative privileges has been assigned a unique administrative account separate from their standard user account. \n\nIf users with administrative privileges do not have separate accounts for administrative functions and standard user functions, this is a finding."
+        },
+        {
+          "label": "fix",
+          "data": "Ensure each user with administrative privileges has a separate account for user duties and one for privileged duties."
+        }
+      ],
+      "id": "SV-254238",
+      "title": "Windows Server 2022 users with Administrative privileges must have separate accounts for administrative duties and normal operational tasks.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57725r848534_chk",
+        "severity": "high",
+        "gid": "V-254240",
+        "rid": "SV-254240r991589_rule",
+        "stig_id": "WN22-00-000030",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "fix_id": "F-57676r848535_fix",
+        "satisfies": [
+          "SRG-OS-000480-GPOS-00227",
+          "SRG-OS-000205-GPOS-00083"
+        ],
+        "cci": [
+          "CCI-000366",
+          "CCI-001312"
+        ],
+        "nist": [
+          "CM-6 b",
+          "SI-11 a"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Using applications that access the internet or have potential internet sources using administrative privileges exposes a system to compromise. If a flaw in an application is exploited while running as a privileged user, the entire system could be compromised. Web browsers and email are common attack vectors for introducing malicious code and must not be run with an administrative account.\n\nSince administrative accounts may generally change or work around technical restrictions for running a web browser or other applications, it is essential that policy require administrative accounts to not access the internet or use applications such as email.\n\nThe policy must define specific exceptions for local service administration. These exceptions may include HTTP(S)-based tools that are used for the administration of the local system, services, or attached devices.\n\nWhitelisting can be used to enforce the policy to ensure compliance.\n\n"
+        },
+        {
+          "label": "check",
+          "data": "Determine whether organization policy, at a minimum, prohibits administrative accounts from using applications that access the internet, such as web browsers, or with potential internet sources, such as email, except as necessary for local service administration.\n\nIf it does not, this is a finding.\n\nThe organization may use technical means such as whitelisting to prevent the use of browsers and mail applications to enforce this requirement."
+        },
+        {
+          "label": "fix",
+          "data": "Establish a policy, at minimum, to prohibit administrative accounts from using applications that access the internet, such as web browsers, or with potential internet sources, such as email. Ensure the policy is enforced.\n\nThe organization may use technical means such as whitelisting to prevent the use of browsers and mail applications to enforce this requirement."
+        }
+      ],
+      "id": "SV-254240",
+      "title": "Windows Server 2022 administrative accounts must not be used with applications that access the internet, such as web browsers, or with potential internet sources, such as email.",
+      "impact": 0.7
+    },
+    {
+      "tags": {
+        "check_id": "C-57728r848543_chk",
+        "severity": "medium",
+        "gid": "V-254243",
+        "rid": "SV-254243r991589_rule",
+        "stig_id": "WN22-00-000060",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "fix_id": "F-57679r848544_fix",
+        "cci": [
+          "CCI-000366"
+        ],
+        "nist": [
+          "CM-6 b"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Setting application account passwords to expire may cause applications to stop functioning. However, not changing them on a regular basis exposes them to attack. If managed service accounts are used, this alleviates the need to manually change application account passwords."
+        },
+        {
+          "label": "fix",
+          "data": "Change passwords for manually managed application/service accounts at least annually or when an administrator with knowledge of the password leaves the organization.\n\nIt is recommended that system-managed service accounts be used whenever possible."
+        }
+      ],
+      "id": "SV-254243",
+      "title": "Windows Server 2022 manually managed application account passwords must be changed at least annually or when a system administrator with knowledge of the password leaves the organization.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57745r848594_chk",
+        "severity": "medium",
+        "gid": "V-254260",
+        "rid": "SV-254260r1137695_rule",
+        "stig_id": "WN22-00-000230",
+        "gtitle": "SRG-OS-000138-GPOS-00069",
+        "fix_id": "F-57696r848595_fix",
+        "cci": [
+          "CCI-001090"
+        ],
+        "nist": [
+          "SC-4"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Shares on a system provide network access. To prevent exposing sensitive information, where shares are necessary, permissions must be reconfigured to give the minimum access to accounts that require it."
+        },
+        {
+          "label": "check",
+          "data": "If only system-created shares such as \"ADMIN$\", \"C$\", and \"IPC$\" exist on the system, this is NA. (System-created shares will display a message that it has been shared for administrative purposes when \"Properties\" is selected.)\n\nRun \"Computer Management\".\n\nNavigate to System Tools >> Shared Folders >> Shares.\n\nRight-click any nonsystem-created shares.\n\nSelect \"Properties\".\n\nSelect the \"Share Permissions\" tab.\n\nIf the file shares have not been configured to restrict permissions to the specific groups or accounts that require access, this is a finding.\n\nSelect the \"Security\" tab.\n\nIf the permissions have not been configured to restrict permissions to the specific groups or accounts that require access, this is a finding."
+        },
+        {
+          "label": "fix",
+          "data": "If a nonsystem-created share is required on a system, configure the share and NTFS permissions to limit access to the specific groups or accounts that require it.\n\nRemove any unnecessary nonsystem-created shares."
+        }
+      ],
+      "id": "SV-254260",
+      "title": "Windows Server 2022 nonsystem-created file shares must limit access to groups that require it.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57755r848624_chk",
+        "severity": "medium",
+        "gid": "V-254270",
+        "rid": "SV-254270r958480_rule",
+        "stig_id": "WN22-00-000330",
+        "gtitle": "SRG-OS-000096-GPOS-00050",
+        "fix_id": "F-57706r848625_fix",
+        "cci": [
+          "CCI-000382"
+        ],
+        "nist": [
+          "CM-7 b"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Unnecessary services increase the attack surface of a system. Some of these services may not support required levels of authentication or encryption."
+        },
+        {
+          "label": "check",
+          "data": "If the server has the role of an FTP server, this is NA.\n\nOpen \"PowerShell\".\n\nEnter \"Get-WindowsFeature | Where Name -eq Web-Ftp-Service\".\n\nIf \"Installed State\" is \"Installed\", this is a finding.\n\nAn Installed State of \"Available\" or \"Removed\" is not a finding.\n\nIf the system has the role of an FTP server, this must be documented with the Information System Security Officer (ISSO)."
+        },
+        {
+          "label": "fix",
+          "data": "Uninstall the \"FTP Server\" role.\n\nStart \"Server Manager\".\n\nSelect the server with the role.\n\nScroll down to \"ROLES AND FEATURES\" in the right pane.\n\nSelect \"Remove Roles and Features\" from the drop-down \"TASKS\" list.\n\nSelect the appropriate server on the \"Server Selection\" page and click \"Next\".\n\nDeselect \"FTP Server\" under \"Web Server (IIS)\" on the \"Roles\" page.\n\nClick \"Next\" and \"Remove\" as prompted."
+        }
+      ],
+      "id": "SV-254270",
+      "title": "Windows Server 2022 must not have the Microsoft FTP service installed unless required by the organization.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57765r848654_chk",
+        "severity": "medium",
+        "gid": "V-254280",
+        "rid": "SV-254280r991589_rule",
+        "stig_id": "WN22-00-000430",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "fix_id": "F-57716r848655_fix",
+        "cci": [
+          "CCI-000366"
+        ],
+        "nist": [
+          "CM-6 b"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "The FTP service allows remote users to access shared files and directories that could provide access to system resources and compromise the system, especially if the user can gain access to the root directory of the boot drive."
+        },
+        {
+          "label": "check",
+          "data": "If FTP is not installed on the system, this is NA.\n\nOpen \"Internet Information Services (IIS) Manager\".\n\nSelect \"Sites\" under the server name.\n\nFor any sites with a Binding that lists FTP, right-click the site and select \"Explore\".\n\nIf the site is not defined to a specific folder for shared FTP resources, this is a finding.\n\nIf the site includes any system areas such as root of the drive, Program Files, or Windows directories, this is a finding."
+        },
+        {
+          "label": "fix",
+          "data": "Configure the FTP sites to allow access only to specific FTP shared resources. Do not allow access to other areas of the system."
+        }
+      ],
+      "id": "SV-254280",
+      "title": "Windows Server 2022 FTP servers must be configured to prevent access to the system drive.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57775r848684_chk",
+        "severity": "medium",
+        "gid": "V-254290",
+        "rid": "SV-254290r1051092_rule",
+        "stig_id": "WN22-AC-000060",
+        "gtitle": "SRG-OS-000075-GPOS-00043",
+        "fix_id": "F-57726r848685_fix",
+        "cci": [
+          "CCI-004066",
+          "CCI-000198"
+        ],
+        "nist": [
+          "IA-5 (1) (h)",
+          "IA-5 (1) (d)"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Permitting passwords to be changed in immediate succession within the same day allows users to cycle passwords through their history database. This enables users to effectively negate the purpose of mandating periodic password changes."
+        },
+        {
+          "label": "check",
+          "data": "Verify the effective setting in Local Group Policy Editor.\n\nRun \"gpedit.msc\".\n\nNavigate to Local Computer Policy >> Computer Configuration >> Windows Settings >> Security Settings >> Account Policies >> Password Policy.\n\nIf the value for the \"Minimum password age\" is set to \"0\" days (\"Password can be changed immediately\"), this is a finding.\n\nFor server core installations, run the following command:\n\nSecedit /Export /Areas SecurityPolicy /CFG C:\\\\Path\\\\FileName.Txt\n\nIf \"MinimumPasswordAge\" equals \"0\" in the file, this is a finding."
+        },
+        {
+          "label": "fix",
+          "data": "Configure the policy value for Computer Configuration >> Windows Settings >> Security Settings >> Account Policies >> Password Policy >> Minimum password age to at least \"1\" day."
+        }
+      ],
+      "id": "SV-254290",
+      "title": "Windows Server 2022 minimum password age must be configured to at least one day.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57785r848714_chk",
+        "severity": "medium",
+        "gid": "V-254300",
+        "rid": "SV-254300r991578_rule",
+        "stig_id": "WN22-AU-000070",
+        "gtitle": "SRG-OS-000470-GPOS-00214",
+        "fix_id": "F-57736r848715_fix",
+        "cci": [
+          "CCI-000172"
+        ],
+        "nist": [
+          "AU-12 c"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Maintaining an audit trail of system activity logs can help identify configuration errors, troubleshoot service disruptions, and analyze compromises that have occurred, as well as detect attacks. Audit logs are necessary to provide a trail of evidence in case the system or network is compromised. Collecting this data is essential for analyzing the security of information assets and detecting signs of suspicious and unexpected behavior.\n\nCredential Validation records events related to validation tests on credentials for a user account logon."
+        },
+        {
+          "label": "check",
+          "data": "Security Option \"Audit: Force audit policy subcategory settings (Windows Vista or later) to override audit policy category settings\" must be set to \"Enabled\" (WN22-SO-000050) for the detailed auditing subcategories to be effective. \n\nUse the \"AuditPol\" tool to review the current Audit Policy configuration:\n\nOpen \"PowerShell\" or a \"Command Prompt\" with elevated privileges (\"Run as administrator\").\n\nEnter \"AuditPol /get /category:*\"\n\nCompare the \"AuditPol\" settings with the following:\n\nIf the system does not audit the following, this is a finding.\n\nAccount Logon >> Credential Validation - Success"
+        },
+        {
+          "label": "fix",
+          "data": "Configure the policy value for Computer Configuration >> Windows Settings >> Security Settings >> Advanced Audit Policy Configuration >> System Audit Policies >> Account Logon >> Audit Credential Validation with \"Success\" selected."
+        }
+      ],
+      "id": "SV-254300",
+      "title": "Windows Server 2022 must be configured to audit Account Logon - Credential Validation successes.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57795r848744_chk",
+        "severity": "medium",
+        "gid": "V-254310",
+        "rid": "SV-254310r991578_rule",
+        "stig_id": "WN22-AU-000170",
+        "gtitle": "SRG-OS-000470-GPOS-00214",
+        "fix_id": "F-57746r848745_fix",
+        "cci": [
+          "CCI-000172"
+        ],
+        "nist": [
+          "AU-12 c"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "check', 'Security Option \"Audit: Force audit policy subcategory settings (Windows Vista or later) to override audit policy category settings\" must be set to \"Enabled\" (WN22-SO-000050) for the detailed auditing subcategories to be effective. \n\nUse the \"AuditPol\" tool to review the current Audit Policy configuration:\n\nOpen \"PowerShell\" or a \"Command Prompt\" with elevated privileges (\"Run as administrator\").\n\nEnter \"AuditPol /get /category:*\"\n\nCompare the \"AuditPol\" settings with the following:\n\nIf the system does not audit the following, this is a finding.\n\nLogon/Logoff >> Group Membership - Success"
+        },
+        {
+          "label": "check",
+          "data": "Security Option \"Audit: Force audit policy subcategory settings (Windows Vista or later) to override audit policy category settings\" must be set to \"Enabled\" (WN22-SO-000050) for the detailed auditing subcategories to be effective. \n\nUse the \"AuditPol\" tool to review the current Audit Policy configuration:\n\nOpen \"PowerShell\" or a \"Command Prompt\" with elevated privileges (\"Run as administrator\").\n\nEnter \"AuditPol /get /category:*\"\n\nCompare the \"AuditPol\" settings with the following:\n\nIf the system does not audit the following, this is a finding.\n\nLogon/Logoff >> Group Membership - Success"
+        },
+        {
+          "label": "fix",
+          "data": "Configure the policy value for Computer Configuration >> Windows Settings >> Advanced Audit Policy Configuration >> System Audit Policies >> Logon/Logoff >> Audit Group Membership with \"Success\" selected."
+        }
+      ],
+      "id": "SV-254310",
+      "title": "Windows Server 2022 must be configured to audit Logon/Logoff - Group Membership successes.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57805r848774_chk",
+        "severity": "medium",
+        "gid": "V-254320",
+        "rid": "SV-254320r958732_rule",
+        "stig_id": "WN22-AU-000270",
+        "gtitle": "SRG-OS-000327-GPOS-00127",
+        "fix_id": "F-57756r848775_fix",
+        "satisfies": [
+          "SRG-OS-000327-GPOS-00127",
+          "SRG-OS-000458-GPOS-00203",
+          "SRG-OS-000463-GPOS-00207",
+          "SRG-OS-000468-GPOS-00212"
+        ],
+        "cci": [
+          "CCI-000172",
+          "CCI-002234"
+        ],
+        "nist": [
+          "AU-12 c",
+          "AC-6 (9)"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Maintaining an audit trail of system activity logs can help identify configuration errors, troubleshoot service disruptions, and analyze compromises that have occurred, as well as detect attacks. Audit logs are necessary to provide a trail of evidence in case the system or network is compromised. Collecting this data is essential for analyzing the security of information assets and detecting signs of suspicious and unexpected behavior.\n\nAudit Policy Change records events related to changes in audit policy.\n\n"
+        },
+        {
+          "label": "check",
+          "data": "Security Option \"Audit: Force audit policy subcategory settings (Windows Vista or later) to override audit policy category settings\" must be set to \"Enabled\" (WN22-SO-000050) for the detailed auditing subcategories to be effective. \n\nUse the \"AuditPol\" tool to review the current Audit Policy configuration:\n\nOpen \"PowerShell\" or a \"Command Prompt\" with elevated privileges (\"Run as administrator\").\n\nEnter \"AuditPol /get /category:*\"\n\nCompare the \"AuditPol\" settings with the following:\n\nIf the system does not audit the following, this is a finding.\n\nPolicy Change >> Audit Audit Policy Change - Failure"
+        },
+        {
+          "label": "fix",
+          "data": "Configure the policy value for Computer Configuration >> Windows Settings >> Security Settings >> Advanced Audit Policy Configuration >> System Audit Policies >> Policy Change >> Audit Audit Policy Change with \"Failure\" selected."
+        }
+      ],
+      "id": "SV-254320",
+      "title": "Windows Server 2022 must be configured to audit Policy Change - Audit Policy Change failures.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57835r848864_chk",
+        "severity": "medium",
+        "gid": "V-254350",
+        "rid": "SV-254350r991589_rule",
+        "stig_id": "WN22-CC-000190",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "fix_id": "F-57786r848865_fix",
+        "cci": [
+          "CCI-000366"
+        ],
+        "nist": [
+          "CM-6 b"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "A system that does not require authentication when resuming from sleep may provide access to unauthorized users. Authentication must always be required when accessing a system. This setting ensures users are prompted for a password when the system wakes from sleep (plugged in)."
+        },
+        {
+          "label": "check",
+          "data": "If the following registry value does not exist or is not configured as specified, this is a finding:\n\nRegistry Hive: HKEY_LOCAL_MACHINE\nRegistry Path: \\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Power\\\\PowerSettings\\\\0e796bdb-100d-47d6-a2d5-f7d2daa51f51\\\\\n\nValue Name: ACSettingIndex\n\nType: REG_DWORD\nValue: 0x00000001 (1)"
+        },
+        {
+          "label": "fix",
+          "data": "Configure the policy value for Computer Configuration >> Administrative Templates >> System >> Power Management >> Sleep Settings >> Require a password when a computer wakes (plugged in) to \"Enabled\"."
+        }
+      ],
+      "id": "SV-254350",
+      "title": "Windows Server 2022 users must be prompted to authenticate when the system wakes from sleep (plugged in).",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57865r848954_chk",
+        "severity": "medium",
+        "gid": "V-254380",
+        "rid": "SV-254380r958510_rule",
+        "stig_id": "WN22-CC-000490",
+        "gtitle": "SRG-OS-000125-GPOS-00065",
+        "fix_id": "F-57816r848955_fix",
+        "cci": [
+          "CCI-000877"
+        ],
+        "nist": [
+          "MA-4 c"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Digest authentication is not as strong as other options and may be subject to man-in-the-middle attacks. Disallowing Digest authentication will reduce this potential."
+        },
+        {
+          "label": "check",
+          "data": "If the following registry value does not exist or is not configured as specified, this is a finding:\n\nRegistry Hive: HKEY_LOCAL_MACHINE\nRegistry Path: \\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\WinRM\\\\Client\\\\\n\nValue Name: AllowDigest\n\nType: REG_DWORD\nValue: 0x00000000 (0)"
+        },
+        {
+          "label": "fix",
+          "data": "Configure the policy value for Computer Configuration >> Administrative Templates >> Windows Components >> Windows Remote Management (WinRM) >> WinRM Client >> Disallow Digest authentication to \"Enabled\"."
+        }
+      ],
+      "id": "SV-254380",
+      "title": "Windows Server 2022 Windows Remote Management (WinRM) client must not use Digest authentication.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57885r849014_chk",
+        "severity": "low",
+        "gid": "V-254400",
+        "rid": "SV-254400r970703_rule",
+        "stig_id": "WN22-DC-000160",
+        "gtitle": "SRG-OS-000163-GPOS-00072",
+        "fix_id": "F-57836r849015_fix",
+        "satisfies": [
+          "SRG-OS-000163-GPOS-00072",
+          "SRG-OS-000279-GPOS-00109"
+        ],
+        "cci": [
+          "CCI-001133",
+          "CCI-002361"
+        ],
+        "nist": [
+          "SC-10",
+          "AC-12"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "The failure to terminate inactive network connections increases the risk of a successful attack on the directory server. The longer an established session is in progress, the more time an attacker has to hijack the session, implement a means to passively intercept data, or compromise any protections on client access. For example, if an attacker gains control of a client computer, an existing (already authenticated) session with the directory server could allow access to the directory. The lack of confidentiality protection in LDAP-based sessions increases exposure to this vulnerability.\n\n"
+        },
+        {
+          "label": "check",
+          "data": "This applies to domain controllers. It is NA for other systems.\n\nOpen an elevated \"Command Prompt\" (run as administrator).\n\nEnter \"ntdsutil\".\n\nAt the \"ntdsutil:\" prompt, enter \"LDAP policies\".\n\nAt the \"ldap policy:\" prompt, enter \"connections\".\n\nAt the \"server connections:\" prompt, enter \"connect to server [host-name]\"\n(where [host-name] is the computer name of the domain controller).\n\nAt the \"server connections:\" prompt, enter \"q\".\n\nAt the \"ldap policy:\" prompt, enter \"show values\". \n\nIf the value for MaxConnIdleTime is greater than \"300\" (5 minutes) or is not specified, this is a finding.\n\nEnter \"q\" at the \"ldap policy:\" and \"ntdsutil:\" prompts to exit.\n\nAlternately, Dsquery can be used to display MaxConnIdleTime:\n\nOpen \"Command Prompt (Admin)\".\nEnter the following command (on a single line).\n\ndsquery * \"cn=Default Query Policy,cn=Query-Policies,cn=Directory Service, cn=Windows NT,cn=Services,cn=Configuration,dc=[forest-name]\" -attr LDAPAdminLimits \n\nThe quotes are required and dc=[forest-name] is the fully qualified LDAP name of the domain being reviewed (e.g., dc=disaost,dc=mil).\n\nIf the results do not specify a \"MaxConnIdleTime\" or it has a value greater than \"300\" (5 minutes), this is a finding."
+        },
+        {
+          "label": "fix",
+          "data": "Configure the directory service to terminate LDAP-based network connections to the directory server after 5 minutes of inactivity.\n\nOpen an elevated \"Command prompt\" (run as administrator).\n\nEnter \"ntdsutil\".\n\nAt the \"ntdsutil:\" prompt, enter \"LDAP policies\".\n\nAt the \"ldap policy:\" prompt, enter \"connections\".\n\nAt the \"server connections:\" prompt, enter \"connect to server [host-name]\" (where [host-name] is the computer name of the domain controller).\n\nAt the \"server connections:\" prompt, enter \"q\".\n\nAt the \"ldap policy:\" prompt, enter \"Set MaxConnIdleTime to 300\".\n\nEnter \"Commit Changes\" to save.\n\nEnter \"Show values\" to verify changes.\n\nEnter \"q\" at the \"ldap policy:\" and \"ntdsutil:\" prompts to exit."
+        }
+      ],
+      "id": "SV-254400",
+      "title": "Windows Server 2022 directory service must be configured to terminate LDAP-based network connections to the directory server after five minutes of inactivity.",
+      "impact": 0.3
+    },
+    {
+      "tags": {
+        "check_id": "C-57905r849074_chk",
+        "severity": "medium",
+        "gid": "V-254420",
+        "rid": "SV-254420r1137691_rule",
+        "stig_id": "WN22-DC-000360",
+        "gtitle": "SRG-OS-000080-GPOS-00048",
+        "fix_id": "F-57856r849075_fix",
+        "cci": [
+          "CCI-000213"
+        ],
+        "nist": [
+          "AC-3"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Inappropriate granting of user rights can provide system, administrative, and other high-level capabilities.\n\nAccounts with the \"Allow log on through Remote Desktop Services\" user right can access a system through Remote Desktop."
+        },
+        {
+          "label": "check",
+          "data": "This applies to domain controllers, it is NA for other systems.\n\nVerify the effective setting in Local Group Policy Editor.\n\nRun \"gpedit.msc\".\n\nNavigate to Local Computer Policy >> Computer Configuration >> Windows Settings >> Security Settings >> Local Policies >> User Rights Assignment.\n\nIf any accounts or groups other than the following are granted the \"Allow log on through Remote Desktop Services\" user right, this is a finding.\n\n- Administrators\n\nFor server core installations, run the following command:\n\nSecedit /Export /Areas User_Rights /cfg c:\\\\path\\\\filename.txt\n\nReview the text file.\n\nIf any SIDs other than the following are granted the \"SeRemoteInteractiveLogonRight\" user right, this is a finding.\n\nS-1-5-32-544 (Administrators)"
+        },
+        {
+          "label": "fix",
+          "data": "Configure the policy value for Computer Configuration >> Windows Settings >> Security Settings >> Local Policies >> User Rights Assignment >> Allow log on through Remote Desktop Services to include only the following accounts or groups:\n\n- Administrators"
+        }
+      ],
+      "id": "SV-254420",
+      "title": "Windows Server 2022 Allow log on through Remote Desktop Services user right must only be assigned to the Administrators group on domain controllers.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57935r849164_chk",
+        "severity": "medium",
+        "gid": "V-254450",
+        "rid": "SV-254450r958908_rule",
+        "stig_id": "WN22-SO-000060",
+        "gtitle": "SRG-OS-000423-GPOS-00187",
+        "fix_id": "F-57886r849165_fix",
+        "satisfies": [
+          "SRG-OS-000423-GPOS-00187",
+          "SRG-OS-000424-GPOS-00188"
+        ],
+        "cci": [
+          "CCI-002418",
+          "CCI-002421"
+        ],
+        "nist": [
+          "SC-8",
+          "SC-8 (1)"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Requests sent on the secure channel are authenticated, and sensitive information (such as passwords) is encrypted, but not all information is encrypted. If this policy is enabled, outgoing secure channel traffic will be encrypted and signed.\n\n"
+        },
+        {
+          "label": "check",
+          "data": "If the following registry value does not exist or is not configured as specified, this is a finding:\n\nRegistry Hive: HKEY_LOCAL_MACHINE \nRegistry Path: \\\\SYSTEM\\\\CurrentControlSet\\\\Services\\\\Netlogon\\\\Parameters\\\\\n\nValue Name: RequireSignOrSeal\n\nValue Type: REG_DWORD\nValue: 0x00000001 (1)"
+        },
+        {
+          "label": "fix",
+          "data": "Configure the policy value for Computer Configuration >> Windows Settings >> Security Settings >> Local Policies >> Security Options >> Domain member: Digitally encrypt or sign secure channel data (always) to \"Enabled\"."
+        }
+      ],
+      "id": "SV-254450",
+      "title": "Windows Server 2022 setting Domain member: Digitally encrypt or sign secure channel data (always) must be configured to Enabled.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57965r1050598_chk",
+        "severity": "medium",
+        "gid": "V-254480",
+        "rid": "SV-254480r1137699_rule",
+        "stig_id": "WN22-SO-000360",
+        "gtitle": "SRG-OS-000478-GPOS-00223",
+        "fix_id": "F-57916r849255_fix",
+        "cci": [
+          "CCI-002450"
+        ],
+        "nist": [
+          "SC-13 b"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "This setting ensures the system uses algorithms that are FIPS-compliant for encryption, hashing, and signing. FIPS-compliant algorithms meet specific standards established by the U.S. Government and must be the algorithms used for all OS encryption functions."
+        },
+        {
+          "label": "check",
+          "data": "This is NA if the host is running SharePoint.                                                                               If the following registry value does not exist or is not configured as specified, this is a finding:\n\nRegistry Hive: HKEY_LOCAL_MACHINE\nRegistry Path: \\\\SYSTEM\\\\CurrentControlSet\\\\Control\\\\Lsa\\\\FIPSAlgorithmPolicy\\\\\n\nValue Name: Enabled\n\nValue Type: REG_DWORD\nValue: 0x00000001 (1)\n \nClients with this setting enabled will not be able to communicate via digitally encrypted or signed protocols with servers that do not support these algorithms. Both the browser and web server must be configured to use TLS; otherwise the browser will not be able to connect to a secure site."
+        },
+        {
+          "label": "fix",
+          "data": "Configure the policy value for Computer Configuration >> Windows Settings >> Security Settings >> Local Policies >> Security Options >> System cryptography: Use FIPS compliant algorithms for encryption, hashing, and signing to \"Enabled\"."
+        }
+      ],
+      "id": "SV-254480",
+      "title": "Windows Server 2022 must be configured to use FIPS-compliant algorithms for encryption, hashing, and signing.",
+      "impact": 0.5
+    },
+    {
+      "tags": {
+        "check_id": "C-57985r849314_chk",
+        "severity": "high",
+        "gid": "V-254500",
+        "rid": "SV-254500r958726_rule",
+        "stig_id": "WN22-UR-000100",
+        "gtitle": "SRG-OS-000324-GPOS-00125",
+        "fix_id": "F-57936r849315_fix",
+        "cci": [
+          "CCI-002235"
+        ],
+        "nist": [
+          "AC-6 (10)"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Inappropriate granting of user rights can provide system, administrative, and other high-level capabilities.\n\nAccounts with the \"Debug programs\" user right can attach a debugger to any process or to the kernel, providing complete access to sensitive and critical operating system components. This right is given to Administrators in the default configuration."
+        },
+        {
+          "label": "check",
+          "data": "Verify the effective setting in Local Group Policy Editor.\n\nRun \"gpedit.msc\".\n\nNavigate to Local Computer Policy >> Computer Configuration >> Windows Settings >> Security Settings >> Local Policies >> User Rights Assignment.\n\nIf any accounts or groups other than the following are granted the \"Debug programs\" user right, this is a finding:\n\n- Administrators\n\nFor server core installations, run the following command:\n\nSecedit /Export /Areas User_Rights /cfg c:\\\\path\\\\filename.txt\n\nReview the text file.\n\nIf any SIDs other than the following are granted the \"SeDebugPrivilege\" user right, this is a finding:\n\nS-1-5-32-544 (Administrators)\n\nIf an application requires this user right, this would not be a finding.\n\nVendor documentation must support the requirement for having the user right.\n\nThe requirement must be documented with the Information System Security Officer (ISSO).\n\nThe application account must meet requirements for application account passwords, such as length (WN22-00-000050) and required frequency of changes (WN22-00-000060).\n\nPasswords for application accounts with this user right must be protected as highly privileged accounts."
+        },
+        {
+          "label": "fix",
+          "data": "Configure the policy value for Computer Configuration >> Windows Settings >> Security Settings >> Local Policies >> User Rights Assignment >> Debug programs to include only the following accounts or groups:\n\n- Administrators"
+        }
+      ],
+      "id": "SV-254500",
+      "title": "Windows Server 2022 debug programs user right must only be assigned to the Administrators group.",
+      "impact": 0.7
+    },
+    {
+      "tags": {
+        "check_id": "C-57995r849344_chk",
+        "severity": "medium",
+        "gid": "V-254510",
+        "rid": "SV-254510r958726_rule",
+        "stig_id": "WN22-UR-000200",
+        "gtitle": "SRG-OS-000324-GPOS-00125",
+        "fix_id": "F-57946r849345_fix",
+        "cci": [
+          "CCI-002235"
+        ],
+        "nist": [
+          "AC-6 (10)"
+        ],
+        "documentable": true
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Inappropriate granting of user rights can provide system, administrative, and other high-level capabilities.\n\nAccounts with the \"Profile single process\" user right can monitor nonsystem processes performance. An attacker could use this to identify processes to attack."
+        },
+        {
+          "label": "check",
+          "data": "Verify the effective setting in Local Group Policy Editor.\n\nRun \"gpedit.msc\".\n\nNavigate to Local Computer Policy >> Computer Configuration >> Windows Settings >> Security Settings >> Local Policies >> User Rights Assignment.\n\nIf any accounts or groups other than the following are granted the \"Profile single process\" user right, this is a finding:\n\n- Administrators\n\nFor server core installations, run the following command:\n\nSecedit /Export /Areas User_Rights /cfg c:\\\\path\\\\filename.txt\n\nReview the text file.\n\nIf any SIDs other than the following are granted the \"SeProfileSingleProcessPrivilege\" user right, this is a finding:\n\nS-1-5-32-544 (Administrators)"
+        },
+        {
+          "label": "fix",
+          "data": "Configure the policy value for Computer Configuration >> Windows Settings >> Security Settings >> Local Policies >> User Rights Assignment >> Profile single process to include only the following accounts or groups:\n\n- Administrators"
+        }
+      ],
+      "id": "SV-254510",
+      "title": "Windows Server 2022 profile single process user right must only be assigned to the Administrators group.",
+      "impact": 0.5
+    }
+  ],
+  "checksum": {
+    "algorithm": "sha256",
+    "value": "ca3ab7edf62a0d741bb72ffb730890715cc7bb45c46fe3e9544485585bf1e9b6"
+  }
+}

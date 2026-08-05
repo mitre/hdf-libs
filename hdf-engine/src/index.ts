@@ -11,6 +11,9 @@ export { detect, type HdfDocType } from './detect.js';
 // Query engine (peer of hdf-engine/go/filter.go).
 export { filter, type FilterOptions, type Match } from './query.js';
 
+// Document loader core (peer of hdf-engine/go/loader.go).
+export { load, detectFormat, type InputFormat, type LoadResult } from './loader.js';
+
 // Compliance & threshold engine (peer of hdf-engine/go/compliance.go).
 export {
   countControlsByStatusSeverity,

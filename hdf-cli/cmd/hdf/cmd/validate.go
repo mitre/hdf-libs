@@ -6,6 +6,7 @@ import (
 	"os"
 
 	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
@@ -121,7 +122,7 @@ func runValidate(_ *cobra.Command, args []string) error {
 		// Build line map for file inputs (not stdin) to annotate errors
 		var lineMap map[string]int
 		if filename != "-" {
-			lineMap = jsonPathLineMap(data)
+			lineMap = hdfutil.JSONPathLineMap(data)
 		}
 
 		if jsonOutput {
@@ -174,13 +175,13 @@ func outputValidationHuman(displayName, schemaType string, vr *validators.Valida
 	for _, e := range vr.Errors {
 		line := 0
 		if lineMap != nil {
-			line = lookupLineNumber(lineMap, e.Field)
+			line = hdfutil.LookupLineNumber(lineMap, e.Field)
 		}
 
 		switch {
-		case line > 0 && e.Field != "" && e.Field != fieldRoot:
+		case line > 0 && e.Field != "" && e.Field != hdfutil.FieldRoot:
 			fmt.Fprintf(os.Stderr, "    line %d: %s: %s\n", line, e.Field, e.Description)
-		case e.Field != "" && e.Field != fieldRoot:
+		case e.Field != "" && e.Field != hdfutil.FieldRoot:
 			fmt.Fprintf(os.Stderr, "    %s: %s\n", e.Field, e.Description)
 		default:
 			fmt.Fprintf(os.Stderr, "    %s\n", e.Description)
@@ -201,7 +202,7 @@ func outputValidationJSON(displayName, schemaType string, vr *validators.Validat
 	for _, e := range vr.Errors {
 		ewl := errorWithLine{Field: e.Field, Description: e.Description}
 		if lineMap != nil {
-			ewl.Line = lookupLineNumber(lineMap, e.Field)
+			ewl.Line = hdfutil.LookupLineNumber(lineMap, e.Field)
 		}
 		errors = append(errors, ewl)
 	}
