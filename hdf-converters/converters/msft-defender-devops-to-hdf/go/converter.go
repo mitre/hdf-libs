@@ -54,6 +54,7 @@ type Policy struct {
 
 type msdoResult struct {
 	RuleID     string                 `json:"ruleId"`
+	Rank       *float64               `json:"rank"`
 	Properties map[string]interface{} `json:"properties"`
 }
 
@@ -64,6 +65,8 @@ type runEnrichment struct {
 	// resultProps maps ruleId to a list of result-level property maps.
 	// Each entry corresponds to one SARIF result for that rule.
 	resultProps map[string][]map[string]interface{}
+	// resultRanks maps ruleId to the first result-level rank seen for that rule.
+	resultRanks map[string]float64
 }
 
 // ConvertMsftDefenderDevopsToHDF converts Microsoft Defender for DevOps SARIF output to HDF format.
@@ -161,11 +164,17 @@ func extractEnrichments(raw msdoSarif) ([]hdf.Component, []runEnrichment) {
 			policyStr = strings.Join(parts, ", ")
 		}
 
-		// Extract result-level properties, keyed by ruleId
+		// Extract result-level properties and ranks, keyed by ruleId
 		resultProps := make(map[string][]map[string]interface{})
+		resultRanks := make(map[string]float64)
 		for _, res := range run.Results {
 			if len(res.Properties) > 0 {
 				resultProps[res.RuleID] = append(resultProps[res.RuleID], res.Properties)
+			}
+			if res.Rank != nil {
+				if _, seen := resultRanks[res.RuleID]; !seen {
+					resultRanks[res.RuleID] = *res.Rank
+				}
 			}
 		}
 
@@ -173,6 +182,7 @@ func extractEnrichments(raw msdoSarif) ([]hdf.Component, []runEnrichment) {
 			toolTags:    tags,
 			policyTag:   policyStr,
 			resultProps: resultProps,
+			resultRanks: resultRanks,
 		}
 	}
 
@@ -213,6 +223,11 @@ func applyEnrichments(result *hdf.HDFResults, targets []hdf.Component, runEnrich
 			if props, ok := re.resultProps[req.ID]; ok && len(props) > 0 {
 				// Store the first result's properties as representative
 				req.Tags["msdo_properties"] = props[0]
+			}
+
+			// Add result-level rank for this requirement's ruleId
+			if rank, ok := re.resultRanks[req.ID]; ok {
+				req.Tags["rank"] = rank
 			}
 		}
 	}

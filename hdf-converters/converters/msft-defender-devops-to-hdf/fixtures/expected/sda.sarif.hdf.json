@@ -178,6 +178,7 @@
               "SA-11",
               "RA-5"
             ],
+            "rank": 94,
             "severity": "error"
           },
           "title": "X.509 Certificate Private Key",
