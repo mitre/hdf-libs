@@ -141,6 +141,12 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 	cciTags := cci.NISTToCCI(nistTags)
 	tags := shared.BuildNISTCCITags(nistTags, cciTags)
 
+	// Surface the Fortify ClassInfo categorization (Seven Pernicious Kingdoms
+	// category, vulnerability class/subtype, analyzer) from the representative
+	// finding. These are parsed but were otherwise dropped. Emit each only when
+	// present in the source.
+	addClassInfoTags(tags, vulns)
+
 	// Title from Abstract (HTML stripped)
 	titleStr := hdfutil.StripHTML(desc.Abstract)
 
@@ -208,6 +214,29 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 	}
 
 	return req
+}
+
+// addClassInfoTags copies the Fortify ClassInfo categorization from the
+// representative finding into tags. Keys: kingdom (Seven Pernicious Kingdoms),
+// class_type (vulnerability class — "class_type" avoids colliding with any
+// generic "type" tag), subtype, analyzer. Absent source fields are omitted.
+func addClassInfoTags(tags map[string]interface{}, vulns []Vulnerability) {
+	if len(vulns) == 0 {
+		return
+	}
+	ci := vulns[0].ClassInfo
+	if ci.Kingdom != "" {
+		tags["kingdom"] = ci.Kingdom
+	}
+	if ci.Type != "" {
+		tags["class_type"] = ci.Type
+	}
+	if ci.Subtype != "" {
+		tags["subtype"] = ci.Subtype
+	}
+	if ci.AnalyzerName != "" {
+		tags["analyzer"] = ci.AnalyzerName
+	}
 }
 
 // buildRequirementCode extracts the raw source snippet text from the first

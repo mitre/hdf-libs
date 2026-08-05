@@ -324,6 +324,22 @@ function buildRequirementCode(
   return parts.join('\n');
 }
 
+// Copy the Fortify ClassInfo categorization from the representative finding into
+// tags. Keys: kingdom (Seven Pernicious Kingdoms), class_type (vulnerability
+// class — "class_type" avoids colliding with any generic "type" tag), subtype,
+// analyzer. Absent source fields are omitted.
+function addClassInfoTags(
+  tags: Record<string, unknown>,
+  vulns: FVDLVulnerability[],
+): void {
+  if (vulns.length === 0) return;
+  const ci = vulns[0]!.ClassInfo;
+  if (ci?.Kingdom) tags.kingdom = ci.Kingdom;
+  if (ci?.Type) tags.class_type = ci.Type;
+  if (ci?.Subtype) tags.subtype = ci.Subtype;
+  if (ci?.AnalyzerName) tags.analyzer = ci.AnalyzerName;
+}
+
 function buildRequirement(
   desc: FVDLDescription,
   vulns: FVDLVulnerability[],
@@ -340,6 +356,12 @@ function buildRequirement(
   }
   const cciTags = nistToCci(nistTags);
   const tags = buildNistCciTags(nistTags, cciTags);
+
+  // Surface the Fortify ClassInfo categorization (Seven Pernicious Kingdoms
+  // category, vulnerability class/subtype, analyzer) from the representative
+  // finding. These are parsed but were otherwise dropped. Emit each only when
+  // present in the source.
+  addClassInfoTags(tags, vulns);
 
   // Title from Abstract (HTML stripped)
   const title = stripFvdlMarkup(desc.Abstract ?? '');

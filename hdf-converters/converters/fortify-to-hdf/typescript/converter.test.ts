@@ -662,4 +662,50 @@ describe('Fortify to HDF Converter', () => {
     expect(fix).toBeDefined();
     expect(fix!.data).toBe('Fix it');
   });
+
+  // The Fortify ClassInfo categorization (kingdom, class_type, subtype, analyzer)
+  // must surface as requirement.tags from the representative finding.
+  it('should surface ClassInfo categorization as tags', async () => {
+    const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+
+    // Empty Catch Block: all four ClassInfo fields present.
+    const exc = findRequirement(bl, '8843F319-8A22-4101-A378-C2B2F2597988')!;
+    const excTags = exc.tags as Record<string, unknown>;
+    expect(excTags.kingdom).toBe('Errors');
+    expect(excTags.class_type).toBe('Poor Error Handling');
+    expect(excTags.subtype).toBe('Empty Catch Block');
+    expect(excTags.analyzer).toBe('structural');
+    // class_type must not clobber the NIST/CCI tags.
+    expect(excTags.nist).toBeDefined();
+
+    // Path Manipulation carries no <Subtype> — that key is omitted.
+    const pathManip = findRequirement(bl, '823FE039-A7FE-4AAD-B976-9EC53FFE4A59')!;
+    const pmTags = pathManip.tags as Record<string, unknown>;
+    expect(pmTags.kingdom).toBe('Input Validation and Representation');
+    expect(pmTags.class_type).toBe('Path Manipulation');
+    expect(pmTags.analyzer).toBe('dataflow');
+    expect('subtype' in pmTags).toBe(false);
+
+    void reqs;
+  });
+
+  // A Description whose classID matches no vulnerability (no ClassInfo) must not
+  // emit any ClassInfo tags.
+  it('should omit ClassInfo tags when no vulnerability is present', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities/>
+<Description classID="NOVULN"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    const tags = reqs[0]!.tags as Record<string, unknown>;
+    for (const key of ['kingdom', 'class_type', 'subtype', 'analyzer']) {
+      expect(key in tags).toBe(false);
+    }
+  });
 });

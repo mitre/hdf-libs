@@ -567,6 +567,52 @@ func findDescription(t *testing.T, descs []hdf.Description, label string) string
 	return ""
 }
 
+// The Fortify ClassInfo categorization (kingdom, class_type, subtype, analyzer)
+// must surface as requirement.tags, sourced from the representative finding.
+func TestConvertFortifyToHDF_ClassInfoTags(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+
+	// Empty Catch Block: all four ClassInfo fields present.
+	exc := shared.MustFindRequirement(t, baseline.Requirements, "8843F319-8A22-4101-A378-C2B2F2597988")
+	assert.Equal(t, "Errors", exc.Tags["kingdom"])
+	assert.Equal(t, "Poor Error Handling", exc.Tags["class_type"])
+	assert.Equal(t, "Empty Catch Block", exc.Tags["subtype"])
+	assert.Equal(t, "structural", exc.Tags["analyzer"])
+
+	// class_type must not collide with the NIST/CCI tags.
+	assert.NotNil(t, exc.Tags["nist"])
+
+	// Path Manipulation carries no <Subtype> — that key must be omitted while the
+	// other three are present.
+	pathManip := shared.MustFindRequirement(t, baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
+	assert.Equal(t, "Input Validation and Representation", pathManip.Tags["kingdom"])
+	assert.Equal(t, "Path Manipulation", pathManip.Tags["class_type"])
+	assert.Equal(t, "dataflow", pathManip.Tags["analyzer"])
+	_, hasSubtype := pathManip.Tags["subtype"]
+	assert.False(t, hasSubtype, "subtype must be omitted when the source ClassInfo carries none")
+}
+
+// A Description whose classID matches no vulnerability (no ClassInfo available)
+// must not emit any ClassInfo tags.
+func TestConvertFortifyToHDF_ClassInfoTags_Absent(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities/>
+<Description classID="NOVULN"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	for _, key := range []string{"kingdom", "class_type", "subtype", "analyzer"} {
+		_, ok := req.Tags[key]
+		assert.False(t, ok, "%s must be omitted when no ClassInfo is available", key)
+	}
+}
+
 func TestConvertFortifyToHDF_VerificationMethod(t *testing.T) {
 	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
 	result, err := ConvertFortifyToHDF(inputData, converterVersion)

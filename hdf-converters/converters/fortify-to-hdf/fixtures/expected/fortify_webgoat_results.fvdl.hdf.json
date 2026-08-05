@@ -31,9 +31,12 @@
           "id": "823FE039-A7FE-4AAD-B976-9EC53FFE4A59",
           "impact": 0.6,
           "tags": {
+            "analyzer": "dataflow",
             "cci": [
               "CCI-001310"
             ],
+            "class_type": "Path Manipulation",
+            "kingdom": "Input Validation and Representation",
             "nist": [
               "SI-10"
             ]
@@ -79,12 +82,16 @@
           "id": "8843F319-8A22-4101-A378-C2B2F2597988",
           "impact": 0.4,
           "tags": {
+            "analyzer": "structural",
             "cci": [
               "CCI-001312"
             ],
+            "class_type": "Poor Error Handling",
+            "kingdom": "Errors",
             "nist": [
               "SI-11"
-            ]
+            ],
+            "subtype": "Empty Catch Block"
           },
           "code": "HttpHeaders httpHeaders = new HttpHeaders();\n            HttpEntity httpEntity = new HttpEntity(httpHeaders);\n            new RestTemplate().exchange(String.format(\"http://%s/PasswordReset/reset/reset-password/%s\", host, resetLink), HttpMethod.GET, httpEntity, Void.class);\n        } catch (Exception e) {\n            //don't care\n        }\n    }\n}",
           "controlType": "technical",
@@ -139,11 +146,14 @@
           "id": "FE4EADF2-7055-4C36-863E-5A01C4A0E1A4",
           "impact": 0.6,
           "tags": {
+            "analyzer": "semantic",
             "cci": [
               "CCI-001312",
               "CCI-001368",
               "CCI-001414"
             ],
+            "class_type": "System Information Leak",
+            "kingdom": "Encapsulation",
             "nist": [
               "AC-4",
               "SI-11"
@@ -195,14 +205,18 @@
           "id": "3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E",
           "impact": 0.4,
           "tags": {
+            "analyzer": "structural",
             "cci": [
               "CCI-001643",
               "CCI-003173"
             ],
+            "class_type": "Dead Code",
+            "kingdom": "Code Quality",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "subtype": "Unused Field"
           },
           "code": "private String id;\n        private String hostname;\n        private String ip;\n        private String mac;\n        private String status;\n        private String description;\n    }",
           "title": "The field is never used. This field is never used.",
@@ -232,14 +246,18 @@
           "id": "B30AA17C-87EC-42CF-9160-CFDF122CE28E",
           "impact": 0.4,
           "tags": {
+            "analyzer": "structural",
             "cci": [
               "CCI-001643",
               "CCI-003173"
             ],
+            "class_type": "Poor Style",
+            "kingdom": "Code Quality",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "subtype": "Value Never Read"
           },
           "code": "JavaFileObject javaObjectFromString = getJavaFileContentsAsString(s);\n        Iterable fileObjects = Arrays.asList(javaObjectFromString);\n        JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnosticsCollector, null, null, fileObjects);\n        Boolean result = task.call();\n        List\u003cDiagnostic\u003e diagnostics = diagnosticsCollector.getDiagnostics();\n        return diagnostics;\n    }\nJavaFileObject javaObjectFromString = getJavaFileContentsAsString(s);\n        Iterable fileObjects = Arrays.asList(javaObjectFromString);\n        JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnosticsCollector, null, null, fileObjects);\n        Boolean result = task.call();\n        List\u003cDiagnostic\u003e diagnostics = diagnosticsCollector.getDiagnostics();\n        return diagnostics;\n    }",
           "title": "The method in never uses the value it assigns to the variable on line . The variable's value is assigned but never used, making it a dead store.",
