@@ -46,6 +46,7 @@ interface CheckovSummary {
 
 interface CheckovCheck {
   check_id: string;
+  bc_check_id?: string | null;
   check_name: string;
   check_result: CheckovCheckResult;
   severity: string | null;
@@ -142,6 +143,10 @@ function buildRequirement(checkId: string, group: CheckWithType[], scanTime: Dat
   const checkTypes = [...new Set(group.map((c) => c.checkType).filter((t) => t !== ''))].sort();
   if (checkTypes.length > 0) {
     tags['check_type'] = checkTypes;
+  }
+  // Bridgecrew check identifier (e.g. "BC_AWS_S3_16"); omit when null/absent.
+  if (rep.bc_check_id) {
+    tags['bc_check_id'] = rep.bc_check_id;
   }
 
   const descriptions: Description[] = [

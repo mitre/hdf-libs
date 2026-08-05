@@ -23,6 +23,7 @@
           "id": "CKV_AWS_275",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_AWS_IAM_79",
             "check_type": [
               "terraform"
             ],
@@ -56,6 +57,7 @@
           "id": "CKV_AWS_41",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_AWS_SECRETS_5",
             "check_type": [
               "terraform"
             ],
@@ -94,6 +96,7 @@
           "id": "CKV_TF_1",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_CROSS_1",
             "check_type": [
               "terraform"
             ],
@@ -128,6 +131,7 @@
           "id": "CKV_AWS_18",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_AWS_S3_13",
             "check_type": [
               "terraform"
             ],
@@ -162,6 +166,7 @@
           "id": "CKV2_AWS_6",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_AWS_NETWORKING_52",
             "check_type": [
               "terraform"
             ],
@@ -195,6 +200,7 @@
           "id": "CKV_DOCKER_11",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_DKR_GENERAL_9",
             "check_type": [
               "dockerfile"
             ],
@@ -228,6 +234,7 @@
           "id": "CKV_DOCKER_5",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_DKR_4",
             "check_type": [
               "dockerfile"
             ],
@@ -261,6 +268,7 @@
           "id": "CKV_DOCKER_7",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_DKR_7",
             "check_type": [
               "dockerfile"
             ],
@@ -294,6 +302,7 @@
           "id": "CKV_DOCKER_2",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_DKR_2",
             "check_type": [
               "dockerfile"
             ],

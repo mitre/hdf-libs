@@ -294,6 +294,49 @@ describe('checkov to HDF converter', async () => {
       expect(ckvTF1?.tags?.['nist']).toEqual(['SA-11', 'RA-5']);
     });
 
+    it('tags each requirement with its Bridgecrew bc_check_id', async () => {
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const byId = new Map(hdf.baselines[0]!.requirements.map((r) => [r.id, r] as const));
+      expect(byId.get('CKV_TF_1')?.tags?.['bc_check_id']).toBe('BC_CROSS_1');
+      expect(byId.get('CKV_AWS_18')?.tags?.['bc_check_id']).toBe('BC_AWS_S3_13');
+    });
+
+    it('omits the bc_check_id tag when the source field is absent', async () => {
+      const doc = {
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [
+            { check_id: 'CKV_NOBC_1', check_name: 'no bc', check_result: { result: 'FAILED' }, resource: 'r', file_path: 'f', file_line_range: [1, 2], severity: null },
+          ],
+          skipped_checks: [],
+        },
+        summary: { passed: 0, failed: 1, skipped: 0, parsing_errors: 0, resource_count: 1, checkov_version: '3.2.0' },
+      };
+      const hdf = JSON.parse(await convertCheckovToHdf(JSON.stringify(doc))) as HDFResults;
+      const req = hdf.baselines?.[0]?.requirements?.[0];
+      expect(req?.id).toBe('CKV_NOBC_1');
+      expect(req?.tags?.['bc_check_id']).toBeUndefined();
+    });
+
+    it('omits the bc_check_id tag when the source field is null', async () => {
+      const doc = {
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [
+            { check_id: 'CKV_NULLBC_1', bc_check_id: null, check_name: 'null bc', check_result: { result: 'FAILED' }, resource: 'r', file_path: 'f', file_line_range: [1, 2], severity: null },
+          ],
+          skipped_checks: [],
+        },
+        summary: { passed: 0, failed: 1, skipped: 0, parsing_errors: 0, resource_count: 1, checkov_version: '3.2.0' },
+      };
+      const hdf = JSON.parse(await convertCheckovToHdf(JSON.stringify(doc))) as HDFResults;
+      const req = hdf.baselines?.[0]?.requirements?.[0];
+      expect(req?.id).toBe('CKV_NULLBC_1');
+      expect(req?.tags?.['bc_check_id']).toBeUndefined();
+    });
+
     it('should synthesize a passed placeholder for empty checks', async () => {
       const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('empty.json'))) as HDFResults;
       expect(hdf.baselines).toHaveLength(1);
