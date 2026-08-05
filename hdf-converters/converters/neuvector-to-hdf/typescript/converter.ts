@@ -249,6 +249,10 @@ function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequire
     tags['cve'] = cveIDs;
   }
 
+  if (vuln.feed_rating) {
+    tags['feed_rating'] = vuln.feed_rating;
+  }
+
   const descriptions: Description[] = [
     { label: 'default', data: vuln.description },
   ];

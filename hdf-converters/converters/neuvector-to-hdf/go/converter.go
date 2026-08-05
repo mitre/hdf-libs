@@ -260,6 +260,9 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequi
 	if len(cveIDs) > 0 {
 		extras["cve"] = hdfutil.StringsToInterfaces(cveIDs)
 	}
+	if vuln.FeedRating != "" {
+		extras["feed_rating"] = vuln.FeedRating
+	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
 	descriptions := []hdf.Description{

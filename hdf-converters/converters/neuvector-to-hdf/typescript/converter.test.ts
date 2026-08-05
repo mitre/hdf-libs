@@ -372,6 +372,39 @@ describe('neuvector to HDF converter', async () => {
     });
   });
 
+  describe('feed_rating tag', async () => {
+    it('maps vulnerability.feed_rating to tags.feed_rating as a string', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req!.tags?.['feed_rating']).toBe('Critical');
+
+      const medium = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36217/avahi/0.8-r0'
+      );
+      expect(medium!.tags?.['feed_rating']).toBe('Medium');
+    });
+
+    it('omits tags.feed_rating when the vulnerability carries no feed_rating', async () => {
+      const input = JSON.stringify({
+        error_message: '',
+        report: {
+          image_id: 'a', registry: 'r', repository: 'x/y', tag: 't', digest: 'd',
+          size: 1, author: '', base_os: 'alpine', created_at: '2024-01-01T00:00:00Z',
+          cvedb_version: '1', cvedb_create_time: '2024-01-01T00:00:00Z', layers: [],
+          vulnerabilities: [{
+            name: 'CVE-2020-0001', score: 5, severity: 'High', vectors: '', description: 'x',
+            file_name: '', package_name: 'pkg', package_version: '1.0', fixed_version: '',
+            link: '', score_v3: 0, vectors_v3: '', published_timestamp: 1, last_modified_timestamp: 1,
+          }],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.tags?.['feed_rating']).toBeUndefined();
+    });
+  });
+
   describe('requirement structure', async () => {
     it('should use name/package_name/package_version as ID', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;

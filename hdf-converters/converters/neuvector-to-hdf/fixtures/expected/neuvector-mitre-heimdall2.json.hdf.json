@@ -43,6 +43,7 @@
             "cve": [
               "CVE-2023-37920"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -98,6 +99,7 @@
             "cve": [
               "CVE-2020-17049"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -159,6 +161,7 @@
               "CVE-2023-44487",
               "CVE-2023-45143"
             ],
+            "feed_rating": "Important",
             "nist": [
               "SI-2",
               "RA-5"
@@ -220,6 +223,7 @@
               "CVE-2023-44487",
               "CVE-2023-45143"
             ],
+            "feed_rating": "Important",
             "nist": [
               "SI-2",
               "RA-5"
@@ -275,6 +279,7 @@
             "cve": [
               "CVE-2019-12900"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -330,6 +335,7 @@
             "cve": [
               "CVE-2020-21674"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -385,6 +391,7 @@
             "cve": [
               "CVE-2021-42694"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -440,6 +447,7 @@
             "cve": [
               "CVE-2021-42694"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -495,6 +503,7 @@
             "cve": [
               "CVE-2018-1000654"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -550,6 +559,7 @@
             "cve": [
               "CVE-2022-4899"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -605,6 +615,7 @@
             "cve": [
               "CVE-2019-17543"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -667,6 +678,7 @@
               "CVE-2024-22017",
               "CVE-2024-22019"
             ],
+            "feed_rating": "Important",
             "nist": [
               "SI-2",
               "RA-5"
@@ -722,6 +734,7 @@
             "cve": [
               "CVE-2022-29244"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -782,6 +795,7 @@
               "CVE-2024-27983",
               "CVE-2024-28182"
             ],
+            "feed_rating": "Important",
             "nist": [
               "SI-2",
               "RA-5"
@@ -842,6 +856,7 @@
               "CVE-2024-27983",
               "CVE-2024-28182"
             ],
+            "feed_rating": "Important",
             "nist": [
               "SI-2",
               "RA-5"
@@ -897,6 +912,7 @@
             "cve": [
               "CVE-2022-29244"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -959,6 +975,7 @@
               "CVE-2024-22017",
               "CVE-2024-22019"
             ],
+            "feed_rating": "Important",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1014,6 +1031,7 @@
             "cve": [
               "CVE-2024-4068"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1069,6 +1087,7 @@
             "cve": [
               "CVE-2022-29244"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1124,6 +1143,7 @@
             "cve": [
               "CVE-2022-29244"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1179,6 +1199,7 @@
             "cve": [
               "CVE-2019-19244"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1234,6 +1255,7 @@
             "cve": [
               "CVE-2024-7264"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1289,6 +1311,7 @@
             "cve": [
               "CVE-2024-25260"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1344,6 +1367,7 @@
             "cve": [
               "CVE-2021-33294"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1399,6 +1423,7 @@
             "cve": [
               "CVE-2019-8906"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1454,6 +1479,7 @@
             "cve": [
               "CVE-2019-8905"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1509,6 +1535,7 @@
             "cve": [
               "CVE-2023-4156"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1564,6 +1591,7 @@
             "cve": [
               "CVE-2023-32665"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1619,6 +1647,7 @@
             "cve": [
               "CVE-2023-32611"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1674,6 +1703,7 @@
             "cve": [
               "CVE-2023-29499"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1729,6 +1759,7 @@
             "cve": [
               "CVE-2023-32636"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1784,6 +1815,7 @@
             "cve": [
               "CVE-2022-3219"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1839,6 +1871,7 @@
             "cve": [
               "CVE-2021-4209"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1894,6 +1927,7 @@
             "cve": [
               "CVE-2023-5455"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1949,6 +1983,7 @@
             "cve": [
               "CVE-2018-1000880"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2004,6 +2039,7 @@
             "cve": [
               "CVE-2018-1000879"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2059,6 +2095,7 @@
             "cve": [
               "CVE-2023-7256"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2114,6 +2151,7 @@
             "cve": [
               "CVE-2024-8006"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2169,6 +2207,7 @@
             "cve": [
               "CVE-2024-7264"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2224,6 +2263,7 @@
             "cve": [
               "CVE-2022-27943"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2279,6 +2319,7 @@
             "cve": [
               "CVE-2018-20657"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2334,6 +2375,7 @@
             "cve": [
               "CVE-2019-14250"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2389,6 +2431,7 @@
             "cve": [
               "CVE-2024-2236"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2444,6 +2487,7 @@
             "cve": [
               "CVE-2019-12904"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2499,6 +2543,7 @@
             "cve": [
               "CVE-2019-14250"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2554,6 +2599,7 @@
             "cve": [
               "CVE-2022-27943"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2609,6 +2655,7 @@
             "cve": [
               "CVE-2018-20657"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2664,6 +2711,7 @@
             "cve": [
               "CVE-2024-34459"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2719,6 +2767,7 @@
             "cve": [
               "CVE-2023-45322"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2774,6 +2823,7 @@
             "cve": [
               "CVE-2024-35325"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2829,6 +2879,7 @@
             "cve": [
               "CVE-2021-24032"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2884,6 +2935,7 @@
             "cve": [
               "CVE-2020-19186"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2939,6 +2991,7 @@
             "cve": [
               "CVE-2021-39537"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -2994,6 +3047,7 @@
             "cve": [
               "CVE-2020-19187"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3049,6 +3103,7 @@
             "cve": [
               "CVE-2020-19185"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3104,6 +3159,7 @@
             "cve": [
               "CVE-2020-19188"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3159,6 +3215,7 @@
             "cve": [
               "CVE-2020-19189"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3214,6 +3271,7 @@
             "cve": [
               "CVE-2018-19211"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3269,6 +3327,7 @@
             "cve": [
               "CVE-2023-50495"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3324,6 +3383,7 @@
             "cve": [
               "CVE-2018-19217"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3379,6 +3439,7 @@
             "cve": [
               "CVE-2020-19190"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3434,6 +3495,7 @@
             "cve": [
               "CVE-2023-50495"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3489,6 +3551,7 @@
             "cve": [
               "CVE-2020-19185"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3544,6 +3607,7 @@
             "cve": [
               "CVE-2020-19190"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3599,6 +3663,7 @@
             "cve": [
               "CVE-2020-19189"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3654,6 +3719,7 @@
             "cve": [
               "CVE-2020-19187"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3709,6 +3775,7 @@
             "cve": [
               "CVE-2020-19186"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3764,6 +3831,7 @@
             "cve": [
               "CVE-2020-19188"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3819,6 +3887,7 @@
             "cve": [
               "CVE-2018-19217"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3874,6 +3943,7 @@
             "cve": [
               "CVE-2018-19211"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3929,6 +3999,7 @@
             "cve": [
               "CVE-2021-39537"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -3984,6 +4055,7 @@
             "cve": [
               "CVE-2017-15897"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4043,6 +4115,7 @@
               "CVE-2024-28863",
               "CVE-2024-36137"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4102,6 +4175,7 @@
               "CVE-2024-28863",
               "CVE-2024-36137"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4157,6 +4231,7 @@
             "cve": [
               "CVE-2017-15897"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4212,6 +4287,7 @@
             "cve": [
               "CVE-2019-20149"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4267,6 +4343,7 @@
             "cve": [
               "CVE-2017-15897"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4326,6 +4403,7 @@
               "CVE-2024-28863",
               "CVE-2024-36137"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4381,6 +4459,7 @@
             "cve": [
               "CVE-2017-15897"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4436,6 +4515,7 @@
             "cve": [
               "CVE-2024-0727"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4491,6 +4571,7 @@
             "cve": [
               "CVE-2023-0464"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4546,6 +4627,7 @@
             "cve": [
               "CVE-2024-4741"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4601,6 +4683,7 @@
             "cve": [
               "CVE-2023-2650"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4656,6 +4739,7 @@
             "cve": [
               "CVE-2023-0465"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4711,6 +4795,7 @@
             "cve": [
               "CVE-2023-0466"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4766,6 +4851,7 @@
             "cve": [
               "CVE-2024-5535"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4821,6 +4907,7 @@
             "cve": [
               "CVE-2022-41409"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4876,6 +4963,7 @@
             "cve": [
               "CVE-2019-9937"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4931,6 +5019,7 @@
             "cve": [
               "CVE-2023-36191"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -4986,6 +5075,7 @@
             "cve": [
               "CVE-2019-9936"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5041,6 +5131,7 @@
             "cve": [
               "CVE-2024-0232"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5096,6 +5187,7 @@
             "cve": [
               "CVE-2018-20839"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5151,6 +5243,7 @@
             "cve": [
               "CVE-2021-3997"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5206,6 +5299,7 @@
             "cve": [
               "CVE-2019-9923"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5261,6 +5355,7 @@
             "cve": [
               "CVE-2021-20193"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5316,6 +5411,7 @@
             "cve": [
               "CVE-2023-27534"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5371,6 +5467,7 @@
             "cve": [
               "CVE-2024-34397"
             ],
+            "feed_rating": "Moderate",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5426,6 +5523,7 @@
             "cve": [
               "CVE-2023-27534"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5481,6 +5579,7 @@
             "cve": [
               "CVE-2023-45918"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5536,6 +5635,7 @@
             "cve": [
               "CVE-2023-45918"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5591,6 +5691,7 @@
             "cve": [
               "CVE-2024-2511"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5646,6 +5747,7 @@
             "cve": [
               "CVE-2023-39804"
             ],
+            "feed_rating": "Low",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5702,6 +5804,7 @@
             "cve": [
               "CVE-2024-4068"
             ],
+            "feed_rating": "High",
             "nist": [
               "SI-2",
               "RA-5"
@@ -5758,6 +5861,7 @@
             "cve": [
               "CVE-2024-4067"
             ],
+            "feed_rating": "Medium",
             "nist": [
               "SI-2",
               "RA-5"
