@@ -5,7 +5,8 @@
  */
 
 import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, inputChecksum, inputIntegrity, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { nistToCci } from '@mitre/hdf-mappings';
+import { buildNistCciTags, deriveControlTypeFromTags, inputChecksum, inputIntegrity, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -190,15 +191,17 @@ function findingsToEvaluatedRequirement(
     results.push(findingToRequirementResult(f, obsMap, riskMap, result, scanTime));
   }
 
-  const tags: Record<string, unknown> = {
-    nist: [nistTag],
-  };
+  // tags.nist carries the finding's NIST control; tags.cci is derived from it
+  // via the standard NIST→CCI mapping (omitted when the control maps to none),
+  // matching how sibling converters emit both.
+  const nistTags = [nistTag];
+  const tags: Record<string, unknown> = buildNistCciTags(nistTags, nistToCci(nistTags));
 
   const req = createRequirement(nistTag, title, descriptions, impact, results, {
     tags,
     ...(refs ? { refs } : {}),
   }) as EvaluatedRequirement;
-  const controlType = deriveControlTypeFromTags([nistTag]);
+  const controlType = deriveControlTypeFromTags(nistTags);
   if (controlType !== undefined) req.controlType = controlType;
   return req;
 }

@@ -584,6 +584,22 @@ describe('convertOscalSarToHdf', () => {
     expect(results.baselines[0]!.integrity?.algorithm).toBe('sha256');
     expect(results.baselines[0]!.integrity?.checksum).toMatch(/^[a-f0-9]{64}$/);
   });
+
+  it('derives tags.cci from the NIST control, omitting it when unmapped', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    const reqs = results.baselines[0]!.requirements;
+
+    // RA-5 maps to a CCI via the standard NIST→CCI table.
+    const ra5 = reqs.find(r => r.id === 'RA-5')!;
+    expect(ra5.tags.nist).toEqual(['RA-5']);
+    expect(ra5.tags.cci as string[]).toContain('CCI-001643');
+
+    // AC-1 has no NIST→CCI mapping, so tags.cci must be absent.
+    const ac1 = reqs.find(r => r.id === 'AC-1')!;
+    expect(ac1.tags.nist).toEqual(['AC-1']);
+    expect(ac1.tags.cci).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------

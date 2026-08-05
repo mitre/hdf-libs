@@ -379,6 +379,32 @@ func TestConvertAssessmentResultsToHDF_AbsentRiskAndEvidenceBranches(t *testing.
 	assert.Nil(t, au1.Refs, "AU-1 should carry no refs")
 }
 
+func TestConvertAssessmentResultsToHDF_CCITagsFromNIST(t *testing.T) {
+	input, err := os.ReadFile("../fixtures/input/sar-fedramp.json")
+	require.NoError(t, err)
+
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0-test")
+	require.NoError(t, err)
+	require.NotEmpty(t, results.Baselines)
+	baseline := &results.Baselines[0]
+
+	// RA-5 maps to a CCI via the standard NIST→CCI table, so tags.cci should
+	// carry it alongside the existing tags.nist.
+	ra5 := findReqByID(baseline, "RA-5")
+	require.NotNil(t, ra5, "RA-5 requirement should exist")
+	assert.Equal(t, []interface{}{"RA-5"}, ra5.Tags["nist"], "tags.nist must be preserved")
+	cci, ok := ra5.Tags["cci"].([]interface{})
+	require.True(t, ok, "RA-5 should carry a tags.cci slice")
+	assert.Contains(t, cci, "CCI-001643", "RA-5 should map to CCI-001643")
+
+	// AC-1 has no NIST→CCI mapping, so tags.cci must be absent (nist preserved).
+	ac1 := findReqByID(baseline, "AC-1")
+	require.NotNil(t, ac1, "AC-1 requirement should exist")
+	assert.Equal(t, []interface{}{"AC-1"}, ac1.Tags["nist"], "tags.nist must be preserved")
+	_, hasCCI := ac1.Tags["cci"]
+	assert.False(t, hasCCI, "AC-1 should not carry a tags.cci (no NIST→CCI mapping)")
+}
+
 func TestRemediationText(t *testing.T) {
 	tests := []struct {
 		name     string

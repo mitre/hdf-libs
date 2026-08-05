@@ -6,6 +6,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
@@ -171,9 +172,11 @@ func findingsToEvaluatedRequirement(
 		results = append(results, reqResult)
 	}
 
-	tags := map[string]interface{}{
-		"nist": []string{nistTag},
-	}
+	// tags.nist carries the finding's NIST control; tags.cci is derived from it
+	// via the standard NIST→CCI mapping (omitted when the control maps to none),
+	// matching how sibling converters emit both.
+	nistTags := []string{nistTag}
+	tags := shared.BuildNISTCCITags(nistTags, cci.NISTToCCI(nistTags))
 
 	return hdf.EvaluatedRequirement{
 		ID:           nistTag,
@@ -183,7 +186,7 @@ func findingsToEvaluatedRequirement(
 		Descriptions: descriptions,
 		Refs:         refs,
 		Results:      results,
-		ControlType:  shared.DeriveControlTypeFromTags([]string{nistTag}),
+		ControlType:  shared.DeriveControlTypeFromTags(nistTags),
 	}
 }
 
