@@ -180,6 +180,40 @@ describe('Microsoft Defender for Cloud to HDF converter', async () => {
     });
   });
 
+  describe('policy definition ID tag', async () => {
+    it('should include policy_definition_id as a string tag when present', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req0 = hdf.baselines[0]!.requirements[0]!;
+      expect(req0.tags?.['policy_definition_id']).toBe(
+        '/providers/Microsoft.Authorization/policyDefinitions/aaaa1111-bbbb-2222-cccc-3333dddd4444',
+      );
+    });
+
+    it('should omit policy_definition_id when source field is absent', async () => {
+      const input = JSON.stringify({
+        value: [
+          {
+            id: '/subscriptions/sub1/providers/Microsoft.Security/assessments/nopolicy',
+            name: 'nopolicy',
+            properties: {
+              displayName: 'No policy',
+              status: { code: 'Healthy' },
+              metadata: {
+                description: 'desc',
+                severity: 'Low',
+                categories: [], tactics: [], techniques: [], threats: [],
+              },
+              resourceDetails: { id: '/subscriptions/sub1/res' },
+            },
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(input)) as HDFResults;
+      const req0 = hdf.baselines[0]!.requirements[0]!;
+      expect(req0.tags?.['policy_definition_id']).toBeUndefined();
+    });
+  });
+
   describe('descriptions', async () => {
     it('should include default description from metadata.description', async () => {
       const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(loadFixture('minimal.json'))) as HDFResults;
