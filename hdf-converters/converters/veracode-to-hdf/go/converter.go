@@ -410,6 +410,16 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 		extras["cweDescription"] = cweDescStr
 	}
 
+	// Veracode cross-references each CWE to external standards catalogs (OWASP,
+	// SANS/CWE Top 25, CERT C/C++/Java, OWASP Mobile). Each becomes a discrete
+	// tag carrying the category's distinct referenced entries; absent catalogs
+	// are omitted (NOT-IN-SOURCE).
+	for _, s := range cweStandardTags {
+		if v := collectCWEStandard(cat.CWEs, s.get); len(v) > 0 {
+			extras[s.key] = v
+		}
+	}
+
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
 	// First-class CWE identifiers ("CWE-NN"). The category cweid attributes are
@@ -881,6 +891,36 @@ func formatSCACodeDesc(comp Component) string {
 	}
 
 	return strings.Join(parts, "\n")
+}
+
+// cweStandardTags names the standards cross-reference attributes Veracode
+// records on each <cwe>, paired with the discrete tag key each maps to. Order is
+// deterministic and shared with the TypeScript twin.
+var cweStandardTags = []struct {
+	key string
+	get func(CWE) string
+}{
+	{"owasp", func(c CWE) string { return c.OWASP }},
+	{"sans", func(c CWE) string { return c.SANS }},
+	{"certc", func(c CWE) string { return c.CERTC }},
+	{"certcpp", func(c CWE) string { return c.CERTCPP }},
+	{"certjava", func(c CWE) string { return c.CERTJava }},
+	{"owaspmobile", func(c CWE) string { return c.OWASPMobile }},
+}
+
+// collectCWEStandard gathers the distinct non-empty values of one standards
+// cross-reference attribute across a category's CWEs, in first-appearance order.
+// Returns nil when no CWE carries the attribute (the NOT-IN-SOURCE case).
+func collectCWEStandard(cwes []CWE, get func(CWE) string) []string {
+	var values []string
+	seen := map[string]bool{}
+	for _, c := range cwes {
+		if v := get(c); v != "" && !seen[v] {
+			seen[v] = true
+			values = append(values, v)
+		}
+	}
+	return values
 }
 
 // formatRemediationStatus collects the distinct remediation_status values across

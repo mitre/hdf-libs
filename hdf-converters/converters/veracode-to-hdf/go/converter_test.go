@@ -100,6 +100,65 @@ func TestConvertVeracodeToHDF_CWEControls(t *testing.T) {
 	assert.Greater(t, len(cweControl.Descriptions), 0, "Should have descriptions")
 }
 
+func TestConvertVeracodeToHDF_StandardsTags(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	reqs := result.Baselines[0].Requirements
+
+	findReq := func(id string) *hdf.EvaluatedRequirement {
+		for i := range reqs {
+			if reqs[i].ID == id {
+				return &reqs[i]
+			}
+		}
+		return nil
+	}
+
+	// Category 18 ("Command or Argument Injection") has one CWE (78) carrying
+	// five of the six standards cross-references. Each becomes a discrete tag.
+	cat18 := findReq("18")
+	require.NotNil(t, cat18, "Should have CWE control with categoryid 18")
+	assert.Equal(t, []string{"1347"}, cat18.Tags["owasp"], "owasp tag")
+	assert.Equal(t, []string{"864"}, cat18.Tags["sans"], "sans tag")
+	assert.Equal(t, []string{"1165"}, cat18.Tags["certc"], "certc tag")
+	assert.Equal(t, []string{"875"}, cat18.Tags["certcpp"], "certcpp tag")
+	assert.Equal(t, []string{"1134"}, cat18.Tags["certjava"], "certjava tag")
+
+	// owaspmobile is absent from every fixture CWE (NOT-IN-SOURCE): key omitted.
+	_, hasMobile := cat18.Tags["owaspmobile"]
+	assert.False(t, hasMobile, "owaspmobile tag should be omitted when absent")
+
+	// Category 7 ("API Abuse") has a CWE (245) with no standards attributes:
+	// none of the discrete standards keys should be present.
+	cat7 := findReq("7")
+	require.NotNil(t, cat7, "Should have CWE control with categoryid 7")
+	for _, key := range []string{"owasp", "sans", "certc", "certcpp", "certjava", "owaspmobile"} {
+		_, ok := cat7.Tags[key]
+		assert.Falsef(t, ok, "%s tag should be omitted when no CWE carries it", key)
+	}
+}
+
+func TestConvertVeracodeToHDF_StandardsTagsDedup(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	// Category 21 ("CRLF Injection") has three CWEs whose owasp attrs are
+	// 1347, 1347, 1355 — distinct values collapse to two in appearance order.
+	for _, req := range result.Baselines[0].Requirements {
+		if req.ID == "21" {
+			assert.Equal(t, []string{"1347", "1355"}, req.Tags["owasp"], "distinct owasp values in appearance order")
+			return
+		}
+	}
+	t.Fatal("Should have CWE control with categoryid 21")
+}
+
 func TestConvertVeracodeToHDF_CVEControls(t *testing.T) {
 	input := loadFixture(t, "veracode.xml")
 

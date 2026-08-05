@@ -189,6 +189,42 @@ describe('Veracode to HDF converter', () => {
     expect((cweControl!.tags!.nist as string[]).length).toBeGreaterThan(0);
   });
 
+  it('should map each CWE standards cross-reference to a discrete tag', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const baseline = output.baselines[0]!;
+
+    // Category 18 (CWE-78) carries five of the six standards catalogs.
+    const cat18 = baseline.requirements.find(r => r.id === '18');
+    expect(cat18).toBeDefined();
+    expect(cat18!.tags!.owasp).toEqual(['1347']);
+    expect(cat18!.tags!.sans).toEqual(['864']);
+    expect(cat18!.tags!.certc).toEqual(['1165']);
+    expect(cat18!.tags!.certcpp).toEqual(['875']);
+    expect(cat18!.tags!.certjava).toEqual(['1134']);
+
+    // owaspmobile is absent from every fixture CWE (NOT-IN-SOURCE): key omitted.
+    expect(cat18!.tags!.owaspmobile).toBeUndefined();
+
+    // Category 7 (CWE-245) carries no standards attributes: none present.
+    const cat7 = baseline.requirements.find(r => r.id === '7');
+    expect(cat7).toBeDefined();
+    for (const key of ['owasp', 'sans', 'certc', 'certcpp', 'certjava', 'owaspmobile']) {
+      expect(cat7!.tags![key]).toBeUndefined();
+    }
+  });
+
+  it('should collapse repeated standards values to distinct entries in appearance order', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const baseline = output.baselines[0]!;
+
+    // Category 21 (CRLF Injection) spans three CWEs with owasp 1347, 1347, 1355.
+    const cat21 = baseline.requirements.find(r => r.id === '21');
+    expect(cat21).toBeDefined();
+    expect(cat21!.tags!.owasp).toEqual(['1347', '1355']);
+  });
+
   it('should have descriptions on CWE controls', async () => {
     const input = loadFixture('veracode.xml');
     const output: HDFResults = JSON.parse(await convert(input));

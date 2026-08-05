@@ -266,6 +266,36 @@ function buildSCACode(vuln: Record<string, unknown>, components: Record<string, 
 
 // ---- Requirement builders ----
 
+// The standards cross-reference attributes Veracode records on each <cwe>. Each
+// maps to a discrete tag of the same name. Order is deterministic and shared
+// with the Go twin (cweStandardTags).
+const CWE_STANDARD_ATTRS = [
+  'owasp',
+  'sans',
+  'certc',
+  'certcpp',
+  'certjava',
+  'owaspmobile',
+];
+
+/**
+ * Collect the distinct non-empty values of one standards cross-reference
+ * attribute across a category's CWEs, in first-appearance order. Returns [] when
+ * no CWE carries the attribute (the NOT-IN-SOURCE case).
+ */
+function collectCWEStandard(cwes: Record<string, unknown>[], key: string): string[] {
+  const values: string[] = [];
+  const seen = new Set<string>();
+  for (const c of cwes) {
+    const v = attr(c, key);
+    if (v && !seen.has(v)) {
+      seen.add(v);
+      values.push(v);
+    }
+  }
+  return values;
+}
+
 /** Build CWE-based requirements from severity categories. */
 function buildCWERequirements(severities: Record<string, unknown>[], firstBuildDate: string): EvaluatedRequirement[] {
   const requirements: EvaluatedRequirement[] = [];
@@ -295,6 +325,15 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
   const extras: Record<string, unknown> = {};
   const cweDescStr = formatCWEDesc(cwes);
   if (cweDescStr) extras.cweDescription = cweDescStr;
+
+  // Veracode cross-references each CWE to external standards catalogs (OWASP,
+  // SANS/CWE Top 25, CERT C/C++/Java, OWASP Mobile). Each becomes a discrete tag
+  // carrying the category's distinct referenced entries; absent catalogs are
+  // omitted (NOT-IN-SOURCE).
+  for (const key of CWE_STANDARD_ATTRS) {
+    const values = collectCWEStandard(cwes, key);
+    if (values.length > 0) extras[key] = values;
+  }
 
   const tags = buildNistCciTags(nist, cciTags, extras);
 
