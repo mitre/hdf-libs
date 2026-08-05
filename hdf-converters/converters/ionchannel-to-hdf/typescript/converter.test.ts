@@ -252,4 +252,65 @@ describe('ionchannel to HDF converter', async () => {
       expect(dep.labels?.ruleset_id).toBe('ruleset-002');
     });
   });
+
+  describe('analysis-level verdict tags on requirements', async () => {
+    it('should tag dependency requirements with the analysis verdict (passed=false)', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'dependency-n/a/requests')!;
+      expect(req.tags?.passed).toBe(false);
+      expect(req.tags?.risk).toBe('medium');
+      expect(req.tags?.ruleset_name).toBe('strict');
+      expect(req.tags?.ruleset_id).toBe('ruleset-002');
+    });
+
+    it('should tag non-dependency scan requirements with the analysis verdict', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
+      const community = hdf.baselines.find((b) => b.name === 'Ion Channel community Scan')!;
+      const req = community.requirements[0]!;
+      expect(req.tags?.passed).toBe(false);
+      expect(req.tags?.risk).toBe('medium');
+      expect(req.tags?.ruleset_name).toBe('strict');
+      expect(req.tags?.ruleset_id).toBe('ruleset-002');
+    });
+
+    it('should carry passed=true as a native boolean', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'dependency-expressjs/express')!;
+      expect(req.tags?.passed).toBe(true);
+      expect(req.tags?.risk).toBe('low');
+      expect(req.tags?.ruleset_name).toBe('default');
+      expect(req.tags?.ruleset_id).toBe('ruleset-001');
+    });
+
+    it('should omit empty verdict fields while keeping passed', async () => {
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        risk: '',
+        passed: true,
+        ruleset_id: '',
+        ruleset_name: '',
+        scan_summaries: [
+          {
+            name: 'dependency',
+            summary: '',
+            results: {
+              type: 'dependency',
+              data: {
+                dependencies: [
+                  { org: 'acme', name: 'widget', type: 'npm', version: '1.0.0', dependencies: [] },
+                ],
+              },
+            },
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'dependency-acme/widget')!;
+      expect(req.tags?.passed).toBe(true);
+      expect(req.tags && 'risk' in req.tags).toBe(false);
+      expect(req.tags && 'ruleset_name' in req.tags).toBe(false);
+      expect(req.tags && 'ruleset_id' in req.tags).toBe(false);
+    });
+  });
 });

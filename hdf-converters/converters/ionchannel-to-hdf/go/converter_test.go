@@ -320,6 +320,78 @@ func TestConvert_EdgeCases_AnalysisVerdict(t *testing.T) {
 	assert.Equal(t, "ruleset-002", dep.Labels["ruleset_id"])
 }
 
+// ---- Analysis-level verdict tags on requirements ----
+
+func TestConvert_AnalysisTags_OnDependencyRequirement(t *testing.T) {
+	// edge-cases.json: passed=false, risk=medium, ruleset_name=strict, ruleset_id=ruleset-002
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-n/a/requests")
+	assert.Equal(t, false, req.Tags["passed"], "passed must be a native boolean")
+	assert.Equal(t, "medium", req.Tags["risk"])
+	assert.Equal(t, "strict", req.Tags["ruleset_name"])
+	assert.Equal(t, "ruleset-002", req.Tags["ruleset_id"])
+}
+
+func TestConvert_AnalysisTags_OnScanRequirement(t *testing.T) {
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	community := findBaseline(t, result, "Ion Channel community Scan")
+	req := community.Requirements[0]
+	assert.Equal(t, false, req.Tags["passed"], "passed must be a native boolean")
+	assert.Equal(t, "medium", req.Tags["risk"])
+	assert.Equal(t, "strict", req.Tags["ruleset_name"])
+	assert.Equal(t, "ruleset-002", req.Tags["ruleset_id"])
+}
+
+func TestConvert_AnalysisTags_PassedTrue(t *testing.T) {
+	// minimal.json: passed=true, risk=low, ruleset_name=default, ruleset_id=ruleset-001
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-expressjs/express")
+	assert.Equal(t, true, req.Tags["passed"], "passed must be a native boolean")
+	assert.Equal(t, "low", req.Tags["risk"])
+	assert.Equal(t, "default", req.Tags["ruleset_name"])
+	assert.Equal(t, "ruleset-001", req.Tags["ruleset_id"])
+}
+
+func TestBuildTags_OmitsAbsentVerdictFields(t *testing.T) {
+	// When risk/ruleset_name/ruleset_id are empty the keys are omitted, but the
+	// boolean passed is always present.
+	dep := contextualizedDependency{
+		Dependency:         Dependency{Org: "acme", Name: "widget"},
+		ParentDependencies: []string{},
+	}
+	tags := buildTags(dep, IonChannelAnalysis{Passed: true})
+
+	assert.Equal(t, true, tags["passed"])
+	_, hasRisk := tags["risk"]
+	assert.False(t, hasRisk, "risk must be omitted when empty")
+	_, hasName := tags["ruleset_name"]
+	assert.False(t, hasName, "ruleset_name must be omitted when empty")
+	_, hasID := tags["ruleset_id"]
+	assert.False(t, hasID, "ruleset_id must be omitted when empty")
+}
+
+func TestBuildScanRequirement_OmitsAbsentVerdictFields(t *testing.T) {
+	scan := ScanSummary{Name: "community", Results: ScanResults{Type: "community"}}
+	req := buildScanRequirement(scan, IonChannelAnalysis{Passed: false})
+
+	assert.Equal(t, false, req.Tags["passed"])
+	_, hasRisk := req.Tags["risk"]
+	assert.False(t, hasRisk, "risk must be omitted when empty")
+	_, hasName := req.Tags["ruleset_name"]
+	assert.False(t, hasName, "ruleset_name must be omitted when empty")
+	_, hasID := req.Tags["ruleset_id"]
+	assert.False(t, hasID, "ruleset_id must be omitted when empty")
+}
+
 // ---- Helper function tests ----
 
 func TestBuildTitle_Standard(t *testing.T) {

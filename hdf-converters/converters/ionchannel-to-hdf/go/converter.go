@@ -169,8 +169,26 @@ func buildTitle(dep Dependency) string {
 	return strings.TrimSpace(title)
 }
 
+// analysisTags returns the analysis-level verdict metadata attached to every
+// requirement built from the analysis. risk/ruleset_name/ruleset_id are omitted
+// when the source leaves them empty; passed is always present as its native
+// boolean (distinct from the string form carried in the baseline labels).
+func analysisTags(a IonChannelAnalysis) map[string]interface{} {
+	tags := map[string]interface{}{"passed": a.Passed}
+	if a.Risk != "" {
+		tags["risk"] = a.Risk
+	}
+	if a.RulesetName != "" {
+		tags["ruleset_name"] = a.RulesetName
+	}
+	if a.RulesetID != "" {
+		tags["ruleset_id"] = a.RulesetID
+	}
+	return tags
+}
+
 // buildTags builds the tags map for a dependency requirement.
-func buildTags(dep contextualizedDependency) map[string]interface{} {
+func buildTags(dep contextualizedDependency, analysis IonChannelAnalysis) map[string]interface{} {
 	nist := shared.DefaultComponentManagementNIST
 	cciTags := cci.NISTToCCI(nist)
 
@@ -195,6 +213,10 @@ func buildTags(dep contextualizedDependency) map[string]interface{} {
 
 	if len(dep.ParentDependencies) > 0 {
 		extras["parentDependencies"] = dep.ParentDependencies
+	}
+
+	for k, v := range analysisTags(analysis) {
+		extras[k] = v
 	}
 
 	return shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
@@ -241,7 +263,7 @@ func titleCaseFirst(s string) string {
 // non-dependency scan summary. The scan's serializable result data is preserved
 // in the code field (the ionchannel dependency pattern), and scan identity lands
 // in tags.
-func buildScanRequirement(scan ScanSummary) hdf.EvaluatedRequirement {
+func buildScanRequirement(scan ScanSummary, analysis IonChannelAnalysis) hdf.EvaluatedRequirement {
 	title := scan.Description
 	if title == "" {
 		title = titleCaseFirst(scan.Name) + " scan"
@@ -252,6 +274,14 @@ func buildScanRequirement(scan ScanSummary) hdf.EvaluatedRequirement {
 		desc = titleCaseFirst(scan.Name) + " scan summary"
 	}
 
+	tags := map[string]interface{}{
+		"name": scan.Name,
+		"type": scan.Results.Type,
+	}
+	for k, v := range analysisTags(analysis) {
+		tags[k] = v
+	}
+
 	return hdf.EvaluatedRequirement{
 		ID:    "scan-" + scan.Name,
 		Title: hdfutil.Ptr(title),
@@ -259,11 +289,8 @@ func buildScanRequirement(scan ScanSummary) hdf.EvaluatedRequirement {
 			{Label: "default", Data: desc},
 		},
 		Impact: 0.0,
-		Tags: map[string]interface{}{
-			"name": scan.Name,
-			"type": scan.Results.Type,
-		},
-		Code: hdfutil.Ptr(buildScanCode(scan.Results.Data)),
+		Tags:   tags,
+		Code:   hdfutil.Ptr(buildScanCode(scan.Results.Data)),
 		Results: []hdf.RequirementResult{
 			{
 				Status:    hdf.NotReviewed,
@@ -355,7 +382,7 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	for i, dep := range contextDeps {
 		depID := fmt.Sprintf("dependency-%s/%s", dep.Org, dep.Name)
 		title := buildTitle(dep.Dependency)
-		tags := buildTags(dep)
+		tags := buildTags(dep, analysis)
 
 		code := marshalDependencyCode(dep.Dependency)
 
@@ -410,7 +437,7 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 			Maintainer:   hdfutil.Ptr("saf@groups.mitre.org"),
 			Supports:     []hdf.SupportedPlatform{},
 			Groups:       []hdf.RequirementGroup{},
-			Requirements: []hdf.EvaluatedRequirement{buildScanRequirement(scan)},
+			Requirements: []hdf.EvaluatedRequirement{buildScanRequirement(scan, analysis)},
 			Integrity:    integrity,
 			Status:       hdfutil.Ptr("loaded"),
 		})
