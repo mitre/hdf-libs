@@ -412,6 +412,39 @@ func TestConvertDbprotect_CheckResults_NISTTags(t *testing.T) {
 	assert.NotEmpty(t, nistSlice, "NIST tags should not be empty")
 }
 
+// ---- check_category tag ----
+
+// The "Check Category" column is DBProtect's finding classification; it is
+// surfaced as the check_category tag, present in both report formats.
+func TestConvertDbprotect_CheckResults_CheckCategoryTag(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req.Tags)
+	assert.Equal(t, "Improper Access Controls", req.Tags["check_category"])
+
+	req2903 := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2903")
+	assert.Equal(t, "Misconfigurations", req2903.Tags["check_category"])
+}
+
+func TestConvertDbprotect_FindingsDetail_CheckCategoryTag(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2903")
+	assert.Equal(t, "Misconfigurations", req.Tags["check_category"])
+}
+
+// Absent branch: a finding with no Check Category value omits the tag entirely.
+func TestBuildRequirement_CheckCategoryAbsent(t *testing.T) {
+	req := buildRequirement("999", []finding{{"Check": "x", "Risk DV": "Low"}}, false)
+	_, present := req.Tags["check_category"]
+	assert.False(t, present, "check_category tag must be omitted when source field is absent")
+}
+
 // ---- Target ----
 
 func TestConvertDbprotect_CheckResults_Target(t *testing.T) {

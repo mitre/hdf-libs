@@ -197,6 +197,11 @@ function buildRequirement(
   const cciTags = nistToCci(nist);
   const tags = buildNistCciTags(nist, cciTags);
 
+  const checkCategory = rep['Check Category'] ?? '';
+  if (checkCategory) {
+    tags.check_category = checkCategory;
+  }
+
   const descriptions: Description[] = [
     { label: 'default', data: formatDesc(rep) },
   ];

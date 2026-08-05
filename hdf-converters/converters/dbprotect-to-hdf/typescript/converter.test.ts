@@ -267,6 +267,29 @@ describe('dbprotect to HDF converter', () => {
     });
   });
 
+  describe('check_category tag', () => {
+    it('surfaces the Check Category column as the check_category tag', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
+      expect(req!.tags!['check_category']).toBe('Improper Access Controls');
+      const req2903 = hdf.baselines[0]!.requirements.find(r => r.id === '2903');
+      expect(req2903!.tags!['check_category']).toBe('Misconfigurations');
+    });
+
+    it('surfaces check_category in the Findings Detail report', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2903');
+      expect(req!.tags!['check_category']).toBe('Misconfigurations');
+    });
+
+    it('omits the check_category tag when the Check Category value is empty', async () => {
+      const xml = `<?xml version="1.0"?><dataset><metadata><item><name>Check ID</name><type>xs:string</type></item><item><name>Check</name><type>xs:string</type></item><item><name>Risk DV</name><type>xs:string</type></item><item><name>Details</name><type>xs:string</type></item><item><name>Date</name><type>xs:string</type></item><item><name>Check Category</name><type>xs:string</type></item></metadata><data><row><value>CK1</value><value>Check</value><value>Low</value><value>Details</value><value>Feb 18 2021 15:57</value><value nil="true"/></row></data></dataset>`;
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0];
+      expect(req!.tags!['check_category']).toBeUndefined();
+    });
+  });
+
   describe('target', () => {
     it('should set target name from Asset column', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;

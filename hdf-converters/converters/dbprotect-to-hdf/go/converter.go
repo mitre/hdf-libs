@@ -186,6 +186,10 @@ func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.Ev
 	cciTags := cci.NISTToCCI(nist)
 	tags := shared.BuildNISTCCITags(nist, cciTags)
 
+	if checkCategory := rep["Check Category"]; checkCategory != "" {
+		tags["check_category"] = checkCategory
+	}
+
 	descriptions := []hdf.Description{
 		{Label: "default", Data: formatDesc(rep)},
 	}
