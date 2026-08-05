@@ -218,6 +218,23 @@ function buildTags(alert: MdeAlert): Record<string, unknown> {
     tags['determination'] = alert.determination;
   }
 
+  if (alert.incidentId) {
+    // Emit as a number when the id is a canonical base-10 integer (round-trips
+    // cleanly); otherwise preserve the source string verbatim. The round-trip
+    // guard keeps Go/TS byte-parity for edge cases like leading zeros.
+    const n = Number(alert.incidentId);
+    tags['incident_id'] = Number.isInteger(n) && String(n) === alert.incidentId ? n : alert.incidentId;
+  }
+  if (alert.detectionSource) {
+    tags['detection_source'] = alert.detectionSource;
+  }
+  if (alert.serviceSource) {
+    tags['service_source'] = alert.serviceSource;
+  }
+  if (alert.threatFamilyName) {
+    tags['threat_family_name'] = alert.threatFamilyName;
+  }
+
   return tags;
 }
 

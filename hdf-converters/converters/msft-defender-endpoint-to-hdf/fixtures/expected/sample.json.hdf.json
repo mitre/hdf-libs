@@ -25,6 +25,8 @@
           "impact": 0.7,
           "tags": {
             "category": "Execution",
+            "detection_source": "WindowsDefenderAtp",
+            "incident_id": 1126093,
             "mitre": [
               "T1059",
               "T1059.001"
@@ -32,7 +34,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "service_source": "microsoftDefenderForEndpoint"
           },
           "refs": [
             {
@@ -65,13 +68,16 @@
           "impact": 0.5,
           "tags": {
             "category": "LateralMovement",
+            "detection_source": "WindowsDefenderAtp",
+            "incident_id": 1126094,
             "mitre": [
               "T1047"
             ],
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "service_source": "microsoftDefenderForEndpoint"
           },
           "refs": [
             {
@@ -105,11 +111,14 @@
           "tags": {
             "category": "DefenseEvasion",
             "classification": "falsePositive",
+            "detection_source": "WindowsDefenderAtp",
             "determination": "notMalicious",
+            "incident_id": 1126095,
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "service_source": "microsoftDefenderForEndpoint"
           },
           "refs": [
             {
@@ -143,7 +152,9 @@
           "tags": {
             "category": "Malware",
             "classification": "truePositive",
+            "detection_source": "WindowsDefenderAv",
             "determination": "malware",
+            "incident_id": 1126096,
             "mitre": [
               "T1566",
               "T1566.001"
@@ -151,7 +162,9 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "service_source": "microsoftDefenderForEndpoint",
+            "threat_family_name": "Emotet"
           },
           "refs": [
             {

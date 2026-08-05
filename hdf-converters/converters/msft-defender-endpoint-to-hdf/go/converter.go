@@ -3,6 +3,7 @@ package msftdefenderendpoint
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -164,6 +165,26 @@ func buildTags(alert mdeAlert) map[string]interface{} {
 	}
 	if alert.Determination != nil && *alert.Determination != "" {
 		tags["determination"] = *alert.Determination
+	}
+
+	if alert.IncidentID != "" {
+		// Emit as a number when the id is a canonical base-10 integer (round-trips
+		// cleanly); otherwise preserve the source string verbatim. The round-trip
+		// guard keeps Go/TS byte-parity for edge cases like leading zeros.
+		if n, err := strconv.ParseInt(alert.IncidentID, 10, 64); err == nil && strconv.FormatInt(n, 10) == alert.IncidentID {
+			tags["incident_id"] = n
+		} else {
+			tags["incident_id"] = alert.IncidentID
+		}
+	}
+	if alert.DetectionSource != "" {
+		tags["detection_source"] = alert.DetectionSource
+	}
+	if alert.ServiceSource != "" {
+		tags["service_source"] = alert.ServiceSource
+	}
+	if alert.ThreatFamilyName != nil && *alert.ThreatFamilyName != "" {
+		tags["threat_family_name"] = *alert.ThreatFamilyName
 	}
 
 	return tags

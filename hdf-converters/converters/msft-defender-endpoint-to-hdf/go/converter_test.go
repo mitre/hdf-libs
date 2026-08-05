@@ -303,6 +303,99 @@ func TestConvert_ClassificationDetermination(t *testing.T) {
 	assert.Equal(t, "malware", req.Tags["determination"])
 }
 
+// ---- Source metadata tags (incident_id, detection_source, service_source, threat_family_name) ----
+
+func TestConvert_IncidentIDTag(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// incidentId "1126093" is a canonical integer → emitted as a number.
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, int64(1126093), req.Tags["incident_id"])
+}
+
+func TestConvert_IncidentIDTag_NonNumericFallsBackToString(t *testing.T) {
+	// A non-numeric incidentId is preserved verbatim as a string.
+	doc := `{"value":[{"id":"a","incidentId":"INC-42","status":"new","severity":"low",` +
+		`"category":"Execution","title":"t","description":"d"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "INC-42", req.Tags["incident_id"])
+}
+
+func TestConvert_IncidentIDTag_Absent(t *testing.T) {
+	// Missing incidentId → no incident_id tag.
+	doc := `{"value":[{"id":"a","status":"new","severity":"low",` +
+		`"category":"Execution","title":"t","description":"d"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	_, has := req.Tags["incident_id"]
+	assert.False(t, has, "should omit incident_id when absent")
+}
+
+func TestConvert_DetectionAndServiceSourceTags(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "WindowsDefenderAtp", req.Tags["detection_source"])
+	assert.Equal(t, "microsoftDefenderForEndpoint", req.Tags["service_source"])
+
+	// Fourth alert has a different detectionSource.
+	assert.Equal(t, "WindowsDefenderAv", result.Baselines[0].Requirements[3].Tags["detection_source"])
+}
+
+func TestConvert_DetectionAndServiceSourceTags_Absent(t *testing.T) {
+	doc := `{"value":[{"id":"a","incidentId":"1","status":"new","severity":"low",` +
+		`"category":"Execution","title":"t","description":"d"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	_, hasDet := req.Tags["detection_source"]
+	_, hasSvc := req.Tags["service_source"]
+	assert.False(t, hasDet, "should omit detection_source when absent")
+	assert.False(t, hasSvc, "should omit service_source when absent")
+}
+
+func TestConvert_ThreatFamilyNameTag(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Fourth alert carries threatFamilyName "Emotet".
+	assert.Equal(t, "Emotet", result.Baselines[0].Requirements[3].Tags["threat_family_name"])
+}
+
+func TestConvert_ThreatFamilyNameTag_AbsentWhenNull(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// First alert has threatFamilyName: null → tag omitted.
+	req := result.Baselines[0].Requirements[0]
+	_, has := req.Tags["threat_family_name"]
+	assert.False(t, has, "should omit threat_family_name when source is null")
+}
+
+func TestConvert_ActorDisplayNameNotMapped(t *testing.T) {
+	// actorDisplayName is null in every fixture — it must never be tagged.
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		_, has := req.Tags["actor_display_name"]
+		assert.False(t, has, "actor_display_name must not be emitted (NOT-IN-SOURCE)")
+	}
+}
+
 // ---- Checksum ----
 
 func TestConvert_Checksum(t *testing.T) {

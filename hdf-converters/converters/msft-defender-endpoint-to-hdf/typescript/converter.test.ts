@@ -259,6 +259,65 @@ describe('msft-defender-endpoint to HDF converter', async () => {
     });
   });
 
+  describe('source metadata tags', async () => {
+    it('emits incident_id as a number for a canonical integer', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('sample.json'))) as HDFResults;
+      const tags = hdf.baselines[0]!.requirements[0]!.tags!;
+      expect(tags['incident_id']).toBe(1126093);
+      expect(typeof tags['incident_id']).toBe('number');
+    });
+
+    it('preserves a non-numeric incidentId as a string', async () => {
+      const doc = { value: [{ id: 'a', incidentId: 'INC-42', status: 'new', severity: 'low', category: 'Execution', title: 't', description: 'd' }] };
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(JSON.stringify(doc))) as HDFResults;
+      const tags = hdf.baselines[0]!.requirements[0]!.tags!;
+      expect(tags['incident_id']).toBe('INC-42');
+    });
+
+    it('omits incident_id when the alert has no incidentId', async () => {
+      const doc = { value: [{ id: 'a', status: 'new', severity: 'low', category: 'Execution', title: 't', description: 'd' }] };
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(JSON.stringify(doc))) as HDFResults;
+      const tags = hdf.baselines[0]!.requirements[0]!.tags!;
+      expect(tags['incident_id']).toBeUndefined();
+    });
+
+    it('emits detection_source and service_source', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('sample.json'))) as HDFResults;
+      const tags = hdf.baselines[0]!.requirements[0]!.tags!;
+      expect(tags['detection_source']).toBe('WindowsDefenderAtp');
+      expect(tags['service_source']).toBe('microsoftDefenderForEndpoint');
+      const fourth = hdf.baselines[0]!.requirements[3]!.tags!;
+      expect(fourth['detection_source']).toBe('WindowsDefenderAv');
+    });
+
+    it('omits detection_source and service_source when absent', async () => {
+      const doc = { value: [{ id: 'a', incidentId: '1', status: 'new', severity: 'low', category: 'Execution', title: 't', description: 'd' }] };
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(JSON.stringify(doc))) as HDFResults;
+      const tags = hdf.baselines[0]!.requirements[0]!.tags!;
+      expect(tags['detection_source']).toBeUndefined();
+      expect(tags['service_source']).toBeUndefined();
+    });
+
+    it('emits threat_family_name when populated', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('sample.json'))) as HDFResults;
+      const tags = hdf.baselines[0]!.requirements[3]!.tags!;
+      expect(tags['threat_family_name']).toBe('Emotet');
+    });
+
+    it('omits threat_family_name when source is null', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('sample.json'))) as HDFResults;
+      const tags = hdf.baselines[0]!.requirements[0]!.tags!;
+      expect(tags['threat_family_name']).toBeUndefined();
+    });
+
+    it('never emits actor_display_name (null in source)', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('sample.json'))) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.tags!['actor_display_name']).toBeUndefined();
+      }
+    });
+  });
+
   describe('checksum', async () => {
     it('should include sha256 checksum', async () => {
       const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('minimal.json'))) as HDFResults;

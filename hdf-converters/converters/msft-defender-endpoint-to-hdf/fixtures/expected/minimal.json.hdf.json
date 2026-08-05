@@ -25,6 +25,8 @@
           "impact": 0.3,
           "tags": {
             "category": "Execution",
+            "detection_source": "WindowsDefenderAtp",
+            "incident_id": 1126093,
             "mitre": [
               "T1064",
               "T1085",
@@ -33,7 +35,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "service_source": "microsoftDefenderForEndpoint"
           },
           "refs": [
             {
