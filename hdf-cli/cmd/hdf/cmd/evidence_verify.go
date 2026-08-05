@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -107,7 +108,7 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 // corresponding results document in the evidence package.
 func verifyCompleteness(pkgDir, planRef string, contents []interface{}) error { //nolint:gocyclo // complexity from path validation error handling
 	// Load the plan (validate path stays within package directory)
-	planPath, err := safePath(pkgDir, planRef)
+	planPath, err := hdfutil.SafePath(pkgDir, planRef)
 	if err != nil {
 		return fmt.Errorf("invalid plan reference: %w", err)
 	}
@@ -149,7 +150,7 @@ func verifyCompleteness(pkgDir, planRef string, contents []interface{}) error { 
 			continue
 		}
 
-		resultsPath, pathErr := safePath(pkgDir, uri)
+		resultsPath, pathErr := hdfutil.SafePath(pkgDir, uri)
 		if pathErr != nil {
 			return fmt.Errorf("invalid results URI %q: %w", uri, pathErr)
 		}
@@ -246,7 +247,7 @@ func verifyContentEntry(entry map[string]interface{}, uri, docType, pkgDir strin
 		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifySkipped}
 	}
 
-	filePath, pathErr := safePath(pkgDir, uri)
+	filePath, pathErr := hdfutil.SafePath(pkgDir, uri)
 	if pathErr != nil {
 		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifyError, Error: pathErr.Error()}
 	}

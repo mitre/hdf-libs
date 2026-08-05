@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
@@ -162,22 +161,6 @@ func readFromFile(path string, allowEmpty bool) ([]byte, error) {
 	}
 
 	return data, nil
-}
-
-// safePath joins baseDir and relPath, then verifies the result stays within
-// baseDir. Returns an error if the resolved path escapes the base directory
-// (e.g., via "../" traversal). This prevents JSON-controlled file paths from
-// reading or writing arbitrary files on the filesystem.
-func safePath(baseDir, relPath string) (string, error) {
-	if relPath == "" {
-		return "", fmt.Errorf("empty path")
-	}
-	resolved := filepath.Clean(filepath.Join(baseDir, relPath))
-	base := filepath.Clean(baseDir) + string(os.PathSeparator)
-	if !strings.HasPrefix(resolved, base) && resolved != filepath.Clean(baseDir) {
-		return "", fmt.Errorf("path traversal detected: %q resolves outside base directory", relPath)
-	}
-	return resolved, nil
 }
 
 // parseHDFResults validates and parses JSON data into HdfResults via

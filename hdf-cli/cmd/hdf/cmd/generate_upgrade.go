@@ -16,6 +16,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/matching"
 	generators "github.com/mitre/hdf-libs/hdf-generators/go/v3"
 	schema "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
@@ -554,7 +555,7 @@ func writeInPlaceProfile(profile generators.InSpecProfile, profileDir string) er
 	// we can prune stale files afterwards.
 	keepIDs := make(map[string]bool, len(profile.Controls))
 	for name, content := range profile.Controls {
-		controlPath, pathErr := safePath(profileDir, name)
+		controlPath, pathErr := hdfutil.SafePath(profileDir, name)
 		if pathErr != nil {
 			return fmt.Errorf("unsafe control path %q: %w", name, pathErr)
 		}
