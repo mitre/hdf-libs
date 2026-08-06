@@ -26,6 +26,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+require github.com/modelcontextprotocol/go-sdk v1.7.0 // indirect
+
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.2 // indirect
 	github.com/anchore/go-struct-converter v0.0.0-20230627203149-c72ef8859ca9 // indirect
