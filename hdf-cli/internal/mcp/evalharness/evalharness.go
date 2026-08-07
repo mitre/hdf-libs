@@ -12,6 +12,8 @@
 package evalharness
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -46,6 +48,19 @@ func getCodec() (tokenizer.Codec, error) {
 		codec, errCodec = tokenizer.Get(tokenizer.O200kBase)
 	})
 	return codec, errCodec
+}
+
+// compactForWire strips insignificant JSON whitespace so the ceiling is measured
+// against the compact form the model actually receives over the JSON-RPC wire,
+// not the indentation the golden file carries for human readability. Non-JSON
+// input is returned unchanged (the synthetic ceiling fixtures are already
+// compact), so counting still proceeds.
+func compactForWire(s string) string {
+	var buf bytes.Buffer
+	if err := json.Compact(&buf, []byte(s)); err != nil {
+		return s
+	}
+	return buf.String()
 }
 
 // CountTokens returns the number of tokens in s under the pinned tokenizer. It
@@ -138,14 +153,14 @@ type ToolsListMeasurement struct {
 // ToolsListPerToolBudget, and a hard failure past ToolsListHardFail. Per-tool
 // attribution tokenizes each tool's own JSON object from the marshalled array.
 func MeasureToolsList(resultJSON string, perToolJSON map[string]string) (ToolsListMeasurement, error) {
-	total, err := CountTokens(resultJSON)
+	total, err := CountTokens(compactForWire(resultJSON))
 	if err != nil {
 		return ToolsListMeasurement{}, err
 	}
 	m := ToolsListMeasurement{TotalTokens: total}
 
 	for name, toolJSON := range perToolJSON {
-		tk, err := CountTokens(toolJSON)
+		tk, err := CountTokens(compactForWire(toolJSON))
 		if err != nil {
 			return ToolsListMeasurement{}, err
 		}

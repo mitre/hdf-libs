@@ -118,6 +118,28 @@ func TestFilter_AllNineFilters(t *testing.T) {
 	}
 }
 
+// TestFilter_StatusCaseInsensitive proves the status filter matches regardless
+// of the case the injected resolver emits: a resolver returning the canonical
+// camelCase schema values (notApplicable/notReviewed) is matched by a lowercase
+// or camelCase filter alike. src/query.test.ts mirrors this.
+func TestFilter_StatusCaseInsensitive(t *testing.T) {
+	results := loadQueryFixture(t)
+	// Resolver returns canonical schema (effectiveStatus) values verbatim.
+	schemaStatusOf := func(c hdf.EvaluatedRequirement) string {
+		if len(c.Results) == 0 {
+			return "notReviewed"
+		}
+		return string(c.Results[0].Status)
+	}
+	// A camelCase filter and a lowercased filter select the same requirement.
+	camel := ids(Filter(results, Options{Status: []string{"notApplicable"}, StatusOf: schemaStatusOf}))
+	lower := ids(Filter(results, Options{Status: []string{"notapplicable"}, StatusOf: schemaStatusOf}))
+	assert.Equal(t, []string{"SV-230223"}, camel, "camelCase filter must match the canonical notApplicable status")
+	assert.Equal(t, camel, lower, "status match must be case-insensitive on both sides")
+	// And a canonical failed status matches a lowercase filter.
+	assert.Equal(t, []string{"SV-230221"}, ids(Filter(results, Options{Status: []string{"failed"}, StatusOf: schemaStatusOf})))
+}
+
 func TestFilter_NilStatusOf(t *testing.T) {
 	results := loadQueryFixture(t)
 	// With no resolver, status is empty and the status filter selects nothing.

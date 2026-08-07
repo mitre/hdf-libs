@@ -98,6 +98,7 @@ func buildFilters(opts Options) []filterFunc {
 			statuses[i] = strings.ToLower(s)
 		}
 		filters = append(filters, func(_ hdf.EvaluatedRequirement, s, _ string) bool {
+			s = strings.ToLower(s)
 			for _, status := range statuses {
 				if s == status {
 					return true

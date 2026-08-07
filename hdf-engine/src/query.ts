@@ -83,7 +83,7 @@ function buildFilters(options: FilterOptions): FilterFunc[] {
 
   if (options.status && options.status.length > 0) {
     const statuses = options.status.map((s) => s.toLowerCase());
-    filters.push((_c, s) => statuses.includes(s));
+    filters.push((_c, s) => statuses.includes(s.toLowerCase()));
   }
 
   if (options.severity && options.severity.length > 0) {

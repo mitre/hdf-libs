@@ -86,6 +86,17 @@ describe('hdf-engine filter — cross-language parity with go/filter.go', () => 
     expect(ids(filter(results, { severity: ['critical'] }))).toEqual(['SV-230221']);
   });
 
+  // Parity with go/filter_test.go TestFilter_StatusCaseInsensitive: a resolver
+  // emitting the canonical camelCase schema status is matched case-insensitively.
+  it('status match is case-insensitive on both sides', () => {
+    const schemaStatusOf = (c: EvaluatedRequirement): string =>
+      (c.results?.[0]?.status as string | undefined) ?? 'notReviewed';
+    const camel = ids(filter(results, { status: ['notApplicable'], statusOf: schemaStatusOf }));
+    const lower = ids(filter(results, { status: ['notapplicable'], statusOf: schemaStatusOf }));
+    expect(camel).toEqual(['SV-230223']);
+    expect(lower).toEqual(camel);
+  });
+
   it('a --tag value without a colon adds no tag filter', () => {
     const all = ids(filter(results, { statusOf: testStatusOf }));
     expect(ids(filter(results, { tag: ['nocolonhere'], statusOf: testStatusOf }))).toEqual(all);

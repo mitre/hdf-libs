@@ -8,7 +8,7 @@
         "openWorldHint": false,
         "readOnlyHint": true
       },
-      "description": "Inspect an HDF document's structure and metadata for any of the eight document types (counts, inventories, envelopes) \u2014 never a requirement collection. To list requirements, use hdf_query.",
+      "description": "Inspect an HDF document's structure and metadata for any of the eight document types (counts, inventories, envelopes) — never a requirement collection. To list requirements, use hdf_query.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -194,6 +194,160 @@
           "docType",
           "schemaVersion",
           "valid"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Filter requirements in an HDF results or baseline document. The only path to a requirement collection; for other document types call hdf_inspect.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline": {
+            "description": "baseline name, glob allowed",
+            "type": "string"
+          },
+          "cci": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "id": {
+            "description": "requirement/STIG ID, GID, or group title",
+            "type": "string"
+          },
+          "impact": {
+            "description": "comparison e.g. \u003e0.5, =0",
+            "type": "string"
+          },
+          "limit": {
+            "description": "cap on rows (0 = all)",
+            "type": "integer"
+          },
+          "nist": {
+            "description": "NIST controls, globs allowed (AC-*)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "page": {
+            "description": "0-based page when truncated",
+            "type": "integer"
+          },
+          "search": {
+            "description": "text match over id/title/descriptions",
+            "type": "string"
+          },
+          "severity": {
+            "description": "critical|high|medium|low|informational (OR)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "source": {
+            "additionalProperties": false,
+            "description": "document as {path} or {handle}",
+            "properties": {
+              "handle": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "status": {
+            "description": "passed|failed|notApplicable|notReviewed|error (OR)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "tag": {
+            "description": "key:value (OR)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "verbosity": {
+            "description": "concise (default) or full",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "type": "object"
+      },
+      "name": "hdf_query",
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "docType": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "nextPage": {
+            "type": "integer"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "requirements": {
+            "items": true,
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "returned": {
+            "type": "integer"
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "handle",
+          "docType",
+          "schemaVersion",
+          "total",
+          "returned",
+          "requirements"
         ],
         "type": "object"
       }
