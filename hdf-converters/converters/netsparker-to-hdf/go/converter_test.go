@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -466,6 +467,43 @@ func TestConvertNetsparker_StartTime(t *testing.T) {
 
 	// StartTime should be non-zero (parsed from target initiated)
 	assert.False(t, req.Results[0].StartTime.IsZero(), "startTime should not be zero")
+}
+
+// ---- Top-level timestamp from `generated` attribute ----
+
+func TestConvertNetsparker_Timestamp(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Fixture carries `generated="03/07/2023 03:15 PM"`; parsed as UTC that is
+	// 2023-03-07T15:15:00Z. The shared snapshot masks the top-level timestamp,
+	// so pin the exact source-derived value here.
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2023-03-07T15:15:00Z", result.Timestamp.UTC().Format(time.RFC3339))
+}
+
+func TestConvertNetsparker_TimestampFallback(t *testing.T) {
+	// No `generated` attribute → the converter falls back to a valid, non-zero
+	// timestamp rather than omitting or emitting a zero value.
+	xml := `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-generated</LookupId>
+			<name>No Generated Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`
+
+	result, err := ConvertNetsparkerToHDF([]byte(xml), testVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Timestamp, "timestamp must fall back to a valid value when generated is absent")
+	assert.False(t, result.Timestamp.IsZero(), "fallback timestamp must be non-zero")
 }
 
 // ---- Netsparker root element detection ----

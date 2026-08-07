@@ -49,6 +49,35 @@ describe('timestamp parse fallback', () => {
   });
 });
 
+describe('top-level timestamp from `generated` attribute', () => {
+  it('pins the top-level timestamp to the fixture `generated` value', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    // generated="03/07/2023 03:15 PM" parsed as UTC → 2023-03-07T15:15:00Z.
+    // The shared snapshot masks this value, so pin it explicitly here.
+    expect(hdf.timestamp as unknown as string).toBe('2023-03-07T15:15:00Z');
+  });
+
+  it('falls back to a valid timestamp when `generated` is absent', async () => {
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-generated</LookupId>
+			<name>No Generated Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    expect(hdf.timestamp).toBeDefined();
+    expect(Number.isNaN(new Date(hdf.timestamp as unknown as string).getTime())).toBe(false);
+  });
+});
+
 describe('Netsparker to HDF converter', () => {
   // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
   // Golden parity proves Go and TS agree, not that either is correct.

@@ -440,6 +440,12 @@ export async function convertNetsparkerToHdf(input: string, converterVersion = '
   const vulns = data.vulnerabilities?.vulnerability ?? [];
   const target = data.target ?? {};
   const initiated = target.initiated ?? '';
+  const generated = data.generated ?? '';
+
+  // Top-level timestamp is the report's `generated` attribute (parsed as UTC,
+  // mirroring the Go converter). Fall back to now() only when the source omits
+  // or malforms it, so a source with `generated` converts deterministically.
+  const timestamp = (generated ? parseNetsparkerTimestamp(generated) : null) ?? new Date();
 
   const { items: limitedVulns, truncated } = limitArray(vulns);
   /* v8 ignore next -- truncation only triggers with >100K items */
@@ -479,6 +485,7 @@ export async function convertNetsparkerToHdf(input: string, converterVersion = '
     generatorName: 'netsparker-to-hdf',
     converterVersion,
     toolName,
+    timestamp,
     baselines: [baseline],
     components: [
       {

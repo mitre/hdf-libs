@@ -196,6 +196,7 @@
     "name": "netsparker-to-hdf",
     "version": "1.0.0"
   },
+  "timestamp": "2023-03-07T15:15:00Z",
   "tool": {
     "name": "Invicti"
   }

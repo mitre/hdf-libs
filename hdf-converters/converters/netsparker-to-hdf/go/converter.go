@@ -483,10 +483,19 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		ResultsChecksum: resultsChecksum,
 	}
 
+	// Top-level timestamp is the report's `generated` attribute (parsed as UTC).
+	// Fall back to now() only when the source omits or malforms it, so a source
+	// with `generated` converts deterministically.
+	timestamp := parseNetsparkerTimestamp(netsparkerData.Generated)
+	if timestamp.IsZero() {
+		timestamp = time.Now().UTC()
+	}
+
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "netsparker-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         toolName,
+		Timestamp:        &timestamp,
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{
