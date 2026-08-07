@@ -345,7 +345,15 @@ func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		targetName = report.Project.UUID
 	}
 
-	now := time.Now().UTC()
+	// Top-level timestamp is the scan time from meta.timestamp (source-derived, so
+	// converting the same input twice is deterministic). Fall back to wall-clock
+	// only when the source omits it or it is unparseable.
+	docTimestamp := time.Now().UTC()
+	if report.Meta.Timestamp != "" {
+		if t := hdfutil.ParseTimestamp(report.Meta.Timestamp); !t.IsZero() {
+			docTimestamp = t
+		}
+	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "deptrack-to-hdf",
@@ -356,6 +364,6 @@ func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Application},
 		},
-		Timestamp: &now,
+		Timestamp: &docTimestamp,
 	}), nil
 }

@@ -325,6 +325,11 @@ export async function convertDeptrackToHdf(input: string, converterVersion = '1.
 
   const targetName = parsed.project?.name ?? parsed.project?.uuid ?? '';
 
+  // Top-level timestamp is the scan time from meta.timestamp (source-derived, so
+  // converting the same input twice is deterministic). Fall back to wall-clock
+  // only when the source omits it or it is unparseable.
+  const docTimestamp = (parsed.meta?.timestamp ? parseTimestamp(parsed.meta.timestamp) : null) ?? new Date();
+
   return buildHdfResults({
     generatorName: 'deptrack-to-hdf',
     converterVersion,
@@ -332,6 +337,6 @@ export async function convertDeptrackToHdf(input: string, converterVersion = '1.
     toolFormat: 'FPF',
     baselines: [baseline],
     components: [{ name: targetName, type: TargetType.Application }],
-    timestamp: new Date(),
+    timestamp: docTimestamp,
   });
 }

@@ -39,16 +39,27 @@ describe('deptrack-to-hdf ground-truth anchor', () => {
 });
 
 describe('timestamp parse fallback', () => {
+  // Value-pin: the top-level timestamp is meta.timestamp verbatim (source-derived,
+  // not wall-clock). The snapshot masks the timestamp key, so this is the only
+  // guard on the actual mapped value.
+  it('maps meta.timestamp to the top-level timestamp', async () => {
+    const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
+    expect(hdf.timestamp).toBe('2022-02-18T23:31:42Z');
+  });
+
   it('falls back to a valid startTime when the report timestamp is unparseable', async () => {
     const input = loadFixture('fpf-default.json').replace(/2022-02-18T23:31:42Z/g, 'not-a-date');
     const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
     expectValidResults(hdf);
+    // Top-level timestamp falls back to a valid wall-clock value, never empty.
+    expect(hdf.timestamp).toBeTruthy();
   });
 
   it('falls back to a valid startTime when the report timestamp is absent', async () => {
     const input = loadFixture('fpf-default.json').replace(/"timestamp"/g, '"timestampAbsent"');
     const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
     expectValidResults(hdf);
+    expect(hdf.timestamp).toBeTruthy();
   });
 });
 
