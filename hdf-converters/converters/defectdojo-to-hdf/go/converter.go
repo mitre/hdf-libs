@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -199,6 +200,36 @@ func buildWaiverOverride(ar ddAcceptedRisk) hdf.StatusOverride {
 	}
 }
 
+var dateOnlyPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+
+// parseFindingDate parses a DefectDojo finding `date`. That field is date-only
+// (YYYY-MM-DD) and hdfutil.ParseTimestamp has no date-only layout, so a bare date
+// is promoted to UTC midnight before canonical parsing. This keeps Go and TS
+// byte-identical (the TS twin's parseTimestamp reads a bare date as UTC midnight
+// too) and avoids Go silently dropping the source date and falling back to now().
+func parseFindingDate(s string) time.Time {
+	if dateOnlyPattern.MatchString(s) {
+		s += "T00:00:00Z"
+	}
+	return hdfutil.ParseTimestamp(s)
+}
+
+// latestFindingDate returns the most recent finding `date`. DefectDojo's findings
+// response carries no single top-level scan time, so the newest finding date is
+// the defensible report time for the top-level HDF timestamp. Returns the zero
+// time when no finding carries a parseable date — the caller then omits the
+// optional top-level timestamp rather than fabricating a wall-clock value
+// (keeping the mapping source-derived and deterministic).
+func latestFindingDate(findings []ddFinding) time.Time {
+	var latest time.Time
+	for _, f := range findings {
+		if d := parseFindingDate(f.Date); !d.IsZero() && d.After(latest) {
+			latest = d
+		}
+	}
+	return latest
+}
+
 func findingID(f ddFinding) string {
 	switch {
 	case f.UniqueIDFromTool != nil && *f.UniqueIDFromTool != "":
@@ -335,7 +366,7 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 	}
 
 	status := deriveStatus(f)
-	startTime := hdfutil.ParseTimestamp(f.Date)
+	startTime := parseFindingDate(f.Date)
 	if startTime.IsZero() {
 		startTime = time.Now().UTC()
 	}
@@ -449,12 +480,18 @@ func ConvertDefectDojo(input []byte, converterVersion string) (*hdf.HDFResults, 
 		}}
 	}
 
-	return shared.BuildHDFResults(shared.HDFResultsOptions{
+	opts := shared.HDFResultsOptions{
 		GeneratorName:    "defectdojo-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "DefectDojo",
 		Baselines:        baselines,
-	}), nil
+	}
+	// Top-level timestamp: the newest finding date, source-derived and
+	// deterministic. Omitted (nil) when no finding carries a parseable date.
+	if ts := latestFindingDate(findings); !ts.IsZero() {
+		opts.Timestamp = &ts
+	}
+	return shared.BuildHDFResults(opts), nil
 }
 
 // parseFindings accepts the DRF envelope {results:[…]} or a bare findings array.

@@ -68,6 +68,35 @@ describe('defectdojo-to-hdf converter', () => {
     expect(String(ov.expiresAt)).toContain('2099'); // real expiration_date
   });
 
+  it('pins the top-level timestamp to the newest finding date', async () => {
+    // The shared snapshot masks timestamp values, so assert the exact source
+    // value here. Newest finding date in the fixture is finding 4, 2024-01-04.
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    expect(hdf.timestamp).toBe('2024-01-04T00:00:00Z');
+  });
+
+  it('derives result startTime from the finding date (not now())', async () => {
+    // Go's ParseTimestamp has no date-only layout; both languages promote the
+    // bare date to UTC midnight so the startTime is source-derived and identical.
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    const byId = new Map(hdf.baselines[0].requirements.map(r => [r.id, r]));
+    expect(byId.get('DefectDojo-Finding-1')!.results[0].startTime).toBe('2021-01-06T00:00:00Z');
+    expect(byId.get('DefectDojo-Finding-4')!.results[0].startTime).toBe('2024-01-04T00:00:00Z');
+  });
+
+  it('is deterministic — converting twice yields byte-identical output', async () => {
+    // Every fixture finding carries a date, so no now() fallback runs; identical
+    // output proves the mapped timestamps are source-anchored, not wall-clock.
+    const a = await convertDefectDojoToHdf(load('findings.json'));
+    const b = await convertDefectDojoToHdf(load('findings.json'));
+    expect(a).toBe(b);
+  });
+
+  it('omits the top-level timestamp when no finding carries a date', async () => {
+    const hdf = JSON.parse(await convertDefectDojoToHdf(JSON.stringify([{id: 1, title: 't', severity: 'High'}]))) as HDFResults;
+    expect(hdf.timestamp).toBeUndefined();
+  });
+
   it('synthesizes a passed placeholder for empty input', async () => {
     const hdf = JSON.parse(await convertDefectDojoToHdf(load('empty.json'))) as HDFResults;
     expectValidResults(hdf);

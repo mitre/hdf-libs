@@ -131,6 +131,31 @@ function buildWaiverOverride(ar: DDAcceptedRisk): StatusOverride {
   };
 }
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+// Parse a DefectDojo finding `date`. That field is date-only (YYYY-MM-DD); a bare
+// date is promoted to UTC midnight before canonical parsing so Go and TS agree
+// (Go's ParseTimestamp has no date-only layout). parseTimestamp then reads it as
+// UTC. Returns null when absent/unparseable.
+function parseFindingDate(s: string | undefined): Date | null {
+  if (!s) return null;
+  return parseTimestamp(DATE_ONLY.test(s) ? `${s}T00:00:00Z` : s);
+}
+
+// The most recent finding `date`. DefectDojo carries no single top-level scan
+// time, so the newest finding date is the defensible report time for the
+// top-level HDF timestamp. Returns undefined when no finding carries a parseable
+// date — the caller then omits the optional timestamp rather than fabricating a
+// wall-clock value (keeping the mapping source-derived and deterministic).
+function latestFindingDate(findings: DDFinding[]): Date | undefined {
+  let latest: Date | undefined;
+  for (const f of findings) {
+    const d = parseFindingDate(f.date);
+    if (d && (!latest || d.getTime() > latest.getTime())) latest = d;
+  }
+  return latest;
+}
+
 function findingId(f: DDFinding): string {
   return f.unique_id_from_tool || f.vuln_id_from_tool || `DefectDojo-Finding-${f.id}`;
 }
@@ -195,7 +220,7 @@ function convertFinding(f: DDFinding): EvaluatedRequirement {
   const result: RequirementResult = {
     status: deriveStatus(f),
     codeDesc: codeDesc(f),
-    startTime: (f.date ? parseTimestamp(f.date) : null) ?? new Date(),
+    startTime: parseFindingDate(f.date) ?? new Date(),
   };
 
   const req: EvaluatedRequirement = {
@@ -286,5 +311,8 @@ export async function convertDefectDojoToHdf(input: string, converterVersion = '
     converterVersion,
     toolName: 'DefectDojo',
     baselines,
+    // Top-level timestamp: the newest finding date, source-derived and
+    // deterministic. Omitted when no finding carries a parseable date.
+    timestamp: latestFindingDate(findings),
   });
 }

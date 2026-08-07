@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -211,6 +212,77 @@ func TestConvertDefectDojo_NoKev(t *testing.T) {
 	for _, r := range result.Baselines[0].Requirements {
 		assert.Nil(t, r.Kev, "defectdojo never emits requirement.kev (no source due date)")
 	}
+}
+
+// TestConvertDefectDojo_TopLevelTimestamp pins the top-level HDF timestamp to the
+// newest finding `date` in the fixture (finding 4, "2024-01-04"). The shared
+// snapshot masks timestamp values, so this asserts the exact source-derived value.
+func TestConvertDefectDojo_TopLevelTimestamp(t *testing.T) {
+	result, err := ConvertDefectDojo(loadFixture(t, "findings.json"), converterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Timestamp, "top-level timestamp must be populated from source")
+
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	var doc struct {
+		Timestamp string `json:"timestamp"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	assert.Equal(t, "2024-01-04T00:00:00Z", doc.Timestamp)
+}
+
+// TestConvertDefectDojo_StartTimeSourceDerived pins result startTime to the
+// finding `date` (date-only, promoted to UTC midnight) — proving Go parses the
+// bare date rather than dropping it to now(), matching the TS twin.
+func TestConvertDefectDojo_StartTimeSourceDerived(t *testing.T) {
+	result, err := ConvertDefectDojo(loadFixture(t, "findings.json"), converterVersion)
+	require.NoError(t, err)
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range result.Baselines[0].Requirements {
+		byID[r.ID] = r
+	}
+	assert.Equal(t, "2021-01-06T00:00:00Z", byID["DefectDojo-Finding-1"].Results[0].StartTime.UTC().Format(time.RFC3339))
+	assert.Equal(t, "2024-01-04T00:00:00Z", byID["DefectDojo-Finding-4"].Results[0].StartTime.UTC().Format(time.RFC3339))
+}
+
+// TestConvertDefectDojo_Deterministic proves the mapped timestamps are
+// source-anchored, not wall-clock: converting the fixture twice yields
+// byte-identical output (every finding carries a date, so no now() fallback runs).
+func TestConvertDefectDojo_Deterministic(t *testing.T) {
+	input := loadFixture(t, "findings.json")
+	first, err := ConvertDefectDojo(input, converterVersion)
+	require.NoError(t, err)
+	second, err := ConvertDefectDojo(input, converterVersion)
+	require.NoError(t, err)
+	a, err := json.Marshal(first)
+	require.NoError(t, err)
+	b, err := json.Marshal(second)
+	require.NoError(t, err)
+	assert.Equal(t, string(a), string(b), "conversion must be deterministic (no wall-clock timestamps)")
+}
+
+// TestConvertDefectDojo_TimestampOmittedWhenNoDate covers the fallback branch: a
+// findings array carrying no parseable date omits the optional top-level timestamp
+// rather than fabricating a wall-clock value.
+func TestConvertDefectDojo_TimestampOmittedWhenNoDate(t *testing.T) {
+	result, err := ConvertDefectDojo([]byte(`[{"id":1,"title":"t","severity":"High"}]`), converterVersion)
+	require.NoError(t, err)
+	assert.Nil(t, result.Timestamp, "no source date → top-level timestamp omitted")
+}
+
+// TestParseFindingDate_Branches covers every branch of parseFindingDate and
+// latestFindingDate: date-only promotion, full RFC3339 passthrough, unparseable,
+// and the latest-of-many selection with zero values skipped.
+func TestParseFindingDate_Branches(t *testing.T) {
+	assert.Equal(t, "2024-01-04T00:00:00Z", parseFindingDate("2024-01-04").UTC().Format(time.RFC3339))
+	assert.Equal(t, "2024-01-04T10:30:00Z", parseFindingDate("2024-01-04T10:30:00Z").UTC().Format(time.RFC3339))
+	assert.True(t, parseFindingDate("").IsZero())
+	assert.True(t, parseFindingDate("not-a-date").IsZero())
+
+	assert.True(t, latestFindingDate(nil).IsZero())
+	assert.True(t, latestFindingDate([]ddFinding{{Date: "nope"}}).IsZero())
+	latest := latestFindingDate([]ddFinding{{Date: "2021-01-06"}, {Date: ""}, {Date: "2024-01-04"}})
+	assert.Equal(t, "2024-01-04T00:00:00Z", latest.UTC().Format(time.RFC3339))
 }
 
 func TestConvertDefectDojo_Empty(t *testing.T) {
