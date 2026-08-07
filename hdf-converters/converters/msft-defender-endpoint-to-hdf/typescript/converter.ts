@@ -257,6 +257,31 @@ function resolveStartTime(alert: MdeAlert, scanTime: Date): Date {
 }
 
 /**
+ * Derives the top-level report timestamp from the latest source alert time: the
+ * freshest lastUpdateDateTime across alerts, falling back per alert to
+ * lastActivityDateTime then createdDateTime. Source-derived so the conversion is
+ * deterministic. Returns null when no alert carries a parseable time (caller
+ * falls back to the conversion time). The skip-null logic mirrors the Go
+ * converter's time.IsZero() fallthrough for byte-parity.
+ */
+function deriveScanTimestamp(alerts: MdeAlert[]): Date | null {
+  let latest: Date | null = null;
+  for (const alert of alerts) {
+    const t =
+      (alert.lastUpdateDateTime ? parseTimestamp(alert.lastUpdateDateTime) : null) ??
+      (alert.lastActivityDateTime ? parseTimestamp(alert.lastActivityDateTime) : null) ??
+      (alert.createdDateTime ? parseTimestamp(alert.createdDateTime) : null);
+    if (!t) {
+      continue;
+    }
+    if (!latest || t.getTime() > latest.getTime()) {
+      latest = t;
+    }
+  }
+  return latest;
+}
+
+/**
  * Converts a single MDE alert to an HDF EvaluatedRequirement.
  */
 function alertToRequirement(alert: MdeAlert, scanTime: Date): EvaluatedRequirement {
@@ -319,6 +344,11 @@ export async function convertMsftDefenderEndpointToHdf(input: string, converterV
   const scanTime = new Date();
 
   const { items: limitedAlerts, truncated } = limitArray(response.value);
+
+  // Top-level timestamp is source-derived (latest alert time), not now(), so the
+  // conversion is deterministic. Fall back to the conversion time only when the
+  // input carries no parseable alert time (e.g. an empty tenant window).
+  const derivedTimestamp = deriveScanTimestamp(limitedAlerts) ?? scanTime;
   /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncated) {
     // eslint-disable-next-line no-console
@@ -357,6 +387,6 @@ export async function convertMsftDefenderEndpointToHdf(input: string, converterV
     toolName: 'Microsoft Defender for Endpoint',
     baselines: [baseline],
     components,
-    timestamp: scanTime,
+    timestamp: derivedTimestamp,
   });
 }

@@ -190,6 +190,31 @@ func buildTags(alert mdeAlert) map[string]interface{} {
 	return tags
 }
 
+// deriveScanTimestamp returns the latest source alert time as the top-level
+// report timestamp: the freshest lastUpdateDateTime across alerts, falling back
+// per alert to lastActivityDateTime then createdDateTime. Source-derived so the
+// conversion is deterministic. Returns the zero time when no alert carries a
+// parseable time (caller falls back to the conversion time).
+func deriveScanTimestamp(alerts []mdeAlert) time.Time {
+	var latest time.Time
+	for _, alert := range alerts {
+		t := hdfutil.ParseTimestamp(alert.LastUpdateDateTime)
+		if t.IsZero() {
+			t = hdfutil.ParseTimestamp(alert.LastActivityDateTime)
+		}
+		if t.IsZero() {
+			t = hdfutil.ParseTimestamp(alert.CreatedDateTime)
+		}
+		if t.IsZero() {
+			continue
+		}
+		if t.After(latest) {
+			latest = t
+		}
+	}
+	return latest
+}
+
 // alertToRequirement converts a single MDE alert into an HDF EvaluatedRequirement.
 func alertToRequirement(alert mdeAlert, scanTime time.Time) hdf.EvaluatedRequirement {
 	impact := severityToImpact(alert.Severity)
@@ -269,6 +294,14 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 
 	limitedAlerts := shared.LimitSliceWithWarning(response.Value, 0, "alert")
 
+	// Top-level timestamp is source-derived (latest alert time), not now(), so the
+	// conversion is deterministic. Fall back to the conversion time only when the
+	// input carries no parseable alert time (e.g. an empty tenant window).
+	timestamp := deriveScanTimestamp(limitedAlerts)
+	if timestamp.IsZero() {
+		timestamp = scanTime
+	}
+
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedAlerts))
 	for i, alert := range limitedAlerts {
 		requirements[i] = alertToRequirement(alert, scanTime)
@@ -306,6 +339,6 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 		ToolName:         "Microsoft Defender for Endpoint",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       targets,
-		Timestamp:        &scanTime,
+		Timestamp:        &timestamp,
 	}), nil
 }

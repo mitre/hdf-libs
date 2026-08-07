@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -499,6 +500,84 @@ func TestConvert_JSONRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, roundTrip.Baselines, 1)
 	assert.Len(t, roundTrip.Baselines[0].Requirements, 4)
+}
+
+// ---- Timestamp backfill: result startTime (value-pinned) ----
+
+// TestConvert_StartTime_FirstActivity pins the exact per-alert startTime taken
+// from firstActivityDateTime (the earliest observed activity for the alert).
+func TestConvert_StartTime_FirstActivity(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// sample alert[0] firstActivityDateTime "2021-01-26T20:31:32.9562661Z"
+	// → canonical UTC at millisecond precision.
+	got := result.Baselines[0].Requirements[0].Results[0].StartTime
+	assert.Equal(t, "2021-01-26T20:31:32.956Z", got.Format(time.RFC3339Nano))
+}
+
+// TestConvert_StartTime_CreatedFallback pins the createdDateTime fallback branch:
+// a present-but-unparseable firstActivityDateTime must not skip a valid
+// createdDateTime in favor of the conversion time (mirrors the TS converter).
+func TestConvert_StartTime_CreatedFallback(t *testing.T) {
+	doc := `{"value":[{"id":"a","status":"new","severity":"low","category":"Execution",` +
+		`"title":"t","description":"d","firstActivityDateTime":"not-a-date",` +
+		`"createdDateTime":"2024-03-04T05:06:07Z"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	got := result.Baselines[0].Requirements[0].Results[0].StartTime
+	assert.Equal(t, "2024-03-04T05:06:07Z", got.Format(time.RFC3339Nano))
+}
+
+// ---- Timestamp backfill: top-level timestamp (value-pinned) ----
+
+// TestConvert_TopLevelTimestamp_FromLatestAlert pins the top-level timestamp to
+// the latest lastUpdateDateTime across alerts (alert[3] in sample.json).
+func TestConvert_TopLevelTimestamp_FromLatestAlert(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2021-01-29T14:30:00Z", result.Timestamp.Format(time.RFC3339Nano))
+}
+
+// TestConvert_TopLevelTimestamp_LastActivityFallback pins the per-alert fallback
+// from lastUpdateDateTime to lastActivityDateTime.
+func TestConvert_TopLevelTimestamp_LastActivityFallback(t *testing.T) {
+	doc := `{"value":[{"id":"a","status":"new","severity":"low","category":"Execution",` +
+		`"title":"t","description":"d","lastActivityDateTime":"2023-05-06T07:08:09Z"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2023-05-06T07:08:09Z", result.Timestamp.Format(time.RFC3339Nano))
+}
+
+// TestConvert_TopLevelTimestamp_CreatedFallback pins the per-alert fallback from
+// lastActivityDateTime to createdDateTime.
+func TestConvert_TopLevelTimestamp_CreatedFallback(t *testing.T) {
+	doc := `{"value":[{"id":"a","status":"new","severity":"low","category":"Execution",` +
+		`"title":"t","description":"d","createdDateTime":"2022-02-03T04:05:06Z"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2022-02-03T04:05:06Z", result.Timestamp.Format(time.RFC3339Nano))
+}
+
+// TestConvert_TopLevelTimestamp_FallsBackToNow confirms the conversion time is
+// used only when no alert carries a parseable time (empty tenant window).
+func TestConvert_TopLevelTimestamp_FallsBackToNow(t *testing.T) {
+	before := time.Now().UTC().Add(-time.Second)
+	input := loadFixture(t, "input/empty.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	assert.False(t, result.Timestamp.Before(before), "empty input should fall back to the conversion time")
 }
 
 func TestSnapshots(t *testing.T) {

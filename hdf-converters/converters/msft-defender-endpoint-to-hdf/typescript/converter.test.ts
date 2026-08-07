@@ -78,6 +78,43 @@ describe('msft-defender-endpoint to HDF converter', async () => {
     });
   });
 
+  describe('startTime value pinning', async () => {
+    it('pins the per-alert startTime to firstActivityDateTime (canonical UTC ms)', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('sample.json'))) as HDFResults;
+      // sample alert[0] firstActivityDateTime "2021-01-26T20:31:32.9562661Z"
+      // → canonical UTC at millisecond precision.
+      const startTime = hdf.baselines[0]!.requirements[0]!.results[0]!.startTime;
+      expect(startTime).toBe('2021-01-26T20:31:32.956Z');
+    });
+  });
+
+  describe('top-level timestamp value pinning', async () => {
+    it('pins the top-level timestamp to the latest lastUpdateDateTime across alerts', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('sample.json'))) as HDFResults;
+      // Latest lastUpdateDateTime is alert[3]'s "2021-01-29T14:30:00.0000000Z".
+      expect(hdf.timestamp).toBe('2021-01-29T14:30:00Z');
+    });
+
+    it('falls back per alert to lastActivityDateTime when lastUpdateDateTime is absent', async () => {
+      const doc = { value: [{ id: 'a', status: 'new', severity: 'low', category: 'Execution', title: 't', description: 'd', lastActivityDateTime: '2023-05-06T07:08:09Z' }] };
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(JSON.stringify(doc))) as HDFResults;
+      expect(hdf.timestamp).toBe('2023-05-06T07:08:09Z');
+    });
+
+    it('falls back per alert to createdDateTime when lastUpdate/lastActivity are absent', async () => {
+      const doc = { value: [{ id: 'a', status: 'new', severity: 'low', category: 'Execution', title: 't', description: 'd', createdDateTime: '2022-02-03T04:05:06Z' }] };
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(JSON.stringify(doc))) as HDFResults;
+      expect(hdf.timestamp).toBe('2022-02-03T04:05:06Z');
+    });
+
+    it('falls back to the conversion time when no alert carries a parseable time', async () => {
+      const before = Date.now();
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('empty.json'))) as HDFResults;
+      expect(hdf.timestamp).toBeTruthy();
+      expect(new Date(hdf.timestamp as unknown as string).getTime()).toBeGreaterThanOrEqual(before - 1000);
+    });
+  });
+
   describe('minimal fixture conversion', async () => {
     it('should produce valid HDF structure from minimal fixture', async () => {
       const output = await convertMsftDefenderEndpointToHdf(loadFixture('minimal.json'));
