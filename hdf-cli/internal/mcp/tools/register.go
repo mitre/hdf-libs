@@ -12,4 +12,5 @@ import (
 func RegisterAll(s *sdkmcp.Server) {
 	ldr := loader.New(0, 0, 0)
 	RegisterOpen(s, ldr)
+	RegisterInspect(s, ldr)
 }

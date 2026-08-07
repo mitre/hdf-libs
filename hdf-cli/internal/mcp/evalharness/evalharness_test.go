@@ -126,16 +126,40 @@ func TestTokenizerPinned(t *testing.T) {
 
 func TestMeasureToolsList_WithinCeilings(t *testing.T) {
 	golden := readTestdata(t, "tools-list.golden.json")
-	m, err := MeasureToolsList(golden, map[string]string{})
+	// Feed the real per-tool JSON so the per-tool ceiling (600) is enforced on the
+	// production surface, not just the total — this is where tool-schema growth
+	// surfaces before it silently consumes headroom.
+	m, err := MeasureToolsList(golden, perToolJSON(t, golden))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(m.Violations) != 0 {
-		t.Errorf("golden tools/list must be within ceilings, got violations: %v", m.Violations)
+		t.Errorf("golden tools/list must be within ceilings (total %d, per-tool %v), got violations: %v", m.TotalTokens, m.PerTool, m.Violations)
 	}
 	if m.TotalTokens > ToolsListTotalBudget {
 		t.Errorf("golden tools/list %d tokens exceeds total budget %d", m.TotalTokens, ToolsListTotalBudget)
 	}
+}
+
+// perToolJSON extracts each tool's own JSON object from a marshalled
+// ListToolsResult, so the per-tool ceiling can be measured on the real surface.
+func perToolJSON(t *testing.T, resultJSON string) map[string]string {
+	t.Helper()
+	var r struct {
+		Tools []json.RawMessage `json:"tools"`
+	}
+	if err := json.Unmarshal([]byte(resultJSON), &r); err != nil {
+		t.Fatalf("parse tools/list: %v", err)
+	}
+	out := make(map[string]string, len(r.Tools))
+	for _, raw := range r.Tools {
+		var n struct {
+			Name string `json:"name"`
+		}
+		_ = json.Unmarshal(raw, &n)
+		out[n.Name] = string(raw)
+	}
+	return out
 }
 
 func TestMeasureToolsList_FailsPastCeilings(t *testing.T) {

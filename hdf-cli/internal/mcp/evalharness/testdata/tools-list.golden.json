@@ -8,6 +8,115 @@
         "openWorldHint": false,
         "readOnlyHint": true
       },
+      "description": "Inspect an HDF document's structure and metadata for any of the eight document types (counts, inventories, envelopes) \u2014 never a requirement collection. To list requirements, use hdf_query.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "description": "0-based page when truncated",
+            "type": "integer"
+          },
+          "section": {
+            "description": "one structural section (validity depends on doc type)",
+            "type": "string"
+          },
+          "source": {
+            "additionalProperties": false,
+            "description": "document as {path} or {handle}",
+            "properties": {
+              "handle": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "verbosity": {
+            "description": "concise (default) or full",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "type": "object"
+      },
+      "name": "hdf_inspect",
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "docType": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "nextPage": {
+            "type": "integer"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "structure": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "validationErrors": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "field": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "line",
+                "description"
+              ],
+              "type": "object"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          }
+        },
+        "required": [
+          "handle",
+          "docType",
+          "schemaVersion",
+          "valid"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
       "description": "Open an HDF document: detect its type, validate it, mint a reusable handle, and return a headline summary. Optional first hop for a multi-question session; a one-shot path call also works.",
       "inputSchema": {
         "additionalProperties": false,
