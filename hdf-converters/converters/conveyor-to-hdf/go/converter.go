@@ -28,7 +28,14 @@ type ConveyorAPIResp struct {
 	FileTree map[string]FileTreeNode   `json:"file_tree"`
 	Results  map[string]ConveyorResult `json:"results"`
 	Params   map[string]interface{}    `json:"params"`
+	Times    ConveyorTimes             `json:"times"`
 	MaxScore float64                   `json:"max_score"`
+}
+
+// ConveyorTimes holds the overall submission timing for a Conveyor run.
+type ConveyorTimes struct {
+	Completed string `json:"completed"`
+	Submitted string `json:"submitted"`
 }
 
 // FileTreeNode represents a node in the Conveyor file tree.
@@ -197,6 +204,25 @@ func groupResultsByScanner(results map[string]ConveyorResult) ([]string, map[str
 	return scanners, groups
 }
 
+// firstServiceVersion returns the scanner version to record as tool.version.
+// Conveyor's service_tool_version is null in observed output, so the value comes
+// from response.service_version. Because that version is per-scanner (it varies
+// across results), the first entry in sorted result-key order is taken so Go and
+// TypeScript pick the same deterministic value. Returns "" when none is present.
+func firstServiceVersion(results map[string]ConveyorResult) string {
+	keys := make([]string, 0, len(results))
+	for k := range results {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if v := results[k].Response.ServiceVersion; v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 // buildRequirement converts a Conveyor result into an HDF EvaluatedRequirement.
 func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequirement {
 	nist := shared.DefaultStaticAnalysisNIST
@@ -220,9 +246,10 @@ func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequi
 		{Label: "default", Data: descText},
 	}
 
-	// Build results from sections
+	// Build results from sections. Conveyor's service_completed is the per-scan
+	// completion time; fall back to the zero time when the source omits it.
 	scannerName := result.Response.ServiceName
-	startTime := hdfutil.ParseTimestamp(result.Response.Milestones.ServiceStarted)
+	startTime := hdfutil.ParseTimestamp(result.Response.Milestones.ServiceCompleted)
 	score := result.Result.Score
 	status := determineStatus(score)
 
@@ -327,6 +354,15 @@ func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 
 	now := time.Now().UTC()
 
+	// Prefer the submission's overall completion time; fall back to now() only
+	// when the source omits it, so the document timestamp is source-anchored.
+	timestamp := now
+	if t := hdfutil.ParseTimestamp(data.APIResponse.Times.Completed); !t.IsZero() {
+		timestamp = t
+	}
+
+	toolVersion := firstServiceVersion(data.APIResponse.Results)
+
 	if len(baselines) == 0 {
 		title := "Conveyor Scan (no findings)"
 		baselines = []hdf.EvaluatedBaseline{
@@ -349,10 +385,11 @@ func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		GeneratorName:    "conveyor-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Conveyor",
+		ToolVersion:      toolVersion,
 		Baselines:        baselines,
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Application},
 		},
-		Timestamp: &now,
+		Timestamp: &timestamp,
 	}), nil
 }

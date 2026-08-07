@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -403,6 +404,91 @@ func TestConvertConveyor_ResultsAnchor(t *testing.T) {
 
 	shared.AssertRequirementCount(t, result, countConveyorResults(t, input),
 		"sample-results.json: one requirement per api_response.results entry")
+}
+
+// findRequirement returns the requirement with the given ID from a baseline.
+func findRequirement(baseline *hdf.EvaluatedBaseline, id string) *hdf.EvaluatedRequirement {
+	for i := range baseline.Requirements {
+		if baseline.Requirements[i].ID == id {
+			return &baseline.Requirements[i]
+		}
+	}
+	return nil
+}
+
+// ---- Value-pinning: source-derived startTime, tool.version, and timestamp ----
+// The shared snapshot masks the top-level timestamp, so these assertions pin the
+// exact source-derived values (per the u6j3/timestamp audit) in both languages.
+
+func TestConvertConveyor_PinnedStartTimeFromServiceCompleted(t *testing.T) {
+	input := loadFixture(t, "input/sample-results.json")
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	clamav := findBaseline(result.Baselines, "Clamav")
+	require.NotNil(t, clamav, "should have a Clamav baseline")
+
+	req := findRequirement(clamav, "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602")
+	require.NotNil(t, req, "Clamav baseline should contain the pinned requirement")
+	require.NotEmpty(t, req.Results)
+
+	// service_completed = 2023-08-28T12:23:54.179435Z → trimmed-UTC millis.
+	assert.Equal(t, "2023-08-28T12:23:54.179Z",
+		req.Results[0].StartTime.UTC().Format(time.RFC3339Nano))
+}
+
+func TestConvertConveyor_PinnedToolVersion(t *testing.T) {
+	input := loadFixture(t, "input/sample-results.json")
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Version, "tool.version should be populated from service_version")
+	assert.Equal(t, "4.3.0.0", *result.Tool.Version)
+}
+
+func TestConvertConveyor_PinnedTimestampFromTimesCompleted(t *testing.T) {
+	input := loadFixture(t, "input/sample-results.json")
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	// api_response.times.completed = 2023-08-28T12:25:24.834217Z → trimmed-UTC millis.
+	assert.Equal(t, "2023-08-28T12:25:24.834Z",
+		result.Timestamp.UTC().Format(time.RFC3339Nano))
+}
+
+func TestConvertConveyor_StartTimeFallbackWhenServiceCompletedAbsent(t *testing.T) {
+	input := []byte(`{"api_response":{"results":{"r1":{"sha256":"abc","response":{"service_name":"Moldy"},"result":{"score":0,"sections":[]}}}}}`)
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	require.NotEmpty(t, result.Baselines[0].Requirements[0].Results)
+
+	// Absent service_completed → zero time sentinel (never omitted; startTime is required).
+	assert.Equal(t, "0001-01-01T00:00:00Z",
+		result.Baselines[0].Requirements[0].Results[0].StartTime.UTC().Format(time.RFC3339Nano))
+}
+
+func TestConvertConveyor_TimestampFallbackWhenTimesAbsent(t *testing.T) {
+	input := []byte(`{"api_response":{"results":{"r1":{"sha256":"abc","response":{"service_name":"Moldy"},"result":{"score":0,"sections":[]}}}}}`)
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	assert.False(t, result.Timestamp.IsZero(), "absent times.completed falls back to now(), never the zero time")
+	assert.True(t, result.Timestamp.After(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
+		"fallback timestamp should be a recent wall-clock time")
+}
+
+func TestConvertConveyor_ToolVersionFallbackWhenAbsent(t *testing.T) {
+	input := []byte(`{"api_response":{"results":{"r1":{"sha256":"abc","response":{"service_name":"Moldy"},"result":{"score":0,"sections":[]}}}}}`)
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Tool)
+	assert.Nil(t, result.Tool.Version, "no service_version → tool.version omitted")
 }
 
 func TestConvertConveyor_VerificationMethod(t *testing.T) {
