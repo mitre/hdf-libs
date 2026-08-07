@@ -239,6 +239,7 @@
   "timestamp": "2021-12-17T10:39:29Z",
   "tool": {
     "format": "XCCDF",
-    "name": "XCCDF"
+    "name": "XCCDF",
+    "version": "1.2.17"
   }
 }

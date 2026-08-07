@@ -582,6 +582,8 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 		}
 	}
 
+	toolVersion := parseCPEVersion(benchmark.TestResult.TestSystem)
+
 	baselineName := benchmark.Title
 	if baselineName == "" {
 		baselineName = benchmark.ID
@@ -603,6 +605,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 		GeneratorName:    "xccdf-results-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "XCCDF",
+		ToolVersion:      toolVersion,
 		ToolFormat:       "XCCDF",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       []hdf.Component{target},
@@ -854,6 +857,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 	var targets []hdf.Component
 	var firstTimestamp time.Time
 	var totalDuration float64
+	var toolVersion string
 
 	for i := range arc.Reports.Reports {
 		report := &arc.Reports.Reports[i]
@@ -868,6 +872,9 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 
 		if firstTimestamp.IsZero() {
 			firstTimestamp = startTime
+		}
+		if toolVersion == "" {
+			toolVersion = parseCPEVersion(tr.TestSystem)
 		}
 		totalDuration += duration
 
@@ -951,6 +958,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		GeneratorName:    "xccdf-results-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "ARF",
+		ToolVersion:      toolVersion,
 		ToolFormat:       "ARF",
 		Baselines:        baselines,
 		Components:       targets,
@@ -1051,6 +1059,25 @@ func buildGroupMap(benchmark *Benchmark) map[string]*Group {
 		groupMap[gr.rule.ID] = gr.group
 	}
 	return groupMap
+}
+
+// parseCPEVersion extracts the scanner version from an XCCDF TestResult
+// @test-system value. Scanners populate it with a CPE 2.2 URI naming the tool
+// that ran the benchmark, e.g. "cpe:/a:redhat:openscap:1.3.5" or
+// "cpe:/a:spawar:scc:5.4.2", where the colon-separated fields after "cpe:/" are
+// part, vendor, product, version. Returns the version field, or "" for a
+// non-CPE or version-less value so tool.version stays unset rather than
+// fabricated.
+func parseCPEVersion(testSystem string) string {
+	const prefix = "cpe:/"
+	if !strings.HasPrefix(testSystem, prefix) {
+		return ""
+	}
+	parts := strings.Split(strings.TrimPrefix(testSystem, prefix), ":")
+	if len(parts) >= 4 {
+		return parts[3]
+	}
+	return ""
 }
 
 // calculateTiming computes the start time and duration in seconds from the

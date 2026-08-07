@@ -667,6 +667,82 @@ func TestConvertXccdfResultsToHDF_Tool(t *testing.T) {
 	assert.Equal(t, "XCCDF", *result.Tool.Format)
 }
 
+// TestConvertXccdfResultsToHDF_ToolVersion pins the scanner version lifted from
+// the TestResult @test-system CPE ("cpe:/a:redhat:openscap:1.2.17"), proving the
+// value is source-derived rather than dropped.
+func TestConvertXccdfResultsToHDF_ToolVersion(t *testing.T) {
+	input := loadFixture(t, "stig-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Version)
+	assert.Equal(t, "1.2.17", *result.Tool.Version)
+	// Name/format stay the format identity; version enriches it.
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "XCCDF", *result.Tool.Name)
+}
+
+// TestConvertXccdfResultsToHDF_ToolVersion_SCC pins the SCC scanner version from
+// "cpe:/a:spawar:scc:5.4.2".
+func TestConvertXccdfResultsToHDF_ToolVersion_SCC(t *testing.T) {
+	input := loadFixture(t, "xccdf-results-scc-rhel8.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Version)
+	assert.Equal(t, "5.4.2", *result.Tool.Version)
+}
+
+// TestConvertXccdfResultsToHDF_ToolVersion_Absent covers the fallback branch: a
+// TestResult with no @test-system leaves tool.version unset (never fabricated).
+func TestConvertXccdfResultsToHDF_ToolVersion_Absent(t *testing.T) {
+	input := loadFixture(t, "minimal.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Tool)
+	assert.Nil(t, result.Tool.Version)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "XCCDF", *result.Tool.Name)
+}
+
+// TestConvertARF_ToolVersion pins the scanner version from the ARF report's
+// embedded TestResult @test-system ("cpe:/a:redhat:openscap:1.3.5").
+func TestConvertARF_ToolVersion(t *testing.T) {
+	input := loadFixture(t, "arf-minimal.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Version)
+	assert.Equal(t, "1.3.5", *result.Tool.Version)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "ARF", *result.Tool.Name)
+}
+
+// TestParseCPEVersion covers every branch of the CPE version parser directly,
+// including malformed inputs that no fixture exercises.
+func TestParseCPEVersion(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"openscap", "cpe:/a:redhat:openscap:1.3.5", "1.3.5"},
+		{"scc", "cpe:/a:spawar:scc:5.4.2", "5.4.2"},
+		{"empty", "", ""},
+		{"non-cpe", "OpenSCAP 1.3.6", ""},
+		{"cpe without version", "cpe:/a:redhat:openscap", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, parseCPEVersion(tc.input))
+		})
+	}
+}
+
 func TestConvertXccdfResultsToHDF_ResultsChecksum(t *testing.T) {
 	input := loadFixture(t, "minimal.xml")
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)

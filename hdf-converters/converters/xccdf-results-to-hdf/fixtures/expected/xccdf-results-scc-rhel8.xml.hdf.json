@@ -9195,6 +9195,7 @@
   "timestamp": "2021-12-17T10:24:33Z",
   "tool": {
     "format": "XCCDF",
-    "name": "XCCDF"
+    "name": "XCCDF",
+    "version": "5.4.2"
   }
 }

@@ -7691,6 +7691,7 @@
   "timestamp": "2021-04-29T14:16:20Z",
   "tool": {
     "format": "XCCDF",
-    "name": "XCCDF"
+    "name": "XCCDF",
+    "version": "5.4"
   }
 }

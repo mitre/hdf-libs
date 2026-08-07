@@ -283,6 +283,25 @@ describe('xccdf-results-to-hdf converter', async () => {
       expect(hdf.tool?.format).toBe('XCCDF');
     });
 
+    it('should set tool.version from TestResult @test-system CPE', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      // cpe:/a:redhat:openscap:1.2.17
+      expect(hdf.tool?.version).toBe('1.2.17');
+      expect(hdf.tool?.name).toBe('XCCDF');
+    });
+
+    it('should set tool.version from an SCC scanner CPE', async () => {
+      const hdf = await parseHdf('xccdf-results-scc-rhel8.xml');
+      // cpe:/a:spawar:scc:5.4.2
+      expect(hdf.tool?.version).toBe('5.4.2');
+    });
+
+    it('should leave tool.version unset when @test-system is absent', async () => {
+      const hdf = await parseHdf('minimal.xml');
+      expect(hdf.tool?.version).toBeUndefined();
+      expect(hdf.tool?.name).toBe('XCCDF');
+    });
+
     it('should set timestamp from TestResult start-time', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
       const ts = new Date(hdf.timestamp as unknown as string);
@@ -850,6 +869,13 @@ describe('xccdf-results-to-hdf converter', async () => {
       const hdf = await parseHdf('arf-minimal.xml');
       expect(hdf.tool?.name).toBe('ARF');
       expect(hdf.tool?.format).toBe('ARF');
+    });
+
+    it('should set tool.version from the ARF TestResult @test-system CPE', async () => {
+      const hdf = await parseHdf('arf-minimal.xml');
+      // cpe:/a:redhat:openscap:1.3.5
+      expect(hdf.tool?.version).toBe('1.3.5');
+      expect(hdf.tool?.name).toBe('ARF');
     });
 
     it('should skip OVAL reports and only produce baselines from XCCDF', async () => {

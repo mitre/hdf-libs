@@ -156,6 +156,7 @@ interface TestResultElement {
   id?: string;
   'start-time'?: string;
   'end-time'?: string;
+  'test-system'?: string;
   title?: string | TextElement;
   target?: string;
   'target-address'?: string[];
@@ -303,6 +304,21 @@ function parseStartTime(raw: string | undefined): Date {
     if (t) return t;
   }
   return new Date();
+}
+
+// Extract the scanner version from an XCCDF TestResult @test-system value.
+// Scanners populate it with a CPE 2.2 URI naming the tool that ran the
+// benchmark, e.g. "cpe:/a:redhat:openscap:1.3.5" or "cpe:/a:spawar:scc:5.4.2",
+// where the colon-separated fields after "cpe:/" are part, vendor, product,
+// version. Returns '' for a non-CPE or version-less value so tool.version stays
+// unset rather than fabricated. Mirrors the Go parseCPEVersion.
+function parseCpeVersion(testSystem: string | undefined): string {
+  const prefix = 'cpe:/';
+  if (!testSystem || !testSystem.startsWith(prefix)) {
+    return '';
+  }
+  const parts = testSystem.slice(prefix.length).split(':');
+  return parts.length >= 4 ? parts[3]! : '';
 }
 
 export async function convertXccdfResultsToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
@@ -476,10 +492,16 @@ async function convertBenchmarkResultsToHdf(
   baseline.status = 'loaded';
   baseline.summary = stripHTML(extractText(benchmark.description));
 
+  const tool: HDFResults['tool'] = { name: 'XCCDF', format: 'XCCDF' };
+  const toolVersion = parseCpeVersion(testResult['test-system']);
+  if (toolVersion) {
+    tool.version = toolVersion;
+  }
+
   const hdf: HDFResults = {
     baselines: [baseline],
     generator: { name: 'xccdf-results-to-hdf', version: converterVersion },
-    tool: { name: 'XCCDF', format: 'XCCDF' },
+    tool,
     components: buildTargets(testResult),
     timestamp: scanTime,
     statistics: { duration: calculateDuration(testResult) },
@@ -673,6 +695,7 @@ async function convertArfCollection(
   const components: Component[] = [];
   let firstTimestamp: Date | undefined;
   let totalDuration = 0;
+  let toolVersion = '';
 
   for (const report of arc.reports?.report ?? []) {
     const testResult = report.content?.TestResult;
@@ -687,6 +710,9 @@ async function convertArfCollection(
 
     if (!firstTimestamp) {
       firstTimestamp = scanTime;
+    }
+    if (!toolVersion) {
+      toolVersion = parseCpeVersion(testResult['test-system']);
     }
     totalDuration += calculateDuration(testResult);
 
@@ -754,10 +780,15 @@ async function convertArfCollection(
     throw new Error('ARF document contains no XCCDF TestResult reports');
   }
 
+  const tool: HDFResults['tool'] = { name: 'ARF', format: 'ARF' };
+  if (toolVersion) {
+    tool.version = toolVersion;
+  }
+
   const hdf: HDFResults = {
     baselines,
     generator: { name: 'xccdf-results-to-hdf', version: converterVersion },
-    tool: { name: 'ARF', format: 'ARF' },
+    tool,
     components,
     timestamp: firstTimestamp ?? new Date(),
     statistics: { duration: totalDuration },
