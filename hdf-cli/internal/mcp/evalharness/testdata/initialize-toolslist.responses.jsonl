@@ -1,0 +1,2 @@
+{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"logging":{}},"instructions":"HDF MCP server: read, analyze, and author Heimdall Data Format documents.","protocolVersion":"2025-11-25","serverInfo":{"name":"hdf-mcp","title":"HDF MCP Server","version":"dev"}}}
+{"jsonrpc":"2.0","id":2,"result":{"ttlMs":0,"cacheScope":"public","tools":[]}}
