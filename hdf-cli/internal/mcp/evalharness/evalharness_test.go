@@ -14,6 +14,7 @@ import (
 	"time"
 
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/tools"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -45,9 +46,9 @@ func realTranscript(t *testing.T) Transcript {
 		Name:        "initialize-toolslist",
 		Requests:    readLines(t, "initialize-toolslist.requests.jsonl"),
 		Responses:   readLines(t, "initialize-toolslist.responses.jsonl"),
-		TokenBudget: 300, // generous; the recorded responses measure ~101 tokens
+		TokenBudget: 600, // generous; the recorded responses measure ~376 tokens
 		Assert: func(responses []string) error {
-			// Final answer: the tools/list response must carry an empty tool set.
+			// Final answer: the tools/list response must advertise hdf_open.
 			for _, r := range responses {
 				var m map[string]any
 				if json.Unmarshal([]byte(r), &m) != nil {
@@ -56,10 +57,12 @@ func realTranscript(t *testing.T) Transcript {
 				if m["id"] == float64(2) {
 					res, _ := m["result"].(map[string]any)
 					tools, _ := res["tools"].([]any)
-					if len(tools) != 0 {
-						return fmt.Errorf("tools/list should be empty, got %d", len(tools))
+					for _, tl := range tools {
+						if tm, ok := tl.(map[string]any); ok && tm["name"] == "hdf_open" {
+							return nil
+						}
 					}
-					return nil
+					return fmt.Errorf("tools/list should advertise hdf_open, got %d tools", len(tools))
 				}
 			}
 			return fmt.Errorf("no tools/list response found in transcript")
@@ -86,7 +89,7 @@ func TestHarness_FailsOnTokenRegression(t *testing.T) {
 	}
 
 	// A generous budget passes and the final-answer assertion holds.
-	tr.TokenBudget = 300
+	tr.TokenBudget = 600
 	res2, err := Replay(tr)
 	if err != nil {
 		t.Fatalf("replay: %v", err)
@@ -128,7 +131,7 @@ func TestMeasureToolsList_WithinCeilings(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(m.Violations) != 0 {
-		t.Errorf("empty tools/list must be within ceilings, got violations: %v", m.Violations)
+		t.Errorf("golden tools/list must be within ceilings, got violations: %v", m.Violations)
 	}
 	if m.TotalTokens > ToolsListTotalBudget {
 		t.Errorf("golden tools/list %d tokens exceeds total budget %d", m.TotalTokens, ToolsListTotalBudget)
@@ -236,8 +239,11 @@ func driveToolsList(t *testing.T) string {
 	reqR, reqW := io.Pipe()
 	respR, respW := io.Pipe()
 	go func() {
-		_ = appmcp.NewServer("test-version", appmcp.NewStderrLogger("error")).
-			Run(ctx, &sdkmcp.IOTransport{Reader: reqR, Writer: respW})
+		// Register the real tool set so the golden reflects the production surface
+		// — the whole point of golden-filing it is that tool growth surfaces here.
+		s := appmcp.NewServer("test-version", appmcp.NewStderrLogger("error"))
+		tools.RegisterAll(s)
+		_ = s.Run(ctx, &sdkmcp.IOTransport{Reader: reqR, Writer: respW})
 		_ = respW.Close()
 	}()
 

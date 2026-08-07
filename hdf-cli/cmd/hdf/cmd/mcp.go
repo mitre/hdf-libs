@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/tools"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +22,7 @@ output; logs go to stderr (level via HDF_MCP_LOG_LEVEL).`,
 		SilenceUsage:  true,
 		SilenceErrors: false,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return mcp.Run(cmd.Context(), version)
+			return mcp.Run(cmd.Context(), version, tools.RegisterAll)
 		},
 	}
 }

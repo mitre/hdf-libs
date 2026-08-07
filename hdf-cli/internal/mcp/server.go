@@ -44,8 +44,16 @@ func NewServer(version string, logger *slog.Logger) *mcp.Server {
 // Run connects the server to the stdio transport and serves until the context
 // is cancelled or the peer disconnects. This is the production entry the cobra
 // command calls; it uses os.Stdin/os.Stdout via the go-sdk StdioTransport.
-func Run(ctx context.Context, version string) error {
-	return NewServer(version, nil).Run(ctx, &mcp.StdioTransport{})
+//
+// register, if non-nil, installs the tool set onto the server before it serves.
+// It is injected (rather than imported) so this package never depends on the
+// tools package — keeping the dependency edge one-way (tools → mcp, never back).
+func Run(ctx context.Context, version string, register func(*mcp.Server)) error {
+	s := NewServer(version, nil)
+	if register != nil {
+		register(s)
+	}
+	return s.Run(ctx, &mcp.StdioTransport{})
 }
 
 // NewStderrLogger builds a structured slog logger writing to stderr at the given

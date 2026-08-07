@@ -1,5 +1,94 @@
 {
   "cacheScope": "public",
-  "tools": [],
+  "tools": [
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Open an HDF document: detect its type, validate it, mint a reusable handle, and return a headline summary. Optional first hop for a multi-question session; a one-shot path call also works.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "additionalProperties": false,
+            "description": "the document to open, as {path} or {handle}",
+            "properties": {
+              "handle": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "type": "object"
+      },
+      "name": "hdf_open",
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "docType": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "validationErrors": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "field": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "line",
+                "description"
+              ],
+              "type": "object"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          }
+        },
+        "required": [
+          "handle",
+          "docType",
+          "schemaVersion",
+          "valid"
+        ],
+        "type": "object"
+      }
+    }
+  ],
   "ttlMs": 0
 }

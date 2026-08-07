@@ -331,7 +331,7 @@ func TestRun_StdioWiring(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	done := make(chan struct{})
-	go func() { _ = Run(ctx, "v"); close(done) }()
+	go func() { _ = Run(ctx, "v", nil); close(done) }()
 	select {
 	case <-done:
 	case <-time.After(3 * time.Second):

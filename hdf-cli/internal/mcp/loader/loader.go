@@ -129,40 +129,51 @@ func (l *Loader) Load(data []byte) (*Result, error) {
 	return l.buildResult(engineRes, data, false), nil
 }
 
-// buildResult assembles the MCP Result, computing the degraded envelope when the
-// engine core reports the document invalid.
+// buildResult assembles the MCP Result and determines validity for ALL detected
+// document types. The engine core only struct-parses (and thus validates)
+// results and baseline; for every other detected type this wrapper validates
+// against the schema so a valid system/plan/amendments/etc. is reported valid
+// rather than mistaken for a degraded read. Invalid documents get the degraded
+// envelope (line-numbered errors); a valid document never does.
 func (l *Loader) buildResult(engineRes *hdfengine.LoadResult, data []byte, cacheHit bool) *Result {
 	r := &Result{
 		Engine:   engineRes,
-		Valid:    engineRes.Valid,
 		DocType:  engineRes.DocType,
 		CacheHit: cacheHit,
 	}
-	if !engineRes.Valid {
-		r.Errors, r.ErrorsMore = l.degradedErrors(engineRes.DocType, data)
+
+	// Results/baseline the engine parsed cleanly are valid.
+	if engineRes.Valid {
+		r.Valid = true
+		return r
 	}
+	// Non-JSON or unrecognized: no schema to validate against.
+	if engineRes.DocType == "" {
+		r.Errors = []ValidationError{{Description: "unrecognized or non-JSON HDF document"}}
+		return r
+	}
+
+	// Detected a type the engine did not validate (non-results/baseline), or a
+	// results/baseline that failed to parse. Validate against the detected schema.
+	vr := validators.Validate(data, validators.SchemaType(engineRes.DocType))
+	if vr.Valid {
+		// A results/baseline the engine rejected but that passes schema validation
+		// failed for a non-schema reason (e.g. trailing data); surface that.
+		if engineRes.ParseError != "" {
+			r.Errors = []ValidationError{{Description: engineRes.ParseError}}
+			return r
+		}
+		r.Valid = true
+		return r
+	}
+
+	r.Errors, r.ErrorsMore = l.degradedErrors(vr, data)
 	return r
 }
 
-// degradedErrors validates data against its detected type and returns the first
-// N errors annotated with source line numbers. When the type is unknown there is
-// no schema to validate against, so a single explanatory error is returned.
-func (l *Loader) degradedErrors(docType string, data []byte) ([]ValidationError, bool) {
-	if docType == "" {
-		return []ValidationError{{
-			Line:        0,
-			Field:       "",
-			Description: "unrecognized or non-JSON HDF document",
-		}}, false
-	}
-
-	vr := validators.Validate(data, validators.SchemaType(docType))
-	if vr.Valid {
-		// Detected type validates cleanly yet the engine core marked it invalid
-		// (e.g. trailing garbage after a valid object). Surface that generically.
-		return []ValidationError{{Description: "document failed to parse despite matching its schema"}}, false
-	}
-
+// degradedErrors turns a failed validation result into the first N errors
+// annotated with source line numbers.
+func (l *Loader) degradedErrors(vr validators.ValidationResult, data []byte) ([]ValidationError, bool) {
 	lineMap := hdfutil.JSONPathLineMap(data)
 	out := make([]ValidationError, 0, l.maxErrors)
 	for _, e := range vr.Errors {

@@ -2,11 +2,23 @@ package loader
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 )
+
+// A real HDF System document (validated by the schema but NOT struct-parsed by
+// the engine core) exercises the wrapper's all-types validity path.
+func validSystem(t *testing.T) []byte {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join("..", "..", "..", "cmd", "hdf", "cmd", "testdata", "evidence-verify", "system.json"))
+	if err != nil {
+		t.Skipf("system fixture unavailable: %v", err)
+	}
+	return b
+}
 
 // A real HDF Results document (from the shared corpus) for the valid/cache paths.
 func validResults() []byte { return fixtures.Results.Minimal }
@@ -47,6 +59,42 @@ func TestLoad_InvalidDoc_DegradedMode(t *testing.T) {
 	}
 	if !hasLine {
 		t.Error("expected at least one line-numbered validation error")
+	}
+}
+
+func TestLoad_ValidNonResultsType_ReportedValid(t *testing.T) {
+	// A valid system document — which the engine core detects but does NOT
+	// struct-parse — must be reported valid (via schema validation), not mistaken
+	// for a degraded read.
+	l := New(0, 0, 0)
+	res, err := l.Load(validSystem(t))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.DocType != "system" {
+		t.Errorf("docType = %q, want system", res.DocType)
+	}
+	if !res.Valid {
+		t.Fatalf("a valid system doc must be reported valid, got errors: %+v", res.Errors)
+	}
+	if len(res.Errors) != 0 {
+		t.Errorf("valid doc must carry no degraded errors, got %v", res.Errors)
+	}
+}
+
+func TestLoad_InvalidNonResultsType_Degraded(t *testing.T) {
+	// A document detected as system (has "components") but schema-invalid degrades
+	// with line-numbered errors rather than being mistaken for valid.
+	bad := []byte("{\n  \"components\": \"not an array\"\n}")
+	res, err := New(0, 0, 0).Load(bad)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.DocType != "system" || res.Valid {
+		t.Errorf("expected detected system + invalid, got docType=%q valid=%v", res.DocType, res.Valid)
+	}
+	if len(res.Errors) == 0 {
+		t.Error("invalid system doc must carry degraded errors")
 	}
 }
 
