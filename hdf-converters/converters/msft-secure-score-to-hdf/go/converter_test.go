@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -311,7 +312,7 @@ func TestConvertMsftSecureScore_NistTags(t *testing.T) {
 	assert.NotEmpty(t, nist)
 }
 
-// ---- StartTime ----
+// ---- StartTime (value-pinned to control lastSynced) ----
 
 func TestConvertMsftSecureScore_StartTime(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
@@ -319,9 +320,39 @@ func TestConvertMsftSecureScore_StartTime(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
+	// McasFirewallLogUpload carries lastSynced "2024-01-01T04:34:13Z" — startTime
+	// must be that control's own sync time, NOT the score's createdDateTime.
 	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
 	require.NotEmpty(t, req.Results)
-	assert.NotNil(t, req.Results[0].StartTime, "result should have start_time from createdDateTime")
+	assert.Equal(t, "2024-01-01T04:34:13Z", req.Results[0].StartTime.UTC().Format(time.RFC3339))
+
+	// A different control has a distinct lastSynced — proves per-control mapping.
+	dlp := shared.MustFindRequirement(t, reqs, "Data:dlp_datalossprevention")
+	require.NotEmpty(t, dlp.Results)
+	assert.Equal(t, "2024-01-01T13:58:47Z", dlp.Results[0].StartTime.UTC().Format(time.RFC3339))
+}
+
+// StartTime fallback: a control missing lastSynced falls back to the score's
+// createdDateTime (never zero/empty — startTime is schema-required).
+func TestConvertMsftSecureScore_StartTimeFallback(t *testing.T) {
+	input := []byte(`{
+		"secureScore": {"value": [{
+			"id": "run-1",
+			"azureTenantId": "t-1",
+			"createdDateTime": "2024-03-14T09:00:00Z",
+			"controlScores": [
+				{"controlCategory": "Apps", "controlName": "no_sync", "description": "d", "score": 0, "implementationStatus": "x", "scoreInPercentage": 0}
+			]
+		}]},
+		"profiles": {"value": []}
+	}`)
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "Apps:no_sync")
+	require.NotEmpty(t, req.Results)
+	assert.Equal(t, "2024-03-14T09:00:00Z", req.Results[0].StartTime.UTC().Format(time.RFC3339),
+		"missing lastSynced should fall back to createdDateTime")
 }
 
 // ---- Full fixture smoke test ----
@@ -348,7 +379,10 @@ func TestConvertMsftSecureScore_Timestamp(t *testing.T) {
 	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	assert.NotNil(t, result.Timestamp)
+	// Top-level timestamp is source-derived from the score's createdDateTime,
+	// not wall-clock now — this is what makes conversion deterministic.
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2024-01-01T00:00:00Z", result.Timestamp.UTC().Format(time.RFC3339))
 }
 
 // ---- Source categorization/metadata tags ----

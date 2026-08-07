@@ -250,8 +250,13 @@ function buildRequirement(
   // CodeDesc from implementationStatus
   const codeDesc = cs.implementationStatus || 'No implementation status provided';
 
-  // StartTime from createdDateTime
-  const startTime = (createdDateTime ? parseTimestamp(createdDateTime) : null) ?? new Date('0001-01-01T00:00:00Z');
+  // StartTime: the control's own lastSynced (when Microsoft last evaluated it).
+  // Fall back to the score snapshot's createdDateTime when a control carries no
+  // sync time (startTime is schema-required). Mirrors Go's IsZero fallback chain.
+  const startTime =
+    parseTimestamp(cs.lastSynced ?? '') ??
+    parseTimestamp(createdDateTime ?? '') ??
+    new Date('0001-01-01T00:00:00Z');
 
   // Secure Score has no per-result explanation beyond codeDesc, so `message`
   // stays absent rather than an empty string (createResult would default it to '').
@@ -339,6 +344,12 @@ export async function convertMsftSecureScoreToHdf(input: string, converterVersio
     ) as EvaluatedBaseline;
   });
 
+  // Top-level timestamp: the score snapshot's createdDateTime (when Microsoft
+  // generated this Secure Score), not wall-clock now — keeps conversion
+  // deterministic. Fall back to now only when the snapshot carries no time.
+  const timestamp =
+    parseTimestamp(combined.secureScore.value[0]?.createdDateTime ?? '') ?? new Date();
+
   return buildHdfResults({
     generatorName: 'msft-secure-score-to-hdf',
     converterVersion,
@@ -350,6 +361,6 @@ export async function convertMsftSecureScoreToHdf(input: string, converterVersio
       provider: 'azure' as Component['provider'],
       labels: { account: tenantId, provider: 'azure' },
     }],
-    timestamp: new Date(),
+    timestamp,
   });
 }

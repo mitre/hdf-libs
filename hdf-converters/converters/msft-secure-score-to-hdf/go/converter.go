@@ -270,8 +270,13 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 		codeDesc = "No implementation status provided"
 	}
 
-	// StartTime from createdDateTime
-	startTime := hdfutil.ParseTimestamp(createdDateTime)
+	// StartTime: the control's own lastSynced (when Microsoft last evaluated it).
+	// Fall back to the score snapshot's createdDateTime when a control carries no
+	// sync time (startTime is schema-required).
+	startTime := hdfutil.ParseTimestamp(cs.LastSynced)
+	if startTime.IsZero() {
+		startTime = hdfutil.ParseTimestamp(createdDateTime)
+	}
 
 	results := []hdf.RequirementResult{
 		{
@@ -353,7 +358,13 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 		baselines = append(baselines, baseline)
 	}
 
-	now := time.Now().UTC()
+	// Top-level timestamp: the score snapshot's createdDateTime (when Microsoft
+	// generated this Secure Score), not wall-clock now — keeps conversion
+	// deterministic. Fall back to now only when the snapshot carries no time.
+	timestamp := hdfutil.ParseTimestamp(combined.SecureScore.Value[0].CreatedDateTime)
+	if timestamp.IsZero() {
+		timestamp = time.Now().UTC()
+	}
 
 	// Target: cloud account
 	provider := hdf.Azure
@@ -375,6 +386,6 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 				},
 			},
 		},
-		Timestamp: &now,
+		Timestamp: &timestamp,
 	}), nil
 }

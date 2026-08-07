@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "The setting is not compliant.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T17:12:14Z",
               "status": "failed"
             }
           ],
@@ -38,7 +38,7 @@
           "results": [
             {
               "codeDesc": "The setting is not compliant.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T17:12:14Z",
               "status": "failed"
             }
           ],
@@ -72,7 +72,7 @@
           "results": [
             {
               "codeDesc": "Feature in place: false.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T04:34:13Z",
               "status": "failed"
             }
           ],
@@ -120,7 +120,7 @@
           "results": [
             {
               "codeDesc": "Policy in place: false.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T04:34:13Z",
               "status": "failed"
             }
           ],
@@ -170,7 +170,7 @@
           "results": [
             {
               "codeDesc": "Policy in place: false.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T04:34:13Z",
               "status": "failed"
             }
           ],
@@ -218,7 +218,7 @@
           "results": [
             {
               "codeDesc": "Feature in place: false.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T04:34:13Z",
               "status": "failed"
             }
           ],
@@ -268,7 +268,7 @@
           "results": [
             {
               "codeDesc": "No implementation status provided",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T14:59:53Z",
               "status": "failed"
             }
           ],
@@ -313,7 +313,7 @@
           "results": [
             {
               "codeDesc": "No implementation status provided",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -358,7 +358,7 @@
           "results": [
             {
               "codeDesc": "No implementation status provided",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -403,7 +403,7 @@
           "results": [
             {
               "codeDesc": "No implementation status provided",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -448,7 +448,7 @@
           "results": [
             {
               "codeDesc": "No implementation status provided",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -493,7 +493,7 @@
           "results": [
             {
               "codeDesc": "The allowed IP addresses list in the connection filter policy is empty ",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -530,7 +530,7 @@
           "results": [
             {
               "codeDesc": "The setting was not enabled.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -564,7 +564,7 @@
           "results": [
             {
               "codeDesc": "Feature in place: false.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -614,7 +614,7 @@
           "results": [
             {
               "codeDesc": "Modern authentication for Exchange Online is enabled",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -662,7 +662,7 @@
           "results": [
             {
               "codeDesc": "MailTips for end users are disabled.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -710,7 +710,7 @@
           "results": [
             {
               "codeDesc": "Spam confidence level (SCL) is not configured in mail transport rules with specific domain",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -750,7 +750,7 @@
           "results": [
             {
               "codeDesc": "Microsoft 365 audit log search is enabled disabled",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -783,7 +783,7 @@
           "results": [
             {
               "codeDesc": "Mailbox auditing for all users is disabled",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -830,7 +830,7 @@
           "results": [
             {
               "codeDesc": "Additional storage providers are restricted in Outlook on the web is not configured correctly. Please follow next steps to correctly configure the control.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -878,7 +878,7 @@
           "results": [
             {
               "codeDesc": "Installing Outlook add-ins configuration is disabled",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -918,7 +918,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -943,7 +943,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -968,7 +968,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1001,7 +1001,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eBuilt-In Protection Policy - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1037,7 +1037,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eBuilt-In Protection Policy - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1070,7 +1070,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1106,7 +1106,7 @@
           "results": [
             {
               "codeDesc": "Policies were published on 1 of the 1 users",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1131,7 +1131,7 @@
           "results": [
             {
               "codeDesc": "Policies were published on 0 of the 1 users",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1164,7 +1164,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1208,7 +1208,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1252,7 +1252,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1296,7 +1296,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1340,7 +1340,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1384,7 +1384,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1428,7 +1428,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1464,7 +1464,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1497,7 +1497,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1541,7 +1541,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1585,7 +1585,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1629,7 +1629,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1665,7 +1665,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1698,7 +1698,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1742,7 +1742,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1786,7 +1786,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1830,7 +1830,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1874,7 +1874,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1910,7 +1910,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1935,7 +1935,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1960,7 +1960,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1985,7 +1985,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -2010,7 +2010,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -2035,7 +2035,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -2060,7 +2060,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -2093,7 +2093,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eBuilt-In Protection Policy - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -2133,7 +2133,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eBuilt-In Protection Policy - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -2166,7 +2166,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -2215,7 +2215,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -2263,7 +2263,7 @@
           "results": [
             {
               "codeDesc": "You have no user consent policy in place.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "failed"
             }
           ],
@@ -2304,7 +2304,7 @@
           "results": [
             {
               "codeDesc": "Your current policy is set to let passwords expire.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -2329,7 +2329,7 @@
           "results": [
             {
               "codeDesc": "You have 0 of 0 users who don't have self-service password reset enabled.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -2362,7 +2362,7 @@
           "results": [
             {
               "codeDesc": "You have 0 of 1 users that don't have legacy authentication blocked.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -2402,7 +2402,7 @@
           "results": [
             {
               "codeDesc": "You have 0 out of 1 users that aren’t registered with MFA.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -2435,7 +2435,7 @@
           "results": [
             {
               "codeDesc": "You have 0 out of 1 users with administrative roles that aren’t registered and protected with MFA.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -2476,7 +2476,7 @@
           "results": [
             {
               "codeDesc": "You have 0 of 1 users that don't have the sign-in risky policy turned on.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -2501,7 +2501,7 @@
           "results": [
             {
               "codeDesc": "You have 0 users out of 1 that do not have user risk policy enabled.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -2526,7 +2526,7 @@
           "results": [
             {
               "codeDesc": "You currently have 1 global admins.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "failed"
             }
           ],
@@ -2551,7 +2551,7 @@
           "results": [
             {
               "codeDesc": "You have 0 users with least privileged administrative roles.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "failed"
             }
           ],
@@ -2590,7 +2590,7 @@
     "name": "msft-secure-score-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:30:23.256245Z",
+  "timestamp": "2024-01-01T00:00:00Z",
   "tool": {
     "name": "Microsoft Secure Score"
   }

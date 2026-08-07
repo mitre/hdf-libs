@@ -237,10 +237,38 @@ describe('msft-secure-score to HDF converter', async () => {
   });
 
   describe('start_time', async () => {
-    it('should set start_time from createdDateTime', async () => {
+    it('should set start_time from the control lastSynced', async () => {
       const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
-      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
-      expect(req?.results[0]?.startTime).toBe('2024-01-01T00:00:00Z');
+      const reqs = hdf.baselines[0]!.requirements;
+      // Per-control lastSynced — NOT the score's createdDateTime.
+      const mcas = reqs.find(r => r.id === 'Apps:McasFirewallLogUpload');
+      expect(mcas?.results[0]?.startTime).toBe('2024-01-01T04:34:13Z');
+      const dlp = reqs.find(r => r.id === 'Data:dlp_datalossprevention');
+      expect(dlp?.results[0]?.startTime).toBe('2024-01-01T13:58:47Z');
+    });
+
+    it('falls back to createdDateTime when a control has no lastSynced', async () => {
+      const input = JSON.stringify({
+        secureScore: { value: [{
+          id: 'run-1',
+          azureTenantId: 't-1',
+          createdDateTime: '2024-03-14T09:00:00Z',
+          controlScores: [
+            { controlCategory: 'Apps', controlName: 'no_sync', description: 'd', score: 0, implementationStatus: 'x', scoreInPercentage: 0 },
+          ],
+        }] },
+        profiles: { value: [] },
+      });
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:no_sync');
+      expect(req?.results[0]?.startTime).toBe('2024-03-14T09:00:00Z');
+    });
+  });
+
+  describe('top-level timestamp', async () => {
+    it('is source-derived from the score createdDateTime (deterministic)', async () => {
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
+      expect(hdf.timestamp).toBe('2024-01-01T00:00:00Z');
     });
   });
 
