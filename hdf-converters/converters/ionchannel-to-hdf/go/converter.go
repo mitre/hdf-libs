@@ -259,6 +259,34 @@ func titleCaseFirst(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
+// scanStartTime returns a scan summary's start time: created_at (when the scan
+// began), falling back to updated_at, then the zero sentinel when the source
+// carries neither. Zero mirrors the TS `new Date('0001-01-01T00:00:00Z')`
+// sentinel so both languages emit the same startTime on a timeless scan.
+func scanStartTime(scan ScanSummary) time.Time {
+	if t := hdfutil.ParseTimestamp(scan.CreatedAt); !t.IsZero() {
+		return t
+	}
+	if t := hdfutil.ParseTimestamp(scan.UpdatedAt); !t.IsZero() {
+		return t
+	}
+	return time.Time{}
+}
+
+// analysisTimestamp returns the document timestamp: the analysis updated_at
+// (completion / last-update time), falling back to created_at, then wall-clock
+// now() when the source carries no parseable analysis time. Source-derived so
+// converting the same input twice yields the same top-level timestamp.
+func analysisTimestamp(a IonChannelAnalysis) time.Time {
+	if t := hdfutil.ParseTimestamp(a.UpdatedAt); !t.IsZero() {
+		return t
+	}
+	if t := hdfutil.ParseTimestamp(a.CreatedAt); !t.IsZero() {
+		return t
+	}
+	return time.Now()
+}
+
 // buildScanRequirement builds the single inventory requirement emitted for a
 // non-dependency scan summary. The scan's serializable result data is preserved
 // in the code field (the ionchannel dependency pattern), and scan identity lands
@@ -295,7 +323,7 @@ func buildScanRequirement(scan ScanSummary, analysis IonChannelAnalysis) hdf.Eva
 			{
 				Status:    hdf.NotReviewed,
 				CodeDesc:  scan.Name + " scan summary",
-				StartTime: time.Time{},
+				StartTime: scanStartTime(scan),
 			},
 		},
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
@@ -443,13 +471,13 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		})
 	}
 
-	now := time.Now()
+	ts := analysisTimestamp(analysis)
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "ionchannel-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Ion Channel",
 		Baselines:        baselines,
-		Timestamp:        &now,
+		Timestamp:        &ts,
 	}), nil
 }

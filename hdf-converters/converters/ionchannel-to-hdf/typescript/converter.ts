@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -214,6 +214,26 @@ function titleCaseFirst(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+// A scan summary's start time: created_at (when the scan began), falling back to
+// updated_at, then the sentinel when the source carries neither. The sentinel
+// mirrors Go's zero time.Time so both languages emit the same startTime on a
+// timeless scan.
+function scanStartTime(scan: ScanSummary): Date {
+  return (
+    parseTimestamp(scan.created_at) ??
+    parseTimestamp(scan.updated_at) ??
+    new Date('0001-01-01T00:00:00Z')
+  );
+}
+
+// The document timestamp: the analysis updated_at (completion / last-update
+// time), falling back to created_at, then wall-clock now() when the source
+// carries no parseable analysis time. Source-derived so converting the same
+// input twice yields the same top-level timestamp.
+function analysisTimestamp(a: IonChannelAnalysis): Date {
+  return parseTimestamp(a.updated_at) ?? parseTimestamp(a.created_at) ?? new Date();
+}
+
 // Build the single inventory requirement for a non-dependency scan summary. The
 // scan's serializable result data is preserved verbatim in the code field
 // (JSON.stringify preserves source key order, matching the Go json.Indent twin).
@@ -229,7 +249,7 @@ function buildScanRequirement(
     {
       status: ResultStatus.NotReviewed,
       codeDesc: `${scan.name} scan summary`,
-      startTime: new Date('0001-01-01T00:00:00Z'),
+      startTime: scanStartTime(scan),
     },
   ];
 
@@ -383,6 +403,6 @@ export async function convertIonchannelToHdf(input: string, converterVersion = '
     converterVersion,
     toolName: 'Ion Channel',
     baselines,
-    timestamp: new Date(),
+    timestamp: analysisTimestamp(analysis),
   });
 }
