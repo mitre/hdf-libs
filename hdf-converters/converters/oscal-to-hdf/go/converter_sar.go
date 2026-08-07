@@ -207,9 +207,14 @@ func findingToRequirementResult(
 	// Build message from risk descriptions
 	message := buildRiskMessage(f, riskMap)
 
-	// Parse start time from result; fall back to the single conversion-time
-	// value when the source omits it (startTime is required and must be valid).
-	startTime := parseResultStartTime(result)
+	// startTime: prefer the earliest observation `collected` time correlated to
+	// this finding via related-observations; fall back to the result's
+	// assessment-period start, then to the single conversion-time value.
+	// startTime is required and must be valid.
+	startTime := findingStartTime(f, obsMap)
+	if startTime.IsZero() {
+		startTime = parseResultStartTime(result)
+	}
 	if startTime.IsZero() {
 		startTime = scanTime
 	}
@@ -550,6 +555,29 @@ func buildObservationMap(observations []Observation) map[string]*Observation {
 		m[observations[i].UUID] = &observations[i]
 	}
 	return m
+}
+
+// findingStartTime lifts the earliest observation `collected` time across the
+// finding's related observations (correlated by observation UUID). Empty or
+// unparseable `collected` values are skipped via ParseTimestamp's zero-time
+// sentinel — the TS side mirrors this skip so both languages agree. Returns the
+// zero time when no correlated observation carries a usable collected time.
+func findingStartTime(f *Finding, obsMap map[string]*Observation) time.Time {
+	var earliest time.Time
+	for _, ref := range f.RelatedObservations {
+		obs, ok := obsMap[ref.ObservationUUID]
+		if !ok {
+			continue
+		}
+		t := hdfutil.ParseTimestamp(obs.Collected)
+		if t.IsZero() {
+			continue
+		}
+		if earliest.IsZero() || t.Before(earliest) {
+			earliest = t
+		}
+	}
+	return earliest
 }
 
 // parseResultStartTime parses the start time from an OSCAL Result.

@@ -216,13 +216,23 @@ function findingToRequirementResult(
   const status = mapFindingStatus(f);
   const codeDesc = buildCodeDesc(f, obsMap);
   const message = buildRiskMessage(f, riskMap);
-  // The OSCAL result's assessment-period start applies to all its findings;
-  // fall back to the single conversion-time value when the source omits it.
-  const startTime = parseResultStartTime(result);
+  // startTime: prefer the earliest observation `collected` time correlated to
+  // this finding via related-observations; fall back to the result's
+  // assessment-period start, then to the single conversion-time value.
+  const obsTime = findingStartTime(f, obsMap);
+  const resultTime = parseResultStartTime(result);
+  let startTime: Date;
+  if (obsTime) {
+    startTime = obsTime;
+  } else if (resultTime.getTime() > 0) {
+    startTime = resultTime;
+  } else {
+    startTime = scanTime;
+  }
 
   return createResult(status, message || undefined, {
     codeDesc,
-    startTime: startTime.getTime() > 0 ? startTime : scanTime,
+    startTime,
   });
 }
 
@@ -495,6 +505,29 @@ function buildRiskMap(risks: IdentifiedRisk[]): Map<string, IdentifiedRisk> {
     m.set(risk.uuid, risk);
   }
   return m;
+}
+
+// Lifts the earliest observation `collected` time across the finding's related
+// observations (correlated by observation UUID). Empty or unparseable
+// `collected` values are skipped — mirrors the Go zero-time sentinel skip so
+// both languages agree. Returns undefined when no correlated observation
+// carries a usable collected time.
+function findingStartTime(f: Finding, obsMap: Map<string, Observation>): Date | undefined {
+  let earliest: Date | undefined;
+  for (const ref of f['related-observations'] ?? []) {
+    const obsUuid = ref['observation-uuid'];
+    if (!obsUuid) continue;
+    const obs = obsMap.get(obsUuid);
+    if (!obs || obs.collected == null) continue;
+    // Generator types collected as Date, but it is a string at runtime; coerce
+    // so parseTimestamp applies canonical UTC handling.
+    const t = parseTimestamp(String(obs.collected));
+    if (!t) continue;
+    if (!earliest || t.getTime() < earliest.getTime()) {
+      earliest = t;
+    }
+  }
+  return earliest;
 }
 
 function parseResultStartTime(result: AssessmentResult): Date {

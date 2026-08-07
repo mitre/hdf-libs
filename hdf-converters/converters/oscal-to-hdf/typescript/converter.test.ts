@@ -543,20 +543,49 @@ describe('convertOscalSarToHdf', () => {
     expect(au1.refs).toBeUndefined();
   });
 
-  it('falls back to conversion time when a result has no start', async () => {
+  it('maps result startTime from the correlated observation collected time', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    const reqs = results.baselines[0]!.requirements;
+
+    // Every finding correlates to observations whose `collected` is
+    // 2023-05-10T00:00:00Z; startTime must be that value, NOT the result's
+    // assessment-period start (2023-03-01T00:00:00Z).
+    for (const id of ['AC-1', 'AU-1', 'RA-5', 'CM-2 (1)', 'AT-2', 'CA-8 (1)']) {
+      const req = reqs.find(r => r.id === id)!;
+      const startTime = req.results[0]!.startTime;
+      expect(new Date(startTime as string | Date).toISOString()).toBe('2023-05-10T00:00:00.000Z');
+    }
+  });
+
+  it('falls back to result start, then conversion time, when no observation collected time exists', async () => {
     const doc = JSON.parse(loadFixture('sar-fedramp.json')) as {
-      'assessment-results': { results: Array<Record<string, unknown>> };
+      'assessment-results': {
+        results: Array<{
+          start?: unknown;
+          observations?: Array<Record<string, unknown>>;
+        } & Record<string, unknown>>;
+      };
     };
-    // Drop the start on the only finding-bearing result to exercise the fallback.
+    // Strip every observation `collected` so the primary source is absent; the
+    // result's `start` (2023-03-01T00:00:00Z) must then supply startTime.
+    for (const r of doc['assessment-results'].results) {
+      for (const o of r.observations ?? []) delete o['collected'];
+    }
+    let output = await convertOscalSarToHdf(JSON.stringify(doc));
+    let results = JSON.parse(output) as HDFResults;
+    expectValidResults(results);
+    let startTime = results.baselines[0]!.requirements[0]!.results[0]!.startTime;
+    expect(new Date(startTime as string | Date).toISOString()).toBe('2023-03-01T00:00:00.000Z');
+
+    // Also drop the result `start`: startTime must fall to a fresh conversion
+    // time, never the 1970 epoch placeholder.
     for (const r of doc['assessment-results'].results) delete r['start'];
     const before = Date.now();
-    const output = await convertOscalSarToHdf(JSON.stringify(doc));
-    const results = JSON.parse(output) as HDFResults;
+    output = await convertOscalSarToHdf(JSON.stringify(doc));
+    results = JSON.parse(output) as HDFResults;
     expectValidResults(results);
-
-    const startTime = results.baselines[0]!.requirements[0]!.results[0]!.startTime;
-    expect(startTime).toBeDefined();
-    // A fresh conversion-time value, not the 1970 epoch placeholder.
+    startTime = results.baselines[0]!.requirements[0]!.results[0]!.startTime;
     expect(new Date(startTime as string | Date).getTime()).toBeGreaterThanOrEqual(before);
   });
 
