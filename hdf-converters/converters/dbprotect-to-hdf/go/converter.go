@@ -137,6 +137,18 @@ func parseDate(dateStr string) time.Time {
 	return time.Time{}
 }
 
+// scanTimestamp derives the scan time for the top-level HDF timestamp from the
+// source, preferring the "Start Date" column (the Findings Detail report's scan
+// start) and falling back to the per-finding "Date" column present in both
+// report formats. Returns the zero time when neither parses, so the caller omits
+// the timestamp rather than emitting a wall-clock value (determinism).
+func scanTimestamp(f finding) time.Time {
+	if t := parseDate(f["Start Date"]); !t.IsZero() {
+		return t
+	}
+	return parseDate(f["Date"])
+}
+
 // groupByCheckID groups findings by their Check ID, preserving insertion order.
 func groupByCheckID(findings []finding) ([]string, map[string][]finding) {
 	order := []string{}
@@ -279,7 +291,14 @@ func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 
 	targetName := firstFinding["Asset"]
-	now := time.Now().UTC()
+
+	// Top-level timestamp is source-derived (Start Date, else Date) so repeated
+	// conversions of the same input are byte-identical. Omit it rather than fall
+	// back to now() when the source carries no parseable scan time.
+	var timestamp *time.Time
+	if ts := scanTimestamp(firstFinding); !ts.IsZero() {
+		timestamp = &ts
+	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "dbprotect-to-hdf",
@@ -289,6 +308,6 @@ func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Host},
 		},
-		Timestamp: &now,
+		Timestamp: timestamp,
 	}), nil
 }

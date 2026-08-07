@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -512,6 +513,59 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "dbprotect-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertDbprotectToHDF(input, "1.0.0")
 	})
+}
+
+// ---- Top-level timestamp (source-derived, value-pinned) ----
+
+// The snapshot harness masks the top-level timestamp, so the golden does not
+// verify its value. Pin the exact source-derived value here: the Findings Detail
+// report carries a "Start Date" column, which becomes the top-level timestamp.
+func TestConvertDbprotect_FindingsDetail_TimestampFromStartDate(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp, "timestamp must be populated from Start Date")
+	assert.Equal(t, "2021-02-18T15:55:00Z", result.Timestamp.UTC().Format(time.RFC3339))
+}
+
+// Fallback branch: the Check Results report has no "Start Date" column, so the
+// top-level timestamp falls back to the per-finding "Date" column.
+func TestConvertDbprotect_CheckResults_TimestampFallsBackToDate(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp, "timestamp must fall back to the Date column")
+	assert.Equal(t, "2021-02-18T15:57:00Z", result.Timestamp.UTC().Format(time.RFC3339))
+}
+
+// Determinism: converting the same input twice yields the identical top-level
+// timestamp (source-derived, never now()).
+func TestConvertDbprotect_TimestampDeterministic(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	first, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+	second, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, first.Timestamp)
+	require.NotNil(t, second.Timestamp)
+	assert.Equal(t, first.Timestamp.UTC(), second.Timestamp.UTC())
+}
+
+// scanTimestamp derivation, exercised directly to cover every branch.
+func TestScanTimestamp(t *testing.T) {
+	// Start Date preferred when present.
+	assert.Equal(t, "2021-02-18T15:55:00Z",
+		scanTimestamp(finding{"Start Date": "2021-02-18 15:55", "Date": "Feb 18 2021 15:57"}).UTC().Format(time.RFC3339))
+
+	// Falls back to Date when Start Date is absent.
+	assert.Equal(t, "2021-02-18T15:57:00Z",
+		scanTimestamp(finding{"Date": "Feb 18 2021 15:57"}).UTC().Format(time.RFC3339))
+
+	// Zero time when neither is parseable, so the caller omits the timestamp.
+	assert.True(t, scanTimestamp(finding{}).IsZero())
 }
 
 func TestConvertDbprotect_VerificationMethod(t *testing.T) {

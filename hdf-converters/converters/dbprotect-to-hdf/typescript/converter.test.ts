@@ -385,4 +385,31 @@ describe('dbprotect to HDF converter', () => {
       expect(hdf.baselines[0]!.requirements).toHaveLength(1);
     });
   });
+
+  // The snapshot harness masks the top-level timestamp, so the golden never
+  // verifies its value. Pin the exact source-derived value here.
+  describe('top-level timestamp (source-derived)', () => {
+    it('derives the timestamp from the Start Date column (findings detail)', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      expect(hdf.timestamp).toBe('2021-02-18T15:55:00Z');
+    });
+
+    it('falls back to the per-finding Date column when Start Date is absent (check results)', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
+      expect(hdf.timestamp).toBe('2021-02-18T15:57:00Z');
+    });
+
+    it('is deterministic across repeated conversions of the same input', async () => {
+      const first = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      const second = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      expect(first.timestamp).toBe(second.timestamp);
+      expect(first.timestamp).toBe('2021-02-18T15:55:00Z');
+    });
+
+    it('omits the timestamp when the source carries no parseable scan time', async () => {
+      const xml = `<?xml version="1.0"?><dataset><metadata><item><name>Check ID</name><type>xs:string</type></item><item><name>Check</name><type>xs:string</type></item><item><name>Risk DV</name><type>xs:string</type></item><item><name>Details</name><type>xs:string</type></item><item><name>Date</name><type>xs:string</type></item><item><name>Task</name><type>xs:string</type></item><item><name>Check Category</name><type>xs:string</type></item><item><name>Organization</name><type>xs:string</type></item><item><name>Asset</name><type>xs:string</type></item><item><name>Asset Type</name><type>xs:string</type></item><item><name>IP Address, Port, Instance</name><type>xs:string</type></item><item><name>Job Name</name><type>xs:string</type></item></metadata><data><row><value>CK1</value><value>Check</value><value>Low</value><value>Details</value><value>invalid date xyz</value><value>Task</value><value>Cat</value><value>Org</value><value>Asset</value><value>DB</value><value>10.0.0.1</value><value>Job</value></row></data></dataset>`;
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.timestamp).toBeUndefined();
+    });
+  });
 });
