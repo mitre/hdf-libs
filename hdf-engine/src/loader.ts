@@ -69,10 +69,11 @@ export function load(input: string | Uint8Array, maxSize = 0): LoadResult {
  */
 export function detectFormat(text: string): InputFormat {
   const lines = text.split('\n').filter((l) => l.trim() !== '');
-  if (lines.length < 2) {
+  const [first, second] = lines;
+  if (first === undefined || second === undefined) {
     return 'json';
   }
-  if (isCompleteJSON(lines[0]) && isCompleteJSON(lines[1])) {
+  if (isCompleteJSON(first) && isCompleteJSON(second)) {
     return 'ndjson';
   }
   return 'json';
