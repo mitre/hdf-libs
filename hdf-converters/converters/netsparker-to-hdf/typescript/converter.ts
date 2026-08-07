@@ -280,7 +280,13 @@ function buildRefs(externalReferences: string | undefined): Reference[] | undefi
   }
   const refs: Reference[] = [];
   for (const match of externalReferences.matchAll(HREF_PATTERN)) {
-    refs.push({ url: match[1] });
+    // Reference.url is schema-constrained to format "uri"; only emit absolute
+    // hrefs (a scheme is present), skipping empty/relative/fragment.
+    const url = match[1]?.trim() ?? '';
+    if (!url.includes('://')) {
+      continue;
+    }
+    refs.push({ url });
   }
   return refs.length > 0 ? refs : undefined;
 }

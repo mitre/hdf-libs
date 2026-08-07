@@ -298,6 +298,25 @@ describe('Netsparker to HDF converter', () => {
     expect(req?.refs).toBeUndefined();
   });
 
+  it('skips non-absolute hrefs (relative/fragment/blank) in external-references', async () => {
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target><url>https://example.com/</url></target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>mixed-refs</LookupId>
+			<name>Mixed Refs Vuln</name>
+			<severity>Low</severity>
+			<external-references><![CDATA[<a href="https://abs.example/x">abs</a><a href="/relative">rel</a><a href="#frag">f</a><a href="   ">blank</a>]]></external-references>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'mixed-refs');
+    expect(req?.refs).toHaveLength(1);
+    expect(req!.refs![0]!.url).toBe('https://abs.example/x');
+  });
+
   // ---- All results are Failed ----
 
   it('should mark all results as failed', async () => {

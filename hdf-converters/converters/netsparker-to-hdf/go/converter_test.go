@@ -361,6 +361,15 @@ func TestBuildRefs(t *testing.T) {
 		require.NotNil(t, refs[0].URL)
 		assert.Equal(t, "https://example.com/x", *refs[0].URL)
 	})
+	t.Run("skips non-absolute hrefs", func(t *testing.T) {
+		refs := buildRefs(`<a href="https://example.com/x">abs</a><a href="/relative/path">rel</a><a href="#frag">frag</a><a href="   ">blank</a>`)
+		require.Len(t, refs, 1)
+		require.NotNil(t, refs[0].URL)
+		assert.Equal(t, "https://example.com/x", *refs[0].URL)
+	})
+	t.Run("nil when only non-absolute hrefs", func(t *testing.T) {
+		assert.Nil(t, buildRefs(`<a href="/relative">rel</a><a href="#frag">f</a>`))
+	})
 }
 
 // ---- Status: all results Failed ----

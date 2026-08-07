@@ -253,13 +253,19 @@ var hrefPattern = regexp.MustCompile(`href=['"]([^'"]+)['"]`)
 // no links, so refs[] is omitted entirely.
 func buildRefs(externalReferences string) []hdf.Reference {
 	matches := hrefPattern.FindAllStringSubmatch(externalReferences, -1)
-	if len(matches) == 0 {
-		return nil
-	}
 	refs := make([]hdf.Reference, 0, len(matches))
 	for _, m := range matches {
-		url := m[1]
-		refs = append(refs, hdf.Reference{URL: &url})
+		// Reference.url is schema-constrained to format "uri"; only emit
+		// absolute hrefs (a scheme is present), skipping empty/relative/fragment.
+		url := strings.TrimSpace(m[1])
+		if !strings.Contains(url, "://") {
+			continue
+		}
+		u := url
+		refs = append(refs, hdf.Reference{URL: &u})
+	}
+	if len(refs) == 0 {
+		return nil
 	}
 	return refs
 }
