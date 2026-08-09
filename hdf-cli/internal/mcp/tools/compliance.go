@@ -85,8 +85,10 @@ func RegisterCompliance(s *sdkmcp.Server, ldr *loader.Loader) {
 		Name: "hdf_compliance",
 		Description: "Compute percent compliance and status/severity rollups (by effective status: impact-0 is " +
 			"Not Applicable and excluded from the denominator, overrides honored) for an HDF results document, " +
-			"with an optional grouped breakdown and threshold verdict. The agentOverrides block is the detective " +
-			"surface: how many overrides are agent-attributed and the compliance delta they account for.",
+			"with an optional grouped breakdown and threshold verdict. counts uses SAF threshold-file keys: " +
+			"skipped = notReviewed, no_impact = notApplicable (the vocabulary hdf_query reports). The " +
+			"agentOverrides block is the detective surface: agent-attributed override count and the compliance " +
+			"delta they account for.",
 		Annotations: appmcp.ReadOnly(),
 	}, hdfCompliance(ldr))
 }

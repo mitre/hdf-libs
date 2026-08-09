@@ -192,6 +192,34 @@ func sameDist(a, b map[string]int) bool {
 	return true
 }
 
+// TestComplianceCountsVocabularyIsDocumented is lj0g.7's first-failing test: the
+// counts payload uses SAF vocabulary (skipped/no_impact) and the tool description
+// states the SAF↔schema mapping, so the two surfaces express one contract and
+// cannot drift. No schema-vocab keys leak into counts; no third vocabulary.
+func TestComplianceCountsVocabularyIsDocumented(t *testing.T) {
+	path := writeRoot(t, "iz.json", readToolsFixture(t, "impact-zero.json"))
+	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
+	for _, saf := range []string{"passed", "failed", "skipped", "error", "no_impact"} {
+		if _, ok := out.Counts[saf]; !ok {
+			t.Errorf("counts must use SAF key %q", saf)
+		}
+	}
+	for _, schema := range []string{"notReviewed", "notApplicable"} {
+		if _, ok := out.Counts[schema]; ok {
+			t.Errorf("counts must NOT carry schema key %q — counts is SAF-vocabulary only", schema)
+		}
+	}
+	// The description must state the mapping (the reachable place an agent reads).
+	s := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "t", Version: "v"}, nil)
+	RegisterCompliance(s, loader.New(0, 0, 0))
+	raw := driveToolsListJSON(t, s)
+	for _, frag := range []string{"skipped = notReviewed", "no_impact = notApplicable"} {
+		if !strings.Contains(raw, frag) {
+			t.Errorf("hdf_compliance description must document the vocabulary mapping %q", frag)
+		}
+	}
+}
+
 func TestHdfCompliance_ComplianceAndCounts(t *testing.T) {
 	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
 	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
