@@ -343,6 +343,50 @@ describe('ZAP Converter', () => {
     });
   });
 
+  describe('source location', () => {
+    // requirement.sourceLocation promotes the affected URL of the alert's primary
+    // (first uri-bearing) instance into the structured, queryable HDF locus. ZAP
+    // is a DAST tool, so ref is a URL and line is always omitted. The URL still
+    // appears in codeDesc freetext — sourceLocation is an additive structured field.
+    it('promotes the primary instance uri into sourceLocation.ref (no line)', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
+      expect(req?.sourceLocation?.ref).toBe('https://example.com/login');
+      expect(req?.sourceLocation?.line).toBeUndefined();
+    });
+
+    // The primary instance is the first uri-bearing instance; alert 90022 has two
+    // instances and the first one's uri is used.
+    it('uses the first instance uri when an alert has multiple instances', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
+      expect(req?.sourceLocation?.ref).toBe('https://example.com/api/submit');
+    });
+
+    // Absent branch: an alert whose instances carry no uri emits no sourceLocation.
+    it('omits sourceLocation when no instance carries a uri', async () => {
+      const zap = {
+        '@version': '2.7.0',
+        site: [{'@host': 'example.com', alerts: [
+          {pluginid: '1', name: 'no-uri', instances: [{method: 'GET'}]},
+          {pluginid: '2', name: 'no-instances', instances: []},
+          {pluginid: '3', name: 'second-uri', instances: [{method: 'GET'}, {uri: 'https://x.example/b'}]},
+        ]}],
+      };
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(JSON.stringify(zap)));
+      const reqs = hdf.baselines[0].requirements;
+      expect(reqs.find(r => r.id === '1')?.sourceLocation).toBeUndefined();
+      expect(reqs.find(r => r.id === '2')?.sourceLocation).toBeUndefined();
+      expect(reqs.find(r => r.id === '3')?.sourceLocation?.ref).toBe('https://x.example/b');
+    });
+  });
+
   describe('NIST mapping', () => {
     it('should map known CWE 16 to NIST control', async () => {
       const input = loadFixture('minimal.json');

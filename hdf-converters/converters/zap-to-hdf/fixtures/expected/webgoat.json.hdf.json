@@ -27,6 +27,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://ciscobinary.openh264.org/openh264-macosx64-0410d336bb748149a4f560eb6108090f078254b1.zip"
+          },
           "id": "10021",
           "impact": 0.3,
           "tags": {
@@ -93,6 +96,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css"
+          },
           "id": "10021",
           "impact": 0.3,
           "tags": {
@@ -159,6 +165,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://detectportal.firefox.com/success.txt"
+          },
           "id": "10021",
           "impact": 0.3,
           "tags": {
@@ -316,6 +325,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id"
+          },
           "id": "90028",
           "impact": 0.3,
           "tags": {
@@ -395,6 +407,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/attack"
+          },
           "id": "10010",
           "impact": 0.3,
           "tags": {
@@ -559,6 +574,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old.baseUrl%\u003e"
+          },
           "id": "10095",
           "impact": 0.5,
           "tags": {
@@ -702,6 +720,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923"
+          },
           "id": "90028.1",
           "impact": 0.3,
           "tags": {
@@ -841,6 +862,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss"
+          },
           "id": "90028.2",
           "impact": 0.3,
           "tags": {
@@ -980,6 +1004,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/service/ixvsrz0hz5"
+          },
           "id": "90028.3",
           "impact": 0.5,
           "tags": {
@@ -1123,6 +1150,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson"
+          },
           "id": "10202",
           "impact": 0.3,
           "tags": {
@@ -1265,6 +1295,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson"
+          },
           "id": "10027",
           "impact": 0.3,
           "tags": {
@@ -1399,6 +1432,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922"
+          },
           "id": "90028.4",
           "impact": 0.3,
           "tags": {
@@ -1538,6 +1574,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson"
+          },
           "id": "90028.5",
           "impact": 0.3,
           "tags": {
@@ -1607,6 +1646,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E"
+          },
           "id": "10023",
           "impact": 0.3,
           "tags": {
@@ -1671,6 +1713,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E"
+          },
           "id": "10023.1",
           "impact": 0.3,
           "tags": {
@@ -1735,6 +1780,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E"
+          },
           "id": "10023.2",
           "impact": 0.3,
           "tags": {
@@ -1869,6 +1917,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/service/lessonoverview.mvc/eh79fr0hqg"
+          },
           "id": "90028.6",
           "impact": 0.5,
           "tags": {
@@ -2008,6 +2059,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/service/lessonprogress.mvc"
+          },
           "id": "90028.7",
           "impact": 0.3,
           "tags": {
@@ -2076,6 +2130,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/challenge/6?confirm_password_reg=ZAP\u0026email_reg=foo-bar%40example.com\u0026password_reg=ZAP\u0026register-submit=Register+Now\u0026username_reg=ZAP"
+          },
           "id": "10024",
           "impact": 0.3,
           "tags": {
@@ -2210,6 +2267,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson"
+          },
           "id": "90028.8",
           "impact": 0.3,
           "tags": {
@@ -2279,6 +2339,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/IDOR/profile/alt-path"
+          },
           "id": "90022",
           "impact": 0.5,
           "tags": {
@@ -2329,6 +2392,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e/\u003c%=index%\u003e"
+          },
           "id": "42",
           "impact": 0.7,
           "tags": {
@@ -2386,6 +2452,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E"
+          },
           "id": "10016",
           "impact": 0.3,
           "tags": {
@@ -2514,6 +2583,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/WebWolf/landing/password-reset"
+          },
           "id": "20012",
           "impact": 0.7,
           "tags": {
@@ -2566,6 +2638,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/js/libs/jquery.form.js"
+          },
           "id": "10026",
           "impact": 0.5,
           "tags": {
@@ -2645,6 +2720,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/service/debug/labels.mvc?query=query+ASC++--+"
+          },
           "id": "40018",
           "impact": 0.7,
           "tags": {
@@ -2701,6 +2779,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/WebWolfIntroduction.lesson.lesson"
+          },
           "id": "2",
           "impact": 0.3,
           "tags": {
@@ -2749,6 +2830,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/start.mvc"
+          },
           "id": "90011",
           "impact": 0.3,
           "tags": {

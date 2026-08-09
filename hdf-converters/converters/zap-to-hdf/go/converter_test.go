@@ -531,6 +531,58 @@ func Test_buildRefs(t *testing.T) {
 	assert.Equal(t, "https://e.example/2", *refs[1].URL)
 }
 
+// --- Source location ---
+// requirement.sourceLocation promotes the affected URL of the alert's primary
+// (first uri-bearing) instance into the structured, queryable HDF locus. ZAP is
+// a DAST tool, so ref is a URL and line is always omitted. The URL still appears
+// in codeDesc freetext — sourceLocation is an additive structured field.
+
+func TestConvertZapToHDF_SourceLocation(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
+	require.NotNil(t, req.SourceLocation)
+	require.NotNil(t, req.SourceLocation.Ref)
+	assert.Equal(t, "https://example.com/login", *req.SourceLocation.Ref)
+	assert.Nil(t, req.SourceLocation.Line, "DAST URL locus carries no line")
+}
+
+// The primary instance is the first uri-bearing instance; alert 90022 has two
+// instances and the first one's uri is used.
+func TestConvertZapToHDF_SourceLocationFirstInstance(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
+	require.NotNil(t, req.SourceLocation)
+	require.NotNil(t, req.SourceLocation.Ref)
+	assert.Equal(t, "https://example.com/api/submit", *req.SourceLocation.Ref)
+}
+
+func Test_buildSourceLocation(t *testing.T) {
+	// NOT-IN-SOURCE: no instances at all → sourceLocation omitted.
+	assert.Nil(t, buildSourceLocation(ZapAlert{}))
+
+	// Absent branch: an instance with no uri → sourceLocation omitted.
+	assert.Nil(t, buildSourceLocation(ZapAlert{Instances: []ZapInstance{{Method: "GET"}}}))
+
+	// A uri-bearing instance → ref set, line omitted.
+	loc := buildSourceLocation(ZapAlert{Instances: []ZapInstance{{URI: "https://x.example/a"}}})
+	require.NotNil(t, loc)
+	require.NotNil(t, loc.Ref)
+	assert.Equal(t, "https://x.example/a", *loc.Ref)
+	assert.Nil(t, loc.Line)
+
+	// First uri-bearing instance wins when earlier instances lack a uri.
+	loc = buildSourceLocation(ZapAlert{Instances: []ZapInstance{{Method: "GET"}, {URI: "https://x.example/b"}}})
+	require.NotNil(t, loc)
+	require.NotNil(t, loc.Ref)
+	assert.Equal(t, "https://x.example/b", *loc.Ref)
+}
+
 // --- SARIF routing ---
 
 func TestConvertZapToHDF_SARIFInput(t *testing.T) {

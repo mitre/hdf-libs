@@ -27,6 +27,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "https://example.com/login"
+          },
           "id": "10021",
           "impact": 0.3,
           "tags": {
@@ -75,6 +78,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "https://example.com/api/submit"
+          },
           "id": "90022",
           "impact": 0.5,
           "tags": {

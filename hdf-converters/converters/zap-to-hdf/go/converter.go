@@ -187,6 +187,23 @@ func buildRequirementCode(alert ZapAlert) *string {
 	return &code
 }
 
+// --- Source location ---
+
+// buildSourceLocation promotes the affected URL of the alert's primary instance
+// into the structured requirement.sourceLocation. ZAP is a DAST tool, so the
+// locus is a URL (ref) with no line number — Line is always omitted. The primary
+// instance is the first instance carrying a uri. Returns nil when no instance
+// carries a uri (NOT-IN-SOURCE), so the field is omitted rather than emitted empty.
+func buildSourceLocation(alert ZapAlert) *hdf.SourceLocation {
+	for _, inst := range alert.Instances {
+		if inst.URI != "" {
+			ref := inst.URI
+			return &hdf.SourceLocation{Ref: &ref}
+		}
+	}
+	return nil
+}
+
 // --- External references ---
 
 // refURLRe extracts http(s) URLs from a ZAP alert's reference field. ZAP ships
@@ -319,6 +336,7 @@ func buildSiteRequirements(site *ZapSite) []hdf.EvaluatedRequirement {
 			Cwe:                buildCwe(alert.CweID),
 			ControlType:        shared.DeriveControlTypeFromTags(nistTags),
 			Code:               buildRequirementCode(alert),
+			SourceLocation:     buildSourceLocation(alert),
 			Descriptions:       descriptions,
 			Refs:               buildRefs(alert.Reference),
 			VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
