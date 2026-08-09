@@ -7,6 +7,7 @@ package hdftooscalsar
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -80,10 +81,15 @@ func buildOSCALDocument(hdfResults *hdf.HDFResults) *oscalSARDocument {
 		importAP = &oscal.ImportAP{Href: "#"}
 	}
 
+	// Assessed-asset identity: the top-level components[] become the subjects
+	// attached to every observation. Built once so all observations share the
+	// same subject identity (and subject-uuid) for a given component.
+	subjects := buildSubjects(hdfResults.Components)
+
 	// Build results from baselines
 	results := make([]oscal.Result, 0, len(hdfResults.Baselines))
 	for i := range hdfResults.Baselines {
-		result := baselineToResult(&hdfResults.Baselines[i], now, toolActorUUID)
+		result := baselineToResult(&hdfResults.Baselines[i], now, toolActorUUID, subjects)
 		results = append(results, result)
 	}
 
@@ -159,7 +165,7 @@ func assessmentStart(baseline *hdf.EvaluatedBaseline, fallback string) string {
 }
 
 // baselineToResult converts a single EvaluatedBaseline to an OSCAL Result.
-func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolActorUUID string) oscal.Result {
+func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolActorUUID string, subjects []oscal.SubjectRef) oscal.Result {
 	title := baseline.Name
 	if baseline.Title != nil && *baseline.Title != "" {
 		title = *baseline.Title
@@ -168,6 +174,12 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 	description := "Converted from HDF results"
 	if baseline.Description != nil && *baseline.Description != "" {
 		description = *baseline.Description
+	}
+
+	// baseline.version has no first-class SAR home; carry it as a result prop.
+	var resultProps []oscal.Property
+	if baseline.Version != nil && *baseline.Version != "" {
+		resultProps = append(resultProps, oscal.Property{Name: "baseline-version", Value: *baseline.Version})
 	}
 
 	var findings []oscal.Finding
@@ -181,7 +193,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 
 	for i := range baseline.Requirements {
 		req := &baseline.Requirements[i]
-		f, obs, rsk := requirementToFindingSet(req, timestamp, toolActorUUID)
+		f, obs, rsk := requirementToFindingSet(req, timestamp, toolActorUUID, subjects)
 		findings = append(findings, f)
 		if obs != nil {
 			observations = append(observations, *obs)
@@ -200,11 +212,36 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		Title:            title,
 		Description:      description,
 		Start:            assessmentStart(baseline, timestamp),
+		Props:            resultProps,
 		ReviewedControls: reviewedControls(includeControls),
 		Findings:         findings,
 		Observations:     observations,
 		Risks:            risks,
 	}
+}
+
+// buildSubjects turns the top-level HDF components[] into OSCAL assessment
+// subjects. Each component's UUID (componentId when present, otherwise a fresh
+// one) identifies the subject; the HDF component type is a valid OSCAL subject
+// type token and its name becomes the subject title.
+func buildSubjects(components []hdf.Component) []oscal.SubjectRef {
+	if len(components) == 0 {
+		return nil
+	}
+	subjects := make([]oscal.SubjectRef, 0, len(components))
+	for i := range components {
+		c := &components[i]
+		uid := oscal.GenerateUUID()
+		if c.ComponentID != nil && *c.ComponentID != "" {
+			uid = *c.ComponentID
+		}
+		subjects = append(subjects, oscal.SubjectRef{
+			SubjectUUID: uid,
+			Type:        string(c.Type),
+			Title:       c.Name,
+		})
+	}
+	return subjects
 }
 
 // reviewedControls builds the OSCAL reviewed-controls object from the assessed
@@ -231,11 +268,15 @@ func descriptionByLabel(descriptions []hdf.Description, label string) string {
 	return ""
 }
 
-func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, toolActorUUID string) (oscal.Finding, *oscal.Observation, *oscal.Risk) {
+func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, toolActorUUID string, subjects []oscal.SubjectRef) (oscal.Finding, *oscal.Observation, *oscal.Risk) {
 	controlID := oscal.NistTagToControlID(req.ID)
 
-	// Determine overall status from results
-	state, reason := aggregateStatus(req.Results)
+	// Determine the finding state from the effective (post-override) status when
+	// present, falling back to the raw worst-wins result aggregation. This makes
+	// a waived / false-positive / risk-adjusted requirement report its assessed
+	// posture rather than its raw result. The raw result status stays verbatim in
+	// the observation description.
+	state, reason := effectiveState(req)
 
 	// Build finding description from requirement descriptions
 	findingDesc := extractDefaultDescription(req.Descriptions)
@@ -279,7 +320,35 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		addProp("applicability", string(*req.Applicability))
 	}
 
+	// Vulnerability enrichment (CWE / EPSS / KEV / CVSS) has no first-class SAR
+	// home; surface it as finding props so it is not silently dropped.
+	for _, cwe := range req.Cwe {
+		addProp("cwe", cwe)
+	}
+	if req.Epss != nil {
+		addProp("epss-score", strconv.FormatFloat(req.Epss.Score, 'f', -1, 64))
+		addProp("epss-percentile", strconv.FormatFloat(req.Epss.Percentile, 'f', -1, 64))
+	}
+	if req.Kev != nil && req.Kev.InKev {
+		addProp("kev", "true")
+		if req.Kev.DueDate != nil {
+			addProp("kev-due-date", *req.Kev.DueDate)
+		}
+	}
+	for i := range req.Cvss {
+		c := &req.Cvss[i]
+		if c.BaseScore != nil {
+			addProp("cvss-base-score", strconv.FormatFloat(*c.BaseScore, 'f', -1, 64))
+		}
+		if c.BaseVector != nil {
+			addProp("cvss-base-vector", *c.BaseVector)
+		}
+	}
+
 	// refs: url/uri -> OSCAL links; a plain string ref -> prop (not a valid href).
+	// url/uri refs are additionally emitted as observation relevant-evidence
+	// (below) so they round-trip through the reverse SAR importer, which reads
+	// refs only from relevant-evidence hrefs, not finding.links.
 	var links []oscal.Link
 	for _, r := range req.Refs {
 		switch {
@@ -289,6 +358,15 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 			links = append(links, oscal.Link{Href: *r.URI, Rel: "reference"})
 		case r.Ref != nil && r.Ref.String != nil:
 			props = append(props, oscal.Property{Name: "reference", Value: *r.Ref.String})
+		}
+	}
+
+	// externalReferences (advisory / STIX / definition-source URIs) share the
+	// finding.links home already used for refs.
+	for i := range req.ExternalReferences {
+		er := &req.ExternalReferences[i]
+		if er.Href != nil && *er.Href != "" {
+			links = append(links, oscal.Link{Href: *er.Href, Rel: "reference"})
 		}
 	}
 
@@ -315,6 +393,9 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 			Status: oscal.TargetStatus{
 				State:  state,
 				Reason: reason,
+				// Governing disposition + most-recent override provenance so the
+				// reason the requirement is in this state is not lost.
+				Remarks: overrideRemarks(req),
 			},
 		},
 	}
@@ -331,6 +412,11 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 			// When the evidence was gathered — the scan time for this requirement,
 			// not when the file was converted.
 			Collected: formatAssessmentTime(earliestResultTime(req.Results), timestamp),
+			// Assessed-asset identity (top-level components) and the requirement's
+			// refs / evidence / source location, in the homes the reverse importer
+			// reads back.
+			Subjects:         subjects,
+			RelevantEvidence: buildRelevantEvidence(req),
 		}
 		finding.RelatedObservations = []oscal.RelatedRef{
 			{ObservationUUID: obsUUID},
@@ -342,6 +428,14 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	if req.Impact > 0 {
 		riskUUID := oscal.GenerateUUID()
 		severity := oscal.ImpactToSeverity(req.Impact)
+		// An explicit severity that disagrees with the impact-derived band drives
+		// the characterization facet (the channel the reverse importer reads).
+		facetValue := severity
+		if req.Severity != nil {
+			if v := severityToFacetValue(*req.Severity); v != "" {
+				facetValue = v
+			}
+		}
 		impactText := fmt.Sprintf("Impact: %.1f (%s)", req.Impact, severity)
 		risk = &oscal.Risk{
 			UUID:  riskUUID,
@@ -363,11 +457,13 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 						{
 							Name:   "impact",
 							System: "https://fedramp.gov",
-							Value:  severity,
+							Value:  facetValue,
 						},
 					},
 				},
 			},
+			Remediations: buildRemediations(req),
+			Deadline:     riskDeadline(req),
 		}
 		finding.RelatedRisks = []oscal.RelatedRef{
 			{RiskUUID: riskUUID},
@@ -375,6 +471,168 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	}
 
 	return finding, observation, risk
+}
+
+// effectiveState derives the OSCAL finding target state/reason from the
+// requirement's effectiveStatus when present, otherwise from the aggregated raw
+// result status.
+func effectiveState(req *hdf.EvaluatedRequirement) (state string, reason string) {
+	if req.EffectiveStatus != nil {
+		return oscalStateFromStatus(*req.EffectiveStatus)
+	}
+	return aggregateStatus(req.Results)
+}
+
+// oscalStateFromStatus maps a single HDF result status to an OSCAL finding
+// target state and reason, mirroring aggregateStatus for a single value.
+func oscalStateFromStatus(status hdf.ResultStatus) (state string, reason string) {
+	switch status {
+	case hdf.Passed:
+		return "satisfied", ""
+	case hdf.NotApplicable:
+		return "not-satisfied", "not-applicable"
+	case hdf.NotReviewed:
+		return "not-satisfied", "other"
+	default:
+		return "not-satisfied", ""
+	}
+}
+
+// overrideRemarks renders the governing disposition and the most-recent status
+// override's provenance into finding.target.status.remarks. Returns "" when the
+// requirement carries no disposition or overrides.
+func overrideRemarks(req *hdf.EvaluatedRequirement) string {
+	var parts []string
+	if req.Disposition != nil {
+		parts = append(parts, "Disposition: "+string(*req.Disposition))
+	}
+	if len(req.StatusOverrides) > 0 {
+		o := &req.StatusOverrides[0] // most-recent first per schema convention
+		parts = append(parts, "Override: "+string(o.Type))
+		if o.Reason != "" {
+			parts = append(parts, "Reason: "+o.Reason)
+		}
+		if o.AppliedBy.Identifier != "" {
+			parts = append(parts, "Applied by: "+o.AppliedBy.Identifier)
+		}
+		if !o.AppliedAt.IsZero() {
+			parts = append(parts, "Applied at: "+o.AppliedAt.UTC().Format(time.RFC3339))
+		}
+		if !o.ExpiresAt.IsZero() {
+			parts = append(parts, "Expires at: "+o.ExpiresAt.UTC().Format(time.RFC3339))
+		}
+	}
+	return strings.Join(parts, "; ")
+}
+
+// buildRelevantEvidence collects the requirement's refs, evidence, and source
+// location into OSCAL observation relevant-evidence, the home the reverse SAR
+// importer reads back into HDF refs (via href) and evidence (via description).
+func buildRelevantEvidence(req *hdf.EvaluatedRequirement) []oscal.RelevantEvidence {
+	var ev []oscal.RelevantEvidence
+	for _, r := range req.Refs {
+		switch {
+		case r.URL != nil && *r.URL != "":
+			ev = append(ev, oscal.RelevantEvidence{Href: *r.URL})
+		case r.URI != nil && *r.URI != "":
+			ev = append(ev, oscal.RelevantEvidence{Href: *r.URI})
+		}
+	}
+	for i := range req.Evidence {
+		e := &req.Evidence[i]
+		re := oscal.RelevantEvidence{}
+		if e.Description != nil {
+			re.Description = *e.Description
+		}
+		if e.Type == hdf.URL && e.Data != "" {
+			re.Href = e.Data
+		}
+		if re.Href != "" || re.Description != "" {
+			ev = append(ev, re)
+		}
+	}
+	if req.SourceLocation != nil {
+		if loc := sourceLocationText(req.SourceLocation); loc != "" {
+			ev = append(ev, oscal.RelevantEvidence{Description: "Source location: " + loc})
+		}
+	}
+	return ev
+}
+
+// sourceLocationText renders a source location as "ref:line", degrading to
+// whichever field is present. Returns "" when neither is set.
+func sourceLocationText(loc *hdf.SourceLocation) string {
+	ref := ""
+	if loc.Ref != nil {
+		ref = *loc.Ref
+	}
+	if loc.Line != nil {
+		if ref != "" {
+			return fmt.Sprintf("%s:%d", ref, int(*loc.Line))
+		}
+		return fmt.Sprintf("line %d", int(*loc.Line))
+	}
+	return ref
+}
+
+// severityToFacetValue maps an explicit HDF severity to the OSCAL risk facet
+// value vocabulary the reverse importer recognizes.
+func severityToFacetValue(s hdf.Severity) string {
+	switch s {
+	case hdf.SeverityCritical:
+		return "critical"
+	case hdf.SeverityHigh:
+		return "high"
+	case hdf.SeverityMedium:
+		return "moderate"
+	case hdf.SeverityLow:
+		return "low"
+	case hdf.Informational:
+		return "info"
+	default:
+		return ""
+	}
+}
+
+// buildRemediations turns the requirement's fix description and any governing
+// risk-acceptance override into OSCAL risk remediations, the home the reverse
+// importer reads back as the HDF remediation description.
+func buildRemediations(req *hdf.EvaluatedRequirement) []oscal.Remediation {
+	var rems []oscal.Remediation
+	if fix := descriptionByLabel(req.Descriptions, "fix"); fix != "" {
+		rems = append(rems, oscal.Remediation{
+			UUID:        oscal.GenerateUUID(),
+			Lifecycle:   "recommendation",
+			Title:       "Recommended fix",
+			Description: fix,
+		})
+	}
+	if req.Disposition != nil && len(req.StatusOverrides) > 0 {
+		o := &req.StatusOverrides[0]
+		desc := o.Reason
+		if desc == "" {
+			desc = "Risk accepted via " + string(*req.Disposition)
+		}
+		rems = append(rems, oscal.Remediation{
+			UUID:        oscal.GenerateUUID(),
+			Lifecycle:   "accepted",
+			Title:       string(*req.Disposition),
+			Description: desc,
+		})
+	}
+	return rems
+}
+
+// riskDeadline surfaces a governing risk-acceptance override's expiry as the
+// risk deadline (the field the OSCAL POA&M importer reads back). Returns "" when
+// no override expiry applies.
+func riskDeadline(req *hdf.EvaluatedRequirement) string {
+	if len(req.StatusOverrides) > 0 {
+		if o := &req.StatusOverrides[0]; !o.ExpiresAt.IsZero() {
+			return o.ExpiresAt.UTC().Format(time.RFC3339)
+		}
+	}
+	return ""
 }
 
 // aggregateStatus determines the overall finding status from requirement results.

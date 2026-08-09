@@ -107,9 +107,14 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
     importAP = { href: '#' };
   }
 
+  // Assessed-asset identity: top-level components[] become the subjects attached
+  // to every observation. Built once so all observations share the same subject
+  // identity (and subject-uuid) for a given component.
+  const subjects = buildSubjects(hdfResults.components);
+
   const results: AssessmentResult[] = [];
   for (const baseline of hdfResults.baselines) {
-    results.push(baselineToResult(baseline, timestamp, toolActorUuid));
+    results.push(baselineToResult(baseline, timestamp, toolActorUuid, subjects));
   }
 
   return {
@@ -171,7 +176,12 @@ function assessmentStart(baseline: EvaluatedBaseline, fallback: string): string 
 /**
  * Converts a single EvaluatedBaseline to an OSCAL Result.
  */
-function baselineToResult(baseline: EvaluatedBaseline, timestamp: string, toolActorUuid: string): AssessmentResult {
+function baselineToResult(
+  baseline: EvaluatedBaseline,
+  timestamp: string,
+  toolActorUuid: string,
+  subjects: SubjectRef[],
+): AssessmentResult {
   let title = baseline.name;
   if (baseline.title && baseline.title !== '') {
     title = baseline.title;
@@ -180,6 +190,12 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string, toolAc
   let description: string | undefined = 'Converted from HDF results';
   if (baseline.description && baseline.description !== '') {
     description = baseline.description;
+  }
+
+  // baseline.version has no first-class SAR home; carry it as a result prop.
+  const resultProps: Property[] = [];
+  if (baseline.version && baseline.version !== '') {
+    resultProps.push({ name: 'baseline-version', value: baseline.version });
   }
 
   const findings: Finding[] = [];
@@ -192,7 +208,7 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string, toolAc
   const seenControl = new Set<string>();
 
   for (const req of baseline.requirements) {
-    const { finding, observation, risk } = requirementToFindingSet(req, timestamp, toolActorUuid);
+    const { finding, observation, risk } = requirementToFindingSet(req, timestamp, toolActorUuid, subjects);
     findings.push(finding);
     if (observation) {
       observations.push(observation);
@@ -215,6 +231,8 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string, toolAc
     title,
     description,
     start: assessmentStart(baseline, timestamp),
+    // Match Go's omitempty: an empty props list is omitted entirely.
+    ...(resultProps.length > 0 ? { props: resultProps } : {}),
     'reviewed-controls': { 'control-selections': [controlSelection] },
     findings,
     observations,
@@ -224,6 +242,28 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string, toolAc
   return result;
 }
 
+/** OSCAL subject reference derived from a top-level HDF component. */
+interface SubjectRef {
+  'subject-uuid': string;
+  type: string;
+  title: string;
+}
+
+/**
+ * Turns the top-level HDF components[] into OSCAL assessment subjects. Each
+ * component's UUID (componentId when present, otherwise a fresh one) identifies
+ * the subject; the HDF component type is a valid OSCAL subject type token and
+ * its name becomes the subject title.
+ */
+function buildSubjects(components: HDFResults['components']): SubjectRef[] {
+  if (!Array.isArray(components) || components.length === 0) return [];
+  return components.map((c) => ({
+    'subject-uuid': c.componentId && c.componentId !== '' ? c.componentId : crypto.randomUUID(),
+    type: String(c.type),
+    title: c.name,
+  }));
+}
+
 /**
  * Converts an EvaluatedRequirement into a Finding, optional Observation, and optional Risk.
  */
@@ -231,6 +271,7 @@ function requirementToFindingSet(
   req: EvaluatedRequirement,
   timestamp: string,
   toolActorUuid: string,
+  subjects: SubjectRef[],
 ): { finding: Finding; observation: Observation | undefined; risk: IdentifiedRisk | undefined } {
   const controlID = nistTagToControlId(req.id);
   // results/descriptions are optional and absent on real minimal HDF; normalize
@@ -238,7 +279,10 @@ function requirementToFindingSet(
   // slices safely rather than throwing.
   const results = req.results ?? [];
   const descriptions = req.descriptions ?? [];
-  const { state, reason } = aggregateStatus(results);
+  // Finding state reflects the effective (post-override) status when present,
+  // falling back to raw worst-wins aggregation. The raw result status stays
+  // verbatim in the observation description.
+  const { state, reason } = effectiveState(req, results);
   const findingDesc = extractDefaultDescription(descriptions);
 
   // Build props from control mappings (nist/cci), source code, non-default
@@ -266,7 +310,26 @@ function requirementToFindingSet(
   if (req.verificationMethod) addProp('verification-method', req.verificationMethod);
   if (req.applicability) addProp('applicability', req.applicability);
 
-  // refs: url/uri become OSCAL links; a plain string ref becomes a prop (not a valid href).
+  // Vulnerability enrichment (CWE / EPSS / KEV / CVSS) has no first-class SAR
+  // home; surface it as finding props so it is not silently dropped.
+  for (const cwe of req.cwe ?? []) addProp('cwe', cwe);
+  if (req.epss) {
+    addProp('epss-score', formatFloat(req.epss.score));
+    addProp('epss-percentile', formatFloat(req.epss.percentile));
+  }
+  if (req.kev?.inKev) {
+    addProp('kev', 'true');
+    if (req.kev.dueDate) addProp('kev-due-date', String(req.kev.dueDate));
+  }
+  for (const c of req.cvss ?? []) {
+    if (c.baseScore != null) addProp('cvss-base-score', formatFloat(c.baseScore));
+    if (c.baseVector != null) addProp('cvss-base-vector', c.baseVector);
+  }
+
+  // refs: url/uri become OSCAL links; a plain string ref becomes a prop (not a
+  // valid href). url/uri refs are additionally emitted as observation
+  // relevant-evidence (below) so they round-trip through the reverse SAR
+  // importer, which reads refs only from relevant-evidence hrefs, not links.
   const links: Link[] = [];
   if (Array.isArray(req.refs)) {
     for (const r of req.refs) {
@@ -277,6 +340,12 @@ function requirementToFindingSet(
     }
   }
 
+  // externalReferences (advisory / STIX / definition-source URIs) share the
+  // finding.links home already used for refs.
+  for (const er of req.externalReferences ?? []) {
+    if (typeof er.href === 'string' && er.href !== '') links.push({ href: er.href, rel: 'reference' });
+  }
+
   let title = req.id;
   if (req.title && req.title !== '') {
     title = req.title;
@@ -285,6 +354,12 @@ function requirementToFindingSet(
   const targetStatus: StatusClass = { state } as unknown as StatusClass;
   if (reason) {
     targetStatus.reason = reason;
+  }
+  // Governing disposition + most-recent override provenance so the reason the
+  // requirement is in this state is not lost.
+  const remarks = overrideRemarks(req);
+  if (remarks) {
+    targetStatus.remarks = remarks;
   }
 
   const target = {
@@ -309,6 +384,7 @@ function requirementToFindingSet(
   if (results.length > 0) {
     const obsUUID = crypto.randomUUID();
     const obsDesc = buildObservationDescription(results);
+    const relevantEvidence = buildRelevantEvidence(req);
     observation = {
       uuid: obsUUID,
       description: obsDesc,
@@ -316,6 +392,11 @@ function requirementToFindingSet(
       // When the evidence was gathered — the scan time for this requirement, not
       // when the file was converted.
       collected: formatAssessmentTime(earliestResultTime(results), timestamp),
+      // Assessed-asset identity (top-level components) and the requirement's
+      // refs / evidence / source location, in the homes the reverse importer
+      // reads back. Match Go's omitempty: empty arrays are omitted.
+      ...(subjects.length > 0 ? { subjects } : {}),
+      ...(relevantEvidence.length > 0 ? { 'relevant-evidence': relevantEvidence } : {}),
     } as unknown as Observation;
     finding['related-observations'] = [{ 'observation-uuid': obsUUID }];
   }
@@ -325,6 +406,15 @@ function requirementToFindingSet(
   if (req.impact > 0) {
     const riskUUID = crypto.randomUUID();
     const severity = impactToSeverity(req.impact);
+    // An explicit severity that disagrees with the impact-derived band drives
+    // the characterization facet (the channel the reverse importer reads).
+    let facetValue = severity;
+    if (req.severity) {
+      const v = severityToFacetValue(req.severity);
+      if (v) facetValue = v;
+    }
+    const remediations = buildRemediations(req);
+    const deadline = riskDeadline(req);
     risk = {
       uuid: riskUUID,
       title: `Risk for ${req.id}`,
@@ -343,16 +433,154 @@ function requirementToFindingSet(
             {
               name: 'impact',
               system: 'https://fedramp.gov',
-              value: severity,
+              value: facetValue,
             },
           ],
         },
       ],
+      // Match Go's omitempty: empty remediations / deadline are omitted.
+      ...(remediations.length > 0 ? { remediations } : {}),
+      ...(deadline ? { deadline } : {}),
     } as unknown as IdentifiedRisk;
     finding['related-risks'] = [{ 'risk-uuid': riskUUID }];
   }
 
   return { finding, observation, risk };
+}
+
+/**
+ * Derives the OSCAL finding target state/reason from the requirement's
+ * effectiveStatus when present, otherwise from aggregated raw results.
+ */
+function effectiveState(req: EvaluatedRequirement, results: RequirementResult[]): { state: string; reason: string } {
+  if (req.effectiveStatus) {
+    return oscalStateFromStatus(req.effectiveStatus);
+  }
+  return aggregateStatus(results);
+}
+
+/** Maps a single HDF result status to an OSCAL finding target state/reason. */
+function oscalStateFromStatus(status: string): { state: string; reason: string } {
+  switch (status) {
+    case 'passed':
+      return { state: 'satisfied', reason: '' };
+    case 'notApplicable':
+      return { state: 'not-satisfied', reason: 'not-applicable' };
+    case 'notReviewed':
+      return { state: 'not-satisfied', reason: 'other' };
+    default:
+      return { state: 'not-satisfied', reason: '' };
+  }
+}
+
+/**
+ * Renders the governing disposition and the most-recent status override's
+ * provenance into finding.target.status.remarks. Returns '' when none apply.
+ */
+function overrideRemarks(req: EvaluatedRequirement): string {
+  const parts: string[] = [];
+  if (req.disposition) parts.push('Disposition: ' + String(req.disposition));
+  const overrides = req.statusOverrides ?? [];
+  if (overrides.length > 0) {
+    const o = overrides[0]!; // most-recent first per schema convention
+    parts.push('Override: ' + String(o.type));
+    if (o.reason) parts.push('Reason: ' + o.reason);
+    if (o.appliedBy?.identifier) parts.push('Applied by: ' + o.appliedBy.identifier);
+    const appliedAt = hdfTime(o.appliedAt);
+    if (appliedAt) parts.push('Applied at: ' + formatTimestampSeconds(appliedAt));
+    const expiresAt = hdfTime(o.expiresAt);
+    if (expiresAt) parts.push('Expires at: ' + formatTimestampSeconds(expiresAt));
+  }
+  return parts.join('; ');
+}
+
+/**
+ * Collects the requirement's refs, evidence, and source location into OSCAL
+ * observation relevant-evidence — the home the reverse SAR importer reads back
+ * into HDF refs (via href) and evidence (via description).
+ */
+function buildRelevantEvidence(req: EvaluatedRequirement): Array<{ href?: string; description: string }> {
+  const ev: Array<{ href?: string; description: string }> = [];
+  for (const r of req.refs ?? []) {
+    const o = r as { url?: unknown; uri?: unknown };
+    if (typeof o.url === 'string' && o.url !== '') ev.push({ href: o.url, description: '' });
+    else if (typeof o.uri === 'string' && o.uri !== '') ev.push({ href: o.uri, description: '' });
+  }
+  for (const e of req.evidence ?? []) {
+    const entry: { href?: string; description: string } = { description: e.description ?? '' };
+    if (String(e.type) === 'url' && e.data) entry.href = e.data;
+    if (entry.href || entry.description) ev.push(entry);
+  }
+  if (req.sourceLocation) {
+    const loc = sourceLocationText(req.sourceLocation);
+    if (loc) ev.push({ description: 'Source location: ' + loc });
+  }
+  return ev;
+}
+
+/** Renders a source location as "ref:line", degrading to whichever is present. */
+function sourceLocationText(loc: NonNullable<EvaluatedRequirement['sourceLocation']>): string {
+  const ref = loc.ref ?? '';
+  if (loc.line != null) {
+    return ref !== '' ? `${ref}:${Math.trunc(loc.line)}` : `line ${Math.trunc(loc.line)}`;
+  }
+  return ref;
+}
+
+/** Maps an explicit HDF severity to the OSCAL risk facet value vocabulary. */
+function severityToFacetValue(s: string): string {
+  switch (s) {
+    case 'critical':
+      return 'critical';
+    case 'high':
+      return 'high';
+    case 'medium':
+      return 'moderate';
+    case 'low':
+      return 'low';
+    case 'informational':
+      return 'info';
+    default:
+      return '';
+  }
+}
+
+/**
+ * Turns the requirement's fix description and any governing risk-acceptance
+ * override into OSCAL risk remediations — the home the reverse importer reads
+ * back as the HDF remediation description.
+ */
+function buildRemediations(req: EvaluatedRequirement): Array<Record<string, string>> {
+  const rems: Array<Record<string, string>> = [];
+  const fix = (req.descriptions ?? []).find((d) => d.label === 'fix');
+  if (fix && fix.data) {
+    rems.push({ uuid: crypto.randomUUID(), lifecycle: 'recommendation', title: 'Recommended fix', description: fix.data });
+  }
+  const overrides = req.statusOverrides ?? [];
+  if (req.disposition && overrides.length > 0) {
+    const o = overrides[0]!;
+    const desc = o.reason || 'Risk accepted via ' + String(req.disposition);
+    rems.push({ uuid: crypto.randomUUID(), lifecycle: 'accepted', title: String(req.disposition), description: desc });
+  }
+  return rems;
+}
+
+/**
+ * Surfaces a governing risk-acceptance override's expiry as the risk deadline
+ * (the field the OSCAL POA&M importer reads back). Returns '' when none applies.
+ */
+function riskDeadline(req: EvaluatedRequirement): string {
+  const overrides = req.statusOverrides ?? [];
+  if (overrides.length > 0) {
+    const expiresAt = hdfTime(overrides[0]!.expiresAt);
+    if (expiresAt) return formatTimestampSeconds(expiresAt);
+  }
+  return '';
+}
+
+/** Formats a finite number without a trailing decimal for integers, matching Go's strconv.FormatFloat(-1). */
+function formatFloat(n: number): string {
+  return String(n);
 }
 
 
