@@ -416,8 +416,10 @@
   ],
   "components": [
     {
-      "name": "Host: zero.webappsecurity.com Port: 443",
-      "type": "application"
+      "name": "zero.webappsecurity.com",
+      "type": "host",
+      "hostname": "zero.webappsecurity.com",
+      "ipAddress": "54.82.22.214"
     }
   ],
   "generator": {
