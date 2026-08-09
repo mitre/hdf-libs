@@ -15,6 +15,14 @@ describe('cvssVersionFromVector', () => {
     expect(cvssVersionFromVector(undefined)).toBe(CvssVersion.The31);
     expect(cvssVersionFromVector('AV:N/AC:L')).toBe(CvssVersion.The31);
   });
+
+  it('uses a caller-supplied default for absent/unrecognized prefixes; a recognized prefix wins', () => {
+    // Nessus historical output defaults to 3.0.
+    expect(cvssVersionFromVector('', CvssVersion.The30)).toBe(CvssVersion.The30);
+    expect(cvssVersionFromVector('AV:N/AC:L', CvssVersion.The30)).toBe(CvssVersion.The30);
+    expect(cvssVersionFromVector('CVSS:3.1/AV:N', CvssVersion.The30)).toBe(CvssVersion.The31);
+    expect(cvssVersionFromVector('CVSS:3.0/AV:N', CvssVersion.The30)).toBe(CvssVersion.The30);
+  });
 });
 
 describe('cvssVersionFromString', () => {

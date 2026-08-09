@@ -15,7 +15,7 @@ import type {
   Epss,
 } from '@mitre/hdf-schema';
 import { ResultStatus, TargetType, createMinimalBaseline, Version as CvssVersion } from '@mitre/hdf-schema';
-import { cvssSeverityFromScore } from '../../../shared/typescript/cvss.js';
+import { cvssSeverityFromScore, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 
 const CVE_SOURCE_RE = /^CVE-\d{4}-\d{4,}$/;
 const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
@@ -394,10 +394,8 @@ function buildCvssEntries(item: ReportItem): Cvss[] {
 }
 
 function detectV3Version(vector: string): CvssVersion {
-  if (vector.startsWith('CVSS:3.1/')) return CvssVersion.The31;
-  if (vector.startsWith('CVSS:3.0/')) return CvssVersion.The30;
-  // Default to 3.0 (Nessus historically emits CVSS:3.0).
-  return CvssVersion.The30;
+  // Nessus historically emits CVSS:3.0; default there when the prefix is absent.
+  return cvssVersionFromVector(vector, CvssVersion.The30);
 }
 
 function stripVersionPrefix(vector: string | undefined): string | undefined {

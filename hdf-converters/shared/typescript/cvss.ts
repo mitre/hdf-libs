@@ -4,15 +4,21 @@ import { CVSSSeverity, Version as CvssVersion } from '@mitre/hdf-schema';
 
 /**
  * Returns the schema CVSS Version enum for a vector-string prefix (CVSS:2.0/,
- * CVSS:3.0/, CVSS:4.0/). An absent or unrecognized prefix (including CVSS:3.1/)
- * defaults to 3.1 — the version modern scanners emit most often.
+ * CVSS:3.0/, CVSS:3.1/, CVSS:4.0/). `defaultVersion` sets the version returned
+ * when the vector is absent or carries no recognized prefix (e.g. historical
+ * Nessus output with no prefix passes 3.0); it defaults to 3.1, the version
+ * modern scanners emit most often.
  */
-export function cvssVersionFromVector(vector: string | undefined): CvssVersion {
-  if (!vector) return CvssVersion.The31;
+export function cvssVersionFromVector(
+  vector: string | undefined,
+  defaultVersion: CvssVersion = CvssVersion.The31
+): CvssVersion {
+  if (!vector) return defaultVersion;
   if (vector.startsWith('CVSS:2.0/')) return CvssVersion.The20;
   if (vector.startsWith('CVSS:3.0/')) return CvssVersion.The30;
+  if (vector.startsWith('CVSS:3.1/')) return CvssVersion.The31;
   if (vector.startsWith('CVSS:4.0/')) return CvssVersion.The40;
-  return CvssVersion.The31;
+  return defaultVersion;
 }
 
 /**

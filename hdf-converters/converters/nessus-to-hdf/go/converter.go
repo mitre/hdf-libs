@@ -656,18 +656,11 @@ func buildCvssEntries(item *ReportItem) []hdf.Cvss {
 	return []hdf.Cvss{c}
 }
 
-// detectV3Version inspects the CVSS:3.x prefix on a v3 vector and returns
-// the corresponding schema Version enum. Defaults to 3.0 when the prefix is
-// absent or unrecognized (Nessus historically emitted CVSS:3.0).
+// detectV3Version reads the schema Version from a Nessus v3 CVSS vector,
+// defaulting to 3.0 when the prefix is absent or unrecognized (Nessus
+// historically emitted CVSS:3.0).
 func detectV3Version(vector string) hdf.Version {
-	switch {
-	case strings.HasPrefix(vector, "CVSS:3.1/"):
-		return hdf.The31
-	case strings.HasPrefix(vector, "CVSS:3.0/"):
-		return hdf.The30
-	default:
-		return hdf.The30
-	}
+	return shared.CvssVersionFromVector(vector, hdf.The30)
 }
 
 // stripVersionPrefix removes a leading "CVSS:X.Y/" segment from a CVSS
