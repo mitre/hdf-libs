@@ -28,9 +28,12 @@ const nistDataByRev: Record<number, NISTDescriptions> = {
 /** The revision mappings emit when nothing overrides it. */
 export const DEFAULT_NIST_REVISION = 5;
 
-/** The description dataset for a revision, falling back to the default (Rev 5). */
+/**
+ * The description dataset for a revision, falling back to the default revision's
+ * data (then an empty set) for an unsupported revision.
+ */
 function descriptionsFor(rev: number): NISTDescriptions {
-  return nistDataByRev[rev] ?? (rawNistDataRev5 as NISTDescriptions);
+  return nistDataByRev[rev] ?? nistDataByRev[DEFAULT_NIST_REVISION] ?? {};
 }
 
 /** Revisions every NIST-emitting mapping table has rows for. */
@@ -104,9 +107,11 @@ export function getNISTDescription(
 }
 
 /**
- * Get all NIST control IDs available in the database.
+ * Get all NIST control IDs present at the selected revision.
  *
- * @returns Array of all NIST control IDs
+ * @param rev - NIST revision to enumerate; defaults to the module-global revision
+ * @returns Array of NIST control IDs for that revision (Rev 5 includes the
+ *   SR/PT families; Rev 4 includes controls withdrawn in Rev 5)
  *
  * @example
  * ```typescript
@@ -119,10 +124,12 @@ export function getAllNISTIds(rev: number = getCurrentNistRevision()): string[] 
 }
 
 /**
- * Check if a NIST control ID exists in the database.
+ * Check if a NIST control ID exists at the selected revision.
  *
  * @param nistId - The NIST control ID to check
- * @returns true if the NIST control exists, false otherwise
+ * @param rev - NIST revision to check against; defaults to the module-global revision
+ * @returns true if the control exists at that revision (e.g. an SR/PT control is
+ *   present at Rev 5 but not Rev 4)
  *
  * @example
  * ```typescript
@@ -140,10 +147,13 @@ export function nistExists(nistId: string, rev: number = getCurrentNistRevision(
 }
 
 /**
- * Extract the NIST family from a NIST control ID.
+ * Extract the NIST family from a NIST control ID, if that family exists at the
+ * selected revision.
  *
  * @param nistId - The NIST control ID (e.g., 'AC-01', 'AC-01 a')
- * @returns The NIST family code (e.g., 'AC'), or undefined if invalid
+ * @param rev - NIST revision to validate against; defaults to the module-global revision
+ * @returns The NIST family code (e.g., 'AC'), or undefined if invalid or the
+ *   family is absent at that revision (the SR/PT families are Rev 5-only)
  *
  * @example
  * ```typescript
