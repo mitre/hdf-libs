@@ -285,6 +285,84 @@ func TestParseFindingDate_Branches(t *testing.T) {
 	assert.Equal(t, "2024-01-04T00:00:00Z", latest.UTC().Format(time.RFC3339))
 }
 
+// TestConvertDefectDojo_SourceLocation pins the structured requirement.sourceLocation
+// promoted from the finding's file_path/line. The shared value-pin: finding 1 →
+// src/first.cpp:13, finding 2 → src/two.cpp:135. Line serializes as a plain number
+// (float64 without fraction) so Go and TS stay byte-identical.
+func TestConvertDefectDojo_SourceLocation(t *testing.T) {
+	result, err := ConvertDefectDojo(loadFixture(t, "findings.json"), converterVersion)
+	require.NoError(t, err)
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range result.Baselines[0].Requirements {
+		byID[r.ID] = r
+	}
+
+	first := byID["DefectDojo-Finding-1"]
+	require.NotNil(t, first.SourceLocation, "file_path/line must promote to sourceLocation")
+	require.NotNil(t, first.SourceLocation.Ref)
+	assert.Equal(t, "src/first.cpp", *first.SourceLocation.Ref)
+	require.NotNil(t, first.SourceLocation.Line)
+	assert.Equal(t, float64(13), *first.SourceLocation.Line)
+
+	second := byID["DefectDojo-Finding-2"]
+	require.NotNil(t, second.SourceLocation)
+	assert.Equal(t, "src/two.cpp", *second.SourceLocation.Ref)
+	require.NotNil(t, second.SourceLocation.Line)
+	assert.Equal(t, float64(135), *second.SourceLocation.Line)
+
+	// Line serializes as a bare integer (byte-parity with the TS twin).
+	out, err := json.Marshal(first.SourceLocation)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"ref":"src/first.cpp","line":13}`, string(out))
+}
+
+// TestBuildSourceLocation_Branches covers every branch: primary file_path/line,
+// the SAST fallback when file_path is absent, ref-only when line is absent, and
+// the omit branch when the finding carries no locus at all.
+func TestBuildSourceLocation_Branches(t *testing.T) {
+	path := "src/a.go"
+	line := 42
+
+	// primary file_path/line
+	loc := buildSourceLocation(ddFinding{FilePath: &path, Line: &line})
+	require.NotNil(t, loc)
+	assert.Equal(t, "src/a.go", *loc.Ref)
+	require.NotNil(t, loc.Line)
+	assert.Equal(t, float64(42), *loc.Line)
+
+	// file_path present, line absent → ref only, line omitted
+	locNoLine := buildSourceLocation(ddFinding{FilePath: &path})
+	require.NotNil(t, locNoLine)
+	assert.Equal(t, "src/a.go", *locNoLine.Ref)
+	assert.Nil(t, locNoLine.Line, "line omitted when source line is absent")
+
+	// file_path absent → SAST source fallback used instead
+	sastPath := "sast/b.go"
+	sastLine := 7
+	locSast := buildSourceLocation(ddFinding{SastSourceFile: &sastPath, SastSourceLine: &sastLine})
+	require.NotNil(t, locSast)
+	assert.Equal(t, "sast/b.go", *locSast.Ref)
+	require.NotNil(t, locSast.Line)
+	assert.Equal(t, float64(7), *locSast.Line)
+
+	// file_path present wins over SAST even when both are set
+	locBoth := buildSourceLocation(ddFinding{FilePath: &path, Line: &line, SastSourceFile: &sastPath, SastSourceLine: &sastLine})
+	require.NotNil(t, locBoth)
+	assert.Equal(t, "src/a.go", *locBoth.Ref, "file_path takes precedence over sast_source_file_path")
+
+	// no locus at all → omitted
+	assert.Nil(t, buildSourceLocation(ddFinding{Title: "t"}), "no path → sourceLocation omitted")
+	empty := ""
+	assert.Nil(t, buildSourceLocation(ddFinding{FilePath: &empty}), "empty file_path → sourceLocation omitted")
+}
+
+// TestConvertFinding_NoSourceLocation covers the caller branch that leaves
+// sourceLocation unset for a finding with no file locus.
+func TestConvertFinding_NoSourceLocation(t *testing.T) {
+	req := convertFinding(ddFinding{Title: "t", Severity: "High"})
+	assert.Nil(t, req.SourceLocation, "no source path → sourceLocation unset")
+}
+
 func TestConvertDefectDojo_Empty(t *testing.T) {
 	result, err := ConvertDefectDojo(loadFixture(t, "empty.json"), converterVersion)
 	require.NoError(t, err)

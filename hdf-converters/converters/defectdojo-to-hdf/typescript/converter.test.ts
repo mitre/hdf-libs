@@ -294,4 +294,37 @@ describe('defectdojo-to-hdf converter', () => {
     const hdf = JSON.parse(await convertDefectDojoToHdf(JSON.stringify([base]))) as HDFResults;
     expect(hdf.baselines[0].name).toBe('DefectDojo: DefectDojo');
   });
+
+  it('promotes file_path/line into structured sourceLocation', async () => {
+    // Value-pin against the real fixture: finding 1 → src/first.cpp:13,
+    // finding 2 → src/two.cpp:135. Line is a bare number (byte-parity with Go).
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    const byId = new Map(hdf.baselines[0].requirements.map(r => [r.id, r]));
+
+    expect(byId.get('DefectDojo-Finding-1')!.sourceLocation).toEqual({ref: 'src/first.cpp', line: 13});
+    expect(byId.get('DefectDojo-Finding-2')!.sourceLocation).toEqual({ref: 'src/two.cpp', line: 135});
+  });
+
+  it('covers every sourceLocation branch', async () => {
+    // primary file_path/line
+    expect((await convertOne({file_path: 'src/a.go', line: 42})).sourceLocation).toEqual({ref: 'src/a.go', line: 42});
+
+    // file_path present, line absent → ref only, line omitted
+    expect((await convertOne({file_path: 'src/a.go', line: null})).sourceLocation).toEqual({ref: 'src/a.go'});
+
+    // file_path absent → SAST source fallback used instead
+    expect((await convertOne({sast_source_file_path: 'sast/b.go', sast_source_line: 7})).sourceLocation).toEqual({
+      ref: 'sast/b.go',
+      line: 7,
+    });
+
+    // file_path present wins over sast_source_file_path when both are set
+    expect(
+      (await convertOne({file_path: 'src/a.go', line: 42, sast_source_file_path: 'sast/b.go', sast_source_line: 7}))
+        .sourceLocation,
+    ).toEqual({ref: 'src/a.go', line: 42});
+
+    // no locus at all → sourceLocation omitted
+    expect((await convertOne({})).sourceLocation).toBeUndefined();
+  });
 });

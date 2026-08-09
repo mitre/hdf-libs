@@ -10,6 +10,7 @@ import {
   OverrideType,
   type RequirementResult,
   ResultStatus,
+  type SourceLocation,
   type StatusOverride,
   Version as CvssVersion,
   createMinimalBaseline,
@@ -47,6 +48,8 @@ interface DDFinding {
   vuln_id_from_tool?: string | null;
   file_path?: string | null;
   line?: number | null;
+  sast_source_file_path?: string | null;
+  sast_source_line?: number | null;
   component_name?: string | null;
   component_version?: string | null;
   service?: string | null;
@@ -207,6 +210,25 @@ function codeDesc(f: DDFinding): string {
   return parts.join(' | ');
 }
 
+// Resolve the finding's file locus, preferring the primary file_path/line over
+// the SAST sast_source_file_path/sast_source_line fallback. The line is taken
+// from whichever ref source is chosen (paired, not mixed).
+function sourceLocus(f: DDFinding): [string | undefined, number | null | undefined] {
+  if (f.file_path) return [f.file_path, f.line];
+  if (f.sast_source_file_path) return [f.sast_source_file_path, f.sast_source_line];
+  return [undefined, undefined];
+}
+
+// Promote the finding's file locus into the structured, machine-addressable
+// requirement.sourceLocation. Returns undefined when no path is present.
+function buildSourceLocation(f: DDFinding): SourceLocation | undefined {
+  const [ref, line] = sourceLocus(f);
+  if (!ref) return undefined;
+  const loc: SourceLocation = {ref};
+  if (line !== undefined && line !== null) loc.line = line;
+  return loc;
+}
+
 function convertFinding(f: DDFinding): EvaluatedRequirement {
   const nist = nistTags(f);
   const tags = buildNistCciTags(nist, nistToCci(nist), triageTags(f));
@@ -251,6 +273,11 @@ function convertFinding(f: DDFinding): EvaluatedRequirement {
   // CODE tab) holds the whole finding as indented JSON — every field the typed
   // interface does not model, byte-identical to the Go twin's json.Indent output.
   req.code = JSON.stringify(f, null, 2);
+
+  // Promote the finding's file locus into the structured, machine-addressable
+  // requirement.sourceLocation (additive; it also stays in codeDesc freetext).
+  const sourceLocation = buildSourceLocation(f);
+  if (sourceLocation) req.sourceLocation = sourceLocation;
 
   // The novel part: a risk-accepted finding carries a real waiver override built
   // from accepted_risks provenance.

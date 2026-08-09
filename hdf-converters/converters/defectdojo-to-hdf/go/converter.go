@@ -51,6 +51,8 @@ type ddFinding struct {
 	VulnIDFromTool   *string          `json:"vuln_id_from_tool"`
 	FilePath         *string          `json:"file_path"`
 	Line             *int             `json:"line"`
+	SastSourceFile   *string          `json:"sast_source_file_path"`
+	SastSourceLine   *int             `json:"sast_source_line"`
 	ComponentName    *string          `json:"component_name"`
 	ComponentVersion *string          `json:"component_version"`
 	Service          *string          `json:"service"`
@@ -351,6 +353,34 @@ func buildFindingCode(f ddFinding) string {
 	return buf.String()
 }
 
+// sourceLocus resolves the finding's file locus, preferring the primary
+// file_path/line over the SAST sast_source_file_path/sast_source_line fallback.
+// The line is taken from whichever ref source is chosen (paired, not mixed).
+func sourceLocus(f ddFinding) (string, *int) {
+	if f.FilePath != nil && *f.FilePath != "" {
+		return *f.FilePath, f.Line
+	}
+	if f.SastSourceFile != nil && *f.SastSourceFile != "" {
+		return *f.SastSourceFile, f.SastSourceLine
+	}
+	return "", nil
+}
+
+// buildSourceLocation promotes the finding's file locus into the structured HDF
+// requirement.sourceLocation. Returns nil when the finding carries no path.
+func buildSourceLocation(f ddFinding) *hdf.SourceLocation {
+	ref, line := sourceLocus(f)
+	if ref == "" {
+		return nil
+	}
+	loc := &hdf.SourceLocation{Ref: &ref}
+	if line != nil {
+		l := float64(*line)
+		loc.Line = &l
+	}
+	return loc
+}
+
 func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 	nist := nistTags(f)
 	tags := shared.BuildNISTCCITags(nist, cci.NISTToCCI(nist))
@@ -400,6 +430,12 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 
 	if code := buildFindingCode(f); code != "" {
 		req.Code = &code
+	}
+
+	// Promote the finding's file locus into the structured, machine-addressable
+	// requirement.sourceLocation (additive; it also stays in codeDesc freetext).
+	if loc := buildSourceLocation(f); loc != nil {
+		req.SourceLocation = loc
 	}
 
 	// The novel part: a risk-accepted finding carries a real waiver override
