@@ -445,6 +445,54 @@ func TestGitLabVulnerability_UnmarshalJSON_Error(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// A SAST finding carries location.file + start_line, which promote into the
+// structured requirement.sourceLocation{ref,line} field (distinct from the
+// codeDesc freetext). Pins the exact ref/line for the known SAST vuln.
+func TestConvertGitlabToHDF_SourceLocation_SAST(t *testing.T) {
+	input := loadFixture(t, "input/minimal-sast.json")
+	result, err := ConvertGitlabToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := reqByID(t, result, "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+	require.NotNil(t, req.SourceLocation, "SAST finding with location.file must emit sourceLocation")
+	require.NotNil(t, req.SourceLocation.Ref)
+	assert.Equal(t, "src/db/queries.py", *req.SourceLocation.Ref)
+	require.NotNil(t, req.SourceLocation.Line)
+	assert.InDelta(t, 42.0, *req.SourceLocation.Line, 0.001)
+}
+
+// A DAST finding carries no location.file (only hostname/path), so
+// sourceLocation is omitted entirely.
+func TestConvertGitlabToHDF_SourceLocation_DAST_Absent(t *testing.T) {
+	input := loadFixture(t, "input/minimal-dast.json")
+	result, err := ConvertGitlabToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.SourceLocation, "DAST finding with no location.file must omit sourceLocation")
+}
+
+// end_line is used only when start_line is absent.
+func TestBuildSourceLocation_Branches(t *testing.T) {
+	assert.Nil(t, buildSourceLocation(nil))
+	assert.Nil(t, buildSourceLocation(&GitLabLocation{Hostname: "https://example.com"}), "no file → nil")
+
+	start := 7
+	end := 12
+	withStart := buildSourceLocation(&GitLabLocation{File: "a.py", StartLine: &start, EndLine: &end})
+	require.NotNil(t, withStart.Line)
+	assert.InDelta(t, 7.0, *withStart.Line, 0.001, "start_line preferred over end_line")
+
+	endOnly := buildSourceLocation(&GitLabLocation{File: "b.py", EndLine: &end})
+	require.NotNil(t, endOnly.Line)
+	assert.InDelta(t, 12.0, *endOnly.Line, 0.001, "end_line fallback when start_line absent")
+
+	noLine := buildSourceLocation(&GitLabLocation{File: "c.py"})
+	require.NotNil(t, noLine.Ref)
+	assert.Equal(t, "c.py", *noLine.Ref)
+	assert.Nil(t, noLine.Line, "Ref only when no line present")
+}
+
 func reqByID(t *testing.T, result *hdf.HDFResults, id string) hdf.EvaluatedRequirement {
 	t.Helper()
 	for _, req := range result.Baselines[0].Requirements {

@@ -521,6 +521,46 @@ describe('GitLab to HDF converter', () => {
   });
 });
 
+describe('gitlab-to-hdf structured sourceLocation', () => {
+  function reqById(hdf: HDFResults, id: string) {
+    const req = hdf.baselines[0].requirements.find((r) => r.id === id);
+    if (!req) throw new Error(`requirement ${id} not found`);
+    return req;
+  }
+
+  it('promotes location.file + start_line into sourceLocation for a SAST finding', async () => {
+    const input = loadFixture('minimal-sast.json');
+    const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
+    const req = reqById(hdf, 'a1b2c3d4-e5f6-7890-abcd-ef1234567890');
+    expect(req.sourceLocation).toEqual({ref: 'src/db/queries.py', line: 42});
+  });
+
+  it('omits sourceLocation for a DAST finding with no location.file', async () => {
+    const input = loadFixture('minimal-dast.json');
+    const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
+    const req = hdf.baselines[0].requirements[0];
+    expect(req.sourceLocation).toBeUndefined();
+  });
+
+  it('falls back to end_line when start_line is absent', async () => {
+    const input = JSON.stringify({
+      scan: {type: 'sast', scanner: {name: 'Scan'}},
+      vulnerabilities: [{id: 'v1', severity: 'High', location: {file: 'b.py', end_line: 12}}],
+    });
+    const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
+    expect(hdf.baselines[0].requirements[0].sourceLocation).toEqual({ref: 'b.py', line: 12});
+  });
+
+  it('emits ref only when the location carries a file but no line', async () => {
+    const input = JSON.stringify({
+      scan: {type: 'sast', scanner: {name: 'Scan'}},
+      vulnerabilities: [{id: 'v1', severity: 'High', location: {file: 'c.py'}}],
+    });
+    const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
+    expect(hdf.baselines[0].requirements[0].sourceLocation).toEqual({ref: 'c.py'});
+  });
+});
+
 describe('gitlab-to-hdf refs and remediation backfill', () => {
   function reqById(hdf: HDFResults, id: string) {
     const req = hdf.baselines[0].requirements.find((r) => r.id === id);

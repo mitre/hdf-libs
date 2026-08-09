@@ -257,6 +257,28 @@ func buildVulnCode(vuln GitLabVulnerability) string {
 	return buf.String()
 }
 
+// buildSourceLocation promotes a finding's file locus into the structured
+// requirement.sourceLocation field (machine-addressable, distinct from the
+// codeDesc freetext). Ref is the source file path; Line is the start line,
+// falling back to end_line only when start_line is absent. Returns nil when the
+// location carries no file (e.g. DAST URL findings) so the field is omitted.
+func buildSourceLocation(loc *GitLabLocation) *hdf.SourceLocation {
+	if loc == nil || loc.File == "" {
+		return nil
+	}
+	ref := loc.File
+	sl := &hdf.SourceLocation{Ref: &ref}
+	line := loc.StartLine
+	if line == nil {
+		line = loc.EndLine
+	}
+	if line != nil {
+		l := float64(*line)
+		sl.Line = &l
+	}
+	return sl
+}
+
 // --- Build code description by scan type ---
 
 func buildCodeDesc(scanType string, loc *GitLabLocation) string {
@@ -460,6 +482,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 			Refs:               buildRefs(vuln),
 			ControlType:        shared.DeriveControlTypeFromTags(nistTags),
 			VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+			SourceLocation:     buildSourceLocation(vuln.Location),
 		}
 
 		requirements = append(requirements, req)

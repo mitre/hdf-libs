@@ -9,6 +9,7 @@ import {
   type HDFResults,
   type Component,
   type Reference,
+  type SourceLocation,
   ResultStatus,
   VerificationMethodEnum,
   severityToImpact,
@@ -194,6 +195,22 @@ function collectIdentifierTags(identifiers: GitLabIdentifier[]): Record<string, 
   return result;
 }
 
+// --- Structured source location (machine-addressable file locus) ---
+
+// Promotes a finding's file locus into requirement.sourceLocation, distinct from
+// the codeDesc freetext. ref is the source file path; line is the start line,
+// falling back to end_line only when start_line is absent. Returns undefined when
+// the location carries no file (e.g. DAST URL findings) so the field is omitted.
+function buildSourceLocation(location?: GitLabLocation): SourceLocation | undefined {
+  if (!location?.file) return undefined;
+  const sourceLocation: SourceLocation = {ref: location.file};
+  const line = location.start_line ?? location.end_line;
+  if (line != null) {
+    sourceLocation.line = line;
+  }
+  return sourceLocation;
+}
+
 // --- Build code description by scan type ---
 
 function buildCodeDesc(scanType: string, location?: GitLabLocation): string {
@@ -351,6 +368,11 @@ export async function convertGitlabToHdf(input: string, converterVersion = '1.0.
     const controlType = deriveControlTypeFromTags(nistTags);
     if (controlType !== undefined) {
       req.controlType = controlType;
+    }
+
+    const sourceLocation = buildSourceLocation(vuln.location);
+    if (sourceLocation) {
+      req.sourceLocation = sourceLocation;
     }
 
     requirements.push(req);
