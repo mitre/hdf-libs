@@ -200,16 +200,74 @@ describe('msft-defender-endpoint to HDF converter', async () => {
       const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.components).toBeDefined();
       expect(hdf.components!.length).toBeGreaterThan(0);
-      expect(hdf.components![0]!.type).toBe('host');
-      expect(hdf.components![0]!.name).toBe('temp123.middleeast.corp.microsoft.com');
-      expect(hdf.components![0]!.fqdn).toBe('temp123.middleeast.corp.microsoft.com');
-      expect(hdf.components![0]!.osName).toBe('Windows10');
+      const target = hdf.components![0]!;
+      expect(target.type).toBe('host');
+      expect(target.name).toBe('temp123.middleeast.corp.microsoft.com');
+      expect(target.fqdn).toBe('temp123.middleeast.corp.microsoft.com');
+      expect(target.osName).toBe('Windows10');
+      // MDE device id surfaced as external identifier.
+      expect(target.externalIds).toEqual({ mde: '111e6dd8c833c8a052ea231ec1b19adaf497b625' });
+      // rbac/health/onboarding surfaced as labels alongside provider.
+      expect(target.labels!['rbacGroupName']).toBe('A');
+      expect(target.labels!['healthStatus']).toBe('active');
+      expect(target.labels!['onboardingStatus']).toBe('onboarded');
+      expect(target.labels!['provider']).toBe('azure');
+    });
+
+    it('should use mdeDeviceId as name when dns name is absent', async () => {
+      const doc = JSON.stringify({
+        value: [{
+          id: 'a', status: 'new', severity: 'low', category: 'Execution', title: 't', description: 'd',
+          evidence: [{ '@odata.type': '#microsoft.graph.security.deviceEvidence', mdeDeviceId: 'abc123' }],
+        }],
+      });
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(doc)) as HDFResults;
+      expect(hdf.components).toHaveLength(1);
+      const target = hdf.components![0]!;
+      expect(target.type).toBe('host');
+      expect(target.name).toBe('abc123');
+      expect(target.fqdn).toBeUndefined();
+      expect(target.externalIds).toEqual({ mde: 'abc123' });
     });
 
     it('should deduplicate targets by name', async () => {
       const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('sample.json'))) as HDFResults;
       // 4 alerts with 4 different devices → 4 targets
       expect(hdf.components).toHaveLength(4);
+    });
+
+    it('should deduplicate targets by mdeDeviceId even when dns names differ', async () => {
+      const doc = JSON.stringify({
+        value: [
+          {
+            id: 'a', status: 'new', severity: 'low', category: 'Execution', title: 't', description: 'd',
+            evidence: [{ '@odata.type': '#microsoft.graph.security.deviceEvidence', deviceDnsName: 'host-a.example.com', mdeDeviceId: 'same-id' }],
+          },
+          {
+            id: 'b', status: 'new', severity: 'low', category: 'Execution', title: 't', description: 'd',
+            evidence: [{ '@odata.type': '#microsoft.graph.security.deviceEvidence', deviceDnsName: 'host-a-renamed.example.com', mdeDeviceId: 'same-id' }],
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(doc)) as HDFResults;
+      expect(hdf.components).toHaveLength(1);
+      expect(hdf.components![0]!.externalIds).toEqual({ mde: 'same-id' });
+    });
+
+    it('should emit no host component when device evidence is absent', async () => {
+      const doc = JSON.stringify({
+        value: [{
+          id: 'a', status: 'new', severity: 'low', category: 'Execution', title: 't', description: 'd',
+          tenantId: 'tenant-xyz',
+          evidence: [{ '@odata.type': '#microsoft.graph.security.processEvidence', processCommandLine: 'x' }],
+        }],
+      });
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(doc)) as HDFResults;
+      expect(hdf.components).toHaveLength(1);
+      const target = hdf.components![0]!;
+      expect(target.type).toBe('cloudAccount');
+      expect(target.type).not.toBe('host');
+      expect(target.externalIds?.['mde']).toBeUndefined();
     });
   });
 

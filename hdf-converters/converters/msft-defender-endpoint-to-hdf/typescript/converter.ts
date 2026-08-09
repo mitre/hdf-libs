@@ -164,26 +164,48 @@ function formatMessage(alert: MdeAlert): string {
 }
 
 /**
- * Extracts a Host target from device evidence, or falls back to tenant as cloud account.
+ * Extracts a Host target from device evidence, carrying the MDE device id
+ * (externalIds.mde) plus rbac/health/onboarding labels. Falls back to tenant as
+ * a cloud account when no device evidence exists.
  */
 function extractDeviceTarget(alert: MdeAlert): Component {
   if (alert.evidence) {
     for (const ev of alert.evidence) {
       const odataType = ev['@odata.type'] ?? '';
-      if (odataType.includes('deviceEvidence') && ev.deviceDnsName) {
-        const target: Component = {
-          name: ev.deviceDnsName,
-          type: TargetType.Host,
-          labels: { provider: 'azure' },
-        };
-        if (ev.deviceDnsName) {
-          target.fqdn = ev.deviceDnsName;
-        }
-        if (ev.osPlatform) {
-          target.osName = ev.osPlatform;
-        }
-        return target;
+      if (!odataType.includes('deviceEvidence')) {
+        continue;
       }
+      const deviceName = ev.deviceDnsName ?? '';
+      const mdeDeviceId = ev.mdeDeviceId ?? '';
+      // A device with neither a name nor an id carries no usable identity.
+      if (!deviceName && !mdeDeviceId) {
+        continue;
+      }
+      const labels: Record<string, string> = { provider: 'azure' };
+      if (ev.rbacGroupName) {
+        labels['rbacGroupName'] = ev.rbacGroupName;
+      }
+      if (ev.healthStatus) {
+        labels['healthStatus'] = ev.healthStatus;
+      }
+      if (ev.onboardingStatus) {
+        labels['onboardingStatus'] = ev.onboardingStatus;
+      }
+      const target: Component = {
+        name: deviceName || mdeDeviceId,
+        type: TargetType.Host,
+        labels,
+      };
+      if (deviceName) {
+        target.fqdn = deviceName;
+      }
+      if (ev.osPlatform) {
+        target.osName = ev.osPlatform;
+      }
+      if (mdeDeviceId) {
+        target.externalIds = { mde: mdeDeviceId };
+      }
+      return target;
     }
   }
   // No device evidence — use tenant as cloud account
@@ -193,6 +215,15 @@ function extractDeviceTarget(alert: MdeAlert): Component {
     accountId: alert.tenantId,
     labels: { account: alert.tenantId ?? '', provider: 'azure' },
   };
+}
+
+/**
+ * Returns the identity used to deduplicate scan-target components: the MDE device
+ * id when present, else the component name.
+ */
+function targetDedupKey(target: Component): string {
+  const mde = target.externalIds?.['mde'];
+  return mde ? `mde:${mde}` : target.name;
 }
 
 /**
@@ -361,8 +392,9 @@ export async function convertMsftDefenderEndpointToHdf(input: string, converterV
   const components: Component[] = [];
   for (const alert of limitedAlerts) {
     const target = extractDeviceTarget(alert);
-    if (!seenTargets.has(target.name)) {
-      seenTargets.add(target.name);
+    const key = targetDedupKey(target);
+    if (!seenTargets.has(key)) {
+      seenTargets.add(key);
       components.push(target);
     }
   }

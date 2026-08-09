@@ -56,8 +56,14 @@
   ],
   "components": [
     {
+      "externalIds": {
+        "mde": "111e6dd8c833c8a052ea231ec1b19adaf497b625"
+      },
       "labels": {
-        "provider": "azure"
+        "healthStatus": "active",
+        "onboardingStatus": "onboarded",
+        "provider": "azure",
+        "rbacGroupName": "A"
       },
       "name": "temp123.middleeast.corp.microsoft.com",
       "type": "host",

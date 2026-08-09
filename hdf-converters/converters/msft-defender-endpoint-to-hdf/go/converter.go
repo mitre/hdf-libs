@@ -115,27 +115,52 @@ func formatMessage(alert mdeAlert) string {
 	return strings.Join(parts, "\n")
 }
 
-// extractDeviceTarget extracts a Host target from device evidence if present.
-// Falls back to tenantId as a cloud account target.
+// extractDeviceTarget extracts a Host target from device evidence if present,
+// carrying the MDE device id (externalIds.mde) plus rbac/health/onboarding labels.
+// Falls back to tenantId as a cloud account target when no device evidence exists.
 func extractDeviceTarget(alert mdeAlert) hdf.Component {
 	for _, ev := range alert.Evidence {
 		odataType, _ := ev["@odata.type"].(string)
-		if strings.Contains(odataType, "deviceEvidence") {
-			deviceName, _ := ev["deviceDnsName"].(string)
-			osPlatform, _ := ev["osPlatform"].(string)
-			target := hdf.Component{
-				Name:   deviceName,
-				Type:   hdf.Host,
-				Labels: map[string]string{"provider": "azure"},
-			}
-			if deviceName != "" {
-				target.FQDN = hdfutil.Ptr(deviceName)
-			}
-			if osPlatform != "" {
-				target.OSName = hdfutil.Ptr(osPlatform)
-			}
-			return target
+		if !strings.Contains(odataType, "deviceEvidence") {
+			continue
 		}
+		deviceName, _ := ev["deviceDnsName"].(string)
+		mdeDeviceID, _ := ev["mdeDeviceId"].(string)
+		// A device with neither a name nor an id carries no usable identity.
+		if deviceName == "" && mdeDeviceID == "" {
+			continue
+		}
+		osPlatform, _ := ev["osPlatform"].(string)
+
+		name := deviceName
+		if name == "" {
+			name = mdeDeviceID
+		}
+		labels := map[string]string{"provider": "azure"}
+		if rbac, _ := ev["rbacGroupName"].(string); rbac != "" {
+			labels["rbacGroupName"] = rbac
+		}
+		if health, _ := ev["healthStatus"].(string); health != "" {
+			labels["healthStatus"] = health
+		}
+		if onboarding, _ := ev["onboardingStatus"].(string); onboarding != "" {
+			labels["onboardingStatus"] = onboarding
+		}
+		target := hdf.Component{
+			Name:   name,
+			Type:   hdf.Host,
+			Labels: labels,
+		}
+		if deviceName != "" {
+			target.FQDN = hdfutil.Ptr(deviceName)
+		}
+		if osPlatform != "" {
+			target.OSName = hdfutil.Ptr(osPlatform)
+		}
+		if mdeDeviceID != "" {
+			target.ExternalIDS = map[string]string{"mde": mdeDeviceID}
+		}
+		return target
 	}
 	// No device evidence — use tenant as cloud account
 	return hdf.Component{
@@ -144,6 +169,15 @@ func extractDeviceTarget(alert mdeAlert) hdf.Component {
 		AccountID: hdfutil.Ptr(alert.TenantID),
 		Labels:    map[string]string{"account": alert.TenantID, "provider": "azure"},
 	}
+}
+
+// targetDedupKey returns the identity used to deduplicate scan-target components:
+// the MDE device id when present, else the component name.
+func targetDedupKey(target hdf.Component) string {
+	if id, ok := target.ExternalIDS["mde"]; ok && id != "" {
+		return "mde:" + id
+	}
+	return target.Name
 }
 
 // buildTags creates the tags map for a requirement.
@@ -311,8 +345,9 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 	var targets []hdf.Component
 	for _, alert := range limitedAlerts {
 		target := extractDeviceTarget(alert)
-		if !seenTargets[target.Name] {
-			seenTargets[target.Name] = true
+		key := targetDedupKey(target)
+		if !seenTargets[key] {
+			seenTargets[key] = true
 			targets = append(targets, target)
 		}
 	}

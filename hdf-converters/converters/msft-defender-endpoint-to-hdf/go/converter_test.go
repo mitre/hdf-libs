@@ -184,6 +184,33 @@ func TestConvert_Target_Host(t *testing.T) {
 	assert.Equal(t, "temp123.middleeast.corp.microsoft.com", *target.FQDN)
 	require.NotNil(t, target.OSName)
 	assert.Equal(t, "Windows10", *target.OSName)
+
+	// MDE device id is surfaced as an external identifier.
+	require.NotNil(t, target.ExternalIDS)
+	assert.Equal(t, "111e6dd8c833c8a052ea231ec1b19adaf497b625", target.ExternalIDS["mde"])
+
+	// rbac/health/onboarding are surfaced as labels alongside provider.
+	assert.Equal(t, "A", target.Labels["rbacGroupName"])
+	assert.Equal(t, "active", target.Labels["healthStatus"])
+	assert.Equal(t, "onboarded", target.Labels["onboardingStatus"])
+	assert.Equal(t, "azure", target.Labels["provider"])
+}
+
+// TestConvert_Target_NameFromDeviceIDFallback pins Name=mdeDeviceId when the
+// device evidence carries an id but no dns name.
+func TestConvert_Target_NameFromDeviceIDFallback(t *testing.T) {
+	doc := `{"value":[{"id":"a","status":"new","severity":"low","category":"Execution",` +
+		`"title":"t","description":"d","evidence":[{"@odata.type":"#microsoft.graph.security.deviceEvidence",` +
+		`"mdeDeviceId":"abc123"}]}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	target := result.Components[0]
+	assert.Equal(t, hdf.Host, target.Type)
+	assert.Equal(t, "abc123", target.Name)
+	assert.Nil(t, target.FQDN, "no dns name → no fqdn")
+	assert.Equal(t, "abc123", target.ExternalIDS["mde"])
 }
 
 func TestConvert_Target_Deduplicated(t *testing.T) {
@@ -193,6 +220,40 @@ func TestConvert_Target_Deduplicated(t *testing.T) {
 
 	// 4 alerts with 4 different devices → 4 targets
 	assert.Len(t, result.Components, 4)
+}
+
+// TestConvert_Target_DedupByDeviceID pins dedup on mdeDeviceId: two alerts on the
+// same device id (even with differing dns names) collapse to one host component.
+func TestConvert_Target_DedupByDeviceID(t *testing.T) {
+	doc := `{"value":[` +
+		`{"id":"a","status":"new","severity":"low","category":"Execution","title":"t","description":"d",` +
+		`"evidence":[{"@odata.type":"#microsoft.graph.security.deviceEvidence","deviceDnsName":"host-a.example.com","mdeDeviceId":"same-id"}]},` +
+		`{"id":"b","status":"new","severity":"low","category":"Execution","title":"t","description":"d",` +
+		`"evidence":[{"@odata.type":"#microsoft.graph.security.deviceEvidence","deviceDnsName":"host-a-renamed.example.com","mdeDeviceId":"same-id"}]}` +
+		`]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1, "same mdeDeviceId → one host component")
+	assert.Equal(t, "same-id", result.Components[0].ExternalIDS["mde"])
+}
+
+// TestConvert_Target_NoDeviceEvidence pins the absent branch: an alert with no
+// device evidence emits no host component (falls back to the tenant cloud account,
+// which carries no mde external id).
+func TestConvert_Target_NoDeviceEvidence(t *testing.T) {
+	doc := `{"value":[{"id":"a","status":"new","severity":"low","category":"Execution",` +
+		`"title":"t","description":"d","tenantId":"tenant-xyz",` +
+		`"evidence":[{"@odata.type":"#microsoft.graph.security.processEvidence","processCommandLine":"x"}]}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	target := result.Components[0]
+	assert.Equal(t, hdf.CloudAccount, target.Type)
+	assert.NotEqual(t, hdf.Host, target.Type, "no device evidence → no host component")
+	_, hasMde := target.ExternalIDS["mde"]
+	assert.False(t, hasMde, "cloud-account fallback carries no mde external id")
 }
 
 // ---- MITRE ATT&CK techniques in tags ----
