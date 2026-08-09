@@ -1,19 +1,20 @@
 #!/usr/bin/env node
 /**
- * Timestamp-handling guard for Go converters and shared converter code.
+ * Timestamp-handling guard for the HDF Go code that parses tool timestamps.
  *
- * A `*-to-hdf` converter must parse tool-supplied timestamps via
- * `hdfutil.ParseTimestamp` (which normalizes to UTC), NOT a bare
- * `time.Parse(time.RFC3339...)`. A bare RFC3339 parse preserves the source
- * offset and diverges from the (UTC) TypeScript converter; ParseTimestamp also
- * covers more formats. Custom-layout `time.Parse("<layout>", ...)` calls are
- * allowed — they handle formats ParseTimestamp does not.
+ * Go code must parse tool-supplied timestamps via `hdfutil.ParseTimestamp`
+ * (which normalizes to UTC), NOT a bare `time.Parse(time.RFC3339...)`. A bare
+ * RFC3339 parse preserves the source offset and diverges from the (UTC)
+ * TypeScript peer; ParseTimestamp also covers more formats. Custom-layout
+ * `time.Parse("<layout>", ...)` calls are allowed — they handle formats
+ * ParseTimestamp does not. A genuine non-footgun use (e.g. a format-only check
+ * that discards the parse result) opts out with a `timestamp-guard:allow`
+ * marker on the offending line or the line directly above it.
  *
- * Scans each converter's Go dir AND hdf-converters/shared/go (recursively):
- * shared Go code (converterutil, exportmap, bom, checklist, vex) parses
- * timestamps on behalf of the converters and is equally exposed to the footgun.
- * Mirrors the TypeScript `no-restricted-syntax` guard in
- * hdf-converters/eslint.config.js, which covers converters/ and shared/. See
+ * Scans (recursively) the converters' Go dirs, hdf-converters/shared/go, and
+ * the other Go modules that parse timestamps: hdf-diff/go, hdf-cli, and
+ * hdf-utilities/go. Mirrors the TypeScript `no-restricted-syntax` guard shared
+ * via scripts/eslint-timestamp-guard.mjs. See
  * site/docs/contributing/developer-guide.md (Timestamp Handling).
  */
 import { readdirSync, readFileSync } from 'node:fs';
@@ -86,13 +87,14 @@ for (const path of files) {
 
 if (offenders.length > 0) {
   console.error(
-    '\nTimestamp guard FAILED: Go converters must use hdfutil.ParseTimestamp,\n' +
+    '\nTimestamp guard FAILED: HDF Go code must use hdfutil.ParseTimestamp,\n' +
       'not a bare time.Parse(time.RFC3339...). ParseTimestamp normalizes to UTC\n' +
-      'so output matches the TypeScript converters and is host-independent.\n' +
+      'so output matches the TypeScript peer and is host-independent. A genuine\n' +
+      'non-footgun use can opt out with a timestamp-guard:allow marker.\n' +
       'See site/docs/contributing/developer-guide.md (Timestamp Handling).\n',
   );
   for (const o of offenders) console.error('  ' + o);
   process.exit(1);
 }
 
-console.log('Timestamp guard: no bare time.Parse(time.RFC3339) in Go converters or shared/go. OK');
+console.log('Timestamp guard: no bare time.Parse(time.RFC3339) in the scanned HDF Go modules. OK');
