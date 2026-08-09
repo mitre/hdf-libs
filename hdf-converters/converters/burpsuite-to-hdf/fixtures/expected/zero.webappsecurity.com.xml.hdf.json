@@ -79,6 +79,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://zero.webappsecurity.com/resources/js/jquery-1.8.2.min.js"
+          },
           "id": "2098688",
           "impact": 0.3,
           "tags": {
@@ -178,6 +181,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://zero.webappsecurity.com/resources/js/jquery-1.8.2.min.js"
+          },
           "id": "2098689",
           "impact": 0.3,
           "tags": {
@@ -318,6 +324,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://zero.webappsecurity.com/resources/js/jquery-1.8.2.min.js"
+          },
           "id": "4197376",
           "impact": 0.3,
           "tags": {
@@ -361,6 +370,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://zero.webappsecurity.com/index.html"
+          },
           "id": "6291672",
           "impact": 0.3,
           "tags": {
@@ -405,6 +417,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "https://zero.webappsecurity.com/"
+          },
           "id": "5245440",
           "impact": 0.3,
           "tags": {
@@ -440,6 +455,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "https://zero.webappsecurity.com/"
+          },
           "id": "16777472",
           "impact": 0.5,
           "tags": {
@@ -485,6 +503,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "https://zero.webappsecurity.com/"
+          },
           "id": "8389120",
           "impact": 0.3,
           "tags": {
@@ -524,6 +545,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "https://zero.webappsecurity.com/"
+          },
           "id": "7340288",
           "impact": 0.3,
           "tags": {
@@ -563,6 +587,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://zero.webappsecurity.com/search.html"
+          },
           "id": "5243904",
           "impact": 0.3,
           "tags": {
@@ -611,6 +638,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "https://zero.webappsecurity.com/"
+          },
           "id": "16777984",
           "impact": 0.3,
           "tags": {
@@ -661,6 +691,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://zero.webappsecurity.com/resources/css/font-awesome.css"
+          },
           "id": "6291968",
           "impact": 0.3,
           "tags": {
@@ -709,6 +742,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://zero.webappsecurity.com/index.html"
+          },
           "id": "5245344",
           "impact": 0.3,
           "tags": {
@@ -750,6 +786,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://zero.webappsecurity.com/resources/css/bootstrap.min.css"
+          },
           "id": "6292736",
           "impact": 0.3,
           "tags": {
@@ -790,6 +829,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "http://zero.webappsecurity.com/"
+          },
           "id": "16777728",
           "impact": 0.3,
           "tags": {

@@ -24,6 +24,7 @@ import type {
   Tool,
   Description,
   Reference,
+  SourceLocation,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -115,6 +116,25 @@ function buildRefs(references: string | undefined): Reference[] | undefined {
     }
   }
   return refs.length > 0 ? refs : undefined;
+}
+
+// --- Source location ---
+
+/**
+ * Build the structured requirement locus from a BurpSuite issue's host URL and
+ * URL path. BurpSuite is a DAST scanner: the locus is a URL (no line number
+ * applies), so only `ref` is emitted. When the host URL is present it is
+ * prefixed onto the path to form a full URL; otherwise the path stands alone.
+ * Returns undefined when the issue carries no path.
+ */
+function buildSourceLocation(
+  hostURL: string | undefined,
+  path: string | undefined,
+): SourceLocation | undefined {
+  const p = (path ?? '').trim();
+  if (!p) return undefined;
+  const h = (hostURL ?? '').trim();
+  return { ref: h ? h + p : p };
 }
 
 // --- Format code desc ---
@@ -324,6 +344,11 @@ function buildRequirement(
   const refs = buildRefs(rep.references);
   if (refs !== undefined) {
     req.refs = refs;
+  }
+
+  const sourceLocation = buildSourceLocation(rep.host?.['#text'], rep.path);
+  if (sourceLocation !== undefined) {
+    req.sourceLocation = sourceLocation;
   }
 
   return req;

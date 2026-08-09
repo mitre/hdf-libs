@@ -437,6 +437,61 @@ func Test_extractReferenceURLs(t *testing.T) {
 	assert.Nil(t, extractReferenceURLs("<ul><li>See the manual</li></ul>"))
 }
 
+// --- Source location (sourceLocation.ref) ---
+
+func TestConvertBurpsuiteToHDF_SourceLocation(t *testing.T) {
+	input := loadFixture(t, "input/zero.webappsecurity.com.xml")
+	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// Type 2098688's representative issue has path /resources/js/jquery-1.8.2.min.js
+	// under host http://zero.webappsecurity.com — combined into a full-URL locus.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
+	require.NotNil(t, req.SourceLocation, "requirement with a path must emit sourceLocation")
+	require.NotNil(t, req.SourceLocation.Ref)
+	assert.Equal(t, "http://zero.webappsecurity.com/resources/js/jquery-1.8.2.min.js", *req.SourceLocation.Ref)
+	assert.Nil(t, req.SourceLocation.Line, "DAST URL locus carries no line number")
+}
+
+func TestConvertBurpsuiteToHDF_SourceLocationAbsent(t *testing.T) {
+	// An issue with no <path> element must omit sourceLocation entirely.
+	input := []byte(`<?xml version="1.0"?><issues burpVersion="2020.1" exportTime="Thu Feb 27 09:28:17 EST 2020">
+  <issue>
+    <serialNumber>1</serialNumber>
+    <type>999999</type>
+    <name>No Path Issue</name>
+    <host ip="1.2.3.4">http://test.com</host>
+    <location>/loc</location>
+    <severity>Low</severity>
+    <confidence>Certain</confidence>
+  </issue>
+</issues>`)
+	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "999999")
+	assert.Nil(t, req.SourceLocation, "requirement without a path must omit sourceLocation")
+}
+
+func Test_buildSourceLocation(t *testing.T) {
+	// host + path → full URL
+	sl := buildSourceLocation("http://test.com", "/a/b")
+	require.NotNil(t, sl)
+	require.NotNil(t, sl.Ref)
+	assert.Equal(t, "http://test.com/a/b", *sl.Ref)
+	assert.Nil(t, sl.Line)
+
+	// path only (host empty) → path stands alone
+	slPathOnly := buildSourceLocation("", "/only")
+	require.NotNil(t, slPathOnly)
+	require.NotNil(t, slPathOnly.Ref)
+	assert.Equal(t, "/only", *slPathOnly.Ref)
+
+	// absent / whitespace-only path → nil
+	assert.Nil(t, buildSourceLocation("http://test.com", ""))
+	assert.Nil(t, buildSourceLocation("http://test.com", "   "))
+}
+
 // --- Title mapping ---
 
 func TestConvertBurpsuiteToHDF_RequirementTitle(t *testing.T) {

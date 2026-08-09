@@ -123,6 +123,25 @@ func formatCodeDesc(hostIP, hostURL, location, issueDetail, confidence string) s
 	return strings.Join(parts, "\n") + "\n"
 }
 
+// --- Source location ---
+
+// buildSourceLocation builds the structured requirement locus from a BurpSuite
+// issue's host URL and URL path. BurpSuite is a DAST scanner: the locus is a URL
+// (no line number applies), so only Ref is emitted. When the host URL is present
+// it is prefixed onto the path to form a full URL; otherwise the path stands
+// alone. Returns nil when the issue carries no path.
+func buildSourceLocation(hostURL, path string) *hdf.SourceLocation {
+	p := strings.TrimSpace(path)
+	if p == "" {
+		return nil
+	}
+	ref := p
+	if h := strings.TrimSpace(hostURL); h != "" {
+		ref = h + p
+	}
+	return &hdf.SourceLocation{Ref: &ref}
+}
+
 // --- Timestamp parsing ---
 
 // parseBurpTimestamp parses BurpSuite's "Thu Feb 27 09:28:17 EST 2020" format.
@@ -317,6 +336,7 @@ func buildRequirement(issueType string, issues []BurpIssue, exportTime string) h
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		Descriptions:       descriptions,
 		Refs:               hdfRefs,
+		SourceLocation:     buildSourceLocation(rep.Host.Text, rep.Path),
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}

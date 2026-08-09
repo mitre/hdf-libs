@@ -454,6 +454,40 @@ describe('burpsuite-to-hdf external references', () => {
   });
 });
 
+// --- Source location (sourceLocation.ref) ---
+describe('burpsuite-to-hdf source location', () => {
+  it('maps host + path to sourceLocation.ref (no line for a DAST URL locus)', async () => {
+    const xml = loadFixture('input/zero.webappsecurity.com.xml');
+    const out = parseOutput(await convertBurpsuiteToHdf(xml));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    // Type 2098688's representative issue: path /resources/js/jquery-1.8.2.min.js
+    // under host http://zero.webappsecurity.com.
+    const req = findRequirement(bl, '2098688')!;
+    const sourceLocation = req.sourceLocation as Record<string, unknown>;
+    expect(sourceLocation).toBeDefined();
+    expect(sourceLocation.ref).toBe('http://zero.webappsecurity.com/resources/js/jquery-1.8.2.min.js');
+    expect(sourceLocation.line).toBeUndefined();
+  });
+
+  it('omits sourceLocation when the issue carries no path', async () => {
+    const xml = `<?xml version="1.0"?><issues burpVersion="2020.1" exportTime="Thu Feb 27 09:28:17 EST 2020">
+  <issue>
+    <serialNumber>1</serialNumber>
+    <type>999999</type>
+    <name>No Path Issue</name>
+    <host ip="1.2.3.4">http://test.com</host>
+    <location>/loc</location>
+    <severity>Low</severity>
+    <confidence>Certain</confidence>
+  </issue>
+</issues>`;
+    const out = parseOutput(await convertBurpsuiteToHdf(xml));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const req = findRequirement(bl, '999999')!;
+    expect(req.sourceLocation).toBeUndefined();
+  });
+});
+
 // Ground-truth anchor (see shared/typescript/anchor.ts). burpsuite groups issues
 // by <type> — one requirement per distinct issue type — counted independently.
 describe('burpsuite-to-hdf ground-truth anchor', () => {
