@@ -107,19 +107,42 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ResultsChecksum: shared.InputChecksum(input),
 	}
 
-	target := hdf.Component{
+	components := []hdf.Component{{
 		Name: name,
 		Type: hdf.Application,
-	}
+	}}
+	components = append(components, hostComponents(suites)...)
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "junit-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "JUnit XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components:       []hdf.Component{target},
+		Components:       components,
 		Timestamp:        &scanTime,
 	}), nil
+}
+
+// hostComponents derives one host component per distinct testsuite @hostname
+// (the machine the tests ran on). Suites without a hostname contribute nothing;
+// duplicate hostnames are emitted once, in first-seen order.
+func hostComponents(suites []junitTestSuite) []hdf.Component {
+	var hosts []hdf.Component
+	seen := map[string]bool{}
+	for _, s := range suites {
+		h := strings.TrimSpace(s.Hostname)
+		if h == "" || seen[h] {
+			continue
+		}
+		seen[h] = true
+		hostname := h
+		hosts = append(hosts, hdf.Component{
+			Name:     h,
+			Type:     hdf.Host,
+			Hostname: &hostname,
+		})
+	}
+	return hosts
 }
 
 // resolveScanTime computes one timestamp per conversion: the first available

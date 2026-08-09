@@ -5,6 +5,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
+  Component,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -126,12 +127,36 @@ export async function convertJunitToHdf(input: string, converterVersion = '1.0.0
     converterVersion,
     toolName: 'JUnit XML',
     baselines: [baseline],
-    components: [{
-      type: TargetType.Application,
-      name,
-    }],
+    components: [
+      {
+        type: TargetType.Application,
+        name,
+      },
+      ...hostComponents(suites),
+    ],
     timestamp: scanTime,
   });
+}
+
+// Derives one host component per distinct testsuite @hostname (the machine the
+// tests ran on). Suites without a hostname contribute nothing; duplicate
+// hostnames are emitted once, in first-seen order.
+function hostComponents(suites: JUnitTestSuite[]): Component[] {
+  const hosts: Component[] = [];
+  const seen = new Set<string>();
+  for (const suite of suites) {
+    const hostname = suite.hostname?.trim();
+    if (!hostname || seen.has(hostname)) {
+      continue;
+    }
+    seen.add(hostname);
+    hosts.push({
+      type: TargetType.Host,
+      name: hostname,
+      hostname,
+    });
+  }
+  return hosts;
 }
 
 // Computes one timestamp per conversion: the first available <testsuite> timestamp,

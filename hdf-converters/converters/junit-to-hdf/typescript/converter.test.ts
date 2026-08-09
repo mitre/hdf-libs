@@ -10,7 +10,7 @@ import {
   countXmlElements,
 } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
-import { ResultStatus } from '@mitre/hdf-schema';
+import { ResultStatus, TargetType } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -556,6 +556,38 @@ describe('junit to HDF converter', async () => {
       expect(reqs[0]!.results[0]!.codeDesc).toContain('JUnit');
       expect(reqs[0]!.results[0]!.codeDesc).toContain('EmptySuite');
       expect(reqs[0]!.results[0]!.codeDesc).toContain('zero findings');
+    });
+  });
+
+  // --- Scan-target components ---
+
+  describe('components', async () => {
+    it('emits a deduped host component from testsuite @hostname', async () => {
+      const hdf = await parseHdf('testsuites-mixed.xml');
+      const hosts = hdf.components!.filter((c) => c.type === TargetType.Host);
+      expect(hosts).toHaveLength(1);
+      expect(hosts[0]!.name).toBe('ci-runner-01');
+      expect(hosts[0]!.hostname).toBe('ci-runner-01');
+      // Application component is still present.
+      expect(hdf.components!.some((c) => c.type === TargetType.Application)).toBe(true);
+    });
+
+    it('emits no host component when no testsuite carries a hostname', async () => {
+      const hdf = await parseHdf('surefire-failing.xml');
+      expect(hdf.components!.some((c) => c.type === TargetType.Host)).toBe(false);
+    });
+
+    it('emits distinct host components for distinct hostnames', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites>
+  <testsuite name="A" hostname="alpha"><testcase name="t1" classname="c"/></testsuite>
+  <testsuite name="B"><testcase name="t2" classname="c"/></testsuite>
+  <testsuite name="C" hostname="beta"><testcase name="t3" classname="c"/></testsuite>
+  <testsuite name="D" hostname="alpha"><testcase name="t4" classname="c"/></testsuite>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
+      const hosts = hdf.components!.filter((c) => c.type === TargetType.Host);
+      expect(hosts.map((h) => h.name)).toEqual(['alpha', 'beta']);
     });
   });
 });

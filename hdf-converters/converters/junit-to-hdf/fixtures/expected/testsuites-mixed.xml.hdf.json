@@ -147,6 +147,11 @@
     {
       "name": "JUnit Test Results",
       "type": "application"
+    },
+    {
+      "name": "ci-runner-01",
+      "type": "host",
+      "hostname": "ci-runner-01"
     }
   ],
   "generator": {

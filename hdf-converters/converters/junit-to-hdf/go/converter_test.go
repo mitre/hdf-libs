@@ -390,6 +390,69 @@ func TestTestsuitesMixed_Timestamp(t *testing.T) {
 	assert.False(t, req.Results[0].StartTime.IsZero(), "startTime should be set from suite timestamp")
 }
 
+// --- Scan-target components ---
+
+func findComponent(components []hdf.Component, t2 hdf.TargetType) *hdf.Component {
+	for i := range components {
+		if components[i].Type == t2 {
+			return &components[i]
+		}
+	}
+	return nil
+}
+
+// testsuites-mixed.xml carries hostname="ci-runner-01" on both suites; that
+// machine identity surfaces as a single deduped host component alongside the
+// application component.
+func TestComponents_HostFromHostname(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+
+	host := findComponent(result.Components, hdf.Host)
+	require.NotNil(t, host, "a host component should be emitted from testsuite @hostname")
+	assert.Equal(t, hdf.Host, host.Type)
+	assert.Equal(t, "ci-runner-01", host.Name)
+	require.NotNil(t, host.Hostname)
+	assert.Equal(t, "ci-runner-01", *host.Hostname)
+
+	// Two suites share one hostname -> exactly one host component (deduped).
+	var hostCount int
+	for _, c := range result.Components {
+		if c.Type == hdf.Host {
+			hostCount++
+		}
+	}
+	assert.Equal(t, 1, hostCount, "duplicate hostnames should be deduped")
+
+	// The application component is still present.
+	assert.NotNil(t, findComponent(result.Components, hdf.Application))
+}
+
+// Fixtures without any testsuite @hostname emit no host component.
+func TestComponents_NoHostnameAbsent(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-failing.xml"), converterVersion)
+	require.NoError(t, err)
+	assert.Nil(t, findComponent(result.Components, hdf.Host),
+		"no host component when no testsuite carries a hostname")
+}
+
+func TestHostComponents_DistinctAndDeduped(t *testing.T) {
+	suites := []junitTestSuite{
+		{Hostname: "alpha"},
+		{Hostname: ""},
+		{Hostname: "beta"},
+		{Hostname: "  alpha  "},
+		{Hostname: "beta"},
+	}
+	hosts := hostComponents(suites)
+	require.Len(t, hosts, 2)
+	assert.Equal(t, "alpha", hosts[0].Name)
+	assert.Equal(t, "beta", hosts[1].Name)
+	assert.Equal(t, hdf.Host, hosts[0].Type)
+	require.NotNil(t, hosts[0].Hostname)
+	assert.Equal(t, "alpha", *hosts[0].Hostname)
+}
+
 // --- JSON serialization round-trip ---
 
 func TestJSONRoundTrip(t *testing.T) {
