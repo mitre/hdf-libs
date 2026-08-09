@@ -337,6 +337,52 @@ describe('checkov to HDF converter', async () => {
       expect(req?.tags?.['bc_check_id']).toBeUndefined();
     });
 
+    it('promotes file_path/line into structured sourceLocation', async () => {
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const byId = new Map(hdf.baselines[0]!.requirements.map((r) => [r.id, r] as const));
+      // ref = file_path; line = START of file_line_range [26,49].
+      expect(byId.get('CKV_TF_1')?.sourceLocation?.ref).toBe('/main.tf');
+      expect(byId.get('CKV_TF_1')?.sourceLocation?.line).toBe(26);
+      // A skipped check anchored elsewhere: file_line_range [115,119].
+      expect(byId.get('CKV_AWS_18')?.sourceLocation?.line).toBe(115);
+    });
+
+    it('omits sourceLocation when file_path is absent', async () => {
+      const doc = {
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [
+            { check_id: 'CKV_NOLOC_1', check_name: 'no loc', check_result: { result: 'FAILED' }, resource: 'r', file_path: '', file_line_range: [1, 5], severity: null },
+          ],
+          skipped_checks: [],
+        },
+        summary: { passed: 0, failed: 1, skipped: 0, parsing_errors: 0, resource_count: 1, checkov_version: '3.2.0' },
+      };
+      const hdf = JSON.parse(await convertCheckovToHdf(JSON.stringify(doc))) as HDFResults;
+      const req = hdf.baselines?.[0]?.requirements?.[0];
+      expect(req?.id).toBe('CKV_NOLOC_1');
+      expect(req?.sourceLocation).toBeUndefined();
+    });
+
+    it('emits sourceLocation.ref only when file_line_range is empty', async () => {
+      const doc = {
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [
+            { check_id: 'CKV_NORANGE_1', check_name: 'no range', check_result: { result: 'FAILED' }, resource: 'r', file_path: '/main.tf', file_line_range: [], severity: null },
+          ],
+          skipped_checks: [],
+        },
+        summary: { passed: 0, failed: 1, skipped: 0, parsing_errors: 0, resource_count: 1, checkov_version: '3.2.0' },
+      };
+      const hdf = JSON.parse(await convertCheckovToHdf(JSON.stringify(doc))) as HDFResults;
+      const req = hdf.baselines?.[0]?.requirements?.[0];
+      expect(req?.sourceLocation?.ref).toBe('/main.tf');
+      expect(req?.sourceLocation?.line).toBeUndefined();
+    });
+
     it('should synthesize a passed placeholder for empty checks', async () => {
       const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('empty.json'))) as HDFResults;
       expect(hdf.baselines).toHaveLength(1);

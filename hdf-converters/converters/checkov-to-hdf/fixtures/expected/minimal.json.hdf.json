@@ -25,6 +25,10 @@
               "status": "passed"
             }
           ],
+          "sourceLocation": {
+            "line": 26,
+            "ref": "/main.tf"
+          },
           "id": "CKV_TF_2",
           "impact": 0.5,
           "tags": {
@@ -69,6 +73,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 26,
+            "ref": "/main.tf"
+          },
           "id": "CKV_TF_1",
           "impact": 0.5,
           "tags": {
@@ -104,6 +112,10 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "line": 115,
+            "ref": "/main.tf"
+          },
           "id": "CKV2_AWS_6",
           "impact": 0.5,
           "tags": {
@@ -139,6 +151,10 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "line": 115,
+            "ref": "/main.tf"
+          },
           "id": "CKV_AWS_18",
           "impact": 0.5,
           "tags": {

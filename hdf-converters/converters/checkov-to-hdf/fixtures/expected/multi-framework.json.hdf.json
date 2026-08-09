@@ -20,6 +20,10 @@
               "status": "passed"
             }
           ],
+          "sourceLocation": {
+            "line": 100,
+            "ref": "/main.tf"
+          },
           "id": "CKV_AWS_275",
           "impact": 0.5,
           "tags": {
@@ -54,6 +58,10 @@
               "status": "passed"
             }
           ],
+          "sourceLocation": {
+            "line": 4,
+            "ref": "/main.tf"
+          },
           "id": "CKV_AWS_41",
           "impact": 0.5,
           "tags": {
@@ -93,6 +101,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 26,
+            "ref": "/main.tf"
+          },
           "id": "CKV_TF_1",
           "impact": 0.5,
           "tags": {
@@ -128,6 +140,10 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "line": 115,
+            "ref": "/main.tf"
+          },
           "id": "CKV_AWS_18",
           "impact": 0.5,
           "tags": {
@@ -163,6 +179,10 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "line": 115,
+            "ref": "/main.tf"
+          },
           "id": "CKV2_AWS_6",
           "impact": 0.5,
           "tags": {
@@ -197,6 +217,10 @@
               "status": "passed"
             }
           ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": "/Dockerfile"
+          },
           "id": "CKV_DOCKER_11",
           "impact": 0.5,
           "tags": {
@@ -231,6 +255,10 @@
               "status": "passed"
             }
           ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": "/Dockerfile"
+          },
           "id": "CKV_DOCKER_5",
           "impact": 0.5,
           "tags": {
@@ -265,6 +293,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 22,
+            "ref": "/Dockerfile"
+          },
           "id": "CKV_DOCKER_7",
           "impact": 0.5,
           "tags": {
@@ -299,6 +331,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": "/Dockerfile"
+          },
           "id": "CKV_DOCKER_2",
           "impact": 0.5,
           "tags": {

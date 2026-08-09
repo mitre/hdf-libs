@@ -9,6 +9,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
+  SourceLocation,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -164,6 +165,16 @@ function buildRequirement(checkId: string, group: CheckWithType[], scanTime: Dat
   const code = renderCodeBlock(rep.code_block);
   if (code !== undefined) {
     req.code = code;
+  }
+
+  // Promote the finding's file/line locus into the structured, queryable
+  // sourceLocation. file_line_range is [start, end]; line is the START line.
+  if (rep.file_path) {
+    const loc: SourceLocation = { ref: rep.file_path };
+    if (Array.isArray(rep.file_line_range) && typeof rep.file_line_range[0] === 'number') {
+      loc.line = rep.file_line_range[0];
+    }
+    req.sourceLocation = loc;
   }
 
   const controlType = deriveControlTypeFromTags([...DEFAULT_STATIC_ANALYSIS_NIST_TAGS]);

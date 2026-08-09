@@ -230,6 +230,16 @@ func buildRequirement(checkID string, group []checkWithType, now time.Time) hdf.
 	if code := renderCodeBlock(rep.CodeBlock); code != "" {
 		req.Code = &code
 	}
+	// Promote the finding's file/line locus into the structured, queryable
+	// sourceLocation. file_line_range is [start, end]; Line is the START line.
+	if rep.FilePath != "" {
+		loc := &hdf.SourceLocation{Ref: hdfutil.Ptr(rep.FilePath)}
+		if len(rep.FileLineRange) > 0 {
+			line := float64(rep.FileLineRange[0])
+			loc.Line = &line
+		}
+		req.SourceLocation = loc
+	}
 	return req
 }
 
