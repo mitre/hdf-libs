@@ -1,5 +1,5 @@
-import { buildCsv } from '@mitre/hdf-utilities';
-import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Component, Description } from '@mitre/hdf-schema';
+import { buildCsv, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
+import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Component, Description, StatusOverride, Cvss } from '@mitre/hdf-schema';
 import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 
 /**
@@ -20,7 +20,7 @@ interface CsvRow {
   'Code': string;
   'References': string;
   'Severity': string;
-  'Impact': number;
+  'Impact': string;
   'Status': string;
   'NIST Controls': string;
   'CCI Controls': string;
@@ -28,6 +28,25 @@ interface CsvRow {
   'Verification Method': string;
   'Applicability': string;
   'Result Message': string;
+  'Effective Status': string;
+  'Effective Impact': string;
+  'Disposition': string;
+  'Override Reason': string;
+  'Applied By': string;
+  'Expires At': string;
+  'CVSS': string;
+  'CWE': string;
+  'EPSS': string;
+  'KEV': string;
+  'Target FQDN': string;
+  'Target IP': string;
+}
+
+interface TargetIdentity {
+  name: string;
+  type: string;
+  fqdn: string;
+  ipAddress: string;
 }
 
 /**
@@ -53,9 +72,14 @@ export function convertHdfToCsv(input: string): string {
   const components = hdf.components || [];
 
   // If no components, create a single default target entry
-  const targetList: Array<{ name: string; type: string }> = components.length > 0
-    ? components.map((t: Component) => ({ name: t.name, type: t.type }))
-    : [{ name: '', type: '' }];
+  const targetList: TargetIdentity[] = components.length > 0
+    ? components.map((t: Component) => ({
+        name: t.name,
+        type: t.type,
+        fqdn: t.fqdn ?? '',
+        ipAddress: t.ipAddress ?? ''
+      }))
+    : [{ name: '', type: '', fqdn: '', ipAddress: '' }];
 
   // Iterate through each baseline
   for (const baseline of hdf.baselines) {
@@ -78,7 +102,7 @@ export function convertHdfToCsv(input: string): string {
 function createRow(
   baseline: EvaluatedBaseline,
   requirement: EvaluatedRequirement,
-  target: { name: string; type: string }
+  target: TargetIdentity
 ): CsvRow {
   // Get default description (required to be present per schema)
   const defaultDesc = requirement.descriptions.find((d: Description) => d.label === 'default');
@@ -103,6 +127,12 @@ function createRow(
   const nistControls = extractArrayFromTags(requirement.tags, 'nist');
   const cciControls = extractArrayFromTags(requirement.tags, 'cci');
 
+  // Post-override posture: effective columns fall back to the raw value when no
+  // override governs, so the column is always populated and sortable.
+  const effectiveStatus = requirement.effectiveStatus ? String(requirement.effectiveStatus) : String(status);
+  const effectiveImpact = (requirement.effectiveImpact ?? requirement.impact).toFixed(1);
+  const disposition = requirement.disposition ? String(requirement.disposition) : '';
+
   return {
     'Baseline ID': baseline.name,
     'Baseline Version': baseline.version || '',
@@ -118,15 +148,75 @@ function createRow(
     'Code': code,
     'References': references,
     'Severity': severity,
-    'Impact': requirement.impact,
+    'Impact': requirement.impact.toFixed(1),
     'Status': String(status),
     'NIST Controls': nistControls,
     'CCI Controls': cciControls,
     'Control Type': requirement.controlType ?? '',
     'Verification Method': requirement.verificationMethod ?? '',
     'Applicability': requirement.applicability ?? '',
-    'Result Message': message
+    'Result Message': message,
+    'Effective Status': effectiveStatus,
+    'Effective Impact': effectiveImpact,
+    'Disposition': disposition,
+    'Override Reason': joinOverrides(requirement.statusOverrides, o => o.reason ?? ''),
+    'Applied By': joinOverrides(requirement.statusOverrides, o => o.appliedBy?.identifier ?? ''),
+    'Expires At': joinOverrides(requirement.statusOverrides, o => formatExpires(o.expiresAt)),
+    'CVSS': cvssScores(requirement.cvss),
+    'CWE': Array.isArray(requirement.cwe) ? requirement.cwe.join('; ') : '',
+    'EPSS': requirement.epss ? requirement.epss.score.toFixed(5) : '',
+    'KEV': requirement.kev ? (requirement.kev.inKev ? 'true' : 'false') : '',
+    'Target FQDN': target.fqdn,
+    'Target IP': target.ipAddress
   };
+}
+
+/**
+ * Apply pick to every status override and join non-empty results with '; ',
+ * matching the NIST/CCI multi-value column convention.
+ */
+function joinOverrides(
+  overrides: StatusOverride[] | undefined,
+  pick: (o: StatusOverride) => string
+): string {
+  if (!Array.isArray(overrides)) {
+    return '';
+  }
+  const out: string[] = [];
+  for (const o of overrides) {
+    const v = pick(o);
+    if (v) {
+      out.push(v);
+    }
+  }
+  return out.join('; ');
+}
+
+/**
+ * Render an override's expiry as a canonical trimmed-UTC RFC3339 timestamp,
+ * byte-identical to the Go converter's RFC3339Nano output.
+ */
+function formatExpires(value: StatusOverride['expiresAt']): string {
+  const parsed = parseTimestamp(String(value));
+  return parsed ? formatTimestamp(parsed) : '';
+}
+
+/**
+ * Render each CVSS entry's score (computed when present, else base) to one
+ * decimal, joined with '; ' to preserve multi-CVE findings.
+ */
+function cvssScores(entries: Cvss[] | undefined): string {
+  if (!Array.isArray(entries)) {
+    return '';
+  }
+  const out: string[] = [];
+  for (const c of entries) {
+    const score = c.computedScore ?? c.baseScore;
+    if (score !== undefined) {
+      out.push(score.toFixed(1));
+    }
+  }
+  return out.join('; ');
 }
 
 /**
