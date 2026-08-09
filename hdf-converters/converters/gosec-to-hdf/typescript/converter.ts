@@ -79,6 +79,36 @@ function cweIds(issue: GosecIssue): string[] {
 }
 
 /**
+ * Parses a gosec line field to a number. gosec emits the line as a string
+ * ("42") or a "start-end" range ("42-45"); the START line is used for a range.
+ * Returns undefined when the field is empty or non-numeric.
+ */
+function parseSourceLine(line: string): number | undefined {
+  if (!line) {
+    return undefined;
+  }
+  const start = line.split('-')[0]!;
+  const n = Number(start);
+  return start.trim() !== '' && Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * Promotes an issue's file/line locus into the structured HDF sourceLocation
+ * field. Returns undefined when the issue carries no file path.
+ */
+function buildSourceLocation(issue: GosecIssue): { ref: string; line?: number } | undefined {
+  if (!issue.file) {
+    return undefined;
+  }
+  const loc: { ref: string; line?: number } = { ref: issue.file };
+  const line = parseSourceLine(issue.line);
+  if (line !== undefined) {
+    loc.line = line;
+  }
+  return loc;
+}
+
+/**
  * Returns true if the issue is suppressed (via nosec flag or suppressions list).
  */
 function isSuppressed(issue: GosecIssue): boolean {
@@ -143,7 +173,13 @@ function buildRequirement(ruleId: string, issues: GosecIssue[], scanTime: Date):
     { label: 'check', data: `CWE-${rep.cwe.id}: ${rep.cwe.url}` },
   ];
 
-  const req = createRequirement(ruleId, rep.details, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+  const options: { tags: Record<string, unknown>; sourceLocation?: { ref: string; line?: number } } = { tags };
+  const sourceLocation = buildSourceLocation(rep);
+  if (sourceLocation) {
+    options.sourceLocation = sourceLocation;
+  }
+
+  const req = createRequirement(ruleId, rep.details, descriptions, impact, results, options) as EvaluatedRequirement;
   const cwe = cweIds(rep);
   if (cwe.length > 0) {
     req.cwe = cwe;

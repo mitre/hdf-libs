@@ -139,7 +139,7 @@ func TestConvertGosecToHDF_RequirementTitle(t *testing.T) {
 	}
 }
 
-// ---- requirement.code (CODE tab; dggj) ----
+// ---- requirement.code (CODE tab) ----
 
 func TestConvertGosecToHDF_RequirementCode(t *testing.T) {
 	input := loadFixture(t, "input/ethereum.json")
@@ -659,6 +659,90 @@ func TestCweIDs(t *testing.T) {
 	assert.Equal(t, []string{"CWE-22"}, cweIDs(GosecIssue{CWE: GosecCWE{ID: "22"}}))
 	assert.Nil(t, cweIDs(GosecIssue{CWE: GosecCWE{ID: ""}}))
 }
+
+// ---- requirement.sourceLocation (structured locus) ----
+
+func TestConvertGosecToHDF_SourceLocation(t *testing.T) {
+	input := loadFixture(t, "input/ethereum.json")
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// G304's representative (first) issue in ethereum.json is bloom.go:86.
+	for _, req := range result.Baselines[0].Requirements {
+		if req.ID == "G304" {
+			require.NotNil(t, req.SourceLocation, "G304 should carry a sourceLocation")
+			require.NotNil(t, req.SourceLocation.Ref)
+			assert.Equal(t, `C:\Users\chu\Downloads\go-ethereum-master\core\state\pruner\bloom.go`, *req.SourceLocation.Ref)
+			require.NotNil(t, req.SourceLocation.Line)
+			assert.InDelta(t, 86.0, *req.SourceLocation.Line, 0.001)
+		}
+	}
+}
+
+func TestConvertGosecToHDF_SourceLocationOmittedWhenNoFile(t *testing.T) {
+	// An issue with no file must not emit a sourceLocation.
+	input := []byte(`{
+		"Golang errors": {},
+		"Issues": [{
+			"severity": "MEDIUM", "confidence": "HIGH",
+			"cwe": {"id": "22", "url": "https://cwe.mitre.org/data/definitions/22.html"},
+			"rule_id": "G304", "details": "File inclusion",
+			"file": "", "code": "f, _ := os.Open(x)\n",
+			"line": "5", "column": "2", "nosec": false, "suppressions": null
+		}],
+		"Stats": {"files": 1, "lines": 10, "nosec": 0, "found": 1},
+		"GosecVersion": "2.18.0"
+	}`)
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+	assert.Nil(t, result.Baselines[0].Requirements[0].SourceLocation,
+		"sourceLocation must be omitted when the issue carries no file")
+}
+
+func TestParseSourceLine(t *testing.T) {
+	tests := []struct {
+		name string
+		line string
+		want *float64
+	}{
+		{"plain", "42", ptrFloat(42)},
+		{"range uses start", "108-110", ptrFloat(108)},
+		{"empty", "", nil},
+		{"non-numeric", "abc", nil},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := parseSourceLine(tc.line)
+			if tc.want == nil {
+				assert.Nil(t, got)
+				return
+			}
+			require.NotNil(t, got)
+			assert.InDelta(t, *tc.want, *got, 0.001)
+		})
+	}
+}
+
+func TestBuildSourceLocation(t *testing.T) {
+	// No file → nil.
+	assert.Nil(t, buildSourceLocation(GosecIssue{File: "", Line: "5"}))
+
+	// File + numeric line.
+	loc := buildSourceLocation(GosecIssue{File: "/app/main.go", Line: "42"})
+	require.NotNil(t, loc)
+	require.NotNil(t, loc.Ref)
+	assert.Equal(t, "/app/main.go", *loc.Ref)
+	require.NotNil(t, loc.Line)
+	assert.InDelta(t, 42.0, *loc.Line, 0.001)
+
+	// File but non-numeric line → Ref only, Line omitted.
+	loc = buildSourceLocation(GosecIssue{File: "/app/main.go", Line: ""})
+	require.NotNil(t, loc)
+	require.NotNil(t, loc.Ref)
+	assert.Nil(t, loc.Line)
+}
+
+func ptrFloat(f float64) *float64 { return &f }
 
 // ---- SARIF format detection and routing ----
 

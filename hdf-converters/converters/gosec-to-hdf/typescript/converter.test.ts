@@ -200,6 +200,51 @@ describe('gosec to HDF converter', async () => {
       expect(hdf.baselines[0]!.requirements[0]!.tags?.['confidence']).toBeUndefined();
     });
 
+    it('should promote the finding locus into structured sourceLocation (G304 → bloom.go:86)', async () => {
+      const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
+      const g304 = hdf.baselines[0]!.requirements.find(r => r.id === 'G304');
+      expect(g304?.sourceLocation?.ref).toBe(
+        'C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\state\\pruner\\bloom.go',
+      );
+      expect(g304?.sourceLocation?.line).toBe(86);
+    });
+
+    it('should use the start line of a range for sourceLocation.line', async () => {
+      const input = JSON.stringify({
+        'Golang errors': {},
+        Issues: [{
+          severity: 'MEDIUM', confidence: 'HIGH',
+          cwe: { id: '22', url: 'https://cwe.mitre.org/data/definitions/22.html' },
+          rule_id: 'G304', details: 'File inclusion',
+          file: '/app/main.go', code: 'os.Open(x)\n',
+          line: '108-110', column: '2', nosec: false, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 10, nosec: 0, found: 1 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.sourceLocation?.ref).toBe('/app/main.go');
+      expect(req.sourceLocation?.line).toBe(108);
+    });
+
+    it('should omit sourceLocation when the issue carries no file', async () => {
+      const input = JSON.stringify({
+        'Golang errors': {},
+        Issues: [{
+          severity: 'MEDIUM', confidence: 'HIGH',
+          cwe: { id: '22', url: 'https://cwe.mitre.org/data/definitions/22.html' },
+          rule_id: 'G304', details: 'File inclusion',
+          file: '', code: 'f, _ := os.Open(x)\n',
+          line: '5', column: '2', nosec: false, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 10, nosec: 0, found: 1 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.sourceLocation).toBeUndefined();
+    });
+
     it('should look up NIST tags from CWE (CWE-338 → SC-13)', async () => {
       const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
       const g404 = hdf.baselines[0]!.requirements.find(r => r.id === 'G404');

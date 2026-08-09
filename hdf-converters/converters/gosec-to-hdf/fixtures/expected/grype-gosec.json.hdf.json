@@ -48,6 +48,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 83,
+            "ref": "C:\\Users\\AGILLUM\\OneDrive - The MITRE Corporation\\Documents\\Code\\grype-0.34.4\\internal\\file\\tar.go"
+          },
           "id": "G304",
           "impact": 0.5,
           "tags": {
@@ -83,6 +87,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 19,
+            "ref": "C:\\Users\\AGILLUM\\OneDrive - The MITRE Corporation\\Documents\\Code\\grype-0.34.4\\cmd\\report_writer.go"
+          },
           "id": "G302",
           "impact": 0.5,
           "tags": {
@@ -118,6 +126,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 77,
+            "ref": "C:\\Users\\AGILLUM\\OneDrive - The MITRE Corporation\\Documents\\Code\\grype-0.34.4\\internal\\file\\tar.go"
+          },
           "id": "G301",
           "impact": 0.5,
           "tags": {

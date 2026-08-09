@@ -3,6 +3,7 @@ package gosec
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -88,6 +89,38 @@ func formatSkipMessage(suppressions []GosecSuppression) *string {
 	}
 	msg := strings.Join(parts, "\n")
 	return &msg
+}
+
+// parseSourceLine parses a gosec line field to a number. gosec emits the line
+// as a string ("42") or a "start-end" range ("42-45"); the START line is used
+// for a range. Returns nil when the field is empty or non-numeric.
+func parseSourceLine(line string) *float64 {
+	if line == "" {
+		return nil
+	}
+	start := line
+	if idx := strings.IndexByte(line, '-'); idx >= 0 {
+		start = line[:idx]
+	}
+	n, err := strconv.ParseFloat(start, 64)
+	if err != nil {
+		return nil
+	}
+	return &n
+}
+
+// buildSourceLocation promotes an issue's file/line locus into the structured
+// HDF SourceLocation field. Returns nil when the issue carries no file path.
+func buildSourceLocation(issue GosecIssue) *hdf.SourceLocation {
+	if issue.File == "" {
+		return nil
+	}
+	ref := issue.File
+	loc := &hdf.SourceLocation{Ref: &ref}
+	if line := parseSourceLine(issue.Line); line != nil {
+		loc.Line = line
+	}
+	return loc
 }
 
 // formatCodeDesc builds the code_desc string for a result.
@@ -202,6 +235,7 @@ func buildRequirement(ruleID string, issues []GosecIssue, startTime time.Time) h
 		Descriptions:       descriptions,
 		Results:            results,
 		Code:               hdfutil.Ptr(rep.Code),
+		SourceLocation:     buildSourceLocation(rep),
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
