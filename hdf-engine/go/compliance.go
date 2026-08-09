@@ -151,6 +151,31 @@ func MapControlIDs(results hdf.HDFResults) []ControlIDMapping {
 	return mappings
 }
 
+// MapControlIDsByStatus builds control ID → status/severity mappings using a
+// caller-resolved status — the injected-resolver twin of MapControlIDs (which
+// maps raw result statuses). statusOf returns each requirement's status in the
+// schema vocabulary; an empty or unrecognized value maps to skipped, and a nil
+// resolver yields all-skipped. Callers use this for effective-status control
+// listings (the same injection pattern as CountControlsByStatus).
+func MapControlIDsByStatus(results hdf.HDFResults, statusOf func(hdf.EvaluatedRequirement) string) []ControlIDMapping {
+	var mappings []ControlIDMapping
+	for _, baseline := range results.Baselines {
+		for i := range baseline.Requirements {
+			req := baseline.Requirements[i]
+			status := ""
+			if statusOf != nil {
+				status = statusOf(req)
+			}
+			mappings = append(mappings, ControlIDMapping{
+				ID:       req.ID,
+				Status:   statusToThresholdKey(hdf.ResultStatus(status)),
+				Severity: DeriveSeverity(req.Impact, req.Severity),
+			})
+		}
+	}
+	return mappings
+}
+
 // statusToThresholdKey converts a ResultStatus to the threshold key name.
 func statusToThresholdKey(status hdf.ResultStatus) string {
 	switch status {

@@ -157,6 +157,32 @@ func TestCountControlsByStatus_EffectiveWithAndWithoutAgent(t *testing.T) {
 	assert.Equal(t, 0.0, CalculateCompliance(CountControlsByStatus(results, nil)))
 }
 
+// TestMapControlIDsByStatus_UsesInjectedResolver proves the injected-resolver
+// twin maps a control's ID to its resolved status, diverging from the raw
+// MapControlIDs where they disagree. An impact-0 notReviewed control is skipped
+// under raw counting but no_impact under the effective-status resolver.
+// src/compliance.test.ts mirrors this.
+func TestMapControlIDsByStatus_UsesInjectedResolver(t *testing.T) {
+	na := hdf.EvaluatedRequirement{ID: "SV-NA", Impact: 0.0, Results: resultsWith(hdf.NotReviewed)}
+	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Requirements: []hdf.EvaluatedRequirement{na}}}}
+
+	raw := MapControlIDs(results)
+	require.Len(t, raw, 1)
+	assert.Equal(t, ThresholdSkipped, raw[0].Status, "raw mapping counts impact-0 notReviewed as skipped")
+
+	eff := MapControlIDsByStatus(results, func(req hdf.EvaluatedRequirement) string {
+		return hdfutil.ComputeEffectiveStatus(statusInput(req), time.Time{})
+	})
+	require.Len(t, eff, 1)
+	assert.Equal(t, "SV-NA", eff[0].ID)
+	assert.Equal(t, ThresholdNoImpact, eff[0].Status, "effective resolver maps impact-0 to no_impact")
+
+	// A nil resolver maps everything to skipped.
+	nilMapped := MapControlIDsByStatus(results, nil)
+	require.Len(t, nilMapped, 1)
+	assert.Equal(t, ThresholdSkipped, nilMapped[0].Status)
+}
+
 func ptrInt(i int) *int           { return &i }
 func ptrFloat(f float64) *float64 { return &f }
 

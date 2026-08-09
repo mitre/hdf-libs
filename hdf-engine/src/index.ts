@@ -20,6 +20,7 @@ export {
   countControlsByStatus,
   agentOverrideCount,
   mapControlIDs,
+  mapControlIDsByStatus,
   calculateCompliance,
   validateThresholds,
   overallStatus,

@@ -14,6 +14,7 @@ import {
   countControlsByStatus,
   agentOverrideCount,
   mapControlIDs,
+  mapControlIDsByStatus,
   calculateCompliance,
   validateThresholds,
   overallStatus,
@@ -201,5 +202,28 @@ describe('agent-override detective surface — parity with go/compliance_test.go
     expect(withAgent - withoutAgent).toBe(25.0);
     // An absent resolver counts everything as skipped → 0% compliance.
     expect(calculateCompliance(countControlsByStatus(agentResults))).toBe(0.0);
+  });
+
+  it('mapControlIDsByStatus uses the injected resolver, diverging from raw mapControlIDs', () => {
+    // Impact-0 notReviewed: skipped under raw counting, no_impact under the
+    // effective-status resolver. Parity: go/compliance_test.go.
+    const na: EvaluatedRequirement = {
+      id: 'SV-NA',
+      impact: 0.0,
+      results: [{ status: 'notReviewed' } as RequirementResult],
+    } as EvaluatedRequirement;
+    const results = { baselines: [{ requirements: [na] }] } as HDFResults;
+
+    const raw = mapControlIDs(results);
+    expect(raw).toHaveLength(1);
+    expect(raw[0]!.status).toBe('skipped');
+
+    const eff = mapControlIDsByStatus(results, (req) => computeEffectiveStatus(statusInput(req)));
+    expect(eff).toHaveLength(1);
+    expect(eff[0]!.id).toBe('SV-NA');
+    expect(eff[0]!.status).toBe('no_impact');
+
+    // An absent resolver maps everything to skipped.
+    expect(mapControlIDsByStatus(results)[0]!.status).toBe('skipped');
   });
 });

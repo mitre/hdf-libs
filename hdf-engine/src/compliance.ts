@@ -227,6 +227,33 @@ export function mapControlIDs(results: HDFResults): ControlIDMapping[] {
   return mappings;
 }
 
+/**
+ * mapControlIDsByStatus builds control ID → status/severity mappings using a
+ * caller-resolved status — the injected-resolver twin of mapControlIDs (which
+ * maps raw result statuses). statusOf returns each requirement's status in the
+ * schema vocabulary; an empty or unrecognized value maps to skipped, and an
+ * absent resolver yields all-skipped. Callers build effective-status control
+ * listings (the same injection pattern as countControlsByStatus). Parity:
+ * go/compliance.go MapControlIDsByStatus.
+ */
+export function mapControlIDsByStatus(
+  results: HDFResults,
+  statusOf?: (req: EvaluatedRequirement) => string,
+): ControlIDMapping[] {
+  const mappings: ControlIDMapping[] = [];
+  for (const baseline of results.baselines ?? []) {
+    for (const req of baseline.requirements ?? []) {
+      const status = statusOf ? statusOf(req) : '';
+      mappings.push({
+        id: req.id,
+        status: statusToThresholdKey(status),
+        severity: deriveSeverity(req.impact, reqSeverity(req)),
+      });
+    }
+  }
+  return mappings;
+}
+
 function reqSeverity(req: EvaluatedRequirement): Severity | null {
   return (req.severity ?? null) as Severity | null;
 }
