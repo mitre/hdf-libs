@@ -272,8 +272,11 @@ describe('convertHdfToOscalPoam', () => {
     const meta = doc['plan-of-action-and-milestones'].metadata;
     expect(meta['responsible-parties']).toHaveLength(1);
     expect(meta['responsible-parties'][0]['role-id']).toBe('prepared-by');
-    expect(meta.parties).toHaveLength(1);
+    // Document applier is party[0]; the distinct per-override applier is surfaced too.
+    expect(meta.parties).toHaveLength(2);
     expect(meta.parties[0].name).toBe('security-team@example.com');
+    expect(meta.parties[0].uuid).toBe(meta['responsible-parties'][0]['party-uuids'][0]);
+    expect(meta.parties.map((p: { name: string }) => p.name)).toContain('admin');
   });
 
   it('should record expiresAt in risk log', async () => {
@@ -366,6 +369,163 @@ describe('nistTagToControlID', () => {
     ['unknown', 'unknown'],
   ])('should convert %s to %s', (input, expected) => {
     expect(nistTagToControlID(input)).toBe(expected);
+  });
+});
+
+// Value-pinning for the exported fields. Mirrors converter_exportfields_test.go
+// so Go and TS surface identical data.
+describe('hdf-to-oscal-poam export fields', () => {
+  const propVal = (props: Array<{ name: string; value: string }> | undefined, name: string) =>
+    props?.find((p) => p.name === name)?.value;
+
+  it('sources last-modified/version/remarks and is deterministic', async () => {
+    const amendments = {
+      name: 'det-test',
+      version: '7',
+      description: 'Imported advisory ADV-1',
+      overrides: [{
+        type: 'poam', requirementId: 'AC-1', reason: 'r', status: 'failed',
+        appliedBy: { type: 'simple', identifier: 'admin' },
+        appliedAt: '2022-03-03T11:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+      }],
+    };
+    const meta1 = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)))['plan-of-action-and-milestones'].metadata;
+    expect(meta1['last-modified']).toBe('2022-03-03T11:00:00Z');
+    expect(meta1.version).toBe('7');
+    expect(meta1.remarks).toBe('Imported advisory ADV-1');
+    const meta2 = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)))['plan-of-action-and-milestones'].metadata;
+    expect(meta1['last-modified']).toBe(meta2['last-modified']);
+  });
+
+  it('picks the newest override appliedAt for last-modified', async () => {
+    const amendments = {
+      name: 'multi-date',
+      overrides: [
+        { type: 'poam', requirementId: 'AC-1', reason: 'r1', status: 'failed', appliedBy: { type: 'simple', identifier: 'admin' }, appliedAt: '2022-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z' },
+        { type: 'poam', requirementId: 'AC-2', reason: 'r2', status: 'failed', appliedBy: { type: 'simple', identifier: 'admin' }, appliedAt: '2023-06-15T09:00:00Z', expiresAt: '2099-12-31T00:00:00Z' },
+      ],
+    };
+    const meta = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)))['plan-of-action-and-milestones'].metadata;
+    expect(meta['last-modified']).toBe('2023-06-15T09:00:00Z');
+  });
+
+  it('maps cvss to a risk characterization with facets and an origin actor', async () => {
+    const amendments = {
+      name: 'cvss-test',
+      overrides: [{
+        type: 'riskAdjustment', requirementId: 'CVE-2021-44228', reason: 'adjusted', status: 'failed',
+        appliedBy: { type: 'simple', identifier: 'analyst' },
+        appliedAt: '2022-03-03T11:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+        cvss: {
+          version: '3.1', baseScore: 9.8, baseSeverity: 'critical',
+          baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+        },
+      }],
+    };
+    const poam = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)))['plan-of-action-and-milestones'];
+    const ch = poam.risks[0].characterizations[0];
+    expect(ch.origin.actors[0].type).toBe('party');
+    expect(ch.origin.actors[0]['actor-uuid']).toBe(poam.metadata.parties[0].uuid);
+    const facet = (n: string) => ch.facets.find((f: { name: string; value: string }) => f.name === n)?.value;
+    expect(facet('base_score')).toBe('9.8');
+    expect(facet('base_severity')).toBe('critical');
+    expect(facet('base_vector')).toBe('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
+    for (const f of ch.facets) expect(f.system).toBe('http://www.first.org/cvss/v3.1');
+  });
+
+  it('maps evidence to observations linked from the poam-item', async () => {
+    const amendments = {
+      name: 'evidence-test',
+      overrides: [{
+        type: 'poam', requirementId: 'CVE-2021-44228', reason: 'r', status: 'failed',
+        appliedBy: { type: 'simple', identifier: 'vendor' },
+        appliedAt: '2022-03-03T11:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+        evidence: [{ type: 'url', data: 'https://psirt.example.com/ADV-1', description: 'CSAF VEX advisory' }],
+      }],
+    };
+    const poam = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)))['plan-of-action-and-milestones'];
+    expect(poam.observations).toHaveLength(1);
+    const obs = poam.observations[0];
+    expect(obs.description).toBe('CSAF VEX advisory');
+    expect(obs.methods).toEqual(['EXAMINE']);
+    expect(obs.collected).toBe('2022-03-03T11:00:00Z');
+    expect(obs['relevant-evidence'][0].href).toBe('https://psirt.example.com/ADV-1');
+    expect(poam['poam-items'][0]['related-observations'][0]['observation-uuid']).toBe(obs.uuid);
+  });
+
+  it('maps justification onto a risk prop', async () => {
+    const amendments = {
+      name: 'just-test',
+      overrides: [{
+        type: 'falsePositive', requirementId: 'CVE-2021-44228', reason: 'no java', status: 'passed',
+        justification: 'component_not_present',
+        appliedBy: { type: 'simple', identifier: 'vendor' },
+        appliedAt: '2022-03-03T11:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+      }],
+    };
+    const poam = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)))['plan-of-action-and-milestones'];
+    expect(propVal(poam.risks[0].props, 'justification')).toBe('component_not_present');
+  });
+
+  it('maps external references onto back-matter resources', async () => {
+    const amendments = {
+      name: 'ref-test',
+      overrides: [{
+        type: 'poam', requirementId: 'CVE-2021-44228', reason: 'r', status: 'failed',
+        appliedBy: { type: 'simple', identifier: 'vendor' },
+        appliedAt: '2022-03-03T11:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+        externalReferences: [{ sourceName: 'cve', externalId: 'CVE-2021-44228', href: 'https://nvd.nist.gov/vuln/detail/CVE-2021-44228', description: 'NVD entry' }],
+      }],
+    };
+    const poam = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)))['plan-of-action-and-milestones'];
+    const res = poam['back-matter'].resources[0];
+    expect(res.title).toBe('cve');
+    expect(res.description).toBe('NVD entry');
+    expect(res.rlinks[0].href).toBe('https://nvd.nist.gov/vuln/detail/CVE-2021-44228');
+    expect(propVal(res.props, 'external-id')).toBe('CVE-2021-44228');
+  });
+
+  it('maps approvedBy onto a distinct responsible-party role', async () => {
+    const amendments = {
+      name: 'approve-test',
+      appliedBy: { type: 'simple', identifier: 'preparer' },
+      approvedBy: { type: 'simple', identifier: 'official' },
+      overrides: [{
+        type: 'poam', requirementId: 'AC-1', reason: 'r', status: 'failed',
+        appliedBy: { type: 'simple', identifier: 'preparer' },
+        appliedAt: '2022-03-03T11:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+      }],
+    };
+    const meta = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)))['plan-of-action-and-milestones'].metadata;
+    const approved = meta['responsible-parties'].find((rp: { 'role-id': string }) => rp['role-id'] === 'approved-by');
+    expect(approved).toBeDefined();
+    const party = meta.parties.find((p: { uuid: string }) => p.uuid === approved['party-uuids'][0]);
+    expect(party.name).toBe('official');
+    expect(meta.roles.some((r: { id: string }) => r.id === 'approved-by')).toBe(true);
+  });
+
+  it('carries minor props and milestone completion attribution', async () => {
+    const amendments = {
+      name: 'minor-test',
+      amendmentId: 'AMD-42',
+      labels: { zone: 'prod', env: 'gov' },
+      overrides: [{
+        type: 'poam', requirementId: 'AC-1', reason: 'r', status: 'failed',
+        baselineRef: 'nist-800-53r5', componentRef: 'comp-uuid-1',
+        appliedBy: { type: 'simple', identifier: 'admin' },
+        appliedAt: '2022-03-03T11:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+        milestones: [{ description: 'patch', estimatedCompletion: '2099-06-30T00:00:00Z', status: 'completed', completedAt: '2023-01-01T00:00:00Z', completedBy: { type: 'simple', identifier: 'ops' } }],
+      }],
+    };
+    const poam = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)))['plan-of-action-and-milestones'];
+    expect(propVal(poam.metadata.props, 'amendment-id')).toBe('AMD-42');
+    expect(propVal(poam.metadata.props, 'env')).toBe('gov');
+    const risk = poam.risks[0];
+    expect(propVal(risk.props, 'baseline-ref')).toBe('nist-800-53r5');
+    expect(propVal(risk.props, 'component-ref')).toBe('comp-uuid-1');
+    const task = risk.remediations[0].tasks[0];
+    expect(propVal(task.props, 'completed-by')).toBe('ops');
+    expect(propVal(task.props, 'completed-at')).toBe('2023-01-01T00:00:00Z');
   });
 });
 
