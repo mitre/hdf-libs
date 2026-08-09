@@ -77,7 +77,10 @@
           "compliance": {
             "type": "number"
           },
-          "counts": true,
+          "counts": {
+            "additionalProperties": true,
+            "type": "object"
+          },
           "docType": {
             "type": "string"
           },
@@ -91,7 +94,10 @@
                 "compliance": {
                   "type": "number"
                 },
-                "counts": true,
+                "counts": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
                 "group": {
                   "type": "string"
                 }
@@ -222,7 +228,10 @@
         "additionalProperties": false,
         "properties": {
           "changes": {
-            "items": true,
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
             "type": [
               "null",
               "array"
@@ -643,7 +652,10 @@
             "type": "string"
           },
           "requirements": {
-            "items": true,
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
             "type": [
               "null",
               "array"

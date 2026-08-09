@@ -43,15 +43,15 @@ type queryInput struct {
 // queryOutput is the hdf_query result envelope: the bounded requirement rows plus
 // the pagination metadata, alongside the source handle and detected type.
 type queryOutput struct {
-	Handle        string `json:"handle"`
-	DocType       string `json:"docType"`
-	SchemaVersion string `json:"schemaVersion"`
-	Total         int    `json:"total"`
-	Returned      int    `json:"returned"`
-	Truncated     bool   `json:"truncated,omitempty"`
-	NextPage      int    `json:"nextPage,omitempty"`
-	Notice        string `json:"notice,omitempty"`
-	Requirements  []any  `json:"requirements"`
+	Handle        string           `json:"handle"`
+	DocType       string           `json:"docType"`
+	SchemaVersion string           `json:"schemaVersion"`
+	Total         int              `json:"total"`
+	Returned      int              `json:"returned"`
+	Truncated     bool             `json:"truncated,omitempty"`
+	NextPage      int              `json:"nextPage,omitempty"`
+	Notice        string           `json:"notice,omitempty"`
+	Requirements  []map[string]any `json:"requirements"`
 }
 
 // conciseRow is the default requirement projection: exactly id/title/status/
@@ -211,7 +211,7 @@ func buildQueryResponse(out *queryOutput, results hdf.HDFResults, matches []hdfe
 	pages := paginateRows(*out, candidates, budget)
 
 	if page < 0 || page >= len(pages) {
-		out.Requirements = []any{}
+		out.Requirements = []map[string]any{}
 		out.Returned = 0
 		out.Truncated = true
 		out.Notice = fmt.Sprintf("page %d is out of range (%d page(s)); page 0 is the first.", page, len(pages))
@@ -251,23 +251,28 @@ func queryTruncationNotice(returned, total, page, numPages int, limited bool) st
 
 // projectRows converts engine matches into concise or full rows. Full rows join
 // back to the source requirement (by baseline+id) for tags and descriptions.
-func projectRows(results hdf.HDFResults, matches []hdfengine.Match, verbosity string) []any {
+// projectRows returns rows as map[string]any so the derived output schema is a
+// concrete object (additionalProperties) rather than a bare boolean, which MCP
+// clients reject under items. Rows are built from the typed conciseRow/fullRow
+// structs and marshalled via structToMap so their json tags (exact concise keys,
+// omitempty full extras) remain authoritative.
+func projectRows(results hdf.HDFResults, matches []hdfengine.Match, verbosity string) []map[string]any {
 	if verbosity != "full" {
-		rows := make([]any, 0, len(matches))
+		rows := make([]map[string]any, 0, len(matches))
 		for _, m := range matches {
-			rows = append(rows, conciseRow{ID: m.ID, Title: m.Title, Status: m.Status, Severity: m.Severity, Impact: m.Impact})
+			rows = append(rows, structToMap(conciseRow{ID: m.ID, Title: m.Title, Status: m.Status, Severity: m.Severity, Impact: m.Impact}))
 		}
 		return rows
 	}
 	index := indexRequirements(results)
-	rows := make([]any, 0, len(matches))
+	rows := make([]map[string]any, 0, len(matches))
 	for _, m := range matches {
 		row := fullRow{ID: m.ID, Title: m.Title, Status: m.Status, Severity: m.Severity, Impact: m.Impact, Baseline: m.Baseline}
 		if src := index[requirementKey(m.Baseline, m.ID)]; src != nil {
 			row.Tags = src.Tags
 			row.Descriptions = src.Descriptions
 		}
-		rows = append(rows, row)
+		rows = append(rows, structToMap(row))
 	}
 	return rows
 }
@@ -291,14 +296,14 @@ func requirementKey(baseline, id string) string {
 // paginateRows greedily packs rows into pages that each fit the token budget
 // (measured on a trial envelope so the fixed handle/metadata overhead counts). A
 // single row too large to fit alone gets its own page so paging always advances.
-func paginateRows(base queryOutput, rows []any, budget int) [][]any {
-	var pages [][]any
+func paginateRows(base queryOutput, rows []map[string]any, budget int) [][]map[string]any {
+	var pages [][]map[string]any
 	i := 0
 	for i < len(rows) {
-		var cur []any
+		var cur []map[string]any
 		for i < len(rows) {
 			trial := base
-			next := make([]any, len(cur), len(cur)+1)
+			next := make([]map[string]any, len(cur), len(cur)+1)
 			copy(next, cur)
 			next = append(next, rows[i])
 			trial.Requirements = next

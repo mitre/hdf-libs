@@ -302,6 +302,61 @@ func driveToolsList(t *testing.T) string {
 	}
 }
 
+// TestToolsList_NoBareBooleanSchemas guards against schemas MCP clients reject:
+// a bare JSON boolean (true/false) under an `items` or `properties.<k>` position.
+// It is valid JSON Schema but Claude Code's zod validator rejects it, failing the
+// whole tools/list. additionalProperties: true is fine (and excluded here).
+func TestToolsList_NoBareBooleanSchemas(t *testing.T) {
+	var r struct {
+		Tools []map[string]any `json:"tools"`
+	}
+	if err := json.Unmarshal([]byte(driveToolsList(t)), &r); err != nil {
+		t.Fatalf("parse tools/list: %v", err)
+	}
+	var hits []string
+	for _, tool := range r.Tools {
+		name, _ := tool["name"].(string)
+		for _, key := range []string{"inputSchema", "outputSchema"} {
+			hits = append(hits, bareBooleanSchemas(tool[key], name+"."+key)...)
+		}
+	}
+	if len(hits) > 0 {
+		t.Errorf("tools/list must not expose bare boolean schemas under items/properties (MCP clients reject them):\n  %s",
+			strings.Join(hits, "\n  "))
+	}
+}
+
+// bareBooleanSchemas walks a schema and reports every `items` or `properties.<k>`
+// whose value is a JSON boolean. additionalProperties booleans are allowed.
+func bareBooleanSchemas(node any, path string) []string {
+	var hits []string
+	switch n := node.(type) {
+	case map[string]any:
+		for k, v := range n {
+			switch k {
+			case "items":
+				if _, ok := v.(bool); ok {
+					hits = append(hits, path+".items")
+				}
+			case "properties":
+				if props, ok := v.(map[string]any); ok {
+					for pk, pv := range props {
+						if _, ok := pv.(bool); ok {
+							hits = append(hits, path+".properties."+pk)
+						}
+					}
+				}
+			}
+			hits = append(hits, bareBooleanSchemas(v, path+"."+k)...)
+		}
+	case []any:
+		for i, x := range n {
+			hits = append(hits, bareBooleanSchemas(x, fmt.Sprintf("%s[%d]", path, i))...)
+		}
+	}
+	return hits
+}
+
 func normalizeJSON(t *testing.T, s string) string {
 	t.Helper()
 	var v any

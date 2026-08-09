@@ -43,7 +43,7 @@ type diffOutput struct {
 	ToHandle   string                 `json:"toHandle"`
 	Mode       string                 `json:"mode"`
 	Summary    diff.ComparisonSummary `json:"summary"`
-	Changes    []any                  `json:"changes"`
+	Changes    []map[string]any       `json:"changes"`
 	Total      int                    `json:"total"`
 	Returned   int                    `json:"returned"`
 	Truncated  bool                   `json:"truncated,omitempty"`
@@ -232,9 +232,12 @@ type componentFull struct {
 
 // projectChanges builds the bounded-eligible change list for the mode. Only
 // actually-changed entries are listed (unchanged counts live in the summary).
-func projectChanges(comp diff.HdfComparison, mode, verbosity string) []any {
+// projectChanges returns rows as map[string]any (via structToMap of the typed row
+// structs) so the derived output schema is a concrete object rather than a bare
+// boolean under items, which MCP clients reject.
+func projectChanges(comp diff.HdfComparison, mode, verbosity string) []map[string]any {
 	full := verbosity == "full"
-	var rows []any
+	var rows []map[string]any
 	if mode == "temporal" {
 		for i := range comp.RequirementDiffs {
 			rd := comp.RequirementDiffs[i]
@@ -249,12 +252,12 @@ func projectChanges(comp diff.HdfComparison, mode, verbosity string) []any {
 				concise.ChangeReasons = []diff.ChangeReason{}
 			}
 			if full {
-				rows = append(rows, temporalFull{
+				rows = append(rows, structToMap(temporalFull{
 					temporalConcise: concise, Title: rd.Title, Baseline: rd.Baseline,
 					OldImpact: rd.OldImpact, NewImpact: rd.NewImpact, FieldChanges: rd.FieldChanges,
-				})
+				}))
 			} else {
-				rows = append(rows, concise)
+				rows = append(rows, structToMap(concise))
 			}
 		}
 		return rows
@@ -266,9 +269,9 @@ func projectChanges(comp diff.HdfComparison, mode, verbosity string) []any {
 		}
 		concise := componentConcise{Name: cd.Name, State: cd.State}
 		if full {
-			rows = append(rows, componentFull{componentConcise: concise, FieldChanges: cd.FieldChanges})
+			rows = append(rows, structToMap(componentFull{componentConcise: concise, FieldChanges: cd.FieldChanges}))
 		} else {
-			rows = append(rows, concise)
+			rows = append(rows, structToMap(concise))
 		}
 	}
 	return rows
@@ -276,7 +279,7 @@ func projectChanges(comp diff.HdfComparison, mode, verbosity string) []any {
 
 // buildDiffResponse token-bounds the change list to the verbosity budget and
 // fills the pagination envelope.
-func buildDiffResponse(out *diffOutput, rows []any, verbosity string, page int) {
+func buildDiffResponse(out *diffOutput, rows []map[string]any, verbosity string, page int) {
 	out.Total = len(rows)
 	budget := respond.ConciseTokenBudget
 	if verbosity == "full" {
@@ -284,7 +287,7 @@ func buildDiffResponse(out *diffOutput, rows []any, verbosity string, page int) 
 	}
 	pages := paginateChanges(*out, rows, budget)
 	if page < 0 || page >= len(pages) {
-		out.Changes = []any{}
+		out.Changes = []map[string]any{}
 		out.Returned = 0
 		out.Truncated = true
 		out.Notice = fmt.Sprintf("page %d is out of range (%d page(s)); page 0 is the first.", page, len(pages))
@@ -305,13 +308,13 @@ func buildDiffResponse(out *diffOutput, rows []any, verbosity string, page int) 
 
 // paginateChanges greedily packs change rows into budget-sized pages (measured on
 // a trial envelope so the fixed summary/handle overhead counts).
-func paginateChanges(base diffOutput, rows []any, budget int) [][]any {
-	var pages [][]any
+func paginateChanges(base diffOutput, rows []map[string]any, budget int) [][]map[string]any {
+	var pages [][]map[string]any
 	i := 0
 	for i < len(rows) {
-		var cur []any
+		var cur []map[string]any
 		for i < len(rows) {
-			next := make([]any, len(cur), len(cur)+1)
+			next := make([]map[string]any, len(cur), len(cur)+1)
 			copy(next, cur)
 			next = append(next, rows[i])
 			trial := base

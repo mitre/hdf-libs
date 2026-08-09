@@ -34,12 +34,9 @@ func toolResultPayload(t *testing.T, res *sdkmcp.CallToolResult) mcperr.ToolResu
 	return tr
 }
 
-func ids(rows []any) []string {
+func ids(rows []map[string]any) []string {
 	out := make([]string, 0, len(rows))
-	for _, r := range rows {
-		b, _ := json.Marshal(r)
-		var m map[string]any
-		_ = json.Unmarshal(b, &m)
+	for _, m := range rows {
 		if id, ok := m["id"].(string); ok {
 			out = append(out, id)
 		}
@@ -345,13 +342,13 @@ func TestHdfQuery_DispatchHookIsAdditive(t *testing.T) {
 }
 
 func TestPaginateRows_DisjointWindows(t *testing.T) {
-	rows := make([]any, 0, 200)
+	rows := make([]map[string]any, 0, 200)
 	for i := 0; i < 200; i++ {
-		rows = append(rows, conciseRow{
+		rows = append(rows, structToMap(conciseRow{
 			ID:    "REQ-" + string(rune('A'+i%26)) + strings.Repeat("x", 3) + itoa(i),
 			Title: strings.Repeat("requirement title padding ", 4), Status: "failed",
 			Severity: "high", Impact: 0.7,
-		})
+		}))
 	}
 	base := queryOutput{Handle: "h", DocType: "results"}
 	pages := paginateRows(base, rows, 800)

@@ -11,7 +11,6 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
-	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -25,6 +24,16 @@ func callCompliance(t *testing.T, in complianceInput) (*sdkmcp.CallToolResult, c
 		t.Fatalf("hdfCompliance Go error (should be taxonomy tool result): %v", err)
 	}
 	return res, out
+}
+
+// countTotal reads counts.<status>.total from the map-typed counts output.
+func countTotal(counts map[string]any, status string) int {
+	if s, ok := counts[status].(map[string]any); ok {
+		if v, ok := s["total"].(float64); ok {
+			return int(v)
+		}
+	}
+	return -1
 }
 
 func findGroup(groups []groupRollup, name string) *groupRollup {
@@ -61,8 +70,7 @@ func TestHdfCompliance_ComplianceAndCounts(t *testing.T) {
 	if out.Compliance != 40.0 {
 		t.Errorf("compliance = %v, want 40", out.Compliance)
 	}
-	counts, ok := out.Counts.(*hdfengine.StatusCounts)
-	if !ok || counts.Passed.Total != 2 || counts.Failed.Total != 3 {
+	if countTotal(out.Counts, "passed") != 2 || countTotal(out.Counts, "failed") != 3 {
 		t.Errorf("counts passed/failed = %+v, want passed.total=2 failed.total=3", out.Counts)
 	}
 	if out.DocType != "results" || out.Handle == "" {
@@ -318,7 +326,7 @@ func TestResolveThreshold_Errors(t *testing.T) {
 
 func TestBoundComplianceResponse_TrimsFailures(t *testing.T) {
 	out := complianceOutput{
-		DocType: "results", Counts: &hdfengine.StatusCounts{},
+		DocType: "results", Counts: map[string]any{},
 		ThresholdVerdict: &thresholdVerdict{Pass: false},
 	}
 	for i := 0; i < 500; i++ {
@@ -338,12 +346,12 @@ func TestBoundComplianceResponse_TrimsFailures(t *testing.T) {
 }
 
 func TestBoundComplianceResponse_TrimsGroups(t *testing.T) {
-	out := complianceOutput{DocType: "results", GroupBy: "nistFamily", Counts: &hdfengine.StatusCounts{}}
+	out := complianceOutput{DocType: "results", GroupBy: "nistFamily", Counts: map[string]any{}}
 	for i := 0; i < 400; i++ {
 		out.Groups = append(out.Groups, groupRollup{
 			Group:      "FAM-" + strings.Repeat("x", 3) + string(rune('A'+i%26)) + strings.Repeat("y", 2),
 			Compliance: 50.0,
-			Counts:     &hdfengine.StatusCounts{},
+			Counts:     map[string]any{},
 		})
 	}
 	boundComplianceResponse(&out)

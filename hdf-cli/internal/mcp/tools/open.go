@@ -213,6 +213,23 @@ func mustJSON(v any) string {
 	return string(b)
 }
 
+// structToMap converts a value to a map[string]any via a JSON round-trip so the
+// value's json tags (field names, omitempty) stay authoritative. Map-typed output
+// fields reflect to an object schema with additionalProperties, which MCP clients
+// accept — unlike the bare boolean schema an `any`/`[]any` field would produce
+// under items/properties.
+func structToMap(v any) map[string]any {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return map[string]any{}
+	}
+	var m map[string]any
+	if json.Unmarshal(b, &m) != nil {
+		return map[string]any{}
+	}
+	return m
+}
+
 // toolError renders a taxonomy error as an isError tool result carrying the
 // structured payload (code, message, nextCall).
 func toolError(e *mcperr.Error) *sdkmcp.CallToolResult {

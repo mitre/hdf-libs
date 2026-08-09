@@ -46,11 +46,11 @@ type complianceOutput struct {
 	DocType       string  `json:"docType"`
 	SchemaVersion string  `json:"schemaVersion"`
 	Compliance    float64 `json:"compliance"`
-	// Counts holds a *hdfengine.StatusCounts (status × severity). It is typed as
-	// any so the derived output schema stays compact — the full nested
-	// StatusCounts schema, emitted here and again per group, would blow the
-	// per-tool token ceiling. The runtime value is the typed struct.
-	Counts           any                  `json:"counts"`
+	// Counts holds the status × severity StatusCounts as a map so the derived
+	// output schema is a concrete object (additionalProperties) — MCP clients
+	// reject a bare boolean schema, which an `any` field would produce, and the
+	// full nested StatusCounts schema would blow the per-tool token ceiling.
+	Counts           map[string]any       `json:"counts"`
 	AgentOverrides   agentOverrideSummary `json:"agentOverrides"`
 	GroupBy          string               `json:"groupBy,omitempty"`
 	Groups           []groupRollup        `json:"groups,omitempty"`
@@ -75,9 +75,8 @@ type thresholdVerdict struct {
 type groupRollup struct {
 	Group      string  `json:"group"`
 	Compliance float64 `json:"compliance"`
-	// Counts holds a *hdfengine.StatusCounts; typed any to keep the schema compact
-	// (see complianceOutput.Counts).
-	Counts any `json:"counts"`
+	// Counts holds the StatusCounts as a map (see complianceOutput.Counts).
+	Counts map[string]any `json:"counts"`
 }
 
 // RegisterCompliance registers the hdf_compliance tool on the server.
@@ -125,7 +124,7 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 			DocType:       resolved.Load.DocType,
 			SchemaVersion: resolved.Handle.SchemaVersion,
 			Compliance:    hdfengine.CalculateCompliance(counts),
-			Counts:        counts,
+			Counts:        structToMap(counts),
 			AgentOverrides: agentOverrideSummary{
 				Count:           hdfengine.AgentOverrideCount(results),
 				ComplianceDelta: agentComplianceDelta(results),
@@ -195,7 +194,7 @@ func groupedRollups(results hdf.HDFResults, mode string) ([]groupRollup, *mcperr
 		rollups = append(rollups, groupRollup{
 			Group:      key,
 			Compliance: hdfengine.CalculateCompliance(counts),
-			Counts:     counts,
+			Counts:     structToMap(counts),
 		})
 	}
 	sort.Slice(rollups, func(i, j int) bool { return rollups[i].Group < rollups[j].Group })

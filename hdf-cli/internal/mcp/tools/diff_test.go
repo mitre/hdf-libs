@@ -39,12 +39,9 @@ func writeRootFiles(t *testing.T, files map[string][]byte) string {
 	return root
 }
 
-func changeByID(t *testing.T, rows []any, key, id string) map[string]any {
+func changeByID(t *testing.T, rows []map[string]any, key, id string) map[string]any {
 	t.Helper()
-	for _, r := range rows {
-		b, _ := json.Marshal(r)
-		var m map[string]any
-		_ = json.Unmarshal(b, &m)
+	for _, m := range rows {
 		if m[key] == id {
 			return m
 		}
@@ -296,12 +293,12 @@ func TestHdfDiff_OutputDirMissing(t *testing.T) {
 }
 
 func TestBuildDiffResponse_TruncatesAndPaginates(t *testing.T) {
-	rows := make([]any, 0, 300)
+	rows := make([]map[string]any, 0, 300)
 	for i := 0; i < 300; i++ {
-		rows = append(rows, temporalConcise{
+		rows = append(rows, structToMap(temporalConcise{
 			ID: "V-" + strings.Repeat("x", 3) + itoa(i), State: "updated",
 			ChangeReasons: []diff.ChangeReason{diff.ReasonResultChanged}, OldStatus: "failed", NewStatus: "passed",
-		})
+		}))
 	}
 	out := diffOutput{Mode: "temporal", FromHandle: "h1", ToHandle: "h2"}
 	buildDiffResponse(&out, rows, "concise", 0)
@@ -323,12 +320,12 @@ func TestBuildDiffResponse_TruncatesAndPaginates(t *testing.T) {
 }
 
 func TestPaginateChanges_DisjointWindows(t *testing.T) {
-	rows := make([]any, 0, 300)
+	rows := make([]map[string]any, 0, 300)
 	for i := 0; i < 300; i++ {
-		rows = append(rows, temporalConcise{
+		rows = append(rows, structToMap(temporalConcise{
 			ID: "V-" + strings.Repeat("x", 3) + itoa(i), State: "updated",
 			OldStatus: "failed", NewStatus: "passed",
-		})
+		}))
 	}
 	base := diffOutput{Mode: "temporal", FromHandle: "h1", ToHandle: "h2"}
 	pages := paginateChanges(base, rows, 800)
