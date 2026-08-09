@@ -67,6 +67,10 @@ func ConvertHDFToASFF(input []byte, converterVersion string) ([]byte, error) {
 
 	docTimestamp := exportmap.GetStr(doc, "timestamp")
 	component := exportmap.FirstComponent(doc)
+	tool, _ := exportmap.AsMap(doc["tool"])
+	generator, _ := exportmap.AsMap(doc["generator"])
+	toolName := exportmap.GetStr(tool, "name")
+	generatorName := exportmap.GetStr(generator, "name")
 	accountID := recoverAccountID(doc)
 	productArn := fmt.Sprintf("arn:aws:securityhub:%s:%s:product/%s/default", placeholderRegion, accountID, accountID)
 
@@ -77,16 +81,41 @@ func ConvertHDFToASFF(input []byte, converterVersion string) ([]byte, error) {
 			continue
 		}
 		baselineName := exportmap.GetStr(baseline, "name")
+		baselineVersion := exportmap.GetStr(baseline, "version")
 		reqs, _ := exportmap.AsSlice(baseline["requirements"])
 		for _, rRaw := range reqs {
 			req, ok := exportmap.AsMap(rRaw)
 			if !ok {
 				continue
 			}
-			findings = append(findings, buildFinding(req, baselineName, docTimestamp, component, accountID, productArn, converterVersion))
+			findings = append(findings, buildFinding(req, findingContext{
+				baselineName:    baselineName,
+				baselineVersion: baselineVersion,
+				toolName:        toolName,
+				generatorName:   generatorName,
+				docTimestamp:    docTimestamp,
+				component:       component,
+				accountID:       accountID,
+				productArn:      productArn,
+				exporterVersion: converterVersion,
+			}))
 		}
 	}
 	return exportmap.EncodeLine(map[string]interface{}{"Findings": findings})
+}
+
+// findingContext carries the doc-/baseline-level values one finding needs beyond
+// its own requirement, keeping buildFinding's signature stable as fields grow.
+type findingContext struct {
+	baselineName    string
+	baselineVersion string
+	toolName        string
+	generatorName   string
+	docTimestamp    string
+	component       map[string]interface{}
+	accountID       string
+	productArn      string
+	exporterVersion string
 }
 
 // recoverAccountID reads AwsAccountId back out of a cloudAccount component (the
@@ -115,7 +144,7 @@ func recoverAccountID(doc map[string]interface{}) string {
 }
 
 // buildFinding maps one Evaluated_Requirement to a single ASFF finding.
-func buildFinding(req map[string]interface{}, baselineName, docTimestamp string, component map[string]interface{}, accountID, productArn, converterVersion string) map[string]interface{} {
+func buildFinding(req map[string]interface{}, ctx findingContext) map[string]interface{} {
 	controlID := exportmap.GetStr(req, "id")
 	st := exportmap.StatusOf(req)
 
@@ -131,36 +160,168 @@ func buildFinding(req map[string]interface{}, baselineName, docTimestamp string,
 	cvssList, hasCVSS := exportmap.AsSlice(req["cvss"])
 	hasCVSS = hasCVSS && len(cvssList) > 0
 
-	ts := canonicalTime(exportmap.FirstResultStartTime(req, docTimestamp))
+	ts := canonicalTime(exportmap.FirstResultStartTime(req, ctx.docTimestamp))
+	id := findingID(ctx.accountID, ctx.baselineName, controlID)
 
 	finding := map[string]interface{}{
 		"SchemaVersion": asffSchemaVersion,
-		"Id":            findingID(accountID, baselineName, controlID),
-		"ProductArn":    productArn,
+		"Id":            id,
+		"ProductArn":    ctx.productArn,
 		"GeneratorId":   controlID,
-		"AwsAccountId":  accountID,
+		"AwsAccountId":  ctx.accountID,
 		"CreatedAt":     ts,
 		"UpdatedAt":     ts,
 		"Title":         truncate(title, maxTitle),
 		"Description":   truncate(desc, maxDescription),
 		"Types":         asffTypes(hasCVSS),
 		"Severity":      severity(req),
-		"Resources":     resources(component, findingID(accountID, baselineName, controlID)),
+		"Resources":     resources(ctx.component, id),
 		"RecordState":   "ACTIVE",
-		"Compliance":    map[string]interface{}{"Status": complianceStatus(st.Rollup)},
+		"Compliance":    complianceBlock(req, st.Rollup),
 	}
 	// The acceptance axis (waiver / falsePositive / attestation drove a failing
 	// result non-failing) maps to Security Hub's SUPPRESSED workflow state.
 	if st.Suppressed {
 		finding["Workflow"] = map[string]interface{}{"Status": "SUPPRESSED"}
 	}
-	if pf := productFields(baselineName, controlID, converterVersion); len(pf) > 0 {
+	if pf := productFields(ctx, controlID); len(pf) > 0 {
 		finding["ProductFields"] = pf
 	}
 	if rem := remediation(req); rem != nil {
 		finding["Remediation"] = rem
 	}
+	// Vulnerabilities[] carries the structured CVSS/CVE data (and any additional
+	// reference URLs) so asff-to-hdf reconstructs requirement.cvss[], the CVE, and
+	// the full refs[]. Extra refs ride the first vuln's ReferenceUrls; when a
+	// requirement carries refs but no CVSS, the first ref falls back to SourceUrl.
+	vulns := vulnerabilities(req)
+	if refs := allRefURLs(req); len(refs) > 0 {
+		if len(vulns) > 0 {
+			vulns[0]["ReferenceUrls"] = refs
+		} else {
+			finding["SourceUrl"] = refs[0]
+		}
+	}
+	if len(vulns) > 0 {
+		finding["Vulnerabilities"] = vulns
+	}
 	return finding
+}
+
+// complianceBlock builds the ASFF Compliance object: the rolled-up status, the
+// NIST/CCI control ids as RelatedRequirements, and the parsed status-reason
+// message as StatusReasons (the reverse of asff-to-hdf's statusReason flatten).
+func complianceBlock(req map[string]interface{}, rollup string) map[string]interface{} {
+	comp := map[string]interface{}{"Status": complianceStatus(rollup)}
+	if rr := relatedRequirements(req); len(rr) > 0 {
+		comp["RelatedRequirements"] = rr
+	}
+	if sr := statusReasons(req); len(sr) > 0 {
+		comp["StatusReasons"] = sr
+	}
+	return comp
+}
+
+// relatedRequirements collects a requirement's NIST controls and CCI ids (in
+// that order) for ASFF Compliance.RelatedRequirements — the standard's field for
+// related control-framework requirements.
+func relatedRequirements(req map[string]interface{}) []string {
+	tags, ok := exportmap.AsMap(req["tags"])
+	if !ok {
+		return nil
+	}
+	var out []string
+	for _, key := range []string{"nist", "cci"} {
+		for _, id := range exportmap.StringSlice(tags[key]) {
+			if id != "" {
+				out = append(out, id)
+			}
+		}
+	}
+	return out
+}
+
+// statusReasons parses the first result message shaped as "ReasonCode: X" /
+// "Description: Y" lines back into ASFF Compliance.StatusReasons[] — the exact
+// inverse of asff-to-hdf's statusReason flatten, so the pair round-trips. A
+// free-form message (no ReasonCode/Description prefixes) yields nothing.
+func statusReasons(req map[string]interface{}) []map[string]interface{} {
+	msg := firstResultMessage(req)
+	if msg == "" {
+		return nil
+	}
+	var out []map[string]interface{}
+	var cur map[string]interface{}
+	for _, line := range strings.Split(msg, "\n") {
+		switch {
+		case strings.HasPrefix(line, "ReasonCode: "):
+			cur = map[string]interface{}{"ReasonCode": strings.TrimPrefix(line, "ReasonCode: ")}
+			out = append(out, cur)
+		case strings.HasPrefix(line, "Description: "):
+			desc := strings.TrimPrefix(line, "Description: ")
+			if cur == nil {
+				cur = map[string]interface{}{}
+				out = append(out, cur)
+			}
+			cur["Description"] = desc
+		}
+	}
+	return out
+}
+
+// firstResultMessage returns the first non-empty results[].message.
+func firstResultMessage(req map[string]interface{}) string {
+	results, _ := exportmap.AsSlice(req["results"])
+	for _, rRaw := range results {
+		if r, ok := exportmap.AsMap(rRaw); ok {
+			if m := exportmap.GetStr(r, "message"); m != "" {
+				return m
+			}
+		}
+	}
+	return ""
+}
+
+// vulnerabilities builds ASFF Vulnerabilities[] from requirement.cvss[]: one
+// vulnerability per CVSS entry, its Id the CVSS source (the CVE id) and its
+// Cvss[] the structured version/base-score/vector/source. asff-to-hdf reads these
+// back into requirement.cvss[] and the CVE, closing the round-trip.
+func vulnerabilities(req map[string]interface{}) []map[string]interface{} {
+	cvssList, _ := exportmap.AsSlice(req["cvss"])
+	var out []map[string]interface{}
+	for _, cRaw := range cvssList {
+		c, ok := exportmap.AsMap(cRaw)
+		if !ok {
+			continue
+		}
+		cvssEntry := map[string]interface{}{}
+		exportmap.SetIf(cvssEntry, "Version", exportmap.GetStr(c, "version"))
+		if bs, ok := c["baseScore"]; ok && bs != nil {
+			cvssEntry["BaseScore"] = bs
+		}
+		exportmap.SetIf(cvssEntry, "BaseVector", exportmap.GetStr(c, "baseVector"))
+		exportmap.SetIf(cvssEntry, "Source", exportmap.GetStr(c, "source"))
+		vuln := map[string]interface{}{"Cvss": []interface{}{cvssEntry}}
+		exportmap.SetIf(vuln, "Id", exportmap.GetStr(c, "source"))
+		out = append(out, vuln)
+	}
+	return out
+}
+
+// allRefURLs returns every requirement.refs[].url (deduped, source order).
+func allRefURLs(req map[string]interface{}) []string {
+	refs, _ := exportmap.AsSlice(req["refs"])
+	var out []string
+	seen := map[string]bool{}
+	for _, rRaw := range refs {
+		if r, ok := exportmap.AsMap(rRaw); ok {
+			if url := exportmap.GetStr(r, "url"); url != "" && !seen[url] {
+				seen[url] = true
+				out = append(out, url)
+			}
+		}
+	}
+	return out
 }
 
 // findingID is a deterministic, per-finding unique id.
@@ -230,11 +391,16 @@ func resources(component map[string]interface{}, id string) []interface{} {
 
 // productFields carries HDF provenance on ASFF's official string map — NOT the
 // Types taxonomy. These are informational only; asff-to-hdf does not read them.
-func productFields(baselineName, controlID, converterVersion string) map[string]interface{} {
+// The source tool/generator identity and baseline version preserve the
+// originating scanner that HDF records at the document/baseline level.
+func productFields(ctx findingContext, controlID string) map[string]interface{} {
 	pf := map[string]interface{}{}
-	exportmap.SetIf(pf, "hdf/baseline", baselineName)
+	exportmap.SetIf(pf, "hdf/baseline", ctx.baselineName)
+	exportmap.SetIf(pf, "hdf/baseline_version", ctx.baselineVersion)
 	exportmap.SetIf(pf, "hdf/control_id", controlID)
-	exportmap.SetIf(pf, "hdf/exporter_version", converterVersion)
+	exportmap.SetIf(pf, "hdf/exporter_version", ctx.exporterVersion)
+	exportmap.SetIf(pf, "hdf/generator", ctx.generatorName)
+	exportmap.SetIf(pf, "hdf/tool", ctx.toolName)
 	return pf
 }
 
