@@ -22,29 +22,28 @@ runConverterContractTests({
   minimalFixture: 'minimal.json',
 });
 
-// countSelectedSiteAlerts parses raw ZAP JSON generically — NOT via the
-// converter's parser — and returns the alert count of the site with the MOST
-// alerts. The converter processes only that one site (selectSite) and emits one
-// requirement per alert (the pluginid dedup only uniquifies IDs, it does not
-// collapse alerts), so a whole-document "alerts" count would overshoot when the
-// report has multiple sites.
-function countSelectedSiteAlerts(input: string): number {
+// countAllSiteAlerts parses raw ZAP JSON generically — NOT via the converter's
+// parser — and returns the total alert count across EVERY site. The converter
+// emits one requirement per alert of every site (the pluginid dedup only
+// uniquifies IDs within a site, it does not collapse alerts), so a silent
+// per-site drop fails this anchor even when Go/TS agree.
+function countAllSiteAlerts(input: string): number {
   const doc = JSON.parse(input) as {site?: Array<{alerts?: unknown[]}>};
-  return (doc.site ?? []).reduce((best, s) => Math.max(best, s.alerts?.length ?? 0), 0);
+  return (doc.site ?? []).reduce((total, s) => total + (s.alerts?.length ?? 0), 0);
 }
 
 // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
-// the converter selects the single site with the most alerts and emits one
-// requirement per alert of that site, counted independently of the converter's
-// parser so a silent under-extraction fails even when Go/TS agree. webgoat.json's
-// busiest site has 25 alerts (of 28 across all 4 sites).
+// the converter emits one requirement per alert of EVERY site, counted
+// independently of the converter's parser so a silent per-site drop fails even
+// when Go/TS agree. webgoat.json carries 28 alerts across all 4 sites (the old
+// single-site behavior dropped 3).
 describe('zap-to-hdf ground-truth anchor', () => {
-  it('emits one requirement per alert of the site with the most alerts', async () => {
+  it('emits one requirement per alert across all sites', async () => {
     const input = loadFixture('webgoat.json');
     assertRequirementCount(
       await convertZapToHdf(input),
-      countSelectedSiteAlerts(input),
-      'webgoat.json: one requirement per alert of the site with the most alerts',
+      countAllSiteAlerts(input),
+      'webgoat.json: one requirement per alert across all sites',
     );
   });
 });
@@ -155,13 +154,13 @@ describe('ZAP Converter', () => {
       expect(hdf.generator.name).toBe('zap-to-hdf');
     });
 
-    it('should set dataSource name to "OWASP ZAP" and format to "JSON"', async () => {
+    it('should set dataSource name to "OWASP ZAP" with no format', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.tool?.name).toBe('OWASP ZAP');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
 
     it('should set tool version from @version', async () => {
@@ -265,16 +264,82 @@ describe('ZAP Converter', () => {
       expect(defaultDesc?.data).toContain("X-Content-Type-Options was not set to 'nosniff'");
     });
 
-    it('should include check description from solution and otherinfo', async () => {
+    // solution is ZAP's remediation guidance, homed under its own "solution"
+    // label with HTML stripped (value-pinned).
+    it('should include solution description with HTML stripped', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
+      expect(req?.descriptions).toHaveLength(3);
+      const solutionDesc = req?.descriptions?.find(d => d.label === 'solution');
+      expect(solutionDesc?.data).toBe('Ensure that the application/web server sets the Content-Type header appropriately.');
+    });
+
+    // otherinfo stays under "check"; it no longer carries the solution text.
+    it('should include check description from otherinfo only', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       const checkDesc = req?.descriptions?.find(d => d.label === 'check');
-      expect(checkDesc).toBeDefined();
-      expect(checkDesc?.data).toContain('Content-Type header');
-      expect(checkDesc?.data).toContain('error type pages');
+      expect(checkDesc?.data).toBe('This issue still applies to error type pages.');
+      expect(checkDesc?.data).not.toContain('Content-Type header');
+    });
+
+    // An alert with no otherinfo emits no "check" description; solution still lands.
+    it('emits solution but no check when otherinfo is empty', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      // Alert 90022 in minimal.json has an empty otherinfo but a solution.
+      const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
+      expect(req?.descriptions?.map(d => d.label)).toEqual(['default', 'solution']);
+      const solutionDesc = req?.descriptions?.find(d => d.label === 'solution');
+      expect(solutionDesc?.data).toBe('Review the source code.');
+    });
+  });
+
+  describe('external references (refs)', () => {
+    // alert.reference is HTML-wrapped URLs; each real URL becomes a refs[] entry.
+    it('extracts external reference URLs into refs[]', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
+      expect(req?.refs).toHaveLength(1);
+      expect(req?.refs?.[0].url).toBe('http://msdn.microsoft.com/en-us/library/ie/gg622941%28v=vs.85%29.aspx');
+    });
+
+    // An empty reference field emits no refs[] (absent branch).
+    it('omits refs[] when the reference field is empty', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      // Alert 90022 in minimal.json has an empty reference.
+      const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
+      expect(req?.refs).toBeUndefined();
+    });
+
+    it('handles multiple URLs, anchor hrefs, and no-URL markup', async () => {
+      const zap = {
+        '@version': '2.7.0',
+        site: [{'@host': 'example.com', alerts: [
+          {pluginid: '1', name: 'multi', reference: '<p>http://a.example/x</p><p>https://b.example/y</p>'},
+          {pluginid: '2', name: 'anchor', reference: '<a href="https://c.example/z">c</a>'},
+          {pluginid: '3', name: 'none', reference: '<p></p>'},
+        ]}],
+      };
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(JSON.stringify(zap)));
+      const reqs = hdf.baselines[0].requirements;
+      expect(reqs.find(r => r.id === '1')?.refs?.map(x => x.url)).toEqual(['http://a.example/x', 'https://b.example/y']);
+      expect(reqs.find(r => r.id === '2')?.refs?.map(x => x.url)).toEqual(['https://c.example/z']);
+      expect(reqs.find(r => r.id === '3')?.refs).toBeUndefined();
     });
   });
 
@@ -312,16 +377,40 @@ describe('ZAP Converter', () => {
     });
   });
 
-  describe('extra tags', () => {
-    it('should include cweid tag', async () => {
+  describe('cwe', () => {
+    it('should promote cweid to first-class cwe[] and drop the cweid tag', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
-      expect(req?.tags?.cweid).toBe('16');
+      expect(req?.cwe).toEqual(['CWE-16']);
+      expect(req?.tags?.cweid).toBeUndefined();
     });
 
+    it('should omit cwe[] when the alert carries an empty cweid', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      // Alert 90022 in minimal.json has an empty cweid.
+      const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
+      expect(req?.cwe).toBeUndefined();
+      expect(req?.tags?.cweid).toBeUndefined();
+    });
+
+    it('should omit cwe[] for a non-numeric cweid', async () => {
+      const zap = {
+        '@version': '2.7.0',
+        site: [{'@host': 'example.com', alerts: [{pluginid: '1', name: 'X', cweid: 'abc'}]}],
+      };
+      const output = await convertZapToHdf(JSON.stringify(zap));
+      const hdf = parseJSON<HDFResults>(output);
+      expect(hdf.baselines[0].requirements[0].cwe).toBeUndefined();
+    });
+  });
+
+  describe('extra tags', () => {
     it('should include wascid tag', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
@@ -395,6 +484,57 @@ describe('ZAP Converter', () => {
     });
   });
 
+  // requirement.code is synthesized from the representative instance's HTTP
+  // request context: "<METHOD> <uri>" + optional "Param:" + optional "Attack:".
+  // The representative instance is the first carrying an attack payload (else the
+  // first instance), so the DAST payload surfaces on the CODE tab.
+  describe('requirement code (CODE tab)', () => {
+    async function firstReqCode(zap: unknown): Promise<string | undefined> {
+      const output = await convertZapToHdf(JSON.stringify(zap));
+      const hdf = parseJSON<HDFResults>(output);
+      return hdf.baselines[0].requirements[0].code;
+    }
+
+    it('falls back to the first instance when none carry an attack', async () => {
+      const input = loadFixture('minimal.json');
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(input));
+      const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
+      expect(req?.code).toBe('GET https://example.com/login\nParam: X-Content-Type-Options');
+    });
+
+    it('prefers the instance carrying the attack payload', async () => {
+      const input = loadFixture('minimal.json');
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(input));
+      const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
+      expect(req?.code).toBe("POST https://example.com/api/login\nParam: username\nAttack: ' OR 1=1 --");
+    });
+
+    it('leaves code unset when the alert has no instances (NOT-IN-SOURCE)', async () => {
+      const code = await firstReqCode({site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n'}]}]});
+      expect(code).toBeUndefined();
+    });
+
+    it('leaves code unset when the instance carries no request context', async () => {
+      const code = await firstReqCode({site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n', instances: [{}]}]}]});
+      expect(code).toBeUndefined();
+    });
+
+    it('emits the request line only when there is no param or attack', async () => {
+      const code = await firstReqCode({site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n', instances: [{method: 'GET', uri: '/x'}]}]}]});
+      expect(code).toBe('GET /x');
+    });
+
+    it('emits a Param line with no request line when only param is present', async () => {
+      const code = await firstReqCode({site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n', instances: [{param: 'p'}]}]}]});
+      expect(code).toBe('Param: p');
+    });
+
+    it('emits an Attack line with no request line when only attack is present', async () => {
+      const code = await firstReqCode({site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n', instances: [{attack: 'a'}]}]}]});
+      expect(code).toBe('Attack: a');
+    });
+  });
+
   describe('SARIF routing', () => {
     it('should delegate SARIF input to SARIF converter', async () => {
       const sarifInput = JSON.stringify({
@@ -413,24 +553,65 @@ describe('ZAP Converter', () => {
   });
 
   describe('webgoat fixture', () => {
-    it('should select site with most alerts (mymac.com, 25 alerts)', async () => {
+    // mymacBaseline returns the per-site baseline for host mymac.com (busiest site).
+    const mymacBaseline = (hdf: HDFResults) => {
+      const b = hdf.baselines.find(b => b.labels?.component === 'mymac.com');
+      expect(b, 'no baseline for host mymac.com').toBeDefined();
+      return b!;
+    };
+
+    it('converts every site to its own baseline + component (no site dropped)', async () => {
       const input = loadFixture('webgoat.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      // Baseline.Name is the fixed scan label; the host goes into targets
-      expect(hdf.baselines[0].name).toBe('OWASP ZAP Scan');
-      expect(hdf.components).toHaveLength(1);
-      expect(hdf.components![0].name).toBe('mymac.com');
+      expect(hdf.baselines).toHaveLength(4);
+      expect(hdf.components).toHaveLength(4);
+      const hosts = hdf.components!.map(c => c.name);
+      expect(hosts).toContain('mymac.com');
+      expect(hosts).toContain('ciscobinary.openh264.org');
+      expect(hosts).toContain('code.jquery.com');
+      expect(hosts).toContain('detectportal.firefox.com');
+      for (const c of hdf.components!) {
+        expect(c.type).toBe('application');
+      }
     });
 
-    it('should produce 15 unique requirements from 25 alerts with deduplication', async () => {
+    it('links each baseline to its host and gives it a unique, host-scoped name', async () => {
       const input = loadFixture('webgoat.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      // 25 alerts, 15 unique pluginids, but duplicates get .1, .2, etc.
-      expect(hdf.baselines[0].requirements).toHaveLength(25);
+      const names = new Set<string>();
+      for (const b of hdf.baselines) {
+        const host = b.labels?.component;
+        expect(host, `baseline ${b.name} missing component label`).toBeTruthy();
+        expect(names.has(b.name), `baseline name ${b.name} not unique`).toBe(false);
+        names.add(b.name);
+        expect(b.name).toContain(host!);
+      }
+    });
+
+    it('keeps the shared pluginid 10021 undeduped across the single-alert hosts', async () => {
+      const input = loadFixture('webgoat.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      const singles = hdf.baselines.filter(b => b.labels?.component !== 'mymac.com');
+      expect(singles).toHaveLength(3);
+      for (const b of singles) {
+        expect(b.requirements).toHaveLength(1);
+        expect(b.requirements[0].id).toBe('10021');
+      }
+    });
+
+    it('produces 25 requirements for mymac.com', async () => {
+      const input = loadFixture('webgoat.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      // 25 alerts, 15 unique pluginids, duplicates get .1, .2, etc.
+      expect(mymacBaseline(hdf).requirements).toHaveLength(25);
     });
 
     it('should deduplicate pluginids with .1, .2 suffixes', async () => {
@@ -438,7 +619,7 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      const ids = hdf.baselines[0].requirements.map(r => r.id);
+      const ids = mymacBaseline(hdf).requirements.map(r => r.id);
       expect(ids).toContain('90028');
       expect(ids).toContain('90028.1');
       expect(ids).toContain('90028.2');
@@ -457,8 +638,7 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      // First requirement (90028) has riskcode 0
-      const req = hdf.baselines[0].requirements.find(r => r.id === '90028');
+      const req = mymacBaseline(hdf).requirements.find(r => r.id === '90028');
       expect(req?.impact).toBe(0.3);
     });
 
@@ -467,8 +647,7 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
-      // Find a requirement with riskcode 3 (e.g. pluginid 42 or 20012)
-      const req = hdf.baselines[0].requirements.find(r => r.id === '42');
+      const req = mymacBaseline(hdf).requirements.find(r => r.id === '42');
       expect(req?.impact).toBe(0.7);
     });
 

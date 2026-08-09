@@ -123,7 +123,28 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req, '2025-06-01T00:00:00Z')).toBe('failed');
   });
 
-  it('uses the first non-expired override when multiple overrides exist', () => {
+  it('uses the governing (most recently applied) override regardless of array order', () => {
+    const req = makeRequirement({
+      results: [makeResult('failed')],
+      statusOverrides: [
+        // Listed first but applied later: governs per the schema's
+        // "most recent non-expired override" definition of disposition.
+        makeOverride({
+          status: 'passed',
+          appliedAt: '2025-06-01T00:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
+        }),
+        makeOverride({
+          status: 'notApplicable',
+          appliedAt: '2025-01-01T00:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
+        }),
+      ],
+    });
+    expect(computeEffectiveStatus(req, '2026-01-01T00:00:00Z')).toBe('passed');
+  });
+
+  it('uses the governing non-expired override when multiple overrides exist', () => {
     const req = makeRequirement({
       results: [makeResult('failed')],
       statusOverrides: [
@@ -287,6 +308,41 @@ describe('classifyChangeReasons', () => {
       newReq,
       '2025-05-01T00:00:00Z',
       '2025-07-01T00:00:00Z',
+    );
+    expect(reasons).toContain('overrideExpired');
+  });
+
+  it('skips the overrideExpired check when a scan timestamp is unparseable', () => {
+    const override = makeOverride({ status: 'passed', expiresAt: '2025-06-01T00:00:00Z' });
+    const oldReq = makeRequirement({ results: [makeResult('failed')], statusOverrides: [override] });
+    const newReq = makeRequirement({ results: [makeResult('failed')], statusOverrides: [override] });
+    // Garbage old timestamp → parseTimestamp returns null → the window check is
+    // skipped rather than misfiring, so overrideExpired is not reported.
+    const reasons = classifyChangeReasons(oldReq, newReq, 'not-a-date', '2025-07-01T00:00:00Z');
+    expect(reasons).not.toContain('overrideExpired');
+  });
+
+  it('detects overrideExpired with zone-less scan timestamps (read as UTC, host-independent)', () => {
+    const override = makeOverride({
+      status: 'passed',
+      // Expires three hours after the old scan's UTC midnight: a host-local
+      // reading of the zone-less old timestamp on any western-hemisphere
+      // host would push the scan past the expiry and lose the reason.
+      expiresAt: '2025-06-01T03:00:00Z',
+    });
+    const oldReq = makeRequirement({
+      results: [makeResult('failed')],
+      statusOverrides: [override],
+    });
+    const newReq = makeRequirement({
+      results: [makeResult('failed')],
+      statusOverrides: [override],
+    });
+    const reasons = classifyChangeReasons(
+      oldReq,
+      newReq,
+      '2025-06-01T00:00:00',
+      '2025-07-01T00:00:00',
     );
     expect(reasons).toContain('overrideExpired');
   });

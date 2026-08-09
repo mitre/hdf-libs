@@ -1,11 +1,13 @@
 package dbprotect
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -334,6 +336,68 @@ func TestConvertDbprotect_CheckResults_StartTime(t *testing.T) {
 	assert.False(t, req.Results[0].StartTime.IsZero(), "StartTime should be set")
 }
 
+// ---- requirement.code (Heimdall CODE tab) ----
+
+// DBProtect ships no literal check source, so requirement.code carries the
+// parsed finding row (column→value map) serialized as indented JSON. Keys must
+// sort so the bytes match the TypeScript twin.
+func TestMarshalFindingCode(t *testing.T) {
+	f := finding{
+		"Check":          "Schema ownership",
+		"Check Category": "Improper Access Controls",
+		"Risk DV":        "Medium",
+	}
+	code := marshalFindingCode(f)
+
+	// Two-space indented, not a compact blob.
+	assert.Contains(t, code, "\n  \"Check\": \"Schema ownership\"")
+
+	// Keys emitted in sorted order for byte-parity with the TS twin.
+	assert.Less(t, strings.Index(code, `"Check"`), strings.Index(code, `"Check Category"`))
+	assert.Less(t, strings.Index(code, `"Check Category"`), strings.Index(code, `"Risk DV"`))
+
+	// Round-trips back to the source row.
+	var back map[string]string
+	require.NoError(t, json.Unmarshal([]byte(code), &back))
+	assert.Equal(t, map[string]string(f), back)
+}
+
+// An empty row serializes to the empty object rather than "null" — the normal
+// encode path, no separate guard.
+func TestMarshalFindingCode_Empty(t *testing.T) {
+	assert.Equal(t, "{}", marshalFindingCode(finding{}))
+}
+
+func TestConvertDbprotect_CheckResults_RequirementCode(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req.Code, "requirement.code must be populated for the CODE tab")
+
+	var row map[string]string
+	require.NoError(t, json.Unmarshal([]byte(*req.Code), &row))
+	assert.Equal(t, "Schema ownership", row["Check"])
+	assert.Equal(t, "Improper Access Controls", row["Check Category"])
+	assert.Equal(t, "Medium", row["Risk DV"])
+	assert.Equal(t, "Schema name=DatabaseMailUserRole;Database=msdb;Owner name=DatabaseMailUserRole", row["Details"])
+}
+
+// The Findings Detail report (no Result Status column) also populates code.
+func TestConvertDbprotect_FindingsDetail_RequirementCode(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		require.NotNil(t, req.Code, "requirement %q must carry code", req.ID)
+		var row map[string]string
+		require.NoError(t, json.Unmarshal([]byte(*req.Code), &row))
+		assert.NotEmpty(t, row["Check"])
+	}
+}
+
 // ---- NIST tags ----
 
 func TestConvertDbprotect_CheckResults_NISTTags(t *testing.T) {
@@ -347,6 +411,39 @@ func TestConvertDbprotect_CheckResults_NISTTags(t *testing.T) {
 	require.True(t, ok, "Should have nist tag")
 	nistSlice := hdfutil.SafeStringSlice(nist)
 	assert.NotEmpty(t, nistSlice, "NIST tags should not be empty")
+}
+
+// ---- check_category tag ----
+
+// The "Check Category" column is DBProtect's finding classification; it is
+// surfaced as the check_category tag, present in both report formats.
+func TestConvertDbprotect_CheckResults_CheckCategoryTag(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req.Tags)
+	assert.Equal(t, "Improper Access Controls", req.Tags["check_category"])
+
+	req2903 := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2903")
+	assert.Equal(t, "Misconfigurations", req2903.Tags["check_category"])
+}
+
+func TestConvertDbprotect_FindingsDetail_CheckCategoryTag(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2903")
+	assert.Equal(t, "Misconfigurations", req.Tags["check_category"])
+}
+
+// Absent branch: a finding with no Check Category value omits the tag entirely.
+func TestBuildRequirement_CheckCategoryAbsent(t *testing.T) {
+	req := buildRequirement("999", []finding{{"Check": "x", "Risk DV": "Low"}}, false)
+	_, present := req.Tags["check_category"]
+	assert.False(t, present, "check_category tag must be omitted when source field is absent")
 }
 
 // ---- Target ----
@@ -416,6 +513,59 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "dbprotect-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertDbprotectToHDF(input, "1.0.0")
 	})
+}
+
+// ---- Top-level timestamp (source-derived, value-pinned) ----
+
+// The snapshot harness masks the top-level timestamp, so the golden does not
+// verify its value. Pin the exact source-derived value here: the Findings Detail
+// report carries a "Start Date" column, which becomes the top-level timestamp.
+func TestConvertDbprotect_FindingsDetail_TimestampFromStartDate(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp, "timestamp must be populated from Start Date")
+	assert.Equal(t, "2021-02-18T15:55:00Z", result.Timestamp.UTC().Format(time.RFC3339))
+}
+
+// Fallback branch: the Check Results report has no "Start Date" column, so the
+// top-level timestamp falls back to the per-finding "Date" column.
+func TestConvertDbprotect_CheckResults_TimestampFallsBackToDate(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp, "timestamp must fall back to the Date column")
+	assert.Equal(t, "2021-02-18T15:57:00Z", result.Timestamp.UTC().Format(time.RFC3339))
+}
+
+// Determinism: converting the same input twice yields the identical top-level
+// timestamp (source-derived, never now()).
+func TestConvertDbprotect_TimestampDeterministic(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	first, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+	second, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, first.Timestamp)
+	require.NotNil(t, second.Timestamp)
+	assert.Equal(t, first.Timestamp.UTC(), second.Timestamp.UTC())
+}
+
+// scanTimestamp derivation, exercised directly to cover every branch.
+func TestScanTimestamp(t *testing.T) {
+	// Start Date preferred when present.
+	assert.Equal(t, "2021-02-18T15:55:00Z",
+		scanTimestamp(finding{"Start Date": "2021-02-18 15:55", "Date": "Feb 18 2021 15:57"}).UTC().Format(time.RFC3339))
+
+	// Falls back to Date when Start Date is absent.
+	assert.Equal(t, "2021-02-18T15:57:00Z",
+		scanTimestamp(finding{"Date": "Feb 18 2021 15:57"}).UTC().Format(time.RFC3339))
+
+	// Zero time when neither is parseable, so the caller omits the timestamp.
+	assert.True(t, scanTimestamp(finding{}).IsZero())
 }
 
 func TestConvertDbprotect_VerificationMethod(t *testing.T) {

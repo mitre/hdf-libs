@@ -587,15 +587,16 @@ type ARLocalDefinitions struct {
 
 // Result contains assessment findings for a specific assessment cycle.
 type Result struct {
-	UUID         string        `json:"uuid"`
-	Title        string        `json:"title"`
-	Description  string        `json:"description,omitempty"`
-	Start        string        `json:"start"`
-	End          string        `json:"end,omitempty"`
-	Props        []Property    `json:"props,omitempty"`
-	Findings     []Finding     `json:"findings,omitempty"`
-	Observations []Observation `json:"observations,omitempty"`
-	Risks        []Risk        `json:"risks,omitempty"`
+	UUID             string            `json:"uuid"`
+	Title            string            `json:"title"`
+	Description      string            `json:"description,omitempty"`
+	Start            string            `json:"start"`
+	End              string            `json:"end,omitempty"`
+	Props            []Property        `json:"props,omitempty"`
+	ReviewedControls *ReviewedControls `json:"reviewed-controls,omitempty"`
+	Findings         []Finding         `json:"findings,omitempty"`
+	Observations     []Observation     `json:"observations,omitempty"`
+	Risks            []Risk            `json:"risks,omitempty"`
 }
 
 // Finding is an assessment determination about a control.
@@ -635,16 +636,26 @@ type RelatedRef struct {
 
 // Observation records evidence from the assessment.
 type Observation struct {
-	UUID        string       `json:"uuid"`
-	Title       string       `json:"title,omitempty"`
-	Description string       `json:"description"`
-	Props       []Property   `json:"props,omitempty"`
-	Methods     []string     `json:"methods,omitempty"`
-	Types       []string     `json:"types,omitempty"`
-	Collected   string       `json:"collected"`
-	Expires     string       `json:"expires,omitempty"`
-	Remarks     string       `json:"remarks,omitempty"`
-	Subjects    []SubjectRef `json:"subjects,omitempty"`
+	UUID             string             `json:"uuid"`
+	Title            string             `json:"title,omitempty"`
+	Description      string             `json:"description"`
+	Props            []Property         `json:"props,omitempty"`
+	Methods          []string           `json:"methods,omitempty"`
+	Types            []string           `json:"types,omitempty"`
+	Collected        string             `json:"collected"`
+	Expires          string             `json:"expires,omitempty"`
+	Remarks          string             `json:"remarks,omitempty"`
+	Subjects         []SubjectRef       `json:"subjects,omitempty"`
+	RelevantEvidence []RelevantEvidence `json:"relevant-evidence,omitempty"`
+}
+
+// RelevantEvidence links an observation to supporting evidence. The href is a
+// resolvable URL when it points outside the document, or a document fragment
+// (e.g. "#uuid") when it references back-matter.
+type RelevantEvidence struct {
+	Href        string `json:"href,omitempty"`
+	Description string `json:"description"`
+	Remarks     string `json:"remarks,omitempty"`
 }
 
 // SubjectRef references an assessment subject.

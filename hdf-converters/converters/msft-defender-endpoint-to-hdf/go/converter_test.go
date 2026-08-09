@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -251,6 +252,31 @@ func TestConvert_Descriptions(t *testing.T) {
 	assert.Contains(t, req.Descriptions[1].Data, "Collect artifacts")
 }
 
+// ---- Refs from alertWebUrl ----
+
+func TestConvert_Refs_FromAlertWebURL(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Refs, 1)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://security.microsoft.com/alerts/da637472900382838869_1364969609", *req.Refs[0].URL)
+	assert.Nil(t, req.Refs[0].URI)
+	assert.Nil(t, req.Refs[0].Ref)
+}
+
+func TestConvert_Refs_Absent(t *testing.T) {
+	// empty.json → no alerts → the no-findings requirement carries no alertWebUrl → no refs.
+	input := loadFixture(t, "input/empty.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Empty(t, req.Refs)
+}
+
 // ---- Evidence in code_desc ----
 
 func TestConvert_EvidenceInCodeDesc(t *testing.T) {
@@ -276,6 +302,99 @@ func TestConvert_ClassificationDetermination(t *testing.T) {
 	req := result.Baselines[0].Requirements[3]
 	assert.Equal(t, "truePositive", req.Tags["classification"])
 	assert.Equal(t, "malware", req.Tags["determination"])
+}
+
+// ---- Source metadata tags (incident_id, detection_source, service_source, threat_family_name) ----
+
+func TestConvert_IncidentIDTag(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// incidentId "1126093" is a canonical integer → emitted as a number.
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, int64(1126093), req.Tags["incident_id"])
+}
+
+func TestConvert_IncidentIDTag_NonNumericFallsBackToString(t *testing.T) {
+	// A non-numeric incidentId is preserved verbatim as a string.
+	doc := `{"value":[{"id":"a","incidentId":"INC-42","status":"new","severity":"low",` +
+		`"category":"Execution","title":"t","description":"d"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "INC-42", req.Tags["incident_id"])
+}
+
+func TestConvert_IncidentIDTag_Absent(t *testing.T) {
+	// Missing incidentId → no incident_id tag.
+	doc := `{"value":[{"id":"a","status":"new","severity":"low",` +
+		`"category":"Execution","title":"t","description":"d"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	_, has := req.Tags["incident_id"]
+	assert.False(t, has, "should omit incident_id when absent")
+}
+
+func TestConvert_DetectionAndServiceSourceTags(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "WindowsDefenderAtp", req.Tags["detection_source"])
+	assert.Equal(t, "microsoftDefenderForEndpoint", req.Tags["service_source"])
+
+	// Fourth alert has a different detectionSource.
+	assert.Equal(t, "WindowsDefenderAv", result.Baselines[0].Requirements[3].Tags["detection_source"])
+}
+
+func TestConvert_DetectionAndServiceSourceTags_Absent(t *testing.T) {
+	doc := `{"value":[{"id":"a","incidentId":"1","status":"new","severity":"low",` +
+		`"category":"Execution","title":"t","description":"d"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	_, hasDet := req.Tags["detection_source"]
+	_, hasSvc := req.Tags["service_source"]
+	assert.False(t, hasDet, "should omit detection_source when absent")
+	assert.False(t, hasSvc, "should omit service_source when absent")
+}
+
+func TestConvert_ThreatFamilyNameTag(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Fourth alert carries threatFamilyName "Emotet".
+	assert.Equal(t, "Emotet", result.Baselines[0].Requirements[3].Tags["threat_family_name"])
+}
+
+func TestConvert_ThreatFamilyNameTag_AbsentWhenNull(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// First alert has threatFamilyName: null → tag omitted.
+	req := result.Baselines[0].Requirements[0]
+	_, has := req.Tags["threat_family_name"]
+	assert.False(t, has, "should omit threat_family_name when source is null")
+}
+
+func TestConvert_ActorDisplayNameNotMapped(t *testing.T) {
+	// actorDisplayName is null in every fixture — it must never be tagged.
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		_, has := req.Tags["actor_display_name"]
+		assert.False(t, has, "actor_display_name must not be emitted (NOT-IN-SOURCE)")
+	}
 }
 
 // ---- Checksum ----
@@ -381,6 +500,84 @@ func TestConvert_JSONRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, roundTrip.Baselines, 1)
 	assert.Len(t, roundTrip.Baselines[0].Requirements, 4)
+}
+
+// ---- Timestamp backfill: result startTime (value-pinned) ----
+
+// TestConvert_StartTime_FirstActivity pins the exact per-alert startTime taken
+// from firstActivityDateTime (the earliest observed activity for the alert).
+func TestConvert_StartTime_FirstActivity(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// sample alert[0] firstActivityDateTime "2021-01-26T20:31:32.9562661Z"
+	// → canonical UTC at millisecond precision.
+	got := result.Baselines[0].Requirements[0].Results[0].StartTime
+	assert.Equal(t, "2021-01-26T20:31:32.956Z", got.Format(time.RFC3339Nano))
+}
+
+// TestConvert_StartTime_CreatedFallback pins the createdDateTime fallback branch:
+// a present-but-unparseable firstActivityDateTime must not skip a valid
+// createdDateTime in favor of the conversion time (mirrors the TS converter).
+func TestConvert_StartTime_CreatedFallback(t *testing.T) {
+	doc := `{"value":[{"id":"a","status":"new","severity":"low","category":"Execution",` +
+		`"title":"t","description":"d","firstActivityDateTime":"not-a-date",` +
+		`"createdDateTime":"2024-03-04T05:06:07Z"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	got := result.Baselines[0].Requirements[0].Results[0].StartTime
+	assert.Equal(t, "2024-03-04T05:06:07Z", got.Format(time.RFC3339Nano))
+}
+
+// ---- Timestamp backfill: top-level timestamp (value-pinned) ----
+
+// TestConvert_TopLevelTimestamp_FromLatestAlert pins the top-level timestamp to
+// the latest lastUpdateDateTime across alerts (alert[3] in sample.json).
+func TestConvert_TopLevelTimestamp_FromLatestAlert(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2021-01-29T14:30:00Z", result.Timestamp.Format(time.RFC3339Nano))
+}
+
+// TestConvert_TopLevelTimestamp_LastActivityFallback pins the per-alert fallback
+// from lastUpdateDateTime to lastActivityDateTime.
+func TestConvert_TopLevelTimestamp_LastActivityFallback(t *testing.T) {
+	doc := `{"value":[{"id":"a","status":"new","severity":"low","category":"Execution",` +
+		`"title":"t","description":"d","lastActivityDateTime":"2023-05-06T07:08:09Z"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2023-05-06T07:08:09Z", result.Timestamp.Format(time.RFC3339Nano))
+}
+
+// TestConvert_TopLevelTimestamp_CreatedFallback pins the per-alert fallback from
+// lastActivityDateTime to createdDateTime.
+func TestConvert_TopLevelTimestamp_CreatedFallback(t *testing.T) {
+	doc := `{"value":[{"id":"a","status":"new","severity":"low","category":"Execution",` +
+		`"title":"t","description":"d","createdDateTime":"2022-02-03T04:05:06Z"}]}`
+	result, err := ConvertMsftDefenderEndpointToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2022-02-03T04:05:06Z", result.Timestamp.Format(time.RFC3339Nano))
+}
+
+// TestConvert_TopLevelTimestamp_FallsBackToNow confirms the conversion time is
+// used only when no alert carries a parseable time (empty tenant window).
+func TestConvert_TopLevelTimestamp_FallsBackToNow(t *testing.T) {
+	before := time.Now().UTC().Add(-time.Second)
+	input := loadFixture(t, "input/empty.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	assert.False(t, result.Timestamp.Before(before), "empty input should fall back to the conversion time")
 }
 
 func TestSnapshots(t *testing.T) {

@@ -8,6 +8,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Reference,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -63,6 +64,18 @@ interface ComplianceItem {
   name: string;
   reference: string;
   version: string;
+}
+
+/**
+ * Renders a finding's compliance references as readable
+ * "<name> <reference> (v<version>)" strings, preserving source order.
+ * Returns an empty array when compliance is empty, absent, or null.
+ */
+function complianceStrings(compliance?: ComplianceItem[] | null): string[] {
+  if (!compliance || compliance.length === 0) {
+    return [];
+  }
+  return compliance.map((c) => `${c.name} ${c.reference} (v${c.version})`);
 }
 
 /**
@@ -185,11 +198,25 @@ function buildRequirement(
   const cciTags = nistToCci(nist);
   const tags = buildNistCciTags(nist, cciTags);
 
+  // Carry compliance framework references (CIS benchmark, etc.) into tags.
+  const compliance = complianceStrings(finding.compliance);
+  if (compliance.length > 0) {
+    tags.compliance = compliance;
+  }
+
   const descriptions: Description[] = [
     { label: 'default', data: finding.rationale },
   ];
   if (finding.remediation) {
     descriptions.push({ label: 'fix', data: finding.remediation });
+  }
+
+  // Build external references (ScoutSuite carries a list of URL strings)
+  const refs: Reference[] = [];
+  for (const url of finding.references ?? []) {
+    if (url) {
+      refs.push({ url });
+    }
   }
 
   const status = getStatus(finding.checked_items, finding.flagged_items);
@@ -214,6 +241,10 @@ function buildRequirement(
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  if (refs.length > 0) {
+    req.refs = refs;
+  }
 
   return req;
 }
@@ -276,7 +307,6 @@ export async function convertScoutsuiteToHdf(input: string, converterVersion = '
     generatorName: 'scoutsuite-to-hdf',
     converterVersion,
     toolName: 'ScoutSuite',
-    toolFormat: 'JSON',
     toolVersion: report.last_run.version,
     baselines: [baseline],
     components: [{

@@ -167,11 +167,7 @@ function buildRuleObj(req: EvaluatedRequirement): Record<string, unknown> {
     rule.rationale = wrap(rationale);
   }
 
-  const fixtext = findDescription(req.descriptions, 'fix');
-  if (fixtext) {
-    rule.fixtext = wrap(fixtext);
-  }
-
+  // XCCDF Rule is an ordered sequence: ident precedes fixtext/fix/check.
   // Idents: CCI and NIST 800-53 controls
   const idents: Record<string, unknown>[] = [];
   if (req.tags && Array.isArray(req.tags['cci'])) {
@@ -186,6 +182,11 @@ function buildRuleObj(req: EvaluatedRequirement): Record<string, unknown> {
   }
   if (idents.length > 0) {
     rule.ident = idents;
+  }
+
+  const fixtext = findDescription(req.descriptions, 'fix');
+  if (fixtext) {
+    rule.fixtext = wrap(fixtext);
   }
 
   // Checks: the check-description (OVAL) and the InSpec source code, each its own <check>.
@@ -243,13 +244,22 @@ function buildTestResultObj(
 
   // Rule results
   const ruleResults: Record<string, unknown>[] = [];
+  let passed = 0;
+  let scorable = 0;
   for (const req of baseline.requirements) {
     const ruleIdRef = sanitizeXccdfId('xccdf_hdf_rule_' + req.id + '_rule');
 
     for (const result of req.results) {
+      const status = hdfStatusToXccdf(result.status);
+      if (status === 'pass') {
+        passed++;
+        scorable++;
+      } else if (status === 'fail') {
+        scorable++;
+      }
       const rr: Record<string, unknown> = {
         [`${ATTR}idref`]: ruleIdRef,
-        result: wrap(hdfStatusToXccdf(result.status)),
+        result: wrap(status),
       };
 
       const startTime =
@@ -275,6 +285,15 @@ function buildTestResultObj(
   }
 
   testResult['rule-result'] = ruleResults;
+
+  // XCCDF requires a score element after the rule-results. Emit the
+  // default-model pass percentage over scorable (pass/fail) rule-results.
+  const score = scorable > 0 ? (passed / scorable) * 100 : 0;
+  testResult.score = {
+    [`${ATTR}system`]: 'urn:xccdf:scoring:default',
+    [`${ATTR}maximum`]: '100.000000',
+    '#text': score.toFixed(6),
+  };
 
   return testResult;
 }

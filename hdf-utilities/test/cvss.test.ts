@@ -1,6 +1,31 @@
+import { createHash } from 'crypto';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
-import { parseCvssVector, validateCvssVector } from '../src/cvss/index.js';
+import {
+  parseCvssVector,
+  validateCvssVector,
+  computeCvssScore,
+  computeCvss40Score,
+  cvss40MacroVector,
+} from '../src/cvss/index.js';
 import { cvssScoreToSeverity } from '../src/severity/index.js';
+
+interface Cvss31Case {
+  vector: string;
+  base: number;
+  temporal: number;
+  note: string;
+}
+const cvss31Cases: Cvss31Case[] = (
+  JSON.parse(
+    readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'cvss31-vectors.json'),
+      'utf-8',
+    ),
+  ) as { cases: Cvss31Case[] }
+).cases;
 
 describe('cvssScoreToSeverity', () => {
   it('returns "none" for 0.0', () => {
@@ -250,5 +275,119 @@ describe('validateCvssVector', () => {
     );
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes('E'))).toBe(true);
+  });
+});
+
+describe('computeCvssScore (CVSS 3.1)', () => {
+  for (const c of cvss31Cases) {
+    it(`${c.vector} → base ${c.base}, temporal ${c.temporal} (${c.note})`, () => {
+      const s = computeCvssScore(c.vector);
+      expect(s.version).toBe('3.1');
+      expect(s.baseScore).toBe(c.base);
+      expect(s.temporalScore).toBe(c.temporal);
+    });
+  }
+
+  it('throws on unsupported versions (2.0 / 3.0 / 4.0)', () => {
+    expect(() =>
+      computeCvssScore('CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N'),
+    ).toThrow();
+    expect(() => computeCvssScore('AV:N/AC:L/Au:N/C:C/I:C/A:C')).toThrow();
+    expect(() => computeCvssScore('CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')).toThrow();
+  });
+
+  it('throws on a structurally invalid 3.1 vector (missing a required base metric)', () => {
+    expect(() => computeCvssScore('CVSS:3.1/AV:N/AC:L')).toThrow();
+  });
+
+  it('throws on an out-of-enum base metric value', () => {
+    // Parser is permissive, so AV:Z reaches compute and fails the weight lookup.
+    expect(() => computeCvssScore('CVSS:3.1/AV:Z/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')).toThrow(/AV/);
+  });
+
+  it('throws on an invalid Scope value', () => {
+    expect(() => computeCvssScore('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:Z/C:H/I:H/A:H')).toThrow(/Scope/);
+  });
+
+  it('throws on an out-of-enum temporal (E) value', () => {
+    expect(() =>
+      computeCvssScore('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:Z'),
+    ).toThrow(/E/);
+  });
+});
+
+interface Cvss40Case {
+  vector: string;
+  macroVector: string;
+  base: number;
+  temporal: number;
+  note: string;
+}
+const fixtureDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata');
+const cvss40Cases: Cvss40Case[] = (
+  JSON.parse(readFileSync(join(fixtureDir, 'cvss40-vectors.json'), 'utf-8')) as {
+    cases: Cvss40Case[];
+  }
+).cases;
+
+describe('computeCvss40Score (CVSS 4.0)', () => {
+  it.each(cvss40Cases)('scores $vector', (c) => {
+    const s = computeCvss40Score(c.vector);
+    expect(s.version).toBe('4.0');
+    expect(s.baseScore).toBe(c.base);
+    expect(s.temporalScore).toBe(c.temporal);
+  });
+
+  it.each(cvss40Cases)('derives the MacroVector for $vector', (c) => {
+    expect(cvss40MacroVector(c.vector)).toBe(c.macroVector);
+  });
+
+  it('returns the exact FIRST-reference score for the base critical vector', () => {
+    // The card's first failing test.
+    const s = computeCvss40Score('CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N');
+    expect(s.version).toBe('4.0');
+    expect(s.temporalScore).toBe(9.3);
+  });
+
+  it('matches the Go peer on every shared parity vector (byte-identical output)', () => {
+    // The Go test (TestComputeCvss40Score) asserts the identical fixture values;
+    // both languages reading the same testdata guarantees Go output == TS output.
+    for (const c of cvss40Cases) {
+      const s = computeCvss40Score(c.vector);
+      expect(`${s.baseScore}/${s.temporalScore}`).toBe(`${c.base}/${c.temporal}`);
+    }
+  });
+
+  it('throws on a non-4.0 version', () => {
+    expect(() => computeCvss40Score('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')).toThrow();
+  });
+
+  it('throws when a required base metric is missing', () => {
+    expect(() => computeCvss40Score('CVSS:4.0/AV:N/AC:L')).toThrow();
+  });
+
+  it('throws on an out-of-enum base metric value', () => {
+    expect(() =>
+      computeCvss40Score('CVSS:4.0/AV:Z/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N'),
+    ).toThrow();
+  });
+
+  it('throws on an out-of-enum Exploit Maturity value', () => {
+    expect(() =>
+      computeCvss40Score('CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:Z'),
+    ).toThrow();
+  });
+});
+
+describe('CVSS 4.0 data table parity', () => {
+  it('go/cvss40-data.json and src/cvss/cvss40-data.json are byte-identical', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+    const goHash = createHash('sha256')
+      .update(readFileSync(join(root, 'go', 'cvss40-data.json')))
+      .digest('hex');
+    const tsHash = createHash('sha256')
+      .update(readFileSync(join(root, 'src', 'cvss', 'cvss40-data.json')))
+      .digest('hex');
+    expect(tsHash).toBe(goHash);
   });
 });

@@ -25,6 +25,8 @@
           "impact": 0.3,
           "tags": {
             "category": "Execution",
+            "detection_source": "WindowsDefenderAtp",
+            "incident_id": 1126093,
             "mitre": [
               "T1064",
               "T1085",
@@ -33,8 +35,14 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "service_source": "microsoftDefenderForEndpoint"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/alerts/da637472900382838869_1364969609"
+            }
+          ],
           "title": "Low-reputation arbitrary code executed by signed executable",
           "verificationMethod": "automated"
         }
@@ -61,7 +69,7 @@
     "name": "msft-defender-endpoint-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T22:56:40.396014Z",
+  "timestamp": "2021-01-26T20:33:59.2Z",
   "tool": {
     "name": "Microsoft Defender for Endpoint"
   }

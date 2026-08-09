@@ -3,13 +3,20 @@
     {
       "requirements": [
         {
+          "cwe": [
+            "CWE-16"
+          ],
           "descriptions": [
             {
               "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'.",
               "label": "default"
             },
             {
-              "data": "Ensure that the application/web server sets the Content-Type header appropriately.\nThis issue still applies to error type pages.",
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately.",
+              "label": "solution"
+            },
+            {
+              "data": "This issue still applies to error type pages.",
               "label": "check"
             }
           ],
@@ -28,7 +35,6 @@
               "CCI-003173"
             ],
             "confidence": "2",
-            "cweid": "16",
             "nist": [
               "SA-11",
               "RA-5"
@@ -36,6 +42,12 @@
             "riskdesc": "Low (Medium)",
             "wascid": "15"
           },
+          "code": "GET https://example.com/login\nParam: X-Content-Type-Options",
+          "refs": [
+            {
+              "url": "http://msdn.microsoft.com/en-us/library/ie/gg622941%28v=vs.85%29.aspx"
+            }
+          ],
           "title": "X-Content-Type-Options Header Missing",
           "verificationMethod": "automated"
         },
@@ -47,7 +59,7 @@
             },
             {
               "data": "Review the source code.",
-              "label": "check"
+              "label": "solution"
             }
           ],
           "results": [
@@ -78,6 +90,7 @@
             "riskdesc": "Medium (Low)",
             "wascid": "13"
           },
+          "code": "POST https://example.com/api/login\nParam: username\nAttack: ' OR 1=1 --",
           "title": "Application Error Disclosure",
           "verificationMethod": "automated"
         }
@@ -87,6 +100,9 @@
         "value": "eb8812e6f4a62701ff5e8ccff65eaa5694cd71c8e4a22097945eabab2fa07cc1"
       },
       "name": "OWASP ZAP Scan",
+      "labels": {
+        "component": "example.com"
+      },
       "summary": "ZAP Version 2.7.0",
       "title": "OWASP ZAP Scan of https://example.com"
     }
@@ -104,7 +120,6 @@
   },
   "timestamp": "2018-12-06T10:53:11Z",
   "tool": {
-    "format": "JSON",
     "name": "OWASP ZAP",
     "version": "2.7.0"
   }

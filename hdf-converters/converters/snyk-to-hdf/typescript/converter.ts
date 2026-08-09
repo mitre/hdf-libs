@@ -7,10 +7,13 @@ import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
 import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import type {
+  Cvss,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Reference,
 } from '@mitre/hdf-schema';
 import {
   Ecosystem,
@@ -55,6 +58,12 @@ interface SnykVuln {
   upgradePath?: unknown[];
   fixedIn?: string[];
   exploit?: string;
+  references?: SnykReference[];
+}
+
+interface SnykReference {
+  title?: string;
+  url?: string;
 }
 
 interface SnykIdentifiers {
@@ -99,6 +108,47 @@ function synthesizePurl(ecosystem: Ecosystem, name: string, version: string): st
   return `pkg:${ecosystem}/${name}@${version}`;
 }
 
+/**
+ * Assembles the structured cvss[] entry for a Snyk vulnerability from its
+ * cvssScore (base score) and CVSSv3 (base vector, carrying a CVSS:3.1/ prefix).
+ * Returns [] when the source carries neither so the field is omitted.
+ */
+export function buildSnykCvss(vuln: SnykVuln): Cvss[] {
+  if (!vuln.cvssScore && !vuln.CVSSv3) return [];
+  return [buildCvss({
+    version: cvssVersionFromVector(vuln.CVSSv3),
+    baseScore: vuln.cvssScore,
+    baseVector: vuln.CVSSv3,
+  })];
+}
+
+/**
+ * Emits one Reference{url} per source reference that carries a URL. Returns
+ * undefined when the vulnerability carries no linkable references so refs[] is
+ * omitted. Snyk reference titles are not a Reference schema field, so only the
+ * url carries through.
+ */
+function buildSnykRefs(refs: SnykReference[] | undefined): Reference[] | undefined {
+  if (!refs) return undefined;
+  const out: Reference[] = [];
+  for (const r of refs) {
+    if (r.url) out.push({ url: r.url });
+  }
+  return out.length > 0 ? out : undefined;
+}
+
+/**
+ * Renders Snyk's upgradePath into readable remediation text. The array leads
+ * with a boolean (whether the top-level dependency itself is upgradable)
+ * followed by the `pkg@version` chain to upgrade to. Only the string chain is
+ * meaningful; returns undefined when it carries no package steps.
+ */
+function formatUpgradePath(path: unknown[] | undefined): string | undefined {
+  if (!path) return undefined;
+  const steps = path.filter((e): e is string => typeof e === 'string' && e.length > 0);
+  return steps.length > 0 ? steps.join(' > ') : undefined;
+}
+
 function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, packageManager?: string): EvaluatedRequirement {
   const rep = vulns[0]!;
   const cweIDs = rep.identifiers.CWE ?? [];
@@ -110,11 +160,10 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, pac
     cci: cciTags,
   };
 
-  if (cweIDs.length > 0) {
-    tags['cweid'] = cweIDs;
-  }
+  // requirement.id is a SNYK/npm advisory id, not the CVE, so tags.cve is the
+  // CVE's home. (Interim pending an identifiers[] schema field.)
   if (rep.identifiers.CVE && rep.identifiers.CVE.length > 0) {
-    tags['cveid'] = rep.identifiers.CVE;
+    tags['cve'] = rep.identifiers.CVE;
   }
   if (rep.identifiers.GHSA && rep.identifiers.GHSA.length > 0) {
     tags['ghsaid'] = rep.identifiers.GHSA;
@@ -123,6 +172,10 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, pac
   const descriptions: Description[] = [
     { label: 'default', data: rep.description },
   ];
+  const upgradePath = formatUpgradePath(rep.upgradePath);
+  if (upgradePath !== undefined) {
+    descriptions.push({ label: 'upgradePath', data: upgradePath });
+  }
 
   const results = vulns.map(vuln => {
     const result = createResult(ResultStatus.Failed, undefined, {
@@ -147,6 +200,19 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, pac
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  const cvss = buildSnykCvss(rep);
+  if (cvss.length > 0) {
+    req.cvss = cvss;
+  }
+  if (cweIDs.length > 0) {
+    req.cwe = cweIDs;
+  }
+
+  const refs = buildSnykRefs(rep.references);
+  if (refs) {
+    req.refs = refs;
+  }
 
   const name = rep.packageName ?? rep.moduleName;
   const version = rep.version;
@@ -278,7 +344,6 @@ export async function convertSnykToHdf(input: string, converterVersion = '1.0.0'
     generatorName: 'snyk-to-hdf',
     converterVersion,
     toolName: 'Snyk',
-    toolFormat: 'JSON',
     baselines,
     components: [{ name: targetName, type: TargetType.Application }],
     timestamp: scanTime,

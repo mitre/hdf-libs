@@ -141,6 +141,9 @@ function buildRequirement(assessmentID: string, assessments: Assessment[], scanT
   if (meta.assessmentType) {
     tags['assessmentType'] = meta.assessmentType;
   }
+  if (meta.policyDefinitionId) {
+    tags['policy_definition_id'] = meta.policyDefinitionId;
+  }
 
   const descriptions: Description[] = [
     { label: 'default', data: meta.description },
@@ -253,7 +256,6 @@ export async function convertMsftDefenderCloudToHdf(input: string, converterVers
     generatorName: 'msft-defender-cloud-to-hdf',
     converterVersion,
     toolName: 'Microsoft Defender for Cloud',
-    toolFormat: 'JSON',
     baselines: [baseline],
     components,
     timestamp: scanTime,

@@ -13,7 +13,9 @@ import {
   hdfPlanSchema,
   hdfAmendmentsSchema,
   hdfEvidencePackageSchema,
+  hdfRequirementChangeEventSchema,
   commonSchema,
+  eventsSchema,
   extensionsSchema,
   platformSchema,
   resultSchema,
@@ -85,6 +87,7 @@ function createValidator(): Ajv {
   ajv.addSchema(systemSchema);
   ajv.addSchema(planSchema);
   ajv.addSchema(comparisonSchema);
+  ajv.addSchema(eventsSchema);      // change-event envelope (referenced by hdf-requirement-change-event)
   ajv.addSchema(componentSchema);
   ajv.addSchema(dataFlowSchema);
 
@@ -98,6 +101,7 @@ function createValidator(): Ajv {
   ajv.addSchema(hdfSystemSchema);
   ajv.addSchema(hdfPlanSchema);
   ajv.addSchema(hdfAmendmentsSchema);
+  ajv.addSchema(hdfRequirementChangeEventSchema);
   ajv.addSchema(hdfEvidencePackageSchema);
 
   return ajv;
@@ -114,6 +118,7 @@ let systemValidator: ValidateFunction | null = null;
 let planValidator: ValidateFunction | null = null;
 let amendmentsValidator: ValidateFunction | null = null;
 let evidencePackageValidator: ValidateFunction | null = null;
+let requirementChangeEventValidator: ValidateFunction | null = null;
 
 function getResultsValidator(): ValidateFunction {
   if (!resultsValidator) {
@@ -134,6 +139,13 @@ function getComparisonValidator(): ValidateFunction {
     comparisonValidator = ajv.compile(hdfComparisonSchema);
   }
   return comparisonValidator;
+}
+
+function getRequirementChangeEventValidator(): ValidateFunction {
+  if (!requirementChangeEventValidator) {
+    requirementChangeEventValidator = ajv.compile(hdfRequirementChangeEventSchema);
+  }
+  return requirementChangeEventValidator;
 }
 
 function getSystemValidator(): ValidateFunction {
@@ -255,6 +267,14 @@ export function validateBaseline(data: unknown): ValidationResult {
  */
 export function validateComparison(data: unknown): ValidationResult {
   const validator = getComparisonValidator();
+  return createResult(validator, data);
+}
+
+/**
+ * Validate an HDF Requirement Change Event (one continuous-monitoring wire event) against schema
+ */
+export function validateRequirementChangeEvent(data: unknown): ValidationResult {
+  const validator = getRequirementChangeEventValidator();
   return createResult(validator, data);
 }
 

@@ -23,11 +23,16 @@
           "id": "CKV_AWS_275",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_AWS_IAM_79",
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "100 data \"aws_iam_policy\" \"ebs_csi_policy\" {\n101   arn = \"arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy\"\n102 }",
           "title": "Disallow policies from using the AWS AdministratorAccess policy",
           "verificationMethod": "automated"
         },
@@ -52,11 +57,16 @@
           "id": "CKV_AWS_41",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_AWS_SECRETS_5",
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "4 provider \"aws\" {\n5   region = var.region\n6 }",
           "title": "Ensure no hard coded AWS access key and secret key exists in provider",
           "verificationMethod": "automated"
         },
@@ -86,11 +96,16 @@
           "id": "CKV_TF_1",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_CROSS_1",
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "26 module \"vpc\" {\n27   source  = \"terraform-aws-modules/vpc/aws\"\n28   version = \"5.8.1\"\n29 \n30   name = \"education-vpc\"",
           "title": "Ensure Terraform module sources use a commit hash",
           "verificationMethod": "automated"
         },
@@ -116,11 +131,16 @@
           "id": "CKV_AWS_18",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_AWS_S3_13",
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
           "title": "Ensure the S3 bucket has access logging enabled",
           "verificationMethod": "automated"
         },
@@ -146,11 +166,16 @@
           "id": "CKV2_AWS_6",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_AWS_NETWORKING_52",
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
           "title": "Ensure that S3 bucket has a Public Access block",
           "verificationMethod": "automated"
         },
@@ -175,11 +200,16 @@
           "id": "CKV_DOCKER_11",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_DKR_GENERAL_9",
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "1 FROM node:22 AS installer\n2 COPY . /juice-shop\n3 WORKDIR /juice-shop\n4 RUN npm i -g typescript ts-node\n5 RUN npm install --omit=dev --unsafe-perm",
           "title": "Ensure From Alias are unique for multistage builds.",
           "verificationMethod": "automated"
         },
@@ -204,11 +234,16 @@
           "id": "CKV_DOCKER_5",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_DKR_4",
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "1 FROM node:22 AS installer\n2 COPY . /juice-shop\n3 WORKDIR /juice-shop\n4 RUN npm i -g typescript ts-node\n5 RUN npm install --omit=dev --unsafe-perm",
           "title": "Ensure update instructions are not use alone in the Dockerfile",
           "verificationMethod": "automated"
         },
@@ -233,11 +268,16 @@
           "id": "CKV_DOCKER_7",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_DKR_7",
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "22 FROM gcr.io/distroless/nodejs22-debian12",
           "title": "Ensure the base image uses a non latest version tag",
           "verificationMethod": "automated"
         },
@@ -262,11 +302,16 @@
           "id": "CKV_DOCKER_2",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_DKR_2",
+            "check_type": [
+              "dockerfile"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "1 FROM node:22 AS installer\n2 COPY . /juice-shop\n3 WORKDIR /juice-shop\n4 RUN npm i -g typescript ts-node\n5 RUN npm install --omit=dev --unsafe-perm",
           "title": "Ensure that HEALTHCHECK instructions have been added to container images",
           "verificationMethod": "automated"
         }
@@ -284,7 +329,6 @@
   },
   "timestamp": "2026-07-12T23:25:21.464819Z",
   "tool": {
-    "format": "terraform, dockerfile",
     "name": "Checkov",
     "version": "3.2.524"
   }

@@ -832,7 +832,7 @@ describe('Nessus to HDF Converter', async () => {
     });
 
     // Low-band severity (1.0-3.9) + ensures the 'low' switch case in
-    // mapCvssSeverity is exercised.
+    // the shared cvssSeverityFromScore is exercised.
     it('maps low CVSS band to low severity', async () => {
       const xml = `<?xml version="1.0"?>
 <NessusClientData_v2>
@@ -882,6 +882,47 @@ describe('Nessus to HDF Converter', async () => {
         .replace(/[A-Z][a-z]{2} [A-Z][a-z]{2} [ 0-9]{1,2} [0-9:]{8} [0-9]{4}/g, 'not-a-date');
       const result = await convertNessusToHdf(xml);
       expectValidResults(result);
+    });
+  });
+
+  describe('synopsis description', () => {
+    it('carries the vulnerability synopsis as a "synopsis" description', async () => {
+      const nessusXml = readFileSync(join(FIXTURES_DIR, 'input', 'sample.nessus'), 'utf-8');
+      const result = await convertNessusToHdf(nessusXml);
+      // Plugin 10114 (ICMP Timestamp) has a synopsis in the source.
+      const req = findReqAcrossBaselines(result, '10114');
+      expect(req).toBeDefined();
+      const syn = req!.descriptions.find(d => d.label === 'synopsis');
+      expect(syn?.data).toBe('It is possible to determine the exact time set on the remote host.');
+    });
+
+    it('carries the compliance synopsis as a "synopsis" description', async () => {
+      const nessusXml = readFileSync(join(FIXTURES_DIR, 'input', 'compliance.nessus'), 'utf-8');
+      const result = await convertNessusToHdf(nessusXml);
+      const req = findReqAcrossBaselines(result, 'V-71849');
+      expect(req).toBeDefined();
+      const syn = req!.descriptions.find(d => d.label === 'synopsis');
+      expect(syn?.data).toBe('The remote Red Hat Enterprise Linux host does not comply with DISA STIG requirements.');
+    });
+
+    it('omits the synopsis description when the source has no synopsis element', async () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Test</policyName></Policy>
+  <Report name="Test">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="test" protocol="tcp" severity="0" pluginID="1" pluginName="Test" pluginFamily="Test">
+        <description>Test</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+      const result = await convertNessusToHdf(xml);
+      const syn = result.baselines[0].requirements[0].descriptions.find(d => d.label === 'synopsis');
+      expect(syn).toBeUndefined();
     });
   });
 });

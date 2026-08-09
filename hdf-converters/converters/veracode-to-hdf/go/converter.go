@@ -9,9 +9,11 @@ package veracode
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -363,7 +365,6 @@ func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		GeneratorName:    "veracode-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Veracode",
-		ToolFormat:       "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Application},
@@ -402,19 +403,31 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultRemediationNIST)
 	cciTags := cci.NISTToCCI(nist)
 
-	// Build CWE data string for tags
-	cweData := formatCWEData(cat.CWEs)
 	cweDescStr := formatCWEDesc(cat.CWEs)
 
 	extras := map[string]interface{}{}
-	if cweData != "" {
-		extras["cweid"] = cweData
-	}
 	if cweDescStr != "" {
 		extras["cweDescription"] = cweDescStr
 	}
 
+	// Veracode cross-references each CWE to external standards catalogs (OWASP,
+	// SANS/CWE Top 25, CERT C/C++/Java, OWASP Mobile). Each becomes a discrete
+	// tag carrying the category's distinct referenced entries; absent catalogs
+	// are omitted (NOT-IN-SOURCE).
+	for _, s := range cweStandardTags {
+		if v := collectCWEStandard(cat.CWEs, s.get); len(v) > 0 {
+			extras[s.key] = v
+		}
+	}
+
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
+
+	// First-class CWE identifiers ("CWE-NN"). The category cweid attributes are
+	// bare numbers; prefix them to match the schema's CWE-N convention.
+	cweList := make([]string, 0, len(cweIDs))
+	for _, id := range cweIDs {
+		cweList = append(cweList, "CWE-"+id)
+	}
 
 	// Build descriptions
 	descriptions := []hdf.Description{
@@ -430,13 +443,28 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 		})
 	}
 
-	// Collect all flaws from all CWEs under this category
+	// Carry each flaw's remediation_status (e.g. "New", "Fixed", "Cannot Fix").
+	// Descriptions are requirement-level while the field is per-flaw, so the
+	// distinct values across the category's flaws are collected into one entry.
+	if remStatus := formatRemediationStatus(cat.CWEs); remStatus != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "remediation_status",
+			Data:  remStatus,
+		})
+	}
+
+	// Collect all flaws from all CWEs under this category. Alongside each result
+	// synthesize its source-context locus for the requirement-level code string.
 	var results []hdf.RequirementResult
+	var codeLines []string
 	for _, c := range cat.CWEs {
 		limited := shared.LimitSliceWithWarning(c.StaticFlaws.Flaws, 0, "flaw")
 		for _, flaw := range limited {
 			result := buildFlawResult(flaw, firstBuildDate)
 			results = append(results, result)
+			if line := synthesizeFlawCode(flaw); line != "" {
+				codeLines = append(codeLines, line)
+			}
 		}
 	}
 
@@ -455,13 +483,43 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 
+	if len(cweList) > 0 {
+		req.Cwe = cweList
+	}
+
 	if sourceRef != "" {
 		req.SourceLocation = &hdf.SourceLocation{
 			Ref: &sourceRef,
 		}
 	}
 
+	// Static findings carry no raw snippet; the code-locus (function prototype at
+	// source-file:line) is the richest source context Veracode provides. Leave
+	// code unset when no flaw carries either (NOT-IN-SOURCE).
+	if len(codeLines) > 0 {
+		code := strings.Join(codeLines, "\n")
+		req.Code = &code
+	}
+
 	return req
+}
+
+// synthesizeFlawCode renders a static flaw's source-context locus from its
+// function prototype and source-file position. Returns "" when the flaw carries
+// neither a prototype nor a source location (the NOT-IN-SOURCE case).
+func synthesizeFlawCode(flaw Flaw) string {
+	locus := flaw.SourceFilePath + flaw.SourceFile
+	if locus != "" && flaw.Line != "" {
+		locus += ":" + flaw.Line
+	}
+	switch {
+	case flaw.FunctionPrototype != "" && locus != "":
+		return flaw.FunctionPrototype + " at " + locus
+	case flaw.FunctionPrototype != "":
+		return flaw.FunctionPrototype
+	default:
+		return locus
+	}
 }
 
 // buildFlawResult creates an HDF RequirementResult from a static analysis flaw.
@@ -548,12 +606,7 @@ func buildCVERequirement(vuln Vulnerability, components []Component, firstBuildD
 		nist = shared.DefaultRemediationNIST
 	}
 	cciTags := cci.NISTToCCI(nist)
-
-	extras := map[string]interface{}{}
-	if vuln.CWEID != "" {
-		extras["cwe"] = vuln.CWEID
-	}
-	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
+	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, nil)
 
 	// Build results: one per affected component
 	results := make([]hdf.RequirementResult, len(components))
@@ -589,13 +642,131 @@ func buildCVERequirement(vuln Vulnerability, components []Component, firstBuildD
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 
+	if cvss := buildVeracodeCvss(vuln, components); len(cvss) > 0 {
+		req.Cvss = cvss
+	}
+
+	// CVE is already the requirement.id, so no interim tags.cve is emitted; the
+	// CWE moves to the first-class cwe[] (already in "CWE-NN" form on SCA vulns).
+	if vuln.CWEID != "" {
+		req.Cwe = []string{vuln.CWEID}
+	}
+
 	if sourceRef != "" {
 		req.SourceLocation = &hdf.SourceLocation{
 			Ref: &sourceRef,
 		}
 	}
 
+	// SCA vulnerabilities have no source snippet or function prototype; the richest
+	// faithful representation is the vulnerability/component entry serialized as
+	// indented JSON (the ionchannel/nessus pattern).
+	code := buildSCACode(vuln, components)
+	req.Code = &code
+
 	return req
+}
+
+// buildVeracodeCvss assembles the structured CVSS entry for an SCA CVE. Veracode
+// reports a bare numeric base score (no vector, no version), so the version
+// defaults to 3.1 via the shared helper. When the vulnerability itself carries
+// no cvss_score, the first affected component's max_cvss_score is used as a
+// fallback. A missing or non-numeric score yields no entry.
+func buildVeracodeCvss(vuln Vulnerability, components []Component) []hdf.Cvss {
+	scoreStr := vuln.CVSSScore
+	if scoreStr == "" {
+		for _, comp := range components {
+			if comp.MaxCVSSScore != "" {
+				scoreStr = comp.MaxCVSSScore
+				break
+			}
+		}
+	}
+	if scoreStr == "" {
+		return nil
+	}
+	score, err := strconv.ParseFloat(scoreStr, 64)
+	if err != nil {
+		return nil
+	}
+	return []hdf.Cvss{shared.BuildCvss(shared.CvssInput{
+		Version:   shared.CvssVersionFromString(""),
+		BaseScore: &score,
+	})}
+}
+
+// scaCodeComponent is the JSON shape of an affected component embedded in a CVE
+// requirement's code. Field order is load-bearing: it must match the TypeScript
+// twin's object-literal insertion order for byte-identical output.
+type scaCodeComponent struct {
+	ComponentID  string   `json:"component_id"`
+	FileName     string   `json:"file_name"`
+	SHA1         string   `json:"sha1"`
+	Version      string   `json:"version"`
+	Library      string   `json:"library"`
+	LibraryID    string   `json:"library_id"`
+	Vendor       string   `json:"vendor"`
+	Description  string   `json:"description"`
+	MaxCVSSScore string   `json:"max_cvss_score"`
+	AddedDate    string   `json:"added_date"`
+	FilePaths    []string `json:"file_paths"`
+}
+
+// scaCode is the JSON shape serialized into a CVE requirement's code. Field order
+// must match the TypeScript twin.
+type scaCode struct {
+	CVEID          string             `json:"cve_id"`
+	CVSSScore      string             `json:"cvss_score"`
+	Severity       string             `json:"severity"`
+	CWEID          string             `json:"cwe_id"`
+	FirstFoundDate string             `json:"first_found_date"`
+	CVESummary     string             `json:"cve_summary"`
+	SeverityDesc   string             `json:"severity_desc"`
+	Components     []scaCodeComponent `json:"components"`
+}
+
+// buildSCACode serializes a CVE and its affected components as indented JSON.
+// HTML escaping is off and the trailing newline is trimmed so the bytes match
+// the TypeScript twin's JSON.stringify(entry, null, 2).
+func buildSCACode(vuln Vulnerability, components []Component) string {
+	entry := scaCode{
+		CVEID:          vuln.CVEID,
+		CVSSScore:      vuln.CVSSScore,
+		Severity:       vuln.Severity,
+		CWEID:          vuln.CWEID,
+		FirstFoundDate: vuln.FirstFoundDate,
+		CVESummary:     vuln.CVESummary,
+		SeverityDesc:   vuln.SeverityDesc,
+		Components:     make([]scaCodeComponent, 0, len(components)),
+	}
+	for _, comp := range components {
+		filePaths := make([]string, 0, len(comp.FilePaths.FilePath))
+		for _, fp := range comp.FilePaths.FilePath {
+			filePaths = append(filePaths, fp.Value)
+		}
+		entry.Components = append(entry.Components, scaCodeComponent{
+			ComponentID:  comp.ComponentID,
+			FileName:     comp.FileName,
+			SHA1:         comp.SHA1,
+			Version:      comp.Version,
+			Library:      comp.Library,
+			LibraryID:    comp.LibraryID,
+			Vendor:       comp.Vendor,
+			Description:  comp.Description,
+			MaxCVSSScore: comp.MaxCVSSScore,
+			AddedDate:    comp.AddedDate,
+			FilePaths:    filePaths,
+		})
+	}
+
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(entry); err != nil {
+		return "{}"
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
 }
 
 // buildSCAResult creates an HDF RequirementResult from an SCA component finding.
@@ -637,31 +808,6 @@ func formatRecommendations(rec Recommendations) string {
 				parts = append(parts, b.Text)
 			}
 		}
-	}
-	return strings.Join(parts, "\n")
-}
-
-// formatCWEData formats CWE entries with their category metadata for the cweid tag.
-func formatCWEData(cwes []CWE) string {
-	var parts []string
-	for _, c := range cwes {
-		entry := fmt.Sprintf("CWE-%s: %s", c.CWEID, c.CWEName)
-
-		categories := []struct{ name, val string }{
-			{"pcrirelated", c.PCIRelated},
-			{"owasp", c.OWASP},
-			{"sans", c.SANS},
-			{"certc", c.CERTC},
-			{"certcpp", c.CERTCPP},
-			{"certjava", c.CERTJava},
-			{"owaspmobile", c.OWASPMobile},
-		}
-		for _, cat := range categories {
-			if cat.val != "" {
-				entry += fmt.Sprintf("%s: %s\n", cat.name, cat.val)
-			}
-		}
-		parts = append(parts, entry)
 	}
 	return strings.Join(parts, "\n")
 }
@@ -745,6 +891,53 @@ func formatSCACodeDesc(comp Component) string {
 	}
 
 	return strings.Join(parts, "\n")
+}
+
+// cweStandardTags names the standards cross-reference attributes Veracode
+// records on each <cwe>, paired with the discrete tag key each maps to. Order is
+// deterministic and shared with the TypeScript twin.
+var cweStandardTags = []struct {
+	key string
+	get func(CWE) string
+}{
+	{"owasp", func(c CWE) string { return c.OWASP }},
+	{"sans", func(c CWE) string { return c.SANS }},
+	{"certc", func(c CWE) string { return c.CERTC }},
+	{"certcpp", func(c CWE) string { return c.CERTCPP }},
+	{"certjava", func(c CWE) string { return c.CERTJava }},
+	{"owaspmobile", func(c CWE) string { return c.OWASPMobile }},
+}
+
+// collectCWEStandard gathers the distinct non-empty values of one standards
+// cross-reference attribute across a category's CWEs, in first-appearance order.
+// Returns nil when no CWE carries the attribute (the NOT-IN-SOURCE case).
+func collectCWEStandard(cwes []CWE, get func(CWE) string) []string {
+	var values []string
+	seen := map[string]bool{}
+	for _, c := range cwes {
+		if v := get(c); v != "" && !seen[v] {
+			seen[v] = true
+			values = append(values, v)
+		}
+	}
+	return values
+}
+
+// formatRemediationStatus collects the distinct remediation_status values across
+// a category's flaws, in order of first appearance. Returns "" when no flaw
+// carries the field (the NOT-IN-SOURCE case).
+func formatRemediationStatus(cwes []CWE) string {
+	var statuses []string
+	seen := map[string]bool{}
+	for _, c := range cwes {
+		for _, flaw := range c.StaticFlaws.Flaws {
+			if flaw.RemediationStatus != "" && !seen[flaw.RemediationStatus] {
+				seen[flaw.RemediationStatus] = true
+				statuses = append(statuses, flaw.RemediationStatus)
+			}
+		}
+	}
+	return strings.Join(statuses, "\n")
 }
 
 // formatSourceLocation collects source file paths from CWE flaws.

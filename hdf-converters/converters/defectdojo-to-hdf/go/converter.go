@@ -12,8 +12,10 @@
 package defectdojo_to_hdf
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -63,6 +65,26 @@ type ddFinding struct {
 	UnderReview      bool             `json:"under_review"`
 	AcceptedRisks    []ddAcceptedRisk `json:"accepted_risks"`
 	RelatedFields    *ddRelatedFields `json:"related_fields"`
+
+	// raw is the finding exactly as DefectDojo emitted it. DefectDojo carries no
+	// literal source snippet, so requirement.code is the whole finding re-indented
+	// in place — preserving source key order and every field the typed struct
+	// does not model, byte-identical to the TypeScript twin's
+	// JSON.stringify(finding, null, 2).
+	raw json.RawMessage
+}
+
+// UnmarshalJSON captures the source bytes for requirement.code before decoding
+// the typed fields. The plain alias avoids unmarshal recursion.
+func (f *ddFinding) UnmarshalJSON(data []byte) error {
+	type plain ddFinding
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*f = ddFinding(p)
+	f.raw = append(json.RawMessage(nil), data...)
+	return nil
 }
 
 type ddVulnID struct {
@@ -178,6 +200,36 @@ func buildWaiverOverride(ar ddAcceptedRisk) hdf.StatusOverride {
 	}
 }
 
+var dateOnlyPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+
+// parseFindingDate parses a DefectDojo finding `date`. That field is date-only
+// (YYYY-MM-DD) and hdfutil.ParseTimestamp has no date-only layout, so a bare date
+// is promoted to UTC midnight before canonical parsing. This keeps Go and TS
+// byte-identical (the TS twin's parseTimestamp reads a bare date as UTC midnight
+// too) and avoids Go silently dropping the source date and falling back to now().
+func parseFindingDate(s string) time.Time {
+	if dateOnlyPattern.MatchString(s) {
+		s += "T00:00:00Z"
+	}
+	return hdfutil.ParseTimestamp(s)
+}
+
+// latestFindingDate returns the most recent finding `date`. DefectDojo's findings
+// response carries no single top-level scan time, so the newest finding date is
+// the defensible report time for the top-level HDF timestamp. Returns the zero
+// time when no finding carries a parseable date — the caller then omits the
+// optional top-level timestamp rather than fabricating a wall-clock value
+// (keeping the mapping source-derived and deterministic).
+func latestFindingDate(findings []ddFinding) time.Time {
+	var latest time.Time
+	for _, f := range findings {
+		if d := parseFindingDate(f.Date); !d.IsZero() && d.After(latest) {
+			latest = d
+		}
+	}
+	return latest
+}
+
 func findingID(f ddFinding) string {
 	switch {
 	case f.UniqueIDFromTool != nil && *f.UniqueIDFromTool != "":
@@ -205,37 +257,19 @@ func buildCvss(f ddFinding) []hdf.Cvss {
 		if score == nil && (vector == nil || *vector == "") {
 			return
 		}
-		entry := hdf.Cvss{Version: version}
-		if score != nil {
-			s := *score
-			entry.BaseScore = &s
-			sev := cvssBand(s)
-			entry.BaseSeverity = &sev
+		var baseVector string
+		if vector != nil {
+			baseVector = *vector
 		}
-		if vector != nil && *vector != "" {
-			v := *vector
-			entry.BaseVector = &v
-		}
-		out = append(out, entry)
+		out = append(out, shared.BuildCvss(shared.CvssInput{
+			Version:    version,
+			BaseScore:  score,
+			BaseVector: baseVector,
+		}))
 	}
 	add(hdf.The31, f.Cvssv3, f.Cvssv3Score)
 	add(hdf.The40, f.Cvssv4, f.Cvssv4Score)
 	return out
-}
-
-func cvssBand(score float64) hdf.CVSSSeverity {
-	switch hdfutil.CvssScoreToSeverity(score) {
-	case "critical":
-		return hdf.CVSSSeverityCritical
-	case "high":
-		return hdf.CVSSSeverityHigh
-	case "medium":
-		return hdf.CVSSSeverityMedium
-	case "low":
-		return hdf.CVSSSeverityLow
-	default:
-		return hdf.None
-	}
 }
 
 func buildEpss(f ddFinding) *hdf.Epss {
@@ -300,6 +334,23 @@ func codeDesc(f ddFinding) string {
 	return strings.Join(parts, " | ")
 }
 
+// buildFindingCode renders the raw DefectDojo finding as indented JSON for
+// requirement.code (Heimdall's CODE tab). json.Indent reformats the original
+// bytes in place, preserving source key order so the output matches the TS
+// twin's JSON.stringify(finding, null, 2). Returns "" when no raw bytes are
+// available (a synthesized finding) or the bytes are malformed, so the caller
+// leaves code unset rather than emitting a placeholder.
+func buildFindingCode(f ddFinding) string {
+	if len(f.raw) == 0 {
+		return ""
+	}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, f.raw, "", "  "); err != nil {
+		return ""
+	}
+	return buf.String()
+}
+
 func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 	nist := nistTags(f)
 	tags := shared.BuildNISTCCITags(nist, cci.NISTToCCI(nist))
@@ -307,8 +358,15 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 		tags[k] = v
 	}
 
+	// CVE → tags.cve (interim, pending a first-class identifiers[] field). The
+	// requirement.id is a native DefectDojo finding id (DefectDojo-Finding-<n> or
+	// a tool id), never the CVE, so the CVE list is not a duplicate of the id.
+	if cves := cveList(f); len(cves) > 0 {
+		tags["cve"] = cves
+	}
+
 	status := deriveStatus(f)
-	startTime := hdfutil.ParseTimestamp(f.Date)
+	startTime := parseFindingDate(f.Date)
 	if startTime.IsZero() {
 		startTime = time.Now().UTC()
 	}
@@ -331,6 +389,17 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 
 	if f.CWE != nil && *f.CWE > 0 {
 		req.Cwe = []string{fmt.Sprintf("CWE-%d", *f.CWE)}
+	}
+
+	// KEV is NOT-IN-SOURCE: DefectDojo findings carry known_exploited/kev_date/
+	// ransomware_used but no CISA remediation due date. hdf.Kev requires both
+	// dateAdded AND dueDate when inKev is true, so a schema-valid requirement.kev
+	// cannot be produced from source alone — synthesizing a dueDate DefectDojo
+	// never sent would be fabrication. The KEV signal is preserved verbatim in
+	// requirement.code (the raw finding JSON).
+
+	if code := buildFindingCode(f); code != "" {
+		req.Code = &code
 	}
 
 	// The novel part: a risk-accepted finding carries a real waiver override
@@ -411,13 +480,18 @@ func ConvertDefectDojo(input []byte, converterVersion string) (*hdf.HDFResults, 
 		}}
 	}
 
-	return shared.BuildHDFResults(shared.HDFResultsOptions{
+	opts := shared.HDFResultsOptions{
 		GeneratorName:    "defectdojo-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "DefectDojo",
-		ToolFormat:       "JSON",
 		Baselines:        baselines,
-	}), nil
+	}
+	// Top-level timestamp: the newest finding date, source-derived and
+	// deterministic. Omitted (nil) when no finding carries a parseable date.
+	if ts := latestFindingDate(findings); !ts.IsZero() {
+		opts.Timestamp = &ts
+	}
+	return shared.BuildHDFResults(opts), nil
 }
 
 // parseFindings accepts the DRF envelope {results:[…]} or a bare findings array.

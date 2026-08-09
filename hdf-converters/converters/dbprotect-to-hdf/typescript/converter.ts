@@ -148,6 +148,11 @@ const MONTH_ABBR: Record<string, string> = {
   Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
 };
 
+// Go's parseDate returns the zero time.Time (serializes as 0001-01-01T00:00:00Z)
+// for an empty or unparseable date; mirror that sentinel for byte-parity instead
+// of a non-deterministic conversion-time fallback.
+const ZERO_DATE = new Date('0001-01-01T00:00:00Z');
+
 /**
  * Parses DBProtect date formats ("Feb 18 2021 15:57" or "2021-02-18 15:55").
  * Month-name values are normalized to ISO so parseTimestamp interprets them as
@@ -155,18 +160,47 @@ const MONTH_ABBR: Record<string, string> = {
  */
 function parseDate(dateStr: string): Date {
   const trimmed = dateStr.trim();
-  // Go's parseDate returns the zero time.Time (serializes as 0001-01-01T00:00:00Z)
-  // for an empty or unparseable Date column; mirror that for byte-parity instead
-  // of a non-deterministic conversion-time fallback.
-  const ZERO = new Date('0001-01-01T00:00:00Z');
   if (!trimmed) {
-    return ZERO;
+    return ZERO_DATE;
   }
   const month = /^([A-Z][a-z]{2}) (\d{1,2}) (\d{4}) (\d{2}:\d{2})$/.exec(trimmed);
   const normalized = month
     ? `${month[3]}-${MONTH_ABBR[month[1]!] ?? '00'}-${month[2]!.padStart(2, '0')} ${month[4]}`
     : trimmed;
-  return parseTimestamp(normalized) ?? ZERO;
+  return parseTimestamp(normalized) ?? ZERO_DATE;
+}
+
+/**
+ * Derives the top-level HDF timestamp from the source, preferring the "Start
+ * Date" column (the Findings Detail report's scan start) and falling back to the
+ * per-finding "Date" column present in both report formats. Returns undefined
+ * (mirroring Go's zero-time skip) when neither parses, so the caller omits the
+ * timestamp rather than emitting a wall-clock value (determinism).
+ */
+function scanTimestamp(f: Finding): Date | undefined {
+  const start = parseDate(f['Start Date'] ?? '');
+  if (start.getTime() !== ZERO_DATE.getTime()) {
+    return start;
+  }
+  const date = parseDate(f['Date'] ?? '');
+  if (date.getTime() !== ZERO_DATE.getTime()) {
+    return date;
+  }
+  return undefined;
+}
+
+/**
+ * Renders a finding's parsed row (column→value map) as the indented JSON blob
+ * carried in requirement.code. DBProtect ships no literal check source, so the
+ * row itself is the richest available representation. Keys are sorted so the
+ * bytes match the Go twin, whose encoding/json emits map keys in sorted order.
+ */
+function marshalFindingCode(f: Finding): string {
+  const sorted: Record<string, string> = {};
+  for (const key of Object.keys(f).sort()) {
+    sorted[key] = f[key]!;
+  }
+  return JSON.stringify(sorted, null, 2);
 }
 
 /**
@@ -182,6 +216,11 @@ function buildRequirement(
   const nist = DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
   const cciTags = nistToCci(nist);
   const tags = buildNistCciTags(nist, cciTags);
+
+  const checkCategory = rep['Check Category'] ?? '';
+  if (checkCategory) {
+    tags.check_category = checkCategory;
+  }
 
   const descriptions: Description[] = [
     { label: 'default', data: formatDesc(rep) },
@@ -208,6 +247,7 @@ function buildRequirement(
     { tags },
   ) as EvaluatedRequirement;
   req.verificationMethod = VerificationMethodEnum.Automated;
+  req.code = marshalFindingCode(rep);
 
   const controlType = deriveControlTypeFromTags([...nist]);
   if (controlType !== undefined) {
@@ -289,9 +329,8 @@ export async function convertDbprotectToHdf(input: string, converterVersion = '1
     generatorName: 'dbprotect-to-hdf',
     converterVersion,
     toolName: 'DBProtect',
-    toolFormat: 'XML',
     baselines: [baseline],
     components: [{ name: targetName, type: TargetType.Host }],
-    timestamp: new Date(),
+    timestamp: scanTimestamp(firstFinding),
   });
 }

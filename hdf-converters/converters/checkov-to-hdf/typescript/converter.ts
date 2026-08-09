@@ -46,6 +46,7 @@ interface CheckovSummary {
 
 interface CheckovCheck {
   check_id: string;
+  bc_check_id?: string | null;
   check_name: string;
   check_result: CheckovCheckResult;
   severity: string | null;
@@ -102,16 +103,51 @@ function checkToResult(check: CheckovCheck, scanTime: Date): RequirementResult {
   return createResult(status, message, { codeDesc, startTime: scanTime });
 }
 
+/** A check paired with the check_type of the report it came from. */
+interface CheckWithType {
+  check: CheckovCheck;
+  checkType: string;
+}
+
+/**
+ * Renders checkov's code_block ([[lineno, "source"], ...]) into a readable,
+ * line-numbered source snippet for the Heimdall CODE tab. Returns undefined when
+ * the code_block is absent or not an array so requirement.code is omitted.
+ */
+function renderCodeBlock(codeBlock: unknown): string | undefined {
+  if (!Array.isArray(codeBlock)) return undefined;
+  const lines: string[] = [];
+  for (const entry of codeBlock) {
+    if (!Array.isArray(entry) || entry.length < 2) continue;
+    const lineno = entry[0];
+    const src = typeof entry[1] === 'string' ? entry[1] : '';
+    const trimmed = src.endsWith('\n') ? src.slice(0, -1) : src;
+    lines.push(`${lineno} ${trimmed}`);
+  }
+  return lines.length ? lines.join('\n') : undefined;
+}
+
 /**
  * Converts a group of checks sharing a check_id into one EvaluatedRequirement.
  */
-function buildRequirement(checkId: string, checks: CheckovCheck[], scanTime: Date): EvaluatedRequirement {
+function buildRequirement(checkId: string, group: CheckWithType[], scanTime: Date): EvaluatedRequirement {
+  const checks = group.map((c) => c.check);
   const rep = checks[0]!;
   const impact = getImpact(rep.severity);
 
   const tags: Record<string, unknown> = {
     nist: [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS],
   };
+  // The scan scope (which framework's report produced this finding) is
+  // requirement-level data, not tool metadata. Mirrors the Go converter.
+  const checkTypes = [...new Set(group.map((c) => c.checkType).filter((t) => t !== ''))].sort();
+  if (checkTypes.length > 0) {
+    tags['check_type'] = checkTypes;
+  }
+  // Bridgecrew check identifier (e.g. "BC_AWS_S3_16"); omit when null/absent.
+  if (rep.bc_check_id) {
+    tags['bc_check_id'] = rep.bc_check_id;
+  }
 
   const descriptions: Description[] = [
     { label: 'default', data: rep.check_name },
@@ -124,6 +160,11 @@ function buildRequirement(checkId: string, checks: CheckovCheck[], scanTime: Dat
 
   const req = createRequirement(checkId, rep.check_name, descriptions, impact, results, { tags }) as EvaluatedRequirement;
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  const code = renderCodeBlock(rep.code_block);
+  if (code !== undefined) {
+    req.code = code;
+  }
 
   const controlType = deriveControlTypeFromTags([...DEFAULT_STATIC_ANALYSIS_NIST_TAGS]);
   if (controlType !== undefined) {
@@ -177,7 +218,7 @@ export async function convertCheckovToHdf(input: string, converterVersion = '1.0
   const reports = parseInput(input);
 
   // Merge all checks from all frameworks
-  const allChecks: CheckovCheck[] = [];
+  const allChecks: CheckWithType[] = [];
   const checkTypes: string[] = [];
   let version: string | undefined;
 
@@ -186,9 +227,9 @@ export async function convertCheckovToHdf(input: string, converterVersion = '1.0
     if (!version && report.summary.checkov_version) {
       version = report.summary.checkov_version;
     }
-    allChecks.push(...report.results.passed_checks);
-    allChecks.push(...report.results.failed_checks);
-    allChecks.push(...report.results.skipped_checks);
+    for (const check of [...report.results.passed_checks, ...report.results.failed_checks, ...report.results.skipped_checks]) {
+      allChecks.push({ check, checkType: report.check_type });
+    }
   }
 
   const { items: limitedChecks, truncated } = limitArray(allChecks);
@@ -199,13 +240,13 @@ export async function convertCheckovToHdf(input: string, converterVersion = '1.0
   }
 
   // Group by check_id preserving insertion order
-  const groups = new Map<string, CheckovCheck[]>();
-  for (const check of limitedChecks) {
-    const existing = groups.get(check.check_id);
+  const groups = new Map<string, CheckWithType[]>();
+  for (const entry of limitedChecks) {
+    const existing = groups.get(entry.check.check_id);
     if (existing) {
-      existing.push(check);
+      existing.push(entry);
     } else {
-      groups.set(check.check_id, [check]);
+      groups.set(entry.check.check_id, [entry]);
     }
   }
 
@@ -214,6 +255,8 @@ export async function convertCheckovToHdf(input: string, converterVersion = '1.0
     requirements.push(buildRequirement(checkId, checks, scanTime));
   }
 
+  // The joined check_types survive only in the no-findings message; the
+  // per-finding scan scope lives in requirement tags (never tool.format).
   const format = checkTypes.join(', ');
 
   if (requirements.length === 0) {
@@ -236,7 +279,6 @@ export async function convertCheckovToHdf(input: string, converterVersion = '1.0
     converterVersion,
     toolName: 'Checkov',
     toolVersion: version,
-    toolFormat: format,
     baselines: [baseline],
     timestamp: scanTime,
   });

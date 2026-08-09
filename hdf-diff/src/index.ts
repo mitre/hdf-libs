@@ -31,6 +31,18 @@ export {
   classifyChangeReasons,
   classifyDiffStatus,
 } from './status.js';
+export {
+  computeEffectiveChecksum,
+  computeEffectiveImpact,
+  computeDisposition,
+} from './effective-checksum.js';
+export type { EffectiveChecksum } from './effective-checksum.js';
+export { changeEventFromPrevious } from './change-event.js';
+export type { KeyState, EventInputs } from './change-event.js';
+export { applyChangeEvents } from './apply-events.js';
+export type { ApplyInputs, ApplyWarning, ApplyResult } from './apply-events.js';
+export { foldChangeEventsIntoComparison } from './fold-events.js';
+export type { FoldResult } from './fold-events.js';
 
 // Summary
 export { computeSummary } from './summary.js';

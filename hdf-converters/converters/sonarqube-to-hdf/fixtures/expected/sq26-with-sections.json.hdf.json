@@ -28,6 +28,10 @@
               "CCI-003173"
             ],
             "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
+            "lang": "web",
+            "langName": "HTML",
             "nist": [
               "SA-11"
             ],
@@ -69,6 +73,10 @@
               "CWE-259",
               "CWE-798"
             ],
+            "debt": "30min",
+            "effort": "30min",
+            "lang": "secrets",
+            "langName": "Secrets",
             "nist": [
               "SA-11"
             ],
@@ -109,6 +117,10 @@
             "cwe": [
               "CWE-20"
             ],
+            "debt": "20min",
+            "effort": "20min",
+            "lang": "ts",
+            "langName": "TypeScript",
             "nist": [
               "SI-10"
             ],

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { convertNetsparkerToHdf } from './converter.js';
+import { convertNetsparkerToHdf, buildNetsparkerCvss } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
@@ -46,6 +46,35 @@ describe('timestamp parse fallback', () => {
     const input = loadFixture('input/sample-netsparker-invicti.xml').replace(/05\/05\/2023 04:57 PM/g, 'not-a-date');
     const hdf = parseResult(await convertNetsparkerToHdf(input));
     expectValidResults(hdf);
+  });
+});
+
+describe('top-level timestamp from `generated` attribute', () => {
+  it('pins the top-level timestamp to the fixture `generated` value', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    // generated="03/07/2023 03:15 PM" parsed as UTC → 2023-03-07T15:15:00Z.
+    // The shared snapshot masks this value, so pin it explicitly here.
+    expect(hdf.timestamp as unknown as string).toBe('2023-03-07T15:15:00Z');
+  });
+
+  it('falls back to a valid timestamp when `generated` is absent', async () => {
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-generated</LookupId>
+			<name>No Generated Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    expect(hdf.timestamp).toBeDefined();
+    expect(Number.isNaN(new Date(hdf.timestamp as unknown as string).getTime())).toBe(false);
   });
 });
 
@@ -115,7 +144,7 @@ describe('Netsparker to HDF converter', () => {
     const input = loadFixture('input/sample-netsparker-invicti.xml');
     const hdf = parseResult(await convertNetsparkerToHdf(input));
     expect(hdf.tool?.name).toContain('Invicti');
-    expect(hdf.tool?.format).toBe('XML');
+    expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
   });
 
   // ---- Target ----
@@ -188,6 +217,36 @@ describe('Netsparker to HDF converter', () => {
     expect(req?.tags?.cci).toBeDefined();
   });
 
+  // ---- Classification tags (capec / wasc / iso27001 / pci32) ----
+
+  it('maps classification fields to tags with the source values', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+
+    // Vuln 1: capec=217, wasc=4, iso27001=A.14.1.3, pci32=6.5.4 (all present).
+    const v1 = findRequirement(hdf, 'e8b418ae-a532-4b43-5d9b-af9b04bbbca3');
+    expect(v1?.tags?.capec).toBe('217');
+    expect(v1?.tags?.wasc).toBe('4');
+    expect(v1?.tags?.iso27001).toBe('A.14.1.3');
+    expect(v1?.tags?.pci32).toBe('6.5.4');
+    // hipaa and owasppc are empty in every fixture vuln → never tagged.
+    expect(v1?.tags?.hipaa).toBeUndefined();
+    expect(v1?.tags?.owasppc).toBeUndefined();
+
+    // Vuln 2: wasc=15, iso27001=A.14.1.2; capec and pci32 empty → omitted.
+    const v2 = findRequirement(hdf, '9c3a51bf-6c1f-47c9-4646-afb704bb8fb0');
+    expect(v2?.tags?.wasc).toBe('15');
+    expect(v2?.tags?.iso27001).toBe('A.14.1.2');
+    expect(v2?.tags?.capec).toBeUndefined();
+    expect(v2?.tags?.pci32).toBeUndefined();
+
+    // Vuln 3: capec=103, iso27001=A.14.2.5; wasc empty → omitted.
+    const v3 = findRequirement(hdf, '8d8e6052-221d-41c4-8f1e-af9704473901');
+    expect(v3?.tags?.capec).toBe('103');
+    expect(v3?.tags?.iso27001).toBe('A.14.2.5');
+    expect(v3?.tags?.wasc).toBeUndefined();
+  });
+
   // ---- Descriptions ----
 
   it('should have default description', async () => {
@@ -208,6 +267,54 @@ describe('Netsparker to HDF converter', () => {
     const fix = findDescription(req!.descriptions!, 'fix');
     expect(fix).toBeDefined();
     expect(fix!.data.length).toBeGreaterThan(0);
+  });
+
+  // ---- External references → refs[] ----
+
+  it('maps <external-references> anchor links to refs[]', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'e8b418ae-a532-4b43-5d9b-af9b04bbbca3');
+    expect(req?.refs).toBeDefined();
+    expect(req!.refs).toHaveLength(5);
+    expect(req!.refs![0]!.url).toBe('https://wiki.owasp.org/index.php/Insecure_Configuration_Management');
+    expect(req!.refs![4]!.url).toBe('https://syslink.pl/cipherlist/');
+  });
+
+  it('omits refs[] when the vuln carries no external-references', async () => {
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target><url>https://example.com/</url></target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-refs</LookupId>
+			<name>No Refs Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'no-refs');
+    expect(req?.refs).toBeUndefined();
+  });
+
+  it('skips non-absolute hrefs (relative/fragment/blank) in external-references', async () => {
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target><url>https://example.com/</url></target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>mixed-refs</LookupId>
+			<name>Mixed Refs Vuln</name>
+			<severity>Low</severity>
+			<external-references><![CDATA[<a href="https://abs.example/x">abs</a><a href="/relative">rel</a><a href="#frag">f</a><a href="   ">blank</a>]]></external-references>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'mixed-refs');
+    expect(req?.refs).toHaveLength(1);
+    expect(req!.refs![0]!.url).toBe('https://abs.example/x');
   });
 
   // ---- All results are Failed ----
@@ -233,6 +340,42 @@ describe('Netsparker to HDF converter', () => {
     expect(req?.results).toBeDefined();
     expect(req!.results![0]!.codeDesc).toContain('http-request');
     expect(req!.results![0]!.codeDesc).toContain('GET');
+  });
+
+  // ---- requirement.code holds the raw HTTP request (CODE tab) ----
+
+  it('should set requirement.code to the raw HTTP request content', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+
+    // First vuln: http-request content is "[SSL Connection]"
+    const req = findRequirement(hdf, 'e8b418ae-a532-4b43-5d9b-af9b04bbbca3');
+    expect(req?.code).toBe('[SSL Connection]');
+
+    // Second vuln: full raw GET request preserved verbatim, no framing
+    const req2 = findRequirement(hdf, '9c3a51bf-6c1f-47c9-4646-afb704bb8fb0');
+    expect(req2?.code).toContain('GET / HTTP/1.1');
+    expect(req2?.code).toContain('Host: mlrcommercial.vams-impl.cms.gov');
+    expect(req2?.code).not.toContain('method :');
+  });
+
+  it('should leave requirement.code unset when the vuln has no http-request content', async () => {
+    const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+  <target>
+    <url>https://example.com/</url>
+  </target>
+  <vulnerabilities>
+    <vulnerability>
+      <LookupId>no-http-request</LookupId>
+      <name>No Request Vuln</name>
+      <severity>Low</severity>
+    </vulnerability>
+  </vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(xml));
+    const req = findRequirement(hdf, 'no-http-request');
+    expect(req?.code).toBeUndefined();
   });
 
   // ---- Message contains HTTP response info ----
@@ -488,5 +631,61 @@ describe('Netsparker to HDF converter', () => {
     expect(req).toBeDefined();
     // Should have owasp tag but no cweid
     expect(req!.tags?.owasp).toBeDefined();
+  });
+});
+
+describe('structured CVSS', () => {
+  it('populates cvss[] from <cvss> (3.0) and <cvss31> (3.1) blocks', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'e8b418ae-a532-4b43-5d9b-af9b04bbbca3');
+    expect(req).toBeDefined();
+    expect(req!.cvss).toHaveLength(2);
+
+    const [c30, c31] = req!.cvss!;
+    expect(c30!.version).toBe('3.0');
+    expect(c30!.baseScore).toBeCloseTo(6.8, 5);
+    expect(c30!.baseSeverity).toBe('medium');
+    expect(c30!.baseVector).toBe('CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N');
+
+    expect(c31!.version).toBe('3.1');
+    expect(c31!.baseScore).toBeCloseTo(6.8, 5);
+    expect(c31!.baseVector).toBe('CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N');
+  });
+
+  it('omits cvss[] when the vuln carries no CVSS block', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    for (const id of ['9c3a51bf-6c1f-47c9-4646-afb704bb8fb0', '8d8e6052-221d-41c4-8f1e-af9704473901']) {
+      const req = findRequirement(hdf, id);
+      expect(req).toBeDefined();
+      expect(req!.cvss).toBeUndefined();
+    }
+  });
+
+  it('builds one entry per block, dropping empty blocks (buildNetsparkerCvss)', () => {
+    expect(buildNetsparkerCvss({
+      cvss: { vector: 'CVSS:3.0/AV:N', score: [{ type: 'Base', value: '6.8' }] },
+      cvss31: { vector: 'CVSS:3.1/AV:N', score: [{ type: 'Base', value: '7.5' }] },
+    })).toHaveLength(2);
+
+    // vector only, no Base score
+    const vectorOnly = buildNetsparkerCvss({ cvss: { vector: 'CVSS:3.1/AV:N' } });
+    expect(vectorOnly).toHaveLength(1);
+    expect(vectorOnly[0]!.baseScore).toBeUndefined();
+
+    // Base score only, no vector
+    const scoreOnly = buildNetsparkerCvss({ cvss31: { score: [{ type: 'Base', value: '4.0' }] } });
+    expect(scoreOnly).toHaveLength(1);
+    expect(scoreOnly[0]!.baseScore).toBeCloseTo(4.0, 5);
+    expect(scoreOnly[0]!.baseVector).toBeUndefined();
+
+    // unparseable / absent Base value and non-Base types → nothing emitted
+    expect(buildNetsparkerCvss({ cvss: { score: [{ type: 'Base', value: 'N/A' }] } })).toHaveLength(0);
+    expect(buildNetsparkerCvss({ cvss: { score: [{ type: 'Base' }] } })).toHaveLength(0);
+    expect(buildNetsparkerCvss({ cvss: { score: [{ type: 'Temporal', value: '6.8' }] } })).toHaveLength(0);
+    expect(buildNetsparkerCvss({ cvss: { score: [{ value: '6.8' }] } })).toHaveLength(0);
+    expect(buildNetsparkerCvss({})).toHaveLength(0);
+    expect(buildNetsparkerCvss(undefined)).toHaveLength(0);
   });
 });

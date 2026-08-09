@@ -93,7 +93,7 @@ describe('BurpSuite to HDF Converter', () => {
       const out = parseOutput(await convertBurpsuiteToHdf(xml));
       const ds = out.tool as Record<string, unknown>;
       expect(ds.name).toBe('BurpSuite');
-      expect(ds.format).toBe('XML');
+      expect(ds.format).toBeUndefined() // serialization structures are not formats (kpvj);
       expect(ds.version).toBe('2020.1');
     });
 
@@ -415,6 +415,42 @@ describe('BurpSuite to HDF Converter', () => {
       const req = findRequirement(bl, '555');
       expect(req!.impact).toBe(0.3); // default fallback
     });
+  });
+});
+
+// --- External references (refs[]) ---
+describe('burpsuite-to-hdf external references', () => {
+  it('maps a references href link to refs[].url', async () => {
+    const xml = loadFixture('input/zero.webappsecurity.com.xml');
+    const out = parseOutput(await convertBurpsuiteToHdf(xml));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    // Type 2098688 references CDATA HTML with one <a href> link.
+    const req = findRequirement(bl, '2098688')!;
+    const refs = req.refs as Array<Record<string, unknown>>;
+    expect(refs).toHaveLength(1);
+    expect(refs[0]!.url).toBe('http://blog.portswigger.net/2016/10/exploiting-cors-misconfigurations-for.html');
+  });
+
+  it('emits one refs[] entry per href when multiple links are present', async () => {
+    const xml = loadFixture('input/zero.webappsecurity.com.xml');
+    const out = parseOutput(await convertBurpsuiteToHdf(xml));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    // Type 16777984 references three <a href> links.
+    const req = findRequirement(bl, '16777984')!;
+    const refs = req.refs as Array<Record<string, unknown>>;
+    expect(refs).toHaveLength(3);
+    expect(refs[0]!.url).toBe('https://developer.mozilla.org/en-US/docs/Web/Security/HTTP_strict_transport_security');
+    expect(refs[1]!.url).toBe('http://www.thoughtcrime.org/software/sslstrip/');
+    expect(refs[2]!.url).toBe('https://hstspreload.appspot.com/');
+  });
+
+  it('omits refs[] when the issue carries no references', async () => {
+    const xml = loadFixture('input/zero.webappsecurity.com.xml');
+    const out = parseOutput(await convertBurpsuiteToHdf(xml));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    // Type 4197376 ("Input returned in response") carries no references element.
+    const req = findRequirement(bl, '4197376')!;
+    expect(req.refs).toBeUndefined();
   });
 });
 

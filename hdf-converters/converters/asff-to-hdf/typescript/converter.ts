@@ -24,6 +24,7 @@ import {
   validateInputSize,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '../../../shared/typescript/converterutil.js';
+import { buildCvss, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -31,6 +32,7 @@ import type {
   RequirementResult,
   Description,
   Component,
+  Cvss,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -65,6 +67,9 @@ export interface AsffFinding {
   // Standard ASFF field any producer may populate (Inspector, third-party
   // scanners); mapped generically so CVE/CVSS/fix data survives.
   Vulnerabilities?: AsffVulnerability[];
+  // The finding provider's authoritative severity, preferred over the top-level
+  // Severity that Security Hub may overwrite on ingest.
+  FindingProviderFields?: { Severity?: AsffSeverity };
 }
 
 export interface AsffVulnerability {
@@ -162,21 +167,24 @@ export function severityLabelToImpact(label: string | undefined): number {
 /**
  * findingImpact derives a 0.0–1.0 impact. Suppressed findings are forced to 0.
  * Security Hub's INFORMATIONAL is up-graded to MEDIUM (Security Hub over-marks
- * findings INFORMATIONAL without context).
+ * findings INFORMATIONAL without context). FindingProviderFields.Severity — the
+ * provider's own rating — is preferred over the top-level Severity, which
+ * Security Hub may overwrite on ingest.
  */
 export function findingImpact(f: AsffFinding): number {
   if (f.Workflow?.Status === 'SUPPRESSED') {
     return 0.0;
   }
-  let label = f.Severity?.Label;
+  const sev = f.FindingProviderFields?.Severity?.Label ? f.FindingProviderFields.Severity : f.Severity;
+  let label = sev?.Label;
   if (isSecurityHub(f) && (label ?? '').toUpperCase() === 'INFORMATIONAL') {
     label = 'MEDIUM';
   }
   if (label) {
     return severityLabelToImpact(label);
   }
-  if (typeof f.Severity?.Normalized === 'number') {
-    return f.Severity.Normalized / 100.0;
+  if (typeof sev?.Normalized === 'number') {
+    return sev.Normalized / 100.0;
   }
   return 0.0;
 }
@@ -394,6 +402,57 @@ function vulnerabilitySummary(f: AsffFinding): string {
     .join('\n');
 }
 
+/**
+ * Assembles requirement.cvss[] from a finding's ASFF Vulnerabilities[]. Each Cvss
+ * entry carrying a BaseScore becomes one structured Cvss via the shared builder.
+ * ASFF's Cvss shape has no vector string, so only version, score, and source map;
+ * an entry without a BaseScore contributes nothing.
+ */
+function vulnCvss(f: AsffFinding): Cvss[] {
+  const out: Cvss[] = [];
+  for (const v of f.Vulnerabilities ?? []) {
+    for (const c of v.Cvss ?? []) {
+      if (typeof c.BaseScore !== 'number') continue;
+      out.push(buildCvss({version: cvssVersionFromString(c.Version), baseScore: c.BaseScore, source: c.Source}));
+    }
+  }
+  return out;
+}
+
+/**
+ * Collects the CVE ids a finding's Vulnerabilities[] carry (dedup, first-seen
+ * order) for tags.cve. ASFF stores the CVE in Vulnerabilities[].Id.
+ */
+function vulnCves(f: AsffFinding): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const v of f.Vulnerabilities ?? []) {
+    if (v.Id && !seen.has(v.Id)) {
+      seen.add(v.Id);
+      out.push(v.Id);
+    }
+  }
+  return out;
+}
+
+/**
+ * Collects the distinct ASFF Types[] taxonomy strings across a requirement's
+ * finding group (dedup, first-appearance order) for tags.types.
+ */
+function groupTypes(group: AsffFinding[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const f of group) {
+    for (const t of f.Types ?? []) {
+      if (t && !seen.has(t)) {
+        seen.add(t);
+        out.push(t);
+      }
+    }
+  }
+  return out;
+}
+
 // trivyMessage summarizes a Trivy finding's product-specific detail for the
 // result message, dispatching on the finding shape Trivy's ASFF template emits:
 // a CVE reports the installed vs patched package, a misconfiguration reports the
@@ -446,7 +505,17 @@ function buildRequirement(id: string, group: AsffFinding[]): EvaluatedRequiremen
   if (fix) descriptions.push({ label: 'fix', data: fix });
 
   const nist = nistTags(group);
-  const tags = nist.length > 0 ? buildNistCciTags(nist, nistToCci(nist)) : {};
+  const tags: Record<string, unknown> = nist.length > 0 ? buildNistCciTags(nist, nistToCci(nist)) : {};
+  // The CVE lives in ASFF's Vulnerabilities[].Id, while requirement.id is the
+  // finding id — so the CVE is not otherwise represented. Surface it in tags.cve
+  // (interim, pending a first-class identifiers[] schema field).
+  const cves = vulnCves(primary);
+  if (cves.length > 0) tags.cve = cves;
+  // ASFF's Types[] finding-type taxonomy is otherwise dropped; surface the
+  // distinct values across the aggregated group (first-appearance order) in
+  // tags.types so the source categorization survives.
+  const types = groupTypes(group);
+  if (types.length > 0) tags.types = types;
 
   const results = group.map(buildResult);
 
@@ -458,6 +527,12 @@ function buildRequirement(id: string, group: AsffFinding[]): EvaluatedRequiremen
   if (controlType !== undefined) {
     req.controlType = controlType;
   }
+  const cvss = vulnCvss(primary);
+  if (cvss.length > 0) req.cvss = cvss;
+  // ASFF carries no literal source snippet, so code holds the whole finding
+  // serialized as indented JSON (byte-identical to the Go twin's json.Indent of
+  // the source bytes).
+  req.code = JSON.stringify(primary, null, 2);
   const refs: { url: string }[] = [];
   if (primary.SourceUrl) refs.push({ url: primary.SourceUrl });
   const seen = new Set<string>();
@@ -545,7 +620,7 @@ export async function convertAsffToHdf(input: string, converterVersion = '1.0.0'
   const hdf: HDFResults = {
     baselines,
     generator: { name: 'asff-to-hdf', version: converterVersion },
-    tool: { name: 'AWS Security Finding Format', format: 'JSON' },
+    tool: { name: 'AWS Security Finding Format' },
     timestamp: new Date(),
   };
 

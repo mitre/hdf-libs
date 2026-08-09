@@ -24,17 +24,23 @@
           "id": "java:S1068",
           "impact": 0.5,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "CLEAR",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
             "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
                 "severity": "MEDIUM"
               }
             ],
+            "lang": "java",
+            "langName": "Java",
             "legacySeverity": "major",
             "nist": [
               "SA-11"
@@ -70,17 +76,23 @@
           "id": "java:S1128",
           "impact": 0.3,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "CLEAR",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
             "cwe": [],
+            "debt": "1min",
+            "effort": "1min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
                 "severity": "LOW"
               }
             ],
+            "lang": "java",
+            "langName": "Java",
             "legacySeverity": "minor",
             "nist": [
               "SA-11"
@@ -116,17 +128,23 @@
           "id": "java:S1135",
           "impact": 0,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "COMPLETE",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
             "cwe": [],
+            "debt": "0min",
+            "effort": "0min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
                 "severity": "INFO"
               }
             ],
+            "lang": "java",
+            "langName": "Java",
             "legacySeverity": "info",
             "nist": [
               "SA-11"
@@ -162,17 +180,23 @@
           "id": "java:S1144",
           "impact": 0.5,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "CLEAR",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
             "cwe": [],
+            "debt": "2min",
+            "effort": "2min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
                 "severity": "MEDIUM"
               }
             ],
+            "lang": "java",
+            "langName": "Java",
             "legacySeverity": "major",
             "nist": [
               "SA-11"
@@ -208,17 +232,23 @@
           "id": "java:S1186",
           "impact": 0.7,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "COMPLETE",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
             "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
                 "severity": "HIGH"
               }
             ],
+            "lang": "java",
+            "langName": "Java",
             "legacySeverity": "critical",
             "nist": [
               "SA-11"
@@ -254,17 +284,23 @@
           "id": "java:S1192",
           "impact": 0.7,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "DISTINCT",
+            "cleanCodeAttributeCategory": "ADAPTABLE",
             "cwe": [],
+            "debt": "8min",
+            "effort": "8min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
                 "severity": "HIGH"
               }
             ],
+            "lang": "java",
+            "langName": "Java",
             "legacySeverity": "critical",
             "nist": [
               "SA-11"
@@ -300,17 +336,23 @@
           "id": "java:S1481",
           "impact": 0.3,
           "tags": {
+            "author": "dev@example.com",
             "cci": [
               "CCI-003173"
             ],
             "cleanCodeAttribute": "CLEAR",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
             "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
             "impacts": [
               {
                 "softwareQuality": "MAINTAINABILITY",
                 "severity": "LOW"
               }
             ],
+            "lang": "java",
+            "langName": "Java",
             "legacySeverity": "minor",
             "nist": [
               "SA-11"

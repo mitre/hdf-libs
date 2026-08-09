@@ -177,7 +177,6 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 		GeneratorName:    "msft-defender-cloud-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Microsoft Defender for Cloud",
-		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       targets,
 		Timestamp:        &scanTime,
@@ -223,6 +222,9 @@ func buildRequirement(assessmentID string, assessments []assessment, scanTime ti
 	}
 	if meta.AssessmentType != "" {
 		tags["assessmentType"] = meta.AssessmentType
+	}
+	if meta.PolicyDefinitionID != "" {
+		tags["policy_definition_id"] = meta.PolicyDefinitionID
 	}
 
 	// Descriptions

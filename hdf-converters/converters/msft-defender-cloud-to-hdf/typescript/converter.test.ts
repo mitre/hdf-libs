@@ -66,7 +66,7 @@ describe('Microsoft Defender for Cloud to HDF converter', async () => {
       expect(hdf.generator?.name).toBe('msft-defender-cloud-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
       expect(hdf.tool?.name).toBe('Microsoft Defender for Cloud');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
       expect(hdf.baselines).toHaveLength(1);
       expectValidResults(hdf);
     });
@@ -177,6 +177,40 @@ describe('Microsoft Defender for Cloud to HDF converter', async () => {
       const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req0 = hdf.baselines[0]!.requirements[0]!;
       expect(req0.tags?.['categories']).toContain('Networking');
+    });
+  });
+
+  describe('policy definition ID tag', async () => {
+    it('should include policy_definition_id as a string tag when present', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req0 = hdf.baselines[0]!.requirements[0]!;
+      expect(req0.tags?.['policy_definition_id']).toBe(
+        '/providers/Microsoft.Authorization/policyDefinitions/aaaa1111-bbbb-2222-cccc-3333dddd4444',
+      );
+    });
+
+    it('should omit policy_definition_id when source field is absent', async () => {
+      const input = JSON.stringify({
+        value: [
+          {
+            id: '/subscriptions/sub1/providers/Microsoft.Security/assessments/nopolicy',
+            name: 'nopolicy',
+            properties: {
+              displayName: 'No policy',
+              status: { code: 'Healthy' },
+              metadata: {
+                description: 'desc',
+                severity: 'Low',
+                categories: [], tactics: [], techniques: [], threats: [],
+              },
+              resourceDetails: { id: '/subscriptions/sub1/res' },
+            },
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(input)) as HDFResults;
+      const req0 = hdf.baselines[0]!.requirements[0]!;
+      expect(req0.tags?.['policy_definition_id']).toBeUndefined();
     });
   });
 

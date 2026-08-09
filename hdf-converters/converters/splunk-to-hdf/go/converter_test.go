@@ -339,6 +339,39 @@ func TestConvertSplunkToHDF_ControlEventAnchor(t *testing.T) {
 		"splunk-events.json: one requirement per meta.subtype==control event")
 }
 
+// ---- Tool version test ----
+
+// header.version carries the Splunk scanner/format version; it maps to HDF
+// tool.version. The value is a static string in the source, so the assertion
+// pins the exact fixture version (the snapshot masks timestamps, not this).
+func TestConvertSplunkToHDF_ToolVersion(t *testing.T) {
+	result, err := ConvertSplunkToHDF(loadEventsFixture(t), testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Tool, "Tool should be set")
+	require.NotNil(t, result.Tool.Version, "tool.version should be set from header.version")
+	assert.Equal(t, "4.16.0", *result.Tool.Version)
+
+	minResult, err := ConvertSplunkToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, minResult.Tool)
+	require.NotNil(t, minResult.Tool.Version)
+	assert.Equal(t, "4.16.0", *minResult.Tool.Version)
+}
+
+// When the header carries no version, tool.version stays absent rather than
+// serializing an empty string.
+func TestConvertSplunkToHDF_ToolVersionAbsent(t *testing.T) {
+	input := []byte(`[{
+		"meta": {"guid": "g", "subtype": "header", "hdf_splunk_schema": "1.0", "filetype": "evaluation", "filename": "t.json"},
+		"profiles": [], "platform": {"name": "centos", "release": "7"}, "statistics": {}
+	}]`)
+	result, err := ConvertSplunkToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	if result.Tool != nil {
+		assert.Nil(t, result.Tool.Version, "tool.version should be absent when header.version is empty")
+	}
+}
+
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "splunk-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertSplunkToHDF(input, "1.0.0")

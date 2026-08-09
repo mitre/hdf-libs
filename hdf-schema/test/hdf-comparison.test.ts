@@ -172,6 +172,41 @@ describe('hdf-comparison.schema.json', () => {
       }
       expect(isValid).toBe(true);
     });
+
+    it('should accept the amendment-axis change reasons the diff engine emits', () => {
+      const doc = createMinimalComparisonDoc({
+        requirementDiffs: [
+          {
+            id: 'SV-100001',
+            state: 'updated',
+            changeReasons: ['dispositionChanged', 'effectiveImpactChanged'],
+            before: createMinimalRequirement({ id: 'SV-100001' }),
+            after: createMinimalRequirement({ id: 'SV-100001' }),
+            fieldChanges: [
+              {
+                op: 'replace',
+                path: '/disposition',
+                oldValue: 'riskAdjustment',
+                newValue: 'waiver',
+              },
+            ],
+          },
+        ],
+        summary: {
+          total: 1,
+          matchedCount: 1,
+          unmatchedOldCount: 0,
+          unmatchedNewCount: 0,
+          updated: 1,
+        },
+      });
+
+      const isValid = validate(doc);
+      if (!isValid) {
+        console.error('Validation errors:', JSON.stringify(validate.errors, null, 2));
+      }
+      expect(isValid).toBe(true);
+    });
   });
 
   describe('RequirementDiff with null before (state=new)', () => {

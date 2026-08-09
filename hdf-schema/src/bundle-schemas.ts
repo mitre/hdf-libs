@@ -17,7 +17,7 @@ const PRIMITIVES_DIR = join(SCHEMAS_DIR, 'primitives');
 const DIST_DIR = process.env.HDF_SCHEMA_DIST_DIR ?? join(__dirname, '..', 'dist', 'schemas');
 
 // Main schemas to bundle (these have $ref to primitives)
-const MAIN_SCHEMAS = ['hdf-results.schema.json', 'hdf-baseline.schema.json', 'hdf-comparison.schema.json', 'hdf-system.schema.json', 'hdf-plan.schema.json', 'hdf-amendments.schema.json', 'hdf-evidence-package.schema.json'];
+const MAIN_SCHEMAS = ['hdf-results.schema.json', 'hdf-baseline.schema.json', 'hdf-comparison.schema.json', 'hdf-system.schema.json', 'hdf-plan.schema.json', 'hdf-amendments.schema.json', 'hdf-evidence-package.schema.json', 'hdf-requirement-change-event.schema.json'];
 
 /**
  * Load and register all schemas with @hyperjump/json-schema.

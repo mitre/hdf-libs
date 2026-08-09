@@ -1,6 +1,8 @@
 package dbprotect
 
 import (
+	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"strings"
@@ -135,6 +137,18 @@ func parseDate(dateStr string) time.Time {
 	return time.Time{}
 }
 
+// scanTimestamp derives the scan time for the top-level HDF timestamp from the
+// source, preferring the "Start Date" column (the Findings Detail report's scan
+// start) and falling back to the per-finding "Date" column present in both
+// report formats. Returns the zero time when neither parses, so the caller omits
+// the timestamp rather than emitting a wall-clock value (determinism).
+func scanTimestamp(f finding) time.Time {
+	if t := parseDate(f["Start Date"]); !t.IsZero() {
+		return t
+	}
+	return parseDate(f["Date"])
+}
+
 // groupByCheckID groups findings by their Check ID, preserving insertion order.
 func groupByCheckID(findings []finding) ([]string, map[string][]finding) {
 	order := []string{}
@@ -159,6 +173,22 @@ func hasResultStatus(ds *Dataset) bool {
 	return false
 }
 
+// marshalFindingCode renders the finding's parsed row (column→value map) as the
+// indented JSON blob carried in requirement.code — DBProtect ships no literal
+// check source, so the row itself is the richest available representation.
+// HTML escaping is off and encoding/json emits map keys in sorted order, so the
+// bytes match the TypeScript twin's JSON.stringify over the same sorted object.
+// Encoding a map[string]string cannot fail, so the error is deliberately ignored
+// (no uncoverable defensive branch).
+func marshalFindingCode(f finding) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	_ = enc.Encode(f)
+	return strings.TrimSuffix(buf.String(), "\n")
+}
+
 // buildRequirement converts a group of findings sharing a Check ID into one
 // EvaluatedRequirement with multiple results.
 func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.EvaluatedRequirement {
@@ -167,6 +197,10 @@ func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.Ev
 	nist := shared.DefaultStaticAnalysisNIST
 	cciTags := cci.NISTToCCI(nist)
 	tags := shared.BuildNISTCCITags(nist, cciTags)
+
+	if checkCategory := rep["Check Category"]; checkCategory != "" {
+		tags["check_category"] = checkCategory
+	}
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: formatDesc(rep)},
@@ -192,6 +226,7 @@ func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.Ev
 	}
 
 	title := rep["Check"]
+	code := marshalFindingCode(rep)
 	return hdf.EvaluatedRequirement{
 		ID:                 checkID,
 		Title:              &title,
@@ -200,6 +235,7 @@ func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.Ev
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		Descriptions:       descriptions,
 		Results:            results,
+		Code:               &code,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
@@ -255,17 +291,23 @@ func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 
 	targetName := firstFinding["Asset"]
-	now := time.Now().UTC()
+
+	// Top-level timestamp is source-derived (Start Date, else Date) so repeated
+	// conversions of the same input are byte-identical. Omit it rather than fall
+	// back to now() when the source carries no parseable scan time.
+	var timestamp *time.Time
+	if ts := scanTimestamp(firstFinding); !ts.IsZero() {
+		timestamp = &ts
+	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "dbprotect-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "DBProtect",
-		ToolFormat:       "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Host},
 		},
-		Timestamp: &now,
+		Timestamp: timestamp,
 	}), nil
 }

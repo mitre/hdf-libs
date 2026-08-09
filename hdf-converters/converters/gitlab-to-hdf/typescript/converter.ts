@@ -8,6 +8,7 @@ import {
   type RequirementResult,
   type HDFResults,
   type Component,
+  type Reference,
   ResultStatus,
   VerificationMethodEnum,
   severityToImpact,
@@ -80,9 +81,45 @@ interface GitLabLocation {
 }
 
 interface GitLabRemediation {
-  fixes?: Array<{id?: string}>;
+  fixes?: Array<{id?: string; cve?: string}>;
   summary?: string;
   diff?: string;
+}
+
+// --- External references (links[] + identifiers[] URLs) ---
+
+function buildRefs(vuln: GitLabVulnerability): Reference[] | undefined {
+  const refs: Reference[] = [];
+  const seen = new Set<string>();
+  const appendUrl = (url?: string): void => {
+    if (!url || seen.has(url)) return;
+    seen.add(url);
+    refs.push({url});
+  };
+  for (const link of vuln.links ?? []) {
+    appendUrl(link.url);
+  }
+  for (const id of vuln.identifiers ?? []) {
+    appendUrl(id.url);
+  }
+  return refs.length > 0 ? refs : undefined;
+}
+
+// --- Remediation summaries keyed by the vuln id a fix targets ---
+
+function buildRemediationMap(remediations: GitLabRemediation[]): Record<string, string[]> {
+  const result: Record<string, string[]> = {};
+  for (const rem of remediations) {
+    if (!rem.summary) continue;
+    for (const fix of rem.fixes ?? []) {
+      for (const key of [fix.id, fix.cve]) {
+        if (key) {
+          (result[key] ??= []).push(rem.summary);
+        }
+      }
+    }
+  }
+  return result;
 }
 
 // --- Severity to impact ---
@@ -241,6 +278,8 @@ export async function convertGitlabToHdf(input: string, converterVersion = '1.0.
   const scannerVersion = report.scan?.scanner?.version;
   const startTime = report.scan?.start_time;
 
+  const remediationMap = buildRemediationMap(report.remediations ?? []);
+
   const vulns = report.vulnerabilities ?? [];
   const {items: limitedVulns, truncated} = limitArray(vulns);
   /* v8 ignore next -- truncation only triggers with >100K items */
@@ -274,6 +313,12 @@ export async function convertGitlabToHdf(input: string, converterVersion = '1.0.
     if (vuln.solution) {
       descriptions.push({label: 'check', data: vuln.solution});
     }
+    const seenRem = new Set<string>();
+    for (const summary of remediationMap[vuln.id] ?? []) {
+      if (seenRem.has(summary)) continue;
+      seenRem.add(summary);
+      descriptions.push({label: 'remediation', data: summary});
+    }
 
     // Build result
     const result: RequirementResult = {
@@ -284,15 +329,24 @@ export async function convertGitlabToHdf(input: string, converterVersion = '1.0.
 
     const impact = gitlabSeverityToImpact(vuln.severity ?? 'Unknown');
 
+    // GitLab carries no literal source snippet, so code holds the whole
+    // vulnerability serialized as indented JSON (byte-identical to the Go twin's
+    // json.Indent output — same source key order, same dropped fields preserved).
     const req: EvaluatedRequirement = {
       id: vuln.id,
       title: vuln.name ?? vuln.id,
       impact,
+      code: JSON.stringify(vuln, null, 2),
       results: [result],
       tags,
       descriptions,
       verificationMethod: VerificationMethodEnum.Automated,
     };
+
+    const refs = buildRefs(vuln);
+    if (refs) {
+      req.refs = refs;
+    }
 
     const controlType = deriveControlTypeFromTags(nistTags);
     if (controlType !== undefined) {
@@ -323,7 +377,6 @@ export async function convertGitlabToHdf(input: string, converterVersion = '1.0.
 
   const tool: Tool = {
     name: scannerName,
-    format: 'JSON',
   };
   if (scannerVersion) {
     tool.version = scannerVersion;

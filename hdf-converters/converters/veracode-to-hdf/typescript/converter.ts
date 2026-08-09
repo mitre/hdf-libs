@@ -14,10 +14,12 @@
 import { parseXml, parseTimestamp } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildCvss, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Cvss,
   Description,
   RequirementResult,
 } from '@mitre/hdf-schema';
@@ -111,26 +113,6 @@ function formatRecommendations(rec: Record<string, unknown> | undefined): string
   return parts.join('\n');
 }
 
-/** Format CWE data for the cweid tag. */
-function formatCWEData(cwes: Record<string, unknown>[]): string {
-  return cwes.map(c => {
-    let entry = `CWE-${attr(c, 'cweid')}: ${attr(c, 'cwename')}`;
-    const categories: [string, string][] = [
-      ['pcrirelated', attr(c, 'pcirelated')],
-      ['owasp', attr(c, 'owasp')],
-      ['sans', attr(c, 'sans')],
-      ['certc', attr(c, 'certc')],
-      ['certcpp', attr(c, 'certcpp')],
-      ['certjava', attr(c, 'certjava')],
-      ['owaspmobile', attr(c, 'owaspmobile')],
-    ];
-    for (const [name, val] of categories) {
-      if (val) entry += `${name}: ${val}\n`;
-    }
-    return entry;
-  }).join('\n');
-}
-
 /** Format CWE descriptions for the cweDescription tag. */
 function formatCWEDesc(cwes: Record<string, unknown>[]): string {
   return cwes.map(c => {
@@ -139,6 +121,28 @@ function formatCWEDesc(cwes: Record<string, unknown>[]): string {
     const descText = text ? attr(text, 'text') : '';
     return `CWE-${attr(c, 'cweid')}: ${attr(c, 'cwename')} Description: ${descText}; `;
   }).join('\n');
+}
+
+/**
+ * Collect the distinct remediation_status values across a category's flaws, in
+ * order of first appearance. Returns '' when no flaw carries the field (the
+ * NOT-IN-SOURCE case).
+ */
+function formatRemediationStatus(cwes: Record<string, unknown>[]): string {
+  const statuses: string[] = [];
+  const seen = new Set<string>();
+  for (const c of cwes) {
+    const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
+    const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
+    for (const flaw of flaws) {
+      const status = attr(flaw, 'remediation_status');
+      if (status && !seen.has(status)) {
+        seen.add(status);
+        statuses.push(status);
+      }
+    }
+  }
+  return statuses.join('\n');
 }
 
 /** Format a static flaw as a code description. */
@@ -208,7 +212,89 @@ function formatSCACodeDesc(comp: Record<string, unknown>): string {
   return parts.join('\n');
 }
 
+/**
+ * Synthesize a static flaw's source-context locus from its function prototype
+ * and source-file position. Returns '' when the flaw carries neither a prototype
+ * nor a source location (the NOT-IN-SOURCE case).
+ */
+function synthesizeFlawCode(flaw: Record<string, unknown>): string {
+  let locus = attr(flaw, 'sourcefilepath') + attr(flaw, 'sourcefile');
+  const line = attr(flaw, 'line');
+  if (locus && line) locus += `:${line}`;
+  const proto = attr(flaw, 'functionprototype');
+  if (proto && locus) return `${proto} at ${locus}`;
+  if (proto) return proto;
+  return locus;
+}
+
+/**
+ * Serialize a CVE and its affected components as indented JSON. Field order is
+ * load-bearing: it must match the Go twin's struct declaration order so the two
+ * `code` strings are byte-identical.
+ */
+function buildSCACode(vuln: Record<string, unknown>, components: Record<string, unknown>[]): string {
+  const entry = {
+    cve_id: attr(vuln, 'cve_id'),
+    cvss_score: attr(vuln, 'cvss_score'),
+    severity: attr(vuln, 'severity'),
+    cwe_id: attr(vuln, 'cwe_id'),
+    first_found_date: attr(vuln, 'first_found_date'),
+    cve_summary: attr(vuln, 'cve_summary'),
+    severity_desc: attr(vuln, 'severity_desc'),
+    components: components.map(comp => {
+      const filePathsElem = comp.file_paths as Record<string, unknown> | undefined;
+      const fps = filePathsElem
+        ? ensureArray(filePathsElem.file_path as Record<string, unknown> | Record<string, unknown>[])
+        : [];
+      return {
+        component_id: attr(comp, 'component_id'),
+        file_name: attr(comp, 'file_name'),
+        sha1: attr(comp, 'sha1'),
+        version: attr(comp, 'version'),
+        library: attr(comp, 'library'),
+        library_id: attr(comp, 'library_id'),
+        vendor: attr(comp, 'vendor'),
+        description: attr(comp, 'description'),
+        max_cvss_score: attr(comp, 'max_cvss_score'),
+        added_date: attr(comp, 'added_date'),
+        file_paths: fps.map(fp => attr(fp, 'value')),
+      };
+    }),
+  };
+  return JSON.stringify(entry, null, 2);
+}
+
 // ---- Requirement builders ----
+
+// The standards cross-reference attributes Veracode records on each <cwe>. Each
+// maps to a discrete tag of the same name. Order is deterministic and shared
+// with the Go twin (cweStandardTags).
+const CWE_STANDARD_ATTRS = [
+  'owasp',
+  'sans',
+  'certc',
+  'certcpp',
+  'certjava',
+  'owaspmobile',
+];
+
+/**
+ * Collect the distinct non-empty values of one standards cross-reference
+ * attribute across a category's CWEs, in first-appearance order. Returns [] when
+ * no CWE carries the attribute (the NOT-IN-SOURCE case).
+ */
+function collectCWEStandard(cwes: Record<string, unknown>[], key: string): string[] {
+  const values: string[] = [];
+  const seen = new Set<string>();
+  for (const c of cwes) {
+    const v = attr(c, key);
+    if (v && !seen.has(v)) {
+      seen.add(v);
+      values.push(v);
+    }
+  }
+  return values;
+}
 
 /** Build CWE-based requirements from severity categories. */
 function buildCWERequirements(severities: Record<string, unknown>[], firstBuildDate: string): EvaluatedRequirement[] {
@@ -237,12 +323,23 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
 
   // Build tags
   const extras: Record<string, unknown> = {};
-  const cweData = formatCWEData(cwes);
-  if (cweData) extras.cweid = cweData;
   const cweDescStr = formatCWEDesc(cwes);
   if (cweDescStr) extras.cweDescription = cweDescStr;
 
+  // Veracode cross-references each CWE to external standards catalogs (OWASP,
+  // SANS/CWE Top 25, CERT C/C++/Java, OWASP Mobile). Each becomes a discrete tag
+  // carrying the category's distinct referenced entries; absent catalogs are
+  // omitted (NOT-IN-SOURCE).
+  for (const key of CWE_STANDARD_ATTRS) {
+    const values = collectCWEStandard(cwes, key);
+    if (values.length > 0) extras[key] = values;
+  }
+
   const tags = buildNistCciTags(nist, cciTags, extras);
+
+  // First-class CWE identifiers ("CWE-NN"). The category cweid attributes are
+  // bare numbers; prefix them to match the schema's CWE-N convention.
+  const cweList = cweIDs.map(id => `CWE-${id}`);
 
   // Build descriptions
   const descriptions: Description[] = [
@@ -251,6 +348,14 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
   const recText = formatRecommendations(cat.recommendations as Record<string, unknown> | undefined);
   if (recText) {
     descriptions.push({ label: 'fix', data: recText });
+  }
+
+  // Carry each flaw's remediation_status (e.g. "New", "Fixed", "Cannot Fix").
+  // Descriptions are requirement-level while the field is per-flaw, so the
+  // distinct values across the category's flaws are collected into one entry.
+  const remStatus = formatRemediationStatus(cwes);
+  if (remStatus) {
+    descriptions.push({ label: 'remediation_status', data: remStatus });
   }
 
   // Collect all flaws from all CWEs in this category
@@ -268,6 +373,15 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     return flaws.map(flaw => attr(flaw, 'sourcefile')).filter(Boolean);
   }).join('\n');
 
+  // Static findings carry no raw snippet; the code-locus (function prototype at
+  // source-file:line) is the richest source context Veracode provides. Leave
+  // code unset when no flaw carries either (NOT-IN-SOURCE).
+  const codeLines = cwes.flatMap(c => {
+    const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
+    const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
+    return flaws.map(flaw => synthesizeFlawCode(flaw)).filter(Boolean);
+  });
+
   const req = createRequirement(
     attr(cat, 'categoryid'),
     attr(cat, 'categoryname'),
@@ -282,6 +396,12 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+  if (cweList.length > 0) {
+    req.cwe = cweList;
+  }
+  if (codeLines.length > 0) {
+    req.code = codeLines.join('\n');
+  }
 
   return req;
 }
@@ -336,6 +456,30 @@ function buildCVERequirements(
   });
 }
 
+/**
+ * Assemble the structured CVSS entry for an SCA CVE. Veracode reports a bare
+ * numeric base score (no vector, no version), so the version defaults to 3.1 via
+ * the shared helper. When the vulnerability itself carries no cvss_score, the
+ * first affected component's max_cvss_score is used as a fallback. A missing or
+ * non-numeric score yields no entry.
+ */
+function buildVeracodeCvss(vuln: Record<string, unknown>, components: Record<string, unknown>[]): Cvss[] {
+  let scoreStr = attr(vuln, 'cvss_score');
+  if (!scoreStr) {
+    for (const comp of components) {
+      const max = attr(comp, 'max_cvss_score');
+      if (max) {
+        scoreStr = max;
+        break;
+      }
+    }
+  }
+  if (!scoreStr) return [];
+  const score = Number(scoreStr);
+  if (!Number.isFinite(score)) return [];
+  return [buildCvss({ version: cvssVersionFromString(undefined), baseScore: score })];
+}
+
 /** Build a single CVE-based requirement. */
 function buildCVERequirement(
   vuln: Record<string, unknown>,
@@ -353,9 +497,7 @@ function buildCVERequirement(
     nist = DEFAULT_REMEDIATION_NIST_TAGS;
   }
   const cciTags = nistToCci(nist);
-  const extras: Record<string, unknown> = {};
-  if (cweID) extras.cwe = cweID;
-  const tags = buildNistCciTags(nist, cciTags, extras);
+  const tags = buildNistCciTags(nist, cciTags, {});
 
   // One result per affected component
   const startTime = parseVeracodeTimestamp(firstBuildDate) ?? new Date();
@@ -390,6 +532,22 @@ function buildCVERequirement(
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  const cvss = buildVeracodeCvss(vuln, components);
+  if (cvss.length > 0) {
+    req.cvss = cvss;
+  }
+
+  // CVE is already the requirement.id, so no interim tags.cve is emitted; the
+  // CWE moves to the first-class cwe[] (already in "CWE-NN" form on SCA vulns).
+  if (cweID) {
+    req.cwe = [cweID];
+  }
+
+  // SCA vulnerabilities have no source snippet or function prototype; the richest
+  // faithful representation is the vulnerability/component entry serialized as
+  // indented JSON (the ionchannel/nessus pattern).
+  req.code = buildSCACode(vuln, components);
 
   return req;
 }
@@ -483,7 +641,6 @@ export async function convertVeracodeToHdf(input: string, converterVersion = '1.
     generatorName: 'veracode-to-hdf',
     converterVersion,
     toolName: 'Veracode',
-    toolFormat: 'XML',
     baselines: [baseline],
     components: [{ name: targetName, type: TargetType.Application }],
     timestamp,

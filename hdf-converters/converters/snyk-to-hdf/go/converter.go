@@ -43,6 +43,14 @@ type SnykVuln struct {
 	UpgradePath []interface{}   `json:"upgradePath"`
 	FixedIn     []string        `json:"fixedIn"`
 	Exploit     string          `json:"exploit"`
+	References  []SnykReference `json:"references"`
+}
+
+// SnykReference is an external link Snyk attaches to a vulnerability. Only the
+// url carries into HDF (Reference.url); title is not a schema field.
+type SnykReference struct {
+	Title string `json:"title"`
+	URL   string `json:"url"`
 }
 
 // SnykIdentifiers holds the CVE, CWE, and GHSA identifiers for a vulnerability.
@@ -106,6 +114,57 @@ func synthesizeSnykPurl(ecosystem hdf.Ecosystem, name, version string) string {
 	return fmt.Sprintf("pkg:%s/%s@%s", ecosystem, name, version)
 }
 
+// buildSnykCvss assembles the structured cvss[] entry for a Snyk vulnerability
+// from its cvssScore (base score) and CVSSv3 (base vector, carrying a CVSS:3.1/
+// prefix). Returns nil when the source carries neither so the field is omitted.
+func buildSnykCvss(v SnykVuln) []hdf.Cvss {
+	if v.CvssScore == 0 && v.CVSSv3 == "" {
+		return nil
+	}
+	var scorePtr *float64
+	if v.CvssScore != 0 {
+		s := v.CvssScore
+		scorePtr = &s
+	}
+	return []hdf.Cvss{shared.BuildCvss(shared.CvssInput{
+		Version:    shared.CvssVersionFromVector(v.CVSSv3),
+		BaseScore:  scorePtr,
+		BaseVector: v.CVSSv3,
+	})}
+}
+
+// buildSnykRefs emits one hdf.Reference{URL} per source reference that carries
+// a URL. Returns nil when the vulnerability carries no linkable references so
+// the refs[] field is omitted.
+func buildSnykRefs(refs []SnykReference) []hdf.Reference {
+	var out []hdf.Reference
+	for _, r := range refs {
+		if r.URL == "" {
+			continue
+		}
+		url := r.URL
+		out = append(out, hdf.Reference{URL: &url})
+	}
+	return out
+}
+
+// formatUpgradePath renders Snyk's upgradePath into readable remediation text.
+// The array leads with a boolean (whether the top-level dependency itself is
+// upgradable) followed by the `pkg@version` chain to upgrade to. Only the
+// string chain is meaningful; returns "" when it carries no package steps.
+func formatUpgradePath(path []interface{}) string {
+	var steps []string
+	for _, elem := range path {
+		if s, ok := elem.(string); ok && s != "" {
+			steps = append(steps, s)
+		}
+	}
+	if len(steps) == 0 {
+		return ""
+	}
+	return strings.Join(steps, " > ")
+}
+
 // buildRequirement converts a group of vulnerabilities sharing an ID into one
 // EvaluatedRequirement with multiple results.
 func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageManager string) hdf.EvaluatedRequirement {
@@ -115,11 +174,10 @@ func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageMan
 	cciTags := cci.NISTToCCI(nist)
 
 	extras := map[string]interface{}{}
-	if len(rep.Identifiers.CWE) > 0 {
-		extras["cweid"] = rep.Identifiers.CWE
-	}
+	// requirement.id is a SNYK/npm advisory id, not the CVE, so tags.cve is the
+	// CVE's home. (Interim pending an identifiers[] schema field.)
 	if len(rep.Identifiers.CVE) > 0 {
-		extras["cveid"] = rep.Identifiers.CVE
+		extras["cve"] = rep.Identifiers.CVE
 	}
 	if len(rep.Identifiers.GHSA) > 0 {
 		extras["ghsaid"] = rep.Identifiers.GHSA
@@ -128,6 +186,9 @@ func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageMan
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: rep.Description},
+	}
+	if upgrade := formatUpgradePath(rep.UpgradePath); upgrade != "" {
+		descriptions = append(descriptions, hdf.Description{Label: "upgradePath", Data: upgrade})
 	}
 
 	results := make([]hdf.RequirementResult, len(vulns))
@@ -149,6 +210,16 @@ func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageMan
 		Descriptions:       descriptions,
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+
+	if cvss := buildSnykCvss(rep); len(cvss) > 0 {
+		req.Cvss = cvss
+	}
+	if len(rep.Identifiers.CWE) > 0 {
+		req.Cwe = rep.Identifiers.CWE
+	}
+	if refs := buildSnykRefs(rep.References); len(refs) > 0 {
+		req.Refs = refs
 	}
 
 	name := rep.PackageName
@@ -271,7 +342,6 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 		GeneratorName:    "snyk-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Snyk",
-		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Application},
@@ -293,7 +363,6 @@ func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converter
 		GeneratorName:    "snyk-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Snyk",
-		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Timestamp:        &now,
 	}), nil

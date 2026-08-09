@@ -3,6 +3,7 @@ import {
   validateResults,
   validateBaseline,
   validateAmendments,
+  validateRequirementChangeEvent,
   ValidationResult,
 } from './index.js';
 
@@ -280,6 +281,72 @@ describe('HDF Results Validation', () => {
       const result = validateResults(invalid);
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(1); // Multiple errors
+    });
+  });
+
+  // A POA&M is a time-boxed acceptance of an open finding; without a deadline it
+  // lets a failing requirement duck remediation indefinitely (bead 2cyd).
+  describe('POA&M deadline enforcement', () => {
+    const poam = (extra: Record<string, unknown>): Record<string, unknown> =>
+      resultsWith({
+        poams: [
+          {
+            type: 'remediation',
+            explanation: 'Patch deployment scheduled pending vendor fix.',
+            appliedBy: { type: 'email', identifier: 'ops@agency.gov' },
+            appliedAt: '2026-01-20T10:00:00Z',
+            ...extra,
+          },
+        ],
+      });
+
+    it('rejects a POA&M without expiresAt', () => {
+      const result = validateResults(poam({}));
+      expect(result.valid).toBe(false);
+      expect(result.getErrorMessage()).toContain('expiresAt');
+    });
+
+    it('accepts a POA&M with expiresAt', () => {
+      const result = validateResults(poam({ expiresAt: '2099-12-31T00:00:00Z' }));
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  // Shared shape asserted identically by the Go and TS validator suites: a
+  // requirement carrying amendment fields (effectiveStatus, disposition,
+  // statusOverrides, poams) and vulnerability fields (cwe, cvss, refs) together.
+  // Keep its fields and values in sync with amendmentAndVulnRequirementFields in validators_test.go.
+  describe('amendment + vulnerability fields on one requirement', () => {
+    it('validates a requirement carrying both amendment and vuln fields', () => {
+      const doc = resultsWith({
+        effectiveStatus: 'failed',
+        disposition: 'poam',
+        statusOverrides: [
+          {
+            type: 'riskAdjustment',
+            impact: { value: 0.4 },
+            reason: 'Environmental exposure reduced — internal VPN only.',
+            appliedBy: { type: 'simple', identifier: 'sec' },
+            appliedAt: '2025-01-01T00:00:00Z',
+            expiresAt: '2099-12-31T00:00:00Z',
+          },
+        ],
+        poams: [
+          {
+            type: 'remediation',
+            explanation: 'Patch deployment scheduled pending vendor fix.',
+            appliedBy: { type: 'simple', identifier: 'ops' },
+            appliedAt: '2025-01-01T00:00:00Z',
+            expiresAt: '2099-12-31T00:00:00Z',
+          },
+        ],
+        cwe: ['CWE-327'],
+        cvss: [{ version: '3.1', baseScore: 7.5, baseSeverity: 'high' }],
+        refs: [{ url: 'https://example.gov/advisory' }],
+      });
+
+      const result = validateResults(doc);
+      expect(result.valid, result.getErrorMessage()).toBe(true);
     });
   });
 });
@@ -826,5 +893,48 @@ describe('CVE-ecosystem: Standalone_Override.cvss in an amendments document', ()
     const result = validateAmendments(doc);
     expect(result.valid).toBe(true);
     expect(result.errors).toEqual([]);
+  });
+});
+
+describe('HDF Requirement Change Event Validation', () => {
+  const validEvent = {
+    eventId: '0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01',
+    source: 'inspec://web01/rhel9-stig',
+    sequence: 412,
+    systemRef: 'apptier.hdf-system.json',
+    componentId: '6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60',
+    timestamp: '2026-07-22T14:03:11Z',
+    priorChecksum: {
+      algorithm: 'sha256',
+      value: '704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021',
+    },
+    requirementId: 'RHEL-09-255065',
+    state: 'fixed',
+    changeReasons: ['resultChanged'],
+    before: { effectiveStatus: 'failed', effectiveImpact: 0.5 },
+    after: {
+      id: 'RHEL-09-255065',
+      impact: 0.5,
+      tags: {},
+      descriptions: [{ label: 'default', data: 'SSH FIPS ciphers' }],
+      results: [
+        { status: 'passed', codeDesc: 'ciphers ok', startTime: '2026-07-22T14:03:11Z' },
+      ],
+    },
+  };
+
+  it('validates a well-formed change event', () => {
+    const result = validateRequirementChangeEvent(validEvent);
+    expect(result.valid, JSON.stringify(result.errors)).toBe(true);
+  });
+
+  it('rejects null after on a non-absent state', () => {
+    const result = validateRequirementChangeEvent({ ...validEvent, after: null });
+    expect(result.valid).toBe(false);
+  });
+
+  it('rejects a batch-only state', () => {
+    const result = validateRequirementChangeEvent({ ...validEvent, state: 'split' });
+    expect(result.valid).toBe(false);
   });
 });

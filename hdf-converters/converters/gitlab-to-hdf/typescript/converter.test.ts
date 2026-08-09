@@ -242,7 +242,7 @@ describe('GitLab to HDF converter', () => {
       const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.tool?.name).toBe('Semgrep');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
       expect(hdf.tool?.version).toBe('1.34.0');
     });
   });
@@ -497,5 +497,89 @@ describe('GitLab to HDF converter', () => {
       const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('URL: https://example.com');
     });
+  });
+
+  // GitLab carries no literal source snippet, so requirement.code holds the whole
+  // vulnerability object serialized as indented JSON — byte-identical to the Go
+  // twin's json.Indent output. Pin that it is set on every requirement and
+  // round-trips to the source vulnerability object across all scan-type fixtures.
+  describe('requirement.code (Heimdall CODE tab)', () => {
+    for (const name of ['minimal-dast.json', 'minimal-sast.json', 'multi-vuln.json']) {
+      it(`round-trips the source vulnerability object for ${name}`, async () => {
+        const input = loadFixture(name);
+        const source = parseJSON<{vulnerabilities: unknown[]}>(input);
+        const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
+        const reqs = hdf.baselines[0].requirements;
+        expect(reqs.length).toBe(source.vulnerabilities.length);
+        reqs.forEach((req, i) => {
+          expect(req.code, `requirement ${i}: code unset; CODE tab empty`).toBeDefined();
+          expect(req.code).toContain('\n');
+          expect(JSON.parse(req.code as string)).toEqual(source.vulnerabilities[i]);
+        });
+      });
+    }
+  });
+});
+
+describe('gitlab-to-hdf refs and remediation backfill', () => {
+  function reqById(hdf: HDFResults, id: string) {
+    const req = hdf.baselines[0].requirements.find((r) => r.id === id);
+    if (!req) throw new Error(`requirement ${id} not found`);
+    return req;
+  }
+
+  it('maps links[].url and identifiers[].url into refs[]', async () => {
+    const input = loadFixture('minimal-sast.json');
+    const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
+    const req = reqById(hdf, 'a1b2c3d4-e5f6-7890-abcd-ef1234567890');
+    expect(req.refs).toEqual([
+      {url: 'https://owasp.org/www-community/attacks/SQL_Injection'},
+      {url: 'https://cwe.mitre.org/data/definitions/89.html'},
+    ]);
+  });
+
+  it('omits refs[] when the vuln carries no links or identifier URLs', async () => {
+    const input = loadFixture('multi-vuln.json');
+    const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
+    const req = reqById(hdf, '33333333-3333-3333-3333-333333333333');
+    expect(req.refs).toBeUndefined();
+  });
+
+  it('de-duplicates a URL shared by links[] and identifiers[]', async () => {
+    const input = JSON.stringify({
+      scan: {type: 'sast', scanner: {name: 'Semgrep'}},
+      vulnerabilities: [
+        {
+          id: 'dup-1',
+          name: 'Dup',
+          severity: 'High',
+          links: [{url: 'https://example.com/shared'}],
+          identifiers: [
+            {type: 'cwe', name: 'CWE-79', value: '79', url: 'https://example.com/shared'},
+            {type: 'cve', name: 'CVE-2024-9', value: 'CVE-2024-9', url: 'https://example.com/other'},
+          ],
+        },
+      ],
+    });
+    const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
+    const req = reqById(hdf, 'dup-1');
+    expect(req.refs).toEqual([
+      {url: 'https://example.com/shared'},
+      {url: 'https://example.com/other'},
+    ]);
+  });
+
+  it('attaches a matching remediation summary as a "remediation" description', async () => {
+    const input = loadFixture('multi-vuln.json');
+    const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
+
+    const fixed = reqById(hdf, '11111111-1111-1111-1111-111111111111');
+    expect(fixed.descriptions).toContainEqual({
+      label: 'remediation',
+      data: 'Upgrade exec library to version 2.0',
+    });
+
+    const unfixed = reqById(hdf, '22222222-2222-2222-2222-222222222222');
+    expect(unfixed.descriptions?.some((d) => d.label === 'remediation')).toBe(false);
   });
 });

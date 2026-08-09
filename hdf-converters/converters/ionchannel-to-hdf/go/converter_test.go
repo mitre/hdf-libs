@@ -252,14 +252,144 @@ func TestConvert_EdgeCases_NAVersionOmitted(t *testing.T) {
 	assert.Equal(t, "Dependency internal-lib from example-corp (Required >=0.5.0)", *req.Title)
 }
 
-func TestConvert_EdgeCases_NonDependencyScansIgnored(t *testing.T) {
-	// edge-cases.json has a community scan — should be ignored
+// findBaseline returns the baseline with the given name, failing the test if absent.
+func findBaseline(t *testing.T, result *hdf.HDFResults, name string) *hdf.EvaluatedBaseline {
+	t.Helper()
+	for i := range result.Baselines {
+		if result.Baselines[i].Name == name {
+			return &result.Baselines[i]
+		}
+	}
+	t.Fatalf("baseline %q not found", name)
+	return nil
+}
+
+func TestConvert_EdgeCases_DependencyBaselineUnchanged(t *testing.T) {
+	// The dependency scan still produces its own baseline with exactly its 3 deps.
 	input := loadFixture(t, "input/edge-cases.json")
 	result, err := ConvertIonChannelToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	// Should only have 3 deps from the dependency scan
-	assert.Len(t, result.Baselines[0].Requirements, 3)
+	dep := findBaseline(t, result, "Ion Channel SBOM Analysis")
+	assert.Len(t, dep.Requirements, 3)
+}
+
+func TestConvert_EdgeCases_CommunityBaselineEmitted(t *testing.T) {
+	// The non-dependency "community" scan now gets its own baseline + requirement.
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	community := findBaseline(t, result, "Ion Channel community Scan")
+	require.Len(t, community.Requirements, 1)
+
+	req := community.Requirements[0]
+	assert.Equal(t, "scan-community", req.ID)
+	require.NotNil(t, req.Title)
+	assert.Equal(t, "Community analysis", *req.Title)
+	require.Len(t, req.Descriptions, 1)
+	assert.Equal(t, "Community scan completed", req.Descriptions[0].Data)
+	assert.Equal(t, "community", req.Tags["name"])
+	assert.Equal(t, "community", req.Tags["type"])
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+
+	// The serializable scan data lands in the requirement's code field.
+	require.NotNil(t, req.Code)
+	assert.Contains(t, *req.Code, `"committers": 5`)
+	assert.Contains(t, *req.Code, `"stars": 42`)
+}
+
+func TestConvert_EdgeCases_AnalysisVerdict(t *testing.T) {
+	// Analysis-level verdict fields surface on the primary (dependency) baseline.
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	dep := findBaseline(t, result, "Ion Channel SBOM Analysis")
+
+	require.NotNil(t, dep.Description)
+	assert.Contains(t, *dep.Description, "FAILED")
+	assert.Contains(t, *dep.Description, "medium")
+	assert.Contains(t, *dep.Description, "strict")
+
+	require.NotNil(t, dep.Labels)
+	assert.Equal(t, "false", dep.Labels["passed"])
+	assert.Equal(t, "medium", dep.Labels["risk"])
+	assert.Equal(t, "strict", dep.Labels["ruleset_name"])
+	assert.Equal(t, "ruleset-002", dep.Labels["ruleset_id"])
+}
+
+// ---- Analysis-level verdict tags on requirements ----
+
+func TestConvert_AnalysisTags_OnDependencyRequirement(t *testing.T) {
+	// edge-cases.json: passed=false, risk=medium, ruleset_name=strict, ruleset_id=ruleset-002
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-n/a/requests")
+	assert.Equal(t, false, req.Tags["passed"], "passed must be a native boolean")
+	assert.Equal(t, "medium", req.Tags["risk"])
+	assert.Equal(t, "strict", req.Tags["ruleset_name"])
+	assert.Equal(t, "ruleset-002", req.Tags["ruleset_id"])
+}
+
+func TestConvert_AnalysisTags_OnScanRequirement(t *testing.T) {
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	community := findBaseline(t, result, "Ion Channel community Scan")
+	req := community.Requirements[0]
+	assert.Equal(t, false, req.Tags["passed"], "passed must be a native boolean")
+	assert.Equal(t, "medium", req.Tags["risk"])
+	assert.Equal(t, "strict", req.Tags["ruleset_name"])
+	assert.Equal(t, "ruleset-002", req.Tags["ruleset_id"])
+}
+
+func TestConvert_AnalysisTags_PassedTrue(t *testing.T) {
+	// minimal.json: passed=true, risk=low, ruleset_name=default, ruleset_id=ruleset-001
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-expressjs/express")
+	assert.Equal(t, true, req.Tags["passed"], "passed must be a native boolean")
+	assert.Equal(t, "low", req.Tags["risk"])
+	assert.Equal(t, "default", req.Tags["ruleset_name"])
+	assert.Equal(t, "ruleset-001", req.Tags["ruleset_id"])
+}
+
+func TestBuildTags_OmitsAbsentVerdictFields(t *testing.T) {
+	// When risk/ruleset_name/ruleset_id are empty the keys are omitted, but the
+	// boolean passed is always present.
+	dep := contextualizedDependency{
+		Dependency:         Dependency{Org: "acme", Name: "widget"},
+		ParentDependencies: []string{},
+	}
+	tags := buildTags(dep, IonChannelAnalysis{Passed: true})
+
+	assert.Equal(t, true, tags["passed"])
+	_, hasRisk := tags["risk"]
+	assert.False(t, hasRisk, "risk must be omitted when empty")
+	_, hasName := tags["ruleset_name"]
+	assert.False(t, hasName, "ruleset_name must be omitted when empty")
+	_, hasID := tags["ruleset_id"]
+	assert.False(t, hasID, "ruleset_id must be omitted when empty")
+}
+
+func TestBuildScanRequirement_OmitsAbsentVerdictFields(t *testing.T) {
+	scan := ScanSummary{Name: "community", Results: ScanResults{Type: "community"}}
+	req := buildScanRequirement(scan, IonChannelAnalysis{Passed: false})
+
+	assert.Equal(t, false, req.Tags["passed"])
+	_, hasRisk := req.Tags["risk"]
+	assert.False(t, hasRisk, "risk must be omitted when empty")
+	_, hasName := req.Tags["ruleset_name"]
+	assert.False(t, hasName, "ruleset_name must be omitted when empty")
+	_, hasID := req.Tags["ruleset_id"]
+	assert.False(t, hasID, "ruleset_id must be omitted when empty")
 }
 
 // ---- Helper function tests ----
@@ -342,6 +472,60 @@ func TestBuildDependencyGraph_ParentAssociation(t *testing.T) {
 	}
 }
 
+// ---- Timestamp backfill (value-pinning) ----
+//
+// The shared snapshot masks the top-level timestamp, so these unit tests pin the
+// exact source-derived values the golden cannot verify.
+
+func TestConvert_TopLevelTimestamp_FromUpdatedAt(t *testing.T) {
+	// minimal.json analysis updated_at = 2024-01-15T10:35:00Z (scan completion).
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	b, err := json.Marshal(result.Timestamp)
+	require.NoError(t, err)
+	assert.Equal(t, `"2024-01-15T10:35:00Z"`, string(b))
+}
+
+func TestConvert_ScanStartTime_FromCreatedAt(t *testing.T) {
+	// edge-cases.json community scan created_at = 2024-02-20T14:00:00Z.
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	community := findBaseline(t, result, "Ion Channel community Scan")
+	require.Len(t, community.Requirements, 1)
+	require.Len(t, community.Requirements[0].Results, 1)
+
+	b, err := json.Marshal(community.Requirements[0].Results[0].StartTime)
+	require.NoError(t, err)
+	assert.Equal(t, `"2024-02-20T14:00:00Z"`, string(b))
+}
+
+func TestAnalysisTimestamp_FallsBackToCreatedAt(t *testing.T) {
+	ts := analysisTimestamp(IonChannelAnalysis{CreatedAt: "2024-03-14T09:00:00Z"})
+	assert.Equal(t, "2024-03-14T09:00:00Z", ts.UTC().Format("2006-01-02T15:04:05Z07:00"))
+}
+
+func TestAnalysisTimestamp_FallsBackToNow(t *testing.T) {
+	// No parseable analysis time → wall-clock fallback (a valid, non-zero time).
+	ts := analysisTimestamp(IonChannelAnalysis{})
+	assert.False(t, ts.IsZero(), "missing analysis time must fall back to a valid now()")
+}
+
+func TestScanStartTime_FallsBackToUpdatedAt(t *testing.T) {
+	st := scanStartTime(ScanSummary{UpdatedAt: "2024-05-06T07:08:09Z"})
+	assert.Equal(t, "2024-05-06T07:08:09Z", st.UTC().Format("2006-01-02T15:04:05Z07:00"))
+}
+
+func TestScanStartTime_FallsBackToZeroSentinel(t *testing.T) {
+	// No parseable scan time → zero sentinel (mirrors the TS Date sentinel).
+	st := scanStartTime(ScanSummary{})
+	assert.True(t, st.IsZero(), "timeless scan must fall back to the zero sentinel")
+}
+
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "ionchannel-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertIonChannelToHDF(input, "1.0.0")
@@ -384,14 +568,14 @@ func TestConvertIonChannel_VerificationMethod(t *testing.T) {
 	}
 }
 
-// countDistinctFlattenedDeps derives the ground-truth requirement count directly
-// from the raw JSON, independent of the converter's structs: it recursively
-// flattens the "dependency" scan summary's dependency tree and counts each
-// distinct org/name exactly once — mirroring the emission unit (one requirement
-// per deduped, flattened dependency). A generic CountJSONItemsUnderKey would
-// over-count when the same package appears in two subtrees, so the anchor
-// re-derives the dedup here rather than reusing the converter's traversal.
-func countDistinctFlattenedDeps(t *testing.T, input []byte) int {
+// countEmittedRequirements derives the ground-truth requirement count directly
+// from the raw JSON, independent of the converter's structs. The emission model
+// is: one requirement per distinct org/name in the flattened "dependency" scan
+// tree, PLUS one requirement per non-dependency scan summary. A generic
+// CountJSONItemsUnderKey would over-count when the same package appears in two
+// subtrees, so the anchor re-derives the dedup here rather than reusing the
+// converter's traversal.
+func countEmittedRequirements(t *testing.T, input []byte) int {
 	t.Helper()
 	var doc struct {
 		ScanSummaries []struct {
@@ -419,25 +603,28 @@ func countDistinctFlattenedDeps(t *testing.T, input []byte) int {
 			walk(sub)
 		}
 	}
+	nonDep := 0
 	for _, scan := range doc.ScanSummaries {
 		if scan.Name == "dependency" {
 			for _, dep := range scan.Results.Data.Dependencies {
 				walk(dep)
 			}
+		} else {
+			nonDep++
 		}
 	}
-	return len(seen)
+	return len(seen) + nonDep
 }
 
 // Ground-truth anchor: one requirement per distinct dependency in the flattened
-// "dependency" scan tree. Catches a silent under-extraction that TS/Go golden
-// parity cannot see.
+// "dependency" scan tree, plus one per non-dependency scan summary. Catches a
+// silent under- or over-extraction that TS/Go golden parity cannot see.
 func TestConvertIonChannel_DependencyAnchor(t *testing.T) {
 	for _, name := range []string{"input/minimal.json", "input/edge-cases.json"} {
 		input := loadFixture(t, name)
 		result, err := ConvertIonChannelToHDF(input, testVersion)
 		require.NoError(t, err)
-		shared.AssertRequirementCount(t, result, countDistinctFlattenedDeps(t, input),
-			name+": one requirement per distinct flattened dependency")
+		shared.AssertRequirementCount(t, result, countEmittedRequirements(t, input),
+			name+": one requirement per distinct flattened dependency plus one per non-dependency scan")
 	}
 }

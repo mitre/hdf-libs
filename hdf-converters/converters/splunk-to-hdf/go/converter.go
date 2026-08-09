@@ -226,16 +226,19 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		allTargets = append(allTargets, target)
 	}
 
-	// Build statistics from the last header.
+	// Build statistics and tool version from the last header.
 	var stats *hdf.Statistics
+	var toolVersion string
 	if lastHeader != nil {
 		stats = convertStatistics(lastHeader.Statistics)
+		toolVersion = lastHeader.Version
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "splunk-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "Splunk",
+		ToolVersion:      toolVersion,
 		Baselines:        allBaselines,
 		Components:       allTargets,
 		Statistics:       stats,

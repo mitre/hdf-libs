@@ -11,14 +11,14 @@ require (
 	github.com/charmbracelet/huh v1.0.0
 	github.com/dlclark/regexp2 v1.12.0
 	github.com/google/uuid v1.6.0
-	github.com/mitre/hdf-libs/hdf-converters/v3 v3.4.4
-	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.4.4
-	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.4.4
-	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.4.4
-	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.4.4
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.4.4
-	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.4.4
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.4.4
+	github.com/mitre/hdf-libs/hdf-converters/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.5.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/term v0.43.0

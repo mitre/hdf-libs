@@ -223,6 +223,26 @@ describe('msft-defender-devops-to-hdf', () => {
     });
   });
 
+  describe('result rank', () => {
+    it('should emit the numeric rank tag for credscan results', async () => {
+      const input = loadFixture('input/minimal.sarif');
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
+
+      const req = result.baselines![0]!.requirements![0]!;
+      const tags = req.tags as Record<string, unknown>;
+      expect(tags.rank).toBe(94);
+    });
+
+    it('should omit the rank tag when results carry no rank (checkov)', async () => {
+      const input = loadFixture('input/minimal.sarif');
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
+
+      const req = result.baselines![1]!.requirements![0]!;
+      const tags = req.tags as Record<string, unknown>;
+      expect(tags.rank).toBeUndefined();
+    });
+  });
+
   // ---- Generator name ----
 
   describe('generator', () => {

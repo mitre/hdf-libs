@@ -3,6 +3,7 @@ package msftdefenderendpoint
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -166,7 +167,52 @@ func buildTags(alert mdeAlert) map[string]interface{} {
 		tags["determination"] = *alert.Determination
 	}
 
+	if alert.IncidentID != "" {
+		// Emit as a number when the id is a canonical base-10 integer (round-trips
+		// cleanly); otherwise preserve the source string verbatim. The round-trip
+		// guard keeps Go/TS byte-parity for edge cases like leading zeros.
+		if n, err := strconv.ParseInt(alert.IncidentID, 10, 64); err == nil && strconv.FormatInt(n, 10) == alert.IncidentID {
+			tags["incident_id"] = n
+		} else {
+			tags["incident_id"] = alert.IncidentID
+		}
+	}
+	if alert.DetectionSource != "" {
+		tags["detection_source"] = alert.DetectionSource
+	}
+	if alert.ServiceSource != "" {
+		tags["service_source"] = alert.ServiceSource
+	}
+	if alert.ThreatFamilyName != nil && *alert.ThreatFamilyName != "" {
+		tags["threat_family_name"] = *alert.ThreatFamilyName
+	}
+
 	return tags
+}
+
+// deriveScanTimestamp returns the latest source alert time as the top-level
+// report timestamp: the freshest lastUpdateDateTime across alerts, falling back
+// per alert to lastActivityDateTime then createdDateTime. Source-derived so the
+// conversion is deterministic. Returns the zero time when no alert carries a
+// parseable time (caller falls back to the conversion time).
+func deriveScanTimestamp(alerts []mdeAlert) time.Time {
+	var latest time.Time
+	for _, alert := range alerts {
+		t := hdfutil.ParseTimestamp(alert.LastUpdateDateTime)
+		if t.IsZero() {
+			t = hdfutil.ParseTimestamp(alert.LastActivityDateTime)
+		}
+		if t.IsZero() {
+			t = hdfutil.ParseTimestamp(alert.CreatedDateTime)
+		}
+		if t.IsZero() {
+			continue
+		}
+		if t.After(latest) {
+			latest = t
+		}
+	}
+	return latest
 }
 
 // alertToRequirement converts a single MDE alert into an HDF EvaluatedRequirement.
@@ -202,6 +248,12 @@ func alertToRequirement(alert mdeAlert, scanTime time.Time) hdf.EvaluatedRequire
 		})
 	}
 
+	var refs []hdf.Reference
+	if alert.AlertWebURL != "" {
+		url := alert.AlertWebURL
+		refs = []hdf.Reference{{URL: &url}}
+	}
+
 	title := alert.Title
 	return hdf.EvaluatedRequirement{
 		ID:                 alert.ID,
@@ -209,6 +261,7 @@ func alertToRequirement(alert mdeAlert, scanTime time.Time) hdf.EvaluatedRequire
 		Impact:             impact,
 		Tags:               buildTags(alert),
 		Descriptions:       descriptions,
+		Refs:               refs,
 		Results:            []hdf.RequirementResult{result},
 		ControlType:        shared.DeriveControlTypeFromTags(shared.DefaultStaticAnalysisNIST),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
@@ -240,6 +293,14 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 	scanTime := time.Now().UTC()
 
 	limitedAlerts := shared.LimitSliceWithWarning(response.Value, 0, "alert")
+
+	// Top-level timestamp is source-derived (latest alert time), not now(), so the
+	// conversion is deterministic. Fall back to the conversion time only when the
+	// input carries no parseable alert time (e.g. an empty tenant window).
+	timestamp := deriveScanTimestamp(limitedAlerts)
+	if timestamp.IsZero() {
+		timestamp = scanTime
+	}
 
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedAlerts))
 	for i, alert := range limitedAlerts {
@@ -278,6 +339,6 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 		ToolName:         "Microsoft Defender for Endpoint",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       targets,
-		Timestamp:        &scanTime,
+		Timestamp:        &timestamp,
 	}), nil
 }

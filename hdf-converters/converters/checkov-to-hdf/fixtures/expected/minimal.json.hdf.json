@@ -28,11 +28,16 @@
           "id": "CKV_TF_2",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_CROSS_2",
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "26 module \"vpc\" {\n27   source  = \"terraform-aws-modules/vpc/aws\"\n28   version = \"5.8.1\"\n29 \n30   name = \"education-vpc\"",
           "title": "Ensure Terraform module sources use a tag with a version number",
           "verificationMethod": "automated"
         },
@@ -67,11 +72,16 @@
           "id": "CKV_TF_1",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_CROSS_1",
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "26 module \"vpc\" {\n27   source  = \"terraform-aws-modules/vpc/aws\"\n28   version = \"5.8.1\"\n29 \n30   name = \"education-vpc\"",
           "title": "Ensure Terraform module sources use a commit hash",
           "verificationMethod": "automated"
         },
@@ -97,11 +107,16 @@
           "id": "CKV2_AWS_6",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_AWS_NETWORKING_52",
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
           "title": "Ensure that S3 bucket has a Public Access block",
           "verificationMethod": "automated"
         },
@@ -127,11 +142,16 @@
           "id": "CKV_AWS_18",
           "impact": 0.5,
           "tags": {
+            "bc_check_id": "BC_AWS_S3_13",
+            "check_type": [
+              "terraform"
+            ],
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
           "title": "Ensure the S3 bucket has access logging enabled",
           "verificationMethod": "automated"
         }
@@ -149,7 +169,6 @@
   },
   "timestamp": "2026-07-12T23:25:21.463728Z",
   "tool": {
-    "format": "terraform",
     "name": "Checkov",
     "version": "3.2.524"
   }

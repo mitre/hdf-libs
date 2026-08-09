@@ -11,7 +11,13 @@
 
 import { flattenOverlays } from '@mitre/hdf-parsers';
 import type { HDFResults } from '@mitre/hdf-schema';
-import { impactToSeverity, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
+import {
+  impactToSeverity,
+  parseTimestamp,
+  formatTimestamp,
+  computeEffectiveStatus as canonicalEffectiveStatus,
+  governingStatusOverrideIndex,
+} from '@mitre/hdf-utilities';
 import { deriveControlTypeFromTags, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
@@ -284,34 +290,15 @@ function normalizeStatus(status: string): string {
 }
 
 /**
- * Compute effectiveStatus from impact and v2 results.
- * Implements InSpec enhanced outcomes precedence:
- *   impact=0 → notApplicable
- *   error > failed > passed > notApplicable > notReviewed
- *
- * See docs/design/status-determination.md for full specification.
+ * Compute effectiveStatus from impact and v2 results via the canonical
+ * worst-wins ordering in @mitre/hdf-utilities (impact=0 → notApplicable;
+ * error > failed > passed > notApplicable > notReviewed).
  */
 function computeEffectiveStatus(impact: number, results: V2Result[]): string {
-  if (impact === 0) return 'notApplicable';
-  if (results.length === 0) return 'notReviewed';
-
-  let hasFailed = false;
-  let hasPassed = false;
-  let hasNotApplicable = false;
-
-  for (const r of results) {
-    switch (r.status) {
-      case 'error': return 'error'; // fail-fast: highest precedence
-      case 'failed': hasFailed = true; break;
-      case 'passed': hasPassed = true; break;
-      case 'notApplicable': hasNotApplicable = true; break;
-    }
-  }
-
-  if (hasFailed) return 'failed';
-  if (hasPassed) return 'passed';
-  if (hasNotApplicable) return 'notApplicable';
-  return 'notReviewed';
+  return canonicalEffectiveStatus({
+    impact,
+    resultStatuses: results.map((r) => r.status),
+  });
 }
 
 /**
@@ -715,19 +702,24 @@ function denormalizeStatus(status: string): string {
   return map[status] ?? 'skipped';
 }
 
-/** Worst-wins rollup (error > failed > passed > notApplicable > notReviewed). */
-function rollupStatus(results: V2Result[]): string {
-  const rank: Record<string, number> = {error: 4, failed: 3, passed: 2, notApplicable: 1, notReviewed: 0};
-  let worst = 'notReviewed';
-  for (const r of results) {
-    if ((rank[r.status] ?? 0) > (rank[worst] ?? 0)) worst = r.status;
-  }
-  return worst;
-}
-
-/** Effective (post-amendment) status as a legacy status string, else the rollup. */
+/**
+ * Effective (post-amendment) status as a legacy status string, computed by the
+ * canonical shared helper (impact==0, governing override, stored
+ * effectiveStatus, worst-wins rollup — see status-determination.md).
+ */
 function effectiveOrRollupV1(req: V2Requirement): string {
-  return denormalizeStatus(req.effectiveStatus ?? rollupStatus(req.results ?? []));
+  return denormalizeStatus(
+    canonicalEffectiveStatus({
+      impact: req.impact ?? Number.NaN,
+      effectiveStatus: req.effectiveStatus,
+      resultStatuses: (req.results ?? []).map((r) => r.status),
+      overrides: (req.statusOverrides ?? []).map((o) => ({
+        status: o.status,
+        appliedAt: o.appliedAt,
+        expiresAt: o.expiresAt,
+      })),
+    }),
+  );
 }
 
 /** Base severity of the first CVSS entry that has one. */
@@ -738,20 +730,17 @@ function firstCvssSeverity(cvss?: Array<{baseSeverity?: string}>): string | unde
   return undefined;
 }
 
-/** The most-recently-applied status-bearing override (the one driving effectiveStatus). */
+/**
+ * The most-recently-applied non-expired status-bearing override (the one
+ * driving effectiveStatus), selected by the canonical helper. An expired
+ * override must not become the waiver_data breadcrumb.
+ */
 function governingOverride(req: V2Requirement): V2StatusOverride | undefined {
-  const now = Date.now();
-  let gov: V2StatusOverride | undefined;
-  for (const o of req.statusOverrides ?? []) {
-    if (o.status === undefined) continue;
-    // An expired override must not become the waiver_data breadcrumb.
-    if (o.expiresAt) {
-      const exp = parseTimestamp(o.expiresAt);
-      if (exp && exp.getTime() <= now) continue;
-    }
-    if (gov === undefined || (o.appliedAt ?? '') > (gov.appliedAt ?? '')) gov = o;
-  }
-  return gov;
+  const overrides = req.statusOverrides ?? [];
+  const i = governingStatusOverrideIndex(
+    overrides.map((o) => ({status: o.status, appliedAt: o.appliedAt, expiresAt: o.expiresAt})),
+  );
+  return i >= 0 ? overrides[i] : undefined;
 }
 
 /** Render the governing override (and any non-representable amendment) as a v1 waiver_data breadcrumb. */
@@ -938,7 +927,52 @@ export function convertV2ToV1(v2Data: HDFV2Results): {hdf: HDFV1Results; warning
   return {hdf, warnings};
 }
 
-export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
+/** Parse the leading major-version integer; -1 when the string has none. */
+function inspecMajor(version: string): number {
+  const major = /^(\d+)/.exec(version ?? '')?.[1];
+  return major !== undefined ? parseInt(major, 10) : -1;
+}
+
+/**
+ * Map the source's top-level version to tool metadata. A genuine InSpec
+ * exec-json run carries the InSpec CLI version (major >= 2 for every modern
+ * release), so those flip the tool to InSpec/exec-json. A legacy HDF v1
+ * document with no InSpec provenance (e.g. a bare "1.0.0" format marker) keeps
+ * the historical label.
+ */
+function toolIdentity(version: string): { name: string; version?: string; format?: string } {
+  if (inspecMajor(version) >= 2) {
+    return { name: 'InSpec', version, format: 'exec-json' };
+  }
+  return { name: 'Heimdall Data Format v1' };
+}
+
+/**
+ * The assessment's execution time for the top-level timestamp. An explicit
+ * source timestamp wins; otherwise it is the latest (last-observed) result
+ * start_time — the assessment's effective as-of instant, the value
+ * `hdf events derive` consumes. Returns undefined only when the source carries
+ * no usable time; never the wall clock. Canonical trimmed-UTC form.
+ */
+function documentTimestamp(v1Data: HDFV1Results): string | undefined {
+  if (v1Data.timestamp) {
+    const t = parseTimestamp(v1Data.timestamp);
+    if (t) return formatTimestamp(t);
+  }
+  let latest: Date | undefined;
+  for (const profile of v1Data.profiles || []) {
+    for (const control of profile.controls || []) {
+      for (const result of control.results || []) {
+        if (!result.start_time) continue;
+        const t = parseTimestamp(result.start_time);
+        if (t && (!latest || t > latest)) latest = t;
+      }
+    }
+  }
+  return latest ? formatTimestamp(latest) : undefined;
+}
+
+export function convertV1ToV2(v1Data: HDFV1Results, converterVersion = '1.0.0'): HDFV2Results {
   validateInputSize(JSON.stringify(v1Data), 'legacyhdf-to-hdf');
   const v2: HDFV2Results = {
     baselines: (v1Data.profiles || []).map(convertProfile),
@@ -962,15 +996,15 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
     v2.components = [component];
   }
 
-  // Copy optional fields
-  if (v1Data.generator) {
-    v2.generator = v1Data.generator;
-  }
+  // generator identifies the converter that produced this file; preserve an
+  // input-provided one, else stamp this converter.
+  v2.generator = v1Data.generator ?? { name: 'legacyhdf-to-hdf', version: converterVersion };
 
-  v2.tool = { name: 'Heimdall Data Format v1' };
+  v2.tool = toolIdentity(v1Data.version);
 
-  if (v1Data.timestamp) {
-    v2.timestamp = v1Data.timestamp;
+  const timestamp = documentTimestamp(v1Data);
+  if (timestamp) {
+    v2.timestamp = timestamp;
   }
 
   // Preserve any extension fields not part of core schema

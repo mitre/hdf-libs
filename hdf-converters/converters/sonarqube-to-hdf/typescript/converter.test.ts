@@ -612,6 +612,60 @@ describe('MQR (Multi-Quality-Rule / Clean Code) severity', async () => {
   });
 });
 
+describe('backfilled source metadata tags', async () => {
+  const byId = async (fixture: string) => {
+    const input = readFileSync(join(__dirname, `../fixtures/input/${fixture}`), 'utf-8');
+    const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+    return new Map(
+      hdf.baselines[0]!.requirements.map(r => [r.id, r.tags as Record<string, unknown>]),
+    );
+  };
+
+  it('pins effort/debt/author/lang/langName/cleanCodeAttributeCategory (mqr.json)', async () => {
+    const tags = (await byId('mqr.json')).get('java:S1186')!;
+    expect(tags.effort).toBe('5min');
+    expect(tags.debt).toBe('5min');
+    expect(tags.author).toBe('dev@example.com');
+    expect(tags.lang).toBe('java');
+    expect(tags.langName).toBe('Java');
+    expect(tags.cleanCodeAttributeCategory).toBe('INTENTIONAL');
+    // The existing cleanCodeAttribute tag must remain untouched.
+    expect(tags.cleanCodeAttribute).toBe('COMPLETE');
+  });
+
+  it('omits author (empty in source) and cleanCodeAttributeCategory (legacy mode) — minimal.json', async () => {
+    const map = await byId('minimal.json');
+    for (const [, tags] of map) {
+      expect(tags).not.toHaveProperty('author');
+      expect(tags).not.toHaveProperty('cleanCodeAttributeCategory');
+      expect(tags.lang).toBe('java');
+      expect(tags.langName).toBe('Java');
+    }
+    const s1144 = map.get('java:S1144')!;
+    expect(s1144.effort).toBe('5min');
+    expect(s1144.debt).toBe('5min');
+  });
+
+  it('omits lang/langName when the rule is not in rules[]', async () => {
+    const input = JSON.stringify({
+      total: 1, p: 1, ps: 100,
+      paging: { pageIndex: 1, pageSize: 100, total: 1 },
+      issues: [{
+        key: 'k1', rule: 'unknown:rule', severity: 'MAJOR',
+        component: 'proj:file', project: 'proj', status: 'OPEN', message: 'msg',
+        effort: '3min', type: 'CODE_SMELL',
+        creationDate: '2026-01-01T00:00:00+0000', updateDate: '2026-01-01T00:00:00+0000',
+      }],
+      components: [], rules: [],
+    });
+    const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+    const tags = hdf.baselines[0]!.requirements[0]!.tags as Record<string, unknown>;
+    expect(tags).not.toHaveProperty('lang');
+    expect(tags).not.toHaveProperty('langName');
+    expect(tags.effort).toBe('3min');
+  });
+});
+
 describe('selectSeverity', () => {
   // The legacy→MQR relationship is per-rule, not a constant offset: a rule can be
   // legacy MAJOR yet MQR LOW (over-rated) or legacy MAJOR yet MQR HIGH (under-rated).

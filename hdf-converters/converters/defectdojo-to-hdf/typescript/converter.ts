@@ -1,7 +1,6 @@
 import {
   type Checksum,
   type Cvss,
-  CVSSSeverity,
   type Description,
   type Epss,
   type EvaluatedBaseline,
@@ -16,8 +15,9 @@ import {
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
-import {cvssScoreToSeverity, severityToImpact, parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
+import {severityToImpact, parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
 import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, validateInputSize, buildHdfResults, mapCWEToNIST} from '../../../shared/typescript/converterutil.js';
+import {buildCvss as buildSharedCvss} from '../../../shared/typescript/cvss.js';
 
 // DefectDojo /api/v2/findings/ input model (subset). The live fetcher produces
 // the same bytes; see converter.go for the design rationale (risk-acceptance
@@ -131,6 +131,31 @@ function buildWaiverOverride(ar: DDAcceptedRisk): StatusOverride {
   };
 }
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+// Parse a DefectDojo finding `date`. That field is date-only (YYYY-MM-DD); a bare
+// date is promoted to UTC midnight before canonical parsing so Go and TS agree
+// (Go's ParseTimestamp has no date-only layout). parseTimestamp then reads it as
+// UTC. Returns null when absent/unparseable.
+function parseFindingDate(s: string | undefined): Date | null {
+  if (!s) return null;
+  return parseTimestamp(DATE_ONLY.test(s) ? `${s}T00:00:00Z` : s);
+}
+
+// The most recent finding `date`. DefectDojo carries no single top-level scan
+// time, so the newest finding date is the defensible report time for the
+// top-level HDF timestamp. Returns undefined when no finding carries a parseable
+// date — the caller then omits the optional timestamp rather than fabricating a
+// wall-clock value (keeping the mapping source-derived and deterministic).
+function latestFindingDate(findings: DDFinding[]): Date | undefined {
+  let latest: Date | undefined;
+  for (const f of findings) {
+    const d = parseFindingDate(f.date);
+    if (d && (!latest || d.getTime() > latest.getTime())) latest = d;
+  }
+  return latest;
+}
+
 function findingId(f: DDFinding): string {
   return f.unique_id_from_tool || f.vuln_id_from_tool || `DefectDojo-Finding-${f.id}`;
 }
@@ -139,32 +164,11 @@ function cveList(f: DDFinding): string[] {
   return (f.vulnerability_ids ?? []).map(v => v.vulnerability_id).filter(Boolean);
 }
 
-function cvssBand(score: number): CVSSSeverity {
-  switch (cvssScoreToSeverity(score)) {
-    case 'critical':
-      return CVSSSeverity.Critical;
-    case 'high':
-      return CVSSSeverity.High;
-    case 'medium':
-      return CVSSSeverity.Medium;
-    case 'low':
-      return CVSSSeverity.Low;
-    default:
-      return CVSSSeverity.None;
-  }
-}
-
 function buildCvss(f: DDFinding): Cvss[] {
   const out: Cvss[] = [];
   const add = (version: CvssVersion, vector?: string | null, score?: number | null): void => {
     if ((score === undefined || score === null) && !vector) return;
-    const entry: Cvss = {version};
-    if (score !== undefined && score !== null) {
-      entry.baseScore = score;
-      entry.baseSeverity = cvssBand(score);
-    }
-    if (vector) entry.baseVector = vector;
-    out.push(entry);
+    out.push(buildSharedCvss({version, baseScore: score, baseVector: vector}));
   };
   add(CvssVersion.The31, f.cvssv3, f.cvssv3_score);
   add(CvssVersion.The40, f.cvssv4, f.cvssv4_score);
@@ -207,10 +211,16 @@ function convertFinding(f: DDFinding): EvaluatedRequirement {
   const nist = nistTags(f);
   const tags = buildNistCciTags(nist, nistToCci(nist), triageTags(f));
 
+  // CVE → tags.cve (interim, pending a first-class identifiers[] field). The
+  // requirement.id is a native DefectDojo finding id (DefectDojo-Finding-<n> or a
+  // tool id), never the CVE, so the CVE list is not a duplicate of the id.
+  const cves = cveList(f);
+  if (cves.length > 0) tags.cve = cves;
+
   const result: RequirementResult = {
     status: deriveStatus(f),
     codeDesc: codeDesc(f),
-    startTime: (f.date ? parseTimestamp(f.date) : null) ?? new Date(),
+    startTime: parseFindingDate(f.date) ?? new Date(),
   };
 
   const req: EvaluatedRequirement = {
@@ -229,6 +239,18 @@ function convertFinding(f: DDFinding): EvaluatedRequirement {
   const epss = buildEpss(f);
   if (epss) req.epss = epss;
   if (f.cwe && f.cwe > 0) req.cwe = [`CWE-${f.cwe}`];
+
+  // KEV is NOT-IN-SOURCE: DefectDojo findings carry known_exploited/kev_date/
+  // ransomware_used but no CISA remediation due date. hdf Kev requires both
+  // dateAdded AND dueDate when inKev is true, so a schema-valid requirement.kev
+  // cannot be produced from source alone — synthesizing a dueDate DefectDojo
+  // never sent would be fabrication. The KEV signal is preserved verbatim in
+  // requirement.code (the raw finding JSON).
+
+  // DefectDojo carries no literal source snippet, so requirement.code (Heimdall's
+  // CODE tab) holds the whole finding as indented JSON — every field the typed
+  // interface does not model, byte-identical to the Go twin's json.Indent output.
+  req.code = JSON.stringify(f, null, 2);
 
   // The novel part: a risk-accepted finding carries a real waiver override built
   // from accepted_risks provenance.
@@ -289,5 +311,8 @@ export async function convertDefectDojoToHdf(input: string, converterVersion = '
     converterVersion,
     toolName: 'DefectDojo',
     baselines,
+    // Top-level timestamp: the newest finding date, source-derived and
+    // deterministic. Omitted when no finding carries a parseable date.
+    timestamp: latestFindingDate(findings),
   });
 }

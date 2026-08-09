@@ -127,7 +127,6 @@ func ConvertHipcheckToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		ConverterVersion: converterVersion,
 		ToolName:         "Hipcheck",
 		ToolVersion:      report.HipcheckVersion,
-		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       components,
 		Timestamp:        &now,

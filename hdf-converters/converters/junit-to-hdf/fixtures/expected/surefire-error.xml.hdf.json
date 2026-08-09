@@ -49,7 +49,6 @@
   },
   "timestamp": "2026-07-12T23:25:16.653236Z",
   "tool": {
-    "format": "XML",
     "name": "JUnit XML"
   }
 }
