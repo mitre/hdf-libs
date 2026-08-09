@@ -307,6 +307,30 @@ func TestConvertScoutsuiteToHDF_RefsAbsent(t *testing.T) {
 	assert.Nil(t, req.Refs)
 }
 
+// --- Source location ---
+
+func TestConvertScoutsuiteToHDF_SourceLocation(t *testing.T) {
+	input := loadFixture(t, "input/scoutsuite_sample.js")
+	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	// cloudtrail-not-configured carries path "cloudtrail.regions.id"
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
+	require.NotNil(t, req.SourceLocation)
+	require.NotNil(t, req.SourceLocation.Ref)
+	assert.Equal(t, "cloudtrail.regions.id", *req.SourceLocation.Ref)
+	assert.Nil(t, req.SourceLocation.Line, "cloud-resource locus carries no line number")
+}
+
+func TestConvertScoutsuiteToHDF_SourceLocationAbsent(t *testing.T) {
+	// A finding with no "path" field must yield no sourceLocation.
+	input := []byte(`{"account_id":"123","provider_name":"AWS","services":{"svc":{"findings":{"rule-x":{"checked_items":1,"flagged_items":0,"description":"d","level":"warning","rationale":"r","items":[]}}}},"last_run":{"time":"2021-01-01 00:00:00+0000","version":"5.0.0","ruleset_name":"test","ruleset_about":"test"}}`)
+	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "rule-x")
+	assert.Nil(t, req.SourceLocation, "sourceLocation omitted when finding carries no path")
+}
+
 // --- Compliance tags ---
 
 func TestConvertScoutsuiteToHDF_ComplianceTag(t *testing.T) {

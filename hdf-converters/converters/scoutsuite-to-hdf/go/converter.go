@@ -245,7 +245,7 @@ func buildRequirement(ruleID string, finding Finding, startTime string) hdf.Eval
 	}
 
 	title := finding.Description
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 ruleID,
 		Title:              &title,
 		Impact:             getImpact(finding.Level),
@@ -256,6 +256,15 @@ func buildRequirement(ruleID string, finding Finding, startTime string) hdf.Eval
 		Results:            []hdf.RequirementResult{result},
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+
+	// Promote the finding's cloud-resource locus into the structured, queryable
+	// sourceLocation. ScoutSuite paths (e.g. "cloudtrail.regions.id.trails.id")
+	// carry no line number, so Line is omitted.
+	if finding.Path != "" {
+		req.SourceLocation = &hdf.SourceLocation{Ref: hdfutil.Ptr(finding.Path)}
+	}
+
+	return req
 }
 
 // ConvertScoutsuiteToHDF converts ScoutSuite output to HDF format.

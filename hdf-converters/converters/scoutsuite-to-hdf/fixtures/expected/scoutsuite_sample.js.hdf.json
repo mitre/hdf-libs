@@ -17,6 +17,9 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-duplicated-global-services-logging",
           "impact": 0.5,
           "tags": {
@@ -52,6 +55,9 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-cloudwatch-integration",
           "impact": 0.5,
           "tags": {
@@ -87,6 +93,9 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-data-logging",
           "impact": 0.5,
           "tags": {
@@ -125,6 +134,9 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-encryption-with-kms",
           "impact": 0.7,
           "tags": {
@@ -161,6 +173,9 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-global-services-logging",
           "impact": 0.7,
           "tags": {
@@ -199,6 +214,9 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-log-file-validation",
           "impact": 0.7,
           "tags": {
@@ -239,6 +257,9 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-logging",
           "impact": 0.7,
           "tags": {
@@ -278,6 +299,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id"
+          },
           "id": "cloudtrail-not-configured",
           "impact": 0.7,
           "tags": {

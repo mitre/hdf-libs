@@ -9,6 +9,7 @@ import type {
   EvaluatedRequirement,
   Checksum,
   Reference,
+  SourceLocation,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -244,6 +245,14 @@ function buildRequirement(
 
   if (refs.length > 0) {
     req.refs = refs;
+  }
+
+  // Promote the finding's cloud-resource locus into the structured, queryable
+  // sourceLocation. ScoutSuite paths (e.g. "cloudtrail.regions.id.trails.id")
+  // carry no line number, so line is omitted.
+  if (finding.path) {
+    const loc: SourceLocation = { ref: finding.path };
+    req.sourceLocation = loc;
   }
 
   return req;
