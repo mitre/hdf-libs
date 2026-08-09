@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -213,7 +214,42 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 		req.Code = code
 	}
 
+	// requirement.sourceLocation = machine-addressable file/line locus of the
+	// representative finding, promoted from the primary trace. Left unset when
+	// no trace node carries a path.
+	if sl := buildSourceLocation(vulns); sl != nil {
+		req.SourceLocation = sl
+	}
+
 	return req
+}
+
+// buildSourceLocation promotes the representative finding's file/line locus into
+// the structured HDF SourceLocation. It uses the first primary-trace node that
+// carries a path (the default/sink node in every observed FVDL). Line is parsed
+// to a number and omitted when the source line is absent or non-numeric. Returns
+// nil when no node carries a path.
+func buildSourceLocation(vulns []Vulnerability) *hdf.SourceLocation {
+	if len(vulns) == 0 {
+		return nil
+	}
+	for _, entry := range vulns[0].AnalysisInfo.Unified.Trace.Primary.Entries {
+		if entry.Node == nil {
+			continue
+		}
+		path := entry.Node.SourceLocation.Path
+		if path == "" {
+			continue
+		}
+		sl := &hdf.SourceLocation{Ref: &path}
+		if lineStr := entry.Node.SourceLocation.Line; lineStr != "" {
+			if line, err := strconv.ParseFloat(lineStr, 64); err == nil {
+				sl.Line = &line
+			}
+		}
+		return sl
+	}
+	return nil
 }
 
 // addClassInfoTags copies the Fortify ClassInfo categorization from the

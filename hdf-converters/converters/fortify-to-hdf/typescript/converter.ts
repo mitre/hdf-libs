@@ -22,6 +22,7 @@ import type {
   Tool,
   Description,
   Reference,
+  SourceLocation,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -324,6 +325,30 @@ function buildRequirementCode(
   return parts.join('\n');
 }
 
+// requirement.sourceLocation = machine-addressable file/line locus of the
+// representative finding, promoted from the primary trace's first node carrying
+// a path (the default/sink node in every observed FVDL). Line is a number,
+// omitted when the source line is absent or non-numeric. Returns undefined when
+// no trace node carries a path.
+function buildSourceLocation(
+  vulns: FVDLVulnerability[],
+): SourceLocation | undefined {
+  if (vulns.length === 0) return undefined;
+  const entries = ensureArray(vulns[0]!.AnalysisInfo?.Unified?.Trace?.Primary?.Entry);
+  for (const entry of entries) {
+    const path = entry.Node?.SourceLocation?.path;
+    if (!path) continue;
+    const sl: SourceLocation = { ref: path };
+    const lineStr = entry.Node?.SourceLocation?.line;
+    if (lineStr !== undefined && lineStr !== '') {
+      const line = Number(lineStr);
+      if (!Number.isNaN(line)) sl.line = line;
+    }
+    return sl;
+  }
+  return undefined;
+}
+
 // Copy the Fortify ClassInfo categorization from the representative finding into
 // tags. Keys: kingdom (Seven Pernicious Kingdoms), class_type (vulnerability
 // class — "class_type" avoids colliding with any generic "type" tag), subtype,
@@ -438,6 +463,11 @@ function buildRequirement(
   const code = buildRequirementCode(vulns, snippetMap);
   if (code !== undefined) {
     req.code = code;
+  }
+
+  const sourceLocation = buildSourceLocation(vulns);
+  if (sourceLocation !== undefined) {
+    req.sourceLocation = sourceLocation;
   }
 
   return req;

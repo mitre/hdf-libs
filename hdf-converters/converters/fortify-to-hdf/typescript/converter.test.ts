@@ -708,4 +708,61 @@ describe('Fortify to HDF Converter', () => {
       expect(key in tags).toBe(false);
     }
   });
+
+  // requirement.sourceLocation promotes the representative finding's file/line
+  // locus (primary-trace default node) into the structured, machine-addressable
+  // HDF field.
+  it('should promote the representative finding locus into sourceLocation', async () => {
+    const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const pathManip = findRequirement(bl, '823FE039-A7FE-4AAD-B976-9EC53FFE4A59')!;
+    const sl = pathManip.sourceLocation as Record<string, unknown>;
+    expect(sl).toBeDefined();
+    expect(sl.ref).toBe('webgoat-lessons/challenge/src/main/java/org/owasp/webgoat/challenges/challenge7/MD5.java');
+    expect(sl.line).toBe(55);
+  });
+
+  // A non-numeric source line must yield ref only, with line omitted.
+  it('should omit line when the source line is non-numeric', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C7</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I7</InstanceID></InstanceInfo>
+    <AnalysisInfo><Unified><Trace><Primary>
+      <Entry><Node isDefault="true"><SourceLocation path="a.java" line="notanumber"/></Node></Entry>
+    </Primary></Trace></Unified></AnalysisInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C7"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    const sl = reqs[0]!.sourceLocation as Record<string, unknown>;
+    expect(sl).toBeDefined();
+    expect(sl.ref).toBe('a.java');
+    expect('line' in sl).toBe(false);
+  });
+
+  // A finding whose representative trace carries no path must leave
+  // sourceLocation unset (NOT-IN-SOURCE) rather than fabricating one.
+  it('should omit sourceLocation when no primary-trace path is present', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C8</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I8</InstanceID></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C8"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    expect('sourceLocation' in reqs[0]!).toBe(false);
+  });
 });

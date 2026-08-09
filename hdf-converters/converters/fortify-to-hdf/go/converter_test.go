@@ -613,6 +613,65 @@ func TestConvertFortifyToHDF_ClassInfoTags_Absent(t *testing.T) {
 	}
 }
 
+// requirement.sourceLocation promotes the representative finding's file/line
+// locus (primary-trace default node) into the structured, machine-addressable
+// HDF field.
+func TestConvertFortifyToHDF_SourceLocation(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	pathManip := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
+	require.NotNil(t, pathManip.SourceLocation, "sourceLocation must be promoted from the primary trace")
+	require.NotNil(t, pathManip.SourceLocation.Ref)
+	assert.Equal(t, "webgoat-lessons/challenge/src/main/java/org/owasp/webgoat/challenges/challenge7/MD5.java", *pathManip.SourceLocation.Ref)
+	require.NotNil(t, pathManip.SourceLocation.Line)
+	assert.Equal(t, 55.0, *pathManip.SourceLocation.Line)
+}
+
+// A non-numeric source line must yield Ref only, with Line omitted.
+func TestConvertFortifyToHDF_SourceLocation_NonNumericLine(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C7</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I7</InstanceID></InstanceInfo>
+    <AnalysisInfo><Unified><Trace><Primary>
+      <Entry><Node isDefault="true"><SourceLocation path="a.java" line="notanumber"/></Node></Entry>
+    </Primary></Trace></Unified></AnalysisInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C7"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	sl := result.Baselines[0].Requirements[0].SourceLocation
+	require.NotNil(t, sl)
+	require.NotNil(t, sl.Ref)
+	assert.Equal(t, "a.java", *sl.Ref)
+	assert.Nil(t, sl.Line, "Line must be omitted when the source line is non-numeric")
+}
+
+// A requirement whose representative finding carries no primary-trace path must
+// leave sourceLocation unset (NOT-IN-SOURCE) rather than fabricating one.
+func TestConvertFortifyToHDF_SourceLocation_Absent(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C8</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I8</InstanceID></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C8"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	assert.Nil(t, result.Baselines[0].Requirements[0].SourceLocation,
+		"sourceLocation must be unset when the finding carries no primary-trace path")
+}
+
 func TestConvertFortifyToHDF_VerificationMethod(t *testing.T) {
 	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
 	result, err := ConvertFortifyToHDF(inputData, converterVersion)

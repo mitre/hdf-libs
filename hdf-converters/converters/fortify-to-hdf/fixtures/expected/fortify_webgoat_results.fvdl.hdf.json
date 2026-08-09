@@ -28,6 +28,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 55,
+            "ref": "webgoat-lessons/challenge/src/main/java/org/owasp/webgoat/challenges/challenge7/MD5.java"
+          },
           "id": "823FE039-A7FE-4AAD-B976-9EC53FFE4A59",
           "impact": 0.6,
           "tags": {
@@ -79,6 +83,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 94,
+            "ref": "webgoat-lessons/password-reset/src/main/java/org/owasp/webgoat/password_reset/ResetLinkAssignmentForgotPassword.java"
+          },
           "id": "8843F319-8A22-4101-A378-C2B2F2597988",
           "impact": 0.4,
           "tags": {
@@ -143,6 +151,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 114,
+            "ref": "webgoat-lessons/missing-function-ac/src/main/java/org/owasp/webgoat/missing_ac/Users.java"
+          },
           "id": "FE4EADF2-7055-4C36-863E-5A01C4A0E1A4",
           "impact": 0.6,
           "tags": {
@@ -202,6 +214,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 55,
+            "ref": "webgoat-lessons/sql-injection/src/main/java/org/owasp/webgoat/sql_injection/mitigation/Servers.java"
+          },
           "id": "3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E",
           "impact": 0.4,
           "tags": {
@@ -243,6 +259,10 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 94,
+            "ref": "webgoat-lessons/sql-injection/src/main/java/org/owasp/webgoat/sql_injection/mitigation/SqlInjectionLesson10b.java"
+          },
           "id": "B30AA17C-87EC-42CF-9160-CFDF122CE28E",
           "impact": 0.4,
           "tags": {
