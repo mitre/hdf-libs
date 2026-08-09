@@ -83,10 +83,10 @@ type groupRollup struct {
 func RegisterCompliance(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
 		Name: "hdf_compliance",
-		Description: "Compute percent compliance and status/severity rollups (over raw result statuses, " +
-			"matching threshold gating) for an HDF results document, with an optional grouped breakdown and " +
-			"threshold verdict. The agentOverrides block is the detective surface: how many overrides are " +
-			"agent-attributed and the effective-compliance delta they account for.",
+		Description: "Compute percent compliance and status/severity rollups (by effective status: impact-0 is " +
+			"Not Applicable and excluded from the denominator, overrides honored) for an HDF results document, " +
+			"with an optional grouped breakdown and threshold verdict. The agentOverrides block is the detective " +
+			"surface: how many overrides are agent-attributed and the compliance delta they account for.",
 		Annotations: appmcp.ReadOnly(),
 	}, hdfCompliance(ldr))
 }
@@ -118,7 +118,7 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 		}
 
 		results := toResults(resolved.Load)
-		counts := hdfengine.CountControlsByStatusSeverity(results)
+		counts := countByEffectiveStatus(results)
 		out := complianceOutput{
 			Handle:        encoded,
 			DocType:       resolved.Load.DocType,
@@ -162,7 +162,7 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 // by effective status via the shared engine primitive with an injected resolver;
 // the tool re-implements no counting.
 func agentComplianceDelta(results hdf.HDFResults) float64 {
-	withAgent := hdfengine.CalculateCompliance(hdfengine.CountControlsByStatus(results, effectiveStatus))
+	withAgent := hdfengine.CalculateCompliance(countByEffectiveStatus(results))
 	withoutAgent := hdfengine.CalculateCompliance(hdfengine.CountControlsByStatus(results, effectiveStatusExcludingAgent))
 	return math.Round((withAgent-withoutAgent)*100) / 100
 }
@@ -190,7 +190,7 @@ func groupedRollups(results hdf.HDFResults, mode string) ([]groupRollup, *mcperr
 	}
 	rollups := make([]groupRollup, 0, len(partitions))
 	for key, sub := range partitions {
-		counts := hdfengine.CountControlsByStatusSeverity(sub)
+		counts := countByEffectiveStatus(sub)
 		rollups = append(rollups, groupRollup{
 			Group:      key,
 			Compliance: hdfengine.CalculateCompliance(counts),

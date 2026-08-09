@@ -8,7 +8,7 @@
         "openWorldHint": false,
         "readOnlyHint": true
       },
-      "description": "Compute percent compliance and status/severity rollups (over raw result statuses, matching threshold gating) for an HDF results document, with an optional grouped breakdown and threshold verdict. The agentOverrides block is the detective surface: how many overrides are agent-attributed and the effective-compliance delta they account for.",
+      "description": "Compute percent compliance and status/severity rollups (by effective status: impact-0 is Not Applicable and excluded from the denominator, overrides honored) for an HDF results document, with an optional grouped breakdown and threshold verdict. The agentOverrides block is the detective surface: how many overrides are agent-attributed and the compliance delta they account for.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {

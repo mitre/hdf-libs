@@ -63,15 +63,106 @@ func TestHdfCompliance_AgentOverrideCount(t *testing.T) {
 	}
 }
 
+// TestComplianceCountsImpactZeroAsNoImpact is the lj0g.4 first-failing test: an
+// impact-0 requirement (InSpec skip: result status notReviewed, explicit STIG
+// severity) is Not Applicable by HDF's canonical rule and must land in no_impact,
+// not skipped — and must be excluded from the compliance denominator.
+func TestComplianceCountsImpactZeroAsNoImpact(t *testing.T) {
+	path := writeRoot(t, "iz.json", readToolsFixture(t, "impact-zero.json"))
+	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
+	// 3 impact-0 (severity medium, notReviewed) → notApplicable/no_impact.
+	if got := countTotal(out.Counts, "no_impact"); got != 3 {
+		t.Errorf("no_impact.total = %d, want 3 (the impact-0 requirements)", got)
+	}
+	// 1 impact-0.5 notReviewed → genuinely skipped.
+	if got := countTotal(out.Counts, "skipped"); got != 1 {
+		t.Errorf("skipped.total = %d, want 1 (only the impact>0 notReviewed control)", got)
+	}
+	// compliance = passed / (passed+failed+skipped+error) = 1/(1+0+1+0) = 50; the
+	// 3 Not Applicable are excluded from the denominator (raw counting gave 20).
+	if out.Compliance != 50.0 {
+		t.Errorf("compliance = %v, want 50 (Not Applicable excluded from denominator)", out.Compliance)
+	}
+}
+
+// TestStatusConsistency_AcrossTools is lj0g.4 AC#4: hdf_open, hdf_inspect,
+// hdf_compliance and hdf_query must report the SAME effective status distribution
+// for one document. (Vocabulary differs — compliance uses SAF keys no_impact/
+// skipped — that reconciliation is lj0g.7; here we translate and compare counts.)
+func TestStatusConsistency_AcrossTools(t *testing.T) {
+	content := readToolsFixture(t, "impact-zero.json")
+	// Ground truth (effective): passed 1, failed 0, notApplicable 3, notReviewed 1, error 0.
+	want := map[string]int{"passed": 1, "failed": 0, "notApplicable": 3, "notReviewed": 1, "error": 0}
+
+	// hdf_query: count rows by status.
+	qp := writeRoot(t, "q.json", content)
+	_, q := callQuery(t, queryInput{Source: handle.Source{Path: qp}})
+	qDist := map[string]int{"passed": 0, "failed": 0, "notApplicable": 0, "notReviewed": 0, "error": 0}
+	for _, r := range q.Requirements {
+		qDist[r["status"].(string)]++
+	}
+	if !sameDist(qDist, want) {
+		t.Errorf("hdf_query distribution = %v, want %v", qDist, want)
+	}
+
+	// hdf_open: summary.statusBreakdown.
+	op := writeRoot(t, "o.json", content)
+	_, o := callOpen(t, openInput{Source: handle.Source{Path: op}})
+	if sb, ok := o.Summary["statusBreakdown"].(map[string]int); !ok || !sameDist(sb, want) {
+		t.Errorf("hdf_open statusBreakdown = %v, want %v", o.Summary["statusBreakdown"], want)
+	}
+
+	// hdf_inspect: baseline statusBreakdown.
+	ip := writeRoot(t, "i.json", content)
+	_, ins := callInspect(t, inspectInput{Source: handle.Source{Path: ip}})
+	baselines, _ := ins.Structure["baselines"].([]map[string]any)
+	if len(baselines) == 0 {
+		t.Fatal("inspect returned no baselines")
+	}
+	if sb, ok := baselines[0]["statusBreakdown"].(map[string]int); !ok || !sameDist(sb, want) {
+		t.Errorf("hdf_inspect statusBreakdown = %v, want %v", baselines[0]["statusBreakdown"], want)
+	}
+
+	// hdf_compliance: counts, translating SAF keys to the schema vocabulary.
+	cp := writeRoot(t, "c.json", content)
+	_, c := callCompliance(t, complianceInput{Source: handle.Source{Path: cp}})
+	cDist := map[string]int{
+		"passed":        countTotal(c.Counts, "passed"),
+		"failed":        countTotal(c.Counts, "failed"),
+		"notApplicable": countTotal(c.Counts, "no_impact"),
+		"notReviewed":   countTotal(c.Counts, "skipped"),
+		"error":         countTotal(c.Counts, "error"),
+	}
+	if !sameDist(cDist, want) {
+		t.Errorf("hdf_compliance distribution = %v, want %v", cDist, want)
+	}
+}
+
+func sameDist(a, b map[string]int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range b {
+		if a[k] != v {
+			return false
+		}
+	}
+	return true
+}
+
 func TestHdfCompliance_ComplianceAndCounts(t *testing.T) {
 	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
 	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
-	// Raw compliance: passed {C,E}=2 / relevant {A,B,C,D,E}=5 = 40%.
-	if out.Compliance != 40.0 {
-		t.Errorf("compliance = %v, want 40", out.Compliance)
+	// Effective compliance: A,B passed (overrides), C passed, D failed, E impact-0
+	// → notApplicable (excluded). passed 3 / relevant {A,B,C,D}=4 = 75%.
+	if out.Compliance != 75.0 {
+		t.Errorf("compliance = %v, want 75", out.Compliance)
 	}
-	if countTotal(out.Counts, "passed") != 2 || countTotal(out.Counts, "failed") != 3 {
-		t.Errorf("counts passed/failed = %+v, want passed.total=2 failed.total=3", out.Counts)
+	if countTotal(out.Counts, "passed") != 3 || countTotal(out.Counts, "failed") != 1 {
+		t.Errorf("counts passed/failed = %+v, want passed.total=3 failed.total=1", out.Counts)
+	}
+	if countTotal(out.Counts, "no_impact") != 1 {
+		t.Errorf("no_impact.total = %d, want 1 (the impact-0 requirement)", countTotal(out.Counts, "no_impact"))
 	}
 	if out.DocType != "results" || out.Handle == "" {
 		t.Errorf("envelope must carry docType+handle, got docType=%q handle=%q", out.DocType, out.Handle)
@@ -93,19 +184,22 @@ func TestHdfCompliance_GroupByBaseline(t *testing.T) {
 	if rhel == nil || k8s == nil {
 		t.Fatalf("missing expected baseline groups: %+v", out.Groups)
 	}
-	// RHEL9-STIG {A fail, B fail, C pass} = 1/3 = 33.33; K8S {D fail, E pass} = 1/2 = 50.
-	if rhel.Compliance != 33.33 {
-		t.Errorf("RHEL9-STIG compliance = %v, want 33.33", rhel.Compliance)
+	// Effective: RHEL9-STIG {A,B,C all pass (overrides)} = 3/3 = 100; K8S {D fail,
+	// E impact-0 → notApplicable, excluded} = 0/1 = 0.
+	if rhel.Compliance != 100.0 {
+		t.Errorf("RHEL9-STIG compliance = %v, want 100", rhel.Compliance)
 	}
-	if k8s.Compliance != 50.0 {
-		t.Errorf("K8S-NODE-STIG compliance = %v, want 50", k8s.Compliance)
+	if k8s.Compliance != 0.0 {
+		t.Errorf("K8S-NODE-STIG compliance = %v, want 0", k8s.Compliance)
 	}
 }
 
 func TestHdfCompliance_GroupBySeverity(t *testing.T) {
 	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
 	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}, GroupBy: "severity"})
-	want := map[string]float64{"critical": 0.0, "medium": 0.0, "high": 100.0, "informational": 100.0}
+	// Effective: A crit passed→100; B med passed + D med failed→50; C high passed→100;
+	// E informational is impact-0 → notApplicable (relevant 0 → 0%).
+	want := map[string]float64{"critical": 100.0, "medium": 50.0, "high": 100.0, "informational": 0.0}
 	for sev, wantPct := range want {
 		g := findGroup(out.Groups, sev)
 		if g == nil {
@@ -121,8 +215,9 @@ func TestHdfCompliance_GroupBySeverity(t *testing.T) {
 func TestHdfCompliance_GroupByNistFamily(t *testing.T) {
 	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
 	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}, GroupBy: "nistFamily"})
-	// AC{A fail}=0, CM{B fail}=0, IA{C pass}=100, AU{D fail}=0, SC{E pass}=100.
-	want := map[string]float64{"AC": 0.0, "CM": 0.0, "IA": 100.0, "AU": 0.0, "SC": 100.0}
+	// Effective: AC{A passed}=100, CM{B passed}=100, IA{C passed}=100, AU{D failed}=0,
+	// SC{E impact-0 → notApplicable, relevant 0}=0.
+	want := map[string]float64{"AC": 100.0, "CM": 100.0, "IA": 100.0, "AU": 0.0, "SC": 0.0}
 	if len(out.Groups) != len(want) {
 		t.Errorf("expected %d nistFamily groups, got %d (%v)", len(want), len(out.Groups), out.Groups)
 	}
@@ -221,7 +316,7 @@ func TestHdfCompliance_HandleSource(t *testing.T) {
 		t.Fatal("open must mint a handle")
 	}
 	_, out := callCompliance(t, complianceInput{Source: handle.Source{Handle: opened.Handle}})
-	if out.Compliance != 40.0 || out.DocType != "results" {
+	if out.Compliance != 75.0 || out.DocType != "results" {
 		t.Errorf("handle source must resolve the same results, got compliance=%v docType=%q", out.Compliance, out.DocType)
 	}
 }

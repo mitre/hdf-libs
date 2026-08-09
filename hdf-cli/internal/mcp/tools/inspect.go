@@ -128,7 +128,7 @@ func resultsStructure(r *hdf.HDFResults) map[string]any {
 	baselines := make([]map[string]any, 0, len(r.Baselines))
 	for i := range r.Baselines {
 		b := &r.Baselines[i]
-		counts := hdfengine.CountControlsByStatusSeverity(hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{*b}})
+		counts := countByEffectiveStatus(hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{*b}})
 		baselines = append(baselines, map[string]any{
 			"name":             b.Name,
 			"requirementCount": len(b.Requirements),

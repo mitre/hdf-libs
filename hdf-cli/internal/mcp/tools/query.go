@@ -170,6 +170,17 @@ func effectiveStatus(control hdf.EvaluatedRequirement) string {
 	return hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(control), time.Time{})
 }
 
+// countByEffectiveStatus counts a result set's requirements by their canonical
+// effective status (impact==0 → notApplicable, overrides honored) — the single
+// status convention every status-reporting MCP tool uses, so hdf_open,
+// hdf_inspect, hdf_compliance and hdf_query all agree on one document. This is
+// the effective-status seam; the raw CountControlsByStatusSeverity is
+// deliberately NOT used by the MCP tools (it drives CLI threshold gating, whose
+// separate correction is tracked apart from the read tools).
+func countByEffectiveStatus(results hdf.HDFResults) *hdfengine.StatusCounts {
+	return hdfengine.CountControlsByStatus(results, effectiveStatus)
+}
+
 // baselineAsResults projects a baseline document's requirements onto the
 // HDFResults shape the engine filters, carrying the fields the engine and status
 // resolver read (id, title, impact, tags, descriptions). A baseline requirement

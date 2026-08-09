@@ -147,7 +147,7 @@ func resultsSummary(r *hdf.HDFResults) map[string]any {
 	for i := range r.Baselines {
 		reqCount += len(r.Baselines[i].Requirements)
 	}
-	counts := hdfengine.CountControlsByStatusSeverity(*r)
+	counts := countByEffectiveStatus(*r)
 	return map[string]any{
 		"baselineCount":    len(r.Baselines),
 		"requirementCount": reqCount,
