@@ -654,3 +654,74 @@ func TestBuildCvssEntries_MissingMetrics(t *testing.T) {
 		t.Errorf("entry with metrics must keep baseScore 3.4, got %v", got[1].BaseScore)
 	}
 }
+
+// Pins the containerImage component surfaced from source.target + distro for an
+// image scan. anchore_grype.json carries repoDigests, imageID, manifestDigest,
+// architecture and an alpine distro.
+func TestConvertGrypeToHDF_ContainerImageComponent(t *testing.T) {
+	input := loadFixture(t, "input/anchore_grype.json")
+	result, err := ConvertGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+	if len(result.Components) != 1 {
+		t.Fatalf("expected 1 component, got %d", len(result.Components))
+	}
+	c := result.Components[0]
+
+	if c.Type != hdf.ContainerImage {
+		t.Errorf("component Type = %q, want containerImage", c.Type)
+	}
+	const wantRepoDigest = "golang@sha256:3f8e3ad3e7c128d29ac3004ac8314967c5ddbfa5bfa7caa59b0de493fc01686a"
+	if c.Name != wantRepoDigest {
+		t.Errorf("component Name = %q, want first repoDigest %q", c.Name, wantRepoDigest)
+	}
+	if c.ImageID == nil || *c.ImageID != "sha256:9d993b748f324b8291a4f202c2bc07b3485f7b9c7c799ee8925f657a760749cd" {
+		t.Errorf("component ImageID = %v, want the source imageID", c.ImageID)
+	}
+	if c.Image == nil || *c.Image != wantRepoDigest {
+		t.Errorf("component Image = %v, want repoDigest", c.Image)
+	}
+	if c.OSName == nil || *c.OSName != "alpine" {
+		t.Errorf("component OSName = %v, want alpine", c.OSName)
+	}
+	if c.OSVersion == nil || *c.OSVersion != "3.11.3" {
+		t.Errorf("component OSVersion = %v, want 3.11.3", c.OSVersion)
+	}
+	if len(c.Integrity) != 1 {
+		t.Fatalf("expected 1 integrity checksum, got %d", len(c.Integrity))
+	}
+	if c.Integrity[0].Algorithm != hdf.Sha256 {
+		t.Errorf("integrity algorithm = %q, want sha256", c.Integrity[0].Algorithm)
+	}
+	// manifestDigest with the "sha256:" prefix stripped.
+	if want := "5b6d42c254b9928b3cbc541bbcd52c6e91b239d2246e8e6f9825246980ed1664"; c.Integrity[0].Value != want {
+		t.Errorf("integrity value = %q, want stripped manifestDigest %q", c.Integrity[0].Value, want)
+	}
+	if c.Labels["architecture"] != "arm64" {
+		t.Errorf("label architecture = %q, want arm64", c.Labels["architecture"])
+	}
+}
+
+// Falls back to a bare artifact component when source.target carries no image
+// identity (e.g. a directory scan) — the NOT-IN-SOURCE branch.
+func TestConvertGrypeToHDF_ArtifactFallbackComponent(t *testing.T) {
+	input := []byte(`{"descriptor":{"name":"grype","version":"0.74.0"},"source":{"type":"directory","target":{"userInput":"dir:/app"}},"matches":[]}`)
+	result, err := ConvertGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+	if len(result.Components) != 1 {
+		t.Fatalf("expected 1 component, got %d", len(result.Components))
+	}
+	c := result.Components[0]
+	if c.Type != hdf.Artifact {
+		t.Errorf("component Type = %q, want artifact", c.Type)
+	}
+	if c.Name != "dir:/app" {
+		t.Errorf("component Name = %q, want dir:/app", c.Name)
+	}
+	if c.ImageID != nil || c.Image != nil || c.OSName != nil || len(c.Integrity) != 0 || len(c.Labels) != 0 {
+		t.Errorf("artifact fallback must carry no image identity, got %+v", c)
+	}
+}

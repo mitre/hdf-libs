@@ -1,6 +1,8 @@
 import {
   type AffectedPackage,
   type Checksum,
+  type Component,
+  HashAlgorithm,
   TargetType,
   createMinimalBaseline,
   type Cvss,
@@ -36,9 +38,26 @@ interface GrypeDescriptor {
 }
 
 interface GrypeSource {
-  target: {
-    userInput: string;
-  };
+  type?: string;
+  target: GrypeTarget;
+}
+
+// GrypeTarget mirrors source.target for an image scan. Only userInput is
+// guaranteed across scan types (a directory scan emits target as a bare string).
+interface GrypeTarget {
+  userInput?: string;
+  imageID?: string;
+  manifestDigest?: string;
+  repoDigests?: string[];
+  tags?: string[];
+  architecture?: string;
+  os?: string;
+  layers?: GrypeLayer[];
+}
+
+interface GrypeLayer {
+  digest?: string;
+  size?: number;
 }
 
 interface GrypeDistro {
@@ -460,6 +479,38 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
   return requirement;
 }
 
+// buildComponent surfaces the scan target's identity into a top-level HDF
+// component. An image scan yields a containerImage component carrying the image
+// digest, id, and distro OS; anything without image identity (e.g. a directory
+// scan) falls back to a bare artifact component named for the scan target.
+function buildComponent(report: GrypeReport, targetName: string): Component {
+  const t = report.source?.target;
+  const firstRepoDigest = t?.repoDigests?.find(d => d);
+  const firstTag = t?.tags?.find(tag => tag);
+  const isImage = Boolean(t && (t.imageID || t.manifestDigest || firstRepoDigest || firstTag));
+  if (!t || !isImage) {
+    return {name: targetName, type: TargetType.Artifact};
+  }
+
+  const name = firstRepoDigest || firstTag || t.imageID || targetName;
+  const component: Component = {name, type: TargetType.ContainerImage};
+  if (t.imageID) component.imageId = t.imageID;
+  // Image the container was started from: a repoDigest pins it exactly; a tag
+  // is the fallback when the scan carries no repoDigest.
+  const image = firstRepoDigest || firstTag;
+  if (image) component.image = image;
+  if (report.distro?.name) component.osName = report.distro.name;
+  if (report.distro?.version) component.osVersion = report.distro.version;
+  if (t.manifestDigest) {
+    component.integrity = [{
+      algorithm: HashAlgorithm.Sha256,
+      value: t.manifestDigest.replace(/^sha256:/, ''),
+    }];
+  }
+  if (t.architecture) component.labels = {architecture: t.architecture};
+  return component;
+}
+
 export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   validateInputSize(input, 'grype');
   // Calculate checksum of input data
@@ -525,10 +576,7 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
     toolName: 'Grype',
     toolVersion: grypeData.descriptor?.version,
     baselines: [baseline],
-    components: [{
-      type: TargetType.Artifact,
-      name: targetName,
-    }],
+    components: [buildComponent(grypeData, targetName)],
     // Match the Go peer: omit the top-level timestamp when Grype provides none,
     // rather than fabricating a non-deterministic wall-clock value.
     timestamp: scanTime ?? undefined,
