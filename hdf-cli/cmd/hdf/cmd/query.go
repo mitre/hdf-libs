@@ -196,13 +196,13 @@ func outputQueryResults(matches []hdfengine.Match) error {
 }
 
 // Severity constants aligned with CVSS 3.x bands normalized to 0-1.
-// Bands: 0.9-1.0=critical, 0.7-0.8=high, 0.4-0.6=medium, 0.1-0.3=low, 0.0=informational.
+// Bands: 0.9-1.0=critical, 0.7-0.8=high, 0.4-0.6=medium, 0.1-0.3=low, 0.0=none.
 const (
-	SeverityCritical      = "critical"
-	SeverityHigh          = "high"
-	SeverityMedium        = "medium"
-	SeverityLow           = "low"
-	SeverityInformational = "informational"
+	SeverityCritical = "critical"
+	SeverityHigh     = "high"
+	SeverityMedium   = "medium"
+	SeverityLow      = "low"
+	SeverityNone     = "none"
 )
 
 func severityToLabel(severity string) string {
@@ -215,8 +215,8 @@ func severityToLabel(severity string) string {
 		return "MED "
 	case SeverityLow:
 		return "LOW "
-	case SeverityInformational:
-		return "INFO"
+	case SeverityNone:
+		return "NONE"
 	default:
 		return "NONE"
 	}

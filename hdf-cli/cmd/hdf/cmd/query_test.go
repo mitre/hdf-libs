@@ -59,7 +59,6 @@ func TestSeverityToLabel(t *testing.T) {
 		{"high", "HIGH"},
 		{"medium", "MED "},
 		{"low", "LOW "},
-		{"informational", "INFO"},
 		{"none", "NONE"},
 		{"unknown", "NONE"},
 	}
