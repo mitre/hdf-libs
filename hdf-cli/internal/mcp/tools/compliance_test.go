@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,12 +27,10 @@ func callCompliance(t *testing.T, in complianceInput) (*sdkmcp.CallToolResult, c
 	return res, out
 }
 
-// countTotal reads counts.<status>.total from the map-typed counts output.
-func countTotal(counts map[string]any, status string) int {
-	if s, ok := counts[status].(map[string]any); ok {
-		if v, ok := s["total"].(float64); ok {
-			return int(v)
-		}
+// countTotal reads counts.<status>.total from the value-typed counts output.
+func countTotal(counts map[string]map[string]int, status string) int {
+	if s, ok := counts[status]; ok {
+		return s["total"]
 	}
 	return -1
 }
@@ -114,10 +113,10 @@ func TestSeverityAgreesAcrossQueryAndCompliance(t *testing.T) {
 	// hdf_compliance counts must place each requirement in the matching severity
 	// bucket of its status: notApplicable (no_impact) high+none; failed low+medium.
 	_, c := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
-	na, _ := c.Counts["no_impact"].(map[string]any)
-	failed, _ := c.Counts["failed"].(map[string]any)
-	checkBucket := func(bucket map[string]any, sev string) {
-		if bucket == nil || bucket[sev] == nil || int(bucket[sev].(float64)) != 1 {
+	na := c.Counts["no_impact"]
+	failed := c.Counts["failed"]
+	checkBucket := func(bucket map[string]int, sev string) {
+		if bucket[sev] != 1 {
 			t.Errorf("compliance bucket missing severity %q=1; got %v", sev, bucket)
 		}
 	}
@@ -190,6 +189,53 @@ func sameDist(a, b map[string]int) bool {
 		}
 	}
 	return true
+}
+
+// TestCountsOutputSchemaIsTyped is lj0g.3's first-failing test: the counts output
+// schema (both the top-level and per-group occurrences) declares its value shape
+// as object→object→integer, not a bare additionalProperties:true. Full named-key
+// typing measured ~2x the per-tool ceiling, so the status/severity keys stay
+// undeclared by decision (documented in the tool description + ADR); the value
+// types are declared.
+func TestCountsOutputSchemaIsTyped(t *testing.T) {
+	s := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "t", Version: "v"}, nil)
+	RegisterCompliance(s, loader.New(0, 0, 0))
+	var r struct {
+		Tools []map[string]any `json:"tools"`
+	}
+	if err := json.Unmarshal([]byte(driveToolsListJSON(t, s)), &r); err != nil {
+		t.Fatal(err)
+	}
+	var tool map[string]any
+	for _, tl := range r.Tools {
+		if tl["name"] == "hdf_compliance" {
+			tool = tl
+		}
+	}
+	if tool == nil {
+		t.Fatal("hdf_compliance not listed")
+	}
+	// integerValued reports whether a counts schema is object→object→integer.
+	integerValued := func(counts any) bool {
+		m, ok := counts.(map[string]any)
+		if !ok {
+			return false
+		}
+		ap, ok := m["additionalProperties"].(map[string]any) // severity level
+		if !ok {
+			return false
+		}
+		leaf, ok := ap["additionalProperties"].(map[string]any) // int level
+		return ok && leaf["type"] == "integer"
+	}
+	out := tool["outputSchema"].(map[string]any)["properties"].(map[string]any)
+	if !integerValued(out["counts"]) {
+		t.Errorf("top-level counts must be value-typed object→object→integer, got %v", out["counts"])
+	}
+	groupCounts := out["groups"].(map[string]any)["items"].(map[string]any)["properties"].(map[string]any)["counts"]
+	if !integerValued(groupCounts) {
+		t.Errorf("per-group counts must be value-typed object→object→integer, got %v", groupCounts)
+	}
 }
 
 // TestComplianceDescriptionStatesStatusConvention is lj0g.2's first-failing test:
@@ -520,7 +566,7 @@ func TestResolveThreshold_Errors(t *testing.T) {
 
 func TestBoundComplianceResponse_TrimsFailures(t *testing.T) {
 	out := complianceOutput{
-		DocType: "results", Counts: map[string]any{},
+		DocType: "results", Counts: map[string]map[string]int{},
 		ThresholdVerdict: &thresholdVerdict{Pass: false},
 	}
 	for i := 0; i < 500; i++ {
@@ -540,12 +586,12 @@ func TestBoundComplianceResponse_TrimsFailures(t *testing.T) {
 }
 
 func TestBoundComplianceResponse_TrimsGroups(t *testing.T) {
-	out := complianceOutput{DocType: "results", GroupBy: "nistFamily", Counts: map[string]any{}}
+	out := complianceOutput{DocType: "results", GroupBy: "nistFamily", Counts: map[string]map[string]int{}}
 	for i := 0; i < 400; i++ {
 		out.Groups = append(out.Groups, groupRollup{
 			Group:      "FAM-" + strings.Repeat("x", 3) + string(rune('A'+i%26)) + strings.Repeat("y", 2),
 			Compliance: 50.0,
-			Counts:     map[string]any{},
+			Counts:     map[string]map[string]int{},
 		})
 	}
 	boundComplianceResponse(&out)

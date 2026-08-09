@@ -46,17 +46,19 @@ type complianceOutput struct {
 	DocType       string  `json:"docType"`
 	SchemaVersion string  `json:"schemaVersion"`
 	Compliance    float64 `json:"compliance"`
-	// Counts holds the status × severity StatusCounts as a map so the derived
-	// output schema is a concrete object (additionalProperties) — MCP clients
-	// reject a bare boolean schema, which an `any` field would produce, and the
-	// full nested StatusCounts schema would blow the per-tool token ceiling.
-	Counts           map[string]any       `json:"counts"`
-	AgentOverrides   agentOverrideSummary `json:"agentOverrides"`
-	GroupBy          string               `json:"groupBy,omitempty"`
-	Groups           []groupRollup        `json:"groups,omitempty"`
-	ThresholdVerdict *thresholdVerdict    `json:"thresholdVerdict,omitempty"`
-	Truncated        bool                 `json:"truncated,omitempty"`
-	Notice           string               `json:"notice,omitempty"`
+	// Counts holds the status × severity StatusCounts as status → severity → int.
+	// This reflects to object→object→integer (value-typed) — richer than a bare
+	// additionalProperties:true, yet far cheaper than the fully named-key
+	// StatusCounts schema, which measured ~2x the per-tool token ceiling (lj0g.3).
+	// The status keys are SAF vocabulary (skipped/no_impact); see the tool
+	// description for the schema-vocabulary mapping.
+	Counts           map[string]map[string]int `json:"counts"`
+	AgentOverrides   agentOverrideSummary      `json:"agentOverrides"`
+	GroupBy          string                    `json:"groupBy,omitempty"`
+	Groups           []groupRollup             `json:"groups,omitempty"`
+	ThresholdVerdict *thresholdVerdict         `json:"thresholdVerdict,omitempty"`
+	Truncated        bool                      `json:"truncated,omitempty"`
+	Notice           string                    `json:"notice,omitempty"`
 }
 
 // agentOverrideSummary is the detective surface of §3: how many overrides on the
@@ -75,8 +77,8 @@ type thresholdVerdict struct {
 type groupRollup struct {
 	Group      string  `json:"group"`
 	Compliance float64 `json:"compliance"`
-	// Counts holds the StatusCounts as a map (see complianceOutput.Counts).
-	Counts map[string]any `json:"counts"`
+	// Counts holds the StatusCounts as status → severity → int (see complianceOutput.Counts).
+	Counts map[string]map[string]int `json:"counts"`
 }
 
 // RegisterCompliance registers the hdf_compliance tool on the server.
@@ -126,7 +128,7 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 			DocType:       resolved.Load.DocType,
 			SchemaVersion: resolved.Handle.SchemaVersion,
 			Compliance:    hdfengine.CalculateCompliance(counts),
-			Counts:        structToMap(counts),
+			Counts:        countsToNestedInt(counts),
 			AgentOverrides: agentOverrideSummary{
 				Count:           hdfengine.AgentOverrideCount(results),
 				ComplianceDelta: agentComplianceDelta(results),
@@ -169,6 +171,23 @@ func agentComplianceDelta(results hdf.HDFResults) float64 {
 	return math.Round((withAgent-withoutAgent)*100) / 100
 }
 
+// countsToNestedInt projects StatusCounts to a status → severity → int map, so
+// the output field reflects to a value-typed object→object→integer schema
+// (richer than additionalProperties:true, within the per-tool token ceiling —
+// lj0g.3). SeverityCounts' omitempty drops zero severity buckets; total is
+// always present.
+func countsToNestedInt(c *hdfengine.StatusCounts) map[string]map[string]int {
+	b, err := json.Marshal(c)
+	if err != nil {
+		return map[string]map[string]int{}
+	}
+	var m map[string]map[string]int
+	if json.Unmarshal(b, &m) != nil {
+		return map[string]map[string]int{}
+	}
+	return m
+}
+
 // effectiveStatusExcludingAgent resolves a requirement's effective status after
 // dropping its agent-attributed overrides, reusing the shared status computation
 // (composed, not forked — the same primitive effectiveStatus uses).
@@ -196,7 +215,7 @@ func groupedRollups(results hdf.HDFResults, mode string) ([]groupRollup, *mcperr
 		rollups = append(rollups, groupRollup{
 			Group:      key,
 			Compliance: hdfengine.CalculateCompliance(counts),
-			Counts:     structToMap(counts),
+			Counts:     countsToNestedInt(counts),
 		})
 	}
 	sort.Slice(rollups, func(i, j int) bool { return rollups[i].Group < rollups[j].Group })
