@@ -559,4 +559,73 @@ describe('neuvector to HDF converter', async () => {
       }
     });
   });
+
+  describe('scan-target component identity', async () => {
+    it('enriches the containerImage component from image identity', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall.json'))) as HDFResults;
+      expect(hdf.components).toHaveLength(1);
+      const comp = hdf.components![0]!;
+      expect(comp.type).toBe('containerImage');
+      expect(comp.name).toBe('https://registry.hub.docker.com/mitre/heimdall:latest');
+      // base_os "alpine:3.12.1" → osName/osVersion
+      expect(comp.osName).toBe('alpine');
+      expect(comp.osVersion).toBe('3.12.1');
+      expect(comp.imageId).toBe('65785cbf46647c77caf8d7c40485900b013fca1290d1a7ab06c9039c3b29761c');
+      expect(comp.registry).toBe('https://registry.hub.docker.com');
+      expect(comp.repository).toBe('mitre/heimdall');
+      expect(comp.tag).toBe('latest');
+      // digest "sha256:54cb..." → integrity{sha256, hex without prefix}
+      expect(comp.integrity).toEqual([
+        { algorithm: 'sha256', value: '54cbfb34a9a8fe00c9a60d722aa1c12f25bec825c505139cfffaeabc91fb10e6' },
+      ]);
+    });
+
+    it('splits a different base_os (rhel:8.10)', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall2.json'))) as HDFResults;
+      const comp = hdf.components![0]!;
+      expect(comp.osName).toBe('rhel');
+      expect(comp.osVersion).toBe('8.10');
+    });
+
+    it('omits osName/osVersion/imageId/integrity when the report carries none', async () => {
+      const input = JSON.stringify({
+        report: {
+          registry: 'reg',
+          repository: 'repo',
+          tag: 'latest',
+          vulnerabilities: [
+            { name: 'CVE-2020-0001', package_name: 'pkg', package_version: '1.0', description: '' },
+          ],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      expect(hdf.components).toHaveLength(1);
+      const comp = hdf.components![0]!;
+      expect(comp.type).toBe('containerImage');
+      expect(comp.osName).toBeUndefined();
+      expect(comp.osVersion).toBeUndefined();
+      expect(comp.imageId).toBeUndefined();
+      expect(comp.integrity).toBeUndefined();
+      expect(comp.registry).toBe('reg');
+    });
+
+    it('folds a non-sha256 digest prefix into the algorithm', async () => {
+      const input = JSON.stringify({
+        report: {
+          registry: 'reg',
+          repository: 'repo',
+          tag: 'latest',
+          base_os: 'scratch',
+          digest: 'sha512:deadbeef',
+          vulnerabilities: [],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      const comp = hdf.components![0]!;
+      // base_os with no ":" → osName only, no osVersion
+      expect(comp.osName).toBe('scratch');
+      expect(comp.osVersion).toBeUndefined();
+      expect(comp.integrity).toEqual([{ algorithm: 'sha512', value: 'deadbeef' }]);
+    });
+  });
 });

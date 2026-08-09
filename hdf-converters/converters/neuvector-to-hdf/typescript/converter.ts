@@ -7,6 +7,7 @@ import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFrom
 import { buildCvss, cvssVersionFromVector, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type {
+  Component,
   Cvss,
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -14,6 +15,7 @@ import type {
   Reference,
 } from '@mitre/hdf-schema';
 import {
+  HashAlgorithm,
   ResultStatus,
   TargetType,
   VerificationMethodEnum,
@@ -323,6 +325,93 @@ function targetNameFromReport(report: NeuVectorScanReport): string {
   return `${report.registry}/${report.repository}:${report.tag}`;
 }
 
+// Maps a NeuVector digest's algorithm prefix to the HDF hash algorithm.
+// NeuVector emits `sha256:<hex>`; the others are defensive.
+const DIGEST_ALGORITHMS: Record<string, HashAlgorithm> = {
+  sha256: HashAlgorithm.Sha256,
+  sha384: HashAlgorithm.Sha384,
+  sha512: HashAlgorithm.Sha512,
+  blake3: HashAlgorithm.Blake3,
+};
+
+/**
+ * Splits NeuVector's base_os "name:version" form (e.g. "alpine:3.12.1") into OS
+ * name and version. A value with no ":" is the name with no version; an empty
+ * value yields two empty strings.
+ */
+function splitBaseOS(baseOS: string): { name: string; version: string } {
+  if (!baseOS) {
+    return { name: '', version: '' };
+  }
+  const i = baseOS.indexOf(':');
+  if (i >= 0) {
+    return { name: baseOS.slice(0, i), version: baseOS.slice(i + 1) };
+  }
+  return { name: baseOS, version: '' };
+}
+
+/**
+ * Turns the report digest ("sha256:<hex>") into the component's Integrity
+ * checksum, folding the algorithm prefix into Checksum.algorithm. Returns
+ * undefined when the report carries no digest.
+ */
+function digestIntegrity(digest: string): Checksum[] | undefined {
+  if (!digest) {
+    return undefined;
+  }
+  let algorithm = HashAlgorithm.Sha256;
+  let value = digest;
+  const i = digest.indexOf(':');
+  if (i >= 0) {
+    const mapped = DIGEST_ALGORITHMS[digest.slice(0, i)];
+    if (mapped) {
+      algorithm = mapped;
+      value = digest.slice(i + 1);
+    }
+  }
+  return [{ algorithm, value }];
+}
+
+/**
+ * Assembles the scan-wide containerImage component from the report's image
+ * identity. base_os → osName/osVersion, digest → integrity, plus
+ * imageId/registry/repository/tag when the report carries them.
+ */
+function buildComponent(report: NeuVectorScanReport): Component {
+  const component: Component = {
+    name: targetNameFromReport(report),
+    type: TargetType.ContainerImage,
+    labels: {
+      image: `${report.registry}/${report.repository}:${report.tag}`,
+      registry: report.registry,
+    },
+  };
+  const { name: osName, version: osVersion } = splitBaseOS(report.base_os);
+  if (osName) {
+    component.osName = osName;
+    if (osVersion) {
+      component.osVersion = osVersion;
+    }
+  }
+  if (report.image_id) {
+    component.imageId = report.image_id;
+  }
+  if (report.registry) {
+    component.registry = report.registry;
+  }
+  if (report.repository) {
+    component.repository = report.repository;
+  }
+  if (report.tag) {
+    component.tag = report.tag;
+  }
+  const integrity = digestIntegrity(report.digest);
+  if (integrity) {
+    component.integrity = integrity;
+  }
+  return component;
+}
+
 /**
  * Converts NeuVector container vulnerability scan JSON output to HDF format.
  *
@@ -404,16 +493,7 @@ export async function convertNeuvectorToHdf(input: string, converterVersion = '1
     converterVersion,
     toolName: 'NeuVector',
     baselines: [baseline],
-    components: [
-      {
-        name: targetNameFromReport(scan.report),
-        type: TargetType.ContainerImage,
-        labels: {
-          image: `${scan.report.registry}/${scan.report.repository}:${scan.report.tag}`,
-          registry: scan.report.registry,
-        },
-      },
-    ],
+    components: [buildComponent(scan.report)],
     timestamp: scanTime,
   });
 }

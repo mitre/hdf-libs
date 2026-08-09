@@ -5887,12 +5887,24 @@
   ],
   "components": [
     {
+      "integrity": [
+        {
+          "algorithm": "sha256",
+          "value": "ae8e58548bb13f1aa5df8aeea51cddf118e163fbe0163165d04552de0bf0ac0a"
+        }
+      ],
       "labels": {
         "image": "https://registry.hub.docker.com/mitre/heimdall2:latest",
         "registry": "https://registry.hub.docker.com"
       },
       "name": "https://registry.hub.docker.com/mitre/heimdall2:latest",
-      "type": "containerImage"
+      "type": "containerImage",
+      "osName": "rhel",
+      "osVersion": "8.10",
+      "imageId": "756f9a308b59ec6a0812ba49f958f2a3f4f0833afc9a3df23afe58f502db10aa",
+      "registry": "https://registry.hub.docker.com",
+      "repository": "mitre/heimdall2",
+      "tag": "latest"
     }
   ],
   "generator": {

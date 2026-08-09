@@ -480,6 +480,113 @@ func TestConvertNeuVector_Target(t *testing.T) {
 	assert.Equal(t, hdf.ContainerImage, result.Components[0].Type)
 }
 
+// ---- Scan-target component identity ----
+
+// Value-pins the enriched containerImage component: base_os → osName/osVersion,
+// digest → Integrity (sha256, prefix stripped), image_id → ImageID, plus
+// registry/repository/tag. Fields are read independently of the golden.
+func TestConvertNeuVector_ComponentIdentity(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.ContainerImage, comp.Type)
+	assert.Equal(t, "https://registry.hub.docker.com/mitre/heimdall:latest", comp.Name)
+
+	// base_os "alpine:3.12.1" → osName "alpine", osVersion "3.12.1"
+	require.NotNil(t, comp.OSName)
+	assert.Equal(t, "alpine", *comp.OSName)
+	require.NotNil(t, comp.OSVersion)
+	assert.Equal(t, "3.12.1", *comp.OSVersion)
+
+	require.NotNil(t, comp.ImageID)
+	assert.Equal(t, "65785cbf46647c77caf8d7c40485900b013fca1290d1a7ab06c9039c3b29761c", *comp.ImageID)
+	require.NotNil(t, comp.Registry)
+	assert.Equal(t, "https://registry.hub.docker.com", *comp.Registry)
+	require.NotNil(t, comp.Repository)
+	assert.Equal(t, "mitre/heimdall", *comp.Repository)
+	require.NotNil(t, comp.Tag)
+	assert.Equal(t, "latest", *comp.Tag)
+
+	// digest "sha256:54cb..." → Integrity{sha256, <hex without prefix>}
+	require.Len(t, comp.Integrity, 1)
+	assert.Equal(t, hdf.Sha256, comp.Integrity[0].Algorithm)
+	assert.Equal(t, "54cbfb34a9a8fe00c9a60d722aa1c12f25bec825c505139cfffaeabc91fb10e6", comp.Integrity[0].Value)
+}
+
+// The rhel fixture pins a different base_os split.
+func TestConvertNeuVector_ComponentOSRhel(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall2.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	require.NotNil(t, comp.OSName)
+	assert.Equal(t, "rhel", *comp.OSName)
+	require.NotNil(t, comp.OSVersion)
+	assert.Equal(t, "8.10", *comp.OSVersion)
+}
+
+// Absent branch: a report carrying no base_os/digest/image_id yields a
+// containerImage component with no OS, Integrity, or ImageID.
+func TestConvertNeuVector_ComponentIdentityAbsent(t *testing.T) {
+	input := []byte(`{
+		"report": {
+			"registry": "reg",
+			"repository": "repo",
+			"tag": "latest",
+			"vulnerabilities": [
+				{"name": "CVE-2020-0001", "package_name": "pkg", "package_version": "1.0"}
+			]
+		}
+	}`)
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.ContainerImage, comp.Type)
+	assert.Nil(t, comp.OSName, "no base_os → no osName")
+	assert.Nil(t, comp.OSVersion, "no base_os → no osVersion")
+	assert.Nil(t, comp.ImageID, "no image_id → no imageId")
+	assert.Nil(t, comp.Integrity, "no digest → no integrity")
+	// registry/repository/tag are still present.
+	require.NotNil(t, comp.Registry)
+	assert.Equal(t, "reg", *comp.Registry)
+}
+
+// Unit branch coverage for the base_os split and digest algorithm folding.
+func TestComponentHelpers_Branches(t *testing.T) {
+	t.Run("splitBaseOS name only", func(t *testing.T) {
+		name, version := splitBaseOS("scratch")
+		assert.Equal(t, "scratch", name)
+		assert.Empty(t, version)
+	})
+	t.Run("splitBaseOS empty", func(t *testing.T) {
+		name, version := splitBaseOS("")
+		assert.Empty(t, name)
+		assert.Empty(t, version)
+	})
+	t.Run("digestIntegrity empty", func(t *testing.T) {
+		assert.Nil(t, digestIntegrity(""))
+	})
+	t.Run("digestIntegrity sha512 prefix", func(t *testing.T) {
+		out := digestIntegrity("sha512:deadbeef")
+		require.Len(t, out, 1)
+		assert.Equal(t, hdf.Sha512, out[0].Algorithm)
+		assert.Equal(t, "deadbeef", out[0].Value)
+	})
+	t.Run("digestIntegrity no prefix defaults sha256", func(t *testing.T) {
+		out := digestIntegrity("abc123")
+		require.Len(t, out, 1)
+		assert.Equal(t, hdf.Sha256, out[0].Algorithm)
+		assert.Equal(t, "abc123", out[0].Value)
+	})
+}
+
 // ---- Tags with extras ----
 
 func TestConvertNeuVector_Tags(t *testing.T) {

@@ -472,12 +472,24 @@
   ],
   "components": [
     {
+      "integrity": [
+        {
+          "algorithm": "sha256",
+          "value": "54cbfb34a9a8fe00c9a60d722aa1c12f25bec825c505139cfffaeabc91fb10e6"
+        }
+      ],
       "labels": {
         "image": "https://registry.hub.docker.com/mitre/heimdall:latest",
         "registry": "https://registry.hub.docker.com"
       },
       "name": "https://registry.hub.docker.com/mitre/heimdall:latest",
-      "type": "containerImage"
+      "type": "containerImage",
+      "osName": "alpine",
+      "osVersion": "3.12.1",
+      "imageId": "65785cbf46647c77caf8d7c40485900b013fca1290d1a7ab06c9039c3b29761c",
+      "registry": "https://registry.hub.docker.com",
+      "repository": "mitre/heimdall",
+      "tag": "latest"
     }
   ],
   "generator": {
