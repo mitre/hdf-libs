@@ -158,7 +158,7 @@ export async function convertNiktoToHdf(input: string, converterVersion = 'unkno
 
   // Surface the scan target's host identity. Nikto scans a single web host;
   // host/ip name it. Omit the component entirely when neither is present.
-  const components = [];
+  const components: Component[] = [];
   if (niktoData.host || niktoData.ip) {
     const host: Component = {
       type: TargetType.Host,
