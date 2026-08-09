@@ -891,7 +891,12 @@ describe('SARIF branch coverage', () => {
       }],
     });
     const hdf = parseHdf(await convertSarifToHdf(input));
-    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    // De-laundering: the raw result status stays the tool's (failed) rather than
+    // being flipped to notReviewed; the suppression record is preserved on the
+    // requirement's suppressions tag (an accepted status would also add an override).
+    const req = hdf.baselines[0]!.requirements[0]!;
+    expect(req.results[0]!.status).toBe('failed');
+    expect(req.tags?.suppressions).toBeDefined();
   });
 
   it('should handle result with no locations', async () => {
