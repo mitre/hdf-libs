@@ -290,17 +290,71 @@ describe('dbprotect to HDF converter', () => {
     });
   });
 
-  describe('target', () => {
-    it('should set target name from Asset column', async () => {
+  describe('scan target component (database identity)', () => {
+    it('builds a database component from the identity columns', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
-      expect(hdf.components).toBeDefined();
-      expect(hdf.components!.length).toBeGreaterThan(0);
-      expect(hdf.components![0]!.name).toBe('CONDS181');
+      expect(hdf.components).toHaveLength(1);
+      const comp = hdf.components![0]!;
+      expect(comp.type).toBe('database');
+      expect(comp.name).toBe('MSSQLSERVER');
+      expect(comp.ipAddress).toBe('10.0.10.204');
+      expect(comp.port).toBe(1433);
+      expect(comp.engine).toBe('Microsoft SQL Server');
+      expect(comp.hostname).toBe('CONDS181');
     });
 
-    it('should set target type to Host', async () => {
-      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
-      expect(hdf.components![0]!.type).toBe('host');
+    it('builds the database component for the findings-detail report too', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      expect(hdf.components).toHaveLength(1);
+      const comp = hdf.components![0]!;
+      expect(comp.type).toBe('database');
+      expect(comp.name).toBe('MSSQLSERVER');
+      expect(comp.ipAddress).toBe('192.168.1.200');
+      expect(comp.hostname).toBe('HOST1');
+    });
+
+    // Drive the name-fallback and absent branches through crafted single-row XML.
+    // cols/vals are positional (Cognos maps metadata items to row values by index).
+    const buildXml = (cols: string[], vals: string[]): string =>
+      `<?xml version="1.0" encoding="utf-8"?>
+<dataset xmlns="http://developer.cognos.com/schemas/xmldata/1/">
+  <metadata>${cols.map((c) => `<item name="${c}" type="xs:string"/>`).join('')}</metadata>
+  <data><row>${vals.map((v) => `<value>${v}</value>`).join('')}</row></data>
+</dataset>`;
+
+    it('names the component IP:Port when no instance is present', async () => {
+      const xml = buildXml(['IP Address, Port, Instance', 'Check ID', 'Check'], ['10.0.10.204, 1433', '1', 'x']);
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.components![0]!.name).toBe('10.0.10.204:1433');
+      expect(hdf.components![0]!.type).toBe('database');
+    });
+
+    it('names the component IP alone when neither instance nor port is present', async () => {
+      const xml = buildXml(['IP Address, Port, Instance', 'Check ID', 'Check'], ['10.0.10.204', '1', 'x']);
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.components![0]!.name).toBe('10.0.10.204');
+      expect(hdf.components![0]!.port).toBeUndefined();
+    });
+
+    it('names the component from the Asset label when the identity cell is empty', async () => {
+      const xml = buildXml(['Asset', 'Check ID', 'Check'], ['CONDS181', '1', 'x']);
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.components![0]!.name).toBe('CONDS181');
+      expect(hdf.components![0]!.hostname).toBe('CONDS181');
+      expect(hdf.components![0]!.ipAddress).toBeUndefined();
+    });
+
+    it('drops a non-numeric port', async () => {
+      const xml = buildXml(['IP Address, Port, Instance', 'Check ID', 'Check'], ['10.0.10.204, abc, INST', '1', 'x']);
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.components![0]!.name).toBe('INST');
+      expect(hdf.components![0]!.port).toBeUndefined();
+    });
+
+    it('omits components entirely when no identity columns are present (NOT-IN-SOURCE)', async () => {
+      const xml = buildXml(['Check ID', 'Check'], ['1', 'x']);
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.components).toBeUndefined();
     });
   });
 

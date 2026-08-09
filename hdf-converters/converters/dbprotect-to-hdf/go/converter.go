@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -149,6 +150,65 @@ func scanTimestamp(f finding) time.Time {
 	return parseDate(f["Date"])
 }
 
+// parseTarget splits DBProtect's combined "IP Address, Port, Instance" cell
+// (e.g. "10.0.10.204, 1433, MSSQLSERVER") into its three parts. Any part the
+// source omits comes back empty. Extra commas beyond the third field are folded
+// back into the instance so an instance name containing a comma survives.
+func parseTarget(s string) (ip, port, instance string) {
+	parts := strings.Split(s, ",")
+	if len(parts) > 0 {
+		ip = strings.TrimSpace(parts[0])
+	}
+	if len(parts) > 1 {
+		port = strings.TrimSpace(parts[1])
+	}
+	if len(parts) > 2 {
+		instance = strings.TrimSpace(strings.Join(parts[2:], ","))
+	}
+	return ip, port, instance
+}
+
+// buildScanTarget derives the scan-wide asset under test — the database — from
+// the first finding's identity columns. Name prefers the instance, then IP:Port,
+// then the raw asset label. Returns nil when the source carries no identity at
+// all, so the caller omits components[] rather than emitting a nameless target.
+func buildScanTarget(f finding) *hdf.Component {
+	ip, port, instance := parseTarget(f["IP Address, Port, Instance"])
+	assetType := strings.TrimSpace(f["Asset Type"])
+	asset := strings.TrimSpace(f["Asset"])
+
+	name := instance
+	switch {
+	case name != "":
+	case ip != "" && port != "":
+		name = ip + ":" + port
+	case ip != "":
+		name = ip
+	default:
+		name = asset
+	}
+	if name == "" {
+		return nil
+	}
+
+	comp := &hdf.Component{Name: name, Type: hdf.Database}
+	if ip != "" {
+		comp.IPAddress = &ip
+	}
+	if port != "" {
+		if p, err := strconv.ParseInt(port, 10, 64); err == nil {
+			comp.Port = &p
+		}
+	}
+	if assetType != "" {
+		comp.Engine = &assetType
+	}
+	if asset != "" {
+		comp.Hostname = &asset
+	}
+	return comp
+}
+
 // groupByCheckID groups findings by their Check ID, preserving insertion order.
 func groupByCheckID(findings []finding) ([]string, map[string][]finding) {
 	order := []string{}
@@ -290,8 +350,6 @@ func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		baseline.Version = &policy
 	}
 
-	targetName := firstFinding["Asset"]
-
 	// Top-level timestamp is source-derived (Start Date, else Date) so repeated
 	// conversions of the same input are byte-identical. Omit it rather than fall
 	// back to now() when the source carries no parseable scan time.
@@ -300,14 +358,17 @@ func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		timestamp = &ts
 	}
 
+	var components []hdf.Component
+	if target := buildScanTarget(firstFinding); target != nil {
+		components = append(components, *target)
+	}
+
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "dbprotect-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "DBProtect",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components: []hdf.Component{
-			{Name: targetName, Type: hdf.Host},
-		},
-		Timestamp: timestamp,
+		Components:       components,
+		Timestamp:        timestamp,
 	}), nil
 }

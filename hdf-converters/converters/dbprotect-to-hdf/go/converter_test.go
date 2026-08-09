@@ -446,16 +446,102 @@ func TestBuildRequirement_CheckCategoryAbsent(t *testing.T) {
 	assert.False(t, present, "check_category tag must be omitted when source field is absent")
 }
 
-// ---- Target ----
+// ---- Scan target component (database identity) ----
 
+// The scan target is a database asset built from the "IP Address, Port,
+// Instance" cell plus "Asset Type" (engine) and "Asset" (host name). Name is
+// the instance.
 func TestConvertDbprotect_CheckResults_Target(t *testing.T) {
 	input := loadFixture(t, "input/sample-check-results.xml")
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Components)
-	assert.Equal(t, "CONDS181", result.Components[0].Name)
-	assert.Equal(t, hdf.Host, result.Components[0].Type)
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.Database, comp.Type)
+	assert.Equal(t, "MSSQLSERVER", comp.Name)
+
+	require.NotNil(t, comp.IPAddress)
+	assert.Equal(t, "10.0.10.204", *comp.IPAddress)
+	require.NotNil(t, comp.Port)
+	assert.Equal(t, int64(1433), *comp.Port)
+	require.NotNil(t, comp.Engine)
+	assert.Equal(t, "Microsoft SQL Server", *comp.Engine)
+	require.NotNil(t, comp.Hostname)
+	assert.Equal(t, "CONDS181", *comp.Hostname)
+}
+
+func TestConvertDbprotect_FindingsDetail_Target(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.Database, comp.Type)
+	assert.Equal(t, "MSSQLSERVER", comp.Name)
+	require.NotNil(t, comp.IPAddress)
+	assert.Equal(t, "192.168.1.200", *comp.IPAddress)
+	require.NotNil(t, comp.Hostname)
+	assert.Equal(t, "HOST1", *comp.Hostname)
+}
+
+// parseTarget splits the combined identity cell; missing parts come back empty.
+func TestParseTarget(t *testing.T) {
+	ip, port, instance := parseTarget("10.0.10.204, 1433, MSSQLSERVER")
+	assert.Equal(t, "10.0.10.204", ip)
+	assert.Equal(t, "1433", port)
+	assert.Equal(t, "MSSQLSERVER", instance)
+
+	ip, port, instance = parseTarget("10.0.10.204, 1433")
+	assert.Equal(t, "10.0.10.204", ip)
+	assert.Equal(t, "1433", port)
+	assert.Empty(t, instance)
+
+	ip, port, instance = parseTarget("")
+	assert.Empty(t, ip)
+	assert.Empty(t, port)
+	assert.Empty(t, instance)
+}
+
+// Name falls back to IP:Port when no instance is present.
+func TestBuildScanTarget_NameFallsBackToIPPort(t *testing.T) {
+	comp := buildScanTarget(finding{"IP Address, Port, Instance": "10.0.10.204, 1433"})
+	require.NotNil(t, comp)
+	assert.Equal(t, "10.0.10.204:1433", comp.Name)
+	assert.Equal(t, hdf.Database, comp.Type)
+}
+
+// Name falls back to IP alone when there is neither instance nor port.
+func TestBuildScanTarget_NameFallsBackToIP(t *testing.T) {
+	comp := buildScanTarget(finding{"IP Address, Port, Instance": "10.0.10.204"})
+	require.NotNil(t, comp)
+	assert.Equal(t, "10.0.10.204", comp.Name)
+	assert.Nil(t, comp.Port)
+}
+
+// Name falls back to the raw Asset label when the identity cell is empty.
+func TestBuildScanTarget_NameFallsBackToAsset(t *testing.T) {
+	comp := buildScanTarget(finding{"Asset": "CONDS181"})
+	require.NotNil(t, comp)
+	assert.Equal(t, "CONDS181", comp.Name)
+	assert.Nil(t, comp.IPAddress)
+	require.NotNil(t, comp.Hostname)
+	assert.Equal(t, "CONDS181", *comp.Hostname)
+}
+
+// A non-numeric port is dropped rather than emitted as a bogus value.
+func TestBuildScanTarget_NonNumericPortDropped(t *testing.T) {
+	comp := buildScanTarget(finding{"IP Address, Port, Instance": "10.0.10.204, abc, INST"})
+	require.NotNil(t, comp)
+	assert.Equal(t, "INST", comp.Name)
+	assert.Nil(t, comp.Port)
+}
+
+// Absent branch: no identity columns at all -> no component (NOT-IN-SOURCE).
+func TestBuildScanTarget_AbsentReturnsNil(t *testing.T) {
+	assert.Nil(t, buildScanTarget(finding{}))
+	assert.Nil(t, buildScanTarget(finding{"Check": "x"}))
 }
 
 // ---- Findings Detail fixture ----

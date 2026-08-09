@@ -8,6 +8,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Component,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -141,6 +142,65 @@ function formatSummary(f: Finding): string {
     `Asset Type : ${f['Asset Type'] ?? ''}`,
     `IP Address, Port, Instance : ${f['IP Address, Port, Instance'] ?? ''}`,
   ].join('\n');
+}
+
+/**
+ * Splits DBProtect's combined "IP Address, Port, Instance" cell
+ * (e.g. "10.0.10.204, 1433, MSSQLSERVER") into its three parts. Any part the
+ * source omits comes back empty. Extra commas beyond the third field fold back
+ * into the instance so an instance name containing a comma survives.
+ */
+function parseTarget(s: string): { ip: string; port: string; instance: string } {
+  const parts = s.split(',');
+  return {
+    ip: (parts[0] ?? '').trim(),
+    port: (parts[1] ?? '').trim(),
+    instance: parts.length > 2 ? parts.slice(2).join(',').trim() : '',
+  };
+}
+
+/**
+ * Derives the scan-wide asset under test — the database — from the first
+ * finding's identity columns. Name prefers the instance, then IP:Port, then the
+ * raw asset label. Returns undefined when the source carries no identity at all,
+ * so the caller omits components[] rather than emitting a nameless target.
+ */
+function buildScanTarget(f: Finding): Component | undefined {
+  const { ip, port, instance } = parseTarget(f['IP Address, Port, Instance'] ?? '');
+  const assetType = (f['Asset Type'] ?? '').trim();
+  const asset = (f['Asset'] ?? '').trim();
+
+  let name = instance;
+  if (!name) {
+    if (ip && port) {
+      name = `${ip}:${port}`;
+    } else if (ip) {
+      name = ip;
+    } else {
+      name = asset;
+    }
+  }
+  if (!name) {
+    return undefined;
+  }
+
+  const comp: Component = { name, type: TargetType.Database };
+  if (ip) {
+    comp.ipAddress = ip;
+  }
+  if (port) {
+    const parsed = Number.parseInt(port, 10);
+    if (!Number.isNaN(parsed)) {
+      comp.port = parsed;
+    }
+  }
+  if (assetType) {
+    comp.engine = assetType;
+  }
+  if (asset) {
+    comp.hostname = asset;
+  }
+  return comp;
 }
 
 const MONTH_ABBR: Record<string, string> = {
@@ -312,7 +372,6 @@ export async function convertDbprotectToHdf(input: string, converterVersion = '1
   const firstFinding = limitedFindings[0]!;
   const title = firstFinding['Job Name'] ?? '';
   const summary = formatSummary(firstFinding);
-  const targetName = firstFinding['Asset'] ?? '';
 
   const baseline = createMinimalBaseline('DBProtect Scan', requirements, {
     resultsChecksum,
@@ -325,12 +384,14 @@ export async function convertDbprotectToHdf(input: string, converterVersion = '1
     baseline.version = policy;
   }
 
+  const target = buildScanTarget(firstFinding);
+
   return buildHdfResults({
     generatorName: 'dbprotect-to-hdf',
     converterVersion,
     toolName: 'DBProtect',
     baselines: [baseline],
-    components: [{ name: targetName, type: TargetType.Host }],
+    components: target ? [target] : undefined,
     timestamp: scanTimestamp(firstFinding),
   });
 }

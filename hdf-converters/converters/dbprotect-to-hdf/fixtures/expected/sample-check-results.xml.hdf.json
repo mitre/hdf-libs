@@ -211,8 +211,12 @@
   ],
   "components": [
     {
-      "name": "CONDS181",
-      "type": "host"
+      "name": "MSSQLSERVER",
+      "type": "database",
+      "hostname": "CONDS181",
+      "ipAddress": "10.0.10.204",
+      "engine": "Microsoft SQL Server",
+      "port": 1433
     }
   ],
   "generator": {

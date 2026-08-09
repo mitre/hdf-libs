@@ -113,8 +113,12 @@
   ],
   "components": [
     {
-      "name": "HOST1",
-      "type": "host"
+      "name": "MSSQLSERVER",
+      "type": "database",
+      "hostname": "HOST1",
+      "ipAddress": "192.168.1.200",
+      "engine": "Microsoft SQL Server",
+      "port": 1433
     }
   ],
   "generator": {
