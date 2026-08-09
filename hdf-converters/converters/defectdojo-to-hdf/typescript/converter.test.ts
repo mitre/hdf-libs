@@ -41,8 +41,8 @@ describe('defectdojo-to-hdf converter', () => {
     expect(byTriage(reqs, 'defectdojo/active').results[0].status).toBe('failed');
 
     const fp = byTriage(reqs, 'defectdojo/false_p');
-    expect(fp.results[0].status).toBe('failed'); // dismissal rides in the tag, not the status
-    expect(fp.effectiveStatus).toBeUndefined();
+    expect(fp.results[0].status).toBe('failed'); // raw stays failed
+    expect(fp.effectiveStatus).toBe('notApplicable'); // dismissal rides in a falsePositive override
 
     const mitigatedOnly = reqs.find(
       r => (r.tags as Record<string, unknown>)['defectdojo/is_mitigated'] === true && (r.tags as Record<string, unknown>)['defectdojo/false_p'] !== true,
@@ -66,6 +66,36 @@ describe('defectdojo-to-hdf converter', () => {
     expect(ov.appliedBy.identifier).toBe('defectdojo-user-1');
     expect(ov.appliedBy.type).toBe('simple');
     expect(String(ov.expiresAt)).toContain('2099'); // real expiration_date
+  });
+
+  it('emits a real falsePositive override from a false-positive dismissal', async () => {
+    // Finding 2 in the fixture: false_p=true, mitigated_by=1, mitigated=2026-07-26.
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    const fp = byTriage(hdf.baselines[0].requirements, 'defectdojo/false_p');
+
+    expect(fp.results[0].status).toBe('failed'); // raw stays failed
+    expect(fp.effectiveStatus).toBe('notApplicable'); // a vuln aggregator's FP → N/A
+    expect(fp.disposition).toBe('falsePositive');
+
+    expect(fp.statusOverrides).toHaveLength(1);
+    const ov = fp.statusOverrides![0];
+    expect(ov.type).toBe('falsePositive');
+    expect(ov.status).toBe('notApplicable');
+    expect(ov.reason).toBe('Some mitigation'); // the finding's mitigation note
+    expect(ov.appliedBy.identifier).toBe('defectdojo-user-1');
+    expect(ov.appliedBy.type).toBe('simple');
+    expect(String(ov.appliedAt)).toContain('2026'); // mitigated date
+    expect(String(ov.expiresAt)).toContain('2027'); // appliedAt + 1yr
+  });
+
+  it('emits no override for an untriaged finding (raw status unchanged)', async () => {
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    const active = byTriage(hdf.baselines[0].requirements, 'defectdojo/active');
+
+    expect(active.results[0].status).toBe('failed');
+    expect(active.effectiveStatus).toBeUndefined();
+    expect(active.disposition).toBeUndefined();
+    expect(active.statusOverrides).toBeUndefined();
   });
 
   it('pins the top-level timestamp to the newest finding date', async () => {
@@ -176,6 +206,46 @@ describe('defectdojo-to-hdf converter', () => {
     // risk_accepted flag but no accepted_risks → no override
     const flagOnly = await convertOne({risk_accepted: true});
     expect(flagOnly.statusOverrides).toBeUndefined();
+  });
+
+  it('resolves false-positive reviewer identity, reason, and appliedAt by precedence', async () => {
+    const fp = (extra: Record<string, unknown>): Record<string, unknown> => ({false_p: true, ...extra});
+
+    const email = await convertOne(fp({mitigated_by: 1, mitigated_by_username: 'u', mitigated_by_email: 'a@b.com'}));
+    expect(email.statusOverrides![0].appliedBy).toMatchObject({type: 'email', identifier: 'a@b.com'});
+
+    const username = await convertOne(fp({mitigated_by: 1, mitigated_by_username: 'u'}));
+    expect(username.statusOverrides![0].appliedBy).toMatchObject({type: 'username', identifier: 'u'});
+
+    const simple = await convertOne(fp({mitigated_by: 7}));
+    expect(simple.statusOverrides![0].appliedBy).toMatchObject({type: 'simple', identifier: 'defectdojo-user-7'});
+
+    const system = await convertOne(fp({}));
+    expect(system.statusOverrides![0].appliedBy).toMatchObject({type: 'other', identifier: 'defectdojo (false positive triage)'});
+
+    // reason: mitigation note when present, else constant fallback
+    expect((await convertOne(fp({mitigation: 'note here'}))).statusOverrides![0].reason).toBe('note here');
+    expect((await convertOne(fp({}))).statusOverrides![0].reason).toBe('Marked as false positive in DefectDojo');
+
+    // appliedAt: mitigated date wins over the finding date; expiresAt is +1yr
+    const mit = await convertOne(fp({mitigated: '2030-05-01T00:00:00Z', date: '2020-01-01'}));
+    expect(String(mit.statusOverrides![0].appliedAt)).toContain('2030');
+    expect(String(mit.statusOverrides![0].expiresAt)).toContain('2031');
+
+    // no mitigated date → falls back to the finding date
+    const fromDate = await convertOne(fp({date: '2022-03-04'}));
+    expect(String(fromDate.statusOverrides![0].appliedAt)).toBe('2022-03-04T00:00:00Z');
+  });
+
+  it('prefers the waiver over the false-positive path when a finding is both', async () => {
+    const both = await convertOne({
+      false_p: true,
+      risk_accepted: true,
+      accepted_risks: [{name: 'AcceptName'}],
+    });
+    expect(both.disposition).toBe('waiver');
+    expect(both.effectiveStatus).toBe('passed');
+    expect(both.statusOverrides![0].type).toBe('waiver');
   });
 
   it('derives the requirement id from the tool ids with fallback', async () => {

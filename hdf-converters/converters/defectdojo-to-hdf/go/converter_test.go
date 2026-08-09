@@ -66,10 +66,12 @@ func TestConvertDefectDojo_StatusMapping(t *testing.T) {
 	active := requirementByTriage(t, reqs, "defectdojo/active")
 	assert.Equal(t, hdf.Failed, active.Results[0].Status)
 
-	// false_p → failed (raw-primary; dismissal rides in the tag, not the status)
+	// false_p → raw stays failed; the dismissal rides in a falsePositive override
+	// (effectiveStatus notApplicable), not a rewrite of the raw status.
 	fp := requirementByTriage(t, reqs, "defectdojo/false_p")
 	assert.Equal(t, hdf.Failed, fp.Results[0].Status)
-	assert.Nil(t, fp.EffectiveStatus, "false positive is not an override")
+	require.NotNil(t, fp.EffectiveStatus)
+	assert.Equal(t, hdf.NotApplicable, *fp.EffectiveStatus)
 
 	// is_mitigated → passed (only when it is not also false_p/risk_accepted)
 	// finding 3 in the fixture is mitigated-only.
@@ -112,6 +114,104 @@ func TestConvertDefectDojo_RiskAcceptanceWaiverOverride(t *testing.T) {
 	assert.Equal(t, hdf.Simple, ov.AppliedBy.Type)
 	assert.Equal(t, 2099, ov.ExpiresAt.Year()) // real expiration_date
 	assert.False(t, ov.AppliedAt.IsZero())
+}
+
+// TestConvertDefectDojo_FalsePositiveOverride pins the falsePositive override
+// reconstructed from a DefectDojo false-positive dismissal (finding 2 in the
+// fixture: false_p=true, mitigated_by=1, mitigated=2026-07-26). Raw status stays
+// failed; effectiveStatus becomes notApplicable (a vuln aggregator's FP means the
+// vuln does not apply), fully attributed to the reviewer.
+func TestConvertDefectDojo_FalsePositiveOverride(t *testing.T) {
+	result, err := ConvertDefectDojo(loadFixture(t, "findings.json"), converterVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+
+	fp := requirementByTriage(t, reqs, "defectdojo/false_p")
+
+	// Raw status stays failed; the dismissal is an override, not a rewrite.
+	assert.Equal(t, hdf.Failed, fp.Results[0].Status)
+
+	require.NotNil(t, fp.EffectiveStatus)
+	assert.Equal(t, hdf.NotApplicable, *fp.EffectiveStatus)
+	require.NotNil(t, fp.Disposition)
+	assert.Equal(t, hdf.FalsePositive, *fp.Disposition)
+
+	require.Len(t, fp.StatusOverrides, 1)
+	ov := fp.StatusOverrides[0]
+	assert.Equal(t, hdf.FalsePositive, ov.Type)
+	require.NotNil(t, ov.Status)
+	assert.Equal(t, hdf.NotApplicable, *ov.Status)
+	assert.Equal(t, "Some mitigation", ov.Reason) // the finding's mitigation note
+	assert.Equal(t, "defectdojo-user-1", ov.AppliedBy.Identifier)
+	assert.Equal(t, hdf.Simple, ov.AppliedBy.Type)
+	assert.Equal(t, 2026, ov.AppliedAt.Year()) // mitigated date
+	assert.Equal(t, 2027, ov.ExpiresAt.Year()) // appliedAt + 1yr
+	assert.Equal(t, ov.AppliedAt.AddDate(1, 0, 0), ov.ExpiresAt)
+}
+
+// TestConvertDefectDojo_NoOverrideForUntriaged locks the no-triage branch: the
+// active, untriaged finding (finding 1) carries no override — raw status
+// unchanged, no effectiveStatus/disposition/statusOverrides.
+func TestConvertDefectDojo_NoOverrideForUntriaged(t *testing.T) {
+	result, err := ConvertDefectDojo(loadFixture(t, "findings.json"), converterVersion)
+	require.NoError(t, err)
+	active := requirementByTriage(t, result.Baselines[0].Requirements, "defectdojo/active")
+
+	assert.Equal(t, hdf.Failed, active.Results[0].Status)
+	assert.Nil(t, active.EffectiveStatus, "untriaged finding carries no effectiveStatus")
+	assert.Nil(t, active.Disposition, "untriaged finding carries no disposition")
+	assert.Empty(t, active.StatusOverrides, "untriaged finding carries no override")
+}
+
+// TestBuildFalsePositiveOverride_Branches covers the falsePositive builder's
+// reviewer-identity precedence, reason fallback, and appliedAt fallbacks.
+func TestBuildFalsePositiveOverride_Branches(t *testing.T) {
+	email := "rev@example.com"
+	user := "reviewer"
+
+	// email > username > user id > system identity precedence
+	assert.Equal(t, hdf.Identity{Type: hdf.Email, Identifier: email},
+		buildFalsePositiveOverride(ddFinding{MitigatedByEmail: &email, MitigatedByUsername: &user, MitigatedBy: "1"}).AppliedBy)
+	assert.Equal(t, hdf.Identity{Type: hdf.Username, Identifier: user},
+		buildFalsePositiveOverride(ddFinding{MitigatedByUsername: &user, MitigatedBy: "1"}).AppliedBy)
+	assert.Equal(t, hdf.Identity{Type: hdf.Simple, Identifier: "defectdojo-user-7"},
+		buildFalsePositiveOverride(ddFinding{MitigatedBy: "7"}).AppliedBy)
+	assert.Equal(t, hdf.Identity{Type: hdf.IdentityTypeOther, Identifier: "defectdojo (false positive triage)"},
+		buildFalsePositiveOverride(ddFinding{}).AppliedBy)
+
+	// reason: mitigation note when present, else constant fallback
+	assert.Equal(t, "note here", buildFalsePositiveOverride(ddFinding{Mitigation: "note here"}).Reason)
+	assert.Equal(t, "Marked as false positive in DefectDojo", buildFalsePositiveOverride(ddFinding{}).Reason)
+
+	// appliedAt: mitigated date wins; else finding date; expiresAt is +1yr
+	mit := "2030-05-01T00:00:00Z"
+	ovMit := buildFalsePositiveOverride(ddFinding{Mitigated: &mit, Date: "2020-01-01"})
+	assert.Equal(t, 2030, ovMit.AppliedAt.Year())
+	assert.Equal(t, 2031, ovMit.ExpiresAt.Year())
+
+	ovDate := buildFalsePositiveOverride(ddFinding{Date: "2022-03-04"})
+	assert.Equal(t, "2022-03-04T00:00:00Z", ovDate.AppliedAt.UTC().Format(time.RFC3339))
+
+	// no mitigated date and no finding date → now() fallback (non-zero)
+	ovNow := buildFalsePositiveOverride(ddFinding{})
+	assert.False(t, ovNow.AppliedAt.IsZero())
+}
+
+// TestConvertFinding_WaiverWinsOverFalsePositive locks the documented precedence:
+// a finding that is both risk-accepted and false-positive gets the waiver, not
+// the falsePositive override.
+func TestConvertFinding_WaiverWinsOverFalsePositive(t *testing.T) {
+	req := convertFinding(ddFinding{
+		Title:         "t",
+		Severity:      "High",
+		FalseP:        true,
+		RiskAccepted:  true,
+		AcceptedRisks: []ddAcceptedRisk{{Name: "AcceptName"}},
+	})
+	require.NotNil(t, req.Disposition)
+	assert.Equal(t, hdf.OverrideTypeWaiver, *req.Disposition)
+	require.Len(t, req.StatusOverrides, 1)
+	assert.Equal(t, hdf.OverrideTypeWaiver, req.StatusOverrides[0].Type)
 }
 
 // TestConvertDefectDojo_RequirementCode pins requirement.code to the raw

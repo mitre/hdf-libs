@@ -68,6 +68,15 @@ type ddFinding struct {
 	AcceptedRisks    []ddAcceptedRisk `json:"accepted_risks"`
 	RelatedFields    *ddRelatedFields `json:"related_fields"`
 
+	// False-positive triage provenance. DefectDojo stamps `mitigated` (decision
+	// date) and `mitigated_by` (the reviewer's user id) when a finding is
+	// dismissed as a false positive. The *_username/_email variants are optional
+	// fetcher enrichment, mirroring accepted_risks' owner fields.
+	Mitigated           *string     `json:"mitigated"`
+	MitigatedBy         json.Number `json:"mitigated_by"`
+	MitigatedByUsername *string     `json:"mitigated_by_username"`
+	MitigatedByEmail    *string     `json:"mitigated_by_email"`
+
 	// raw is the finding exactly as DefectDojo emitted it. DefectDojo carries no
 	// literal source snippet, so requirement.code is the whole finding re-indented
 	// in place — preserving source key order and every field the typed struct
@@ -197,6 +206,61 @@ func buildWaiverOverride(ar ddAcceptedRisk) hdf.StatusOverride {
 		Status:    &passed,
 		Reason:    reason,
 		AppliedBy: riskAcceptanceOwner(ar),
+		AppliedAt: appliedAt,
+		ExpiresAt: expiresAt,
+	}
+}
+
+// falsePositiveReviewer resolves the false-positive reviewer to an HDF Identity,
+// preferring fetcher-enriched username/email over the raw mitigated_by user id.
+// When DefectDojo recorded no reviewer, fall back to an honest system identity
+// (never a fabricated person).
+func falsePositiveReviewer(f ddFinding) hdf.Identity {
+	switch {
+	case f.MitigatedByEmail != nil && *f.MitigatedByEmail != "":
+		return hdf.Identity{Type: hdf.Email, Identifier: *f.MitigatedByEmail}
+	case f.MitigatedByUsername != nil && *f.MitigatedByUsername != "":
+		return hdf.Identity{Type: hdf.Username, Identifier: *f.MitigatedByUsername}
+	case f.MitigatedBy.String() != "":
+		return hdf.Identity{Type: hdf.Simple, Identifier: fmt.Sprintf("defectdojo-user-%s", f.MitigatedBy.String())}
+	default:
+		return hdf.Identity{Type: hdf.IdentityTypeOther, Identifier: "defectdojo (false positive triage)"}
+	}
+}
+
+// buildFalsePositiveOverride turns a DefectDojo false-positive dismissal into an
+// HDF falsePositive Status_Override. DefectDojo is a vulnerability aggregator, so
+// a false positive means the vuln does not apply → effectiveStatus notApplicable
+// (disposition distinguishes it from a genuine N/A). Raw status stays failed with
+// the full attributed, expiring override present — not laundering.
+func buildFalsePositiveOverride(f ddFinding) hdf.StatusOverride {
+	notApplicable := hdf.NotApplicable
+	reason := f.Mitigation
+	if reason == "" {
+		reason = "Marked as false positive in DefectDojo"
+	}
+	// appliedAt: the mitigation decision date when present; else the finding's
+	// own date. Deterministic — parsed canonically, never now() when a real
+	// source time exists.
+	var appliedAt time.Time
+	if f.Mitigated != nil && *f.Mitigated != "" {
+		appliedAt = hdfutil.ParseTimestamp(*f.Mitigated)
+	}
+	if appliedAt.IsZero() {
+		appliedAt = parseFindingDate(f.Date)
+	}
+	if appliedAt.IsZero() {
+		appliedAt = time.Now().UTC()
+	}
+	// expiresAt is REQUIRED; DefectDojo carries no expiry for a false positive, so
+	// default to one year out (the same "reviewed rather than permanent" convention
+	// as the waiver path).
+	expiresAt := appliedAt.AddDate(1, 0, 0)
+	return hdf.StatusOverride{
+		Type:      hdf.FalsePositive,
+		Status:    &notApplicable,
+		Reason:    reason,
+		AppliedBy: falsePositiveReviewer(f),
 		AppliedAt: appliedAt,
 		ExpiresAt: expiresAt,
 	}
@@ -438,10 +502,13 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 		req.SourceLocation = loc
 	}
 
-	// The novel part: a risk-accepted finding carries a real waiver override
-	// (built from accepted_risks provenance), so raw failed + effectiveStatus
-	// passed + disposition waiver are all present.
-	if f.RiskAccepted && len(f.AcceptedRisks) > 0 {
+	// The novel part: a triaged finding carries a real, attributed override so raw
+	// status + effectiveStatus + disposition are all present (not laundering).
+	// Precedence: a risk acceptance (waiver, from accepted_risks provenance) wins
+	// over a false-positive dismissal — a finding accepted as real risk is not
+	// simultaneously a false positive.
+	switch {
+	case f.RiskAccepted && len(f.AcceptedRisks) > 0:
 		override := buildWaiverOverride(f.AcceptedRisks[0])
 		waiver := hdf.OverrideTypeWaiver
 		effective := hdf.Passed
@@ -449,6 +516,13 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 		req.EffectiveStatus = &effective
 		req.Disposition = &waiver
 		req.Tags["defectdojo/decision"] = f.AcceptedRisks[0].Decision
+	case f.FalseP:
+		override := buildFalsePositiveOverride(f)
+		fp := hdf.FalsePositive
+		effective := hdf.NotApplicable
+		req.StatusOverrides = []hdf.StatusOverride{override}
+		req.EffectiveStatus = &effective
+		req.Disposition = &fp
 	}
 
 	return req

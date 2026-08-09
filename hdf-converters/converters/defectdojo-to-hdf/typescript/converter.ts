@@ -63,6 +63,13 @@ interface DDFinding {
   under_review?: boolean;
   accepted_risks?: DDAcceptedRisk[];
   related_fields?: {test?: {test_type?: {name?: string}}};
+  // False-positive triage provenance: `mitigated` (decision date) + `mitigated_by`
+  // (reviewer user id). The *_username/_email variants are optional fetcher
+  // enrichment, mirroring accepted_risks' owner fields.
+  mitigated?: string | null;
+  mitigated_by?: number | string | null;
+  mitigated_by_username?: string | null;
+  mitigated_by_email?: string | null;
 }
 
 interface DDAcceptedRisk {
@@ -131,6 +138,44 @@ function buildWaiverOverride(ar: DDAcceptedRisk): StatusOverride {
     appliedBy: riskAcceptanceOwner(ar),
     appliedAt,
     expiresAt,
+  };
+}
+
+// Resolve the false-positive reviewer to an HDF Identity, preferring
+// fetcher-enriched username/email over the raw mitigated_by user id. When
+// DefectDojo recorded no reviewer, fall back to an honest system identity
+// (never a fabricated person).
+function falsePositiveReviewer(f: DDFinding): Identity {
+  if (f.mitigated_by_email) return {type: IdentityType.Email, identifier: f.mitigated_by_email};
+  if (f.mitigated_by_username) return {type: IdentityType.Username, identifier: f.mitigated_by_username};
+  if (f.mitigated_by !== undefined && f.mitigated_by !== null && `${f.mitigated_by}` !== '') {
+    return {type: IdentityType.Simple, identifier: `defectdojo-user-${f.mitigated_by}`};
+  }
+  return {type: IdentityType.Other, identifier: 'defectdojo (false positive triage)'};
+}
+
+// DefectDojo is a vulnerability aggregator, so a false positive means the vuln
+// does not apply → effectiveStatus notApplicable (disposition distinguishes it
+// from a genuine N/A). Raw status stays failed with the full attributed, expiring
+// override present — not laundering.
+function buildFalsePositiveOverride(f: DDFinding): StatusOverride {
+  const reason = f.mitigation || 'Marked as false positive in DefectDojo';
+  // appliedAt: the mitigation decision date when present; else the finding's own
+  // date. Deterministic — parsed canonically, never now() when a real time exists.
+  const appliedAt = (f.mitigated ? parseTimestamp(f.mitigated) : null) ?? parseFindingDate(f.date) ?? new Date();
+  // expiresAt is REQUIRED; DefectDojo carries no expiry for a false positive, so
+  // default to one year out (the same "reviewed rather than permanent" convention
+  // as the waiver path). setTime avoids the eslint new Date(value) ban.
+  const oneYearOut = new Date();
+  oneYearOut.setTime(appliedAt.getTime());
+  oneYearOut.setUTCFullYear(oneYearOut.getUTCFullYear() + 1);
+  return {
+    type: OverrideType.FalsePositive,
+    status: ResultStatus.NotApplicable,
+    reason,
+    appliedBy: falsePositiveReviewer(f),
+    appliedAt,
+    expiresAt: oneYearOut,
   };
 }
 
@@ -279,14 +324,21 @@ function convertFinding(f: DDFinding): EvaluatedRequirement {
   const sourceLocation = buildSourceLocation(f);
   if (sourceLocation) req.sourceLocation = sourceLocation;
 
-  // The novel part: a risk-accepted finding carries a real waiver override built
-  // from accepted_risks provenance.
+  // The novel part: a triaged finding carries a real, attributed override so raw
+  // status + effectiveStatus + disposition are all present (not laundering).
+  // Precedence: a risk acceptance (waiver, from accepted_risks provenance) wins
+  // over a false-positive dismissal — a finding accepted as real risk is not
+  // simultaneously a false positive.
   const firstRisk = f.accepted_risks?.[0];
   if (f.risk_accepted && firstRisk) {
     req.statusOverrides = [buildWaiverOverride(firstRisk)];
     req.effectiveStatus = ResultStatus.Passed;
     req.disposition = OverrideType.Waiver;
     tags['defectdojo/decision'] = firstRisk.decision ?? '';
+  } else if (f.false_p) {
+    req.statusOverrides = [buildFalsePositiveOverride(f)];
+    req.effectiveStatus = ResultStatus.NotApplicable;
+    req.disposition = OverrideType.FalsePositive;
   }
 
   return req;
