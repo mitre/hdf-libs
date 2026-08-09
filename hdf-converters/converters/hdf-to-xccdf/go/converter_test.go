@@ -114,8 +114,19 @@ func TestConvertHDFToXCCDF_StigRhel7(t *testing.T) {
 	var benchmark XCCDFBenchmark
 	err = xml.Unmarshal(output, &benchmark)
 	require.NoError(t, err)
-	assert.Equal(t, 5, len(benchmark.Rules))
+	// STIG rules carry gid/gtitle tags, so each is nested in its own Group.
+	assert.Equal(t, 5, len(collectRules(benchmark)))
 	assert.Equal(t, 5, len(benchmark.TestResult.RuleResults))
+}
+
+// collectRules returns every Rule in the benchmark, whether nested in a Group or
+// flat under the Benchmark.
+func collectRules(b XCCDFBenchmark) []XCCDFRule {
+	rules := append([]XCCDFRule(nil), b.Rules...)
+	for _, g := range b.Groups {
+		rules = append(rules, g.Rules...)
+	}
+	return rules
 }
 
 // --- Status mapping tests ---
@@ -250,7 +261,7 @@ func TestConvertHDFToXCCDF_RoundTrip_SeverityMapping(t *testing.T) {
 	// RHEL-07-020200 has impact 0.3 → low
 	// Others have impact 0.5 → medium
 	severityCounts := map[string]int{}
-	for _, rule := range benchmark.Rules {
+	for _, rule := range collectRules(benchmark) {
 		severityCounts[rule.Severity]++
 	}
 	assert.Equal(t, 3, severityCounts["medium"])
@@ -284,6 +295,94 @@ func TestConvertHDFToXCCDF_SpecialCharacters(t *testing.T) {
 
 	assert.Equal(t, 1, len(benchmark.Rules))
 	assert.Equal(t, `Rule with <angle> & "quotes"`, benchmark.Rules[0].Title)
+}
+
+// --- Export-fidelity value pins (fields the export formerly dropped) ---
+
+func TestConvertHDFToXCCDF_BenchmarkDescription(t *testing.T) {
+	out, err := ConvertHDFToXCCDF(loadFixture(t, "stig-rhel7.json"), "test")
+	require.NoError(t, err)
+	var benchmark XCCDFBenchmark
+	require.NoError(t, xml.Unmarshal(out, &benchmark))
+	// baseline.summary -> Benchmark/description.
+	assert.Contains(t, benchmark.Description, "Security Technical Implementation Guide is published")
+}
+
+func TestConvertHDFToXCCDF_EndTimeCarriesDuration(t *testing.T) {
+	out, err := ConvertHDFToXCCDF(loadFixture(t, "stig-rhel7.json"), "test")
+	require.NoError(t, err)
+	var benchmark XCCDFBenchmark
+	require.NoError(t, xml.Unmarshal(out, &benchmark))
+	// timestamp 2021-12-17T10:39:29Z + statistics.duration 89s = 10:40:58Z.
+	assert.Equal(t, "2021-12-17T10:39:29Z", benchmark.TestResult.StartTime)
+	assert.Equal(t, "2021-12-17T10:40:58Z", benchmark.TestResult.EndTime)
+	assert.NotEqual(t, benchmark.TestResult.StartTime, benchmark.TestResult.EndTime,
+		"end-time must not collapse to start-time or duration is lost on round-trip")
+}
+
+func TestConvertHDFToXCCDF_StigTagsAndGroups(t *testing.T) {
+	out, err := ConvertHDFToXCCDF(loadFixture(t, "stig-rhel7.json"), "test")
+	require.NoError(t, err)
+	var benchmark XCCDFBenchmark
+	require.NoError(t, xml.Unmarshal(out, &benchmark))
+
+	require.Equal(t, 5, len(benchmark.Groups), "one Group per gid tag")
+	require.Empty(t, benchmark.Rules, "grouped rules must not also appear flat")
+
+	// First rule: SV-204393 / RHEL-07-010030 with its STIG identifiers.
+	g := benchmark.Groups[0]
+	assert.Equal(t, "xccdf_mil.disa.stig_group_V-204393", g.ID)
+	assert.Equal(t, "SRG-OS-000023-GPOS-00006", g.Title)
+	require.Equal(t, 1, len(g.Rules))
+	rule := g.Rules[0]
+	assert.Equal(t, "RHEL-07-010030", rule.Version, "stig_id -> Rule/version")
+
+	idents := map[string][]string{}
+	for _, id := range rule.Idents {
+		idents[id.System] = append(idents[id.System], id.Value)
+	}
+	assert.Equal(t, []string{"CCI-000048"}, idents["http://cyber.mil/cci"])
+	assert.Equal(t, []string{"CCE-26970-4"}, idents["http://cce.mitre.org"], "cce -> ident cce.mitre.org")
+	assert.Equal(t, []string{"V-71859", "SV-86483"}, idents["http://cyber.mil/legacy"], "legacy_id -> ident cyber.mil/legacy")
+
+	// rule-result carries the STIG ID in @version too (importer prefers it).
+	assert.Equal(t, "RHEL-07-010030", benchmark.TestResult.RuleResults[0].Version)
+}
+
+func TestConvertHDFToXCCDF_TestSystemFromTool(t *testing.T) {
+	out, err := ConvertHDFToXCCDF(loadFixture(t, "stig-rhel7.json"), "test")
+	require.NoError(t, err)
+	var benchmark XCCDFBenchmark
+	require.NoError(t, xml.Unmarshal(out, &benchmark))
+	// tool {name:XCCDF, version:1.2.17} -> CPE whose 4th field is the version.
+	assert.Equal(t, "cpe:/a:xccdf:xccdf:1.2.17", benchmark.TestResult.TestSystem)
+}
+
+func TestConvertHDFToXCCDF_EffectiveStatusGovernsResult(t *testing.T) {
+	// A waiver flips a failed result to notApplicable via effectiveStatus; the
+	// emitted rule-result must reflect the effective (post-override) status.
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{
+		"id":"SV-1","impact":0.5,"title":"req","tags":{},
+		"descriptions":[{"label":"default","data":"d"}],
+		"effectiveStatus":"notApplicable",
+		"results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]
+	}]}]}`)
+	out, err := ConvertHDFToXCCDF(input, "test")
+	require.NoError(t, err)
+	result := string(out)
+	assert.Contains(t, result, "<result>notapplicable</result>")
+	assert.NotContains(t, result, "<result>fail</result>")
+}
+
+func TestConvertHDFToXCCDF_RawStatusWhenNoOverride(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{
+		"id":"SV-1","impact":0.5,"title":"req","tags":{},
+		"descriptions":[{"label":"default","data":"d"}],
+		"results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]
+	}]}]}`)
+	out, err := ConvertHDFToXCCDF(input, "test")
+	require.NoError(t, err)
+	assert.Contains(t, string(out), "<result>fail</result>")
 }
 
 // TestGoldenParity asserts whole-output equality against frozen golden XCCDF
