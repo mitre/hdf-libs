@@ -6,9 +6,13 @@ import type {
   RequirementResult,
   Checksum,
   Component,
+  Identity,
   Reference,
+  StatusOverride,
 } from '@mitre/hdf-schema';
 import {
+  IdentityType,
+  OverrideType,
   ResultStatus,
   TargetType,
   VerificationMethodEnum,
@@ -104,17 +108,94 @@ function severityToImpact(severity: string): number {
 }
 
 /**
- * Maps MDE alert status + classification to HDF result status.
- * new/inProgress → Failed, resolved with falsePositive → Passed, otherwise → Failed.
+ * An MDE alert is a detection that fired, so every alert is a raw Failed result.
+ * Consumer triage (falsePositive, expected-activity) never flips the raw status —
+ * it rides in a structured Status_Override that carries effectiveStatus + full
+ * provenance (see buildTriageOverride). The raw failure and the attributed,
+ * expiring override are both present.
  */
-function statusToResultStatus(status: string, classification?: string | null): ResultStatus {
-  if (status.toLowerCase() === 'resolved') {
-    if (classification && classification.toLowerCase() === 'falsepositive') {
-      return ResultStatus.Passed;
+const RAW_ALERT_STATUS = ResultStatus.Failed;
+
+/**
+ * Resolves the alert's human triager (assignedTo) to an HDF Identity, typed as
+ * email when the value looks like an address. When no owner is recorded, falls
+ * back to an honest system identity rather than inventing a person.
+ */
+function triageIdentity(assignedTo?: string | null): Identity {
+  if (assignedTo) {
+    if (assignedTo.includes('@')) {
+      return { type: IdentityType.Email, identifier: assignedTo };
     }
-    return ResultStatus.Failed;
+    return { type: IdentityType.Username, identifier: assignedTo };
   }
-  return ResultStatus.Failed;
+  return { type: IdentityType.System, identifier: 'Microsoft Defender for Endpoint (automated triage)' };
+}
+
+/**
+ * Renders the override justification from the alert's determination and
+ * classification (e.g. "notMalicious (falsePositive)").
+ */
+function triageReason(alert: MdeAlert): string {
+  const det = alert.determination ?? '';
+  const cls = alert.classification ?? '';
+  if (det && cls) {
+    return `${det} (${cls})`;
+  }
+  return det || cls || 'Triaged in Microsoft Defender for Endpoint';
+}
+
+interface TriageOverride {
+  override: StatusOverride;
+  effectiveStatus: ResultStatus;
+  disposition: OverrideType;
+}
+
+/**
+ * Turns an MDE alert's classification triage into a structured HDF
+ * Status_Override with full provenance (assignedTo owner, resolvedDateTime applied
+ * time). Returns null when the classification carries no override-worthy decision
+ * (truePositive or untriaged → raw stays failed).
+ * - falsePositive → falsePositive override, effectiveStatus notApplicable (the
+ *   detection was wrong; disposition distinguishes it from a genuine N/A).
+ * - informationalExpectedActivity → waiver override, effectiveStatus passed (the
+ *   activity is real but expected/authorized, i.e. an accepted risk).
+ */
+function buildTriageOverride(alert: MdeAlert, startTime: Date): TriageOverride | null {
+  if (!alert.classification) {
+    return null;
+  }
+  let disposition: OverrideType;
+  let effectiveStatus: ResultStatus;
+  switch (alert.classification.toLowerCase()) {
+    case 'falsepositive':
+      disposition = OverrideType.FalsePositive;
+      effectiveStatus = ResultStatus.NotApplicable;
+      break;
+    case 'informationalexpectedactivity':
+      disposition = OverrideType.Waiver;
+      effectiveStatus = ResultStatus.Passed;
+      break;
+    default: // truePositive, unknownFutureValue, … → no override
+      return null;
+  }
+
+  const appliedAt =
+    (alert.resolvedDateTime ? parseTimestamp(alert.resolvedDateTime) : null) ??
+    (alert.lastUpdateDateTime ? parseTimestamp(alert.lastUpdateDateTime) : null) ??
+    startTime;
+  const expiresAt = new Date();
+  expiresAt.setTime(appliedAt.getTime());
+  expiresAt.setUTCFullYear(expiresAt.getUTCFullYear() + 1);
+
+  const override: StatusOverride = {
+    type: disposition,
+    status: effectiveStatus,
+    reason: triageReason(alert),
+    appliedBy: triageIdentity(alert.assignedTo),
+    appliedAt,
+    expiresAt,
+  };
+  return { override, effectiveStatus, disposition };
 }
 
 /**
@@ -242,13 +323,6 @@ function buildTags(alert: MdeAlert): Record<string, unknown> {
     tags['mitre'] = alert.mitreTechniques;
   }
 
-  if (alert.classification) {
-    tags['classification'] = alert.classification;
-  }
-  if (alert.determination) {
-    tags['determination'] = alert.determination;
-  }
-
   if (alert.incidentId) {
     // Emit as a number when the id is a canonical base-10 integer (round-trips
     // cleanly); otherwise preserve the source string verbatim. The round-trip
@@ -317,14 +391,13 @@ function deriveScanTimestamp(alerts: MdeAlert[]): Date | null {
  */
 function alertToRequirement(alert: MdeAlert, scanTime: Date): EvaluatedRequirement {
   const impact = severityToImpact(alert.severity);
-  const status = statusToResultStatus(alert.status, alert.classification);
 
   const codeDesc = formatEvidence(alert.evidence ?? []);
   const message = formatMessage(alert);
   const startTime = resolveStartTime(alert, scanTime);
 
   const results: RequirementResult[] = [
-    createResult(status, message, { codeDesc, startTime }),
+    createResult(RAW_ALERT_STATUS, message, { codeDesc, startTime }),
   ];
 
   const descriptions: Description[] = [
@@ -346,6 +419,24 @@ function alertToRequirement(alert: MdeAlert, scanTime: Date): EvaluatedRequireme
   if (alert.alertWebUrl) {
     const refs: Reference[] = [{ url: alert.alertWebUrl }];
     req.refs = refs;
+  }
+
+  // Consumer triage becomes a structured override (raw failure + attributed,
+  // expiring override both present). When the classification carries no
+  // override-worthy decision (truePositive / untriaged), preserve the raw
+  // classification + determination as loose tags instead.
+  const triage = buildTriageOverride(alert, startTime);
+  if (triage) {
+    req.statusOverrides = [triage.override];
+    req.effectiveStatus = triage.effectiveStatus;
+    req.disposition = triage.disposition;
+  } else {
+    if (alert.classification) {
+      tags['classification'] = alert.classification;
+    }
+    if (alert.determination) {
+      tags['determination'] = alert.determination;
+    }
   }
   return req;
 }

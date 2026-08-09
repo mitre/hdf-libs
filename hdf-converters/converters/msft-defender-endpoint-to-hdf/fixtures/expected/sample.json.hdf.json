@@ -98,21 +98,34 @@
               "label": "fix"
             }
           ],
+          "disposition": "falsePositive",
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "codeDesc": "Device: laptop03.corp.contoso.com (OS: Windows10)",
               "message": "Alert: Unusual network connection established\nStatus: resolved\nSeverity: informational\nURL: https://security.microsoft.com/alerts/da637472900382838871_1111111111",
               "startTime": "2021-01-28T07:58:00Z",
-              "status": "passed"
+              "status": "failed"
+            }
+          ],
+          "statusOverrides": [
+            {
+              "appliedAt": "2021-01-28T12:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@contoso.com",
+                "type": "email"
+              },
+              "expiresAt": "2022-01-28T12:00:00Z",
+              "reason": "notMalicious (falsePositive)",
+              "status": "notApplicable",
+              "type": "falsePositive"
             }
           ],
           "id": "da637472900382838871_1111111111",
           "impact": 0,
           "tags": {
             "category": "DefenseEvasion",
-            "classification": "falsePositive",
             "detection_source": "WindowsDefenderAtp",
-            "determination": "notMalicious",
             "incident_id": 1126095,
             "nist": [
               "SA-11",
