@@ -1,0 +1,333 @@
+package tools
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+
+	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
+	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
+	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+)
+
+// diffNarrowParam names the response controls a truncation notice recommends.
+const diffNarrowParam = "verbosity=concise or page=N"
+
+// diffInput is the hdf_diff argument surface: two sources, a comparison mode, and
+// the response/emission controls.
+type diffInput struct {
+	From      handle.Source `json:"from" jsonschema:"the 'before' document as {path} or {handle}"`
+	To        handle.Source `json:"to" jsonschema:"the 'after' document as {path} or {handle}"`
+	Mode      string        `json:"mode,omitempty" jsonschema:"temporal (results across time, default) or system-drift (system docs)"`
+	Verbosity string        `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
+	Page      int           `json:"page,omitempty" jsonschema:"0-based page when the change list is truncated"`
+	Output    string        `json:"output,omitempty" jsonschema:"path under HDF_MCP_ROOT to write the hdf-comparison document"`
+}
+
+// diffOutput is the hdf_diff result: the comparison summary, a bounded change
+// list, the two source handles, and — when output is given — the emitted
+// hdf-comparison artifact's path, hash, and validity.
+type diffOutput struct {
+	FromHandle string                 `json:"fromHandle"`
+	ToHandle   string                 `json:"toHandle"`
+	Mode       string                 `json:"mode"`
+	Summary    diff.ComparisonSummary `json:"summary"`
+	Changes    []any                  `json:"changes"`
+	Total      int                    `json:"total"`
+	Returned   int                    `json:"returned"`
+	Truncated  bool                   `json:"truncated,omitempty"`
+	NextPage   int                    `json:"nextPage,omitempty"`
+	Notice     string                 `json:"notice,omitempty"`
+	OutputPath string                 `json:"outputPath,omitempty"`
+	Sha256     string                 `json:"sha256,omitempty"`
+	Valid      bool                   `json:"valid,omitempty"`
+}
+
+// RegisterDiff registers the hdf_diff tool on the server.
+func RegisterDiff(s *sdkmcp.Server, ldr *loader.Loader) {
+	sdkmcp.AddTool(s, &sdkmcp.Tool{
+		Name: "hdf_diff",
+		Description: "Compare two HDF documents: temporal (results across time) or system-drift (system " +
+			"documents). Returns a summary and a bounded change list, and — when output is given — writes a " +
+			"schema-valid hdf-comparison document. Diffing is delegated to the shared hdf-diff engine.",
+		Annotations: appmcp.ReadOnly(),
+	}, hdfDiff(ldr))
+}
+
+func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
+	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in diffInput) (*sdkmcp.CallToolResult, diffOutput, error) {
+		mode := in.Mode
+		if mode == "" {
+			mode = "temporal"
+		}
+		if mode != "temporal" && mode != "system-drift" {
+			e := mcperr.New(mcperr.AmbiguousFormat, fmt.Sprintf("unknown mode %q", mode), map[string]any{"mode": mode}).
+				WithNextCall("use mode = temporal or system-drift")
+			return toolError(e), diffOutput{}, nil
+		}
+
+		from, terr := resolveSource(in.From, ldr)
+		if terr != nil {
+			return toolError(terr), diffOutput{}, nil
+		}
+		to, terr := resolveSource(in.To, ldr)
+		if terr != nil {
+			return toolError(terr), diffOutput{}, nil
+		}
+		fromH, err := handle.Encode(from.Handle)
+		if err != nil {
+			return nil, diffOutput{}, fmt.Errorf("encoding from handle: %w", err)
+		}
+		toH, err := handle.Encode(to.Handle)
+		if err != nil {
+			return nil, diffOutput{}, fmt.Errorf("encoding to handle: %w", err)
+		}
+
+		comp, terr := computeComparison(mode, from, to)
+		if terr != nil {
+			return toolError(terr), diffOutput{}, nil
+		}
+
+		out := diffOutput{FromHandle: fromH, ToHandle: toH, Mode: mode, Summary: comp.Summary}
+
+		if in.Output != "" {
+			if terr := emitComparison(&out, comp, in.Output); terr != nil {
+				return toolError(terr), diffOutput{}, nil
+			}
+		}
+
+		changes := projectChanges(comp, mode, in.Verbosity)
+		buildDiffResponse(&out, changes, in.Verbosity, in.Page)
+		return nil, out, nil
+	}
+}
+
+// computeComparison delegates to the shared engine: temporal compares two results
+// documents, system-drift two system documents. A document of the wrong type for
+// the mode returns WRONG_DOC_TYPE; a schema-invalid one returns SCHEMA_INVALID.
+func computeComparison(mode string, from, to *Resolved) (diff.HdfComparison, *mcperr.Error) {
+	switch mode {
+	case "temporal":
+		if terr := requireDocType(from, "results", mode); terr != nil {
+			return diff.HdfComparison{}, terr
+		}
+		if terr := requireDocType(to, "results", mode); terr != nil {
+			return diff.HdfComparison{}, terr
+		}
+		comp, err := diff.DiffHdf(*from.Load.Engine.Results, []hdf.HDFResults{*to.Load.Engine.Results},
+			diff.Options{ComparisonMode: diff.ModeTemporal})
+		if err != nil {
+			return diff.HdfComparison{}, mcperr.New(mcperr.SchemaInvalid, "diff failed: "+err.Error(), nil)
+		}
+		return comp, nil
+	default: // system-drift
+		if terr := requireDocType(from, "system", mode); terr != nil {
+			return diff.HdfComparison{}, terr
+		}
+		if terr := requireDocType(to, "system", mode); terr != nil {
+			return diff.HdfComparison{}, terr
+		}
+		var oldSys, newSys map[string]any
+		if err := json.Unmarshal(from.Content, &oldSys); err != nil {
+			return diff.HdfComparison{}, mcperr.New(mcperr.SchemaInvalid, "from system document did not parse", nil)
+		}
+		if err := json.Unmarshal(to.Content, &newSys); err != nil {
+			return diff.HdfComparison{}, mcperr.New(mcperr.SchemaInvalid, "to system document did not parse", nil)
+		}
+		comp, err := diff.DiffSystems(oldSys, newSys)
+		if err != nil {
+			return diff.HdfComparison{}, mcperr.New(mcperr.SchemaInvalid, "system diff failed: "+err.Error(), nil)
+		}
+		return comp, nil
+	}
+}
+
+// requireDocType enforces the mode's expected document type, pointing a mismatch
+// at the right mode or hdf_inspect.
+func requireDocType(r *Resolved, want, mode string) *mcperr.Error {
+	if !r.Load.Valid {
+		return mcperr.New(mcperr.SchemaInvalid,
+			fmt.Sprintf("the document is %s but failed schema validation, so it cannot be diffed", r.Load.DocType),
+			map[string]any{"docType": r.Load.DocType})
+	}
+	if r.Load.DocType != want {
+		other := "system-drift"
+		if mode == "system-drift" {
+			other = "temporal"
+		}
+		return mcperr.New(mcperr.WrongDocType,
+			fmt.Sprintf("%s mode compares %s documents; got %s", mode, want, r.Load.DocType),
+			map[string]any{"docType": r.Load.DocType, "mode": mode}).
+			WithNextCall(fmt.Sprintf("pass %s documents, or switch to mode=%s (or call hdf_inspect)", want, other))
+	}
+	return nil
+}
+
+// emitComparison marshals the engine comparison (already schema-shaped), writes
+// it to the confined output path, and records the path, hash, and schema validity.
+func emitComparison(out *diffOutput, comp diff.HdfComparison, output string) *mcperr.Error {
+	docBytes, err := json.MarshalIndent(comp, "", "  ")
+	if err != nil {
+		return mcperr.New(mcperr.SchemaInvalid, "could not serialize the comparison", nil)
+	}
+	confined, serr := hdfutil.SafePath(mcpRoot(), output)
+	if serr != nil {
+		return mcperr.New(mcperr.PathDenied, "output path resolves outside HDF_MCP_ROOT", map[string]any{"path": output})
+	}
+	vr := validators.Validate(docBytes, validators.TypeComparison)
+	out.Valid = vr.Valid
+	if werr := os.WriteFile(confined, docBytes, 0o600); werr != nil { //nolint:gosec // confined to HDF_MCP_ROOT by SafePath
+		if errors.Is(werr, os.ErrNotExist) {
+			return mcperr.New(mcperr.DocumentNotFound, "output directory does not exist", map[string]any{"path": output})
+		}
+		return mcperr.New(mcperr.DocumentNotFound, "could not write the comparison", map[string]any{"error": werr.Error()})
+	}
+	sum := sha256.Sum256(docBytes)
+	out.OutputPath = output
+	out.Sha256 = hex.EncodeToString(sum[:])
+	return nil
+}
+
+// changeRow projections. Concise carries the identifying + state fields; full
+// adds impacts, field changes, and metadata. changeReasons pass through verbatim,
+// so v3.5.0 additions (dispositionChanged, effectiveImpactChanged) surface
+// unchanged rather than being dropped.
+type temporalConcise struct {
+	ID            string                `json:"id"`
+	State         diff.RequirementState `json:"state"`
+	ChangeReasons []diff.ChangeReason   `json:"changeReasons"`
+	OldStatus     string                `json:"oldStatus,omitempty"`
+	NewStatus     string                `json:"newStatus,omitempty"`
+}
+
+type temporalFull struct {
+	temporalConcise
+	Title        string             `json:"title,omitempty"`
+	Baseline     string             `json:"baseline,omitempty"`
+	OldImpact    *float64           `json:"oldImpact,omitempty"`
+	NewImpact    *float64           `json:"newImpact,omitempty"`
+	FieldChanges []diff.FieldChange `json:"fieldChanges,omitempty"`
+}
+
+type componentConcise struct {
+	Name  string                `json:"name"`
+	State diff.RequirementState `json:"state"`
+}
+
+type componentFull struct {
+	componentConcise
+	FieldChanges []diff.FieldChange `json:"fieldChanges,omitempty"`
+}
+
+// projectChanges builds the bounded-eligible change list for the mode. Only
+// actually-changed entries are listed (unchanged counts live in the summary).
+func projectChanges(comp diff.HdfComparison, mode, verbosity string) []any {
+	full := verbosity == "full"
+	var rows []any
+	if mode == "temporal" {
+		for i := range comp.RequirementDiffs {
+			rd := comp.RequirementDiffs[i]
+			if rd.State == diff.StateUnchanged {
+				continue
+			}
+			concise := temporalConcise{
+				ID: rd.ID, State: rd.State, ChangeReasons: rd.ChangeReasons,
+				OldStatus: rd.OldEffectiveStatus, NewStatus: rd.NewEffectiveStatus,
+			}
+			if concise.ChangeReasons == nil {
+				concise.ChangeReasons = []diff.ChangeReason{}
+			}
+			if full {
+				rows = append(rows, temporalFull{
+					temporalConcise: concise, Title: rd.Title, Baseline: rd.Baseline,
+					OldImpact: rd.OldImpact, NewImpact: rd.NewImpact, FieldChanges: rd.FieldChanges,
+				})
+			} else {
+				rows = append(rows, concise)
+			}
+		}
+		return rows
+	}
+	for i := range comp.ComponentDiffs {
+		cd := comp.ComponentDiffs[i]
+		if cd.State == diff.StateUnchanged {
+			continue
+		}
+		concise := componentConcise{Name: cd.Name, State: cd.State}
+		if full {
+			rows = append(rows, componentFull{componentConcise: concise, FieldChanges: cd.FieldChanges})
+		} else {
+			rows = append(rows, concise)
+		}
+	}
+	return rows
+}
+
+// buildDiffResponse token-bounds the change list to the verbosity budget and
+// fills the pagination envelope.
+func buildDiffResponse(out *diffOutput, rows []any, verbosity string, page int) {
+	out.Total = len(rows)
+	budget := respond.ConciseTokenBudget
+	if verbosity == "full" {
+		budget = respond.FullTokenBudget
+	}
+	pages := paginateChanges(*out, rows, budget)
+	if page < 0 || page >= len(pages) {
+		out.Changes = []any{}
+		out.Returned = 0
+		out.Truncated = true
+		out.Notice = fmt.Sprintf("page %d is out of range (%d page(s)); page 0 is the first.", page, len(pages))
+		return
+	}
+	out.Changes = pages[page]
+	out.Returned = len(pages[page])
+	if len(pages) > 1 {
+		out.Truncated = true
+		if page+1 < len(pages) {
+			out.NextPage = page + 1
+		}
+		out.Notice = fmt.Sprintf(
+			"Change list spans %d pages within the %s budget; showing page %d of %d (%d of %d changes). Narrow with %s.",
+			len(pages), verbosityLabel(verbosity), page, len(pages), out.Returned, out.Total, diffNarrowParam)
+	}
+}
+
+// paginateChanges greedily packs change rows into budget-sized pages (measured on
+// a trial envelope so the fixed summary/handle overhead counts).
+func paginateChanges(base diffOutput, rows []any, budget int) [][]any {
+	var pages [][]any
+	i := 0
+	for i < len(rows) {
+		var cur []any
+		for i < len(rows) {
+			next := make([]any, len(cur), len(cur)+1)
+			copy(next, cur)
+			next = append(next, rows[i])
+			trial := base
+			trial.Changes = next
+			trial.Truncated = true
+			trial.NextPage = 1
+			if respond.EstimateTokens(mustJSON(&trial)) > budget && len(cur) > 0 {
+				break
+			}
+			cur = next
+			i++
+		}
+		pages = append(pages, cur)
+	}
+	if len(pages) == 0 {
+		pages = append(pages, nil)
+	}
+	return pages
+}

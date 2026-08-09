@@ -169,7 +169,9 @@ func extractComponents(system map[string]any) []map[string]any {
 // computeMapFieldChanges computes field-level changes between two maps
 // for the specified tracked fields.
 func computeMapFieldChanges(oldObj, newObj map[string]any, trackedFields []string) []FieldChange {
-	var changes []FieldChange
+	// Non-nil so an unchanged component's fieldChanges marshals as [] (not null),
+	// conforming to the hdf-comparison schema and matching the TS peer.
+	changes := []FieldChange{}
 
 	for _, field := range trackedFields {
 		oldVal, oldExists := oldObj[field]

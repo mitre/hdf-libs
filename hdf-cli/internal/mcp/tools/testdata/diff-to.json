@@ -1,0 +1,17 @@
+{
+  "baselines": [{
+    "name": "RHEL9-STIG", "version": "1.0.0",
+    "integrity": {"algorithm": "sha256", "checksum": "00000000000000000000000000000000000000000000000000000000000000d2"},
+    "requirements": [
+      {"id": "V-FIX-01", "title": "Will be fixed", "descriptions": [{"label":"default","data":"x"}], "impact": 0.7, "tags": {"nist":["AC-6"]},
+       "results": [{"status":"failed","codeDesc":"fail","startTime":"2025-02-15T10:00:00Z"}],
+       "disposition": "waiver", "effectiveImpact": 0.0, "effectiveStatus": "passed",
+       "statusOverrides": [{"type":"waiver","reason":"accepted","status":"passed","appliedBy":{"type":"agent","identifier":"a"},"appliedAt":"2025-02-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z"}]},
+      {"id": "V-REG-02", "title": "Will regress", "descriptions": [{"label":"default","data":"y"}], "impact": 0.5, "tags": {"nist":["CM-6"]},
+       "results": [{"status":"failed","codeDesc":"now failing","startTime":"2025-02-15T10:00:00Z"}]}
+    ]
+  }],
+  "components": [{"name":"h","type":"host"}],
+  "statistics": {"duration": 6.0},
+  "timestamp": "2025-02-15T10:00:00Z"
+}

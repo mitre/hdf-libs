@@ -1,6 +1,8 @@
 package diff
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -148,6 +150,30 @@ func TestDiffSystems_DatabaseTierUnchanged(t *testing.T) {
 	}
 	if comp.State != StateUnchanged {
 		t.Errorf("expected DatabaseTier state %q, got %q", StateUnchanged, comp.State)
+	}
+}
+
+// TestDiffSystems_UnchangedFieldChangesMarshalAsArray locks the schema-
+// conformance fix: an unchanged component's fieldChanges must marshal as [] (not
+// null), matching the hdf-comparison schema and the TS peer.
+func TestDiffSystems_UnchangedFieldChangesMarshalAsArray(t *testing.T) {
+	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	comp := findComponentDiff(result.ComponentDiffs, "DatabaseTier")
+	if comp == nil {
+		t.Fatal("DatabaseTier not found")
+	}
+	if comp.FieldChanges == nil {
+		t.Fatal("unchanged component fieldChanges must be non-nil so it marshals as []")
+	}
+	b, err := json.Marshal(comp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"fieldChanges":[]`) {
+		t.Errorf("fieldChanges must marshal as [], got %s", b)
 	}
 }
 

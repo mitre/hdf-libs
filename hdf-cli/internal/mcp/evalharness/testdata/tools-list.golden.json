@@ -164,6 +164,171 @@
         "openWorldHint": false,
         "readOnlyHint": true
       },
+      "description": "Compare two HDF documents: temporal (results across time) or system-drift (system documents). Returns a summary and a bounded change list, and — when output is given — writes a schema-valid hdf-comparison document. Diffing is delegated to the shared hdf-diff engine.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "additionalProperties": false,
+            "description": "the 'before' document as {path} or {handle}",
+            "properties": {
+              "handle": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "mode": {
+            "description": "temporal (results across time, default) or system-drift (system docs)",
+            "type": "string"
+          },
+          "output": {
+            "description": "path under HDF_MCP_ROOT to write the hdf-comparison document",
+            "type": "string"
+          },
+          "page": {
+            "description": "0-based page when the change list is truncated",
+            "type": "integer"
+          },
+          "to": {
+            "additionalProperties": false,
+            "description": "the 'after' document as {path} or {handle}",
+            "properties": {
+              "handle": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "verbosity": {
+            "description": "concise (default) or full",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "name": "hdf_diff",
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "changes": {
+            "items": true,
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "fromHandle": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "nextPage": {
+            "type": "integer"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "outputPath": {
+            "type": "string"
+          },
+          "returned": {
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "summary": {
+            "additionalProperties": false,
+            "properties": {
+              "absent": {
+                "type": "integer"
+              },
+              "fixed": {
+                "type": "integer"
+              },
+              "matchedCount": {
+                "type": "integer"
+              },
+              "new": {
+                "type": "integer"
+              },
+              "regressed": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              },
+              "unchanged": {
+                "type": "integer"
+              },
+              "unmatchedNewCount": {
+                "type": "integer"
+              },
+              "unmatchedOldCount": {
+                "type": "integer"
+              },
+              "updated": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "fixed",
+              "regressed",
+              "new",
+              "absent",
+              "unchanged",
+              "updated",
+              "total",
+              "matchedCount",
+              "unmatchedOldCount",
+              "unmatchedNewCount"
+            ],
+            "type": "object"
+          },
+          "toHandle": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fromHandle",
+          "toHandle",
+          "mode",
+          "summary",
+          "changes",
+          "total",
+          "returned"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
       "description": "Inspect an HDF document's structure and metadata for any of the eight document types (counts, inventories, envelopes) — never a requirement collection. To list requirements, use hdf_query.",
       "inputSchema": {
         "additionalProperties": false,
