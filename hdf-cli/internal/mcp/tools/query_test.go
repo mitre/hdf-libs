@@ -282,6 +282,26 @@ func TestHdfQuery_PaginationFunctional(t *testing.T) {
 	}
 }
 
+// The limit-capped truncation notice must advise raising/removing limit (not a
+// smaller limit), and must not read as self-contradictory. Regression for lj0g.6.
+func TestHdfQuery_LimitNoticeAdvisesRaiseNotShrink(t *testing.T) {
+	path := writeRoot(t, "q.json", readToolsFixture(t, "query-results.json"))
+	_, out := callQuery(t, queryInput{Source: handle.Source{Path: path}, Limit: 2})
+	if !out.Truncated || out.Notice == "" {
+		t.Fatal("a limit that hides matches must truncate with a notice")
+	}
+	n := out.Notice
+	if strings.Contains(n, "smaller limit to see") || strings.Contains(n, "a smaller limit or") {
+		t.Errorf("notice must not advise a smaller limit to see more rows: %q", n)
+	}
+	if !strings.Contains(n, "Raise or remove limit") {
+		t.Errorf("notice should advise raising/removing limit, got %q", n)
+	}
+	if !strings.Contains(n, "page=N") {
+		t.Errorf("notice should point at paging for the unlimited result, got %q", n)
+	}
+}
+
 func TestHdfQuery_PageOutOfRange(t *testing.T) {
 	path := writeRoot(t, "q.json", readToolsFixture(t, "query-results.json"))
 	_, out := callQuery(t, queryInput{Source: handle.Source{Path: path}, Page: 99})

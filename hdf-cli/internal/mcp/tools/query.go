@@ -17,9 +17,10 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// queryNarrowParam names the parameters a truncation notice recommends to shrink
-// a query result set.
-const queryNarrowParam = "a status[]/severity[]/nist[]/id/search filter or a smaller limit"
+// queryNarrowParam names the filters a truncation notice recommends tightening to
+// shrink the result set. It deliberately does NOT mention limit — a smaller limit
+// returns fewer rows, never more, so it is not a way to "see the rest".
+const queryNarrowParam = "a status/severity/nist/id/search filter"
 
 // queryInput is the hdf_query argument surface: a source, the nine requirement
 // filters, and the response controls (verbosity/limit/page). Every filter is
@@ -242,22 +243,28 @@ func buildQueryResponse(out *queryOutput, results hdf.HDFResults, matches []hdfe
 	}
 }
 
-// queryTruncationNotice states what was withheld and names the remedy — the
-// narrowing filters and, when more pages remain, the next page.
+// queryTruncationNotice states what was withheld and the correct remedy for each
+// reason: token-budget paging → fetch the next page; a caller limit → raise/remove
+// it (paging cannot reach beyond the limit window); last page → revisit earlier
+// pages. Tightening a filter shrinks the set in every case.
 func queryTruncationNotice(returned, total, page, numPages int, limited bool) string {
-	if page+1 < numPages {
+	switch {
+	case page+1 < numPages:
 		return fmt.Sprintf(
-			"Showing %d of %d requirements (page %d of %d). Narrow with %s, or fetch the next page with page=%d.",
-			returned, total, page, numPages, queryNarrowParam, page+1,
+			"Showing %d of %d requirements (page %d of %d). Fetch the next page with page=%d, or tighten %s to shrink the set.",
+			returned, total, page, numPages, page+1, queryNarrowParam,
 		)
-	}
-	if limited {
+	case limited:
 		return fmt.Sprintf(
-			"Showing %d of %d requirements (capped by limit). Raise limit or narrow with %s to see the rest.",
+			"Showing %d of %d requirements (capped by limit). Raise or remove limit to see the rest — a larger result then pages with page=N; a smaller limit shows fewer, not more. Or tighten %s to shrink the set.",
 			returned, total, queryNarrowParam,
 		)
+	default:
+		return fmt.Sprintf(
+			"Showing %d of %d requirements (page %d of %d, last page). Revisit earlier pages with page=0..%d, or tighten %s to shrink the set.",
+			returned, total, page, numPages, numPages-1, queryNarrowParam,
+		)
 	}
-	return fmt.Sprintf("Showing %d of %d requirements. Narrow with %s.", returned, total, queryNarrowParam)
 }
 
 // projectRows converts engine matches into concise or full rows. Full rows join
