@@ -17,6 +17,8 @@ export { load, detectFormat, type InputFormat, type LoadResult } from './loader.
 // Compliance & threshold engine (peer of hdf-engine/go/compliance.go).
 export {
   countControlsByStatusSeverity,
+  countControlsByStatus,
+  agentOverrideCount,
   mapControlIDs,
   calculateCompliance,
   validateThresholds,

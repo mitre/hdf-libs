@@ -2,10 +2,17 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { worstStatus } from '@mitre/hdf-utilities';
-import type { HDFResults, RequirementResult } from '@mitre/hdf-schema';
+import {
+  worstStatus,
+  computeEffectiveStatus,
+  type EffectiveStatusInput,
+  type StatusOverrideInput,
+} from '@mitre/hdf-utilities';
+import type { HDFResults, RequirementResult, EvaluatedRequirement } from '@mitre/hdf-schema';
 import {
   countControlsByStatusSeverity,
+  countControlsByStatus,
+  agentOverrideCount,
   mapControlIDs,
   calculateCompliance,
   validateThresholds,
@@ -19,6 +26,40 @@ import type { Severity } from '@mitre/hdf-schema';
 // compliance implementations run the same input.
 const fixturePath = join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'query-fixture.json');
 const results = JSON.parse(readFileSync(fixturePath, 'utf-8')) as HDFResults;
+
+// Shared agent-override fixture (also read by go/compliance_test.go) for the §3
+// detective-surface parity tests.
+const agentFixturePath = join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'agent-overrides-fixture.json');
+const agentResults = JSON.parse(readFileSync(agentFixturePath, 'utf-8')) as HDFResults;
+
+// statusInput builds the effective-status input from a requirement — the test's
+// injected mapping, mirroring shared.RequirementStatusInput that the production
+// MCP tool injects into countControlsByStatus. Parity: statusInput in
+// go/compliance_test.go.
+function statusInput(req: EvaluatedRequirement): EffectiveStatusInput {
+  const overrides: StatusOverrideInput[] = (req.statusOverrides ?? []).map((o) => ({
+    appliedAt: o.appliedAt,
+    expiresAt: o.expiresAt,
+    status: o.status as string | undefined,
+  }));
+  return {
+    impact: req.impact,
+    effectiveStatus: (req.effectiveStatus ?? undefined) as string | undefined,
+    overrides,
+    resultStatuses: (req.results ?? []).map((r) => String(r.status)),
+  };
+}
+
+// effectiveStatusOf resolves a requirement's effective status; excludeAgent drops
+// appliedBy.type==='agent' overrides first. Parity: effectiveStatusOf in Go.
+function effectiveStatusOf(excludeAgent: boolean): (req: EvaluatedRequirement) => string {
+  return (req: EvaluatedRequirement): string => {
+    const kept = excludeAgent
+      ? { ...req, statusOverrides: (req.statusOverrides ?? []).filter((o) => o.appliedBy?.type !== 'agent') }
+      : req;
+    return computeEffectiveStatus(statusInput(kept));
+  };
+}
 
 function rs(...statuses: string[]): RequirementResult[] {
   return statuses.map((s) => ({ status: s }) as unknown as RequirementResult);
@@ -141,5 +182,24 @@ describe('deriveSeverity', () => {
   });
   it('impact-derived high', () => {
     expect(deriveSeverity(0.7)).toBe('high');
+  });
+});
+
+describe('agent-override detective surface — parity with go/compliance_test.go', () => {
+  it('agentOverrideCount counts agent-attributed overrides only', () => {
+    // One agent override (V-AGENT-A); the system/from_vex override (V-SYSTEM-B) is excluded.
+    expect(agentOverrideCount(agentResults)).toBe(1);
+  });
+
+  it('countControlsByStatus yields the effective compliance delta agent overrides cause', () => {
+    const withAgent = calculateCompliance(countControlsByStatus(agentResults, effectiveStatusOf(false)));
+    const withoutAgent = calculateCompliance(countControlsByStatus(agentResults, effectiveStatusOf(true)));
+    // With all overrides: A,B,C passed, D failed → 3/4 = 75%.
+    expect(withAgent).toBe(75.0);
+    // Stripping the agent override: A reverts to failed, B stays passed (system) → 2/4 = 50%.
+    expect(withoutAgent).toBe(50.0);
+    expect(withAgent - withoutAgent).toBe(25.0);
+    // An absent resolver counts everything as skipped → 0% compliance.
+    expect(calculateCompliance(countControlsByStatus(agentResults))).toBe(0.0);
   });
 });

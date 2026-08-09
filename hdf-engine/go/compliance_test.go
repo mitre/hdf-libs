@@ -1,7 +1,11 @@
 package hdfengine
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -73,6 +77,84 @@ func TestCompliance_CountsAndPercentage(t *testing.T) {
 
 func TestCalculateCompliance_EmptyIsZero(t *testing.T) {
 	assert.Equal(t, 0.0, CalculateCompliance(&StatusCounts{}))
+}
+
+// loadAgentOverrideFixture reads the shared agent-override fixture (also read by
+// src/compliance.test.ts) so the detective-surface primitives are parity-tested.
+func loadAgentOverrideFixture(t *testing.T) hdf.HDFResults {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "testdata", "agent-overrides-fixture.json"))
+	require.NoError(t, err)
+	var results hdf.HDFResults
+	require.NoError(t, json.Unmarshal(data, &results))
+	return results
+}
+
+// effectiveStatusOf resolves a requirement's effective status through the shared
+// computation. excludeAgent drops appliedBy.type=="agent" overrides first — the
+// basis for the agent-override compliance delta. The same resolver logic runs in
+// src/compliance.test.ts so CountControlsByStatus is parity-tested.
+func effectiveStatusOf(excludeAgent bool) func(hdf.EvaluatedRequirement) string {
+	return func(req hdf.EvaluatedRequirement) string {
+		if excludeAgent {
+			kept := make([]hdf.StatusOverride, 0, len(req.StatusOverrides))
+			for _, o := range req.StatusOverrides {
+				if o.AppliedBy.Type != hdf.Agent {
+					kept = append(kept, o)
+				}
+			}
+			req.StatusOverrides = kept
+		}
+		return hdfutil.ComputeEffectiveStatus(statusInput(req), time.Time{})
+	}
+}
+
+// statusInput builds the effective-status input from a requirement — the test's
+// injected mapping, mirroring shared.RequirementStatusInput that the production
+// MCP tool injects into CountControlsByStatus.
+func statusInput(req hdf.EvaluatedRequirement) hdfutil.EffectiveStatusInput {
+	in := hdfutil.EffectiveStatusInput{Impact: req.Impact}
+	if req.EffectiveStatus != nil {
+		in.EffectiveStatus = string(*req.EffectiveStatus)
+	}
+	for _, o := range req.StatusOverrides {
+		soi := hdfutil.StatusOverrideInput{AppliedAt: o.AppliedAt, ExpiresAt: o.ExpiresAt}
+		if o.Status != nil {
+			soi.Status = string(*o.Status)
+		}
+		in.Overrides = append(in.Overrides, soi)
+	}
+	for _, r := range req.Results {
+		in.ResultStatuses = append(in.ResultStatuses, string(r.Status))
+	}
+	return in
+}
+
+// TestAgentOverrideCount_CountsAgentAttributedOnly is the Go side of the parity
+// contract for the §3 detective count; src/compliance.test.ts mirrors it.
+func TestAgentOverrideCount_CountsAgentAttributedOnly(t *testing.T) {
+	results := loadAgentOverrideFixture(t)
+	// One agent override (V-AGENT-A); the system/from_vex override (V-SYSTEM-B) is excluded.
+	assert.Equal(t, 1, AgentOverrideCount(results))
+}
+
+// TestCountControlsByStatus_EffectiveWithAndWithoutAgent proves the injected-
+// resolver counting yields the effective-compliance delta agent overrides cause.
+func TestCountControlsByStatus_EffectiveWithAndWithoutAgent(t *testing.T) {
+	results := loadAgentOverrideFixture(t)
+
+	withAgent := CalculateCompliance(CountControlsByStatus(results, effectiveStatusOf(false)))
+	withoutAgent := CalculateCompliance(CountControlsByStatus(results, effectiveStatusOf(true)))
+
+	// With all overrides: A,B,C passed, D failed → 3/4 = 75%.
+	assert.Equal(t, 75.0, withAgent)
+	// Stripping the agent override: A reverts to failed, B stays passed (system) → 2/4 = 50%.
+	assert.Equal(t, 50.0, withoutAgent)
+	// The agent-attributed overrides account for +25 points.
+	assert.Equal(t, 25.0, withAgent-withoutAgent)
+
+	// A nil resolver counts everything as skipped → 0% compliance.
+	assert.Equal(t, 0.0, CalculateCompliance(CountControlsByStatus(results, nil)))
 }
 
 func ptrInt(i int) *int           { return &i }

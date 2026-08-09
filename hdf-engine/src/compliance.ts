@@ -167,6 +167,50 @@ export function countControlsByStatusSeverity(results: HDFResults): StatusCounts
   return counts;
 }
 
+/**
+ * countControlsByStatus counts requirements by a caller-resolved status — the
+ * injected-resolver twin of countControlsByStatusSeverity (which counts raw
+ * result statuses with no override awareness). statusOf returns each
+ * requirement's status in the schema vocabulary (passed/failed/notApplicable/
+ * notReviewed/error); an empty or unrecognized value counts as skipped, and an
+ * absent resolver yields all-skipped. Callers build effective-status rollups
+ * (e.g. compliance with and without agent-attributed overrides) without the
+ * engine binding to any one status convention. Parity: go/compliance.go.
+ */
+export function countControlsByStatus(
+  results: HDFResults,
+  statusOf?: (req: EvaluatedRequirement) => string,
+): StatusCounts {
+  const counts = newStatusCounts();
+  for (const baseline of results.baselines ?? []) {
+    for (const req of baseline.requirements ?? []) {
+      const status = statusOf ? statusOf(req) : '';
+      addCount(counts, status, deriveSeverity(req.impact, reqSeverity(req)));
+    }
+  }
+  return counts;
+}
+
+/**
+ * agentOverrideCount counts the status overrides across a result set whose
+ * applied-by identity type is "agent" — the detective count. Deterministic
+ * from_vex/system overrides are excluded so the count is a meaningful AI-scrutiny
+ * signal. Parity: go/compliance.go AgentOverrideCount.
+ */
+export function agentOverrideCount(results: HDFResults): number {
+  let count = 0;
+  for (const baseline of results.baselines ?? []) {
+    for (const req of baseline.requirements ?? []) {
+      for (const o of req.statusOverrides ?? []) {
+        if (o.appliedBy?.type === 'agent') {
+          count++;
+        }
+      }
+    }
+  }
+  return count;
+}
+
 /** MapControlIDs builds control ID → status/severity mappings from a result set. */
 export function mapControlIDs(results: HDFResults): ControlIDMapping[] {
   const mappings: ControlIDMapping[] = [];

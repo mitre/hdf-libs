@@ -8,6 +8,162 @@
         "openWorldHint": false,
         "readOnlyHint": true
       },
+      "description": "Compute percent compliance and status/severity rollups (over raw result statuses, matching threshold gating) for an HDF results document, with an optional grouped breakdown and threshold verdict. The agentOverrides block is the detective surface: how many overrides are agent-attributed and the effective-compliance delta they account for.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "groupBy": {
+            "description": "baseline | severity | nistFamily",
+            "type": "string"
+          },
+          "source": {
+            "additionalProperties": false,
+            "description": "document as {path} or {handle}",
+            "properties": {
+              "handle": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "threshold": {
+            "additionalProperties": false,
+            "description": "threshold spec: {path} to a YAML/JSON file, or {inline} object",
+            "properties": {
+              "inline": {
+                "additionalProperties": true,
+                "description": "inline threshold spec (compliance/passed/failed/... bounds)",
+                "type": "object"
+              },
+              "path": {
+                "description": "path to a YAML/JSON threshold file under HDF_MCP_ROOT",
+                "type": "string"
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "type": "object"
+      },
+      "name": "hdf_compliance",
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "agentOverrides": {
+            "additionalProperties": false,
+            "properties": {
+              "complianceDelta": {
+                "type": "number"
+              },
+              "count": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "count",
+              "complianceDelta"
+            ],
+            "type": "object"
+          },
+          "compliance": {
+            "type": "number"
+          },
+          "counts": true,
+          "docType": {
+            "type": "string"
+          },
+          "groupBy": {
+            "type": "string"
+          },
+          "groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "compliance": {
+                  "type": "number"
+                },
+                "counts": true,
+                "group": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "group",
+                "compliance",
+                "counts"
+              ],
+              "type": "object"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "handle": {
+            "type": "string"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "thresholdVerdict": {
+            "additionalProperties": false,
+            "properties": {
+              "failures": {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "null",
+                  "array"
+                ]
+              },
+              "pass": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "pass",
+              "failures"
+            ],
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "handle",
+          "docType",
+          "schemaVersion",
+          "compliance",
+          "counts",
+          "agentOverrides"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
       "description": "Inspect an HDF document's structure and metadata for any of the eight document types (counts, inventories, envelopes) — never a requirement collection. To list requirements, use hdf_query.",
       "inputSchema": {
         "additionalProperties": false,

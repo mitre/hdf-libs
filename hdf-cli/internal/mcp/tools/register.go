@@ -14,4 +14,5 @@ func RegisterAll(s *sdkmcp.Server) {
 	RegisterOpen(s, ldr)
 	RegisterInspect(s, ldr)
 	RegisterQuery(s, ldr)
+	RegisterCompliance(s, ldr)
 }

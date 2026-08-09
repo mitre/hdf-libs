@@ -91,6 +91,49 @@ func CountControlsByStatusSeverity(results hdf.HDFResults) *StatusCounts {
 	return counts
 }
 
+// CountControlsByStatus counts a result set's requirements by a caller-resolved
+// status — the injected-resolver twin of CountControlsByStatusSeverity (which
+// counts raw result statuses with no override awareness). statusOf returns each
+// requirement's status in the schema vocabulary (passed/failed/notApplicable/
+// notReviewed/error); an empty or unrecognized value is counted as skipped, and
+// a nil resolver yields all-skipped. Callers use this to build effective-status
+// rollups — e.g. compliance with and without agent-attributed overrides — without
+// the engine binding to any one status convention (the same injection pattern as
+// Filter's StatusOf).
+func CountControlsByStatus(results hdf.HDFResults, statusOf func(hdf.EvaluatedRequirement) string) *StatusCounts {
+	counts := &StatusCounts{}
+	for _, baseline := range results.Baselines {
+		for i := range baseline.Requirements {
+			req := baseline.Requirements[i]
+			status := ""
+			if statusOf != nil {
+				status = statusOf(req)
+			}
+			addCount(counts, hdf.ResultStatus(status), deriveSeverity(req.Impact, req.Severity))
+		}
+	}
+	return counts
+}
+
+// AgentOverrideCount counts the status overrides across a result set whose
+// applied-by identity type is "agent" — the §3 detective count. Deterministic
+// from_vex / system overrides (appliedBy.type == "system") are deliberately
+// excluded: keeping non-judgment overrides out of the count is what makes an
+// agent-attributed count a meaningful AI-scrutiny signal for auditors.
+func AgentOverrideCount(results hdf.HDFResults) int {
+	count := 0
+	for _, baseline := range results.Baselines {
+		for _, req := range baseline.Requirements {
+			for _, o := range req.StatusOverrides {
+				if o.AppliedBy.Type == hdf.Agent {
+					count++
+				}
+			}
+		}
+	}
+	return count
+}
+
 // MapControlIDs builds control ID → status/severity mappings from a result set.
 func MapControlIDs(results hdf.HDFResults) []ControlIDMapping {
 	var mappings []ControlIDMapping
