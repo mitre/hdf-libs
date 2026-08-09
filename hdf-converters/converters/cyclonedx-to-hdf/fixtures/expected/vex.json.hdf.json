@@ -39,11 +39,27 @@
               "label": "fix"
             }
           ],
+          "disposition": "falsePositive",
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "codeDesc": "Component urn:cdx:3e671687-395b-41f5-a30f-a58921a69b79/1#pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.10.0?type=jar is vulnerable",
               "startTime": "2026-07-12T23:29:28.221396Z",
               "status": "failed"
+            }
+          ],
+          "statusOverrides": [
+            {
+              "appliedAt": "2021-10-26T00:00:00Z",
+              "appliedBy": {
+                "identifier": "cyclonedx analysis",
+                "type": "other"
+              },
+              "expiresAt": "2022-10-26T00:00:00Z",
+              "justification": "vulnerable_code_not_in_execute_path",
+              "reason": "Automated dataflow analysis and manual code review indicates that the vulnerable code is not reachable, either directly or indirectly. (Response: will_not_fix, update)",
+              "status": "notApplicable",
+              "type": "falsePositive"
             }
           ],
           "id": "CVE-2020-25649",

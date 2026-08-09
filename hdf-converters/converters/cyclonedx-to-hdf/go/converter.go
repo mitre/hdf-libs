@@ -58,6 +58,9 @@ type CDXVulnerability struct {
 	Description    string         `json:"description"`
 	Detail         string         `json:"detail"`
 	Recommendation string         `json:"recommendation"`
+	Created        string         `json:"created"`
+	Published      string         `json:"published"`
+	Updated        string         `json:"updated"`
 	Affects        []CDXAffect    `json:"affects"`
 	Analysis       *CDXAnalysis   `json:"analysis"`
 }
@@ -100,6 +103,114 @@ type CDXAnalysis struct {
 	Justification string   `json:"justification"`
 	Response      []string `json:"response"`
 	Detail        string   `json:"detail"`
+}
+
+// vexJustification maps a CycloneDX analysis.justification value to the HDF
+// Justification controlled vocabulary. Returns nil for an empty or unmapped
+// value — the free-text justification still rides in the override reason.
+func vexJustification(j string) *hdf.Justification {
+	var out hdf.Justification
+	switch j {
+	case "code_not_present":
+		out = hdf.VulnerableCodeNotPresent
+	case "code_not_reachable":
+		out = hdf.VulnerableCodeNotInExecutePath
+	case "requires_configuration":
+		out = hdf.RequiresConfiguration
+	case "requires_dependency":
+		out = hdf.RequiresDependency
+	case "requires_environment":
+		out = hdf.RequiresEnvironment
+	case "protected_by_compiler":
+		out = hdf.ProtectedByCompiler
+	case "protected_at_runtime":
+		out = hdf.ProtectedAtRuntime
+	case "protected_at_perimeter":
+		out = hdf.ProtectedAtPerimeter
+	case "protected_by_mitigating_control":
+		out = hdf.InlineMitigationsAlreadyExist
+	default:
+		return nil
+	}
+	return &out
+}
+
+// analysisAppliedAt resolves the override's decision time. CycloneDX VEX carries
+// no owner/date on the analysis block, so the vulnerability's own updated ->
+// published -> created time is the defensible decision time; falls back to the
+// finding's scan time only when the vuln carries no parseable date (keeping the
+// override deterministic rather than reaching for now()).
+func analysisAppliedAt(vuln CDXVulnerability, fallback time.Time) time.Time {
+	for _, s := range []string{vuln.Updated, vuln.Published, vuln.Created} {
+		if s == "" {
+			continue
+		}
+		if t := hdfutil.ParseTimestamp(s); !t.IsZero() {
+			return t
+		}
+	}
+	return fallback
+}
+
+// analysisReason folds the CycloneDX analysis detail and response[] hints into a
+// single override reason. Falls back to a short state-derived constant so the
+// schema-required reason is never empty.
+func analysisReason(a *CDXAnalysis) string {
+	reason := a.Detail
+	if len(a.Response) > 0 {
+		ctx := "Response: " + strings.Join(a.Response, ", ")
+		if reason == "" {
+			reason = ctx
+		} else {
+			reason = reason + " (" + ctx + ")"
+		}
+	}
+	if reason == "" {
+		reason = "Dismissed via CycloneDX VEX analysis: " + a.State
+	}
+	return reason
+}
+
+// analysisOverride reconstructs a structured HDF status override from a CycloneDX
+// VEX analysis block. Raw result status stays Failed; the attributed, expiring
+// override carries the triage decision:
+//   - not_affected / false_positive -> falsePositive, effectiveStatus notApplicable
+//     (a vulnerability/SCA scan: the flagged vuln does not apply to this system).
+//   - resolved / resolved_with_pedigree -> attestation, effectiveStatus passed
+//     (the finding was remediated; resolved_with_pedigree carries the evidence).
+//
+// Returns (nil, nil, nil) when the analysis is absent or the state leaves the
+// finding actionable (exploitable / in_triage / unknown) — those keep the raw
+// Failed result with no override.
+func analysisOverride(vuln CDXVulnerability, fallback time.Time) (*hdf.StatusOverride, *hdf.ResultStatus, *hdf.OverrideType) {
+	if vuln.Analysis == nil {
+		return nil, nil, nil
+	}
+	var oType hdf.OverrideType
+	var effective hdf.ResultStatus
+	switch vuln.Analysis.State {
+	case "not_affected", "false_positive":
+		oType = hdf.FalsePositive
+		effective = hdf.NotApplicable
+	case "resolved", "resolved_with_pedigree":
+		oType = hdf.Attestation
+		effective = hdf.Passed
+	default:
+		return nil, nil, nil
+	}
+	appliedAt := analysisAppliedAt(vuln, fallback)
+	override := hdf.StatusOverride{
+		Type:      oType,
+		Status:    &effective,
+		Reason:    analysisReason(vuln.Analysis),
+		AppliedBy: hdf.Identity{Type: hdf.IdentityTypeOther, Identifier: "cyclonedx analysis"},
+		AppliedAt: appliedAt,
+		ExpiresAt: appliedAt.AddDate(1, 0, 0),
+	}
+	if j := vexJustification(vuln.Analysis.Justification); j != nil {
+		override.Justification = j
+	}
+	return &override, &effective, &oType
 }
 
 // severityToImpact maps CycloneDX severity strings to HDF impact values.
@@ -449,7 +560,7 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		// statements (analyst assertions about CVE exploitability). The
 		// converter cannot reliably distinguish the two, so stamping
 		// "automated" would misclassify VEX-derived requirements.
-		requirements = append(requirements, hdf.EvaluatedRequirement{
+		req := hdf.EvaluatedRequirement{
 			ID:           vuln.ID,
 			Title:        &title,
 			Impact:       impact,
@@ -460,7 +571,18 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			Descriptions: descriptions,
 			Refs:         buildRefs(vuln),
 			Results:      results,
-		})
+		}
+
+		// Reconstruct a structured override from the CycloneDX VEX analysis: the
+		// raw Failed result stays, and the triage decision rides as an attributed,
+		// expiring statusOverride that flips effectiveStatus.
+		if override, eff, disp := analysisOverride(vuln, scanTime); override != nil {
+			req.StatusOverrides = []hdf.StatusOverride{*override}
+			req.EffectiveStatus = eff
+			req.Disposition = disp
+		}
+
+		requirements = append(requirements, req)
 	}
 
 	baseline := hdf.EvaluatedBaseline{

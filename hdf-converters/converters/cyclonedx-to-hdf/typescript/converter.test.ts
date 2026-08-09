@@ -671,4 +671,102 @@ describe('cyclonedx to HDF converter', async () => {
       expect(versions).toContain('4.0');
     });
   });
+
+  describe('VEX analysis -> structured status override', () => {
+    it('reconstructs a falsePositive override for a not_affected vuln', async () => {
+      // vex.json: analysis.state not_affected, justification code_not_reachable,
+      // response [will_not_fix, update]. Raw stays failed; effectiveStatus flips
+      // to notApplicable (a vuln scan) with the attributed, expiring override.
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('vex.json'))
+      ) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'CVE-2020-25649'
+      )!;
+      expect(req).toBeDefined();
+
+      // raw result unchanged
+      expect(req.results[0]!.status).toBe('failed');
+
+      // effective status + disposition flipped
+      expect(req.effectiveStatus).toBe('notApplicable');
+      expect(req.disposition).toBe('falsePositive');
+
+      // structured override
+      expect(req.statusOverrides).toHaveLength(1);
+      const ov = req.statusOverrides![0]!;
+      expect(ov.type).toBe('falsePositive');
+      expect(ov.status).toBe('notApplicable');
+      expect(ov.appliedBy.identifier).toBe('cyclonedx analysis');
+      expect(ov.appliedBy.type).toBe('other');
+      expect(ov.justification).toBe('vulnerable_code_not_in_execute_path');
+      expect(ov.reason).toContain('vulnerable code is not reachable');
+      expect(ov.reason).toContain('Response: will_not_fix, update');
+
+      // appliedAt derived from the vuln updated time; expiresAt = +1 year.
+      expect(ov.appliedAt).toBe('2021-10-26T00:00:00Z');
+      expect(ov.expiresAt).toBe('2022-10-26T00:00:00Z');
+    });
+
+    it('reconstructs an attestation override for a resolved vuln', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'CVE-RESOLVED',
+            ratings: [{severity: 'high'}],
+            published: '2023-01-15T00:00:00Z',
+            analysis: {state: 'resolved', detail: 'Patched in 2.1.0'},
+            affects: [{ref: 'comp-1'}],
+          },
+        ],
+        components: [{type: 'library', name: 'test-lib', 'bom-ref': 'comp-1'}],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.results[0]!.status).toBe('failed');
+      expect(req.effectiveStatus).toBe('passed');
+      expect(req.disposition).toBe('attestation');
+      expect(req.statusOverrides).toHaveLength(1);
+      expect(req.statusOverrides![0]!.type).toBe('attestation');
+      expect(req.statusOverrides![0]!.reason).toBe('Patched in 2.1.0');
+      expect(req.statusOverrides![0]!.justification).toBeUndefined();
+      expect(req.statusOverrides![0]!.appliedAt).toBe('2023-01-15T00:00:00Z');
+    });
+
+    it('leaves exploitable / in_triage / no-analysis findings actionable (no override)', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'CVE-EXPLOIT',
+            ratings: [{severity: 'high'}],
+            analysis: {state: 'exploitable', detail: 'reachable'},
+            affects: [{ref: 'comp-1'}],
+          },
+          {
+            id: 'CVE-TRIAGE',
+            ratings: [{severity: 'high'}],
+            analysis: {state: 'in_triage'},
+            affects: [{ref: 'comp-1'}],
+          },
+          {
+            id: 'CVE-NONE',
+            ratings: [{severity: 'high'}],
+            affects: [{ref: 'comp-1'}],
+          },
+        ],
+        components: [{type: 'library', name: 'test-lib', 'bom-ref': 'comp-1'}],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.results[0]!.status).toBe('failed');
+        expect(req.statusOverrides).toBeUndefined();
+        expect(req.effectiveStatus).toBeUndefined();
+        expect(req.disposition).toBeUndefined();
+      }
+    });
+  });
 });

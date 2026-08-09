@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -703,6 +704,129 @@ func TestConvertCycloneDX_VerificationMethodNotSet(t *testing.T) {
 			"requirement %q: cyclonedx must not assert verificationMethod (VEX may be human-authored)", req.ID)
 	}
 }
+
+// ---- VEX analysis → structured status override ----
+
+func TestConvertCycloneDX_VEXAnalysisOverride(t *testing.T) {
+	// vex.json carries analysis.state "not_affected", justification
+	// "code_not_reachable", response [will_not_fix, update]. That reconstructs a
+	// falsePositive override: raw stays Failed, effectiveStatus becomes
+	// notApplicable (a vuln scan), with the attributed, expiring override present.
+	input := loadFixture(t, "input/vex.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
+
+	// raw result unchanged
+	require.NotEmpty(t, req.Results)
+	assert.Equal(t, hdf.Failed, req.Results[0].Status, "raw result stays failed")
+
+	// effective status + disposition flipped
+	require.NotNil(t, req.EffectiveStatus)
+	assert.Equal(t, hdf.NotApplicable, *req.EffectiveStatus)
+	require.NotNil(t, req.Disposition)
+	assert.Equal(t, hdf.FalsePositive, *req.Disposition)
+
+	// structured override
+	require.Len(t, req.StatusOverrides, 1)
+	ov := req.StatusOverrides[0]
+	assert.Equal(t, hdf.FalsePositive, ov.Type)
+	require.NotNil(t, ov.Status)
+	assert.Equal(t, hdf.NotApplicable, *ov.Status)
+	assert.Equal(t, "cyclonedx analysis", ov.AppliedBy.Identifier)
+	assert.Equal(t, hdf.IdentityTypeOther, ov.AppliedBy.Type)
+	require.NotNil(t, ov.Justification)
+	assert.Equal(t, hdf.VulnerableCodeNotInExecutePath, *ov.Justification)
+	assert.Contains(t, ov.Reason, "vulnerable code is not reachable")
+	assert.Contains(t, ov.Reason, "Response: will_not_fix, update")
+
+	// appliedAt derived from the vuln updated time; expiresAt = +1 year.
+	assert.Equal(t, "2021-10-26T00:00:00Z", ov.AppliedAt.UTC().Format(time.RFC3339))
+	assert.Equal(t, "2022-10-26T00:00:00Z", ov.ExpiresAt.UTC().Format(time.RFC3339))
+}
+
+func TestConvertCycloneDX_VEXResolvedAttestation(t *testing.T) {
+	// A resolved (remediated) VEX state reconstructs an attestation override:
+	// effectiveStatus passed, raw stays Failed.
+	input := []byte(`{
+		"bomFormat": "CycloneDX",
+		"specVersion": "1.5",
+		"vulnerabilities": [{
+			"id": "CVE-RESOLVED",
+			"ratings": [{"severity": "high"}],
+			"published": "2023-01-15T00:00:00Z",
+			"analysis": {"state": "resolved", "detail": "Patched in 2.1.0"},
+			"affects": [{"ref": "comp-1"}]
+		}],
+		"components": [{"type": "library", "name": "test-lib", "bom-ref": "comp-1"}]
+	}`)
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, hdf.Failed, req.Results[0].Status)
+	require.NotNil(t, req.EffectiveStatus)
+	assert.Equal(t, hdf.Passed, *req.EffectiveStatus)
+	require.NotNil(t, req.Disposition)
+	assert.Equal(t, hdf.Attestation, *req.Disposition)
+	require.Len(t, req.StatusOverrides, 1)
+	assert.Equal(t, hdf.Attestation, req.StatusOverrides[0].Type)
+	assert.Equal(t, "Patched in 2.1.0", req.StatusOverrides[0].Reason)
+	assert.Nil(t, req.StatusOverrides[0].Justification, "no justification supplied")
+	assert.Equal(t, "2023-01-15T00:00:00Z", req.StatusOverrides[0].AppliedAt.UTC().Format(time.RFC3339))
+}
+
+func TestConvertCycloneDX_VEXNoOverrideBranches(t *testing.T) {
+	// exploitable / in_triage / no-analysis leave the finding actionable: raw
+	// Failed, no override, no effectiveStatus/disposition.
+	input := []byte(`{
+		"bomFormat": "CycloneDX",
+		"specVersion": "1.5",
+		"vulnerabilities": [
+			{"id": "CVE-EXPLOIT", "ratings": [{"severity": "high"}], "analysis": {"state": "exploitable", "detail": "reachable"}, "affects": [{"ref": "comp-1"}]},
+			{"id": "CVE-TRIAGE", "ratings": [{"severity": "high"}], "analysis": {"state": "in_triage"}, "affects": [{"ref": "comp-1"}]},
+			{"id": "CVE-NONE", "ratings": [{"severity": "high"}], "affects": [{"ref": "comp-1"}]}
+		],
+		"components": [{"type": "library", "name": "test-lib", "bom-ref": "comp-1"}]
+	}`)
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		assert.Equal(t, hdf.Failed, req.Results[0].Status, "%s raw status", req.ID)
+		assert.Empty(t, req.StatusOverrides, "%s gets no override", req.ID)
+		assert.Nil(t, req.EffectiveStatus, "%s effectiveStatus unset", req.ID)
+		assert.Nil(t, req.Disposition, "%s disposition unset", req.ID)
+	}
+}
+
+func TestVexJustificationMapping(t *testing.T) {
+	cases := map[string]*hdf.Justification{
+		"code_not_present":                ptrJ(hdf.VulnerableCodeNotPresent),
+		"code_not_reachable":              ptrJ(hdf.VulnerableCodeNotInExecutePath),
+		"requires_configuration":          ptrJ(hdf.RequiresConfiguration),
+		"requires_dependency":             ptrJ(hdf.RequiresDependency),
+		"requires_environment":            ptrJ(hdf.RequiresEnvironment),
+		"protected_by_compiler":           ptrJ(hdf.ProtectedByCompiler),
+		"protected_at_runtime":            ptrJ(hdf.ProtectedAtRuntime),
+		"protected_at_perimeter":          ptrJ(hdf.ProtectedAtPerimeter),
+		"protected_by_mitigating_control": ptrJ(hdf.InlineMitigationsAlreadyExist),
+		"":                                nil,
+		"some_future_value":               nil,
+	}
+	for in, want := range cases {
+		got := vexJustification(in)
+		if want == nil {
+			assert.Nil(t, got, "justification %q", in)
+			continue
+		}
+		require.NotNil(t, got, "justification %q", in)
+		assert.Equal(t, *want, *got, "justification %q", in)
+	}
+}
+
+func ptrJ(j hdf.Justification) *hdf.Justification { return &j }
 
 func TestCvssVersionFromMethod(t *testing.T) {
 	cases := []struct {

@@ -19,11 +19,15 @@ import type {
   Checksum,
   Reference,
   RequirementResult,
+  StatusOverride,
   Version as CvssVersion,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
   createResult,
+  IdentityType,
+  Justification,
+  OverrideType,
   TargetType,
   createMinimalBaseline,
   createRequirement,
@@ -73,6 +77,9 @@ interface CycloneDXVulnerability {
   description?: string;
   detail?: string;
   recommendation?: string;
+  created?: string;
+  published?: string;
+  updated?: string;
   affects?: CycloneDXAffect[];
   analysis?: CycloneDXAnalysis;
 }
@@ -277,6 +284,134 @@ function hasMLModelComponent(components: CycloneDXComponent[]): boolean {
 }
 
 /**
+ * Maps a CycloneDX analysis.justification value to the HDF Justification
+ * controlled vocabulary. Returns undefined for an empty or unmapped value — the
+ * free-text justification still rides in the override reason.
+ */
+function vexJustification(j: string | undefined): Justification | undefined {
+  switch (j) {
+    case 'code_not_present':
+      return Justification.VulnerableCodeNotPresent;
+    case 'code_not_reachable':
+      return Justification.VulnerableCodeNotInExecutePath;
+    case 'requires_configuration':
+      return Justification.RequiresConfiguration;
+    case 'requires_dependency':
+      return Justification.RequiresDependency;
+    case 'requires_environment':
+      return Justification.RequiresEnvironment;
+    case 'protected_by_compiler':
+      return Justification.ProtectedByCompiler;
+    case 'protected_at_runtime':
+      return Justification.ProtectedAtRuntime;
+    case 'protected_at_perimeter':
+      return Justification.ProtectedAtPerimeter;
+    case 'protected_by_mitigating_control':
+      return Justification.InlineMitigationsAlreadyExist;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Resolves the override's decision time. CycloneDX VEX carries no owner/date on
+ * the analysis block, so the vulnerability's own updated -> published -> created
+ * time is the defensible decision time; falls back to the finding's scan time
+ * only when the vuln carries no parseable date (keeping the override
+ * deterministic rather than reaching for now()).
+ */
+function analysisAppliedAt(vuln: CycloneDXVulnerability, fallback: Date): Date {
+  for (const s of [vuln.updated, vuln.published, vuln.created]) {
+    if (!s) {
+      continue;
+    }
+    const t = parseTimestamp(s);
+    if (t && !isNaN(t.getTime())) {
+      return t;
+    }
+  }
+  return fallback;
+}
+
+/**
+ * Folds the CycloneDX analysis detail and response[] hints into a single override
+ * reason. Falls back to a short state-derived constant so the schema-required
+ * reason is never empty.
+ */
+function analysisReason(a: CycloneDXAnalysis): string {
+  let reason = a.detail ?? '';
+  if (a.response && a.response.length > 0) {
+    const ctx = `Response: ${a.response.join(', ')}`;
+    reason = reason ? `${reason} (${ctx})` : ctx;
+  }
+  if (!reason) {
+    reason = `Dismissed via CycloneDX VEX analysis: ${a.state ?? ''}`;
+  }
+  return reason;
+}
+
+interface AnalysisOverride {
+  override: StatusOverride;
+  effectiveStatus: ResultStatus;
+  disposition: OverrideType;
+}
+
+/**
+ * Reconstructs a structured HDF status override from a CycloneDX VEX analysis
+ * block. Raw result status stays Failed; the attributed, expiring override
+ * carries the triage decision:
+ *   - not_affected / false_positive -> falsePositive, effectiveStatus notApplicable
+ *     (a vulnerability/SCA scan: the flagged vuln does not apply to this system).
+ *   - resolved / resolved_with_pedigree -> attestation, effectiveStatus passed
+ *     (the finding was remediated; resolved_with_pedigree carries the evidence).
+ * Returns undefined when the analysis is absent or the state leaves the finding
+ * actionable (exploitable / in_triage / unknown) — those keep the raw Failed
+ * result with no override.
+ */
+function analysisOverride(
+  vuln: CycloneDXVulnerability,
+  fallback: Date
+): AnalysisOverride | undefined {
+  const a = vuln.analysis;
+  if (!a) {
+    return undefined;
+  }
+  let disposition: OverrideType;
+  let effectiveStatus: ResultStatus;
+  switch (a.state) {
+    case 'not_affected':
+    case 'false_positive':
+      disposition = OverrideType.FalsePositive;
+      effectiveStatus = ResultStatus.NotApplicable;
+      break;
+    case 'resolved':
+    case 'resolved_with_pedigree':
+      disposition = OverrideType.Attestation;
+      effectiveStatus = ResultStatus.Passed;
+      break;
+    default:
+      return undefined;
+  }
+  const appliedAt = analysisAppliedAt(vuln, fallback);
+  const expiresAt = new Date();
+  expiresAt.setTime(appliedAt.getTime());
+  expiresAt.setUTCFullYear(expiresAt.getUTCFullYear() + 1);
+  const override: StatusOverride = {
+    type: disposition,
+    status: effectiveStatus,
+    reason: analysisReason(a),
+    appliedBy: {type: IdentityType.Other, identifier: 'cyclonedx analysis'},
+    appliedAt,
+    expiresAt,
+  };
+  const justification = vexJustification(a.justification);
+  if (justification !== undefined) {
+    override.justification = justification;
+  }
+  return {override, effectiveStatus, disposition};
+}
+
+/**
  * Converts CycloneDX SBOM/VEX JSON to HDF format.
  *
  * @param input - CycloneDX JSON string
@@ -434,6 +569,17 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
     if (controlType !== undefined) {
       req.controlType = controlType;
     }
+
+    // Reconstruct a structured override from the CycloneDX VEX analysis: the raw
+    // Failed result stays, and the triage decision rides as an attributed,
+    // expiring statusOverride that flips effectiveStatus.
+    const triaged = analysisOverride(vuln, scanTime);
+    if (triaged !== undefined) {
+      req.statusOverrides = [triaged.override];
+      req.effectiveStatus = triaged.effectiveStatus;
+      req.disposition = triaged.disposition;
+    }
+
     requirements.push(req);
   }
 
