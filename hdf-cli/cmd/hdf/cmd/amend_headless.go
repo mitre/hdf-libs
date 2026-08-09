@@ -267,6 +267,8 @@ func normalizeExpiresAt(out map[string]interface{}, now time.Time) error {
 	if raw == "" {
 		return fmt.Errorf("override for %v is missing required field \"expiresAt\"", out["requirementId"])
 	}
+	// Format check only: the parse result is discarded and a valid RFC3339
+	// expiresAt is kept verbatim, not parsed for use. timestamp-guard:allow
 	if _, err := time.Parse(time.RFC3339, raw); err == nil {
 		return nil
 	}
@@ -456,6 +458,8 @@ func resolveDraftExpiry(expires string, now time.Time) (string, error) {
 	if strings.TrimSpace(expires) == "" {
 		return "", nil
 	}
+	// Format check only: the parse result is discarded and a valid RFC3339
+	// --expires is kept verbatim, not parsed for use. timestamp-guard:allow
 	if _, err := time.Parse(time.RFC3339, expires); err == nil {
 		return expires, nil
 	}

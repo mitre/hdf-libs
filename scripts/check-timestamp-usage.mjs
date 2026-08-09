@@ -43,6 +43,7 @@ function goFilesUnder(dir) {
     return out; // no such dir (e.g. converter has no Go implementation)
   }
   for (const e of entries) {
+    if (e.name === 'node_modules' || e.name === 'dist' || e.name === '.git') continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) out.push(...goFilesUnder(p));
     else if (e.name.endsWith('.go') && !e.name.endsWith('_test.go')) out.push(p);
@@ -55,14 +56,31 @@ for (const conv of readdirSync(convertersDir, { withFileTypes: true })) {
   if (conv.isDirectory()) files.push(...goFilesUnder(join(convertersDir, conv.name, 'go')));
 }
 files.push(...goFilesUnder(sharedGoDir));
+// The same footgun exists wherever HDF Go code parses timestamps: the diff
+// engine, the CLI, and hdf-utilities (which also carries the Go peers of the
+// shared parse helpers). Scan them too so the class cannot regrow.
+files.push(...goFilesUnder(join(root, 'hdf-diff', 'go')));
+files.push(...goFilesUnder(join(root, 'hdf-cli')));
+files.push(...goFilesUnder(join(root, 'hdf-utilities', 'go')));
+
+// A justified exception carries a `timestamp-guard:allow` marker (with a reason)
+// on the offending line or the line directly above it — for genuine non-footgun
+// uses such as a format-validation check that DISCARDS the parse result rather
+// than parsing a tool timestamp for use. This is a reason-bearing, guard-
+// specific opt-out, not a blanket nolint.
+const ALLOW_MARKER = 'timestamp-guard:allow';
 
 const offenders = [];
 for (const path of files) {
   const content = readFileSync(path, 'utf8');
+  const lines = content.split('\n');
   for (const match of content.matchAll(FORBIDDEN)) {
-    const line = content.slice(0, match.index).split('\n').length;
+    const lineNo = content.slice(0, match.index).split('\n').length; // 1-indexed
+    const thisLine = lines[lineNo - 1] ?? '';
+    const prevLine = lines[lineNo - 2] ?? '';
+    if (thisLine.includes(ALLOW_MARKER) || prevLine.includes(ALLOW_MARKER)) continue;
     const snippet = content.slice(match.index, match.index + 60).replace(/\s+/g, ' ').trim();
-    offenders.push(`${path}:${line}: ${snippet}`);
+    offenders.push(`${path}:${lineNo}: ${snippet}`);
   }
 }
 

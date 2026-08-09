@@ -8,6 +8,8 @@
  * so the diff engine only needs to handle one format.
  */
 
+import { parseTimestamp } from '@mitre/hdf-utilities';
+
 interface V1Result {
   status: string;
   code_desc?: string;
@@ -143,9 +145,10 @@ function normalizeTimestamp(timestamp: string): string {
     return timestamp;
   }
 
-  // Try to parse InSpec format: "YYYY-MM-DD HH:MM:SS +HHMM"
-  const parsed = new Date(timestamp);
-  if (!isNaN(parsed.getTime())) {
+  // Parse InSpec format ("YYYY-MM-DD HH:MM:SS +HHMM") via the shared helper,
+  // which reads a zone-less value as UTC rather than host-local.
+  const parsed = parseTimestamp(timestamp);
+  if (parsed) {
     return parsed.toISOString();
   }
 

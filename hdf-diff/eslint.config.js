@@ -1,5 +1,6 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
+import { DATE_GUARD_RULES } from '../scripts/eslint-timestamp-guard.mjs';
 
 export default [
   {
@@ -26,6 +27,7 @@ export default [
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/await-thenable': 'error',
       'no-console': 'warn',
+      'no-restricted-syntax': ['error', ...DATE_GUARD_RULES],
     },
   },
   {
