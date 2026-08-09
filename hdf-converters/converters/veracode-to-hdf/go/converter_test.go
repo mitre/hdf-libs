@@ -766,6 +766,71 @@ func TestBuildCWERequirement_NoRemediationStatus(t *testing.T) {
 	}
 }
 
+// A static CWE requirement promotes its first flaw's source-file:line into the
+// structured sourceLocation. Category 18 (CWE-78) first flaw is
+// ToolsController.java:53. Ref remains the newline-joined source files.
+func TestConvertVeracodeToHDF_SourceLocation(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	byID := func(id string) *hdf.EvaluatedRequirement {
+		for i := range result.Baselines[0].Requirements {
+			if result.Baselines[0].Requirements[i].ID == id {
+				return &result.Baselines[0].Requirements[i]
+			}
+		}
+		return nil
+	}
+
+	// CWE (static) branch: ref + line both present.
+	cwe := byID("18")
+	require.NotNil(t, cwe)
+	require.NotNil(t, cwe.SourceLocation, "static CWE requirement should carry sourceLocation")
+	require.NotNil(t, cwe.SourceLocation.Ref)
+	assert.Equal(t, "ToolsController.java\nToolsController.java", *cwe.SourceLocation.Ref)
+	require.NotNil(t, cwe.SourceLocation.Line, "static flaw line should be promoted")
+	assert.Equal(t, float64(53), *cwe.SourceLocation.Line)
+
+	// SCA (CVE) branch: ref present, line absent (SCA vulns carry no line).
+	cve := byID("CVE-2012-5783")
+	require.NotNil(t, cve)
+	require.NotNil(t, cve.SourceLocation, "SCA CVE requirement should carry sourceLocation ref")
+	require.NotNil(t, cve.SourceLocation.Ref)
+	assert.Nil(t, cve.SourceLocation.Line, "SCA CVE requirement must not carry a line")
+}
+
+// firstFlawLine branch coverage: first numeric line wins, non-numeric/empty are
+// skipped, and no numeric line anywhere yields nil (the absent branch).
+func TestFirstFlawLine(t *testing.T) {
+	t.Run("first numeric line across flaws", func(t *testing.T) {
+		cwes := []CWE{{StaticFlaws: StaticFlaws{Flaws: []Flaw{
+			{Line: ""},
+			{Line: "83"},
+			{Line: "53"},
+		}}}}
+		got := firstFlawLine(cwes)
+		require.NotNil(t, got)
+		assert.Equal(t, float64(83), *got)
+	})
+
+	t.Run("skips non-numeric lines", func(t *testing.T) {
+		cwes := []CWE{{StaticFlaws: StaticFlaws{Flaws: []Flaw{
+			{Line: "n/a"},
+			{Line: "40"},
+		}}}}
+		got := firstFlawLine(cwes)
+		require.NotNil(t, got)
+		assert.Equal(t, float64(40), *got)
+	})
+
+	t.Run("no numeric line yields nil", func(t *testing.T) {
+		cwes := []CWE{{StaticFlaws: StaticFlaws{Flaws: []Flaw{{Line: ""}, {IssueID: "1"}}}}}
+		assert.Nil(t, firstFlawLine(cwes))
+	})
+}
+
 func TestConvertVeracodeToHDF_VerificationMethod(t *testing.T) {
 	input := loadFixture(t, "veracode.xml")
 	result, err := ConvertVeracodeToHDF(input, testConverterVersion)

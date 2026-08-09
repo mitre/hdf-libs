@@ -33,6 +33,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 53,
             "ref": "ToolsController.java\nToolsController.java"
           },
           "id": "18",
@@ -157,6 +158,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 467,
             "ref": "BlabController.java\nIgnoreCommand.java\nIgnoreCommand.java\nListenCommand.java\nListenCommand.java\nRemoveAccountCommand.java\nRemoveAccountCommand.java\nRemoveAccountCommand.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "19",
@@ -404,6 +406,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 419,
             "ref": "UserController.java\nUserController.java\nUserController.java\nUtils.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nIgnoreCommand.java\nIgnoreCommand.java\nListenCommand.java\nListenCommand.java\nRemoveAccountCommand.java\nRemoveAccountCommand.java\nRemoveAccountCommand.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nToolsController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "21",
@@ -460,6 +463,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 1,
             "ref": "Constants.java\nConstants.java"
           },
           "id": "10",
@@ -689,6 +693,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 56,
             "ref": "blab.jsp\nblab.jsp\nblab.jsp\nblab.jsp\nblab.jsp\nblab.jsp\nblabbers.jsp\nblabbers.jsp\nblabbers.jsp\nBlabController.java\nfeed.jsp\nfeed.jsp\nfeed.jsp\nfeed.jsp\nfeed.jsp\nfeed.jsp\nlogin.jsp\nlogin.jsp\nlogin.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nregister-finish.jsp\nregister-finish.jsp\nregister.jsp\nregister.jsp\ntools.jsp\ntools.jsp\ntools.jsp\nUserController.java\nUserController.java"
           },
           "id": "20",
@@ -781,6 +786,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 127,
             "ref": "ResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nUser.java\nUserController.java"
           },
           "id": "12",
@@ -861,6 +867,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 229,
             "ref": "UserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "1",
@@ -914,6 +921,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 43,
             "ref": "UserFactory.java"
           },
           "id": "22",
@@ -975,6 +983,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 86,
             "ref": "UserController.java\nUserController.java\nBlabController.java"
           },
           "id": "25",
@@ -1106,6 +1115,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 69,
             "ref": "BlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nResetController.java\nResetController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "7",
@@ -1151,6 +1161,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 55,
             "ref": "Utils.java"
           },
           "id": "12",
@@ -1417,6 +1428,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 68,
             "ref": "blab.jsp\nblabbers.jsp\nfeed.jsp\nlogin.jsp\nprofile.jsp\nregister-finish.jsp\nregister.jsp\nUserController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nHomeController.java\nResetController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "8",
@@ -1554,6 +1566,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 175,
             "ref": "BlabController.java\nIgnoreCommand.java\nIgnoreCommand.java\nListenCommand.java\nListenCommand.java\nRemoveAccountCommand.java\nRemoveAccountCommand.java\nToolsController.java\nToolsController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "17",
@@ -1613,6 +1626,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 53,
             "ref": "ToolsController.java\nToolsController.java"
           },
           "id": "24",

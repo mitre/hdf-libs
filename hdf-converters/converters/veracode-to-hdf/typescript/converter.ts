@@ -145,6 +145,26 @@ function formatRemediationStatus(cwes: Record<string, unknown>[]): string {
   return statuses.join('\n');
 }
 
+/**
+ * Return the line number of the first flaw carrying a parseable numeric line
+ * across a category's CWEs — the locus paired with the first source file in the
+ * joined ref. Returns undefined when no flaw carries a numeric line (SCA/absent
+ * case), so sourceLocation.line is omitted.
+ */
+function firstFlawLine(cwes: Record<string, unknown>[]): number | undefined {
+  for (const c of cwes) {
+    const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
+    const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
+    for (const flaw of flaws) {
+      const lineStr = attr(flaw, 'line');
+      if (!lineStr) continue;
+      const n = Number(lineStr);
+      if (Number.isFinite(n)) return n;
+    }
+  }
+  return undefined;
+}
+
 /** Format a static flaw as a code description. */
 function formatFlawCodeDesc(flaw: Record<string, unknown>): string {
   const sourcefilepath = attr(flaw, 'sourcefilepath');
@@ -372,6 +392,7 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
     return flaws.map(flaw => attr(flaw, 'sourcefile')).filter(Boolean);
   }).join('\n');
+  const sourceLine = firstFlawLine(cwes);
 
   // Static findings carry no raw snippet; the code-locus (function prototype at
   // source-file:line) is the richest source context Veracode provides. Leave
@@ -388,7 +409,14 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     descriptions,
     impact,
     results,
-    { tags, sourceLocation: sourceRef ? { ref: sourceRef } : undefined },
+    {
+      tags,
+      sourceLocation: sourceRef
+        ? sourceLine !== undefined
+          ? { line: sourceLine, ref: sourceRef }
+          : { ref: sourceRef }
+        : undefined,
+    },
   ) as EvaluatedRequirement;
 
   const controlType = deriveControlTypeFromTags(nist);

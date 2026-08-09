@@ -470,6 +470,7 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 
 	// Build source location from flaw source files
 	sourceRef := formatSourceLocation(cat.CWEs)
+	sourceLine := firstFlawLine(cat.CWEs)
 
 	title := cat.CategoryName
 	req := hdf.EvaluatedRequirement{
@@ -489,7 +490,8 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 
 	if sourceRef != "" {
 		req.SourceLocation = &hdf.SourceLocation{
-			Ref: &sourceRef,
+			Ref:  &sourceRef,
+			Line: sourceLine,
 		}
 	}
 
@@ -938,6 +940,24 @@ func formatRemediationStatus(cwes []CWE) string {
 		}
 	}
 	return strings.Join(statuses, "\n")
+}
+
+// firstFlawLine returns the line number of the first flaw carrying a parseable
+// numeric line across a category's CWEs — the locus paired with the first source
+// file in the joined ref. Returns nil when no flaw carries a numeric line
+// (SCA/absent case), so SourceLocation.Line is omitted.
+func firstFlawLine(cwes []CWE) *float64 {
+	for _, c := range cwes {
+		for _, flaw := range c.StaticFlaws.Flaws {
+			if flaw.Line == "" {
+				continue
+			}
+			if n, err := strconv.ParseFloat(flaw.Line, 64); err == nil {
+				return &n
+			}
+		}
+	}
+	return nil
 }
 
 // formatSourceLocation collects source file paths from CWE flaws.

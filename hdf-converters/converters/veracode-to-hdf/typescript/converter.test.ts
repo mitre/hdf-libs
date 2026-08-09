@@ -450,3 +450,23 @@ describe('veracode requirement.code (CODE-tab fill)', () => {
     expect(parsed.components.length).toBeGreaterThan(0);
   });
 });
+
+describe('veracode requirement.sourceLocation', () => {
+  it('promotes the first static flaw source-file:line into sourceLocation', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const cwe = output.baselines[0]!.requirements.find(r => r.id === '18');
+    expect(cwe!.sourceLocation).toBeDefined();
+    expect(cwe!.sourceLocation!.ref).toBe('ToolsController.java\nToolsController.java');
+    expect(cwe!.sourceLocation!.line).toBe(53);
+  });
+
+  it('emits ref without line on SCA CVE requirements (no source line)', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const cve = output.baselines[0]!.requirements.find(r => r.id === 'CVE-2012-5783');
+    expect(cve!.sourceLocation).toBeDefined();
+    expect(cve!.sourceLocation!.ref).toBeTruthy();
+    expect(cve!.sourceLocation!.line).toBeUndefined();
+  });
+});
