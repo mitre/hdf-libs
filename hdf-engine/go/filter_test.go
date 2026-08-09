@@ -140,6 +140,20 @@ func TestFilter_StatusCaseInsensitive(t *testing.T) {
 	assert.Equal(t, []string{"SV-230221"}, ids(Filter(results, Options{Status: []string{"failed"}, StatusOf: schemaStatusOf})))
 }
 
+// TestFilter_SeverityHonorsExplicitTag proves Filter uses the explicit STIG
+// severity when present (impact 0 would otherwise derive to none), matching
+// deriveSeverity / hdf_compliance. src/query.test.ts mirrors this.
+func TestFilter_SeverityHonorsExplicitTag(t *testing.T) {
+	sev := hdf.SeverityHigh
+	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Name: "b", Requirements: []hdf.EvaluatedRequirement{
+		{ID: "X", Impact: 0.0, Severity: &sev, Descriptions: []hdf.Description{{Label: "default", Data: "x"}}, Results: []hdf.RequirementResult{{Status: hdf.NotReviewed}}},
+	}}}}
+	// The explicit "high" tag wins over the impact-0 derivation ("none").
+	assert.Equal(t, []string{"X"}, ids(Filter(results, Options{Severity: []string{"high"}, StatusOf: testStatusOf})))
+	assert.Empty(t, Filter(results, Options{Severity: []string{"none"}, StatusOf: testStatusOf}))
+	assert.Equal(t, "high", Filter(results, Options{StatusOf: testStatusOf})[0].Severity)
+}
+
 func TestFilter_NilStatusOf(t *testing.T) {
 	results := loadQueryFixture(t)
 	// With no resolver, status is empty and the status filter selects nothing.

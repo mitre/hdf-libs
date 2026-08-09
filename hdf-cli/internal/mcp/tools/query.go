@@ -28,7 +28,7 @@ const queryNarrowParam = "a status/severity/nist/id/search filter"
 type queryInput struct {
 	Source    handle.Source `json:"source" jsonschema:"document as {path} or {handle}"`
 	Status    []string      `json:"status,omitempty" jsonschema:"passed|failed|notApplicable|notReviewed|error (OR)"`
-	Severity  []string      `json:"severity,omitempty" jsonschema:"critical|high|medium|low|informational (OR)"`
+	Severity  []string      `json:"severity,omitempty" jsonschema:"critical|high|medium|low|none (OR)"`
 	Impact    string        `json:"impact,omitempty" jsonschema:"comparison e.g. >0.5, =0"`
 	CCI       []string      `json:"cci,omitempty"`
 	NIST      []string      `json:"nist,omitempty" jsonschema:"NIST controls, globs allowed (AC-*)"`

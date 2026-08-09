@@ -245,13 +245,13 @@ func partitionBy(results hdf.HDFResults, keyOf func(hdf.EvaluatedRequirement) []
 	return out
 }
 
-// groupSeverity is the severity group key for a requirement: its explicit
-// severity, else the canonical impact-derived band (hdfutil.ImpactToSeverity).
+// groupSeverity is the severity group key for a requirement — the single
+// canonical rule (hdfengine.DeriveSeverity: explicit STIG tag first, impact-
+// derived fallback with the zero band normalized to "none") that hdf_query rows
+// and the compliance counts also use, so no surface reports one requirement at
+// two severities.
 func groupSeverity(req hdf.EvaluatedRequirement) string {
-	if req.Severity != nil {
-		return string(*req.Severity)
-	}
-	return hdfutil.ImpactToSeverity(req.Impact)
+	return hdfengine.DeriveSeverity(req.Impact, req.Severity)
 }
 
 // nistFamilies returns the distinct NIST control families a requirement maps to

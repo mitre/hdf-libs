@@ -84,7 +84,7 @@ func CountControlsByStatusSeverity(results hdf.HDFResults) *StatusCounts {
 	for _, baseline := range results.Baselines {
 		for _, req := range baseline.Requirements {
 			status := overallStatus(req.Results)
-			sev := deriveSeverity(req.Impact, req.Severity)
+			sev := DeriveSeverity(req.Impact, req.Severity)
 			addCount(counts, status, sev)
 		}
 	}
@@ -109,7 +109,7 @@ func CountControlsByStatus(results hdf.HDFResults, statusOf func(hdf.EvaluatedRe
 			if statusOf != nil {
 				status = statusOf(req)
 			}
-			addCount(counts, hdf.ResultStatus(status), deriveSeverity(req.Impact, req.Severity))
+			addCount(counts, hdf.ResultStatus(status), DeriveSeverity(req.Impact, req.Severity))
 		}
 	}
 	return counts
@@ -140,7 +140,7 @@ func MapControlIDs(results hdf.HDFResults) []ControlIDMapping {
 	for _, baseline := range results.Baselines {
 		for _, req := range baseline.Requirements {
 			status := overallStatus(req.Results)
-			sev := deriveSeverity(req.Impact, req.Severity)
+			sev := DeriveSeverity(req.Impact, req.Severity)
 			mappings = append(mappings, ControlIDMapping{
 				ID:       req.ID,
 				Status:   statusToThresholdKey(status),
@@ -182,10 +182,10 @@ func overallStatus(results []hdf.RequirementResult) hdf.ResultStatus {
 	return hdf.ResultStatus(hdfutil.WorstStatus(statuses))
 }
 
-// deriveSeverity determines the severity string from impact and optional
+// DeriveSeverity determines the severity string from impact and optional
 // explicit severity, importing hdfutil.ImpactToSeverity for the impact-based
 // mapping. Maps "informational" to "none" for SAF CLI threshold compatibility.
-func deriveSeverity(impact float64, severity *hdf.Severity) string {
+func DeriveSeverity(impact float64, severity *hdf.Severity) string {
 	if severity != nil {
 		return string(*severity)
 	}

@@ -85,6 +85,48 @@ func TestComplianceCountsImpactZeroAsNoImpact(t *testing.T) {
 	}
 }
 
+// TestSeverityAgreesAcrossQueryAndCompliance is lj0g.5's first-failing test: one
+// requirement must have one severity. The canonical rule is explicit STIG tag
+// first, impact-derived fallback (deriveSeverity) — shared by hdf_query rows and
+// hdf_compliance counts. Covers all four combinations of {impact 0, impact>0} ×
+// {explicit tag, no tag}.
+func TestSeverityAgreesAcrossQueryAndCompliance(t *testing.T) {
+	path := writeRoot(t, "sm.json", readToolsFixture(t, "severity-mix.json"))
+
+	// hdf_query row severity per requirement.
+	_, q := callQuery(t, queryInput{Source: handle.Source{Path: path}})
+	qSev := map[string]string{}
+	for _, r := range q.Requirements {
+		qSev[r["id"].(string)] = r["severity"].(string)
+	}
+	want := map[string]string{
+		"S-0-TAG-HIGH":  "high",   // impact 0 + explicit high → high (not informational/none)
+		"S-0-NOTAG":     "none",   // impact 0 + no tag → none
+		"S-P-TAG-LOW":   "low",    // impact 0.7 + explicit low → low (explicit beats impact-derived high)
+		"S-P-NOTAG-MED": "medium", // impact 0.5 + no tag → medium
+	}
+	for id, sev := range want {
+		if qSev[id] != sev {
+			t.Errorf("hdf_query severity[%s] = %q, want %q", id, qSev[id], sev)
+		}
+	}
+
+	// hdf_compliance counts must place each requirement in the matching severity
+	// bucket of its status: notApplicable (no_impact) high+none; failed low+medium.
+	_, c := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
+	na, _ := c.Counts["no_impact"].(map[string]any)
+	failed, _ := c.Counts["failed"].(map[string]any)
+	checkBucket := func(bucket map[string]any, sev string) {
+		if bucket == nil || bucket[sev] == nil || int(bucket[sev].(float64)) != 1 {
+			t.Errorf("compliance bucket missing severity %q=1; got %v", sev, bucket)
+		}
+	}
+	checkBucket(na, "high")       // S-0-TAG-HIGH → notApplicable/high
+	checkBucket(na, "none")       // S-0-NOTAG → notApplicable/none
+	checkBucket(failed, "low")    // S-P-TAG-LOW → failed/low
+	checkBucket(failed, "medium") // S-P-NOTAG-MED → failed/medium
+}
+
 // TestStatusConsistency_AcrossTools is lj0g.4 AC#4: hdf_open, hdf_inspect,
 // hdf_compliance and hdf_query must report the SAME effective status distribution
 // for one document. (Vocabulary differs — compliance uses SAF keys no_impact/
@@ -198,8 +240,8 @@ func TestHdfCompliance_GroupBySeverity(t *testing.T) {
 	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
 	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}, GroupBy: "severity"})
 	// Effective: A crit passed→100; B med passed + D med failed→50; C high passed→100;
-	// E informational is impact-0 → notApplicable (relevant 0 → 0%).
-	want := map[string]float64{"critical": 100.0, "medium": 50.0, "high": 100.0, "informational": 0.0}
+	// E impact-0 no tag → severity "none", notApplicable (relevant 0 → 0%).
+	want := map[string]float64{"critical": 100.0, "medium": 50.0, "high": 100.0, "none": 0.0}
 	for sev, wantPct := range want {
 		g := findGroup(out.Groups, sev)
 		if g == nil {
@@ -350,6 +392,15 @@ func TestGroupSeverity_ExplicitAndDerived(t *testing.T) {
 	}
 	if g := groupSeverity(hdf.EvaluatedRequirement{Impact: 0.95}); g != "critical" {
 		t.Errorf("impact-derived, got %q want critical", g)
+	}
+	// Zero band: no explicit tag → "none" (matches DeriveSeverity / the counts),
+	// NOT "informational" — the surviving-fork regression from lj0g.5 review.
+	if g := groupSeverity(hdf.EvaluatedRequirement{Impact: 0.0}); g != "none" {
+		t.Errorf("impact-0 no tag group key = %q, want none (must match DeriveSeverity, not raw ImpactToSeverity)", g)
+	}
+	// Zero band with an explicit tag → the tag wins.
+	if g := groupSeverity(hdf.EvaluatedRequirement{Severity: sevPtr(hdf.SeverityMedium), Impact: 0.0}); g != "medium" {
+		t.Errorf("impact-0 tagged medium group key = %q, want medium", g)
 	}
 }
 

@@ -81,6 +81,23 @@ describe('hdf-engine filter — cross-language parity with go/filter.go', () => 
     expect(high).toEqual(['SV-230222']);
   });
 
+  // Parity with go/filter_test.go TestFilter_SeverityHonorsExplicitTag.
+  it('severity honors the explicit STIG tag over impact-derived', () => {
+    const doc = {
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            { id: 'X', impact: 0, severity: 'high', descriptions: [{ label: 'default', data: 'x' }], results: [{ status: 'notReviewed' }] },
+          ],
+        },
+      ],
+    } as unknown as HDFResults;
+    expect(ids(filter(doc, { severity: ['high'], statusOf: testStatusOf }))).toEqual(['X']);
+    expect(filter(doc, { severity: ['none'], statusOf: testStatusOf })).toHaveLength(0);
+    expect(filter(doc, { statusOf: testStatusOf })[0].severity).toBe('high');
+  });
+
   it('nil resolver → empty status; non-status filters still work', () => {
     expect(filter(results, { status: ['failed'] })).toHaveLength(0);
     expect(ids(filter(results, { severity: ['critical'] }))).toEqual(['SV-230221']);

@@ -1,0 +1,19 @@
+{
+  "baselines": [{
+    "name": "sev-mix",
+    "version": "1.0.0",
+    "integrity": {"algorithm": "sha256", "checksum": "00000000000000000000000000000000000000000000000000000000000000f0"},
+    "requirements": [
+      {"id": "S-0-TAG-HIGH", "title": "impact 0 + explicit high", "descriptions": [{"label":"default","data":"x"}], "impact": 0.0, "severity": "high", "tags": {"nist":["AC-2"]},
+       "results": [{"status":"notReviewed","codeDesc":"skipped","startTime":"2025-01-15T10:00:00Z"}]},
+      {"id": "S-0-NOTAG", "title": "impact 0 + no tag", "descriptions": [{"label":"default","data":"x"}], "impact": 0.0, "tags": {"nist":["AC-3"]},
+       "results": [{"status":"notReviewed","codeDesc":"skipped","startTime":"2025-01-15T10:00:00Z"}]},
+      {"id": "S-P-TAG-LOW", "title": "impact 0.7 + explicit low (differs from impact-derived high)", "descriptions": [{"label":"default","data":"x"}], "impact": 0.7, "severity": "low", "tags": {"nist":["AC-4"]},
+       "results": [{"status":"failed","codeDesc":"fail","startTime":"2025-01-15T10:00:00Z"}]},
+      {"id": "S-P-NOTAG-MED", "title": "impact 0.5 + no tag", "descriptions": [{"label":"default","data":"x"}], "impact": 0.5, "tags": {"nist":["CM-6"]},
+       "results": [{"status":"failed","codeDesc":"fail","startTime":"2025-01-15T10:00:00Z"}]}
+    ]
+  }],
+  "components": [{"name":"h","type":"host"}],
+  "statistics": {"duration": 2.0}
+}

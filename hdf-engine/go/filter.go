@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // Options configures a requirements query. Every filter input arrives here — the
@@ -65,7 +64,10 @@ func Filter(results hdf.HDFResults, opts Options) []Match {
 			if opts.StatusOf != nil {
 				status = opts.StatusOf(control)
 			}
-			severity := hdfutil.ImpactToSeverity(control.Impact)
+			// Explicit STIG severity wins; impact-derived only as a fallback — one
+			// canonical rule (DeriveSeverity) shared with the compliance counts, so
+			// hdf_query and hdf_compliance never disagree on a requirement's severity.
+			severity := DeriveSeverity(control.Impact, control.Severity)
 
 			if !applyFilters(control, status, severity, filters) {
 				continue

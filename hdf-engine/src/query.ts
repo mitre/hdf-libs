@@ -4,7 +4,7 @@
 // runs both over the same fixture).
 
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
-import { impactToSeverity } from '@mitre/hdf-utilities';
+import { deriveSeverity } from './compliance.js';
 import { safeGlobMatch } from './safematch.js';
 
 /**
@@ -59,7 +59,10 @@ export function filter(results: HDFResults, options: FilterOptions): Match[] {
       }
 
       const status = options.statusOf ? options.statusOf(control) : '';
-      const severity = impactToSeverity(control.impact);
+      // Explicit STIG severity wins; impact-derived only as a fallback — the
+      // canonical rule shared with the compliance counts (deriveSeverity), so
+      // query rows and compliance never disagree on a requirement's severity.
+      const severity = deriveSeverity(control.impact, control.severity ?? null);
 
       if (!applyFilters(control, status, severity, filters)) {
         continue;

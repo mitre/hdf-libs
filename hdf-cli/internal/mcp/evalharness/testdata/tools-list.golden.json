@@ -583,7 +583,7 @@
             "type": "string"
           },
           "severity": {
-            "description": "critical|high|medium|low|informational (OR)",
+            "description": "critical|high|medium|low|none (OR)",
             "items": {
               "type": "string"
             },
