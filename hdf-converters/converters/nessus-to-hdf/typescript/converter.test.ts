@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertNessusToHdf } from './index.js';
+import { TargetType } from '@mitre/hdf-schema';
 import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 
@@ -242,11 +243,35 @@ describe('Nessus to HDF Converter', async () => {
       // Find the first host (10.0.0.3)
       const target = result.components!.find(t => t.name === '10.0.0.3');
       expect(target).toBeDefined();
+      expect(target?.type).toBe(TargetType.Host);
       expect(target?.osName).toContain('Ubuntu');
       expect(target?.ipAddress).toBe('10.0.0.3');
       // The short hostname HostProperty is carried into the dedicated field.
       expect(target?.hostname).toBe('s');
       expect(target?.fqdn).toBe('DESKTOP-TEST001.localdomain');
+    });
+
+    it('leaves optional identity fields undefined when the host carries no properties', async () => {
+      const nessusXml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Bare</policyName></Policy>
+  <Report name="Bare" xmlns:cm="http://www.nessus.org/cm">
+    <ReportHost name="bare-target">
+      <HostProperties></HostProperties>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+
+      const result = await convertNessusToHdf(nessusXml);
+      const target = result.components!.find(t => t.name === 'bare-target');
+      expect(target).toBeDefined();
+      expect(target?.type).toBe(TargetType.Host);
+      expect(target?.hostname).toBeUndefined();
+      expect(target?.fqdn).toBeUndefined();
+      expect(target?.ipAddress).toBeUndefined();
+      expect(target?.osName).toBeUndefined();
+      expect(target?.osVersion).toBeUndefined();
+      expect(target?.macAddress).toBeUndefined();
     });
 
     it('should set generator metadata', async () => {

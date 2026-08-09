@@ -380,15 +380,36 @@ func TestConvertReportHostToTarget_HostnameAndFQDN(t *testing.T) {
 			{Name: "hostname", Value: "web01"},
 			{Name: "host-fqdn", Value: "web01.prod.example.com"},
 			{Name: "host-ip", Value: "10.0.0.3"},
+			{Name: "operating-system", Value: "Linux Kernel 5.13.0 on Ubuntu 20.04"},
 		}},
 	}
 	c := convertReportHostToTarget(host)
+	assert.Equal(t, hdf.Host, c.Type, "scan target is a host component")
+	assert.Equal(t, "10.0.0.3", c.Name)
 	require.NotNil(t, c.Hostname)
 	assert.Equal(t, "web01", *c.Hostname)
 	require.NotNil(t, c.FQDN)
 	assert.Equal(t, "web01.prod.example.com", *c.FQDN)
 	require.NotNil(t, c.IPAddress)
 	assert.Equal(t, "10.0.0.3", *c.IPAddress)
+	require.NotNil(t, c.OSName)
+	assert.Equal(t, "Linux Kernel 5.13.0 on Ubuntu 20.04", *c.OSName, "operating-system carried verbatim into OSName")
+}
+
+// A host whose name is neither an IP nor an FQDN and that carries no
+// HostProperties tags yields a host component with only Name+Type set; every
+// optional identity field stays nil (the absent branch).
+func TestConvertReportHostToTarget_AbsentProperties(t *testing.T) {
+	host := &ReportHost{Name: "bare-target"}
+	c := convertReportHostToTarget(host)
+	assert.Equal(t, hdf.Host, c.Type)
+	assert.Equal(t, "bare-target", c.Name)
+	assert.Nil(t, c.Hostname)
+	assert.Nil(t, c.FQDN)
+	assert.Nil(t, c.IPAddress)
+	assert.Nil(t, c.OSName)
+	assert.Nil(t, c.OSVersion)
+	assert.Nil(t, c.MACAddress)
 }
 
 // Real-fixture regression: the short hostname must survive end-to-end (it was
