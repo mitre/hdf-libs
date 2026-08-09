@@ -38,7 +38,7 @@ setNistStrict(true);
 
 :::
 
-For explicit, side-effect-free selection, every mapping also exposes per-call variants (`NISTControlsForRevision(...)` in Go, an optional `rev` parameter in TypeScript).
+For explicit, side-effect-free selection, the revision-aware tables (AWS Config, CWE) expose per-call variants — `NISTControlsForRevision(...)` in Go, an optional `rev` parameter in TypeScript. The single-revision tables translate through the crosswalk directly, which is likewise side-effect-free: `nist.AtRevision(controls, nativeRev, rev)` / `nist.TranslateControls(...)` in Go, `nistControlsAtRevision(controls, nativeRev, rev)` in TypeScript.
 
 ## What selection guarantees
 
