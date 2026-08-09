@@ -192,6 +192,26 @@ func sameDist(a, b map[string]int) bool {
 	return true
 }
 
+// TestComplianceDescriptionStatesStatusConvention is lj0g.2's first-failing test:
+// the registered description must name the status convention the counts use
+// (effective status) and cross-reference hdf_query as the per-requirement status
+// surface, so a tool-selecting agent isn't misled into using counts for a
+// per-requirement question.
+func TestComplianceDescriptionStatesStatusConvention(t *testing.T) {
+	s := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "t", Version: "v"}, nil)
+	RegisterCompliance(s, loader.New(0, 0, 0))
+	raw := driveToolsListJSON(t, s)
+	for _, frag := range []string{"effective status", "per-requirement", "hdf_query"} {
+		if !strings.Contains(raw, frag) {
+			t.Errorf("hdf_compliance description must state %q (status convention + hdf_query cross-reference)", frag)
+		}
+	}
+	// Must not resurrect the misleading "raw result statuses" claim.
+	if strings.Contains(raw, "raw result statuses") {
+		t.Error("description must not claim 'raw result statuses' — counts are effective")
+	}
+}
+
 // TestComplianceCountsVocabularyIsDocumented is lj0g.7's first-failing test: the
 // counts payload uses SAF vocabulary (skipped/no_impact) and the tool description
 // states the SAF↔schema mapping, so the two surfaces express one contract and
