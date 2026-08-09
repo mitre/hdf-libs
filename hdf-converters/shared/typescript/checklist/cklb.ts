@@ -51,9 +51,13 @@ interface CklbRule {
   legacy_ids?: string[];
   srg_id?: string;
   status?: string;
+  overrides?: CklbOverrides;
   comments?: string;
   finding_details?: string;
   third_party_tools?: string;
+}
+interface CklbOverrides {
+  severity?: { severity?: string; justification?: string };
 }
 
 /** Parse CKLB JSON into the format-neutral Checklist model. */
@@ -138,6 +142,8 @@ function cklbRuleToModel(r: CklbRule): Vuln {
     status: parseStatus(r.status),
     findingDetails: nz(r.finding_details),
     comments: nz(r.comments),
+    severityOverride: nz(r.overrides?.severity?.severity),
+    severityJustification: nz(r.overrides?.severity?.justification),
     extra,
   };
 }
@@ -190,6 +196,11 @@ export function serializeCklb(cl: Checklist): string {
         ccis: v.ccis,
         ...(v.legacyIDs && v.legacyIDs.length ? { legacy_ids: v.legacyIDs } : {}),
         status: statusToCklb(v.status),
+        // overrides is always emitted ({} when empty), matching real STIG Viewer 3
+        // and the Go serializer's non-omitempty overrides field.
+        overrides: v.severityOverride
+          ? { severity: { severity: v.severityOverride, justification: v.severityJustification ?? '' } }
+          : {},
         comments: v.comments ?? '',
         finding_details: v.findingDetails ?? '',
         ...(v.extra?.['Third_Party_Tools'] ? { third_party_tools: v.extra['Third_Party_Tools'] } : {}),

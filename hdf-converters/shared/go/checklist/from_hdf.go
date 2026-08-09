@@ -3,10 +3,12 @@ package checklist
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // HDFToChecklist maps HDF Results back to the format-neutral Checklist model.
@@ -103,26 +105,149 @@ func baselineToStig(bl *hdf.EvaluatedBaseline) Stig {
 
 func requirementToVuln(req *hdf.EvaluatedRequirement) Vuln {
 	tags := req.Tags
+	sevOverride, sevJust := overrideSeverity(req)
 	v := Vuln{
-		VulnNum:        req.ID,
-		RuleID:         tagStr(tags, "rid"),
-		RuleVer:        tagStr(tags, "stig_id"),
-		GroupID:        orDefault(tagStr(tags, "group_id"), req.ID),
-		GroupTitle:     tagStr(tags, "gtitle"),
-		RuleTitle:      derefStr(req.Title),
-		Weight:         tagStr(tags, "weight"),
-		Severity:       resolveSeverity(req, tags),
-		CCIs:           resolveCCIs(tags),
-		LegacyIDs:      tagStrSlice(tags, "legacy_ids"),
-		Status:         StatusFromHDF(firstResultStatus(req)),
-		FindingDetails: derefStr(firstResultMessage(req)),
-		Comments:       tagStr(tags, "comments"),
-		Extra:          extractCklMetadata(tags),
+		VulnNum:               req.ID,
+		RuleID:                tagStr(tags, "rid"),
+		RuleVer:               tagStr(tags, "stig_id"),
+		GroupID:               orDefault(tagStr(tags, "group_id"), req.ID),
+		GroupTitle:            tagStr(tags, "gtitle"),
+		RuleTitle:             derefStr(req.Title),
+		Weight:                tagStr(tags, "weight"),
+		Severity:              resolveSeverity(req, tags),
+		CCIs:                  resolveCCIs(tags),
+		LegacyIDs:             tagStrSlice(tags, "legacy_ids"),
+		Status:                StatusFromHDF(effectiveOrRawStatus(req)),
+		FindingDetails:        composeFindingDetails(req),
+		Comments:              composeComments(tags, req),
+		SeverityOverride:      sevOverride,
+		SeverityJustification: sevJust,
+		Extra:                 extractCklMetadata(tags),
 	}
 	v.VulnDiscuss = descByLabel(req.Descriptions, "default")
 	v.CheckContent = descByLabel(req.Descriptions, "check")
 	v.FixText = descByLabel(req.Descriptions, "fix")
 	return v
+}
+
+// effectiveOrRawStatus drives the exported checklist STATUS from the resolved
+// post-override status when the HDF carries one, falling back to the raw first
+// result. A waived/attested/false-positive finding thus exports its governing
+// posture (Not_Applicable / NotAFinding) rather than the pre-override Open.
+func effectiveOrRawStatus(req *hdf.EvaluatedRequirement) hdf.ResultStatus {
+	if req.EffectiveStatus != nil && *req.EffectiveStatus != "" {
+		return *req.EffectiveStatus
+	}
+	return firstResultStatus(req)
+}
+
+// composeFindingDetails builds FINDING_DETAILS from every result's status,
+// codeDesc, and message — not just results[0].message — so multi-test
+// requirements and the per-test assessment narrative survive export.
+func composeFindingDetails(req *hdf.EvaluatedRequirement) string {
+	if len(req.Results) == 0 {
+		return ""
+	}
+	segments := make([]string, 0, len(req.Results))
+	for i := range req.Results {
+		r := &req.Results[i]
+		var body []string
+		if cd := strings.TrimSpace(r.CodeDesc); cd != "" {
+			body = append(body, cd)
+		}
+		if r.Message != nil {
+			if msg := strings.TrimSpace(*r.Message); msg != "" && (len(body) == 0 || msg != body[0]) {
+				body = append(body, msg)
+			}
+		}
+		seg := "[" + string(r.Status) + "]"
+		if len(body) > 0 {
+			seg += " " + strings.Join(body, "\n")
+		}
+		segments = append(segments, seg)
+	}
+	return strings.Join(segments, "\n\n")
+}
+
+// composeComments merges the round-tripped COMMENTS (tags.comments) with the
+// provenance of any status overrides / disposition governing this requirement.
+func composeComments(tags map[string]interface{}, req *hdf.EvaluatedRequirement) string {
+	parts := make([]string, 0, 2)
+	if c := tagStr(tags, "comments"); c != "" {
+		parts = append(parts, c)
+	}
+	if prov := overrideProvenance(req); prov != "" {
+		parts = append(parts, prov)
+	}
+	return strings.Join(parts, "\n\n")
+}
+
+// overrideProvenance renders the audit trail of every status override (most
+// recent first per schema) as free text for COMMENTS. When no overrides are
+// recorded but a disposition is, it notes the disposition type alone.
+func overrideProvenance(req *hdf.EvaluatedRequirement) string {
+	if len(req.StatusOverrides) > 0 {
+		lines := make([]string, 0, len(req.StatusOverrides))
+		for i := range req.StatusOverrides {
+			lines = append(lines, formatOverride(&req.StatusOverrides[i]))
+		}
+		return strings.Join(lines, "\n")
+	}
+	if req.Disposition != nil && *req.Disposition != "" {
+		return "Disposition: " + string(*req.Disposition)
+	}
+	return ""
+}
+
+func formatOverride(o *hdf.StatusOverride) string {
+	s := "Override [" + string(o.Type) + "]"
+	if o.Reason != "" {
+		s += ": " + o.Reason
+	}
+	var meta []string
+	if id := o.AppliedBy.Identifier; id != "" {
+		meta = append(meta, "by "+id)
+	}
+	if !o.AppliedAt.IsZero() {
+		meta = append(meta, "applied "+formatOverrideTime(o.AppliedAt))
+	}
+	if !o.ExpiresAt.IsZero() {
+		meta = append(meta, "expires "+formatOverrideTime(o.ExpiresAt))
+	}
+	if len(meta) > 0 {
+		s += " (" + strings.Join(meta, ", ") + ")"
+	}
+	return s
+}
+
+func formatOverrideTime(t time.Time) string {
+	return hdfutil.NormalizeTimestamp(t).Format(time.RFC3339Nano)
+}
+
+// overrideSeverity derives the checklist severity override (SEVERITY_OVERRIDE /
+// overrides.severity) from the first impact-bearing status override — a risk
+// adjustment restates the qualitative severity, its reason the justification.
+func overrideSeverity(req *hdf.EvaluatedRequirement) (severity, justification string) {
+	for i := range req.StatusOverrides {
+		o := &req.StatusOverrides[i]
+		if o.Impact != nil {
+			return qualSeverityFromImpact(o.Impact.Value), o.Reason
+		}
+	}
+	return "", ""
+}
+
+// qualSeverityFromImpact maps an impact score to STIG's qualitative severity
+// bucket, inverse of the standard SeverityToImpact mapping.
+func qualSeverityFromImpact(impact float64) string {
+	switch {
+	case impact >= 0.7:
+		return "high"
+	case impact >= 0.4:
+		return "medium"
+	default:
+		return "low"
+	}
 }
 
 // resolveSeverity prefers the round-tripped tags.severity, else derives from
@@ -180,13 +305,6 @@ func firstResultStatus(req *hdf.EvaluatedRequirement) hdf.ResultStatus {
 		return req.Results[0].Status
 	}
 	return hdf.NotReviewed
-}
-
-func firstResultMessage(req *hdf.EvaluatedRequirement) *string {
-	if len(req.Results) > 0 {
-		return req.Results[0].Message
-	}
-	return nil
 }
 
 func descByLabel(descs []hdf.Description, label string) string {

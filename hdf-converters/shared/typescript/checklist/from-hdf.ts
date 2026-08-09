@@ -1,11 +1,14 @@
-import { parseHdf } from '../converterutil.js';
+import { parseHdf, hdfTime } from '../converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Description,
+  ResultStatus,
+  StatusOverride,
 } from '@mitre/hdf-schema';
 import { nistToCci } from '@mitre/hdf-mappings';
+import { formatTimestamp } from '@mitre/hdf-utilities';
 import { Asset, Checklist, Stig, Vuln } from './model.js';
 import { statusFromHdf } from './status.js';
 
@@ -92,6 +95,7 @@ function baselineToStig(bl: EvaluatedBaseline): Stig {
 function requirementToVuln(req: EvaluatedRequirement): Vuln {
   const tags = (req.tags ?? {}) as Record<string, unknown>;
   const descs = req.descriptions ?? [];
+  const sev = overrideSeverity(req);
   return {
     vulnNum: req.id,
     ruleID: strVal(tags, 'rid'),
@@ -106,11 +110,88 @@ function requirementToVuln(req: EvaluatedRequirement): Vuln {
     fixText: descData(descs, 'fix'),
     ccis: resolveCcis(tags),
     legacyIDs: strSlice(tags, 'legacy_ids'),
-    status: statusFromHdf(req.results?.[0]?.status),
-    findingDetails: req.results?.[0]?.message,
-    comments: strVal(tags, 'comments'),
+    status: statusFromHdf(effectiveOrRawStatus(req)),
+    findingDetails: composeFindingDetails(req),
+    comments: composeComments(tags, req),
+    severityOverride: sev.severity,
+    severityJustification: sev.justification,
     extra: extractCklMetadata(tags),
   };
+}
+
+// effectiveOrRawStatus drives the exported STATUS from the resolved
+// post-override status when present, falling back to the raw first result.
+function effectiveOrRawStatus(req: EvaluatedRequirement): ResultStatus | undefined {
+  return req.effectiveStatus ?? req.results?.[0]?.status;
+}
+
+// composeFindingDetails builds finding_details from every result's status,
+// codeDesc, and message — not just results[0].message.
+function composeFindingDetails(req: EvaluatedRequirement): string {
+  const results = req.results ?? [];
+  if (results.length === 0) return '';
+  return results
+    .map((r) => {
+      const body: string[] = [];
+      const cd = (r.codeDesc ?? '').trim();
+      if (cd) body.push(cd);
+      const msg = (r.message ?? '').trim();
+      if (msg && (body.length === 0 || msg !== body[0])) body.push(msg);
+      let seg = `[${r.status}]`;
+      if (body.length > 0) seg += ' ' + body.join('\n');
+      return seg;
+    })
+    .join('\n\n');
+}
+
+// composeComments merges the round-tripped comments (tags.comments) with the
+// provenance of any status overrides / disposition governing this requirement.
+function composeComments(tags: Record<string, unknown>, req: EvaluatedRequirement): string {
+  const parts: string[] = [];
+  const existing = strVal(tags, 'comments');
+  if (existing) parts.push(existing);
+  const prov = overrideProvenance(req);
+  if (prov) parts.push(prov);
+  return parts.join('\n\n');
+}
+
+function overrideProvenance(req: EvaluatedRequirement): string {
+  const overrides = req.statusOverrides ?? [];
+  if (overrides.length > 0) {
+    return overrides.map(formatOverride).join('\n');
+  }
+  if (req.disposition) return `Disposition: ${req.disposition}`;
+  return '';
+}
+
+function formatOverride(o: StatusOverride): string {
+  let s = `Override [${o.type}]`;
+  if (o.reason) s += `: ${o.reason}`;
+  const meta: string[] = [];
+  if (o.appliedBy?.identifier) meta.push(`by ${o.appliedBy.identifier}`);
+  const applied = hdfTime(o.appliedAt);
+  if (applied) meta.push(`applied ${formatTimestamp(applied)}`);
+  const expires = hdfTime(o.expiresAt);
+  if (expires) meta.push(`expires ${formatTimestamp(expires)}`);
+  if (meta.length > 0) s += ` (${meta.join(', ')})`;
+  return s;
+}
+
+// overrideSeverity derives the checklist severity override from the first
+// impact-bearing status override (a risk adjustment).
+function overrideSeverity(req: EvaluatedRequirement): { severity: string; justification: string } {
+  for (const o of req.statusOverrides ?? []) {
+    if (o.impact) {
+      return { severity: qualSeverityFromImpact(o.impact.value), justification: o.reason ?? '' };
+    }
+  }
+  return { severity: '', justification: '' };
+}
+
+function qualSeverityFromImpact(impact: number): string {
+  if (impact >= 0.7) return 'high';
+  if (impact >= 0.4) return 'medium';
+  return 'low';
 }
 
 function resolveSeverity(req: EvaluatedRequirement, tags: Record<string, unknown>): string {
