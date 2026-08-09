@@ -3,6 +3,20 @@ packages:
   - 'site'
 allowBuilds:
   esbuild: true
+# Supply-chain cooldown: refuse dependency versions published within the last
+# 7 days (10080 min) AT RESOLUTION TIME, so a freshly-published compromised
+# version (the npm credential-harvester worm pattern) has time to be detected
+# and scrubbed before we can pull it. pnpm 11 already defaults this to 1440
+# (24h); we extend to a week. Frozen-lockfile installs (CI) are UNAFFECTED —
+# they use locked versions and never re-resolve. To take a genuinely-needed
+# fresh patch, add the package to minimumReleaseAgeExclude — a conscious,
+# reviewed opt-out (bare name, an @org/* pattern, or pkg@x.y.z).
+minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  # nanoid 3.3.17 is the vetted patch for GHSA-2v37-7h3g-55p8, published
+  # 2026-08-03 (< 7 days old when pinned). Exempt so a local re-resolve doesn't
+  # fight our own override; harmless to drop once it ages past the window.
+  - nanoid
 # Forced patched versions for transitive advisories (see the security gate).
 # These GO STALE: when an advisory's patched floor rises, the version pinned here
 # becomes the new vulnerable floor and the gate fails on the next unrelated commit.
