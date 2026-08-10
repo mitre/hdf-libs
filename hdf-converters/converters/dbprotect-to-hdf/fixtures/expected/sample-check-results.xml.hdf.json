@@ -78,6 +78,9 @@
           ],
           "results": [
             {
+              "backtrace": [
+                "DB Protect Failed Check"
+              ],
               "codeDesc": "Check \"Browser Service enabled\" execution failed since we are unable to get the required data:\nUser credentials cannot be used for local connections",
               "startTime": "2021-02-18T15:57:00Z",
               "status": "failed"

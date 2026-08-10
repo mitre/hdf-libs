@@ -123,6 +123,17 @@ function getStatus(status: string): ResultStatus {
   }
 }
 
+/**
+ * Mirrors heimdall2: a source "Failed" result carries a fixed marker in
+ * results[].backtrace. DBProtect ships no stacktrace, so this sentinel is the
+ * only backtrace signal. Keys on the literal source "Result Status", not the
+ * mapped HDF status, so "Finding" (also HDF-failed) and the implicit-failed
+ * Findings Detail rows get no marker — exactly as heimdall2 does.
+ */
+function getBacktrace(resultStatus: string): string[] | undefined {
+  return resultStatus === 'Failed' ? ['DB Protect Failed Check'] : undefined;
+}
+
 /** Maps DBProtect risk level to HDF impact value */
 function getImpact(riskDV: string): number {
   const impact = IMPACT_MAPPING[riskDV.toLowerCase()];
@@ -295,6 +306,7 @@ function buildRequirement(
     return createResult(status, undefined, {
       codeDesc: f['Details'] ?? '',
       startTime: parseDate(f['Date'] ?? ''),
+      backtrace: getBacktrace(f['Result Status'] ?? ''),
     });
   });
 
