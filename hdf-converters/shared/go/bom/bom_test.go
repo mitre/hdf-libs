@@ -607,6 +607,43 @@ func TestDetectSPDX3(t *testing.T) {
 	assert.Equal(t, float64(0), DetectSPDX3(map[string]any{"@context": "x", "@graph": "nope"}))
 }
 
+func TestDetectSPDX3Security(t *testing.T) {
+	vexDoc := map[string]any{
+		"@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+		"@graph": []any{
+			map[string]any{"type": "software_Package", "spdxId": "pkg"},
+			map[string]any{"type": "security_VexNotAffectedVulnAssessmentRelationship", "from": "cve"},
+		},
+	}
+	assert.Equal(t, float64(1), DetectSPDX3Security(vexDoc))
+	require.NotNil(t, DetectFormat(vexDoc))
+	assert.Equal(t, FormatSPDX3Security, DetectFormat(vexDoc).Format)
+
+	// Disjoint from the AI/Dataset detector.
+	assert.Equal(t, float64(0), DetectSPDX3(vexDoc), "security VEX doc is not an AI/Dataset doc")
+
+	// Each of the four VEX assessment subtypes fires.
+	for _, subtype := range []string{
+		"security_VexAffectedVulnAssessmentRelationship",
+		"security_VexNotAffectedVulnAssessmentRelationship",
+		"security_VexFixedVulnAssessmentRelationship",
+		"security_VexUnderInvestigationVulnAssessmentRelationship",
+	} {
+		doc := map[string]any{"@context": "x", "@graph": []any{map[string]any{"type": subtype}}}
+		assert.Equalf(t, float64(1), DetectSPDX3Security(doc), "subtype %s", subtype)
+	}
+
+	// Must NOT fire on SPDX 2.x, on AI/Dataset SPDX-3, or on non-VEX graphs.
+	spdx23 := parseJSONObject(t, loadFixture(t, "spdx-sbom.json"))
+	assert.Equal(t, float64(0), DetectSPDX3Security(spdx23))
+	aiModel := parseJSONObject(t, loadFixture(t, "spdx-ai-model-1.json"))
+	assert.Equal(t, float64(0), DetectSPDX3Security(aiModel))
+	assert.Equal(t, float64(0), DetectSPDX3Security(map[string]any{"@graph": []any{map[string]any{"type": "security_VexFixedVulnAssessmentRelationship"}}}), "no @context")
+	assert.Equal(t, float64(0), DetectSPDX3Security(map[string]any{"@context": "x", "@graph": []any{map[string]any{"type": "security_CvssV3VulnAssessmentRelationship"}}}), "CVSS relationship is not a VEX assessment")
+	assert.Equal(t, float64(0), DetectSPDX3Security(map[string]any{"@context": "x", "@graph": "nope"}))
+	assert.Equal(t, float64(0), DetectSPDX3Security(nil))
+}
+
 func TestParseSPDX3_Model1(t *testing.T) {
 	v := bomValidator(t)
 	subjects := spdx3Subjects(t, "spdx-ai-model-1.json")

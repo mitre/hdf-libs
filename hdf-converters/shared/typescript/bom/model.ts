@@ -47,7 +47,12 @@ export type {
 };
 
 /** Supported source BOM formats the parser can detect and normalize. */
-export type BomFormat = 'cyclonedx' | 'spdx' | 'cyclonedx-ml' | 'spdx-3-ai';
+export type BomFormat =
+  | 'cyclonedx'
+  | 'spdx'
+  | 'cyclonedx-ml'
+  | 'spdx-3-ai'
+  | 'spdx-3-security';
 
 /**
  * A node in the reserved relational-BOM graph (CBOM cryptographic assets,

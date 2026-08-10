@@ -76,6 +76,25 @@ describe('normalizeJustification', () => {
     ['protected_by_compiler', Justification.ProtectedByCompiler],
     ['protected_at_runtime', Justification.ProtectedAtRuntime],
     ['protected_at_perimeter', Justification.ProtectedAtPerimeter],
+    // SPDX-3 security profile emits camelCase justification tokens; they must
+    // canonicalize to the same enum values as their snake_case twins.
+    [
+      'vulnerableCodeNotInExecutePath',
+      Justification.VulnerableCodeNotInExecutePath,
+    ],
+    ['componentNotPresent', Justification.ComponentNotPresent],
+    [
+      'vulnerableCodeNotPresent',
+      Justification.VulnerableCodeNotPresent,
+    ],
+    [
+      'vulnerableCodeCannotBeControlledByAdversary',
+      Justification.VulnerableCodeCannotBeControlledByAdversary,
+    ],
+    [
+      'inlineMitigationsAlreadyExist',
+      Justification.InlineMitigationsAlreadyExist,
+    ],
   ])('maps %s', (raw, expected) => {
     expect(normalizeJustification(raw)).toBe(expected);
   });

@@ -1,0 +1,393 @@
+{
+    "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+    "@graph": [
+        {
+            "type": "CreationInfo",
+            "@id": "_:CreationInfo0",
+            "created": "2026-08-10T16:39:32Z",
+            "createdBy": [
+                "http://spdx.org/spdxdocs/65b0820b-2977-5607-9915-58e55658857a/agent/sbom-cve-check"
+            ],
+            "createdUsing": [
+                "http://spdx.org/spdxdocs/65b0820b-2977-5607-9915-58e55658857a/tool/sbom-cve-check"
+            ],
+            "specVersion": "3.0.1"
+        },
+        {
+            "type": "CreationInfo",
+            "@id": "_:CreationInfo1",
+            "created": "2026-08-10T16:39:41Z",
+            "createdBy": [
+                "http://spdx.org/spdxdocs/65b0820b-2977-5607-9915-58e55658857a/agent/sbom-cve-check"
+            ],
+            "createdUsing": [
+                "http://spdx.org/spdxdocs/65b0820b-2977-5607-9915-58e55658857a/tool/sbom-cve-check"
+            ],
+            "specVersion": "3.0.1"
+        },
+        {
+            "type": "build_Build",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/build/recipe",
+            "build_buildType": "http://openembedded.org/bitbake/do_create_spdx/recipe",
+            "creationInfo": "_:CreationInfo0",
+            "name": "example-lib:do_create_spdx:recipe"
+        },
+        {
+            "type": "security_CvssV3VulnAssessmentRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/cvss-V3_1/f81bd9536e543d9a7afe98a0040abb81",
+            "security_score": "9.8",
+            "security_severity": "critical",
+            "security_vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "from": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vulnerability/CVE-2024-30001",
+            "relationshipType": "hasAssessmentFor",
+            "to": [
+                "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/package/example-lib"
+            ],
+            "creationInfo": "_:CreationInfo1"
+        },
+        {
+            "type": "software_Package",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/package/example-lib",
+            "software_packageVersion": "1.0.0",
+            "software_primaryPurpose": "install",
+            "creationInfo": "_:CreationInfo0",
+            "description": "Example generic library component (test fixture).",
+            "externalIdentifier": [
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "cpe23",
+                    "identifier": "cpe:2.3:a:examplevendor:example-lib:1.0.0:*:*:*:*:*:*:*"
+                }
+            ],
+            "name": "example-lib"
+        },
+        {
+            "type": "Relationship",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/relationship/3bdf9986fd6cc6d91402b8bc3d3a149f",
+            "from": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/package/example-lib",
+            "relationshipType": "hasAssociatedVulnerability",
+            "to": [
+                "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vulnerability/CVE-2024-30001",
+                "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vulnerability/CVE-2024-30002"
+            ],
+            "creationInfo": "_:CreationInfo1"
+        },
+        {
+            "type": "LifecycleScopedRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/relationship/5cdfcc67aa27cd6f5aa4aae5af77e4d8",
+            "scope": "build",
+            "from": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/build/recipe",
+            "relationshipType": "hasOutput",
+            "to": [
+                "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/package/example-lib"
+            ],
+            "creationInfo": "_:CreationInfo0"
+        },
+        {
+            "type": "security_VexAffectedVulnAssessmentRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vex-affected/2a85569af9b04c079daecb2a850a2de9",
+            "security_actionStatement": "Mitigation action unknown",
+            "security_actionStatementTime": "2026-08-10T16:39:41Z",
+            "security_statusNotes": "version-in-range",
+            "security_vexVersion": "1",
+            "from": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vulnerability/CVE-2024-30001",
+            "relationshipType": "affects",
+            "to": [
+                "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/package/example-lib"
+            ],
+            "creationInfo": "_:CreationInfo1"
+        },
+        {
+            "type": "security_VexNotAffectedVulnAssessmentRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vex-not-affected/2c23aff5aef577f182efe6cd27ec911d",
+            "security_impactStatement": "The vulnerable parsing routine is not reachable in the shipped configuration of example-lib.",
+            "security_impactStatementTime": "2024-06-10T00:00:00Z",
+            "security_justificationType": "vulnerableCodeNotInExecutePath",
+            "security_statusNotes": "Reviewed by examplevendor security team.",
+            "from": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vulnerability/CVE-2024-30002",
+            "relationshipType": "doesNotAffect",
+            "to": [
+                "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/package/example-lib"
+            ],
+            "creationInfo": "_:CreationInfo1"
+        },
+        {
+            "type": "security_Vulnerability",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vulnerability/CVE-2024-30001",
+            "security_modifiedTime": "2024-06-02T00:00:00Z",
+            "security_publishedTime": "2024-06-01T00:00:00Z",
+            "creationInfo": "_:CreationInfo1",
+            "description": "A heap-based buffer overflow in the input parser of example-lib 1.0.0 allows a remote attacker to cause a denial of service or potential code execution via a crafted request. This is a synthetic record for test fixtures only.",
+            "externalIdentifier": [
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "cve",
+                    "identifier": "CVE-2024-30001",
+                    "identifierLocator": [
+                        "https://cveawg.mitre.org/api/cve/CVE-2024-30001",
+                        "https://www.cve.org/CVERecord?id=CVE-2024-30001"
+                    ]
+                }
+            ],
+            "externalRef": [
+                {
+                    "type": "ExternalRef",
+                    "locator": [
+                        "https://example.com/advisories/CVE-2024-30001"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "security_Vulnerability",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vulnerability/CVE-2024-30002",
+            "creationInfo": "_:CreationInfo1",
+            "description": "Synthetic vulnerability in example-lib used to demonstrate a not_affected VEX assessment with justification.",
+            "externalIdentifier": [
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "cve",
+                    "identifier": "CVE-2024-30002",
+                    "identifierLocator": [
+                        "https://cveawg.mitre.org/api/cve/CVE-2024-30002",
+                        "https://www.cve.org/CVERecord?id=CVE-2024-30002"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "SoftwareAgent",
+            "spdxId": "http://spdx.org/spdxdocs/65b0820b-2977-5607-9915-58e55658857a/agent/sbom-cve-check",
+            "creationInfo": "_:CreationInfo0",
+            "name": "sbom-cve-check"
+        },
+        {
+            "type": "SoftwareAgent",
+            "spdxId": "http://spdx.org/spdxdocs/65b0820b-2977-5607-9915-58e55658857a/agent/sbom-cve-check",
+            "creationInfo": "_:CreationInfo1",
+            "name": "sbom-cve-check"
+        },
+        {
+            "type": "Tool",
+            "spdxId": "http://spdx.org/spdxdocs/65b0820b-2977-5607-9915-58e55658857a/tool/sbom-cve-check",
+            "creationInfo": "_:CreationInfo0",
+            "name": "sbom-cve-check"
+        },
+        {
+            "type": "Tool",
+            "spdxId": "http://spdx.org/spdxdocs/65b0820b-2977-5607-9915-58e55658857a/tool/sbom-cve-check",
+            "creationInfo": "_:CreationInfo1",
+            "name": "sbom-cve-check"
+        },
+        {
+            "type": "build_Build",
+            "spdxId": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/build/recipe",
+            "build_buildType": "http://openembedded.org/bitbake/do_create_spdx/recipe",
+            "creationInfo": "_:CreationInfo0",
+            "name": "demo-daemon:do_create_spdx:recipe"
+        },
+        {
+            "type": "software_Package",
+            "spdxId": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/package/demo-daemon",
+            "software_packageVersion": "0.9.0",
+            "software_primaryPurpose": "install",
+            "creationInfo": "_:CreationInfo0",
+            "description": "Example generic daemon component (test fixture).",
+            "externalIdentifier": [
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "cpe23",
+                    "identifier": "cpe:2.3:a:examplevendor:demo-daemon:0.9.0:*:*:*:*:*:*:*"
+                }
+            ],
+            "name": "demo-daemon"
+        },
+        {
+            "type": "Relationship",
+            "spdxId": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/relationship/1bcda912e8441c9b040d633211d92673",
+            "from": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/package/demo-daemon",
+            "relationshipType": "hasAssociatedVulnerability",
+            "to": [
+                "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/vulnerability/CVE-2024-30004"
+            ],
+            "creationInfo": "_:CreationInfo1"
+        },
+        {
+            "type": "LifecycleScopedRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/relationship/69077cceff7a6e6f9a962365eb528952",
+            "scope": "build",
+            "from": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/build/recipe",
+            "relationshipType": "hasOutput",
+            "to": [
+                "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/package/demo-daemon"
+            ],
+            "creationInfo": "_:CreationInfo0"
+        },
+        {
+            "type": "security_VexUnderInvestigationVulnAssessmentRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/vex-under-invest/144f8c23392f71bee29571b615e021e5",
+            "security_statusNotes": "Triage in progress for demo-daemon 0.9.0; exploitability not yet confirmed.",
+            "security_vexVersion": "1",
+            "from": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/vulnerability/CVE-2024-30004",
+            "relationshipType": "underInvestigationFor",
+            "to": [
+                "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/package/demo-daemon"
+            ],
+            "creationInfo": "_:CreationInfo1"
+        },
+        {
+            "type": "security_Vulnerability",
+            "spdxId": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/vulnerability/CVE-2024-30004",
+            "creationInfo": "_:CreationInfo1",
+            "externalIdentifier": [
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "cve",
+                    "identifier": "CVE-2024-30004",
+                    "identifierLocator": [
+                        "https://cveawg.mitre.org/api/cve/CVE-2024-30004",
+                        "https://www.cve.org/CVERecord?id=CVE-2024-30004"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "build_Build",
+            "spdxId": "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/build/recipe",
+            "build_buildType": "http://openembedded.org/bitbake/do_create_spdx/recipe",
+            "creationInfo": "_:CreationInfo0",
+            "name": "sample-utils:do_create_spdx:recipe"
+        },
+        {
+            "type": "software_Package",
+            "spdxId": "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/package/sample-utils",
+            "software_packageVersion": "2.3.1",
+            "software_primaryPurpose": "install",
+            "creationInfo": "_:CreationInfo0",
+            "description": "Example generic utilities component (test fixture).",
+            "externalIdentifier": [
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "cpe23",
+                    "identifier": "cpe:2.3:a:examplevendor:sample-utils:2.3.1:*:*:*:*:*:*:*"
+                }
+            ],
+            "name": "sample-utils"
+        },
+        {
+            "type": "Relationship",
+            "spdxId": "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/relationship/0d19397dc645fce30cc7ea89dab972f7",
+            "from": "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/package/sample-utils",
+            "relationshipType": "hasAssociatedVulnerability",
+            "to": [
+                "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/vulnerability/CVE-2024-30003"
+            ],
+            "creationInfo": "_:CreationInfo1"
+        },
+        {
+            "type": "LifecycleScopedRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/relationship/984d9130cc9b98776e806f9a3bb9f9af",
+            "scope": "build",
+            "from": "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/build/recipe",
+            "relationshipType": "hasOutput",
+            "to": [
+                "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/package/sample-utils"
+            ],
+            "creationInfo": "_:CreationInfo0"
+        },
+        {
+            "type": "security_VexFixedVulnAssessmentRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/vex-fixed/dfc9a368afce72c34abe1902ea773a80",
+            "security_statusNotes": "Patched in the 2.3.1 build; fix backported from upstream.",
+            "security_vexVersion": "1",
+            "from": "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/vulnerability/CVE-2024-30003",
+            "relationshipType": "fixedIn",
+            "to": [
+                "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/package/sample-utils"
+            ],
+            "creationInfo": "_:CreationInfo1"
+        },
+        {
+            "type": "security_Vulnerability",
+            "spdxId": "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/vulnerability/CVE-2024-30003",
+            "creationInfo": "_:CreationInfo1",
+            "externalIdentifier": [
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "cve",
+                    "identifier": "CVE-2024-30003",
+                    "identifierLocator": [
+                        "https://cveawg.mitre.org/api/cve/CVE-2024-30003",
+                        "https://www.cve.org/CVERecord?id=CVE-2024-30003"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "build_Build",
+            "spdxId": "http://spdx.org/spdxdocs/de3c6c1e-9779-59fd-9b6a-fa7fd31bd9de/build/rootfs",
+            "build_buildType": "http://openembedded.org/bitbake/do_create_rootfs_spdx/rootfs",
+            "creationInfo": "_:CreationInfo0",
+            "name": "example-image:do_create_rootfs_spdx:rootfs"
+        },
+        {
+            "type": "SpdxDocument",
+            "spdxId": "http://spdx.org/spdxdocs/de3c6c1e-9779-59fd-9b6a-fa7fd31bd9de/document",
+            "profileConformance": [
+                "build",
+                "core",
+                "security",
+                "simpleLicensing",
+                "software"
+            ],
+            "rootElement": [
+                "http://spdx.org/spdxdocs/de3c6c1e-9779-59fd-9b6a-fa7fd31bd9de/sbom"
+            ],
+            "creationInfo": "_:CreationInfo1",
+            "name": "example-image"
+        },
+        {
+            "type": "LifecycleScopedRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/de3c6c1e-9779-59fd-9b6a-fa7fd31bd9de/relationship/2d9e0ed1fe051e2cd6d7dca51f90b42b",
+            "scope": "build",
+            "from": "http://spdx.org/spdxdocs/de3c6c1e-9779-59fd-9b6a-fa7fd31bd9de/build/rootfs",
+            "relationshipType": "hasOutput",
+            "to": [
+                "http://spdx.org/spdxdocs/de3c6c1e-9779-59fd-9b6a-fa7fd31bd9de/rootfs/example-image"
+            ],
+            "creationInfo": "_:CreationInfo0"
+        },
+        {
+            "type": "LifecycleScopedRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/de3c6c1e-9779-59fd-9b6a-fa7fd31bd9de/relationship/a2e4ae17259c540a3298c67a3ab96464",
+            "scope": "build",
+            "from": "http://spdx.org/spdxdocs/de3c6c1e-9779-59fd-9b6a-fa7fd31bd9de/build/rootfs",
+            "relationshipType": "hasInput",
+            "to": [
+                "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/package/example-lib",
+                "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/package/demo-daemon",
+                "http://spdx.org/spdxdocs/c174fe83-ec47-576d-b106-d4ae07e8d382/package/sample-utils"
+            ],
+            "creationInfo": "_:CreationInfo0"
+        },
+        {
+            "type": "software_Package",
+            "spdxId": "http://spdx.org/spdxdocs/de3c6c1e-9779-59fd-9b6a-fa7fd31bd9de/rootfs/example-image",
+            "software_primaryPurpose": "archive",
+            "creationInfo": "_:CreationInfo0",
+            "name": "example-image"
+        },
+        {
+            "type": "software_Sbom",
+            "spdxId": "http://spdx.org/spdxdocs/de3c6c1e-9779-59fd-9b6a-fa7fd31bd9de/sbom",
+            "software_sbomType": [
+                "build"
+            ],
+            "rootElement": [
+                "http://spdx.org/spdxdocs/de3c6c1e-9779-59fd-9b6a-fa7fd31bd9de/rootfs/example-image"
+            ],
+            "creationInfo": "_:CreationInfo0",
+            "name": "example-image"
+        }
+    ]
+}
