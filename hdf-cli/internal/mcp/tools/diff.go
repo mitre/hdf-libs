@@ -5,9 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"os"
+	"strings"
 
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
@@ -16,7 +15,6 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
 	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -33,25 +31,27 @@ type diffInput struct {
 	Verbosity string        `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
 	Page      int           `json:"page,omitempty" jsonschema:"0-based page when the change list is truncated"`
 	Output    string        `json:"output,omitempty" jsonschema:"path under HDF_MCP_ROOT to write the hdf-comparison document"`
+	DryRun    bool          `json:"dryRun,omitempty" jsonschema:"with output set, preview the write (return the summary + sha256, write no file)"`
 }
 
 // diffOutput is the hdf_diff result: the comparison summary, a bounded change
 // list, the two source handles, and — when output is given — the emitted
 // hdf-comparison artifact's path, hash, and validity.
 type diffOutput struct {
-	FromHandle string                 `json:"fromHandle"`
-	ToHandle   string                 `json:"toHandle"`
-	Mode       string                 `json:"mode"`
-	Summary    diff.ComparisonSummary `json:"summary"`
-	Changes    []map[string]any       `json:"changes"`
-	Total      int                    `json:"total"`
-	Returned   int                    `json:"returned"`
-	Truncated  bool                   `json:"truncated,omitempty"`
-	NextPage   int                    `json:"nextPage,omitempty"`
-	Notice     string                 `json:"notice,omitempty"`
-	OutputPath string                 `json:"outputPath,omitempty"`
-	Sha256     string                 `json:"sha256,omitempty"`
-	Valid      bool                   `json:"valid,omitempty"`
+	FromHandle     string                 `json:"fromHandle"`
+	ToHandle       string                 `json:"toHandle"`
+	Mode           string                 `json:"mode"`
+	Summary        diff.ComparisonSummary `json:"summary"`
+	Changes        []map[string]any       `json:"changes"`
+	Total          int                    `json:"total"`
+	Returned       int                    `json:"returned"`
+	Truncated      bool                   `json:"truncated,omitempty"`
+	NextPage       int                    `json:"nextPage,omitempty"`
+	Notice         string                 `json:"notice,omitempty"`
+	OutputPath     string                 `json:"outputPath,omitempty"`
+	Sha256         string                 `json:"sha256,omitempty"`
+	Valid          bool                   `json:"valid,omitempty"`
+	WritesDisabled bool                   `json:"writesDisabled,omitempty"`
 }
 
 // RegisterDiff registers the hdf_diff tool on the server.
@@ -101,14 +101,16 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 
 		out := diffOutput{FromHandle: fromH, ToHandle: toH, Mode: mode, Summary: comp.Summary}
 
+		changes := projectChanges(comp, mode, in.Verbosity)
+		buildDiffResponse(&out, changes, in.Verbosity, in.Page)
+
+		// Emit last so a write-model notice (dry-run / WRITES_DISABLED) is appended
+		// to — not clobbered by — any truncation notice buildDiffResponse set.
 		if in.Output != "" {
-			if terr := emitComparison(&out, comp, in.Output); terr != nil {
+			if terr := emitComparison(&out, comp, in.Output, in.DryRun); terr != nil {
 				return toolError(terr), diffOutput{}, nil
 			}
 		}
-
-		changes := projectChanges(comp, mode, in.Verbosity)
-		buildDiffResponse(&out, changes, in.Verbosity, in.Page)
 		return nil, out, nil
 	}
 }
@@ -176,27 +178,38 @@ func requireDocType(r *Resolved, want, mode string) *mcperr.Error {
 
 // emitComparison marshals the engine comparison (already schema-shaped), writes
 // it to the confined output path, and records the path, hash, and schema validity.
-func emitComparison(out *diffOutput, comp diff.HdfComparison, output string) *mcperr.Error {
+func emitComparison(out *diffOutput, comp diff.HdfComparison, output string, dryRun bool) *mcperr.Error {
 	docBytes, err := json.MarshalIndent(comp, "", "  ")
 	if err != nil {
 		return mcperr.New(mcperr.SchemaInvalid, "could not serialize the comparison", nil)
 	}
-	confined, serr := hdfutil.SafePath(mcpRoot(), output)
-	if serr != nil {
-		return mcperr.New(mcperr.PathDenied, "output path resolves outside HDF_MCP_ROOT", map[string]any{"path": output})
-	}
-	vr := validators.Validate(docBytes, validators.TypeComparison)
-	out.Valid = vr.Valid
-	if werr := os.WriteFile(confined, docBytes, 0o600); werr != nil { //nolint:gosec // confined to HDF_MCP_ROOT by SafePath
-		if errors.Is(werr, os.ErrNotExist) {
-			return mcperr.New(mcperr.DocumentNotFound, "output directory does not exist", map[string]any{"path": output})
-		}
-		return mcperr.New(mcperr.DocumentNotFound, "could not write the comparison", map[string]any{"error": werr.Error()})
-	}
+	// Validate and hash the comparison regardless of whether it is written, so a
+	// dry-run/writes-disabled preview still reports what would land on disk.
+	out.Valid = validators.Validate(docBytes, validators.TypeComparison).Valid
 	sum := sha256.Sum256(docBytes)
-	out.OutputPath = output
 	out.Sha256 = hex.EncodeToString(sum[:])
+
+	// The write itself goes through the one shared write model (gate + dry_run +
+	// confinement) — no direct filesystem write in the tool.
+	writtenPath, notice, terr := writeArtifact(output, dryRun, docBytes)
+	if terr != nil {
+		return terr
+	}
+	out.OutputPath = writtenPath
+	if notice != "" {
+		out.Notice = appendNotice(out.Notice, notice)
+		out.WritesDisabled = strings.Contains(notice, "WRITES_DISABLED")
+	}
 	return nil
+}
+
+// appendNotice joins a write-model notice onto any existing (e.g. truncation)
+// notice without clobbering it.
+func appendNotice(existing, add string) string {
+	if existing == "" {
+		return add
+	}
+	return existing + " " + add
 }
 
 // changeRow projections. Concise carries the identifying + state fields; full

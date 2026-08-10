@@ -184,6 +184,10 @@
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
+          "dryRun": {
+            "description": "with output set, preview the write (return the summary + sha256, write no file)",
+            "type": "boolean"
+          },
           "from": {
             "additionalProperties": false,
             "description": "the 'before' document as {path} or {handle}",
@@ -326,6 +330,9 @@
             "type": "boolean"
           },
           "valid": {
+            "type": "boolean"
+          },
+          "writesDisabled": {
             "type": "boolean"
           }
         },

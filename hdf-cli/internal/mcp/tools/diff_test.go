@@ -52,6 +52,7 @@ func changeByID(t *testing.T, rows []map[string]any, key, id string) map[string]
 // The card's designated first-failing test: when output is set, the emitted
 // document validates as hdf-comparison via hdf-validators (not just as JSON).
 func TestHdfDiff_EmitsValidComparison(t *testing.T) {
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
 	root := writeRootFiles(t, map[string][]byte{
 		"from.json": readToolsFixture(t, "diff-from.json"),
 		"to.json":   readToolsFixture(t, "diff-to.json"),
@@ -118,7 +119,79 @@ func TestHdfDiff_ToleratesV350ChangeReasons(t *testing.T) {
 	}
 }
 
+func TestHdfDiff_WritesDisabledPreview(t *testing.T) {
+	// Writes disabled (the deployer-ceiling default): an output-giving diff must
+	// return the summary + a WRITES_DISABLED notice and write NO file — not error.
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "")
+	root := writeRootFiles(t, map[string][]byte{
+		"from.json": readToolsFixture(t, "diff-from.json"),
+		"to.json":   readToolsFixture(t, "diff-to.json"),
+	})
+	res, out := callDiff(t, diffInput{
+		From: handle.Source{Path: "from.json"}, To: handle.Source{Path: "to.json"}, Output: "comp.json",
+	})
+	if res != nil {
+		t.Fatalf("writes-disabled must be a successful preview, not an error: %s", payloadText(t, res))
+	}
+	if out.OutputPath != "" {
+		t.Fatalf("writes-disabled must not write a path, got %q", out.OutputPath)
+	}
+	if !out.WritesDisabled || !strings.Contains(out.Notice, "WRITES_DISABLED") {
+		t.Fatalf("expected a WRITES_DISABLED flag + notice, got %+v", out)
+	}
+	if out.Sha256 == "" || !out.Valid {
+		t.Fatalf("the preview must still report the would-be sha256 + validity, got %+v", out)
+	}
+	if _, err := os.Stat(filepath.Join(root, "comp.json")); !os.IsNotExist(err) {
+		t.Fatal("writes-disabled must not create a file")
+	}
+}
+
+func TestHdfDiff_WriteNoticePreservesOtherNotice(t *testing.T) {
+	// A write-model notice must be appended to, not clobber, a notice
+	// buildDiffResponse already set (here, an out-of-range page).
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "")
+	writeRootFiles(t, map[string][]byte{
+		"from.json": readToolsFixture(t, "diff-from.json"),
+		"to.json":   readToolsFixture(t, "diff-to.json"),
+	})
+	_, out := callDiff(t, diffInput{
+		From: handle.Source{Path: "from.json"}, To: handle.Source{Path: "to.json"},
+		Output: "comp.json", Page: 99,
+	})
+	if !strings.Contains(out.Notice, "out of range") {
+		t.Fatalf("page notice lost: %q", out.Notice)
+	}
+	if !strings.Contains(out.Notice, "WRITES_DISABLED") || !out.WritesDisabled {
+		t.Fatalf("write notice/flag lost: notice=%q writesDisabled=%v", out.Notice, out.WritesDisabled)
+	}
+}
+
+func TestHdfDiff_DryRunPreview(t *testing.T) {
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+	root := writeRootFiles(t, map[string][]byte{
+		"from.json": readToolsFixture(t, "diff-from.json"),
+		"to.json":   readToolsFixture(t, "diff-to.json"),
+	})
+	_, out := callDiff(t, diffInput{
+		From: handle.Source{Path: "from.json"}, To: handle.Source{Path: "to.json"}, Output: "comp.json", DryRun: true,
+	})
+	if out.OutputPath != "" {
+		t.Fatalf("dry_run must not write, got path %q", out.OutputPath)
+	}
+	if out.Notice == "" {
+		t.Fatal("dry_run must carry a preview notice")
+	}
+	if out.Sha256 == "" {
+		t.Fatal("dry_run should still report the would-be sha256")
+	}
+	if _, err := os.Stat(filepath.Join(root, "comp.json")); !os.IsNotExist(err) {
+		t.Fatal("dry_run must not create a file")
+	}
+}
+
 func TestHdfDiff_SystemDrift(t *testing.T) {
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
 	root := writeRootFiles(t, map[string][]byte{
 		"from.json": readToolsFixture(t, "diff-system-from.json"),
 		"to.json":   readToolsFixture(t, "diff-system-to.json"),
@@ -234,6 +307,7 @@ func TestHdfDiff_UnknownMode(t *testing.T) {
 }
 
 func TestHdfDiff_OutputPathDenied(t *testing.T) {
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
 	writeRootFiles(t, map[string][]byte{
 		"from.json": readToolsFixture(t, "diff-from.json"),
 		"to.json":   readToolsFixture(t, "diff-to.json"),
@@ -277,6 +351,7 @@ func TestHdfDiff_SchemaInvalidSource(t *testing.T) {
 }
 
 func TestHdfDiff_OutputDirMissing(t *testing.T) {
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
 	writeRootFiles(t, map[string][]byte{
 		"from.json": readToolsFixture(t, "diff-from.json"),
 		"to.json":   readToolsFixture(t, "diff-to.json"),
