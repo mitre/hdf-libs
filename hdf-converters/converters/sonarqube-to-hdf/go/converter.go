@@ -187,8 +187,15 @@ func severityToImpactScore(severity, source string) float64 {
 // An absent field (nil), an explicit null, or an empty array are all treated as
 // "no flows" so the sonarqube/flows tag stays off rather than pinning "[]".
 func hasFlows(raw json.RawMessage) bool {
+	// Parse the array rather than string-compare: json.RawMessage preserves the
+	// source formatting, so an empty array written as "[ ]" or pretty-printed
+	// would slip past a literal "[]" check and emit an empty flows tag.
+	var arr []json.RawMessage
+	if err := json.Unmarshal(raw, &arr); err == nil {
+		return len(arr) > 0
+	}
 	trimmed := bytes.TrimSpace(raw)
-	return len(trimmed) > 0 && string(trimmed) != "[]" && string(trimmed) != "null"
+	return len(trimmed) > 0 && string(trimmed) != "null"
 }
 
 // defaultNistTag is the fallback NIST control for SonarQube findings without

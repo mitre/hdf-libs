@@ -16,6 +16,15 @@ import (
 
 const testConverterVersion = "test-version"
 
+func TestHasFlows(t *testing.T) {
+	assert.True(t, hasFlows(json.RawMessage(`[{"x":1}]`)))
+	assert.False(t, hasFlows(json.RawMessage(`[]`)))
+	assert.False(t, hasFlows(json.RawMessage(`[ ]`)))
+	assert.False(t, hasFlows(json.RawMessage("[\n  ]")))
+	assert.False(t, hasFlows(json.RawMessage(`null`)))
+	assert.False(t, hasFlows(json.RawMessage(``)))
+}
+
 func loadMinimalFixture(t *testing.T) []byte {
 	t.Helper()
 	fixturePath := filepath.Join(shared.GetConvertersDir(), "sonarqube-to-hdf", "fixtures", "input", "minimal.json")
