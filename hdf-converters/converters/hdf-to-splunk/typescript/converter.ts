@@ -66,11 +66,14 @@ function buildHECEvent(
   const category = firstCWE(req);
   const vendorProduct = getStr(tool, 'name');
 
+  const hdfBlock = buildHDFBlock(req, baseline, st.raw, st.overridden, st.suppressed, generator, tool, converterVersion);
+  augmentHdfBlock(hdfBlock, req, baseline, component);
+
   const event: Obj = {
     signature,
     hdf_status: st.raw,
     suppressed: st.suppressed,
-    hdf: buildHDFBlock(req, baseline, st.raw, st.overridden, st.suppressed, generator, tool, converterVersion),
+    hdf: hdfBlock,
   };
   setIf(event, 'signature_id', controlID);
   setIf(event, 'dest', dest);
@@ -78,6 +81,10 @@ function buildHECEvent(
   setIf(event, 'cve', cve);
   setIf(event, 'category', category);
   setIf(event, 'vendor_product', vendorProduct);
+  if (component) {
+    setIf(event, 'os', getStr(component, 'osName'));
+    setIf(event, 'dest_ip', getStr(component, 'ipAddress'));
+  }
   if (hasCVSS) event.cvss = cvss;
 
   const fields: Obj = { signature, hdf_status: st.raw, suppressed: st.suppressed };
@@ -85,6 +92,7 @@ function buildHECEvent(
   setIf(fields, 'dest', dest);
   setIf(fields, 'severity', sev);
   setIf(fields, 'cve', cve);
+  if (component) setIf(fields, 'dest_ip', getStr(component, 'ipAddress'));
   if (hasCVSS) fields.cvss = cvss;
 
   const hec: Obj = {
@@ -97,6 +105,23 @@ function buildHECEvent(
   if (t !== undefined) hec.time = t;
   setIf(hec, 'host', dest);
   return hec;
+}
+
+/**
+ * Add the Splunk-specific lossless keys the shared exportmap block omits but the
+ * splunk-to-hdf importer round-trips: the requirement's source_location and
+ * verification_method, the baseline metadata beyond its name
+ * (version/title/checksum/groups), and the full target component. Each is
+ * emitted only when the source carries it, so absent fields stay absent.
+ */
+function augmentHdfBlock(hdf: Obj, req: Obj, baseline: Obj, component: Obj | undefined): void {
+  if ('sourceLocation' in req) hdf.source_location = req.sourceLocation;
+  if ('verificationMethod' in req) hdf.verification_method = req.verificationMethod;
+  if ('version' in baseline) hdf.baseline_version = baseline.version;
+  if ('title' in baseline) hdf.baseline_title = baseline.title;
+  if ('checksum' in baseline) hdf.baseline_checksum = baseline.checksum;
+  if ('groups' in baseline) hdf.groups = baseline.groups;
+  if (component) hdf.component = component;
 }
 
 function destHost(component: Obj | undefined): string {
