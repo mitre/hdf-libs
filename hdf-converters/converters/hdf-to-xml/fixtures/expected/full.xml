@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <HdfResults>
   <baselines>
     <baseline>
@@ -14,6 +15,8 @@
         <algorithm>sha256</algorithm>
         <value>2222222222222222222222222222222222222222222222222222222222222222</value>
       </originalChecksum>
+      <maintainer>MITRE</maintainer>
+      <description>STIG-derived baseline for RHEL 8 web servers.</description>
       <integrity>
         <algorithm>sha256</algorithm>
         <checksum>abc123</checksum>
@@ -40,7 +43,7 @@
               <data>Rationale text.</data>
             </description>
           </descriptions>
-          <code>control &apos;SV-100001&apos; do
+          <code>control &#39;SV-100001&#39; do
   impact 0.7
 end</code>
           <sourceLocation>
@@ -75,8 +78,103 @@ end</code>
               <codeDesc>check failed</codeDesc>
               <startTime>2026-01-15T10:00:00Z</startTime>
               <message>expected X to eq Y</message>
+              <exception>RuntimeError</exception>
+              <backtrace>controls/SV-100001.rb:12:in `block&#39;</backtrace>
+              <backtrace>inspec/runner.rb:88:in `run&#39;</backtrace>
+              <resource>sshd_config</resource>
+              <resourceId>/etc/ssh/sshd_config</resourceId>
             </result>
           </results>
+          <severity>high</severity>
+          <statusOverrides>
+            <statusOverride>
+              <type>riskAdjustment</type>
+              <status>passed</status>
+              <impact>
+                <value>0.3</value>
+              </impact>
+              <reason>Compensating control: host isolated on a management VLAN with no inbound internet exposure.</reason>
+              <appliedBy>
+                <identifier>jane.doe@example.gov</identifier>
+                <type>email</type>
+                <description>ISSO</description>
+              </appliedBy>
+              <appliedAt>2026-01-10T12:00:00Z</appliedAt>
+              <expiresAt>2099-12-31T00:00:00Z</expiresAt>
+              <evidence>
+                <item>
+                  <type>url</type>
+                  <data>https://grc.example.gov/waivers/SV-100001</data>
+                  <description>Approved waiver record</description>
+                </item>
+              </evidence>
+              <previousChecksum>
+                <algorithm>sha256</algorithm>
+                <value>3333333333333333333333333333333333333333333333333333333333333333</value>
+              </previousChecksum>
+              <justification>inline_mitigations_already_exist</justification>
+            </statusOverride>
+          </statusOverrides>
+          <disposition>riskAdjustment</disposition>
+          <effectiveStatus>passed</effectiveStatus>
+          <effectiveImpact>0.3</effectiveImpact>
+          <cvss>
+            <cvss>
+              <version>3.1</version>
+              <source>nvd@nist.gov</source>
+              <baseVector>CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H</baseVector>
+              <baseScore>9.8</baseScore>
+              <baseSeverity>critical</baseSeverity>
+            </cvss>
+          </cvss>
+          <cwe>CWE-79</cwe>
+          <cwe>CWE-89</cwe>
+          <epss>
+            <score>0.00432</score>
+            <percentile>0.7421</percentile>
+            <date>2026-01-14</date>
+          </epss>
+          <kev>
+            <inKev>true</inKev>
+            <dateAdded>2025-11-01</dateAdded>
+            <dueDate>2025-11-22</dueDate>
+            <notes>Actively exploited per CISA.</notes>
+          </kev>
+          <poams>
+            <poam>
+              <type>remediation</type>
+              <explanation>Patch scheduled in the Q1 maintenance window.</explanation>
+              <appliedBy>
+                <identifier>team-secops</identifier>
+                <type>other</type>
+              </appliedBy>
+              <appliedAt>2026-01-05T09:00:00Z</appliedAt>
+              <expiresAt>2099-12-31T00:00:00Z</expiresAt>
+              <milestones>
+                <milestone>
+                  <description>Vendor patch validated in staging</description>
+                  <estimatedCompletion>2026-02-15T00:00:00Z</estimatedCompletion>
+                  <status>inProgress</status>
+                </milestone>
+              </milestones>
+            </poam>
+          </poams>
+          <evidence>
+            <item>
+              <type>log</type>
+              <data>auth.log excerpt showing MFA enforcement</data>
+              <description>Runtime evidence</description>
+              <mimeType>text/plain</mimeType>
+            </item>
+          </evidence>
+          <affectedPackages>
+            <affectedPackage>
+              <name>openssl</name>
+              <version>1.1.1k</version>
+              <ecosystem>rpm</ecosystem>
+              <fixedInVersion>1.1.1n</fixedInVersion>
+            </affectedPackage>
+          </affectedPackages>
         </requirement>
         <requirement>
           <id>SV-100002</id>
@@ -109,6 +207,9 @@ end</code>
       <type>host</type>
       <fqdn>web01.example.gov</fqdn>
       <ipAddress>10.0.0.1</ipAddress>
+      <macAddress>02:42:ac:11:00:02</macAddress>
+      <osName>Red Hat Enterprise Linux</osName>
+      <osVersion>8.9</osVersion>
     </target>
   </components>
   <statistics>
@@ -119,4 +220,22 @@ end</code>
     <name>hdf-xml-coverage</name>
     <version>1.0.0</version>
   </generator>
+  <tool>
+    <name>InSpec</name>
+    <version>5.22.3</version>
+    <format>inspec-json</format>
+  </tool>
+  <integrity>
+    <algorithm>sha256</algorithm>
+    <checksum>4444444444444444444444444444444444444444444444444444444444444444</checksum>
+    <signature>z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz</signature>
+    <signedBy>ci-signer@example.gov</signedBy>
+  </integrity>
+  <id>b1e7c0de-1a2b-4c3d-8e4f-5a6b7c8d9e0f</id>
+  <runner>
+    <name>inspec</name>
+    <release>5.22.3</release>
+    <architecture>x86_64</architecture>
+    <hostname>scanner01</hostname>
+  </runner>
 </HdfResults>
