@@ -93,7 +93,9 @@ function getMatchingProfiles(
 }
 
 /**
- * Gets the title from matching profiles, or falls back to category:name.
+ * Gets the joined titles from matching profiles, or falls back to category:name.
+ * When multiple profiles match a control name, all of their titles are joined
+ * (mirrors heimdall2's multi-profile join).
  */
 function getTitle(
   profiles: SecureScoreControlProfile[],
@@ -105,7 +107,7 @@ function getTitle(
     .filter((t): t is string => t !== undefined && t !== '');
 
   if (titles.length > 0) {
-    return titles[0]!;
+    return titles.join('\n');
   }
 
   // Fallback
@@ -191,19 +193,29 @@ function buildRequirement(
       .map(p => p.remediation)
       .filter((r): r is string => r !== undefined && r !== '');
     if (remediations.length > 0) {
-      descriptions.push({ label: 'fix', data: stripHTML(remediations[0]!) });
+      descriptions.push({ label: 'fix', data: remediations.map(r => stripHTML(r)).join('\n') });
     }
 
     const impacts = matched
       .map(p => p.remediationImpact)
       .filter((r): r is string => r !== undefined && r !== '');
     if (impacts.length > 0) {
-      descriptions.push({ label: 'rationale', data: stripHTML(impacts[0]!) });
+      descriptions.push({ label: 'rationale', data: impacts.map(r => stripHTML(r)).join('\n') });
     }
 
     // Source categorization/metadata from the matched profile(s). Emit each tag
     // only when a matched profile actually carries the value; preserve the
     // source's natural JSON type (threats array, numeric rank, strings).
+    const category = matched.map(p => p.controlCategory).find((s): s is string => !!s);
+    if (category !== undefined) {
+      tags.category = category;
+    }
+    const maxScore = matched
+      .map(p => p.maxScore)
+      .find((n): n is number => typeof n === 'number' && n !== 0);
+    if (maxScore !== undefined) {
+      tags.maxScore = maxScore;
+    }
     const threats = matched
       .map(p => p.threats)
       .find(t => Array.isArray(t) && t.length > 0);
