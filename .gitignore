@@ -56,6 +56,9 @@ hdf-cli/hdf
 site/schemas/*.md
 site/v*/
 site/.vitepress/versions.json
+# Converter catalog page — rendered from site/data/converters.json (which IS
+# committed and golden-tested against the registry) by generate-converters.mjs.
+site/docs/guides/converters.md
 # Per-version raw schema archive IS committed (backs the canonical $id
 # URL e.g. /schemas/hdf-amendments/v3.2.0/ and the per-version rendered
 # docs). ~70 KB per release; storage cost trivial. See site/seed-archive.mjs.
