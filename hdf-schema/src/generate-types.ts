@@ -25,6 +25,7 @@ const SCHEMAS = [
   { file: 'hdf-plan.schema.json', name: 'HDFPlan' },
   { file: 'hdf-amendments.schema.json', name: 'HDFAmendments' },
   { file: 'hdf-evidence-package.schema.json', name: 'HDFEvidencePackage' },
+  { file: 'hdf-requirement-change-event.schema.json', name: 'HDFRequirementChangeEvent' },
 ];
 
 const LANGUAGES = [

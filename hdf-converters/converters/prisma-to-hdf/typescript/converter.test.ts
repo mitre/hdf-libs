@@ -126,10 +126,10 @@ describe('prisma to HDF converter', () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set tool to Prisma Cloud / CSV', async () => {
+    it('should set tool to Prisma Cloud', async () => {
       const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Prisma Cloud');
-      expect(hdf.tool?.format).toBe('CSV');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 
@@ -297,6 +297,80 @@ describe('prisma to HDF converter', () => {
       for (const baseline of hdf.baselines) {
         expect(baseline.requirements.length).toBeGreaterThan(0);
       }
+    });
+  });
+
+  describe('CVSS structured scoring', () => {
+    it('maps a positive CVSS score to cvss[] with default 3.1 version and CVE source', async () => {
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
+      const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
+      const req = findRequirement(host1!.requirements, '46-CVE-2021-44142');
+      expect(req?.cvss).toHaveLength(1);
+      const cv = req!.cvss![0]!;
+      expect(cv.baseScore).toBe(9.9);
+      expect(cv.baseSeverity).toBe('critical');
+      expect(cv.version).toBe('3.1');
+      expect(cv.baseVector).toBeUndefined();
+      expect(cv.source).toBe('CVE-2021-44142');
+    });
+
+    it('maps a low CVSS score to the low band', async () => {
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
+      const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
+      const req = findRequirement(host1!.requirements, '46-CVE-2016-2226');
+      expect(req?.cvss?.[0]?.baseScore).toBe(3.3);
+      expect(req?.cvss?.[0]?.baseSeverity).toBe('low');
+    });
+
+    it('omits cvss[] for compliance findings carrying CVSS 0.00', async () => {
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
+      const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
+      const req = findRequirement(host1!.requirements, '60522-redhat-RHEL7-high');
+      expect(req?.cvss).toBeUndefined();
+    });
+
+    function firstReqCvss(csv: string): Promise<HDFResults['baselines'][number]['requirements'][number]['cvss']> {
+      return convertPrismaToHdf(csv).then(out => {
+        const hdf = JSON.parse(out) as HDFResults;
+        return hdf.baselines[0]!.requirements[0]!.cvss;
+      });
+    }
+
+    function cvssRow(cvss: string, cve = 'CVE-2026-1', compliance = '1'): string {
+      const header = 'Hostname,Distro,CVE ID,Compliance ID,Type,Severity,Packages,Source Package,Package Version,Package License,CVSS,Fix Status,Vulnerability Tags,Description,Cause,Published,Services,Cluster,Vulnerability Link';
+      return `${header}\nh,redhat-RHEL7,${cve},${compliance},image,high,pkg,,1.0,,${cvss},,,d,,,,,`;
+    }
+
+    it('omits cvss[] when the CVSS column is blank', async () => {
+      expect(await firstReqCvss(cvssRow(''))).toBeUndefined();
+    });
+
+    it('omits cvss[] for a non-numeric CVSS token', async () => {
+      expect(await firstReqCvss(cvssRow('n/a'))).toBeUndefined();
+    });
+
+    it('emits cvss[] with no source for a positive score on a non-CVE row', async () => {
+      const cvss = await firstReqCvss(cvssRow('7.50', '', '60522'));
+      expect(cvss).toHaveLength(1);
+      expect(cvss![0]!.baseScore).toBe(7.5);
+      expect(cvss![0]!.source).toBeUndefined();
+    });
+  });
+
+  describe('external references (refs[])', () => {
+    it('maps a populated Vulnerability Link to a single refs[] URL', async () => {
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
+      const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
+      const req = findRequirement(host1!.requirements, '46-CVE-2021-44142');
+      expect(req?.refs).toHaveLength(1);
+      expect(req!.refs![0]!.url).toBe('http://example.com/security/cve/CVE-2021-44142');
+    });
+
+    it('omits refs[] when the Vulnerability Link column is blank', async () => {
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
+      const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
+      const req = findRequirement(host1!.requirements, '60522-redhat-RHEL7-high');
+      expect(req?.refs).toBeUndefined();
     });
   });
 

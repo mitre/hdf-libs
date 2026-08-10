@@ -1,10 +1,12 @@
 package neuvector
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -14,6 +16,14 @@ import (
 )
 
 var cpe23Pattern = regexp.MustCompile(`^cpe:2\.3:[aho]:`)
+
+// whitespaceRun collapses runs of ASCII whitespace to a single space when
+// building the code_desc description snippet. The class is spelled out (rather
+// than \s) so Go and TS collapse identically.
+var whitespaceRun = regexp.MustCompile(`[ \t\n\r]+`)
+
+// codeDescSnippetRunes bounds the description snippet in code_desc.
+const codeDescSnippetRunes = 100
 
 // NeuVectorScan is the top-level NeuVector scan JSON output structure.
 type NeuVectorScan struct {
@@ -55,7 +65,7 @@ type NeuVectorVuln struct {
 	VectorsV3             string   `json:"vectors_v3"`
 	PublishedTimestamp    int64    `json:"published_timestamp"`
 	LastModifiedTimestamp int64    `json:"last_modified_timestamp"`
-	Cpes                  []string `json:"cpes"`
+	Cpes                  []string `json:"cpes,omitempty"`
 	Cves                  []string `json:"cves"`
 	FeedRating            string   `json:"feed_rating"`
 	InBaseImage           *bool    `json:"in_base_image,omitempty"`
@@ -82,6 +92,57 @@ func extractCWEs(description string) []string {
 		result[i] = "CWE-" + id
 	}
 	return result
+}
+
+// extractCVEs collects the distinct CVE identifiers a vulnerability carries in
+// its cves[] field, preserving first-seen order. The requirement ID is a
+// name/package/version composite (not the CVE), so tags.cve is where the CVE
+// list lives.
+func extractCVEs(vuln NeuVectorVuln) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, cve := range vuln.Cves {
+		if cve != "" && !seen[cve] {
+			seen[cve] = true
+			out = append(out, cve)
+		}
+	}
+	return out
+}
+
+// buildCvssEntries assembles the structured requirement.cvss[] from the scoring
+// a vulnerability carries. NeuVector emits a CVSS v3 vector (with a
+// version-prefixed string) and, separately, a legacy v2 vector (prefix-less).
+// The v3 metric is preferred; the v2 metric is the fallback. A vulnerability
+// with neither vector contributes no entry — its score still drives impact.
+func buildCvssEntries(vuln NeuVectorVuln) []hdf.Cvss {
+	if vuln.VectorsV3 != "" {
+		var score *float64
+		if vuln.ScoreV3 > 0 {
+			s := vuln.ScoreV3
+			score = &s
+		}
+		return []hdf.Cvss{shared.BuildCvss(shared.CvssInput{
+			Version:    shared.CvssVersionFromVector(vuln.VectorsV3),
+			BaseScore:  score,
+			BaseVector: vuln.VectorsV3,
+			Source:     "NeuVector",
+		})}
+	}
+	if vuln.Vectors != "" {
+		var score *float64
+		if vuln.Score > 0 {
+			s := vuln.Score
+			score = &s
+		}
+		return []hdf.Cvss{shared.BuildCvss(shared.CvssInput{
+			Version:    shared.CvssVersionFromString("2.0"),
+			BaseScore:  score,
+			BaseVector: vuln.Vectors,
+			Source:     "NeuVector",
+		})}
+	}
+	return nil
 }
 
 // getImpact computes the HDF impact from NeuVector CVSS scores.
@@ -119,15 +180,88 @@ func vulnMessage(vuln NeuVectorVuln) string {
 		vuln.PackageName, vuln.PackageVersion, vuln.FixedVersion)
 }
 
+// cvssScore returns the CVSS score used in code_desc: CVSS v3 preferred, else v2.
+func cvssScore(vuln NeuVectorVuln) float64 {
+	if vuln.ScoreV3 > 0 {
+		return vuln.ScoreV3
+	}
+	return vuln.Score
+}
+
+// descSnippet collapses the vulnerability description to a single line and
+// truncates it to codeDescSnippetRunes runes for the code_desc composite. Rune
+// counting (not bytes) matches the TS twin's Array.from(...).slice().
+func descSnippet(description string) string {
+	collapsed := strings.TrimSpace(whitespaceRun.ReplaceAllString(description, " "))
+	runes := []rune(collapsed)
+	if len(runes) > codeDescSnippetRunes {
+		return string(runes[:codeDescSnippetRunes]) + "…"
+	}
+	return collapsed
+}
+
+// buildCodeDesc builds the pipe-joined result code_desc from the fields the
+// vuln carries: package@version | name | CVSS score | description snippet. Only
+// parts the source actually provides are included.
+func buildCodeDesc(vuln NeuVectorVuln) string {
+	parts := make([]string, 0, 4)
+	if vuln.PackageName != "" {
+		if vuln.PackageVersion != "" {
+			parts = append(parts, vuln.PackageName+"@"+vuln.PackageVersion)
+		} else {
+			parts = append(parts, vuln.PackageName)
+		}
+	}
+	if vuln.Name != "" {
+		parts = append(parts, vuln.Name)
+	}
+	if score := cvssScore(vuln); score > 0 {
+		parts = append(parts, fmt.Sprintf("CVSS %g", score))
+	}
+	if snippet := descSnippet(vuln.Description); snippet != "" {
+		parts = append(parts, snippet)
+	}
+	return strings.Join(parts, " | ")
+}
+
+// marshalVulnCode renders the source vulnerability as the indented JSON blob
+// carried in the requirement's code field (the CODE tab). HTML escaping is off
+// so `<`, `>`, `&` in descriptions stay literal, matching the TS twin's
+// JSON.stringify(vuln, null, 2).
+func marshalVulnCode(vuln NeuVectorVuln) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(vuln); err != nil {
+		return "{}"
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
+}
+
+// buildRefs emits a single external Reference for the vulnerability's advisory
+// link. Returns nil when the source carries no link so refs[] is omitted.
+func buildRefs(vuln NeuVectorVuln) []hdf.Reference {
+	if vuln.Link == "" {
+		return nil
+	}
+	url := vuln.Link
+	return []hdf.Reference{{URL: &url}}
+}
+
 // buildRequirement converts a NeuVector vulnerability to an EvaluatedRequirement.
 func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequirement {
 	cweIDs := extractCWEs(vuln.Description)
+	cveIDs := extractCVEs(vuln)
 	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultRemediationNIST)
 	cciTags := cci.NISTToCCI(nist)
 
 	extras := map[string]interface{}{}
-	if len(cweIDs) > 0 {
-		extras["cwe"] = hdfutil.StringsToInterfaces(cweIDs)
+	if len(cveIDs) > 0 {
+		extras["cve"] = hdfutil.StringsToInterfaces(cveIDs)
+	}
+	if vuln.FeedRating != "" {
+		extras["feed_rating"] = vuln.FeedRating
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -139,7 +273,7 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequi
 	results := []hdf.RequirementResult{
 		{
 			Status:    hdf.Failed,
-			CodeDesc:  "",
+			CodeDesc:  buildCodeDesc(vuln),
 			Message:   &msg,
 			StartTime: scanTime,
 		},
@@ -153,8 +287,18 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequi
 		Tags:               tags,
 		Descriptions:       descriptions,
 		Results:            results,
+		Code:               hdfutil.Ptr(marshalVulnCode(vuln)),
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+	if len(cweIDs) > 0 {
+		req.Cwe = cweIDs
+	}
+	if cvss := buildCvssEntries(vuln); len(cvss) > 0 {
+		req.Cvss = cvss
+	}
+	if refs := buildRefs(vuln); len(refs) > 0 {
+		req.Refs = refs
 	}
 
 	// NeuVector scans container images; the package ecosystem isn't
@@ -195,6 +339,82 @@ func imageTitle(report NeuVectorScanReport) string {
 func targetName(report NeuVectorScanReport) string {
 	return fmt.Sprintf("%s/%s:%s",
 		report.Registry, report.Repository, report.Tag)
+}
+
+// digestAlgorithms maps a NeuVector digest's algorithm prefix to the HDF hash
+// algorithm. NeuVector emits `sha256:<hex>`; the others are defensive.
+var digestAlgorithms = map[string]hdf.HashAlgorithm{
+	"sha256": hdf.Sha256,
+	"sha384": hdf.Sha384,
+	"sha512": hdf.Sha512,
+	"blake3": hdf.Blake3,
+}
+
+// splitBaseOS splits NeuVector's base_os "name:version" form (e.g. "alpine:3.12.1")
+// into OS name and version. A value with no ":" is the name with no version; an
+// empty value yields two empty strings.
+func splitBaseOS(baseOS string) (name, version string) {
+	if baseOS == "" {
+		return "", ""
+	}
+	if i := strings.IndexByte(baseOS, ':'); i >= 0 {
+		return baseOS[:i], baseOS[i+1:]
+	}
+	return baseOS, ""
+}
+
+// digestIntegrity turns the report digest ("sha256:<hex>") into the component's
+// Integrity checksum, folding the algorithm prefix into Checksum.Algorithm.
+// Returns nil when the report carries no digest.
+func digestIntegrity(digest string) []hdf.Checksum {
+	if digest == "" {
+		return nil
+	}
+	algo := hdf.Sha256
+	value := digest
+	if i := strings.IndexByte(digest, ':'); i >= 0 {
+		if mapped, ok := digestAlgorithms[digest[:i]]; ok {
+			algo = mapped
+			value = digest[i+1:]
+		}
+	}
+	return []hdf.Checksum{{Algorithm: algo, Value: value}}
+}
+
+// buildComponent assembles the scan-wide containerImage component from the
+// report's image identity. base_os → OSName/OSVersion, digest → Integrity,
+// plus image_id/registry/repository/tag when the report carries them.
+func buildComponent(report NeuVectorScanReport) hdf.Component {
+	comp := hdf.Component{
+		Name: targetName(report),
+		Type: hdf.ContainerImage,
+		Labels: map[string]string{
+			"image":    fmt.Sprintf("%s/%s:%s", report.Registry, report.Repository, report.Tag),
+			"registry": report.Registry,
+		},
+	}
+	if osName, osVersion := splitBaseOS(report.BaseOS); osName != "" {
+		comp.OSName = &osName
+		if osVersion != "" {
+			comp.OSVersion = &osVersion
+		}
+	}
+	if report.ImageID != "" {
+		comp.ImageID = hdfutil.Ptr(report.ImageID)
+	}
+	if report.Registry != "" {
+		comp.Registry = hdfutil.Ptr(report.Registry)
+	}
+	if report.Repository != "" {
+		comp.Repository = hdfutil.Ptr(report.Repository)
+	}
+	if report.Tag != "" {
+		comp.Tag = hdfutil.Ptr(report.Tag)
+	}
+	if integrity := digestIntegrity(report.Digest); len(integrity) > 0 {
+		comp.Integrity = integrity
+	}
+	return comp
 }
 
 // ConvertNeuVectorToHDF converts NeuVector container vulnerability scan JSON output
@@ -261,18 +481,8 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		GeneratorName:    "neuvector-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "NeuVector",
-		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components: []hdf.Component{
-			{
-				Name: targetName(scan.Report),
-				Type: hdf.ContainerImage,
-				Labels: map[string]string{
-					"image":    fmt.Sprintf("%s/%s:%s", scan.Report.Registry, scan.Report.Repository, scan.Report.Tag),
-					"registry": scan.Report.Registry,
-				},
-			},
-		},
-		Timestamp: &now,
+		Components:       []hdf.Component{buildComponent(scan.Report)},
+		Timestamp:        &now,
 	}), nil
 }

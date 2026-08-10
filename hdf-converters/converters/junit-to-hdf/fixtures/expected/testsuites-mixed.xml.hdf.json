@@ -147,6 +147,11 @@
     {
       "name": "JUnit Test Results",
       "type": "application"
+    },
+    {
+      "name": "ci-runner-01",
+      "type": "host",
+      "hostname": "ci-runner-01"
     }
   ],
   "generator": {
@@ -155,7 +160,6 @@
   },
   "timestamp": "2024-11-15T10:30:00Z",
   "tool": {
-    "format": "XML",
     "name": "JUnit XML"
   }
 }

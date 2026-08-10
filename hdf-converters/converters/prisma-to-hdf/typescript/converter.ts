@@ -12,13 +12,16 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildCvss, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type {
   HDFResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Cvss,
   Description,
+  Reference,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -54,6 +57,8 @@ interface PrismaRecord {
   'Fix Status': string;
   Published: string;
   'Vulnerability Link': string;
+  /** Base score column (numeric, no vector). Config rows carry "0.00". */
+  CVSS?: string;
 }
 
 /**
@@ -182,13 +187,61 @@ function buildRequirement(rec: PrismaRecord, scanTime: Date): EvaluatedRequireme
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
 
+  const cvss = buildCvssEntries(rec);
+  if (cvss) {
+    (req as EvaluatedRequirement).cvss = cvss;
+  }
+
   if (rec['CVE ID']) {
     const pkg = buildAffectedPackageFromRecord(rec);
     if (pkg) {
       (req as EvaluatedRequirement).affectedPackages = [pkg];
     }
   }
+
+  const refs = buildRefs(rec);
+  if (refs) {
+    (req as EvaluatedRequirement).refs = refs;
+  }
   return req as EvaluatedRequirement;
+}
+
+/**
+ * Maps the "Vulnerability Link" CSV column to a single external Reference URL.
+ * Returns undefined when the column is blank.
+ */
+function buildRefs(rec: PrismaRecord): Reference[] | undefined {
+  const url = rec['Vulnerability Link']?.trim();
+  if (!url) return undefined;
+  return [{ url }];
+}
+
+/**
+ * Maps the CSV CVSS column to a structured cvss[] entry. Prisma emits a bare
+ * base score with no vector, so version defaults to 3.1 via the shared helper.
+ * Config rows carry "0.00" (or blank); only a positive score yields an entry,
+ * and the source is the associated CVE when present.
+ */
+function buildCvssEntries(rec: PrismaRecord): Cvss[] | undefined {
+  const score = parseCvssScore(rec.CVSS);
+  if (score === undefined) return undefined;
+  return [buildCvss({
+    version: cvssVersionFromString(undefined),
+    baseScore: score,
+    source: rec['CVE ID'] || undefined,
+  })];
+}
+
+/**
+ * Parses the CVSS column, returning undefined for blank, non-numeric, or
+ * non-positive scores (the placeholder value on config rows).
+ */
+function parseCvssScore(field: string | undefined): number | undefined {
+  const s = field?.trim();
+  if (!s) return undefined;
+  const v = Number.parseFloat(s);
+  if (!Number.isFinite(v) || v <= 0) return undefined;
+  return v;
 }
 
 /**
@@ -333,7 +386,6 @@ export async function convertPrismaToHdf(input: string, converterVersion = '1.0.
     generatorName: 'prisma-to-hdf',
     converterVersion,
     toolName: 'Prisma Cloud',
-    toolFormat: 'CSV',
     baselines,
     components,
     timestamp: scanTime,

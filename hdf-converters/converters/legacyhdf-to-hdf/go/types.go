@@ -7,6 +7,8 @@
 // Current HDF types are imported from github.com/mitre/hdf-libs/hdf-schema/dist/go/v3.
 package legacyhdf
 
+import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+
 // V1Result represents a test result in HDF v1.0 format.
 type V1Result struct {
 	Status         string   `json:"status"`
@@ -36,13 +38,15 @@ type V1Description struct {
 
 // V1Control represents a control in HDF v1.0 format.
 type V1Control struct {
-	ID             string                 `json:"id"`
-	Title          *string                `json:"title,omitempty"`
-	Desc           *string                `json:"desc,omitempty"`
-	Descriptions   []V1Description        `json:"descriptions,omitempty"`
-	Impact         float64                `json:"impact"`
-	Refs           []interface{}          `json:"refs,omitempty"`
-	Tags           map[string]interface{} `json:"tags,omitempty"`
+	ID           string          `json:"id"`
+	Title        *string         `json:"title,omitempty"`
+	Desc         *string         `json:"desc,omitempty"`
+	Descriptions []V1Description `json:"descriptions,omitempty"`
+	Impact       float64         `json:"impact"`
+	// refs/tags are required by the InSpec exec-json schema Heimdall loads (empty is
+	// valid, but the key must be present), so no omitempty.
+	Refs           []interface{}          `json:"refs"`
+	Tags           map[string]interface{} `json:"tags"`
 	Code           *string                `json:"code,omitempty"`
 	SourceLocation *V1SourceLocation      `json:"source_location,omitempty"`
 	WaiverData     map[string]interface{} `json:"waiver_data,omitempty"`
@@ -75,24 +79,26 @@ type V1Dependency struct {
 
 // V1Profile represents a profile in HDF v1.0 format.
 type V1Profile struct {
-	Name           string                   `json:"name"`
-	Version        *string                  `json:"version,omitempty"`
-	Title          *string                  `json:"title,omitempty"`
-	Maintainer     *string                  `json:"maintainer,omitempty"`
-	Summary        *string                  `json:"summary,omitempty"`
-	License        *string                  `json:"license,omitempty"`
-	Copyright      *string                  `json:"copyright,omitempty"`
-	CopyrightEmail *string                  `json:"copyright_email,omitempty"`
-	Supports       []map[string]interface{} `json:"supports,omitempty"`
-	Attributes     []map[string]interface{} `json:"attributes,omitempty"`
-	Groups         []V1Group                `json:"groups,omitempty"`
-	Controls       []V1Control              `json:"controls,omitempty"`
-	SHA256         *string                  `json:"sha256,omitempty"`
-	Depends        []V1Dependency           `json:"depends,omitempty"`
-	ParentProfile  *string                  `json:"parent_profile,omitempty"`
-	Status         *string                  `json:"status,omitempty"`
-	StatusMessage  *string                  `json:"status_message,omitempty"`
-	SkipMessage    *string                  `json:"skip_message,omitempty"`
+	Name           string  `json:"name"`
+	Version        *string `json:"version,omitempty"`
+	Title          *string `json:"title,omitempty"`
+	Maintainer     *string `json:"maintainer,omitempty"`
+	Summary        *string `json:"summary,omitempty"`
+	License        *string `json:"license,omitempty"`
+	Copyright      *string `json:"copyright,omitempty"`
+	CopyrightEmail *string `json:"copyright_email,omitempty"`
+	// supports/attributes/groups are required by the InSpec exec-json schema Heimdall
+	// loads (an empty array is valid, but the key must be present), so no omitempty.
+	Supports      []map[string]interface{} `json:"supports"`
+	Attributes    []map[string]interface{} `json:"attributes"`
+	Groups        []V1Group                `json:"groups"`
+	Controls      []V1Control              `json:"controls,omitempty"`
+	SHA256        *string                  `json:"sha256,omitempty"`
+	Depends       []V1Dependency           `json:"depends,omitempty"`
+	ParentProfile *string                  `json:"parent_profile,omitempty"`
+	Status        *string                  `json:"status,omitempty"`
+	StatusMessage *string                  `json:"status_message,omitempty"`
+	SkipMessage   *string                  `json:"skip_message,omitempty"`
 }
 
 // V1Platform represents the platform in HDF v1.0 format.
@@ -113,4 +119,8 @@ type HDFV1Results struct {
 	Platform   V1Platform   `json:"platform"`
 	Profiles   []V1Profile  `json:"profiles"`
 	Statistics V1Statistics `json:"statistics"`
+	// Timestamp/Generator are absent from genuine InSpec exec-json but a
+	// re-exported HDF v1 document may carry them; preserve when present.
+	Timestamp *string        `json:"timestamp,omitempty"`
+	Generator *hdf.Generator `json:"generator,omitempty"`
 }

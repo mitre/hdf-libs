@@ -10,7 +10,7 @@ import {
   countXmlElements,
 } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
-import { ResultStatus } from '@mitre/hdf-schema';
+import { ResultStatus, TargetType } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -99,7 +99,7 @@ describe('junit to HDF converter', async () => {
     it('should set tool', async () => {
       const hdf = await parseHdf('surefire-failing.xml');
       expect(hdf.tool?.name).toBe('JUnit XML');
-      expect(hdf.tool?.format).toBe('XML');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 
@@ -278,6 +278,57 @@ describe('junit to HDF converter', async () => {
       );
       expect(req).toBeDefined();
       expect(req?.results[0]?.status).toBe(ResultStatus.Passed);
+    });
+
+    it('should surface flaky retry system-out/system-err as descriptions', async () => {
+      const hdf = await parseHdf('surefire-flaky.xml');
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'org.acme.FlakyTest.testFlaky'
+      );
+      expect(req).toBeDefined();
+
+      const out = req?.descriptions?.find((d) => d.label === 'system-out');
+      expect(out).toBeDefined();
+      expect(out?.data).toContain('code-with-quarkus 1.0.0-SNAPSHOT on JVM');
+      expect(out?.data).toContain('Installed features: [cdi, resteasy-reactive');
+
+      const err = req?.descriptions?.find((d) => d.label === 'system-err');
+      expect(err).toBeDefined();
+      expect(err?.data).toBe('Test system.err');
+    });
+
+    it('should not emit system-out/system-err descriptions when absent', async () => {
+      const hdf = await parseHdf('surefire-flaky.xml');
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'org.acme.FlakyTest.testStable'
+      );
+      expect(req).toBeDefined();
+      expect(req?.descriptions?.find((d) => d.label === 'system-out')).toBeUndefined();
+      expect(req?.descriptions?.find((d) => d.label === 'system-err')).toBeUndefined();
+    });
+
+    it('should map direct testcase-level system-out/system-err children', async () => {
+      const xml =
+        '<?xml version="1.0"?>' +
+        '<testsuite name="S"><testcase classname="C" name="t">' +
+        '<system-out>  captured stdout\n</system-out>' +
+        '<system-err>captured stderr</system-err>' +
+        '</testcase></testsuite>';
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'C.t');
+      expect(req?.descriptions?.find((d) => d.label === 'system-out')?.data).toBe('captured stdout');
+      expect(req?.descriptions?.find((d) => d.label === 'system-err')?.data).toBe('captured stderr');
+    });
+
+    it('should omit whitespace-only system-out/system-err', async () => {
+      const xml =
+        '<?xml version="1.0"?>' +
+        '<testsuite name="S"><testcase classname="C" name="t">' +
+        '<system-out>   \n  </system-out>' +
+        '</testcase></testsuite>';
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'C.t');
+      expect(req?.descriptions?.find((d) => d.label === 'system-out')).toBeUndefined();
     });
   });
 
@@ -505,6 +556,38 @@ describe('junit to HDF converter', async () => {
       expect(reqs[0]!.results[0]!.codeDesc).toContain('JUnit');
       expect(reqs[0]!.results[0]!.codeDesc).toContain('EmptySuite');
       expect(reqs[0]!.results[0]!.codeDesc).toContain('zero findings');
+    });
+  });
+
+  // --- Scan-target components ---
+
+  describe('components', async () => {
+    it('emits a deduped host component from testsuite @hostname', async () => {
+      const hdf = await parseHdf('testsuites-mixed.xml');
+      const hosts = hdf.components!.filter((c) => c.type === TargetType.Host);
+      expect(hosts).toHaveLength(1);
+      expect(hosts[0]!.name).toBe('ci-runner-01');
+      expect(hosts[0]!.hostname).toBe('ci-runner-01');
+      // Application component is still present.
+      expect(hdf.components!.some((c) => c.type === TargetType.Application)).toBe(true);
+    });
+
+    it('emits no host component when no testsuite carries a hostname', async () => {
+      const hdf = await parseHdf('surefire-failing.xml');
+      expect(hdf.components!.some((c) => c.type === TargetType.Host)).toBe(false);
+    });
+
+    it('emits distinct host components for distinct hostnames', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites>
+  <testsuite name="A" hostname="alpha"><testcase name="t1" classname="c"/></testsuite>
+  <testsuite name="B"><testcase name="t2" classname="c"/></testsuite>
+  <testsuite name="C" hostname="beta"><testcase name="t3" classname="c"/></testsuite>
+  <testsuite name="D" hostname="alpha"><testcase name="t4" classname="c"/></testsuite>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
+      const hosts = hdf.components!.filter((c) => c.type === TargetType.Host);
+      expect(hosts.map((h) => h.name)).toEqual(['alpha', 'beta']);
     });
   });
 });

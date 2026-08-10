@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 //go:embed hipcheck-nist-mappings.json
@@ -54,6 +56,11 @@ func bareName(analysis string) string {
 	return analysis
 }
 
+// NativeRevision is the NIST 800-53 revision this table was authored against
+// (declared Rev: 5 in the data; it carries SR-family controls that do not
+// exist at Rev 4). Lookups translate to the process-global revision.
+const NativeRevision = 5
+
 // NISTControls returns the NIST 800-53 controls for a Hipcheck analysis name.
 // Accepts bare ("binary") or publisher-prefixed ("mitre/binary") names.
 // Returns nil if the analysis has no mapping.
@@ -69,7 +76,7 @@ func NISTControls(analysis string) []string {
 			out = append(out, p)
 		}
 	}
-	return out
+	return nist.AtRevision(out, NativeRevision, nist.Revision())
 }
 
 // Exists reports whether the given Hipcheck analysis name has a NIST mapping.

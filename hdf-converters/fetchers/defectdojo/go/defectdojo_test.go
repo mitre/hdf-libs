@@ -73,6 +73,38 @@ func TestDefectDojoFetcher_FetchPaginatesAndFeedsConverter(t *testing.T) {
 	assert.Len(t, result.Baselines[0].Requirements, 2)
 }
 
+func TestDefectDojoFetcher_EmptyResultSetProducesNoFindingsHDF(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v2/user_profile/" {
+			_, _ = w.Write([]byte(`{"username":"admin"}`))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"next":null,"results":[]}`))
+	}))
+	defer srv.Close()
+	t.Setenv(defectDojoTokenEnv, testToken)
+
+	f, err := NewDefectDojoFetcher(DefectDojoParams{URL: srv.URL}, shared.TLSOptions{})
+	require.NoError(t, err)
+
+	data, err := f.Fetch(context.Background())
+	require.NoError(t, err)
+
+	// The assembled envelope must be {"results":[]}, not {"results":null}.
+	var env struct {
+		Results []json.RawMessage `json:"results"`
+	}
+	require.NoError(t, json.Unmarshal(data, &env))
+	assert.NotNil(t, env.Results, "empty fetch must marshal results as [] not null")
+	assert.Empty(t, env.Results)
+
+	// The converter accepts it and produces a no-findings baseline rather than erroring.
+	result, err := converter.ConvertDefectDojo(data, "0.1.0")
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+}
+
 func TestDefectDojoFetcher_Verify(t *testing.T) {
 	srv := ddServer(t)
 	defer srv.Close()

@@ -184,7 +184,9 @@ func (f *DefectDojoFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	var results []json.RawMessage
+	// Non-nil so an empty result set marshals to {"results":[]} (which the converter
+	// turns into a no-findings baseline) rather than {"results":null} (which it rejects).
+	results := make([]json.RawMessage, 0)
 	for page := 0; nextURL != ""; page++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err

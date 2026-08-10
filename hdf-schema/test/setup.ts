@@ -31,6 +31,7 @@ export function createAjvWithPrimitives(): Ajv2020 {
     'extensions.schema.json',
     'parameter.schema.json',
     'comparison.schema.json',
+    'events.schema.json',       // after common (envelope $refs the Checksum type)
     'system.schema.json',
     'bom.schema.json',          // before component + hdf-system (both $ref the Bom type)
     'component.schema.json',

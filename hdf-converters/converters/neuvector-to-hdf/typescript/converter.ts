@@ -4,13 +4,18 @@ import {
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildCvss, cvssVersionFromVector, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type {
+  Component,
+  Cvss,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Reference,
 } from '@mitre/hdf-schema';
 import {
+  HashAlgorithm,
   ResultStatus,
   TargetType,
   VerificationMethodEnum,
@@ -86,6 +91,51 @@ function extractCWEs(description: string): string[] {
 }
 
 /**
+ * Collects the distinct CVE identifiers a vulnerability carries in its cves[]
+ * field, preserving first-seen order. The requirement ID is a
+ * name/package/version composite (not the CVE), so tags.cve is where the CVE
+ * list lives.
+ */
+function extractCVEs(vuln: NeuVectorVuln): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const cve of vuln.cves ?? []) {
+    if (cve && !seen.has(cve)) {
+      seen.add(cve);
+      out.push(cve);
+    }
+  }
+  return out;
+}
+
+/**
+ * Assembles the structured requirement.cvss[] from the scoring a vulnerability
+ * carries. NeuVector emits a CVSS v3 vector (version-prefixed) and, separately,
+ * a legacy v2 vector (prefix-less). The v3 metric is preferred; the v2 metric
+ * is the fallback. A vulnerability with neither vector contributes no entry —
+ * its score still drives impact.
+ */
+function buildCvssEntries(vuln: NeuVectorVuln): Cvss[] {
+  if (vuln.vectors_v3) {
+    return [buildCvss({
+      version: cvssVersionFromVector(vuln.vectors_v3),
+      baseScore: vuln.score_v3 > 0 ? vuln.score_v3 : undefined,
+      baseVector: vuln.vectors_v3,
+      source: 'NeuVector',
+    })];
+  }
+  if (vuln.vectors) {
+    return [buildCvss({
+      version: cvssVersionFromString('2.0'),
+      baseScore: vuln.score > 0 ? vuln.score : undefined,
+      baseVector: vuln.vectors,
+      source: 'NeuVector',
+    })];
+  }
+  return [];
+}
+
+/**
  * Computes the HDF impact from NeuVector CVSS scores.
  * Prefers CVSS v3 score; falls back to CVSS v2 if v3 is 0.
  * Impact is normalized to 0.0-1.0 by dividing by 10.
@@ -124,11 +174,71 @@ function vulnMessage(vuln: NeuVectorVuln): string {
   return `Vulnerable package ${vuln.package_name} is at version ${vuln.package_version}. Update to fixed version ${vuln.fixed_version}.`;
 }
 
+// Collapses runs of ASCII whitespace to a single space; spelled out (not \s)
+// so Go and TS collapse identically.
+const WHITESPACE_RUN = /[ \t\n\r]+/g;
+const CODE_DESC_SNIPPET_RUNES = 100;
+
+/**
+ * Returns the CVSS score used in code_desc: CVSS v3 preferred, else v2.
+ */
+function cvssScore(vuln: NeuVectorVuln): number {
+  return vuln.score_v3 > 0 ? vuln.score_v3 : vuln.score;
+}
+
+/**
+ * Collapses the description to a single line and truncates it to
+ * CODE_DESC_SNIPPET_RUNES code points (Array.from matches Go's []rune).
+ */
+function descSnippet(description: string): string {
+  const collapsed = description.replace(WHITESPACE_RUN, ' ').trim();
+  const runes = Array.from(collapsed);
+  return runes.length > CODE_DESC_SNIPPET_RUNES
+    ? runes.slice(0, CODE_DESC_SNIPPET_RUNES).join('') + '…'
+    : collapsed;
+}
+
+/**
+ * Builds the pipe-joined result code_desc from the fields the vuln carries:
+ * package@version | name | CVSS score | description snippet. Only parts the
+ * source actually provides are included.
+ */
+function buildCodeDesc(vuln: NeuVectorVuln): string {
+  const parts: string[] = [];
+  if (vuln.package_name) {
+    parts.push(vuln.package_version ? `${vuln.package_name}@${vuln.package_version}` : vuln.package_name);
+  }
+  if (vuln.name) {
+    parts.push(vuln.name);
+  }
+  const score = cvssScore(vuln);
+  if (score > 0) {
+    parts.push(`CVSS ${score}`);
+  }
+  const snippet = descSnippet(vuln.description);
+  if (snippet) {
+    parts.push(snippet);
+  }
+  return parts.join(' | ');
+}
+
+/**
+ * Emits a single external Reference for the vulnerability's advisory link.
+ * Returns undefined when the source carries no link so refs[] is omitted.
+ */
+function buildRefs(vuln: NeuVectorVuln): Reference[] | undefined {
+  if (!vuln.link) {
+    return undefined;
+  }
+  return [{ url: vuln.link }];
+}
+
 /**
  * Builds a single EvaluatedRequirement from a NeuVector vulnerability.
  */
 function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequirement {
   const cweIDs = extractCWEs(vuln.description);
+  const cveIDs = extractCVEs(vuln);
   const nist = mapCWEToNIST(cweIDs, DEFAULT_REMEDIATION_NIST_TAGS);
   const cciTags = nistToCci(nist);
 
@@ -137,8 +247,12 @@ function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequire
     cci: cciTags,
   };
 
-  if (cweIDs.length > 0) {
-    tags['cwe'] = cweIDs;
+  if (cveIDs.length > 0) {
+    tags['cve'] = cveIDs;
+  }
+
+  if (vuln.feed_rating) {
+    tags['feed_rating'] = vuln.feed_rating;
   }
 
   const descriptions: Description[] = [
@@ -147,7 +261,7 @@ function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequire
 
   const results = [
     createResult(ResultStatus.Failed, vulnMessage(vuln), {
-      codeDesc: '',
+      codeDesc: buildCodeDesc(vuln),
       startTime: scanTime,
     }),
   ];
@@ -160,11 +274,23 @@ function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequire
     results,
     { tags }
   ) as EvaluatedRequirement;
+  req.code = JSON.stringify(vuln, null, 2);
   const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+  if (cweIDs.length > 0) {
+    req.cwe = cweIDs;
+  }
+  const cvss = buildCvssEntries(vuln);
+  if (cvss.length > 0) {
+    req.cvss = cvss;
+  }
+  const refs = buildRefs(vuln);
+  if (refs) {
+    req.refs = refs;
+  }
 
   // NeuVector scans container images; the package ecosystem isn't
   // disambiguated by the source format (could be rpm/deb/python/etc.
@@ -197,6 +323,93 @@ function imageTitle(report: NeuVectorScanReport): string {
  */
 function targetNameFromReport(report: NeuVectorScanReport): string {
   return `${report.registry}/${report.repository}:${report.tag}`;
+}
+
+// Maps a NeuVector digest's algorithm prefix to the HDF hash algorithm.
+// NeuVector emits `sha256:<hex>`; the others are defensive.
+const DIGEST_ALGORITHMS: Record<string, HashAlgorithm> = {
+  sha256: HashAlgorithm.Sha256,
+  sha384: HashAlgorithm.Sha384,
+  sha512: HashAlgorithm.Sha512,
+  blake3: HashAlgorithm.Blake3,
+};
+
+/**
+ * Splits NeuVector's base_os "name:version" form (e.g. "alpine:3.12.1") into OS
+ * name and version. A value with no ":" is the name with no version; an empty
+ * value yields two empty strings.
+ */
+function splitBaseOS(baseOS: string): { name: string; version: string } {
+  if (!baseOS) {
+    return { name: '', version: '' };
+  }
+  const i = baseOS.indexOf(':');
+  if (i >= 0) {
+    return { name: baseOS.slice(0, i), version: baseOS.slice(i + 1) };
+  }
+  return { name: baseOS, version: '' };
+}
+
+/**
+ * Turns the report digest ("sha256:<hex>") into the component's Integrity
+ * checksum, folding the algorithm prefix into Checksum.algorithm. Returns
+ * undefined when the report carries no digest.
+ */
+function digestIntegrity(digest: string): Checksum[] | undefined {
+  if (!digest) {
+    return undefined;
+  }
+  let algorithm = HashAlgorithm.Sha256;
+  let value = digest;
+  const i = digest.indexOf(':');
+  if (i >= 0) {
+    const mapped = DIGEST_ALGORITHMS[digest.slice(0, i)];
+    if (mapped) {
+      algorithm = mapped;
+      value = digest.slice(i + 1);
+    }
+  }
+  return [{ algorithm, value }];
+}
+
+/**
+ * Assembles the scan-wide containerImage component from the report's image
+ * identity. base_os → osName/osVersion, digest → integrity, plus
+ * imageId/registry/repository/tag when the report carries them.
+ */
+function buildComponent(report: NeuVectorScanReport): Component {
+  const component: Component = {
+    name: targetNameFromReport(report),
+    type: TargetType.ContainerImage,
+    labels: {
+      image: `${report.registry}/${report.repository}:${report.tag}`,
+      registry: report.registry,
+    },
+  };
+  const { name: osName, version: osVersion } = splitBaseOS(report.base_os);
+  if (osName) {
+    component.osName = osName;
+    if (osVersion) {
+      component.osVersion = osVersion;
+    }
+  }
+  if (report.image_id) {
+    component.imageId = report.image_id;
+  }
+  if (report.registry) {
+    component.registry = report.registry;
+  }
+  if (report.repository) {
+    component.repository = report.repository;
+  }
+  if (report.tag) {
+    component.tag = report.tag;
+  }
+  const integrity = digestIntegrity(report.digest);
+  if (integrity) {
+    component.integrity = integrity;
+  }
+  return component;
 }
 
 /**
@@ -279,18 +492,8 @@ export async function convertNeuvectorToHdf(input: string, converterVersion = '1
     generatorName: 'neuvector-to-hdf',
     converterVersion,
     toolName: 'NeuVector',
-    toolFormat: 'JSON',
     baselines: [baseline],
-    components: [
-      {
-        name: targetNameFromReport(scan.report),
-        type: TargetType.ContainerImage,
-        labels: {
-          image: `${scan.report.registry}/${scan.report.repository}:${scan.report.tag}`,
-          registry: scan.report.registry,
-        },
-      },
-    ],
+    components: [buildComponent(scan.report)],
     timestamp: scanTime,
   });
 }

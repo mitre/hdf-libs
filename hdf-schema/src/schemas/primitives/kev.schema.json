@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.4.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.5.0",
   "title": "HDF Kev Primitives",
   "description": "Types for representing CISA Known Exploited Vulnerabilities (KEV) catalog membership. The KEV catalog (https://www.cisa.gov/known-exploited-vulnerabilities-catalog) flags CVEs that are confirmed actively exploited in the wild and drives federal patching urgency under CISA Binding Operational Directive 22-01.",
   "$defs": {

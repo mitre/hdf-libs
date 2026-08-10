@@ -59,7 +59,7 @@ Linting thresholds (`.golangci.yml`): `gocyclo` min-complexity 20, `gocognit` mi
 
 Built on [Cobra](https://github.com/spf13/cobra). Each command is in its own file. The root command defines persistent flags (`--json`, `--debug`/`-d`, `--fail-fast`/`-F`, `--max-size`, `--no-follow-symlinks`, `--no-headers`, `--schema-dir`).
 
-Commands: `validate`, `list`, `query`, `convert`, `diff`, `amend`, `evidence`, `plan`, `system`, `label`, `generate`, `fetch`, `version`. (The former `info` and `stats` commands were folded into `list <file> --detail`.)
+Commands: `validate`, `list`, `query`, `convert`, `diff`, `events`, `enrich`, `amend`, `evidence`, `plan`, `system`, `label`, `generate`, `fetch`, `version`. (The former `info` and `stats` commands were folded into `list <file> --detail`.)
 
 ### Input Handling (`input.go`)
 

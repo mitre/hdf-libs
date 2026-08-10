@@ -23,6 +23,8 @@ import type {
   Checksum,
   Tool,
   Description,
+  Reference,
+  SourceLocation,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -84,6 +86,55 @@ function getImpact(severity: string): number {
 function parseCWEIDs(html: string): string[] {
   if (!html) return [];
   return extractCWEIDs(html).map(id => `CWE-${id}`);
+}
+
+// --- Reference parsing ---
+
+const HREF_RE = /href\s*=\s*["']([^"']+)["']/gi;
+
+/**
+ * Extract external link URLs from the BurpSuite references field, which is
+ * typically an HTML blob of `<a href="URL">` anchors (often CDATA). Collects
+ * href targets; if none are present, falls back to whitespace-split plain-text
+ * tokens. Only absolute URIs (containing a "://" scheme separator) are returned.
+ * Returns undefined when the field carries no usable URI.
+ */
+function buildRefs(references: string | undefined): Reference[] | undefined {
+  if (!references) return undefined;
+  const refs: Reference[] = [];
+  for (const m of references.matchAll(HREF_RE)) {
+    const url = m[1]!.trim();
+    if (url.includes('://')) {
+      refs.push({ url });
+    }
+  }
+  if (refs.length === 0) {
+    for (const tok of stripHTML(references).split(/\s+/).filter(Boolean)) {
+      if (tok.includes('://')) {
+        refs.push({ url: tok });
+      }
+    }
+  }
+  return refs.length > 0 ? refs : undefined;
+}
+
+// --- Source location ---
+
+/**
+ * Build the structured requirement locus from a BurpSuite issue's host URL and
+ * URL path. BurpSuite is a DAST scanner: the locus is a URL (no line number
+ * applies), so only `ref` is emitted. When the host URL is present it is
+ * prefixed onto the path to form a full URL; otherwise the path stands alone.
+ * Returns undefined when the issue carries no path.
+ */
+function buildSourceLocation(
+  hostURL: string | undefined,
+  path: string | undefined,
+): SourceLocation | undefined {
+  const p = (path ?? '').trim();
+  if (!p) return undefined;
+  const h = (hostURL ?? '').trim();
+  return { ref: h ? h + p : p };
 }
 
 // --- Format code desc ---
@@ -186,7 +237,6 @@ export async function convertBurpsuiteToHdf(input: string, converterVersion = '1
 
   const tool: Tool = {
     name: 'BurpSuite',
-    format: 'XML',
   };
   if (burpVersion) {
     tool.version = burpVersion;
@@ -289,6 +339,16 @@ function buildRequirement(
   const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {
     req.controlType = controlType;
+  }
+
+  const refs = buildRefs(rep.references);
+  if (refs !== undefined) {
+    req.refs = refs;
+  }
+
+  const sourceLocation = buildSourceLocation(rep.host?.['#text'], rep.path);
+  if (sourceLocation !== undefined) {
+    req.sourceLocation = sourceLocation;
   }
 
   return req;

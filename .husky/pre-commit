@@ -1,2 +1,12 @@
 export PATH="$PATH:$HOME/go/bin:/opt/homebrew/bin"
+
+# Git worktrees keep their real .git storage under the parent checkout's
+# .git/worktrees/. `go build` (buildvcs=auto) queries that on every build to
+# stamp VCS info; when the parent isn't readable (e.g. a sandboxed worktree)
+# the query fails with "error obtaining VCS status: exit status 128" and every
+# go-build-shelling test in `pnpm check` breaks. VCS stamping is irrelevant to
+# the test-builds the hook runs (release binaries are stamped by goreleaser), so
+# disable it for the hook. Harmless in a normal checkout and in CI.
+export GOFLAGS="${GOFLAGS:+$GOFLAGS }-buildvcs=false"
+
 pnpm check

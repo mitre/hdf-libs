@@ -4,6 +4,14 @@
 
 import type { ScoutsuiteNistMapping, ScoutsuiteNistMappings } from './types.js';
 import rawMappings from '../data/scoutsuite-nist-mappings.json';
+import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
+
+// Authored against Rev 4 (heimdall2's mapping; every control it carries is
+// identical at both revisions today — a test guards that invariant). Lookups
+// translate to the current module-global revision.
+const NATIVE_REVISION = 4;
+const atCurrentRevision = (nistId: string): string =>
+  nistControlsAtRevision(nistId.split('|'), NATIVE_REVISION, getCurrentNistRevision()).join('|');
 
 const mappings = rawMappings as ScoutsuiteNistMappings;
 const indexByRule = new Map<string, ScoutsuiteNistMapping>(
@@ -26,7 +34,7 @@ export function getScoutsuiteNistMapping(rule: string): ScoutsuiteNistMapping | 
  */
 export function getScoutsuiteNistControl(rule: string): string | undefined {
   const mapping = getScoutsuiteNistMapping(rule);
-  return mapping?.['NIST-ID'];
+  return mapping ? atCurrentRevision(mapping['NIST-ID']) : undefined;
 }
 
 /**

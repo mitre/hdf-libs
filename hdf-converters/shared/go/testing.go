@@ -110,7 +110,7 @@ type ConvertFn func(input []byte) (interface{}, error)
 //	go test -run TestSnapshots -update
 func RunSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, maskStartTime ...string) {
 	t.Helper()
-	runSnapshotTests(t, converterName, convertFn, nil, maskStartTime)
+	runSnapshotTests(t, converterName, convertFn, nil, maskStartTime, nil)
 }
 
 // SnapshotInputResolver supplies input bytes for a fixture whose source lives
@@ -123,10 +123,21 @@ type SnapshotInputResolver func(inputName string) ([]byte, bool)
 // input lives outside fixtures/input/ (e.g. shared @mitre/hdf-fixtures fixtures).
 func RunSnapshotTestsWithInput(t *testing.T, converterName string, convertFn ConvertFn, resolveInput SnapshotInputResolver, maskStartTime ...string) {
 	t.Helper()
-	runSnapshotTests(t, converterName, convertFn, resolveInput, maskStartTime)
+	runSnapshotTests(t, converterName, convertFn, resolveInput, maskStartTime, nil)
 }
 
-func runSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, resolveInput SnapshotInputResolver, maskStartTime []string) {
+// RunSnapshotTestsMasking is RunSnapshotTests with extra volatile keys to mask for
+// EVERY fixture, beyond the always-masked timestamp and per-fixture startTime. Use
+// it only when a converter emits a field with no deterministic source value — e.g.
+// SARIF suppression overrides carry no owner or decision date, so appliedAt /
+// expiresAt are conversion-time. Opt-in and scoped: other converters that assert
+// deterministic override dates via their goldens are unaffected.
+func RunSnapshotTestsMasking(t *testing.T, converterName string, convertFn ConvertFn, extraMask []string, maskStartTime ...string) {
+	t.Helper()
+	runSnapshotTests(t, converterName, convertFn, nil, maskStartTime, extraMask)
+}
+
+func runSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, resolveInput SnapshotInputResolver, maskStartTime []string, extraMask []string) {
 	t.Helper()
 
 	// syntheticStartTime lists the input-fixture names whose startTime the
@@ -200,6 +211,9 @@ func runSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, r
 			mask := map[string]bool{"timestamp": true}
 			if syntheticStartTime["*"] || syntheticStartTime[inputName] {
 				mask["startTime"] = true
+			}
+			for _, k := range extraMask {
+				mask[k] = true
 			}
 			normalizedExpected := normalizeVolatileFields(expectedJSON, mask)
 			normalizedActual := normalizeVolatileFields(actualJSON, mask)

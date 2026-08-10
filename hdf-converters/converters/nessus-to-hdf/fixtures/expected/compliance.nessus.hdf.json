@@ -9,6 +9,10 @@
               "label": "default"
             },
             {
+              "data": "The remote Red Hat Enterprise Linux host does not comply with DISA STIG requirements.",
+              "label": "synopsis"
+            },
+            {
               "data": "Configure the operating system to display the Standard Mandatory DoD Notice and Consent Banner before granting access to the system.\n\nNote: If the system does not have GNOME installed, this requirement is Not Applicable.\n\nCreate a database to contain the system-wide graphical user logon settings (if it does not already exist) with the following command:\n\n# touch /etc/dconf/db/local.d/01-banner-message\n\nAdd the following line to the [org/gnome/login-screen] section of the \"/etc/dconf/db/local.d/01-banner-message\":\n\n[org/gnome/login-screen]\nbanner-message-enable=true",
               "label": "fix"
             }
@@ -53,6 +57,10 @@
             {
               "data": "Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised. Passwords encrypted with a weak algorithm are no more protected than if they are kept in plain text.",
               "label": "default"
+            },
+            {
+              "data": "The remote Red Hat Enterprise Linux host does not comply with DISA STIG requirements.",
+              "label": "synopsis"
             },
             {
               "data": "Configure the operating system to store only SHA512 encrypted representations of passwords.\n\nAdd the following line in \"/etc/pam.d/system-auth\":\n\npassword sufficient pam_unix.so sha512 shadow try_first_pass use_authtok\n\nAdd the following line in \"/etc/pam.d/password-auth\":\n\npassword sufficient pam_unix.so sha512 shadow try_first_pass use_authtok\n\nNote: Per requirement RHEL-07-010199, the \"nullok\" option cannot be utilized in the password files.",
@@ -101,6 +109,10 @@
               "label": "default"
             },
             {
+              "data": "The remote Red Hat Enterprise Linux host complies with DISA STIG requirements.",
+              "label": "synopsis"
+            },
+            {
               "data": "Configure the operating system to assign home directories to all new local interactive users by setting the CREATE_HOME parameter in \"/etc/login.defs\" to \"yes\" as follows.\n\nCREATE_HOME yes",
               "label": "fix"
             }
@@ -144,6 +156,10 @@
             {
               "data": "Without establishing what type of events occurred, it would be difficult to establish, correlate, and investigate the events leading up to an outage or attack.\n\nAudit record content that may be necessary to satisfy this requirement includes, for example, time stamps, source and destination addresses, user/process identifiers, event descriptions, success/fail indications, filenames involved, and access control or flow control rules invoked.",
               "label": "default"
+            },
+            {
+              "data": "The remote Red Hat Enterprise Linux host has a WARNING for DISA STIG requirements.",
+              "label": "synopsis"
             },
             {
               "data": "Configure the operating system to produce audit records containing information to establish when (date and time) the events occurred.\n\nEnable the auditd service with the following command:\n\n# systemctl enable auditd.service",
@@ -190,6 +206,10 @@
             {
               "data": "Unapproved mechanisms that are used for authentication to the cryptographic module are not verified and therefore cannot be relied upon to provide confidentiality or integrity, and DoD data may be compromised.",
               "label": "default"
+            },
+            {
+              "data": "The remote Red Hat Enterprise Linux host encountered an ERROR during DISA STIG compliance check.",
+              "label": "synopsis"
             },
             {
               "data": "Configure SSH to use FIPS 140-2 approved cryptographic algorithms.\n\nAdd the following line (or modify the line to have the required value) to the \"/etc/ssh/sshd_config\" file (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor).\n\nCiphers aes128-ctr,aes192-ctr,aes256-ctr\n\nThe SSH service must be restarted for changes to take effect.",

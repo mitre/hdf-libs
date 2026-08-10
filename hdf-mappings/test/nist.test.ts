@@ -54,16 +54,16 @@ describe('NIST revision selection', () => {
 
 describe('NIST Mapping Functions', () => {
   describe('getNISTDescription', () => {
-    it('should return description for valid NIST control ID', () => {
+    it('should return description for valid NIST control ID (Rev 5 default)', () => {
       const desc = getNISTDescription('AC-01');
       expect(desc).toBeDefined();
-      expect(desc).toBe('ACCESS CONTROL POLICY AND PROCEDURES');
+      expect(desc).toBe('Policy and Procedures');
     });
 
-    it('should return description for NIST control sub-parts', () => {
+    it('should return description for NIST control sub-parts (Rev 5 default)', () => {
       const desc = getNISTDescription('AC-01 a');
       expect(desc).toBeDefined();
-      expect(desc).toContain('Develops, documents, and disseminates');
+      expect(desc).toContain('Develop, document, and disseminate');
     });
 
     it('should return undefined for invalid NIST ID', () => {
@@ -88,7 +88,7 @@ describe('NIST Mapping Functions', () => {
     it('should return array of all NIST IDs', () => {
       const ids = getAllNISTIds();
       expect(Array.isArray(ids)).toBe(true);
-      expect(ids.length).toBeGreaterThan(1600); // We know there are 1682 NIST entries
+      expect(ids.length).toBeGreaterThan(1600); // full 800-53 catalog at the default revision
     });
 
     it('should include base controls and sub-parts', () => {
@@ -145,6 +145,38 @@ describe('NIST Mapping Functions', () => {
     it('should handle all common NIST families', () => {
       // Verify the function works for a representative NIST family
       expect(getNISTFamily('AC-01')).toBe('AC');
+    });
+  });
+
+  describe('revision-aware descriptions', () => {
+    afterEach(() => {
+      resetNistRevision();
+    });
+
+    it('returns the revision-specific title for a renamed control', () => {
+      expect(getNISTDescription('AC-01', 4)).toBe('ACCESS CONTROL POLICY AND PROCEDURES');
+      expect(getNISTDescription('AC-01', 5)).toBe('Policy and Procedures');
+    });
+
+    it('resolves a Rev 5-only family (SR) at Rev 5 but not Rev 4', () => {
+      expect(getNISTDescription('SR-01', 5)).toBeDefined();
+      expect(getNISTDescription('SR-01', 4)).toBeUndefined();
+      expect(nistExists('SR-01', 5)).toBe(true);
+      expect(nistExists('SR-01', 4)).toBe(false);
+      expect(getNISTFamily('SR-01', 5)).toBe('SR');
+      expect(getNISTFamily('SR-01', 4)).toBeUndefined();
+    });
+
+    it('resolves a Rev 4 control withdrawn in Rev 5 (IR-10) at Rev 4 but not Rev 5', () => {
+      expect(getNISTDescription('IR-10', 4)).toBeDefined();
+      expect(getNISTDescription('IR-10', 5)).toBeUndefined();
+    });
+
+    it('honors the module-global revision when no explicit rev is passed', () => {
+      expect(getNISTDescription('AC-01')).toBe('Policy and Procedures'); // default Rev 5
+      setCurrentNistRevision(4);
+      expect(getNISTDescription('AC-01')).toBe('ACCESS CONTROL POLICY AND PROCEDURES');
+      expect(nistExists('SR-01')).toBe(false); // SR family absent at Rev 4
     });
   });
 

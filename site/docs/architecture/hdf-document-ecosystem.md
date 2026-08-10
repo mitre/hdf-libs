@@ -883,7 +883,7 @@ a record of the intent behind v3's shape.
 - Add Input type definition (or new parameter.schema.json) — **shipped** (lives in `parameter.schema.json`)
 
 ### v3 cardinality tightening (not in the original v2→v3 plan)
-- `requirements`, `results`, and `descriptions` arrays now declare `minItems: 1`. Legacy HDF v1 (InSpec-ExecJSON-shaped) tolerated empty arrays; v3 requires producers to commit to a non-empty record. Converters synthesize a `passed` placeholder for clean scans. See `../specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale and shape.
+- `requirements`, `results`, and `descriptions` arrays now declare `minItems: 1`. Legacy HDF v2 (InSpec-ExecJSON-shaped) tolerated empty arrays; v3 requires producers to commit to a non-empty record. Converters synthesize a `passed` placeholder for clean scans. See `../specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale and shape.
 
 ---
 

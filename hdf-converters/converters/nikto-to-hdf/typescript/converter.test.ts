@@ -106,13 +106,13 @@ describe('Nikto Converter', async () => {
       expect(hdf.generator.name).toBe('nikto-to-hdf');
     });
 
-    it('should set dataSource name to "Nikto" and format to "JSON"', async () => {
+    it('should set dataSource name to "Nikto" with no format', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertNiktoToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.tool?.name).toBe('Nikto');
-      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.format).toBeUndefined() // serialization structures are not formats (kpvj);
     });
   });
 
@@ -257,6 +257,56 @@ describe('Nikto Converter', async () => {
       expect(req.results).toHaveLength(1);
       expect(req.results[0]!.status).toBe('passed');
       expect(req.results[0]!.codeDesc).toContain('zero findings');
+    });
+  });
+
+  describe('host component', () => {
+    it('should emit a host component with hostname and ipAddress', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertNiktoToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      expect(hdf.components).toHaveLength(1);
+      const comp = hdf.components![0]!;
+      expect(comp.type).toBe('host');
+      expect(comp.name).toBe('example.com');
+      expect(comp.hostname).toBe('example.com');
+      expect(comp.ipAddress).toBe('93.184.216.34');
+      expect(comp.componentId).toBeUndefined();
+    });
+
+    it('should name the component from ip when host is absent', async () => {
+      const input = JSON.stringify({ip: '10.1.2.3', vulnerabilities: []});
+      const output = await convertNiktoToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      expect(hdf.components).toHaveLength(1);
+      const comp = hdf.components![0]!;
+      expect(comp.type).toBe('host');
+      expect(comp.name).toBe('10.1.2.3');
+      expect(comp.hostname).toBeUndefined();
+      expect(comp.ipAddress).toBe('10.1.2.3');
+    });
+
+    it('should set only hostname when ip is absent', async () => {
+      const input = JSON.stringify({host: 'web.example.com', vulnerabilities: []});
+      const output = await convertNiktoToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      expect(hdf.components).toHaveLength(1);
+      const comp = hdf.components![0]!;
+      expect(comp.type).toBe('host');
+      expect(comp.name).toBe('web.example.com');
+      expect(comp.hostname).toBe('web.example.com');
+      expect(comp.ipAddress).toBeUndefined();
+    });
+
+    it('should omit the component when host and ip are absent', async () => {
+      const input = JSON.stringify({banner: 'nginx', vulnerabilities: []});
+      const output = await convertNiktoToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      expect(hdf.components ?? []).toHaveLength(0);
     });
   });
 

@@ -89,20 +89,22 @@ describe('unmapped rule NIST fallback', () => {
   });
 });
 
-// api-gw-ssl-enabled is mapped only at Rev 5; cloudtrail-enabled at both.
+// secretsmanager-rotation-enabled-check maps solely to AC-3(15), which has no
+// Rev 4 equivalent — the one rule that stays a genuine revision mismatch after
+// the crosswalk backfill (its Rev 4 row is an explicit empty-NIST-ID marker).
 const REV_MIX_INPUT = JSON.stringify({
   ConfigRules: [
     {
       ConfigRuleId: 'r1',
-      ConfigRuleName: 'api-gw-ssl-enabled',
+      ConfigRuleName: 'secretsmanager-rotation-enabled-check',
       ConfigRuleArn: 'arn:aws:config:us-east-1:123456789012:config-rule/r1',
-      Source: { Owner: 'AWS', SourceIdentifier: 'API_GW_SSL_ENABLED' },
+      Source: { Owner: 'AWS', SourceIdentifier: 'SECRETSMANAGER_ROTATION_ENABLED_CHECK' },
       EvaluationResults: [
         {
           EvaluationResultIdentifier: {
             EvaluationResultQualifier: {
-              ConfigRuleName: 'api-gw-ssl-enabled',
-              ResourceType: 'AWS::ApiGateway::Stage',
+              ConfigRuleName: 'secretsmanager-rotation-enabled-check',
+              ResourceType: 'AWS::SecretsManager::Secret',
               ResourceId: 's1',
             },
           },
@@ -127,14 +129,16 @@ describe('AWS Config revision alignment', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await convertAwsConfigToHdf(REV_MIX_INPUT);
     const msg = warn.mock.calls.map((c) => String(c[0])).join('\n');
-    expect(msg).toContain('api-gw-ssl-enabled');
+    expect(msg).toContain('secretsmanager-rotation-enabled-check');
     expect(msg).toContain('Rev 5');
   });
 
   it('throws in strict mode on a revision mismatch', async () => {
     setCurrentNistRevision(4);
     setNistStrict(true);
-    await expect(convertAwsConfigToHdf(REV_MIX_INPUT)).rejects.toThrow('api-gw-ssl-enabled');
+    await expect(convertAwsConfigToHdf(REV_MIX_INPUT)).rejects.toThrow(
+      'secretsmanager-rotation-enabled-check'
+    );
   });
 
   it('does not warn when every rule is mapped at the requested revision', async () => {
@@ -142,6 +146,27 @@ describe('AWS Config revision alignment', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await convertAwsConfigToHdf(REV_MIX_INPUT);
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('emits crosswalk-backfilled tags without warning for a natively Rev5-only rule at Rev 4', async () => {
+    setCurrentNistRevision(4);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const input = JSON.stringify({
+      ConfigRules: [
+        {
+          ConfigRuleId: 'r1',
+          ConfigRuleName: 'api-gw-ssl-enabled',
+          ConfigRuleArn: 'arn:aws:config:us-east-1:123456789012:config-rule/r1',
+          Source: { Owner: 'AWS', SourceIdentifier: 'API_GW_SSL_ENABLED' },
+          EvaluationResults: [],
+        },
+      ],
+    });
+    const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HDFResults;
+    expect(warn).not.toHaveBeenCalled();
+    const tags = hdf.baselines[0].requirements[0].tags?.nist ?? [];
+    expect(tags).toContain('SC-8');
+    expect(tags).not.toContain('CM-6');
   });
 });
 

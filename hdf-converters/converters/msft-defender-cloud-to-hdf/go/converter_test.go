@@ -203,6 +203,29 @@ func TestConvert_Categories(t *testing.T) {
 	assert.Contains(t, categories, "Networking")
 }
 
+// ---- Policy definition ID tag ----
+
+func TestConvert_PolicyDefinitionIDTag(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftDefenderCloudToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req0 := result.Baselines[0].Requirements[0]
+	pdid, ok := req0.Tags["policy_definition_id"].(string)
+	require.True(t, ok, "policy_definition_id should be a string")
+	assert.Equal(t, "/providers/Microsoft.Authorization/policyDefinitions/aaaa1111-bbbb-2222-cccc-3333dddd4444", pdid)
+}
+
+func TestConvert_PolicyDefinitionIDTag_Absent(t *testing.T) {
+	input := []byte(`{"value":[{"id":"/subscriptions/sub1/providers/Microsoft.Security/assessments/nopolicy","name":"nopolicy","type":"Microsoft.Security/assessments","properties":{"displayName":"No policy","resourceDetails":{"source":"Azure","id":"/subscriptions/sub1/res"},"status":{"code":"Healthy"},"metadata":{"displayName":"No policy","severity":"Low"}}}]}`)
+	result, err := ConvertMsftDefenderCloudToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req0 := result.Baselines[0].Requirements[0]
+	_, ok := req0.Tags["policy_definition_id"]
+	assert.False(t, ok, "policy_definition_id should be omitted when source field is absent")
+}
+
 // ---- Descriptions ----
 
 func TestConvert_Descriptions(t *testing.T) {

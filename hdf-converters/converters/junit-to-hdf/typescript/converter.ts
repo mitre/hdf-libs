@@ -5,6 +5,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
+  Component,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -44,6 +45,17 @@ interface JUnitTestCase {
   failure?: JUnitFailure;
   error?: JUnitError;
   skipped?: JUnitSkipped | '';
+  'system-out'?: string;
+  'system-err'?: string;
+  flakyFailure?: JUnitFlaky[];
+  flakyError?: JUnitFlaky[];
+}
+
+// A Surefire flaky/rerun retry element, which can carry its own captured
+// stdout/stderr for the attempt.
+interface JUnitFlaky {
+  'system-out'?: string;
+  'system-err'?: string;
 }
 
 interface JUnitFailure {
@@ -81,7 +93,7 @@ function decodeXmlEntities(s: string): string {
 }
 
 // Tags to always parse as arrays (even when single element)
-const ARRAY_TAGS = ['testsuite', 'testcase'];
+const ARRAY_TAGS = ['testsuite', 'testcase', 'flakyFailure', 'flakyError'];
 
 /**
  * Converts JUnit XML test results to HDF format.
@@ -114,14 +126,37 @@ export async function convertJunitToHdf(input: string, converterVersion = '1.0.0
     generatorName: 'junit-to-hdf',
     converterVersion,
     toolName: 'JUnit XML',
-    toolFormat: 'XML',
     baselines: [baseline],
-    components: [{
-      type: TargetType.Application,
-      name,
-    }],
+    components: [
+      {
+        type: TargetType.Application,
+        name,
+      },
+      ...hostComponents(suites),
+    ],
     timestamp: scanTime,
   });
+}
+
+// Derives one host component per distinct testsuite @hostname (the machine the
+// tests ran on). Suites without a hostname contribute nothing; duplicate
+// hostnames are emitted once, in first-seen order.
+function hostComponents(suites: JUnitTestSuite[]): Component[] {
+  const hosts: Component[] = [];
+  const seen = new Set<string>();
+  for (const suite of suites) {
+    const hostname = suite.hostname?.trim();
+    if (!hostname || seen.has(hostname)) {
+      continue;
+    }
+    seen.add(hostname);
+    hosts.push({
+      type: TargetType.Host,
+      name: hostname,
+      hostname,
+    });
+  }
+  return hosts;
 }
 
 // Computes one timestamp per conversion: the first available <testsuite> timestamp,
@@ -220,6 +255,13 @@ function testCaseToRequirement(
       data: `JUnit test: ${name} in ${tc.classname ? decodeXmlEntities(tc.classname) : 'unknown'}`,
     },
   ];
+  const { systemOut, systemErr } = collectSystemStreams(tc);
+  if (systemOut) {
+    descriptions.push({ label: 'system-out', data: systemOut });
+  }
+  if (systemErr) {
+    descriptions.push({ label: 'system-err', data: systemErr });
+  }
 
   const req = createRequirement(id, name, descriptions, 0.5, [result], {
     tags: { nist: DEFAULT_NIST },
@@ -230,6 +272,30 @@ function testCaseToRequirement(
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
   return req;
+}
+
+// Gathers captured stdout/stderr for a test case: any direct
+// <system-out>/<system-err> children plus those nested inside Surefire
+// flakyFailure/flakyError retry elements, in document order. Each block is
+// trimmed of wrapping whitespace and empty blocks are dropped; multiple blocks
+// are joined with a newline so each stream yields one description.
+function collectSystemStreams(tc: JUnitTestCase): { systemOut: string; systemErr: string } {
+  const outs: string[] = [];
+  const errs: string[] = [];
+  const add = (out?: string, err?: string): void => {
+    if (out) {
+      const trimmed = decodeXmlEntities(out).trim();
+      if (trimmed) outs.push(trimmed);
+    }
+    if (err) {
+      const trimmed = decodeXmlEntities(err).trim();
+      if (trimmed) errs.push(trimmed);
+    }
+  };
+  add(tc['system-out'], tc['system-err']);
+  for (const f of tc.flakyFailure ?? []) add(f['system-out'], f['system-err']);
+  for (const f of tc.flakyError ?? []) add(f['system-out'], f['system-err']);
+  return { systemOut: outs.join('\n'), systemErr: errs.join('\n') };
 }
 
 function buildID(tc: JUnitTestCase): string {

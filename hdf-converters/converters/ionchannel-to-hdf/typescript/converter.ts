@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -70,7 +70,10 @@ interface ScanSummary {
 
 interface ScanResults {
   type: string;
-  data: ScanData;
+  // Kept as unknown so non-dependency scan types (community, vulnerability,
+  // license, virus, …) are preserved verbatim rather than narrowed to the
+  // dependency shape.
+  data: ScanData & Record<string, unknown>;
 }
 
 interface ScanData {
@@ -164,8 +167,21 @@ function buildTitle(dep: Dependency): string {
   return title.trim();
 }
 
+// Analysis-level verdict metadata attached to every requirement built from the
+// analysis. risk/ruleset_name/ruleset_id are omitted when the source leaves them
+// empty; passed is always present as its native boolean (distinct from the
+// string form carried in the baseline labels).
+function analysisTags(a: IonChannelAnalysis): Record<string, unknown> {
+  const tags: Record<string, unknown> = { passed: a.passed };
+  if (a.risk) tags.risk = a.risk;
+  if (a.ruleset_name) tags.ruleset_name = a.ruleset_name;
+  if (a.ruleset_id) tags.ruleset_id = a.ruleset_id;
+  return tags;
+}
+
 function buildTags(
   dep: ContextualizedDependency,
+  analysis: IonChannelAnalysis,
 ): Record<string, unknown> {
   const nist = DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS;
   const cciTags = nistToCci(nist);
@@ -189,7 +205,83 @@ function buildTags(
     extras.parentDependencies = dep.parentDependencies;
   }
 
+  Object.assign(extras, analysisTags(analysis));
+
   return buildNistCciTags(nist, cciTags, extras);
+}
+
+function titleCaseFirst(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+// A scan summary's start time: created_at (when the scan began), falling back to
+// updated_at, then the sentinel when the source carries neither. The sentinel
+// mirrors Go's zero time.Time so both languages emit the same startTime on a
+// timeless scan.
+function scanStartTime(scan: ScanSummary): Date {
+  return (
+    parseTimestamp(scan.created_at) ??
+    parseTimestamp(scan.updated_at) ??
+    new Date('0001-01-01T00:00:00Z')
+  );
+}
+
+// The document timestamp: the analysis updated_at (completion / last-update
+// time), falling back to created_at, then wall-clock now() when the source
+// carries no parseable analysis time. Source-derived so converting the same
+// input twice yields the same top-level timestamp.
+function analysisTimestamp(a: IonChannelAnalysis): Date {
+  return parseTimestamp(a.updated_at) ?? parseTimestamp(a.created_at) ?? new Date();
+}
+
+// Build the single inventory requirement for a non-dependency scan summary. The
+// scan's serializable result data is preserved verbatim in the code field
+// (JSON.stringify preserves source key order, matching the Go json.Indent twin).
+function buildScanRequirement(
+  scan: ScanSummary,
+  analysis: IonChannelAnalysis,
+): EvaluatedRequirement {
+  const title = scan.description || `${titleCaseFirst(scan.name)} scan`;
+  const desc = scan.summary || `${titleCaseFirst(scan.name)} scan summary`;
+
+  const descriptions = [createDescription('default', desc)];
+  const results: RequirementResult[] = [
+    {
+      status: ResultStatus.NotReviewed,
+      codeDesc: `${scan.name} scan summary`,
+      startTime: scanStartTime(scan),
+    },
+  ];
+
+  const req = createRequirement(`scan-${scan.name}`, title, descriptions, 0.0, results, {
+    tags: { name: scan.name, type: scan.results?.type ?? '', ...analysisTags(analysis) },
+  }) as EvaluatedRequirement;
+  req.code = JSON.stringify(scan.results?.data ?? {}, null, 2);
+  req.verificationMethod = VerificationMethodEnum.Automated;
+  return req;
+}
+
+// Render the analysis-level ruleset verdict as prose.
+function verdictDescription(a: IonChannelAnalysis): string {
+  const outcome = a.passed ? 'PASSED' : 'FAILED';
+  let desc = `Ion Channel analysis verdict: ${outcome}`;
+  if (a.risk) desc += ` (risk: ${a.risk})`;
+  if (a.ruleset_name) {
+    desc += `. Ruleset: ${a.ruleset_name}`;
+    if (a.ruleset_id) desc += ` (${a.ruleset_id})`;
+  }
+  return `${desc}.`;
+}
+
+// Surface the structured analysis-level verdict as queryable baseline labels
+// (well-known-key grouping map). Values are strings; only non-empty fields are
+// included, and passed is always present.
+function verdictLabels(a: IonChannelAnalysis): Record<string, string> {
+  const labels: Record<string, string> = { passed: String(a.passed) };
+  if (a.risk) labels.risk = a.risk;
+  if (a.ruleset_name) labels.ruleset_name = a.ruleset_name;
+  if (a.ruleset_id) labels.ruleset_id = a.ruleset_id;
+  return labels;
 }
 
 // ---- Main converter ----
@@ -209,13 +301,18 @@ export async function convertIonchannelToHdf(input: string, converterVersion = '
     );
   }
 
-  // Extract dependencies from dependency scan
+  // Extract dependencies from dependency scan; collect every other scan summary
+  // for its own baseline.
   let allDeps: Dependency[] = [];
+  const nonDepScans: ScanSummary[] = [];
+  let foundDep = false;
   for (const scan of analysis.scan_summaries) {
-    if (scan.name === 'dependency') {
+    if (scan.name === 'dependency' && !foundDep) {
       allDeps = scan.results?.data?.dependencies ?? [];
-      break;
+      foundDep = true;
+      continue;
     }
+    nonDepScans.push(scan);
   }
 
   // Flatten and contextualize
@@ -225,7 +322,7 @@ export async function convertIonchannelToHdf(input: string, converterVersion = '
   const requirements: EvaluatedRequirement[] = contextDeps.map((dep) => {
     const depId = `dependency-${dep.org}/${dep.name}`;
     const title = buildTitle(dep);
-    const tags = buildTags(dep);
+    const tags = buildTags(dep, analysis);
     const code = JSON.stringify(
       {
         latest_version: dep.latest_version,
@@ -280,13 +377,32 @@ export async function convertIonchannelToHdf(input: string, converterVersion = '
     },
   ) as EvaluatedBaseline;
   baseline.maintainer = 'saf@groups.mitre.org';
+  baseline.description = verdictDescription(analysis);
+  baseline.labels = verdictLabels(analysis);
+
+  const baselines: EvaluatedBaseline[] = [baseline];
+
+  // One baseline per non-dependency scan summary, grouped by scan-summary name.
+  for (const scan of nonDepScans) {
+    const scanBaseline = createMinimalBaseline(
+      `Ion Channel ${scan.name} Scan`,
+      [buildScanRequirement(scan, analysis)],
+      {
+        title: `Ion Channel Analysis of ${analysis.source}`,
+        summary: scan.summary,
+        integrity: { algorithm: resultsChecksum.algorithm, checksum: resultsChecksum.value },
+        status: 'loaded',
+      },
+    ) as EvaluatedBaseline;
+    scanBaseline.maintainer = 'saf@groups.mitre.org';
+    baselines.push(scanBaseline);
+  }
 
   return buildHdfResults({
     generatorName: 'ionchannel-to-hdf',
     converterVersion,
     toolName: 'Ion Channel',
-    toolFormat: 'JSON',
-    baselines: [baseline],
-    timestamp: new Date(),
+    baselines,
+    timestamp: analysisTimestamp(analysis),
   });
 }

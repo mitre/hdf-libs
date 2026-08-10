@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"sync"
 	"testing"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 func TestNISTControls_WildcardFamily(t *testing.T) {
@@ -91,10 +93,29 @@ func TestExists_Unknown(t *testing.T) {
 }
 
 func TestNISTControls_ServiceDetection(t *testing.T) {
-	// Service detection plugin 10884 → AU-8(1)
+	// Plugin 10884 is authored as AU-8(1) (Rev 4); AU-8(1) was moved to
+	// SC-45(1) in Rev 5, so the default (Rev 5) lookup follows the crosswalk.
 	controls := NISTControls("Service detection", "10884")
+	if len(controls) != 1 || controls[0] != "SC-45(1)" {
+		t.Errorf("expected [SC-45(1)] for Service detection/10884 at Rev 5, got %v", controls)
+	}
+
+	if err := nist.SetRevision(4); err != nil {
+		t.Fatalf("SetRevision(4): %v", err)
+	}
+	defer nist.ResetRevision()
+	controls = NISTControls("Service detection", "10884")
 	if len(controls) != 1 || controls[0] != "AU-8(1)" {
-		t.Errorf("expected [AU-8(1)] for Service detection/10884, got %v", controls)
+		t.Errorf("expected [AU-8(1)] for Service detection/10884 at Rev 4, got %v", controls)
+	}
+}
+
+func TestNISTControls_PlaceholderPassthrough(t *testing.T) {
+	// Plugin 19506 carries heimdall2's "UM-1" placeholder — not a NIST control
+	// at either revision; translation must pass it through, not drop it.
+	controls := NISTControls("Settings", "19506")
+	if len(controls) != 1 || controls[0] != "UM-1" {
+		t.Errorf("expected [UM-1] passthrough, got %v", controls)
 	}
 }
 

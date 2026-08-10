@@ -1,11 +1,13 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import Ajv from 'ajv';
 import { describe, it, expect } from 'vitest';
 import { inspec } from '@mitre/hdf-fixtures';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
-import { convertV1ToV2, isHDFV1, HDFV1Results } from './converter.js';
+import { convertV1ToV2, convertV2ToV1, isHDFV1, HDFV1Results, HDFV2Results } from './converter.js';
+import { createMinimalBaseline, createRequirement, createResult, createDescription } from '@mitre/hdf-schema/helpers';
 
 // Count control OBJECTS under every profiles[].controls[] array in raw v1 HDF,
 // independent of the converter's typed model. Skips groups[].controls[] (those
@@ -149,7 +151,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(v2.timestamp).toBe(timestamp);
     });
 
-    it('should handle missing optional fields', () => {
+    it('stamps the converter generator and no timestamp when the source carries neither', () => {
       const v1: HDFV1Results = {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -157,10 +159,107 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
+      const v2 = convertV1ToV2(v1, '3.4.5');
+
+      // generator identifies the converter that produced the file.
+      expect(v2.generator).toEqual({ name: 'legacyhdf-to-hdf', version: '3.4.5' });
+      // no result times and no explicit timestamp → undefined (never wall clock).
+      expect(v2.timestamp).toBeUndefined();
+    });
+
+    it('derives the document timestamp from the latest result start_time', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        profiles: [
+          {
+            name: 'p',
+            controls: [
+              {
+                id: 'c-1',
+                impact: 0.5,
+                results: [
+                  { status: 'passed', start_time: '2024-03-01T10:00:00Z' },
+                  { status: 'passed', start_time: '2024-03-01T10:05:30-05:00' }, // latest → 15:05:30Z
+                  { status: 'passed', start_time: '2024-03-01T09:58:00Z' },
+                ],
+              },
+            ],
+          },
+        ],
+        statistics: {},
+      };
+
       const v2 = convertV1ToV2(v1);
 
-      expect(v2.generator).toBeUndefined();
-      expect(v2.timestamp).toBeUndefined();
+      expect(v2.timestamp).toBe('2024-03-01T15:05:30Z');
+    });
+
+    it('ignores results without start_time when deriving the timestamp', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        profiles: [
+          {
+            name: 'p',
+            controls: [
+              { id: 'c-1', impact: 0.5, results: [{ status: 'passed' }] },
+              { id: 'c-2', impact: 0.5, results: [{ status: 'passed', start_time: '2024-06-01T00:00:00Z' }] },
+            ],
+          },
+        ],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      // A result without start_time is not an observation; the latest real
+      // time wins and no sentinel value can leak into the document.
+      expect(v2.timestamp).toBe('2024-06-01T00:00:00Z');
+    });
+
+    it('normalizes an offset-bearing explicit timestamp to canonical UTC', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        timestamp: '2023-11-05T00:00:00-05:00',
+        profiles: [
+          { name: 'p', controls: [{ id: 'c-1', impact: 0.5, results: [{ status: 'passed', start_time: '2024-03-01T10:00:00Z' }] }] },
+        ],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      // Explicit-timestamp precedence must still produce the repo's
+      // canonical trimmed-UTC form, never the source's offset rendering.
+      expect(v2.timestamp).toBe('2023-11-05T05:00:00Z');
+    });
+
+    it('sets InSpec tool identity from a real InSpec version', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        profiles: [],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      expect(v2.tool).toEqual({ name: 'InSpec', version: '5.22.3', format: 'exec-json' });
+    });
+
+    it('keeps the legacy tool label for a non-InSpec (major<2) version', () => {
+      const v1: HDFV1Results = {
+        version: '1.37.6',
+        platform: { name: 'test' },
+        profiles: [],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      expect(v2.tool).toEqual({ name: 'Heimdall Data Format v1' });
     });
 
     it('should move unknown fields to extensions', () => {
@@ -1382,5 +1481,234 @@ describe('three-layer-overlay overlay output', () => {
   it('is schema-valid after overlay flattening', () => {
     const v1 = JSON.parse(readFileSync(inputFixturePath('three-layer-overlay.json'), 'utf-8')) as HDFV1Results;
     expectValidResults(convertV1ToV2(v1));
+  });
+});
+
+// Parity peer of the Go TestDowngradeV3ToV2_FlattensAmendments
+// (hdf-converters/shared/go/hdfversion/hdf_version_test.go). Reads the SAME fixture
+// and asserts the same flatten, so the amendment-flattening logic cannot drift
+// between the two languages even though the CLI transform is Go-only.
+describe('convertV2ToV1 downgrade (Go parity)', () => {
+  const fixture = join(__dirname, '..', '..', '..', 'shared', 'go', 'hdfversion', 'testdata', 'modern_with_amendments.json');
+
+  it('flattens amendments into the legacy shape, matching the Go transform', () => {
+    const v2 = JSON.parse(readFileSync(fixture, 'utf-8')) as HDFV2Results;
+    const { hdf, warnings } = convertV2ToV1(v2);
+
+    expect(hdf.version).toBe('5.22.65'); // gap C: version reconstructed from the source tool
+
+    // The downgraded document must satisfy the InSpec exec-json schema Heimdall loads:
+    // every required key on every element, and result statuses within InSpec's enum.
+    expect(hdf.platform).toHaveProperty('release');
+    const profile = hdf.profiles[0]!;
+    for (const k of ['attributes', 'controls', 'groups', 'name', 'sha256', 'supports']) {
+      expect(profile).toHaveProperty(k);
+    }
+    const validStatus = new Set(['passed', 'failed', 'error', 'skipped']);
+    for (const c of profile.controls ?? []) {
+      for (const k of ['id', 'impact', 'refs', 'results', 'source_location', 'tags']) {
+        expect(c).toHaveProperty(k);
+      }
+      for (const r of c.results ?? []) {
+        expect(r).toHaveProperty('code_desc');
+        expect(r).toHaveProperty('start_time');
+        expect(validStatus.has(r.status)).toBe(true);
+      }
+    }
+
+    const controls = hdf.profiles[0]!.controls ?? [];
+    const byId = Object.fromEntries(controls.map((c) => [c.id, c]));
+
+    // Waiver: control status flattened to effective (passed); raw result preserved (failed); breadcrumb present.
+    const waiver = byId['V-001-waiver']!;
+    expect(waiver.status).toBe('passed');
+    expect(waiver.waiver_data?.override_type).toBe('waiver');
+    expect(waiver.waiver_data?.skipped_due_to_waiver).toBe(true);
+    expect(waiver.results?.[0]!.status).toBe('failed');
+
+    // False positive: flattened, breadcrumb records the disposition type.
+    expect(byId['V-002-fp']!.status).toBe('passed');
+    expect(byId['V-002-fp']!.waiver_data?.override_type).toBe('falsePositive');
+
+    // POA&M: not representable — control stays failed, breadcrumb + warning.
+    const poam = byId['V-003-poam']!;
+    expect(poam.status).toBe('failed');
+    expect(poam.waiver_data).toHaveProperty('not_representable_in_v2');
+
+    // riskAdjustment: effective (re-scored) impact + carried resource fields.
+    const risk = byId['V-004-risk']!;
+    expect(risk.impact).toBeCloseTo(0.3, 9);
+    expect(risk.results?.[0]!.resource_class).toBe('file');
+    expect(risk.results?.[0]!.resource_id).toBe('/etc/audit/auditd.conf');
+    // refs carried into the v2 refs slot; cwe/severity mirrored into tags for Heimdall.
+    expect(risk.refs).toBeDefined();
+    expect(risk.tags?.cweid).toEqual(['CWE-79']);
+    expect(risk.tags?.severity).toBe('medium');
+
+    // Part B: the non-representable POA&M is surfaced as a warning, not dropped silently.
+    const joined = warnings.join('\n');
+    expect(joined).toContain('V-003-poam');
+    expect(joined).toContain('POA&M');
+  });
+
+  it('round-trips the profile sha256 fingerprint through v1→v2→v1 (GH #163)', () => {
+    const v1 = {
+      version: '1.0.0',
+      platform: {name: 'rhel', release: '9'},
+      profiles: [{name: 'p', sha256: '570c6a9e8a19093085ead8b98d88ba9dc', controls: [], groups: [], supports: [], attributes: []}],
+      statistics: {},
+    } as unknown as HDFV1Results;
+    const v2 = convertV1ToV2(v1);
+    const {hdf} = convertV2ToV1(v2);
+    // The fingerprint survives inspec(v1)→modern(v2/integrity)→legacy(v1/sha256).
+    expect(hdf.profiles[0]!.sha256).toBe('570c6a9e8a19093085ead8b98d88ba9dc');
+  });
+
+  it('does not name an expired override in the waiver_data breadcrumb', () => {
+    const v2 = {
+      baselines: [{name: 'B', requirements: [{
+        id: 'V-EXP', title: 'Expired waiver', impact: 0.5,
+        effectiveStatus: 'failed',
+        statusOverrides: [{
+          type: 'waiver', status: 'passed', reason: 'old waiver',
+          appliedBy: {type: 'username', identifier: 'jdoe'},
+          appliedAt: '2019-01-01T00:00:00Z', expiresAt: '2020-01-01T00:00:00Z',
+        }],
+        results: [{status: 'failed', codeDesc: 'x', startTime: '2020-01-01T00:00:00Z'}],
+      }]}],
+      statistics: {},
+      components: [{name: 'h'}],
+      generator: {name: 'g', version: '1.0.0'},
+    } as unknown as HDFV2Results;
+    const {hdf} = convertV2ToV1(v2);
+    expect(hdf.profiles[0]!.controls![0]!.waiver_data?.override_type).toBeUndefined();
+  });
+
+  it('produces a document that validates against the InSpec exec-json schema', () => {
+    // Authoritative guard: validate the whole downgrade output against the InSpec
+    // exec-json schema Heimdall's parser enforces (vendored in Go testdata), rather
+    // than trusting per-field presence assertions that can drift from the contract.
+    const v2 = JSON.parse(readFileSync(fixture, 'utf-8')) as HDFV2Results;
+    const { hdf } = convertV2ToV1(v2);
+
+    const schemaPath = join(__dirname, '..', '..', '..', 'shared', 'go', 'hdfversion', 'testdata', 'exec-json.schema.json');
+    const schema = JSON.parse(readFileSync(schemaPath, 'utf-8'));
+    const validate = new Ajv({ strict: false, allErrors: true }).compile(schema);
+
+    const ok = validate(hdf);
+    expect(validate.errors ?? []).toEqual([]);
+    expect(ok).toBe(true);
+  });
+
+  it('falls back to the rollup status + generator version and reconstructs optional profile fields', () => {
+    // No effectiveStatus/overrides → control status is the worst-wins rollup; the
+    // create* helpers supply the standard skeleton (only `code` isn't modeled).
+    const rollup = {
+      ...createRequirement(
+        'V-100',
+        'Rollup control',
+        [createDescription('default', 'default text'), createDescription('check', 'check text')],
+        0.5,
+        [
+          createResult('passed', undefined, { codeDesc: 'ok', startTime: '2026-01-01T00:00:00Z' }),
+          createResult('failed', undefined, { codeDesc: 'bad', startTime: '2026-01-01T00:00:00Z' }),
+        ],
+        { tags: { nist: ['AC-1'] }, sourceLocation: { ref: 'controls/test.rb', line: 5 } },
+      ),
+      code: 'describe file(...) do ... end',
+    };
+    // operationalRequirement (no v2 equivalent) + no title — built inline since the
+    // helpers require a title and don't model amendment fields.
+    const opreqReq = {
+      id: 'V-101-opreq',
+      impact: 0.9,
+      effectiveStatus: 'failed',
+      statusOverrides: [
+        {
+          type: 'operationalRequirement',
+          reason: 'Accepted operational risk documented in the ATO',
+          appliedBy: { type: 'username', identifier: 'ao' },
+          appliedAt: '2026-01-05T00:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
+        },
+      ],
+      results: [createResult('failed', undefined, { codeDesc: 'x', startTime: '2026-01-01T00:00:00Z' })],
+    };
+    const baseline = {
+      ...createMinimalBaseline('B', [rollup, opreqReq], {
+        version: '1.0',
+        title: 'T',
+        summary: 'S',
+        groups: [{ id: 'g1', title: 'G', requirements: ['V-100'] }],
+      }),
+      maintainer: 'M',
+      license: 'L',
+      copyright: 'C',
+      copyrightEmail: 'e@x.com',
+      depends: [{ name: 'dep' }],
+    };
+    const v2 = {
+      baselines: [baseline],
+      statistics: {},
+      components: [{ name: 'host', osVersion: '9.3' }],
+      generator: { name: 'gen', version: '2.2.2' }, // no tool → generator version used
+    } as unknown as HDFV2Results;
+    const { hdf, warnings } = convertV2ToV1(v2);
+    expect(hdf.version).toBe('2.2.2');
+    expect(hdf.platform.name).toBe('host');
+    expect(hdf.platform.release).toBe('9.3');
+    const p = hdf.profiles[0]!;
+    expect(p.version).toBe('1.0');
+    expect(p.maintainer).toBe('M');
+    expect(p.groups?.[0]!.controls).toEqual(['V-100']);
+    const ctrl = p.controls![0]!;
+    expect(ctrl.status).toBe('failed'); // rollup: failed wins over passed
+    expect(ctrl.waiver_data).toBeUndefined();
+    expect(ctrl.code).toBe('describe file(...) do ... end');
+    expect(ctrl.desc).toBe('default text'); // default description extracted
+    expect(ctrl.descriptions).toHaveLength(2);
+    expect(ctrl.tags?.nist).toEqual(['AC-1']);
+    expect(ctrl.source_location?.line).toBe(5);
+
+    // operationalRequirement is non-representable: warned + breadcrumb, control kept.
+    const opreq = p.controls![1]!;
+    expect(opreq.title).toBeUndefined();
+    expect(opreq.waiver_data).toHaveProperty('not_representable_in_v2');
+    expect(warnings.join('\n')).toContain('operationalRequirement');
+  });
+
+  it('uses the sentinel version when neither tool nor generator version is present', () => {
+    const { hdf } = convertV2ToV1({ baselines: [], statistics: {} } as unknown as HDFV2Results);
+    expect(hdf.version).toBe('0.0.0');
+    expect(hdf.platform.name).toBe('');
+  });
+});
+
+// Upgrade edge cases: a notApplicable-only control (effectiveStatus rollup) and
+// non-string / contentless control refs (dropped rather than passed through).
+describe('convertV1ToV2 upgrade edge cases', () => {
+  it('rolls up a notApplicable-only control and drops non-string / empty refs', () => {
+    const v1: HDFV1Results = {
+      version: '1.0',
+      platform: { name: 'x' },
+      statistics: {},
+      profiles: [
+        {
+          name: 'p',
+          controls: [
+            {
+              id: 'V-NA',
+              impact: 0.5,
+              refs: [42, { url: '' }], // number ref → null; contentless object → null
+              results: [{ status: 'not_applicable', code_desc: 'na', start_time: '2026-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+    };
+    const v2 = convertV1ToV2(v1);
+    const req = v2.baselines[0]!.requirements![0]!;
+    expect(req.effectiveStatus).toBe('notApplicable');
+    expect(req.refs ?? []).toHaveLength(0);
   });
 });

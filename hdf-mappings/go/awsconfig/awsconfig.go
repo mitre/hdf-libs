@@ -16,6 +16,10 @@ type Mapping struct {
 	AwsConfigRuleName             string `json:"AwsConfigRuleName"`
 	NISTID                        string `json:"NIST-ID"`
 	Rev                           int    `json:"Rev"`
+	// Source is the generator tier the row came from: config-pack,
+	// security-hub, derived-theme, or crosswalk (rev-translated from the rule's
+	// native revision; empty NIST-ID means no equivalent exists at this Rev).
+	Source string `json:"Source"`
 }
 
 //go:embed awsconfig-mappings.json

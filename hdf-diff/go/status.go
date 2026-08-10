@@ -6,23 +6,10 @@ package diff
 import (
 	"reflect"
 	"sort"
-	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
-
-// statusSeverity defines the severity ranking of statuses.
-// Higher index = worse status.
-// statusNotReviewed is the default status for requirements with no results.
-const statusNotReviewed = "notReviewed"
-
-var statusSeverity = []string{
-	"notApplicable",
-	"notReviewed",
-	"passed",
-	"failed",
-	"error",
-}
 
 // passingStatuses are statuses that count as "passing" for fixed/regressed classification.
 var passingStatuses = map[string]bool{
@@ -36,74 +23,38 @@ var failingStatuses = map[string]bool{
 	"notReviewed": true,
 }
 
-// severityIndex returns the index of a status in the severity ranking, or -1 if not found.
-func severityIndex(status string) int {
-	for i, s := range statusSeverity {
-		if s == status {
-			return i
-		}
-	}
-	return -1
-}
-
-// ComputeEffectiveStatus determines the effective status of a requirement from
-// its results and overrides.
+// ComputeEffectiveStatus determines the effective status of a requirement
+// from its results and overrides, delegating to the canonical shared
+// implementation in hdf-utilities (see status-determination.md):
 //
-// Priority:
 //  1. impact == 0 -> "notApplicable" (regardless of results)
-//  2. Non-expired statusOverrides -> use first non-expired override's status
+//  2. the governing (most recent non-expired) status override's status
 //  3. effectiveStatus field set (and no statusOverrides) -> use it
 //  4. Aggregate results using worst-wins
 //  5. Empty results -> "notReviewed"
 func ComputeEffectiveStatus(req hdf.EvaluatedRequirement, referenceTimestamp string) string {
-	// 1. impact == 0 -> notApplicable
-	if req.Impact == 0 {
-		return "notApplicable"
+	// ParseTimestamp keeps zone-less inputs host-independent (repo timestamp
+	// convention); a zero result means "now" to the shared helper.
+	ref := hdfutil.ParseTimestamp(referenceTimestamp)
+
+	input := hdfutil.EffectiveStatusInput{Impact: req.Impact}
+	if req.EffectiveStatus != nil {
+		input.EffectiveStatus = string(*req.EffectiveStatus)
 	}
-
-	// 2. Non-expired statusOverrides
-	if len(req.StatusOverrides) > 0 {
-		var refTime time.Time
-		if referenceTimestamp != "" {
-			parsed, err := time.Parse(time.RFC3339, referenceTimestamp)
-			if err == nil {
-				refTime = parsed
-			} else {
-				refTime = time.Now()
-			}
-		} else {
-			refTime = time.Now()
-		}
-
-		for _, override := range req.StatusOverrides {
-			if override.ExpiresAt.After(refTime) && override.Status != nil {
-				return string(*override.Status)
-			}
-		}
-		// All overrides expired — fall through to results
-	}
-
-	// 3. effectiveStatus field set and no overrides
-	if req.EffectiveStatus != nil && len(req.StatusOverrides) == 0 {
-		return string(*req.EffectiveStatus)
-	}
-
-	// 4. Aggregate results using worst-wins
-	if len(req.Results) == 0 {
-		return statusNotReviewed
-	}
-
-	worstIndex := -1
-	worstStatus := statusNotReviewed
 	for _, result := range req.Results {
-		idx := severityIndex(string(result.Status))
-		if idx > worstIndex {
-			worstIndex = idx
-			worstStatus = string(result.Status)
-		}
+		input.ResultStatuses = append(input.ResultStatuses, string(result.Status))
 	}
-
-	return worstStatus
+	for _, override := range req.StatusOverrides {
+		in := hdfutil.StatusOverrideInput{
+			AppliedAt: override.AppliedAt,
+			ExpiresAt: override.ExpiresAt,
+		}
+		if override.Status != nil {
+			in.Status = string(*override.Status)
+		}
+		input.Overrides = append(input.Overrides, in)
+	}
+	return hdfutil.ComputeEffectiveStatus(input, ref)
 }
 
 // ClassifyChangeReasons classifies why the status changed between two requirements.
@@ -131,11 +82,13 @@ func ClassifyChangeReasons(
 		reasons = append(reasons, ReasonOverrideRemoved)
 	}
 
-	// Check for override expiration between scans
+	// Check for override expiration between scans. ParseTimestamp keeps
+	// zone-less scan timestamps host-independent (repo timestamp convention);
+	// a zero result means unparseable, so the check is skipped.
 	if oldTimestamp != "" && newTimestamp != "" && oldOverrideCount > 0 {
-		oldTime, errOld := time.Parse(time.RFC3339, oldTimestamp)
-		newTime, errNew := time.Parse(time.RFC3339, newTimestamp)
-		if errOld == nil && errNew == nil {
+		oldTime := hdfutil.ParseTimestamp(oldTimestamp)
+		newTime := hdfutil.ParseTimestamp(newTimestamp)
+		if !oldTime.IsZero() && !newTime.IsZero() {
 			for _, override := range oldReq.StatusOverrides {
 				expiresAt := override.ExpiresAt
 				if expiresAt.After(oldTime) && !expiresAt.After(newTime) {

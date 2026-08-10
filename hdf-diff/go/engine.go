@@ -398,7 +398,9 @@ func computeFieldChanges(
 	oldReq, newReq hdf.EvaluatedRequirement,
 	trackedFields []string,
 ) []FieldChange {
-	var changes []FieldChange
+	// Non-nil: Requirement_Diff.fieldChanges is a required array in the
+	// schema; nil marshals as null and fails validation.
+	changes := []FieldChange{}
 
 	for _, field := range trackedFields {
 		oldVal := getFieldValue(oldReq, field)

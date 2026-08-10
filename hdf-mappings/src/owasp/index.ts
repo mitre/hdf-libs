@@ -4,6 +4,14 @@
 
 import type { OwaspNistMappings, OwaspNistMapping } from './types.js';
 import rawOwaspData from '../data/owasp-nist-mappings.json';
+import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
+
+// Authored against Rev 4 (declared Rev: 4 in the data; every control it
+// carries is identical at both revisions today — a test guards that
+// invariant). Lookups translate to the current module-global revision.
+const NATIVE_REVISION = 4;
+const atCurrentRevision = (nistId: string): string =>
+  nistControlsAtRevision(nistId.split('|'), NATIVE_REVISION, getCurrentNistRevision()).join('|');
 
 const owaspData = rawOwaspData as OwaspNistMappings;
 const owaspIndex = new Map<string, OwaspNistMapping>(
@@ -44,7 +52,7 @@ export function getOwaspNistMapping(owaspId: string): OwaspNistMapping | undefin
  */
 export function getOwaspNistControl(owaspId: string): string | undefined {
   const mapping = getOwaspNistMapping(owaspId);
-  return mapping?.['NIST-ID'];
+  return mapping ? atCurrentRevision(mapping['NIST-ID']) : undefined;
 }
 
 /**

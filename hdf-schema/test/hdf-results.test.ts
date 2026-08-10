@@ -723,6 +723,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-01T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                   },
                 ],
                 effectiveStatus: 'failed', // POAM doesn't change status
@@ -750,6 +751,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-01T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                     milestones: [
                       {
                         description: 'Implement firewall rules to isolate affected system',
@@ -807,6 +809,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-01T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                     milestones: [
                       {
                         description: 'Test patch in staging',
@@ -846,6 +849,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-01T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                   },
                   {
                     type: 'mitigation',
@@ -855,6 +859,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-02T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                   },
                   {
                     type: 'remediation',
@@ -864,6 +869,7 @@ describe('hdf-results.schema.json (refactored)', () => {
             type: 'simple',
           },
                     appliedAt: '2025-12-03T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                   },
                 ],
                 effectiveStatus: 'failed',
@@ -1247,6 +1253,7 @@ describe('hdf-results.schema.json (refactored)', () => {
                     explanation: 'Waiting for vendor to release patch for CVE-2026-1234',
                     appliedBy: { identifier: 'ops@agency.gov', type: 'email' },
                     appliedAt: '2026-04-14T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
                   },
                 ],
                 effectiveStatus: 'failed',
@@ -1628,6 +1635,79 @@ describe('hdf-results.schema.json (refactored)', () => {
         ],
       });
       expect(validate(doc)).toBe(true);
+    });
+  });
+
+  describe('derivation block (reconciled result sets)', () => {
+    const validDerivation = {
+      seed: {
+        uri: 'apptier-seed-scan.hdf.json',
+        checksum: {
+          algorithm: 'sha256',
+          value: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        },
+      },
+      source: 'inspec://web01/rhel9-stig',
+      throughSequence: 414,
+      eventsApplied: 3,
+      asOf: '2026-07-24T10:15:00Z',
+    };
+
+    it('accepts a results document carrying a valid derivation block', () => {
+      const doc = createMinimalResultsDoc({ derivation: validDerivation });
+      const isValid = validate(doc);
+      if (!isValid) console.error('Validation errors:', validate.errors);
+      expect(isValid).toBe(true);
+    });
+
+    it('remains optional — documents without derivation still validate', () => {
+      expect(validate(createMinimalResultsDoc())).toBe(true);
+    });
+
+    for (const field of ['seed', 'source', 'throughSequence', 'eventsApplied', 'asOf']) {
+      it(`rejects a derivation missing ${field}`, () => {
+        const partial: Record<string, unknown> = { ...validDerivation };
+        delete partial[field];
+        expect(validate(createMinimalResultsDoc({ derivation: partial }))).toBe(false);
+      });
+    }
+
+    it('rejects a seed without a checksum (pinning is the contract)', () => {
+      const doc = createMinimalResultsDoc({
+        derivation: { ...validDerivation, seed: { uri: 'apptier-seed-scan.hdf.json' } },
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('rejects unknown properties inside derivation', () => {
+      const doc = createMinimalResultsDoc({
+        derivation: { ...validDerivation, extra: true },
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('rejects a negative throughSequence', () => {
+      const doc = createMinimalResultsDoc({
+        derivation: { ...validDerivation, throughSequence: -1 },
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('validates every example on the Derivation def', () => {
+      const eventsSchema = JSON.parse(
+        JSON.stringify(loadSchema('primitives/events.schema.json')),
+      ) as { $id: string; $defs: { Derivation: { examples?: Record<string, unknown>[] } } };
+      const validateDef = ajv.compile({ $ref: `${eventsSchema.$id}#/$defs/Derivation` });
+      const examples = eventsSchema.$defs.Derivation.examples ?? [];
+      expect(examples.length).toBeGreaterThanOrEqual(1);
+      for (const example of examples) {
+        const data = { ...example };
+        delete data.$comment;
+        const ok = validateDef(data);
+        if (!ok) console.error('Derivation example errors:', validateDef.errors);
+        expect(ok).toBe(true);
+        expect(typeof example.$comment).toBe('string');
+      }
     });
   });
 });

@@ -69,22 +69,22 @@ Generate and verify cryptographic hashes for data integrity:
 ```typescript
 import { sha256, sha512, generateHash, hashObject, verifyHash } from '@mitre/hdf-utilities';
 
-// Quick SHA-256 hash
-const hash = sha256('content to hash');
+// Quick SHA-256 hash (hash functions are async)
+const hash = await sha256('content to hash');
 console.log(hash); // hex-encoded hash
 
 // Hash with custom options
-const customHash = generateHash('data', {
+const customHash = await generateHash('data', {
   algorithm: 'sha512',
   encoding: 'base64'
 });
 
 // Hash JavaScript objects (deterministic JSON serialization)
 const baseline = { name: 'My Baseline', version: '1.0' };
-const objectHash = hashObject(baseline, { algorithm: 'sha256' });
+const objectHash = await hashObject(baseline, { algorithm: 'sha256' });
 
 // Verify data integrity
-const isValid = verifyHash('original data', hash, { algorithm: 'sha256' });
+const isValid = await verifyHash('original data', hash, { algorithm: 'sha256' });
 if (!isValid) {
   console.error('Data integrity check failed!');
 }
@@ -229,42 +229,42 @@ Check if string can be parsed as JSON.
 
 ### Hash Utilities
 
-#### `sha256(data: string): string`
+#### `sha256(data: string): Promise<string>`
 
 Generate SHA-256 hash (hex-encoded).
 
 - **Parameters:**
   - `data` - String to hash
-- **Returns:** Hex-encoded hash string
+- **Returns:** Promise resolving to a hex-encoded hash string
 
-#### `sha512(data: string): string`
+#### `sha512(data: string): Promise<string>`
 
 Generate SHA-512 hash (hex-encoded).
 
 - **Parameters:**
   - `data` - String to hash
-- **Returns:** Hex-encoded hash string
+- **Returns:** Promise resolving to a hex-encoded hash string
 
-#### `generateHash(data: string, options?: HashOptions): string`
+#### `generateHash(data: string, options?: HashOptions): Promise<string>`
 
 Generate hash with custom algorithm and encoding.
 
 - **Parameters:**
   - `data` - String to hash
   - `options.algorithm` - Hash algorithm: `'sha256'` | `'sha512'` (default: `'sha256'`)
-  - `options.encoding` - Output encoding: `'hex'` | `'base64'` | `'base64url'` (default: `'hex'`)
-- **Returns:** Encoded hash string
+  - `options.encoding` - Output encoding: `'hex'` | `'base64'` (default: `'hex'`)
+- **Returns:** Promise resolving to the encoded hash string
 
-#### `hashObject(obj: unknown, options?: HashOptions): string`
+#### `hashObject(obj: unknown, options?: HashOptions): Promise<string>`
 
 Generate deterministic hash of JavaScript object.
 
 - **Parameters:**
   - `obj` - Object to hash (will be JSON-stringified)
   - `options` - Same as `generateHash`
-- **Returns:** Hash of serialized object
+- **Returns:** Promise resolving to the hash of the serialized object
 
-#### `verifyHash(data: string, expectedHash: string, options?: HashOptions): boolean`
+#### `verifyHash(data: string, expectedHash: string, options?: HashOptions): Promise<boolean>`
 
 Verify data matches expected hash.
 
@@ -272,7 +272,7 @@ Verify data matches expected hash.
   - `data` - Original data to verify
   - `expectedHash` - Expected hash value
   - `options` - Same hash options used during generation
-- **Returns:** `true` if hash matches, `false` otherwise
+- **Returns:** Promise resolving to `true` if the hash matches, `false` otherwise
 
 ### XML Utilities
 

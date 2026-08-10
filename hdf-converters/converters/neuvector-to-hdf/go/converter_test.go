@@ -105,8 +105,7 @@ func TestConvertNeuVector_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Equal(t, "NeuVector", *result.Tool.Name)
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 // ---- Impact: score_v3 / 10 ----
@@ -203,11 +202,10 @@ func TestConvertNeuVector_CweToNist(t *testing.T) {
 	require.NotNil(t, nist, "nist tag should be present")
 	assert.NotEmpty(t, nist)
 
-	// CWE tag should also be set
-	cweTags, ok := req.Tags["cwe"]
-	require.True(t, ok, "cwe tag should be present")
-	cweStrings := hdfutil.SafeStringSlice(cweTags)
-	assert.Contains(t, cweStrings, "CWE-787")
+	// CWE is now first-class on the requirement (not a tag).
+	assert.Contains(t, req.Cwe, "CWE-787")
+	_, hasCweTag := req.Tags["cwe"]
+	assert.False(t, hasCweTag, "cwe must no longer be emitted as a tag")
 }
 
 func TestConvertNeuVector_NistFallback(t *testing.T) {
@@ -224,6 +222,158 @@ func TestConvertNeuVector_NistFallback(t *testing.T) {
 	require.NotNil(t, nist, "nist fallback should be present")
 	assert.Contains(t, nist, "SI-2")
 	assert.Contains(t, nist, "RA-5")
+}
+
+// ---- Structured CVSS ----
+
+func TestConvertNeuVector_CvssV3FromVector(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	// CVE-2021-36159/apk-tools carries a v3 vector + score_v3=9.1.
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	require.Len(t, req.Cvss, 1)
+	cv := req.Cvss[0]
+	assert.Equal(t, hdf.The31, cv.Version)
+	require.NotNil(t, cv.BaseScore)
+	assert.InDelta(t, 9.1, *cv.BaseScore, 0.001)
+	require.NotNil(t, cv.BaseVector)
+	assert.Equal(t, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H", *cv.BaseVector)
+	require.NotNil(t, cv.BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityCritical, *cv.BaseSeverity)
+	require.NotNil(t, cv.Source)
+	assert.Equal(t, "NeuVector", *cv.Source)
+}
+
+func TestConvertNeuVector_CvssV2Fallback(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	// CVE-2018-25032/ruby:nokogiri has no v3 vector, so the prefix-less v2
+	// vector + score (5) is used and forced to version 2.0.
+	req := shared.MustFindRequirement(t, reqs, "CVE-2018-25032/ruby:nokogiri/1.10.9")
+	require.Len(t, req.Cvss, 1)
+	cv := req.Cvss[0]
+	assert.Equal(t, hdf.The20, cv.Version)
+	require.NotNil(t, cv.BaseScore)
+	assert.InDelta(t, 5.0, *cv.BaseScore, 0.001)
+	require.NotNil(t, cv.BaseVector)
+	assert.Equal(t, "AV:N/AC:L/Au:N/C:N/I:N/A:P", *cv.BaseVector)
+}
+
+// buildCvssEntries branch coverage for the sub-branches fixtures don't exercise:
+// a vector present with a zero score (score omitted), and no vector at all.
+func TestBuildCvssEntries_Branches(t *testing.T) {
+	t.Run("v3 vector, no score", func(t *testing.T) {
+		out := buildCvssEntries(NeuVectorVuln{VectorsV3: "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", ScoreV3: 0})
+		require.Len(t, out, 1)
+		assert.Equal(t, hdf.The30, out[0].Version)
+		assert.Nil(t, out[0].BaseScore, "zero score_v3 must not be emitted")
+		require.NotNil(t, out[0].BaseVector)
+	})
+	t.Run("v2 vector, no score", func(t *testing.T) {
+		out := buildCvssEntries(NeuVectorVuln{Vectors: "AV:N/AC:L/Au:N/C:P/I:P/A:P", Score: 0})
+		require.Len(t, out, 1)
+		assert.Equal(t, hdf.The20, out[0].Version)
+		assert.Nil(t, out[0].BaseScore, "zero score must not be emitted")
+	})
+	t.Run("no vector, no entry", func(t *testing.T) {
+		assert.Empty(t, buildCvssEntries(NeuVectorVuln{ScoreV3: 9.8, Score: 5}),
+			"a vulnerability with no vector contributes no cvss entry")
+	})
+}
+
+// ---- External references (refs[]) ----
+
+// Value-pins the mapped vulnerability.link -> refs[0].url. The link is read
+// independently from the fixture so this catches a silent drop even if the
+// golden churns.
+func TestConvertNeuVector_RefsFromLink(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	require.Len(t, req.Refs, 1, "one Reference per link")
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-36159", *req.Refs[0].URL)
+	assert.Nil(t, req.Refs[0].Ref, "external link maps to url, not ref")
+	assert.Nil(t, req.Refs[0].URI, "external link maps to url, not uri")
+}
+
+// buildRefs branch coverage: no link -> no refs[].
+func TestBuildRefs_Absent(t *testing.T) {
+	assert.Nil(t, buildRefs(NeuVectorVuln{Link: ""}), "empty link contributes no refs")
+	out := buildRefs(NeuVectorVuln{Link: "https://example.test/adv"})
+	require.Len(t, out, 1)
+	require.NotNil(t, out[0].URL)
+	assert.Equal(t, "https://example.test/adv", *out[0].URL)
+}
+
+// ---- CVE tag (interim) ----
+
+func TestConvertNeuVector_CveTag(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+
+	// requirement.id is a name/package/version composite, NOT the bare CVE.
+	assert.NotEqual(t, "CVE-2021-36159", req.ID)
+	cveTags := hdfutil.SafeStringSlice(req.Tags["cve"])
+	require.NotNil(t, cveTags, "cve tag should be present")
+	assert.Equal(t, []string{"CVE-2021-36159"}, cveTags)
+}
+
+func TestExtractCVEs_Dedup(t *testing.T) {
+	out := extractCVEs(NeuVectorVuln{Cves: []string{"CVE-2021-1", "", "CVE-2021-1", "CVE-2021-2"}})
+	assert.Equal(t, []string{"CVE-2021-1", "CVE-2021-2"}, out)
+	assert.Nil(t, extractCVEs(NeuVectorVuln{Cves: nil}), "no cves -> no tag")
+}
+
+// ---- feed_rating tag ----
+
+// Value-pins vulnerability.feed_rating -> tags["feed_rating"], read as a string.
+func TestConvertNeuVector_FeedRatingTag(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	assert.Equal(t, "Critical", req.Tags["feed_rating"])
+
+	// Different vuln carries a different rating in the same fixture.
+	medium := shared.MustFindRequirement(t, reqs, "CVE-2021-36217/avahi/0.8-r0")
+	assert.Equal(t, "Medium", medium.Tags["feed_rating"])
+}
+
+// Absent branch: a vuln with no feed_rating contributes no feed_rating tag.
+func TestConvertNeuVector_FeedRatingAbsent(t *testing.T) {
+	input := []byte(`{
+		"report": {
+			"registry": "reg",
+			"repository": "repo",
+			"tag": "latest",
+			"vulnerabilities": [
+				{"name": "CVE-2020-0001", "package_name": "pkg", "package_version": "1.0"}
+			]
+		}
+	}`)
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "CVE-2020-0001/pkg/1.0")
+	_, has := req.Tags["feed_rating"]
+	assert.False(t, has, "no feed_rating in source -> no feed_rating tag")
 }
 
 // ---- Requirement ID and Title ----
@@ -328,6 +478,113 @@ func TestConvertNeuVector_Target(t *testing.T) {
 	// Target name should be the image reference
 	assert.Contains(t, result.Components[0].Name, "mitre/heimdall")
 	assert.Equal(t, hdf.ContainerImage, result.Components[0].Type)
+}
+
+// ---- Scan-target component identity ----
+
+// Value-pins the enriched containerImage component: base_os → osName/osVersion,
+// digest → Integrity (sha256, prefix stripped), image_id → ImageID, plus
+// registry/repository/tag. Fields are read independently of the golden.
+func TestConvertNeuVector_ComponentIdentity(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.ContainerImage, comp.Type)
+	assert.Equal(t, "https://registry.hub.docker.com/mitre/heimdall:latest", comp.Name)
+
+	// base_os "alpine:3.12.1" → osName "alpine", osVersion "3.12.1"
+	require.NotNil(t, comp.OSName)
+	assert.Equal(t, "alpine", *comp.OSName)
+	require.NotNil(t, comp.OSVersion)
+	assert.Equal(t, "3.12.1", *comp.OSVersion)
+
+	require.NotNil(t, comp.ImageID)
+	assert.Equal(t, "65785cbf46647c77caf8d7c40485900b013fca1290d1a7ab06c9039c3b29761c", *comp.ImageID)
+	require.NotNil(t, comp.Registry)
+	assert.Equal(t, "https://registry.hub.docker.com", *comp.Registry)
+	require.NotNil(t, comp.Repository)
+	assert.Equal(t, "mitre/heimdall", *comp.Repository)
+	require.NotNil(t, comp.Tag)
+	assert.Equal(t, "latest", *comp.Tag)
+
+	// digest "sha256:54cb..." → Integrity{sha256, <hex without prefix>}
+	require.Len(t, comp.Integrity, 1)
+	assert.Equal(t, hdf.Sha256, comp.Integrity[0].Algorithm)
+	assert.Equal(t, "54cbfb34a9a8fe00c9a60d722aa1c12f25bec825c505139cfffaeabc91fb10e6", comp.Integrity[0].Value)
+}
+
+// The rhel fixture pins a different base_os split.
+func TestConvertNeuVector_ComponentOSRhel(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall2.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	require.NotNil(t, comp.OSName)
+	assert.Equal(t, "rhel", *comp.OSName)
+	require.NotNil(t, comp.OSVersion)
+	assert.Equal(t, "8.10", *comp.OSVersion)
+}
+
+// Absent branch: a report carrying no base_os/digest/image_id yields a
+// containerImage component with no OS, Integrity, or ImageID.
+func TestConvertNeuVector_ComponentIdentityAbsent(t *testing.T) {
+	input := []byte(`{
+		"report": {
+			"registry": "reg",
+			"repository": "repo",
+			"tag": "latest",
+			"vulnerabilities": [
+				{"name": "CVE-2020-0001", "package_name": "pkg", "package_version": "1.0"}
+			]
+		}
+	}`)
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.ContainerImage, comp.Type)
+	assert.Nil(t, comp.OSName, "no base_os → no osName")
+	assert.Nil(t, comp.OSVersion, "no base_os → no osVersion")
+	assert.Nil(t, comp.ImageID, "no image_id → no imageId")
+	assert.Nil(t, comp.Integrity, "no digest → no integrity")
+	// registry/repository/tag are still present.
+	require.NotNil(t, comp.Registry)
+	assert.Equal(t, "reg", *comp.Registry)
+}
+
+// Unit branch coverage for the base_os split and digest algorithm folding.
+func TestComponentHelpers_Branches(t *testing.T) {
+	t.Run("splitBaseOS name only", func(t *testing.T) {
+		name, version := splitBaseOS("scratch")
+		assert.Equal(t, "scratch", name)
+		assert.Empty(t, version)
+	})
+	t.Run("splitBaseOS empty", func(t *testing.T) {
+		name, version := splitBaseOS("")
+		assert.Empty(t, name)
+		assert.Empty(t, version)
+	})
+	t.Run("digestIntegrity empty", func(t *testing.T) {
+		assert.Nil(t, digestIntegrity(""))
+	})
+	t.Run("digestIntegrity sha512 prefix", func(t *testing.T) {
+		out := digestIntegrity("sha512:deadbeef")
+		require.Len(t, out, 1)
+		assert.Equal(t, hdf.Sha512, out[0].Algorithm)
+		assert.Equal(t, "deadbeef", out[0].Value)
+	})
+	t.Run("digestIntegrity no prefix defaults sha256", func(t *testing.T) {
+		out := digestIntegrity("abc123")
+		require.Len(t, out, 1)
+		assert.Equal(t, hdf.Sha256, out[0].Algorithm)
+		assert.Equal(t, "abc123", out[0].Value)
+	})
 }
 
 // ---- Tags with extras ----
@@ -498,6 +755,44 @@ func countDistinctNeuVectorVulns(t *testing.T, input []byte) int {
 		distinct[v.Name+"/"+v.PackageName+"/"+v.PackageVersion] = struct{}{}
 	}
 	return len(distinct)
+}
+
+// ---- CODE tab / code_desc fidelity ----
+
+// The requirement's code carries the source vulnerability object serialized as
+// indented JSON; it must round-trip back to the exact source vuln.
+func TestConvertNeuVector_RequirementCodeRoundTrips(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	var scan NeuVectorScan
+	require.NoError(t, json.Unmarshal(input, &scan))
+
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.NotNil(t, req.Code, "requirement.code must be populated (CODE tab)")
+	assert.NotEmpty(t, *req.Code)
+
+	var back NeuVectorVuln
+	require.NoError(t, json.Unmarshal([]byte(*req.Code), &back),
+		"requirement.code must parse back to the source vuln object")
+	assert.Equal(t, scan.Report.Vulnerabilities[0], back)
+}
+
+// code_desc is no longer hard-coded empty; it is a pipe-joined composite of the
+// fields the vuln carries.
+func TestConvertNeuVector_ResultCodeDescComposite(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1)
+	cd := req.Results[0].CodeDesc
+	assert.NotEmpty(t, cd, "code_desc must no longer be hard-coded empty")
+	assert.Equal(t,
+		"apk-tools@2.10.5-r1 | CVE-2021-36159 | CVSS 9.1 | libfetch before 2021-07-26, as used in apk-tools, xbps, and other products, mishandles numeric strin…",
+		cd)
 }
 
 // Ground-truth anchor (input-derived count; see shared/go/anchor.go). Golden

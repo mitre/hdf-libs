@@ -3,6 +3,9 @@
     {
       "requirements": [
         {
+          "cwe": [
+            "CWE-338"
+          ],
           "descriptions": [
             {
               "data": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
@@ -45,22 +48,27 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 91,
+            "ref": "C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\state\\snapshot\\difflayer.go"
+          },
           "id": "G404",
           "impact": 0.7,
           "tags": {
-            "cwe": {
-              "id": "338",
-              "url": "https://cwe.mitre.org/data/definitions/338.html"
-            },
+            "confidence": "MEDIUM",
             "nist": [
               "SC-13"
             ]
           },
+          "code": "90: \tfor bloomAccountHasherOffset == bloomDestructHasherOffset {\n91: \t\tbloomAccountHasherOffset = rand.Intn(25)\n92: \t}\n",
           "controlType": "technical",
           "title": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-22"
+          ],
           "descriptions": [
             {
               "data": "Potential file inclusion via variable",
@@ -109,22 +117,27 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 86,
+            "ref": "C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\state\\pruner\\bloom.go"
+          },
           "id": "G304",
           "impact": 0.5,
           "tags": {
-            "cwe": {
-              "id": "22",
-              "url": "https://cwe.mitre.org/data/definitions/22.html"
-            },
+            "confidence": "HIGH",
             "nist": [
               "SI-10"
             ]
           },
+          "code": "85: \t// Ensure the file is synced to disk\n86: \tf, err := os.OpenFile(tempname, os.O_RDWR, 0666)\n87: \tif err != nil {\n",
           "controlType": "technical",
           "title": "Potential file inclusion via variable",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-276"
+          ],
           "descriptions": [
             {
               "data": "Expect file permissions to be 0600 or less",
@@ -173,22 +186,27 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 162,
+            "ref": "C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\txpool\\legacypool\\journal.go"
+          },
           "id": "G302",
           "impact": 0.5,
           "tags": {
-            "cwe": {
-              "id": "276",
-              "url": "https://cwe.mitre.org/data/definitions/276.html"
-            },
+            "confidence": "HIGH",
             "nist": [
               "SI-2",
               "RA-5"
             ]
           },
+          "code": "161: \t}\n162: \tsink, err := os.OpenFile(journal.path, os.O_WRONLY|os.O_APPEND, 0644)\n163: \tif err != nil {\n",
           "title": "Expect file permissions to be 0600 or less",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-276"
+          ],
           "descriptions": [
             {
               "data": "Expect directory permissions to be 0750 or less",
@@ -213,22 +231,27 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "line": 133,
+            "ref": "C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\rawdb\\freezer_table.go"
+          },
           "id": "G301",
           "impact": 0.5,
           "tags": {
-            "cwe": {
-              "id": "276",
-              "url": "https://cwe.mitre.org/data/definitions/276.html"
-            },
+            "confidence": "HIGH",
             "nist": [
               "SI-2",
               "RA-5"
             ]
           },
+          "code": "132: \t// Ensure the containing directory exists and open the indexEntry file\n133: \tif err := os.MkdirAll(path, 0755); err != nil {\n134: \t\treturn nil, err\n",
           "title": "Expect directory permissions to be 0750 or less",
           "verificationMethod": "automated"
         },
         {
+          "cwe": [
+            "CWE-703"
+          ],
           "descriptions": [
             {
               "data": "Errors unhandled.",
@@ -1165,18 +1188,20 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 243,
+            "ref": "C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\vm\\instructions.go"
+          },
           "id": "G104",
           "impact": 0.3,
           "tags": {
-            "cwe": {
-              "id": "703",
-              "url": "https://cwe.mitre.org/data/definitions/703.html"
-            },
+            "confidence": "HIGH",
             "nist": [
               "SI-2",
               "RA-5"
             ]
           },
+          "code": "242: \tinterpreter.hasher.Write(data)\n243: \tinterpreter.hasher.Read(interpreter.hasherBuf[:])\n244: \n",
           "title": "Errors unhandled.",
           "verificationMethod": "automated"
         }

@@ -8,6 +8,12 @@
 
 import type { HipcheckNistMapping, HipcheckNistMappings } from './types.js';
 import rawMappings from '../data/hipcheck-nist-mappings.json';
+import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
+
+// Authored against Rev 5 (declared Rev: 5 in the data; it carries SR-family
+// controls that do not exist at Rev 4). Lookups translate to the current
+// module-global revision.
+const NATIVE_REVISION = 5;
 
 const mappings = rawMappings as HipcheckNistMappings;
 
@@ -33,10 +39,11 @@ function bareName(analysis: string): string {
 export function getHipcheckNistControls(analysis: string): string[] {
   const m = byAnalysis.get(bareName(analysis));
   if (!m) return [];
-  return m['NIST-ID']
+  const controls = m['NIST-ID']
     .split('|')
     .map((s) => s.trim())
     .filter(Boolean);
+  return nistControlsAtRevision(controls, NATIVE_REVISION, getCurrentNistRevision());
 }
 
 /** Check whether a Hipcheck analysis name has a NIST mapping. */

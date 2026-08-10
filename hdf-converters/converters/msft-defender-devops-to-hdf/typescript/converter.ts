@@ -41,6 +41,7 @@ interface MsdoPolicy {
 
 interface MsdoResult {
   ruleId: string;
+  rank?: number;
   properties?: Record<string, unknown>;
 }
 
@@ -48,6 +49,7 @@ interface RunEnrichment {
   toolTags: Record<string, unknown>;
   policyTag: string;
   resultProps: Map<string, Record<string, unknown>[]>;
+  resultRanks: Map<string, number>;
 }
 
 /**
@@ -137,17 +139,21 @@ function extractEnrichments(raw: MsdoSarif): {
       policyTag = run.policies.map(p => `${p.name} ${p.version}`).join(', ');
     }
 
-    // Extract result-level properties keyed by ruleId
+    // Extract result-level properties and ranks keyed by ruleId
     const resultProps = new Map<string, Record<string, unknown>[]>();
+    const resultRanks = new Map<string, number>();
     for (const res of run.results ?? []) {
       if (res.properties && Object.keys(res.properties).length > 0) {
         const existing = resultProps.get(res.ruleId) ?? [];
         existing.push(res.properties);
         resultProps.set(res.ruleId, existing);
       }
+      if (typeof res.rank === 'number' && !resultRanks.has(res.ruleId)) {
+        resultRanks.set(res.ruleId, res.rank);
+      }
     }
 
-    runEnrichments.push({ toolTags, policyTag, resultProps });
+    runEnrichments.push({ toolTags, policyTag, resultProps, resultRanks });
   }
 
   return { components, runEnrichments };
@@ -186,6 +192,12 @@ function applyEnrichments(
       const props = re.resultProps.get(req.id);
       if (props && props.length > 0) {
         tags.msdo_properties = props[0];
+      }
+
+      // Add result-level rank for this requirement's ruleId
+      const rank = re.resultRanks.get(req.id);
+      if (rank !== undefined) {
+        tags.rank = rank;
       }
 
       req.tags = tags;

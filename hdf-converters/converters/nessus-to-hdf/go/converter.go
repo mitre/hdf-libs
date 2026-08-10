@@ -317,6 +317,14 @@ func buildDescriptions(item *ReportItem, isCompliance bool) []hdf.Description {
 		})
 	}
 
+	// Short summary of the finding (Nessus synopsis element).
+	if item.Synopsis != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "synopsis",
+			Data:  parseHTML(item.Synopsis),
+		})
+	}
+
 	// Fix/solution description
 	solution := item.Solution
 	if isCompliance {
@@ -637,31 +645,22 @@ func buildCvssEntries(item *ReportItem) []hdf.Cvss {
 	}
 
 	if c.BaseScore != nil {
-		if sev := cvssSeverity(*c.BaseScore); sev != nil {
-			c.BaseSeverity = sev
-		}
+		sev := shared.CvssSeverityFromScore(*c.BaseScore)
+		c.BaseSeverity = &sev
 	}
 	if c.ComputedScore != nil {
-		if sev := cvssSeverity(*c.ComputedScore); sev != nil {
-			c.ComputedSeverity = sev
-		}
+		sev := shared.CvssSeverityFromScore(*c.ComputedScore)
+		c.ComputedSeverity = &sev
 	}
 
 	return []hdf.Cvss{c}
 }
 
-// detectV3Version inspects the CVSS:3.x prefix on a v3 vector and returns
-// the corresponding schema Version enum. Defaults to 3.0 when the prefix is
-// absent or unrecognized (Nessus historically emitted CVSS:3.0).
+// detectV3Version reads the schema Version from a Nessus v3 CVSS vector,
+// defaulting to 3.0 when the prefix is absent or unrecognized (Nessus
+// historically emitted CVSS:3.0).
 func detectV3Version(vector string) hdf.Version {
-	switch {
-	case strings.HasPrefix(vector, "CVSS:3.1/"):
-		return hdf.The31
-	case strings.HasPrefix(vector, "CVSS:3.0/"):
-		return hdf.The30
-	default:
-		return hdf.The30
-	}
+	return shared.CvssVersionFromVector(vector, hdf.The30)
 }
 
 // stripVersionPrefix removes a leading "CVSS:X.Y/" segment from a CVSS
@@ -695,29 +694,6 @@ func parseFloatPtr(s string) *float64 {
 		return nil
 	}
 	return &f
-}
-
-// cvssSeverity maps a CVSS base/computed score to the schema's CVSSSeverity
-// enum via hdfutil. Returns nil when the score is the zero default and no
-// score was actually provided — callers should check before calling.
-func cvssSeverity(score float64) *hdf.CVSSSeverity {
-	sev := hdfutil.CvssScoreToSeverity(score)
-	var out hdf.CVSSSeverity
-	switch sev {
-	case "critical":
-		out = hdf.CVSSSeverityCritical
-	case "high":
-		out = hdf.CVSSSeverityHigh
-	case "medium":
-		out = hdf.CVSSSeverityMedium
-	case "low":
-		out = hdf.CVSSSeverityLow
-	case "none":
-		out = hdf.None
-	default:
-		return nil
-	}
-	return &out
 }
 
 // buildCweIDs returns a sorted, deduplicated slice of CWE IDs in "CWE-N"

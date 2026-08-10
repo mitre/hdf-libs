@@ -135,7 +135,7 @@ func TestConvertGitlabToHDF_MinimalSAST_Tool(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "Semgrep", *result.Tool.Name)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 	assert.Equal(t, "1.34.0", *result.Tool.Version)
 }
 
@@ -372,5 +372,206 @@ func TestConvertGitlabToHDF_VerificationMethod(t *testing.T) {
 			assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
 				"requirement %q should be marked automated", req.ID)
 		}
+	}
+}
+
+// GitLab carries no literal source snippet, so requirement.code holds the whole
+// vulnerability object serialized as indented JSON. Pin that it is set on every
+// requirement and round-trips byte-structurally back to the source vulnerability
+// object across all scan-type fixtures (Heimdall CODE-tab fidelity). This also
+// proves the many dropped fields (links, identifiers[].url, remediation linkage,
+// location detail) survive into code.
+func TestConvertGitlabToHDF_RequirementCode(t *testing.T) {
+	for _, name := range []string{"minimal-dast.json", "minimal-sast.json", "multi-vuln.json"} {
+		t.Run(name, func(t *testing.T) {
+			input := loadFixture(t, "input/"+name)
+			result, err := ConvertGitlabToHDF(input, testVersion)
+			require.NoError(t, err)
+
+			var raw struct {
+				Vulnerabilities []json.RawMessage `json:"vulnerabilities"`
+			}
+			require.NoError(t, json.Unmarshal(input, &raw))
+
+			reqs := result.Baselines[0].Requirements
+			require.Len(t, reqs, len(raw.Vulnerabilities))
+
+			for i, req := range reqs {
+				require.NotNilf(t, req.Code, "requirement %d: Code is nil; Heimdall CODE tab would be empty", i)
+
+				var got, want interface{}
+				require.NoErrorf(t, json.Unmarshal([]byte(*req.Code), &got), "requirement %d: Code is not valid JSON", i)
+				require.NoError(t, json.Unmarshal(raw.Vulnerabilities[i], &want))
+				assert.Equalf(t, want, got, "requirement %d: Code does not round-trip to source vulnerability object", i)
+
+				// url fields that the typed struct/tags path drops must survive into code.
+				assert.Contains(t, *req.Code, "\n", "requirement %d: Code should be indented JSON", i)
+			}
+		})
+	}
+}
+
+// buildVulnCode has three branches: populated raw (indented JSON), empty raw,
+// and malformed raw (json.Indent error). The last two are defensive and
+// unreachable via the normal parse path, so exercise them directly.
+func TestBuildVulnCode_Branches(t *testing.T) {
+	// Populated raw: indented JSON that round-trips to the source object.
+	source := []byte(`{"id":"x","severity":"High","links":[{"url":"https://example.com"}]}`)
+	var vuln GitLabVulnerability
+	require.NoError(t, json.Unmarshal(source, &vuln))
+	code := buildVulnCode(vuln)
+	assert.Contains(t, code, "\n  ", "expected indented JSON")
+	var got, want interface{}
+	require.NoError(t, json.Unmarshal([]byte(code), &got))
+	require.NoError(t, json.Unmarshal(source, &want))
+	assert.Equal(t, want, got)
+
+	// Empty raw: defensive fallback.
+	assert.Equal(t, "{}", buildVulnCode(GitLabVulnerability{}))
+
+	// Malformed raw: json.Indent error fallback.
+	assert.Equal(t, "{}", buildVulnCode(GitLabVulnerability{raw: json.RawMessage("{not json")}))
+}
+
+// UnmarshalJSON captures the raw bytes and delegates typed decoding; a type
+// mismatch in the vulnerability propagates the decode error (exercised via the
+// report-level parse, which surfaces as an invalid-JSON conversion failure).
+func TestGitLabVulnerability_UnmarshalJSON_Error(t *testing.T) {
+	var vuln GitLabVulnerability
+	// id is typed string; a numeric id forces the inner json.Unmarshal to error.
+	assert.Error(t, vuln.UnmarshalJSON([]byte(`{"id": 12345}`)))
+
+	_, err := ConvertGitlabToHDF([]byte(`{"vulnerabilities":[{"id": 12345}]}`), testVersion)
+	assert.Error(t, err)
+}
+
+// A SAST finding carries location.file + start_line, which promote into the
+// structured requirement.sourceLocation{ref,line} field (distinct from the
+// codeDesc freetext). Pins the exact ref/line for the known SAST vuln.
+func TestConvertGitlabToHDF_SourceLocation_SAST(t *testing.T) {
+	input := loadFixture(t, "input/minimal-sast.json")
+	result, err := ConvertGitlabToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := reqByID(t, result, "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+	require.NotNil(t, req.SourceLocation, "SAST finding with location.file must emit sourceLocation")
+	require.NotNil(t, req.SourceLocation.Ref)
+	assert.Equal(t, "src/db/queries.py", *req.SourceLocation.Ref)
+	require.NotNil(t, req.SourceLocation.Line)
+	assert.InDelta(t, 42.0, *req.SourceLocation.Line, 0.001)
+}
+
+// A DAST finding carries no location.file (only hostname/path), so
+// sourceLocation is omitted entirely.
+func TestConvertGitlabToHDF_SourceLocation_DAST_Absent(t *testing.T) {
+	input := loadFixture(t, "input/minimal-dast.json")
+	result, err := ConvertGitlabToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Nil(t, req.SourceLocation, "DAST finding with no location.file must omit sourceLocation")
+}
+
+// end_line is used only when start_line is absent.
+func TestBuildSourceLocation_Branches(t *testing.T) {
+	assert.Nil(t, buildSourceLocation(nil))
+	assert.Nil(t, buildSourceLocation(&GitLabLocation{Hostname: "https://example.com"}), "no file → nil")
+
+	start := 7
+	end := 12
+	withStart := buildSourceLocation(&GitLabLocation{File: "a.py", StartLine: &start, EndLine: &end})
+	require.NotNil(t, withStart.Line)
+	assert.InDelta(t, 7.0, *withStart.Line, 0.001, "start_line preferred over end_line")
+
+	endOnly := buildSourceLocation(&GitLabLocation{File: "b.py", EndLine: &end})
+	require.NotNil(t, endOnly.Line)
+	assert.InDelta(t, 12.0, *endOnly.Line, 0.001, "end_line fallback when start_line absent")
+
+	noLine := buildSourceLocation(&GitLabLocation{File: "c.py"})
+	require.NotNil(t, noLine.Ref)
+	assert.Equal(t, "c.py", *noLine.Ref)
+	assert.Nil(t, noLine.Line, "Ref only when no line present")
+}
+
+func reqByID(t *testing.T, result *hdf.HDFResults, id string) hdf.EvaluatedRequirement {
+	t.Helper()
+	for _, req := range result.Baselines[0].Requirements {
+		if req.ID == id {
+			return req
+		}
+	}
+	t.Fatalf("requirement %q not found", id)
+	return hdf.EvaluatedRequirement{}
+}
+
+// links[].url and identifiers[].url both flow into refs[] (one Reference.URL
+// each). minimal-sast carries a link URL plus a CWE identifier URL.
+func TestConvertGitlabToHDF_Refs_LinksAndIdentifiers(t *testing.T) {
+	input := loadFixture(t, "input/minimal-sast.json")
+	result, err := ConvertGitlabToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := reqByID(t, result, "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+	require.Len(t, req.Refs, 2)
+	require.NotNil(t, req.Refs[0].URL)
+	require.NotNil(t, req.Refs[1].URL)
+	assert.Equal(t, "https://owasp.org/www-community/attacks/SQL_Injection", *req.Refs[0].URL)
+	assert.Equal(t, "https://cwe.mitre.org/data/definitions/89.html", *req.Refs[1].URL)
+}
+
+// A vuln with empty links[] and empty identifiers[] emits no refs[].
+func TestConvertGitlabToHDF_Refs_AbsentNotEmitted(t *testing.T) {
+	input := loadFixture(t, "input/multi-vuln.json")
+	result, err := ConvertGitlabToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := reqByID(t, result, "33333333-3333-3333-3333-333333333333")
+	assert.Nil(t, req.Refs)
+}
+
+// A URL present in both links[] and identifiers[] appears in refs[] only once.
+func TestConvertGitlabToHDF_Refs_Dedup(t *testing.T) {
+	input := []byte(`{
+	  "scan": {"type": "sast", "scanner": {"name": "Semgrep"}},
+	  "vulnerabilities": [{
+	    "id": "dup-1",
+	    "name": "Dup",
+	    "severity": "High",
+	    "links": [{"url": "https://example.com/shared"}],
+	    "identifiers": [
+	      {"type": "cwe", "name": "CWE-79", "value": "79", "url": "https://example.com/shared"},
+	      {"type": "cve", "name": "CVE-2024-9", "value": "CVE-2024-9", "url": "https://example.com/other"}
+	    ]
+	  }]
+	}`)
+	result, err := ConvertGitlabToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := reqByID(t, result, "dup-1")
+	require.Len(t, req.Refs, 2)
+	assert.Equal(t, "https://example.com/shared", *req.Refs[0].URL)
+	assert.Equal(t, "https://example.com/other", *req.Refs[1].URL)
+}
+
+// A top-level remediation whose fixes[].id matches a vuln attaches its summary
+// as a "remediation" description on that requirement only.
+func TestConvertGitlabToHDF_RemediationDescription(t *testing.T) {
+	input := loadFixture(t, "input/multi-vuln.json")
+	result, err := ConvertGitlabToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	fixed := reqByID(t, result, "11111111-1111-1111-1111-111111111111")
+	var found bool
+	for _, d := range fixed.Descriptions {
+		if d.Label == "remediation" {
+			found = true
+			assert.Equal(t, "Upgrade exec library to version 2.0", d.Data)
+		}
+	}
+	assert.True(t, found, "expected a remediation description on the matched vuln")
+
+	unfixed := reqByID(t, result, "22222222-2222-2222-2222-222222222222")
+	for _, d := range unfixed.Descriptions {
+		assert.NotEqual(t, "remediation", d.Label, "unmatched vuln must carry no remediation description")
 	}
 }

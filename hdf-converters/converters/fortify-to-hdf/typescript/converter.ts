@@ -5,6 +5,7 @@ import {
   deriveControlTypeFromTags,
   inputChecksum,
   buildNistCciTags,
+  mapCWEToNIST,
   limitArray,
   stripHTML,
   ensureArray,
@@ -20,6 +21,8 @@ import type {
   Checksum,
   Tool,
   Description,
+  Reference,
+  SourceLocation,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -32,9 +35,15 @@ import {
 const NIST_REFERENCE_NAME =
   'Standards Mapping - NIST Special Publication 800-53 Revision 4';
 
+// CWE reference name used by Fortify in Description.References
+const CWE_REFERENCE_NAME =
+  'Standards Mapping - Common Weakness Enumeration';
 
 // Regex to match NIST control identifiers like SI-10, AC-2
 const NIST_PATTERN = /[a-zA-Z]{2}-\d+/g;
+
+// Regex to match the numeric CWE IDs in a title like "CWE ID 22, CWE ID 73"
+const CWE_ID_PATTERN = /\d+/g;
 
 // --- FVDL XML types ---
 
@@ -107,6 +116,9 @@ interface FVDLDescription {
   Abstract?: string;
   Explanation?: string;
   Recommendations?: string;
+  Tips?: {
+    Tip?: string | string[];
+  };
   References?: {
     Reference?: FVDLReference | FVDLReference[];
   };
@@ -193,6 +205,64 @@ function extractNISTFromReferences(refs: FVDLReference[]): string[] {
   return [];
 }
 
+// Pull CWE identifiers from the Common Weakness Enumeration reference, returning
+// them in "CWE-NN" form (e.g. ["CWE-22","CWE-73"]).
+function extractCWEFromReferences(refs: FVDLReference[]): string[] {
+  for (const ref of refs) {
+    if (ref.Author === CWE_REFERENCE_NAME) {
+      const matches = ref.Title?.match(CWE_ID_PATTERN);
+      if (matches && matches.length > 0) {
+        return matches.map(m => `CWE-${m}`);
+      }
+    }
+  }
+  return [];
+}
+
+// Append the NIST controls implied by cweIDs to the native NIST tags, preserving
+// native order and skipping duplicates.
+function mergeCweNist(nist: string[], cweIDs: string[]): string[] {
+  const merged = [...nist];
+  for (const ctrl of mapCWEToNIST(cweIDs, [])) {
+    if (!merged.includes(ctrl)) {
+      merged.push(ctrl);
+    }
+  }
+  return merged;
+}
+
+// Strip markup from each <Tip> and join the non-empty tips into a single
+// description body. Returns '' when there are no usable tips.
+function buildTipsData(tips: string[]): string {
+  const parts: string[] = [];
+  for (const tip of tips) {
+    const text = stripFvdlMarkup(tip);
+    if (text) parts.push(text);
+  }
+  return parts.join('\n\n');
+}
+
+// Reports whether s is an http(s) URL.
+function isExternalURL(s: string): boolean {
+  return s.startsWith('http://') || s.startsWith('https://');
+}
+
+// Emit one Reference{url} per distinct external URL carried in a Description's
+// References (<Source> element), preserving first-seen order. Returns undefined
+// when no reference carries an external URL.
+function buildRefs(refs: FVDLReference[]): Reference[] | undefined {
+  const hdfRefs: Reference[] = [];
+  const seen = new Set<string>();
+  for (const ref of refs) {
+    const url = (ref.Source ?? '').trim();
+    if (!isExternalURL(url)) continue;
+    if (seen.has(url)) continue;
+    seen.add(url);
+    hdfRefs.push({ url });
+  }
+  return hdfRefs.length > 0 ? hdfRefs : undefined;
+}
+
 function formatSnippet(snippet: FVDLSnippet): string {
   const text = (snippet.Text ?? '').trim();
   return `Path: ${snippet.File ?? ''}\nStartLine: ${snippet.StartLine ?? ''}, EndLine: ${snippet.EndLine ?? ''}\nCode:\n${text}`;
@@ -231,20 +301,92 @@ function buildCodeDesc(
   return parts.join('\n');
 }
 
+// requirement.code = raw source snippet from the representative finding's
+// primary trace (Heimdall CODE tab). Returns undefined when no snippet exists.
+function buildRequirementCode(
+  vulns: FVDLVulnerability[],
+  snippetMap: Map<string, FVDLSnippet>,
+): string | undefined {
+  if (vulns.length === 0) return undefined;
+
+  const parts: string[] = [];
+  const entries = ensureArray(vulns[0]!.AnalysisInfo?.Unified?.Trace?.Primary?.Entry);
+  for (const entry of entries) {
+    if (!entry.Node) continue;
+    const snippetID = entry.Node.SourceLocation?.snippet;
+    if (!snippetID) continue;
+    const snippet = snippetMap.get(snippetID);
+    if (!snippet) continue;
+    const text = (snippet.Text ?? '').trim();
+    if (text) parts.push(text);
+  }
+
+  if (parts.length === 0) return undefined;
+  return parts.join('\n');
+}
+
+// requirement.sourceLocation = machine-addressable file/line locus of the
+// representative finding, promoted from the primary trace's first node carrying
+// a path (the default/sink node in every observed FVDL). Line is a number,
+// omitted when the source line is absent or non-numeric. Returns undefined when
+// no trace node carries a path.
+function buildSourceLocation(
+  vulns: FVDLVulnerability[],
+): SourceLocation | undefined {
+  if (vulns.length === 0) return undefined;
+  const entries = ensureArray(vulns[0]!.AnalysisInfo?.Unified?.Trace?.Primary?.Entry);
+  for (const entry of entries) {
+    const path = entry.Node?.SourceLocation?.path;
+    if (!path) continue;
+    const sl: SourceLocation = { ref: path };
+    const lineStr = entry.Node?.SourceLocation?.line;
+    if (lineStr !== undefined && lineStr !== '') {
+      const line = Number(lineStr);
+      if (!Number.isNaN(line)) sl.line = line;
+    }
+    return sl;
+  }
+  return undefined;
+}
+
+// Copy the Fortify ClassInfo categorization from the representative finding into
+// tags. Keys: kingdom (Seven Pernicious Kingdoms), class_type (vulnerability
+// class — "class_type" avoids colliding with any generic "type" tag), subtype,
+// analyzer. Absent source fields are omitted.
+function addClassInfoTags(
+  tags: Record<string, unknown>,
+  vulns: FVDLVulnerability[],
+): void {
+  if (vulns.length === 0) return;
+  const ci = vulns[0]!.ClassInfo;
+  if (ci?.Kingdom) tags.kingdom = ci.Kingdom;
+  if (ci?.Type) tags.class_type = ci.Type;
+  if (ci?.Subtype) tags.subtype = ci.Subtype;
+  if (ci?.AnalyzerName) tags.analyzer = ci.AnalyzerName;
+}
+
 function buildRequirement(
   desc: FVDLDescription,
   vulns: FVDLVulnerability[],
   snippetMap: Map<string, FVDLSnippet>,
   startTimeStr: string,
 ): EvaluatedRequirement {
-  // Extract NIST tags from Description References
+  // Extract NIST tags from Description References, then merge in the NIST
+  // controls implied by the CWE mapping so tags.nist reflects both sources.
   const refs = ensureArray(desc.References?.Reference);
-  let nistTags = extractNISTFromReferences(refs);
+  const cweIDs = extractCWEFromReferences(refs);
+  let nistTags = mergeCweNist(extractNISTFromReferences(refs), cweIDs);
   if (nistTags.length === 0) {
     nistTags = [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS];
   }
   const cciTags = nistToCci(nistTags);
   const tags = buildNistCciTags(nistTags, cciTags);
+
+  // Surface the Fortify ClassInfo categorization (Seven Pernicious Kingdoms
+  // category, vulnerability class/subtype, analyzer) from the representative
+  // finding. These are parsed but were otherwise dropped. Emit each only when
+  // present in the source.
+  addClassInfoTags(tags, vulns);
 
   // Title from Abstract (HTML stripped)
   const title = stripFvdlMarkup(desc.Abstract ?? '');
@@ -266,10 +408,16 @@ function buildRequirement(
     });
   }
 
-  // Impact from the first vulnerability's DefaultSeverity / 5
+  // Tips description from the Description's <Tips><Tip> guidance text.
+  const tipsData = buildTipsData(ensureArray(desc.Tips?.Tip));
+  if (tipsData) {
+    descriptions.push({ label: 'tips', data: tipsData });
+  }
+
+  // Impact from the representative instance's per-instance severity / 5.
   let impact = 0;
   if (vulns.length > 0) {
-    const severity = parseFloat(vulns[0]!.ClassInfo?.DefaultSeverity ?? '0');
+    const severity = parseFloat(vulns[0]!.InstanceInfo?.InstanceSeverity ?? '0');
     impact = severity / 5.0;
   }
 
@@ -297,9 +445,29 @@ function buildRequirement(
     verificationMethod: VerificationMethodEnum.Automated,
   };
 
+  if (cweIDs.length > 0) {
+    req.cwe = cweIDs;
+  }
+
+  // External reference links from Description References (<Source> URL).
+  const refsList = buildRefs(refs);
+  if (refsList !== undefined) {
+    req.refs = refsList;
+  }
+
   const controlType = deriveControlTypeFromTags(nistTags);
   if (controlType !== undefined) {
     req.controlType = controlType;
+  }
+
+  const code = buildRequirementCode(vulns, snippetMap);
+  if (code !== undefined) {
+    req.code = code;
+  }
+
+  const sourceLocation = buildSourceLocation(vulns);
+  if (sourceLocation !== undefined) {
+    req.sourceLocation = sourceLocation;
   }
 
   return req;

@@ -1,8 +1,11 @@
 package scoutsuite
 
 import (
+	"strings"
 	"sync"
 	"testing"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 func TestNISTControl_KnownRule(t *testing.T) {
@@ -85,5 +88,18 @@ func TestLoadData_InvalidJSON(t *testing.T) {
 	}
 	if len(result) != 0 {
 		t.Errorf("expected empty map on JSON error, got %d entries", len(result))
+	}
+}
+
+// See the nikto equivalent: this guard fails when a control in the table stops
+// being identical across revisions, signalling the mapping needs real handling.
+func TestTableIsRevisionNeutral(t *testing.T) {
+	for rule, control := range loadData() {
+		for _, c := range strings.Split(control, "|") {
+			tr := nist.Translate(strings.TrimSpace(c), 4, 5)
+			if tr.Relation != nist.RelationIdentity {
+				t.Errorf("scoutsuite %s: control %q is not revision-neutral (relation %s)", rule, c, tr.Relation)
+			}
+		}
 	}
 }

@@ -1,7 +1,6 @@
 import {
   type Checksum,
   type Cvss,
-  CVSSSeverity,
   type Description,
   type Epss,
   type EvaluatedBaseline,
@@ -11,13 +10,15 @@ import {
   OverrideType,
   type RequirementResult,
   ResultStatus,
+  type SourceLocation,
   type StatusOverride,
   Version as CvssVersion,
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
-import {getCweNistControl, nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
-import {cvssScoreToSeverity, parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
+import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
+import {severityToImpact, parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
+import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, validateInputSize, buildHdfResults, mapCWEToNIST} from '../../../shared/typescript/converterutil.js';
+import {buildCvss as buildSharedCvss} from '../../../shared/typescript/cvss.js';
 
 // DefectDojo /api/v2/findings/ input model (subset). The live fetcher produces
 // the same bytes; see converter.go for the design rationale (risk-acceptance
@@ -47,6 +48,8 @@ interface DDFinding {
   vuln_id_from_tool?: string | null;
   file_path?: string | null;
   line?: number | null;
+  sast_source_file_path?: string | null;
+  sast_source_line?: number | null;
   component_name?: string | null;
   component_version?: string | null;
   service?: string | null;
@@ -60,6 +63,13 @@ interface DDFinding {
   under_review?: boolean;
   accepted_risks?: DDAcceptedRisk[];
   related_fields?: {test?: {test_type?: {name?: string}}};
+  // False-positive triage provenance: `mitigated` (decision date) + `mitigated_by`
+  // (reviewer user id). The *_username/_email variants are optional fetcher
+  // enrichment, mirroring accepted_risks' owner fields.
+  mitigated?: string | null;
+  mitigated_by?: number | string | null;
+  mitigated_by_username?: string | null;
+  mitigated_by_email?: string | null;
 }
 
 interface DDAcceptedRisk {
@@ -71,18 +81,6 @@ interface DDAcceptedRisk {
   decision?: string;
   decision_details?: string | null;
   name?: string;
-}
-
-const SEVERITY_IMPACT: Record<string, number> = {
-  critical: 0.9,
-  high: 0.7,
-  medium: 0.5,
-  low: 0.3,
-  info: 0.0,
-};
-
-function impactFor(severity: string): number {
-  return SEVERITY_IMPACT[severity?.toLowerCase()] ?? 0.5;
 }
 
 // Raw-primary: what the tool reported is preserved; triage decisions ride in
@@ -143,6 +141,69 @@ function buildWaiverOverride(ar: DDAcceptedRisk): StatusOverride {
   };
 }
 
+// Resolve the false-positive reviewer to an HDF Identity, preferring
+// fetcher-enriched username/email over the raw mitigated_by user id. When
+// DefectDojo recorded no reviewer, fall back to an honest system identity
+// (never a fabricated person).
+function falsePositiveReviewer(f: DDFinding): Identity {
+  if (f.mitigated_by_email) return {type: IdentityType.Email, identifier: f.mitigated_by_email};
+  if (f.mitigated_by_username) return {type: IdentityType.Username, identifier: f.mitigated_by_username};
+  if (f.mitigated_by !== undefined && f.mitigated_by !== null && `${f.mitigated_by}` !== '') {
+    return {type: IdentityType.Simple, identifier: `defectdojo-user-${f.mitigated_by}`};
+  }
+  return {type: IdentityType.Other, identifier: 'defectdojo (false positive triage)'};
+}
+
+// DefectDojo is a vulnerability aggregator, so a false positive means the vuln
+// does not apply → effectiveStatus notApplicable (disposition distinguishes it
+// from a genuine N/A). Raw status stays failed with the full attributed, expiring
+// override present — not laundering.
+function buildFalsePositiveOverride(f: DDFinding): StatusOverride {
+  const reason = f.mitigation || 'Marked as false positive in DefectDojo';
+  // appliedAt: the mitigation decision date when present; else the finding's own
+  // date. Deterministic — parsed canonically, never now() when a real time exists.
+  const appliedAt = (f.mitigated ? parseTimestamp(f.mitigated) : null) ?? parseFindingDate(f.date) ?? new Date();
+  // expiresAt is REQUIRED; DefectDojo carries no expiry for a false positive, so
+  // default to one year out (the same "reviewed rather than permanent" convention
+  // as the waiver path). setTime avoids the eslint new Date(value) ban.
+  const oneYearOut = new Date();
+  oneYearOut.setTime(appliedAt.getTime());
+  oneYearOut.setUTCFullYear(oneYearOut.getUTCFullYear() + 1);
+  return {
+    type: OverrideType.FalsePositive,
+    status: ResultStatus.NotApplicable,
+    reason,
+    appliedBy: falsePositiveReviewer(f),
+    appliedAt,
+    expiresAt: oneYearOut,
+  };
+}
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+// Parse a DefectDojo finding `date`. That field is date-only (YYYY-MM-DD); a bare
+// date is promoted to UTC midnight before canonical parsing so Go and TS agree
+// (Go's ParseTimestamp has no date-only layout). parseTimestamp then reads it as
+// UTC. Returns null when absent/unparseable.
+function parseFindingDate(s: string | undefined): Date | null {
+  if (!s) return null;
+  return parseTimestamp(DATE_ONLY.test(s) ? `${s}T00:00:00Z` : s);
+}
+
+// The most recent finding `date`. DefectDojo carries no single top-level scan
+// time, so the newest finding date is the defensible report time for the
+// top-level HDF timestamp. Returns undefined when no finding carries a parseable
+// date — the caller then omits the optional timestamp rather than fabricating a
+// wall-clock value (keeping the mapping source-derived and deterministic).
+function latestFindingDate(findings: DDFinding[]): Date | undefined {
+  let latest: Date | undefined;
+  for (const f of findings) {
+    const d = parseFindingDate(f.date);
+    if (d && (!latest || d.getTime() > latest.getTime())) latest = d;
+  }
+  return latest;
+}
+
 function findingId(f: DDFinding): string {
   return f.unique_id_from_tool || f.vuln_id_from_tool || `DefectDojo-Finding-${f.id}`;
 }
@@ -151,32 +212,11 @@ function cveList(f: DDFinding): string[] {
   return (f.vulnerability_ids ?? []).map(v => v.vulnerability_id).filter(Boolean);
 }
 
-function cvssBand(score: number): CVSSSeverity {
-  switch (cvssScoreToSeverity(score)) {
-    case 'critical':
-      return CVSSSeverity.Critical;
-    case 'high':
-      return CVSSSeverity.High;
-    case 'medium':
-      return CVSSSeverity.Medium;
-    case 'low':
-      return CVSSSeverity.Low;
-    default:
-      return CVSSSeverity.None;
-  }
-}
-
 function buildCvss(f: DDFinding): Cvss[] {
   const out: Cvss[] = [];
   const add = (version: CvssVersion, vector?: string | null, score?: number | null): void => {
     if ((score === undefined || score === null) && !vector) return;
-    const entry: Cvss = {version};
-    if (score !== undefined && score !== null) {
-      entry.baseScore = score;
-      entry.baseSeverity = cvssBand(score);
-    }
-    if (vector) entry.baseVector = vector;
-    out.push(entry);
+    out.push(buildSharedCvss({version, baseScore: score, baseVector: vector}));
   };
   add(CvssVersion.The31, f.cvssv3, f.cvssv3_score);
   add(CvssVersion.The40, f.cvssv4, f.cvssv4_score);
@@ -190,11 +230,9 @@ function buildEpss(f: DDFinding): Epss | undefined {
 }
 
 function nistTags(f: DDFinding): string[] {
-  if (f.cwe && f.cwe > 0) {
-    const control = getCweNistControl(f.cwe);
-    if (control) return [control];
-  }
-  return DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
+  return f.cwe && f.cwe > 0
+    ? mapCWEToNIST([`CWE-${f.cwe}`], DEFAULT_STATIC_ANALYSIS_NIST_TAGS)
+    : DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
 }
 
 function buildDescriptions(f: DDFinding): Description[] {
@@ -217,19 +255,44 @@ function codeDesc(f: DDFinding): string {
   return parts.join(' | ');
 }
 
+// Resolve the finding's file locus, preferring the primary file_path/line over
+// the SAST sast_source_file_path/sast_source_line fallback. The line is taken
+// from whichever ref source is chosen (paired, not mixed).
+function sourceLocus(f: DDFinding): [string | undefined, number | null | undefined] {
+  if (f.file_path) return [f.file_path, f.line];
+  if (f.sast_source_file_path) return [f.sast_source_file_path, f.sast_source_line];
+  return [undefined, undefined];
+}
+
+// Promote the finding's file locus into the structured, machine-addressable
+// requirement.sourceLocation. Returns undefined when no path is present.
+function buildSourceLocation(f: DDFinding): SourceLocation | undefined {
+  const [ref, line] = sourceLocus(f);
+  if (!ref) return undefined;
+  const loc: SourceLocation = {ref};
+  if (line !== undefined && line !== null) loc.line = line;
+  return loc;
+}
+
 function convertFinding(f: DDFinding): EvaluatedRequirement {
   const nist = nistTags(f);
   const tags = buildNistCciTags(nist, nistToCci(nist), triageTags(f));
 
+  // CVE → tags.cve (interim, pending a first-class identifiers[] field). The
+  // requirement.id is a native DefectDojo finding id (DefectDojo-Finding-<n> or a
+  // tool id), never the CVE, so the CVE list is not a duplicate of the id.
+  const cves = cveList(f);
+  if (cves.length > 0) tags.cve = cves;
+
   const result: RequirementResult = {
     status: deriveStatus(f),
     codeDesc: codeDesc(f),
-    startTime: (f.date ? parseTimestamp(f.date) : null) ?? new Date(),
+    startTime: parseFindingDate(f.date) ?? new Date(),
   };
 
   const req: EvaluatedRequirement = {
     id: findingId(f),
-    impact: impactFor(f.severity),
+    impact: severityToImpact(f.severity),
     results: [result],
     tags,
     descriptions: buildDescriptions(f),
@@ -244,14 +307,38 @@ function convertFinding(f: DDFinding): EvaluatedRequirement {
   if (epss) req.epss = epss;
   if (f.cwe && f.cwe > 0) req.cwe = [`CWE-${f.cwe}`];
 
-  // The novel part: a risk-accepted finding carries a real waiver override built
-  // from accepted_risks provenance.
+  // KEV is NOT-IN-SOURCE: DefectDojo findings carry known_exploited/kev_date/
+  // ransomware_used but no CISA remediation due date. hdf Kev requires both
+  // dateAdded AND dueDate when inKev is true, so a schema-valid requirement.kev
+  // cannot be produced from source alone — synthesizing a dueDate DefectDojo
+  // never sent would be fabrication. The KEV signal is preserved verbatim in
+  // requirement.code (the raw finding JSON).
+
+  // DefectDojo carries no literal source snippet, so requirement.code (Heimdall's
+  // CODE tab) holds the whole finding as indented JSON — every field the typed
+  // interface does not model, byte-identical to the Go twin's json.Indent output.
+  req.code = JSON.stringify(f, null, 2);
+
+  // Promote the finding's file locus into the structured, machine-addressable
+  // requirement.sourceLocation (additive; it also stays in codeDesc freetext).
+  const sourceLocation = buildSourceLocation(f);
+  if (sourceLocation) req.sourceLocation = sourceLocation;
+
+  // The novel part: a triaged finding carries a real, attributed override so raw
+  // status + effectiveStatus + disposition are all present (not laundering).
+  // Precedence: a risk acceptance (waiver, from accepted_risks provenance) wins
+  // over a false-positive dismissal — a finding accepted as real risk is not
+  // simultaneously a false positive.
   const firstRisk = f.accepted_risks?.[0];
   if (f.risk_accepted && firstRisk) {
     req.statusOverrides = [buildWaiverOverride(firstRisk)];
     req.effectiveStatus = ResultStatus.Passed;
     req.disposition = OverrideType.Waiver;
     tags['defectdojo/decision'] = firstRisk.decision ?? '';
+  } else if (f.false_p) {
+    req.statusOverrides = [buildFalsePositiveOverride(f)];
+    req.effectiveStatus = ResultStatus.NotApplicable;
+    req.disposition = OverrideType.FalsePositive;
   }
 
   return req;
@@ -303,5 +390,8 @@ export async function convertDefectDojoToHdf(input: string, converterVersion = '
     converterVersion,
     toolName: 'DefectDojo',
     baselines,
+    // Top-level timestamp: the newest finding date, source-derived and
+    // deterministic. Omitted when no finding carries a parseable date.
+    timestamp: latestFindingDate(findings),
   });
 }

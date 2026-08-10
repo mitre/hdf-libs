@@ -5,6 +5,12 @@
 import type { CCIMappings, NistCCIMappings } from './types.js';
 import rawCCIData from '../data/cci-mappings.json';
 import rawNistCCIData from '../data/nist-cci-mappings.json';
+import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
+
+// The DISA CCI list's NIST references are Rev 4-era (they include Appendix J
+// privacy controls and SA-12/SA-19, all withdrawn or relocated in Rev 5).
+// getCCINistMappings translates to the current module-global revision.
+const NATIVE_REVISION = 4;
 
 const cciData = rawCCIData as CCIMappings;
 const nistCCIData = rawNistCCIData as NistCCIMappings;
@@ -48,7 +54,8 @@ export function getCCINistMappings(cciId: string): string[] | undefined {
   }
 
   const item = cciData[cciId];
-  return item?.nist;
+  if (!item) return undefined;
+  return nistControlsAtRevision(item.nist, NATIVE_REVISION, getCurrentNistRevision());
 }
 
 /**

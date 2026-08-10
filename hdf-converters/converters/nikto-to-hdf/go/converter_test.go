@@ -49,7 +49,7 @@ func TestConvertNiktoToHDF_Tool(t *testing.T) {
 
 	require.NotNil(t, result.Tool)
 	assert.Equal(t, "Nikto", *result.Tool.Name)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 func TestConvertNiktoToHDF_BaselineName(t *testing.T) {
@@ -236,6 +236,58 @@ func TestConvertNiktoToHDF_RequirementTitle(t *testing.T) {
 	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "999986")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "Retrieved access-control-allow-origin header: *", *req.Title)
+}
+
+func TestConvertNiktoToHDF_HostComponent(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNiktoToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.Host, comp.Type)
+	assert.Equal(t, "example.com", comp.Name)
+	require.NotNil(t, comp.Hostname)
+	assert.Equal(t, "example.com", *comp.Hostname)
+	require.NotNil(t, comp.IPAddress)
+	assert.Equal(t, "93.184.216.34", *comp.IPAddress)
+	assert.Nil(t, comp.ComponentID, "componentId must not be set")
+}
+
+func TestConvertNiktoToHDF_HostComponentIPOnly(t *testing.T) {
+	input := []byte(`{"ip":"10.1.2.3","vulnerabilities":[]}`)
+	result, err := ConvertNiktoToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.Host, comp.Type)
+	assert.Equal(t, "10.1.2.3", comp.Name)
+	assert.Nil(t, comp.Hostname)
+	require.NotNil(t, comp.IPAddress)
+	assert.Equal(t, "10.1.2.3", *comp.IPAddress)
+}
+
+func TestConvertNiktoToHDF_HostComponentHostOnly(t *testing.T) {
+	input := []byte(`{"host":"web.example.com","vulnerabilities":[]}`)
+	result, err := ConvertNiktoToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.Host, comp.Type)
+	assert.Equal(t, "web.example.com", comp.Name)
+	require.NotNil(t, comp.Hostname)
+	assert.Equal(t, "web.example.com", *comp.Hostname)
+	assert.Nil(t, comp.IPAddress)
+}
+
+func TestConvertNiktoToHDF_HostComponentAbsent(t *testing.T) {
+	input := []byte(`{"banner":"nginx","vulnerabilities":[]}`)
+	result, err := ConvertNiktoToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	assert.Empty(t, result.Components, "no host component when host and ip are absent")
 }
 
 func TestConverterContract(t *testing.T) {

@@ -1,6 +1,7 @@
 package grype_to_hdf
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -30,9 +31,28 @@ type GrypeDescriptor struct {
 }
 
 type GrypeSource struct {
-	Target struct {
-		UserInput string `json:"userInput"`
-	} `json:"target"`
+	Type   string      `json:"type,omitempty"`
+	Target GrypeTarget `json:"target"`
+}
+
+// GrypeTarget mirrors source.target for an image scan. Grype carries the full
+// scanned-image identity here; the converter previously read only userInput and
+// dropped the rest. A directory scan emits target as a bare string instead, so
+// only UserInput is guaranteed across scan types.
+type GrypeTarget struct {
+	UserInput      string       `json:"userInput,omitempty"`
+	ImageID        string       `json:"imageID,omitempty"`
+	ManifestDigest string       `json:"manifestDigest,omitempty"`
+	RepoDigests    []string     `json:"repoDigests,omitempty"`
+	Tags           []string     `json:"tags,omitempty"`
+	Architecture   string       `json:"architecture,omitempty"`
+	OS             string       `json:"os,omitempty"`
+	Layers         []GrypeLayer `json:"layers,omitempty"`
+}
+
+type GrypeLayer struct {
+	Digest string `json:"digest,omitempty"`
+	Size   int64  `json:"size,omitempty"`
 }
 
 type GrypeDistro struct {
@@ -46,6 +66,24 @@ type GrypeMatch struct {
 	RelatedVulnerabilities []GrypeRelatedVulnerability `json:"relatedVulnerabilities,omitempty"`
 	MatchDetails           []GrypeMatchDetail          `json:"matchDetails"`
 	Artifact               GrypeArtifact               `json:"artifact"`
+
+	// raw is the match exactly as Grype emitted it. Grype carries no literal
+	// source snippet, so requirement.code is the whole match re-indented in
+	// place — preserving source key order, every field the typed struct does
+	// not model, and the source number literals, so the output is byte-identical
+	// to the TypeScript twin's JSON.stringify(match, null, 2).
+	raw json.RawMessage
+}
+
+func (m *GrypeMatch) UnmarshalJSON(data []byte) error {
+	type plain GrypeMatch
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*m = GrypeMatch(p)
+	m.raw = append(json.RawMessage(nil), data...)
+	return nil
 }
 
 type GrypeVulnerability struct {
@@ -287,38 +325,19 @@ func buildCodeDesc(match GrypeMatch) string {
 	return strings.Join(parts, " | ")
 }
 
-// cvssVersionToSchema maps a Grype-emitted CVSS version string to the schema
-// Version enum. Grype emits "2.0", "3.0", "3.1", and "4.0". Unrecognized
-// values default to "3.1" (the most common in modern scans).
-func cvssVersionToSchema(v string) hdf.Version {
-	switch v {
-	case "2.0":
-		return hdf.The20
-	case "3.0":
-		return hdf.The30
-	case "4.0":
-		return hdf.The40
-	default:
-		return hdf.The31
+// buildMatchCode renders the raw match as indented JSON for requirement.code.
+// json.Indent re-formats the original bytes in place, preserving source key
+// order so the output is byte-identical to the TypeScript twin's
+// JSON.stringify(match, null, 2).
+func buildMatchCode(match GrypeMatch) string {
+	if len(match.raw) == 0 {
+		return "{}"
 	}
-}
-
-// cvssBandSeverity converts a CVSS base score to the schema CVSSSeverity enum.
-// Delegates to hdfutil.CvssScoreToSeverity so band thresholds stay aligned
-// with the rest of the codebase.
-func cvssBandSeverity(score float64) hdf.CVSSSeverity {
-	switch hdfutil.CvssScoreToSeverity(score) {
-	case "critical":
-		return hdf.CVSSSeverityCritical
-	case "high":
-		return hdf.CVSSSeverityHigh
-	case "medium":
-		return hdf.CVSSSeverityMedium
-	case "low":
-		return hdf.CVSSSeverityLow
-	default:
-		return hdf.None
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, match.raw, "", "  "); err != nil {
+		return "{}"
 	}
+	return buf.String()
 }
 
 // buildCvssEntries maps every entry in vulnerability.cvss[] to a schema Cvss
@@ -331,24 +350,21 @@ func buildCvssEntries(vuln GrypeVulnerability) []hdf.Cvss {
 	}
 	out := make([]hdf.Cvss, 0, len(vuln.CVSS))
 	for _, c := range vuln.CVSS {
-		var baseScore float64
+		var bs *float64
 		if c.Metrics != nil {
-			baseScore = c.Metrics.BaseScore
+			s := c.Metrics.BaseScore
+			bs = &s
 		}
-		severity := cvssBandSeverity(baseScore)
-		source := vuln.ID
-		bs := baseScore
-		entry := hdf.Cvss{
-			Version:      cvssVersionToSchema(c.Version),
-			BaseScore:    &bs,
-			BaseSeverity: &severity,
-		}
-		if c.Vector != "" {
-			bv := c.Vector
-			entry.BaseVector = &bv
-		}
-		if source != "" {
-			entry.Source = &source
+		entry := shared.BuildCvss(shared.CvssInput{
+			Version:    shared.CvssVersionFromString(c.Version),
+			BaseScore:  bs,
+			BaseVector: c.Vector,
+			Source:     vuln.ID,
+		})
+		// Parity with the TS converter: an entry with neither score nor
+		// vector cannot satisfy the schema anyOf and is skipped.
+		if entry.BaseScore == nil && entry.BaseVector == nil {
+			continue
 		}
 		out = append(out, entry)
 	}
@@ -480,7 +496,7 @@ func buildKev(k *GrypeKEV) *hdf.Kev {
 	return out
 }
 
-func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRequirement {
+func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName string, startTime time.Time) hdf.EvaluatedRequirement {
 	vuln := match.Vulnerability
 	cveID := vuln.ID
 	severity := vuln.Severity
@@ -517,15 +533,11 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 	messageParts = append(messageParts, fixInfo)
 	message := strings.Join(messageParts, " ")
 
-	// Build execution result
-	// Use Go zero time
-	zeroTime := time.Time{}
-
 	result := hdf.RequirementResult{
 		Status:    status,
 		CodeDesc:  buildCodeDesc(match),
 		Message:   &message,
-		StartTime: zeroTime,
+		StartTime: startTime,
 	}
 
 	// Get CCI tags from curated NIST → CCI mapping
@@ -559,9 +571,13 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 		}
 	}
 
+	title := fmt.Sprintf("Grype found a vulnerability to %s in %s", cveID, targetName)
+
 	requirement := hdf.EvaluatedRequirement{
 		ID:                 requirementID,
+		Title:              &title,
 		Impact:             impact,
+		Code:               hdfutil.Ptr(buildMatchCode(match)),
 		Results:            []hdf.RequirementResult{result},
 		Tags:               tags,
 		Descriptions:       descriptions,
@@ -576,6 +592,68 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 	}
 
 	return requirement
+}
+
+// buildComponent surfaces the scan target's identity into a top-level HDF
+// component. An image scan yields a containerImage component carrying the image
+// digest, id, and distro OS; anything without image identity (e.g. a directory
+// scan) falls back to a bare artifact component named for the scan target.
+func buildComponent(report GrypeReport, targetName string) hdf.Component {
+	t := report.Source.Target
+	isImage := t.ImageID != "" || t.ManifestDigest != "" || len(t.RepoDigests) > 0 || len(t.Tags) > 0
+	if !isImage {
+		return hdf.Component{Name: targetName, Type: hdf.Artifact}
+	}
+
+	firstRepoDigest := firstNonEmpty(t.RepoDigests)
+	firstTag := firstNonEmpty(t.Tags)
+
+	name := firstRepoDigest
+	if name == "" {
+		name = firstTag
+	}
+	if name == "" {
+		name = t.ImageID
+	}
+
+	component := hdf.Component{Name: name, Type: hdf.ContainerImage}
+	if t.ImageID != "" {
+		component.ImageID = hdfutil.Ptr(t.ImageID)
+	}
+	// Image the container was started from: a repoDigest pins it exactly; a tag
+	// is the fallback when the scan carries no repoDigest.
+	if image := firstRepoDigest; image != "" {
+		component.Image = hdfutil.Ptr(image)
+	} else if firstTag != "" {
+		component.Image = hdfutil.Ptr(firstTag)
+	}
+	if report.Distro != nil {
+		if report.Distro.Name != "" {
+			component.OSName = hdfutil.Ptr(report.Distro.Name)
+		}
+		if report.Distro.Version != "" {
+			component.OSVersion = hdfutil.Ptr(report.Distro.Version)
+		}
+	}
+	if t.ManifestDigest != "" {
+		component.Integrity = []hdf.Checksum{{
+			Algorithm: hdf.Sha256,
+			Value:     strings.TrimPrefix(t.ManifestDigest, "sha256:"),
+		}}
+	}
+	if t.Architecture != "" {
+		component.Labels = map[string]string{"architecture": t.Architecture}
+	}
+	return component
+}
+
+func firstNonEmpty(values []string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // ConvertGrypeToHDF converts Grype JSON to HDF
@@ -596,25 +674,38 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		return nil, fmt.Errorf("invalid Grype JSON: %w", err)
 	}
 
+	// Build baseline name from source
+	targetName := grypeData.Source.Target.UserInput
+	if targetName == "" {
+		targetName = "Grype Scan"
+	}
+
+	// The scan timestamp anchors every result's start_time; a valid Go zero time is
+	// the schema-safe fallback when Grype omits descriptor.timestamp.
+	var scanTime *time.Time
+	if grypeData.Descriptor.Timestamp != "" {
+		if parsed := hdfutil.ParseTimestamp(grypeData.Descriptor.Timestamp); !parsed.IsZero() {
+			scanTime = &parsed
+		}
+	}
+	resultStart := time.Time{}
+	if scanTime != nil {
+		resultStart = *scanTime
+	}
+
 	// Build requirements from matches
 	requirements := []hdf.EvaluatedRequirement{}
 
 	// Process regular matches
 	limitedMatches := shared.LimitSliceWithWarning(grypeData.Matches, 0, "match")
 	for _, match := range limitedMatches {
-		requirements = append(requirements, convertMatchToRequirement(match, false))
+		requirements = append(requirements, convertMatchToRequirement(match, false, targetName, resultStart))
 	}
 
 	// Process ignored matches
 	limitedIgnored := shared.LimitSliceWithWarning(grypeData.IgnoredMatches, 0, "ignored match")
 	for _, match := range limitedIgnored {
-		requirements = append(requirements, convertMatchToRequirement(match, true))
-	}
-
-	// Build baseline name from source
-	targetName := grypeData.Source.Target.UserInput
-	if targetName == "" {
-		targetName = "Grype Scan"
+		requirements = append(requirements, convertMatchToRequirement(match, true, targetName, resultStart))
 	}
 
 	if len(requirements) == 0 {
@@ -634,19 +725,8 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ResultsChecksum: resultsChecksum,
 	}
 
-	// Build timestamp
-	var timestamp *time.Time
-	if grypeData.Descriptor.Timestamp != "" {
-		if parsedTime := hdfutil.ParseTimestamp(grypeData.Descriptor.Timestamp); !parsedTime.IsZero() {
-			timestamp = &parsedTime
-		}
-	}
-
-	// Build target from scan source
-	target := hdf.Component{
-		Name: targetName,
-		Type: hdf.Artifact,
-	}
+	// Build target component from scan source (image identity when present)
+	target := buildComponent(grypeData, targetName)
 
 	// Build HDF results
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
@@ -656,7 +736,7 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ToolVersion:      grypeData.Descriptor.Version,
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       []hdf.Component{target},
-		Timestamp:        timestamp,
+		Timestamp:        scanTime,
 	})
 
 	return hdfResult, nil

@@ -111,8 +111,7 @@ func TestConvertSnyk_Tool(t *testing.T) {
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)
 	assert.Equal(t, "Snyk", *result.Tool.Name)
-	require.NotNil(t, result.Tool.Format)
-	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Nil(t, result.Tool.Format, "serialization structures are not formats (kpvj)")
 }
 
 // ---- Severity → Impact mapping ----
@@ -199,15 +198,16 @@ func TestConvertSnyk_Tags(t *testing.T) {
 	// npm:adm-zip:20180415 has CVE, CWE, and GHSA identifiers
 	req := shared.MustFindRequirement(t, reqs, "npm:adm-zip:20180415")
 
-	// cweid
-	cweid, ok := req.Tags["cweid"].([]string)
-	require.True(t, ok, "cweid should be []string")
-	assert.Contains(t, cweid, "CWE-29")
+	// CWE is now first-class (req.Cwe), not a tag
+	_, hasCweid := req.Tags["cweid"]
+	assert.False(t, hasCweid, "cweid tag removed — CWE now lives in requirement.cwe[]")
 
-	// cveid
-	cveid, ok := req.Tags["cveid"].([]string)
-	require.True(t, ok, "cveid should be []string")
-	assert.Contains(t, cveid, "CVE-2018-1002204")
+	// cve (renamed from cveid); CVE is not the requirement.id so it lives here
+	cve, ok := req.Tags["cve"].([]string)
+	require.True(t, ok, "cve should be []string")
+	assert.Contains(t, cve, "CVE-2018-1002204")
+	_, hasCveid := req.Tags["cveid"]
+	assert.False(t, hasCveid, "cveid tag renamed to cve")
 
 	// ghsaid
 	ghsaid, ok := req.Tags["ghsaid"].([]string)
@@ -223,6 +223,71 @@ func TestConvertSnyk_Tags(t *testing.T) {
 	cciSlice := hdfutil.SafeStringSlice(req.Tags["cci"])
 	require.NotNil(t, cciSlice, "cci should be present")
 	assert.NotEmpty(t, cciSlice)
+}
+
+// ---- Structured CVSS ----
+
+func TestConvertSnyk_Cvss(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
+
+	require.Len(t, req.Cvss, 1)
+	cv := req.Cvss[0]
+	assert.Equal(t, hdf.The31, cv.Version)
+	require.NotNil(t, cv.BaseScore)
+	assert.InDelta(t, 7.4, *cv.BaseScore, 0.001)
+	require.NotNil(t, cv.BaseVector)
+	assert.Equal(t, "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N", *cv.BaseVector)
+	require.NotNil(t, cv.BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityHigh, *cv.BaseSeverity)
+
+	// Old CVSS-related tags must not be present
+	_, hasBaseScore := req.Tags["cvss_base_score"]
+	assert.False(t, hasBaseScore)
+	_, hasCvss31 := req.Tags["cvss31"]
+	assert.False(t, hasCvss31)
+}
+
+// ---- Structured CWE ----
+
+func TestConvertSnyk_Cwe(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
+
+	assert.Equal(t, []string{"CWE-22"}, req.Cwe)
+	// NIST mapping (derived from CWE) stays as a tag
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
+	assert.NotEmpty(t, nist)
+}
+
+// ---- buildSnykCvss branch coverage ----
+
+func TestBuildSnykCvss_Branches(t *testing.T) {
+	// Both absent → omitted
+	assert.Nil(t, buildSnykCvss(SnykVuln{}))
+
+	// Score present, vector absent → default version 3.1, no vector, no severity band absent-check
+	scoreOnly := buildSnykCvss(SnykVuln{CvssScore: 5.5})
+	require.Len(t, scoreOnly, 1)
+	assert.Equal(t, hdf.The31, scoreOnly[0].Version)
+	require.NotNil(t, scoreOnly[0].BaseScore)
+	assert.InDelta(t, 5.5, *scoreOnly[0].BaseScore, 0.001)
+	assert.Nil(t, scoreOnly[0].BaseVector)
+
+	// Vector present, score zero → vector set, no base score
+	vectorOnly := buildSnykCvss(SnykVuln{CVSSv3: "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"})
+	require.Len(t, vectorOnly, 1)
+	assert.Equal(t, hdf.The30, vectorOnly[0].Version)
+	assert.Nil(t, vectorOnly[0].BaseScore)
+	require.NotNil(t, vectorOnly[0].BaseVector)
 }
 
 // ---- Status: all results are Failed ----
@@ -253,6 +318,77 @@ func TestConvertSnyk_Description(t *testing.T) {
 	desc := findDescription(req.Descriptions, "default")
 	require.NotNil(t, desc, "expected a 'default' description")
 	assert.Contains(t, desc.Data, "adm-zip")
+}
+
+// ---- External references (refs[]) ----
+
+func TestConvertSnyk_Refs(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
+
+	require.Len(t, req.Refs, 1)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://github.com/cthackers/adm-zip/commit/119dcad6599adccc77982feb14a0c7440fa63013", *req.Refs[0].URL)
+}
+
+func TestBuildSnykRefs_Branches(t *testing.T) {
+	// No references → nil (field omitted)
+	assert.Nil(t, buildSnykRefs(nil))
+	assert.Nil(t, buildSnykRefs([]SnykReference{}))
+
+	// Title-only reference (no URL) is skipped
+	assert.Nil(t, buildSnykRefs([]SnykReference{{Title: "no link"}}))
+
+	// URL present → one Reference per URL, title dropped
+	refs := buildSnykRefs([]SnykReference{
+		{Title: "a", URL: "https://example.com/a"},
+		{Title: "b"},
+		{Title: "c", URL: "https://example.com/c"},
+	})
+	require.Len(t, refs, 2)
+	require.NotNil(t, refs[0].URL)
+	assert.Equal(t, "https://example.com/a", *refs[0].URL)
+	require.NotNil(t, refs[1].URL)
+	assert.Equal(t, "https://example.com/c", *refs[1].URL)
+}
+
+// ---- upgradePath remediation description ----
+
+func TestConvertSnyk_UpgradePathDescription(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// SNYK-JS-ADMZIP-1065796 upgradePath is [false, "adm-zip@0.5.2"]
+	withPath := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
+	desc := findDescription(withPath.Descriptions, "upgradePath")
+	require.NotNil(t, desc, "expected an 'upgradePath' description")
+	assert.Equal(t, "adm-zip@0.5.2", desc.Data)
+
+	// SNYK-JS-HBS-1566555 has an empty upgradePath → no description emitted
+	noPath := shared.MustFindRequirement(t, reqs, "SNYK-JS-HBS-1566555")
+	assert.Nil(t, findDescription(noPath.Descriptions, "upgradePath"),
+		"empty upgradePath must not emit an upgradePath description")
+}
+
+func TestFormatUpgradePath_Branches(t *testing.T) {
+	// Empty / bool-only (structural noise) → ""
+	assert.Equal(t, "", formatUpgradePath(nil))
+	assert.Equal(t, "", formatUpgradePath([]interface{}{}))
+	assert.Equal(t, "", formatUpgradePath([]interface{}{false}))
+
+	// Single package step
+	assert.Equal(t, "adm-zip@0.5.2", formatUpgradePath([]interface{}{false, "adm-zip@0.5.2"}))
+
+	// Multi-step chain joined with " > ", empty strings dropped
+	assert.Equal(t, "tap@11.1.5 > handlebars@4.5.3",
+		formatUpgradePath([]interface{}{false, "tap@11.1.5", "", "handlebars@4.5.3"}))
 }
 
 // ---- Requirement title and ID ----

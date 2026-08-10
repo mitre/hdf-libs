@@ -36,6 +36,6 @@ describe('Main index exports', () => {
   it('should have working NIST functions from main export', () => {
     const desc = getNISTDescription('AC-01');
     expect(desc).toBeDefined();
-    expect(desc).toBe('ACCESS CONTROL POLICY AND PROCEDURES');
+    expect(desc).toBe('Policy and Procedures'); // Rev 5 default
   });
 });

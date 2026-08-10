@@ -59,6 +59,7 @@
             ],
             "severity": "warning"
           },
+          "code": "      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\",",
           "title": "AWS Access Key secret detected",
           "verificationMethod": "automated"
         },
@@ -99,6 +100,7 @@
             ],
             "severity": "warning"
           },
+          "code": "      \"raw_source_code_extract\": \"-----BEGIN OPENSSH PRIVATE KEY-----\",",
           "title": "Asymmetric Private Key secret detected",
           "verificationMethod": "automated"
         }

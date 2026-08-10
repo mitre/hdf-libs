@@ -1,0 +1,94 @@
+{
+  "baselines": [
+    {
+      "name": "Test Baseline",
+      "requirements": [
+        {
+          "id": "V-001-waiver",
+          "title": "Waived control",
+          "impact": 0.7,
+          "effectiveStatus": "passed",
+          "disposition": "waiver",
+          "statusOverrides": [
+            {
+              "type": "waiver",
+              "status": "passed",
+              "reason": "Compensating control documented in SSP",
+              "appliedBy": {"type": "username", "identifier": "jdoe"},
+              "appliedAt": "2026-01-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
+            }
+          ],
+          "results": [
+            {"status": "failed", "codeDesc": "package check failed", "startTime": "2026-01-01T00:00:00Z"}
+          ]
+        },
+        {
+          "id": "V-002-fp",
+          "title": "False positive control",
+          "impact": 0.5,
+          "effectiveStatus": "passed",
+          "disposition": "falsePositive",
+          "statusOverrides": [
+            {
+              "type": "falsePositive",
+              "status": "passed",
+              "reason": "Scanner misidentified a symlink",
+              "appliedBy": {"type": "username", "identifier": "asmith"},
+              "appliedAt": "2026-01-02T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
+            }
+          ],
+          "results": [
+            {"status": "failed", "codeDesc": "acl check failed", "startTime": "2026-01-01T00:00:00Z"}
+          ]
+        },
+        {
+          "id": "V-003-poam",
+          "title": "POAM-tracked control",
+          "impact": 0.9,
+          "effectiveStatus": "failed",
+          "poams": [
+            {
+              "type": "remediation",
+              "explanation": "Patch scheduled for Q3 maintenance window",
+              "appliedBy": {"type": "username", "identifier": "jdoe"},
+              "appliedAt": "2026-01-03T00:00:00Z"
+            }
+          ],
+          "results": [
+            {"status": "failed", "codeDesc": "kernel version check failed", "startTime": "2026-01-01T00:00:00Z"}
+          ]
+        },
+        {
+          "id": "V-004-risk",
+          "title": "Risk-adjusted control",
+          "impact": 0.9,
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.3,
+          "disposition": "riskAdjustment",
+          "refs": [{"url": "https://example.com/advisory/CVE-2026-0001"}],
+          "cwe": ["CWE-79"],
+          "cvss": [{"version": "3.1", "baseScore": 5.4, "baseSeverity": "medium"}],
+          "statusOverrides": [
+            {
+              "type": "riskAdjustment",
+              "impact": {"value": 0.3},
+              "reason": "Downgraded per authorizing official risk assessment",
+              "appliedBy": {"type": "username", "identifier": "jdoe"},
+              "appliedAt": "2026-01-04T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
+            }
+          ],
+          "results": [
+            {"status": "failed", "codeDesc": "audit config check failed", "resource": "file", "resourceId": "/etc/audit/auditd.conf", "startTime": "2026-01-01T00:00:00Z"},
+            {"status": "notApplicable", "codeDesc": "not applicable on this platform", "startTime": "2026-01-01T00:00:00Z"}
+          ]
+        }
+      ]
+    }
+  ],
+  "components": [{"name": "rhel9-host", "type": "host"}],
+  "generator": {"name": "test-generator", "version": "1.0.0"},
+  "tool": {"name": "InSpec", "version": "5.22.65", "format": "InSpec"}
+}

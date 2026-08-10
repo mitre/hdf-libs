@@ -25,6 +25,8 @@
           "impact": 0.7,
           "tags": {
             "category": "Execution",
+            "detection_source": "WindowsDefenderAtp",
+            "incident_id": 1126093,
             "mitre": [
               "T1059",
               "T1059.001"
@@ -32,8 +34,14 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "service_source": "microsoftDefenderForEndpoint"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/alerts/da637472900382838869_1364969609"
+            }
+          ],
           "title": "Suspicious process executed",
           "verificationMethod": "automated"
         },
@@ -60,14 +68,22 @@
           "impact": 0.5,
           "tags": {
             "category": "LateralMovement",
+            "detection_source": "WindowsDefenderAtp",
+            "incident_id": 1126094,
             "mitre": [
               "T1047"
             ],
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "service_source": "microsoftDefenderForEndpoint"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/alerts/da637472900382838870_9876543210"
+            }
+          ],
           "title": "Suspicious remote WMI execution",
           "verificationMethod": "automated"
         },
@@ -82,25 +98,46 @@
               "label": "fix"
             }
           ],
+          "disposition": "falsePositive",
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "codeDesc": "Device: laptop03.corp.contoso.com (OS: Windows10)",
               "message": "Alert: Unusual network connection established\nStatus: resolved\nSeverity: informational\nURL: https://security.microsoft.com/alerts/da637472900382838871_1111111111",
               "startTime": "2021-01-28T07:58:00Z",
-              "status": "passed"
+              "status": "failed"
+            }
+          ],
+          "statusOverrides": [
+            {
+              "appliedAt": "2021-01-28T12:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@contoso.com",
+                "type": "email"
+              },
+              "expiresAt": "2022-01-28T12:00:00Z",
+              "reason": "notMalicious (falsePositive)",
+              "status": "notApplicable",
+              "type": "falsePositive"
             }
           ],
           "id": "da637472900382838871_1111111111",
           "impact": 0,
           "tags": {
             "category": "DefenseEvasion",
-            "classification": "falsePositive",
-            "determination": "notMalicious",
+            "detection_source": "WindowsDefenderAtp",
+            "incident_id": 1126095,
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "service_source": "microsoftDefenderForEndpoint"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/alerts/da637472900382838871_1111111111"
+            }
+          ],
           "title": "Unusual network connection established",
           "verificationMethod": "automated"
         },
@@ -128,7 +165,9 @@
           "tags": {
             "category": "Malware",
             "classification": "truePositive",
+            "detection_source": "WindowsDefenderAv",
             "determination": "malware",
+            "incident_id": 1126096,
             "mitre": [
               "T1566",
               "T1566.001"
@@ -136,8 +175,15 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "service_source": "microsoftDefenderForEndpoint",
+            "threat_family_name": "Emotet"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/alerts/da637472900382838872_2222222222"
+            }
+          ],
           "title": "Malware detected and quarantined",
           "verificationMethod": "automated"
         }
@@ -151,8 +197,14 @@
   ],
   "components": [
     {
+      "externalIds": {
+        "mde": "222e6dd8c833c8a052ea231ec1b19adaf497b625"
+      },
       "labels": {
-        "provider": "azure"
+        "healthStatus": "active",
+        "onboardingStatus": "onboarded",
+        "provider": "azure",
+        "rbacGroupName": "Engineering"
       },
       "name": "workstation01.corp.contoso.com",
       "type": "host",
@@ -160,8 +212,14 @@
       "osName": "Windows11"
     },
     {
+      "externalIds": {
+        "mde": "333e6dd8c833c8a052ea231ec1b19adaf497b625"
+      },
       "labels": {
-        "provider": "azure"
+        "healthStatus": "active",
+        "onboardingStatus": "onboarded",
+        "provider": "azure",
+        "rbacGroupName": "Servers"
       },
       "name": "server02.corp.contoso.com",
       "type": "host",
@@ -169,8 +227,14 @@
       "osName": "WindowsServer2019"
     },
     {
+      "externalIds": {
+        "mde": "444e6dd8c833c8a052ea231ec1b19adaf497b625"
+      },
       "labels": {
-        "provider": "azure"
+        "healthStatus": "active",
+        "onboardingStatus": "onboarded",
+        "provider": "azure",
+        "rbacGroupName": "Users"
       },
       "name": "laptop03.corp.contoso.com",
       "type": "host",
@@ -178,8 +242,14 @@
       "osName": "Windows10"
     },
     {
+      "externalIds": {
+        "mde": "555e6dd8c833c8a052ea231ec1b19adaf497b625"
+      },
       "labels": {
-        "provider": "azure"
+        "healthStatus": "active",
+        "onboardingStatus": "onboarded",
+        "provider": "azure",
+        "rbacGroupName": "Finance"
       },
       "name": "workstation04.corp.contoso.com",
       "type": "host",
@@ -191,7 +261,7 @@
     "name": "msft-defender-endpoint-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T22:56:40.396742Z",
+  "timestamp": "2021-01-29T14:30:00Z",
   "tool": {
     "name": "Microsoft Defender for Endpoint"
   }
