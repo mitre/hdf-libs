@@ -7,7 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/uuid"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
+
 	"github.com/spf13/cobra"
 )
 
@@ -176,7 +177,7 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 		if parseErr != nil {
 			return parseErr
 		}
-		result, err = applyLabels(result, labels)
+		result, err = hdfdoc.ApplyLabels(result, labels)
 		if err != nil {
 			return err
 		}
@@ -184,7 +185,7 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 
 	// Apply --component-id or --generate-component-id
 	if componentID != "" || generateCID {
-		result, err = applyComponentIDs(result, componentID, generateCID)
+		result, err = hdfdoc.ApplyComponentID(result, componentID, generateCID)
 		if err != nil {
 			return err
 		}
@@ -197,35 +198,6 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 // applyComponentIDs stamps componentId on all components in the JSON document.
 // If fixedID is non-empty, all components get that ID. If generate is true,
 // each component gets a unique UUID.
-func applyComponentIDs(data []byte, fixedID string, generate bool) ([]byte, error) {
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON: %w", err)
-	}
-
-	componentsRaw, ok := doc["components"]
-	if !ok {
-		return data, nil
-	}
-	components, ok := componentsRaw.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("components field is not an array")
-	}
-
-	for _, cRaw := range components {
-		comp, ok := cRaw.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		if generate {
-			comp["componentId"] = uuid.New().String()
-		} else if fixedID != "" {
-			comp["componentId"] = fixedID
-		}
-	}
-
-	return json.MarshalIndent(doc, "", "  ")
-}
 
 func runLabelRemove(cmd *cobra.Command, args []string) error {
 	filePath := args[0]

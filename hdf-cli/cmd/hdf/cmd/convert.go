@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
+
 	hdfpassthrough "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-passthrough/go"
 	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
@@ -243,7 +245,7 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		if err != nil {
 			return fmt.Errorf("invalid --labels flag: %w", err)
 		}
-		output, err = applyLabels(output, labels)
+		output, err = hdfdoc.ApplyLabels(output, labels)
 		if err != nil {
 			return fmt.Errorf("failed to apply labels: %w", err)
 		}
@@ -253,7 +255,7 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	// Apply --component-id if provided
 	componentID, _ := cmd.Flags().GetString("component-id")
 	if componentID != "" {
-		output, err = applyComponentIDs(output, componentID, false)
+		output, err = hdfdoc.ApplyComponentID(output, componentID, false)
 		if err != nil {
 			return fmt.Errorf("failed to apply component-id: %w", err)
 		}

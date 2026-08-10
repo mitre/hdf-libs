@@ -25,57 +25,6 @@ func parseLabelsFlag(pairs []string) (map[string]string, error) {
 	return labels, nil
 }
 
-// applyLabels merges the given labels into the "labels" field of every target
-// in the HDF JSON document. If there are no targets the input is returned
-// unchanged (not an error).
-func applyLabels(data []byte, labels map[string]string) ([]byte, error) {
-	if len(labels) == 0 {
-		return data, nil
-	}
-
-	// applyLabels is a doc-type-agnostic mutation helper consumed by
-	// `convert` and `hdf label`. Both callers route the result through the
-	// writeValidatedHDFOutput gate downstream, so input validation here
-	// would either duplicate that work or reject legitimate partial inputs
-	// (e.g. a CKL-shaped doc that's not HDF). Skip the input gate here.
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON for label application: %w", err)
-	}
-
-	targetsRaw, ok := doc["components"]
-	if !ok {
-		// No targets array — nothing to label.
-		return data, nil
-	}
-
-	targets, ok := targetsRaw.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("targets field is not an array")
-	}
-
-	for i, tRaw := range targets {
-		target, ok := tRaw.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("target at index %d is not an object", i)
-		}
-
-		existing := make(map[string]interface{})
-		if labelsRaw, ok := target["labels"]; ok {
-			if labelsMap, ok := labelsRaw.(map[string]interface{}); ok {
-				existing = labelsMap
-			}
-		}
-
-		for k, v := range labels {
-			existing[k] = v
-		}
-		target["labels"] = existing
-	}
-
-	return json.MarshalIndent(doc, "", "  ")
-}
-
 // removeLabels removes the specified keys from the "labels" field of every
 // target in the HDF JSON document. Missing keys are silently ignored.
 func removeLabels(data []byte, keys []string) ([]byte, error) {
