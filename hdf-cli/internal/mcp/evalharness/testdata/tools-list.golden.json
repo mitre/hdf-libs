@@ -694,6 +694,103 @@
         ],
         "type": "object"
       }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Validate an HDF document in one of three modes: schema (JSON-Schema conformance for any of the eight document types, with line-numbered errors), checksums (verify an evidence package's referenced-file sha256 checksums), or completeness (verify every planned baseline has results). The checksums and completeness modes also report the agent-attributed override count across the package's results.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "description": "inline HDF document to validate, as an alternative to source",
+            "type": "string"
+          },
+          "docType": {
+            "description": "optional document type to validate against in schema mode (e.g. hdf-results); defaults to the detected type",
+            "type": "string"
+          },
+          "mode": {
+            "description": "validation mode: schema, checksums, or completeness",
+            "type": "string"
+          },
+          "source": {
+            "additionalProperties": false,
+            "description": "the document to validate, as {path} or {handle}; omit when using content",
+            "properties": {
+              "handle": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "type": "object"
+      },
+      "name": "hdf_validate",
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "agentOverrideCount": {
+            "type": "integer"
+          },
+          "docType": {
+            "type": "string"
+          },
+          "errors": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ],
+              "type": "object"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "mode": {
+            "type": "string"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "valid",
+          "mode",
+          "errors"
+        ],
+        "type": "object"
+      }
     }
   ],
   "ttlMs": 0
