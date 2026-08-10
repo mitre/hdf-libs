@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -589,80 +590,52 @@ func TestEvidenceVerifyJSON(t *testing.T) {
 	assert.Len(t, results, 2)
 }
 
-// --- verifyContents / verifyContentEntry unit tests ---
+// --- checksum adapter (confinedFetch + toVerifyResults) unit tests ---
+// The checksum classification itself lives in and is tested by hdf-engine
+// (evidence_test.go); these cover the CLI's confinement + render/count adapter.
 
-func TestVerifyContents(t *testing.T) {
-	t.Run("handles empty contents", func(t *testing.T) {
-		results, counts := verifyContents(nil, "/tmp")
-		assert.Empty(t, results)
-		assert.Equal(t, 0, counts.match)
-	})
+func TestToVerifyResults_MapsStatusesAndCounts(t *testing.T) {
+	in := []hdfengine.ChecksumResult{
+		{URI: "a", Type: "hdf-results", Status: hdfengine.ChecksumMatch},
+		{URI: "b", Type: "hdf-plan", Status: hdfengine.ChecksumMismatch, Expected: "x", Actual: "y"},
+		{URI: "c", Type: "hdf-system", Status: hdfengine.ChecksumSkipped},
+		{URI: "d", Type: "hdf-results", Status: hdfengine.ChecksumError, Error: "boom"},
+	}
+	results, counts := toVerifyResults(in)
+	require.Len(t, results, 4)
+	assert.Equal(t, "match", results[0].Status)
+	assert.Equal(t, "y", results[1].Actual)
+	assert.Equal(t, 1, counts.match)
+	assert.Equal(t, 1, counts.mismatch)
+	assert.Equal(t, 1, counts.skipped)
+	assert.Equal(t, 1, counts.errors)
 
-	t.Run("skips non-map entries", func(t *testing.T) {
-		contents := []interface{}{"not-a-map", 42}
-		results, counts := verifyContents(contents, "/tmp")
-		assert.Empty(t, results)
-		assert.Equal(t, 0, counts.match)
-	})
+	empty, ec := toVerifyResults(nil)
+	assert.Empty(t, empty)
+	assert.Equal(t, 0, ec.match)
 }
 
-func TestVerifyContentEntry(t *testing.T) {
-	t.Run("skips when checksum value is empty", func(t *testing.T) {
-		entry := map[string]interface{}{
-			"checksum": map[string]interface{}{
-				"algorithm": "sha256",
-				"value":     "",
-			},
-		}
-		r := verifyContentEntry(entry, "test.json", "hdf-results", "/tmp")
-		assert.Equal(t, verifySkipped, r.Status)
-	})
+func TestConfinedFetch_VerifiesChecksums(t *testing.T) {
+	tmpDir := t.TempDir()
+	content := []byte("test content")
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "file.txt"), content, 0o600))
+	h := sha256.Sum256(content)
+	got := hdfengine.VerifyChecksums([]hdfengine.EvidenceContent{
+		{URI: "file.txt", Type: "hdf-results", Checksum: hex.EncodeToString(h[:])},
+		{URI: "file.txt", Type: "hdf-results", Checksum: "badhash"},
+		{URI: "file.txt", Type: "hdf-results", Checksum: ""},
+		{URI: "missing.json", Type: "hdf-results", Checksum: "abc"},
+	}, confinedFetch(tmpDir))
+	assert.Equal(t, hdfengine.ChecksumMatch, got[0].Status)
+	assert.Equal(t, hdfengine.ChecksumMismatch, got[1].Status)
+	assert.Equal(t, hdfengine.ChecksumSkipped, got[2].Status)
+	assert.Equal(t, hdfengine.ChecksumError, got[3].Status)
+	assert.NotEmpty(t, got[3].Error)
+}
 
-	t.Run("returns match for valid checksum", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		content := `test content`
-		fp := filepath.Join(tmpDir, "file.txt")
-		require.NoError(t, os.WriteFile(fp, []byte(content), 0o600))
-
-		h := sha256.Sum256([]byte(content))
-		entry := map[string]interface{}{
-			"checksum": map[string]interface{}{
-				"algorithm": "sha256",
-				"value":     hex.EncodeToString(h[:]),
-			},
-		}
-		r := verifyContentEntry(entry, "file.txt", "hdf-results", tmpDir)
-		assert.Equal(t, verifyMatch, r.Status)
-	})
-
-	t.Run("returns mismatch for wrong checksum", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		fp := filepath.Join(tmpDir, "file.txt")
-		require.NoError(t, os.WriteFile(fp, []byte("content"), 0o600))
-
-		entry := map[string]interface{}{
-			"checksum": map[string]interface{}{
-				"algorithm": "sha256",
-				"value":     "badhash",
-			},
-		}
-		r := verifyContentEntry(entry, "file.txt", "hdf-results", tmpDir)
-		assert.Equal(t, verifyMismatch, r.Status)
-		assert.Equal(t, "badhash", r.Expected)
-		assert.NotEmpty(t, r.Actual)
-	})
-
-	t.Run("returns error when file not found", func(t *testing.T) {
-		entry := map[string]interface{}{
-			"checksum": map[string]interface{}{
-				"algorithm": "sha256",
-				"value":     "abc123",
-			},
-		}
-		r := verifyContentEntry(entry, "missing.json", "hdf-results", "/nonexistent")
-		assert.Equal(t, verifyError, r.Status)
-		assert.NotEmpty(t, r.Error)
-	})
+func TestConfinedFetch_RejectsTraversal(t *testing.T) {
+	_, err := confinedFetch(t.TempDir())("../../../etc/passwd")
+	assert.Error(t, err)
 }
 
 // --- evidence export tests ---

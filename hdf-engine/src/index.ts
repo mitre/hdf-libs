@@ -14,6 +14,20 @@ export { filter, type FilterOptions, type Match } from './query.js';
 // Document loader core (peer of hdf-engine/go/loader.go).
 export { load, detectFormat, type InputFormat, type LoadResult } from './loader.js';
 
+// Evidence-verify engine (peer of hdf-engine/go/evidence.go).
+export {
+  parseEvidencePackage,
+  verifyChecksums,
+  plannedBaselineRefs,
+  coveredBaselineNames,
+  completeness,
+  type ChecksumStatus,
+  type EvidenceContent,
+  type ChecksumResult,
+  type CompletenessResult,
+  type FetchFn,
+} from './evidence.js';
+
 // Compliance & threshold engine (peer of hdf-engine/go/compliance.go).
 export {
   countControlsByStatusSeverity,
