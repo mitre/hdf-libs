@@ -424,7 +424,8 @@ func boundComplianceResponse(out *complianceOutput) {
 		out.ThresholdVerdict.Failures = out.ThresholdVerdict.Failures[:kept]
 		out.Truncated = true
 		out.Notice = strings.TrimSpace(out.Notice + fmt.Sprintf(
-			" Threshold failures truncated to %d of %d; re-run against a smaller threshold or fix the reported violations first.", kept, total))
+			" Showing %d of %d threshold failures (capped by the %d-token budget; the total count is authoritative). There is no paging for the failure list — fix the reported violations and re-run to surface the rest.",
+			kept, total, respond.ConciseTokenBudget))
 	}
 }
 

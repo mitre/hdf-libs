@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -446,6 +447,44 @@ func TestHdfCompliance_PerControlThresholdUsesEffectiveStatus(t *testing.T) {
 	}
 	if !out.ThresholdVerdict.Pass {
 		t.Errorf("V-NA-1 (impact 0, medium, notReviewed) must satisfy no_impact.medium.controls under effective status; got failures %v", out.ThresholdVerdict.Failures)
+	}
+}
+
+// TestThresholdTruncationNoticeIsActionable is the lj0g.12 regression guard.
+// When the thresholdVerdict.failures list overflows the token-budget cap, the
+// notice must report the true total, must NOT advise making the threshold
+// "smaller" (a threshold is a set of bounds, not a page size), and must name the
+// real mechanism for the withheld failures (fix + re-run) — matching the house
+// style lj0g.6 set for hdf_query. Many non-existent control IDs generate one
+// "not found" violation each, overflowing the cap without a huge fixture.
+func TestThresholdTruncationNoticeIsActionable(t *testing.T) {
+	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
+	const wantTotal = 400
+	fakes := make([]any, 0, wantTotal)
+	for i := 0; i < wantTotal; i++ {
+		fakes = append(fakes, fmt.Sprintf("MISSING-%03d", i))
+	}
+	_, out := callCompliance(t, complianceInput{
+		Source: handle.Source{Path: path},
+		Threshold: &thresholdInput{Inline: map[string]any{
+			"passed": map[string]any{"total": map[string]any{"controls": fakes}},
+		}},
+	})
+	if out.ThresholdVerdict == nil || out.ThresholdVerdict.Pass {
+		t.Fatal("expected a failing threshold verdict")
+	}
+	if !out.Truncated {
+		t.Fatalf("expected truncation with %d failures; failures kept=%d notice=%q", wantTotal, len(out.ThresholdVerdict.Failures), out.Notice)
+	}
+	n := out.Notice
+	if strings.Contains(strings.ToLower(n), "smaller threshold") {
+		t.Errorf("notice must not advise a 'smaller threshold': %q", n)
+	}
+	if !strings.Contains(n, fmt.Sprintf("of %d", wantTotal)) {
+		t.Errorf("notice must report the true total (%d): %q", wantTotal, n)
+	}
+	if !strings.Contains(n, "re-run") || !strings.Contains(strings.ToLower(n), "fix") {
+		t.Errorf("notice must name the real mechanism (fix the reported violations and re-run): %q", n)
 	}
 }
 
