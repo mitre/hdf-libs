@@ -233,6 +233,31 @@ function formatSCACodeDesc(comp: Record<string, unknown>): string {
 }
 
 /**
+ * Collect the exploitability-adjustment notes on a flaw, in document order,
+ * joined by newline. Veracode records exploitability reasoning as nested
+ * <exploitability_adjustments><exploitability_adjustment><note> elements (not
+ * the empty note attribute). Returns '' when the flaw carries no nested note
+ * (the NOT-IN-SOURCE case), so result.message is omitted. Entities are decoded
+ * to match Go's encoding/xml, which decodes element char data automatically.
+ */
+function formatFlawMessage(flaw: Record<string, unknown>): string {
+  const blocks = ensureArray(
+    flaw.exploitability_adjustments as Record<string, unknown> | Record<string, unknown>[],
+  );
+  const notes: string[] = [];
+  for (const block of blocks) {
+    const adjustments = ensureArray(
+      block.exploitability_adjustment as Record<string, unknown> | Record<string, unknown>[],
+    );
+    for (const adj of adjustments) {
+      const note = adj.note;
+      if (typeof note === 'string' && note) notes.push(decodeXmlEntities(note));
+    }
+  }
+  return notes.join('\n');
+}
+
+/**
  * Synthesize a static flaw's source-context locus from its function prototype
  * and source-file position. Returns '' when the flaw carries neither a prototype
  * nor a source location (the NOT-IN-SOURCE case).
@@ -384,7 +409,7 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
     const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
     return flaws.map((flaw): RequirementResult =>
-      createResult(ResultStatus.Failed, undefined, { codeDesc: formatFlawCodeDesc(flaw), startTime }));
+      createResult(ResultStatus.Failed, formatFlawMessage(flaw) || undefined, { codeDesc: formatFlawCodeDesc(flaw), startTime }));
   });
 
   const sourceRef = cwes.flatMap(c => {
