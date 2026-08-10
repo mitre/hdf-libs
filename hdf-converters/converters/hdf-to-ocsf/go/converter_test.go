@@ -323,6 +323,102 @@ func TestConvert_WarningStatuses(t *testing.T) {
 	}
 }
 
+// TestConvert_Remediation pins the "fix"-labeled description onto the OCSF
+// remediation homes: top-level remediation.desc on every finding, plus per-vuln
+// vulnerabilities[].remediation + fix_available on a Vulnerability Finding. A
+// bare "n/a" fix placeholder yields no remediation.
+func TestConvert_Remediation(t *testing.T) {
+	out, err := ConvertHDFToOCSF(fixture(t, "input", "cve.json"), converterVersion)
+	require.NoError(t, err)
+	objs := parseLines(t, out)
+
+	// req1: real fix text -> top-level + per-vuln remediation + fix_available
+	o := objs[0]
+	assert.Equal(t, "Apply the appropriate patch according to the January 2022 Oracle Critical Patch Update advisory.",
+		sub(t, o, "remediation")["desc"])
+	vuln := o["vulnerabilities"].([]interface{})[0].(map[string]interface{})
+	assert.Equal(t, "Apply the appropriate patch according to the January 2022 Oracle Critical Patch Update advisory.",
+		vuln["remediation"].(map[string]interface{})["desc"])
+	assert.Equal(t, true, vuln["fix_available"])
+
+	// req3 (portmapper): fix == "n/a" -> no remediation anywhere, no fix_available
+	last := objs[2]
+	_, hasTop := last["remediation"]
+	assert.False(t, hasTop, "n/a fix yields no top-level remediation")
+	lastVuln := last["vulnerabilities"].([]interface{})[0].(map[string]interface{})
+	_, hasVulnRem := lastVuln["remediation"]
+	assert.False(t, hasVulnRem)
+	_, hasFix := lastVuln["fix_available"]
+	assert.False(t, hasFix)
+
+	// Compliance findings also carry top-level remediation from their fix text.
+	cout, err := ConvertHDFToOCSF(fixture(t, "input", "compliance.json"), converterVersion)
+	require.NoError(t, err)
+	assert.Contains(t, sub(t, parseLines(t, cout)[0], "remediation")["desc"], "banner-message-enable=true")
+}
+
+// TestConvert_RawDataMessageEvidence pins the raw tool blob -> raw_data, the
+// assertion text -> message, and per-result codeDesc/message/status -> evidences[].
+func TestConvert_RawDataMessageEvidence(t *testing.T) {
+	out, err := ConvertHDFToOCSF(fixture(t, "input", "cve.json"), converterVersion)
+	require.NoError(t, err)
+	o := parseLines(t, out)[0]
+
+	assert.Contains(t, o["raw_data"], "\"PluginID\": \"156888\"", "raw code blob -> raw_data")
+	assert.Contains(t, o["message"], "Installed version : 1.11.0_12", "result message -> base_event.message")
+	ev := o["evidences"].([]interface{})
+	require.Len(t, ev, 1)
+	data := ev[0].(map[string]interface{})["data"].(map[string]interface{})
+	assert.Contains(t, data["code_desc"], "January 2022 CPU advisory")
+	assert.Contains(t, data["message"], "Installed version")
+	assert.Equal(t, "failed", data["status"])
+}
+
+// TestConvert_AllReferences pins that ALL refs[].url are emitted, not just the first.
+func TestConvert_AllReferences(t *testing.T) {
+	out, err := ConvertHDFToOCSF(fixture(t, "input", "cve.json"), converterVersion)
+	require.NoError(t, err)
+	vuln := parseLines(t, out)[0]["vulnerabilities"].([]interface{})[0].(map[string]interface{})
+	refs := vuln["references"].([]interface{})
+	assert.Equal(t, []interface{}{
+		"https://www.oracle.com/a/tech/docs/cpujan2022cvrf.xml",
+		"https://www.oracle.com/security-alerts/cpujan2022.html#AppendixJAVA",
+	}, refs, "both refs, not just the first")
+}
+
+// TestConvert_CVSSTemporalMetrics pins computedScore -> cvss.overall_score and
+// threatScore/threatVector/computedSeverity -> cvss.metrics[].
+func TestConvert_CVSSTemporalMetrics(t *testing.T) {
+	out, err := ConvertHDFToOCSF(fixture(t, "input", "cve.json"), converterVersion)
+	require.NoError(t, err)
+	cvss := parseLines(t, out)[0]["vulnerabilities"].([]interface{})[0].(map[string]interface{})["cve"].(map[string]interface{})["cvss"].([]interface{})[0].(map[string]interface{})
+	assert.Equal(t, float64(4.6), cvss["overall_score"], "computedScore -> overall_score")
+	assert.Equal(t, []interface{}{
+		map[string]interface{}{"name": "Threat Score", "value": "4.6"},
+		map[string]interface{}{"name": "Threat Vector", "value": "E:U/RL:O/RC:C"},
+		map[string]interface{}{"name": "Computed Severity", "value": "medium"},
+	}, cvss["metrics"])
+}
+
+// TestConvert_StatusDetail pins the precise HDF status onto base_event.status_detail:
+// notApplicable/notReviewed/error survive verbatim (not collapsed to Warning),
+// and an override surfaces the effective status (a waived fail reads "passed").
+func TestConvert_StatusDetail(t *testing.T) {
+	out, err := ConvertHDFToOCSF(fixture(t, "input", "warnings.json"), converterVersion)
+	require.NoError(t, err)
+	objs := parseLines(t, out)
+	require.Len(t, objs, 3)
+	assert.Equal(t, "notApplicable", objs[0]["status_detail"])
+	assert.Equal(t, "notReviewed", objs[1]["status_detail"])
+	assert.Equal(t, "error", objs[2]["status_detail"])
+
+	oout, err := ConvertHDFToOCSF(fixture(t, "input", "override.json"), converterVersion)
+	require.NoError(t, err)
+	o := parseLines(t, oout)[0]
+	assert.Equal(t, "passed", o["status_detail"], "status_detail reflects the effective (overridden) status")
+	assert.Equal(t, float64(3), sub(t, o, "compliance")["status_id"], "raw verdict stays Fail")
+}
+
 func TestConvert_FloatBaseScore(t *testing.T) {
 	// A whole-number CVSS base score must serialize as OCSF float_t: 10.0, not 10.
 	doc := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"CVE-x","impact":0.7,` +

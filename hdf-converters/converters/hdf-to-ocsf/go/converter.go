@@ -22,6 +22,7 @@
 package hdftoocsf
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
@@ -91,6 +92,26 @@ func buildFinding(req, baseline map[string]interface{}, docTimestamp string, too
 	exportmap.SetIf(finding, "comment", overrideComment(req))
 	if device := buildDevice(component); device != nil {
 		finding["device"] = device
+	}
+
+	// Surface the check evidence and raw source data into their first-class OCSF
+	// (base_event) homes instead of leaving them only in unmapped: the raw tool
+	// blob → raw_data, the assertion text → message, per-result codeDesc/message/
+	// status → evidences[], and the precise HDF status (which the collapsed
+	// compliance.status_id loses for notApplicable/notReviewed/error) →
+	// status_detail. status_detail carries the effective/rollup status so it also
+	// reflects an override (e.g. a waived fail reads "passed").
+	exportmap.SetIf(finding, "raw_data", exportmap.GetStr(req, "code"))
+	exportmap.SetIf(finding, "message", firstResultMessage(req))
+	if ev := buildEvidences(req); len(ev) > 0 {
+		finding["evidences"] = ev
+	}
+	exportmap.SetIf(finding, "status_detail", st.Rollup)
+	// The "fix"-labeled description is real remediation guidance; give it the
+	// first-class Finding remediation home (Vulnerability Findings also get a
+	// per-vuln remediation + fix_available below).
+	if rem := remediationText(req); rem != "" {
+		finding["remediation"] = map[string]interface{}{"desc": rem}
 	}
 
 	if hasCVSS {
@@ -350,6 +371,24 @@ func buildVulnerabilities(cvssList []interface{}, req map[string]interface{}) []
 		exportmap.SetIf(entry, "version", exportmap.GetStr(m, "version"))
 		exportmap.SetIf(entry, "vector_string", exportmap.GetStr(m, "baseVector"))
 		exportmap.SetIf(entry, "severity", exportmap.GetStr(m, "baseSeverity"))
+		// Temporal/computed scoring: the environmental-adjusted score → cvss.
+		// overall_score (float_t); the remaining temporal components → cvss.metrics[].
+		if cs, ok := m["computedScore"].(float64); ok {
+			entry["overall_score"] = exportmap.FloatToken(cs)
+		}
+		var metrics []interface{}
+		if ts, ok := m["threatScore"].(float64); ok {
+			metrics = append(metrics, map[string]interface{}{"name": "Threat Score", "value": floatMetric(ts)})
+		}
+		if tv := exportmap.GetStr(m, "threatVector"); tv != "" {
+			metrics = append(metrics, map[string]interface{}{"name": "Threat Vector", "value": tv})
+		}
+		if cs := exportmap.GetStr(m, "computedSeverity"); cs != "" {
+			metrics = append(metrics, map[string]interface{}{"name": "Computed Severity", "value": cs})
+		}
+		if len(metrics) > 0 {
+			entry["metrics"] = metrics
+		}
 		cvssArr = append(cvssArr, entry)
 	}
 	if len(cvssArr) > 0 {
@@ -366,8 +405,88 @@ func buildVulnerabilities(cvssList []interface{}, req map[string]interface{}) []
 	vuln := map[string]interface{}{"cve": cve}
 	exportmap.SetIf(vuln, "title", exportmap.GetStr(req, "title"))
 	exportmap.SetIf(vuln, "desc", exportmap.DefaultDescription(req))
-	if ref := exportmap.FirstRefURL(req); ref != "" {
-		vuln["references"] = []interface{}{ref}
+	if refs := allRefURLs(req); len(refs) > 0 {
+		vuln["references"] = refs // ALL refs, not just the first
+	}
+	if rem := remediationText(req); rem != "" {
+		vuln["remediation"] = map[string]interface{}{"desc": rem}
+		vuln["fix_available"] = true
 	}
 	return []interface{}{vuln}
+}
+
+// labeledDescription returns the data of the first description carrying the given
+// label, or "".
+func labeledDescription(req map[string]interface{}, label string) string {
+	descs, _ := exportmap.AsSlice(req["descriptions"])
+	for _, dRaw := range descs {
+		if d, ok := exportmap.AsMap(dRaw); ok && exportmap.GetStr(d, "label") == label {
+			return exportmap.GetStr(d, "data")
+		}
+	}
+	return ""
+}
+
+// remediationText returns the "fix"-labeled description as remediation guidance,
+// treating a bare "n/a" placeholder as absent (no real remediation).
+func remediationText(req map[string]interface{}) string {
+	fix := labeledDescription(req, "fix")
+	if strings.EqualFold(strings.TrimSpace(fix), "n/a") {
+		return ""
+	}
+	return fix
+}
+
+// allRefURLs returns every non-empty refs[].url (not just the first).
+func allRefURLs(req map[string]interface{}) []interface{} {
+	refs, _ := exportmap.AsSlice(req["refs"])
+	var out []interface{}
+	for _, rRaw := range refs {
+		if r, ok := exportmap.AsMap(rRaw); ok {
+			if url := exportmap.GetStr(r, "url"); url != "" {
+				out = append(out, url)
+			}
+		}
+	}
+	return out
+}
+
+// firstResultMessage returns results[0].message, or "".
+func firstResultMessage(req map[string]interface{}) string {
+	results, _ := exportmap.AsSlice(req["results"])
+	if len(results) > 0 {
+		if r, ok := exportmap.AsMap(results[0]); ok {
+			return exportmap.GetStr(r, "message")
+		}
+	}
+	return ""
+}
+
+// buildEvidences captures each result's codeDesc/message/status as an OCSF
+// evidences[] artifact (its data object), preserving per-result check evidence
+// that the scalar finding.message cannot hold.
+func buildEvidences(req map[string]interface{}) []interface{} {
+	results, _ := exportmap.AsSlice(req["results"])
+	var out []interface{}
+	for _, rRaw := range results {
+		r, ok := exportmap.AsMap(rRaw)
+		if !ok {
+			continue
+		}
+		data := map[string]interface{}{}
+		exportmap.SetIf(data, "code_desc", exportmap.GetStr(r, "codeDesc"))
+		exportmap.SetIf(data, "message", exportmap.GetStr(r, "message"))
+		exportmap.SetIf(data, "status", exportmap.GetStr(r, "status"))
+		if len(data) > 0 {
+			out = append(out, map[string]interface{}{"data": data})
+		}
+	}
+	return out
+}
+
+// floatMetric renders a float as a plain decimal string for an OCSF Metric
+// value (Metric.value is String). Go's shortest-decimal format and JS's String()
+// agree over the low-precision decimals used here, keeping Go/TS byte-identical.
+func floatMetric(f float64) string {
+	return strconv.FormatFloat(f, 'f', -1, 64)
 }
