@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { convertNetsparkerToHdf, buildNetsparkerCvss } from './converter.js';
+import { convertNetsparkerToHdf, buildNetsparkerCvss, decodeXmlEntities } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
@@ -267,6 +267,31 @@ describe('Netsparker to HDF converter', () => {
     const fix = findDescription(req!.descriptions!, 'fix');
     expect(fix).toBeDefined();
     expect(fix!.data.length).toBeGreaterThan(0);
+  });
+
+  it('appends <extra-information> to the default description with entities decoded', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'e8b418ae-a532-4b43-5d9b-af9b04bbbca3');
+    const desc = findDescription(req!.descriptions!, 'default');
+    expect(desc!.data).toContain(
+      'Extra-information: List of Supported Weak Ciphers=>TLS_RSA_WITH_AES_128_CBC_SHA256 (0x003C)',
+    );
+  });
+
+  it('omits the Extra-information line for a vuln without <extra-information>', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, '8d8e6052-221d-41c4-8f1e-af9704473901');
+    const desc = findDescription(req!.descriptions!, 'default');
+    expect(desc!.data).not.toContain('Extra-information:');
+  });
+
+  it('decodeXmlEntities decodes numeric, hex, and named XML entities (matching Go attribute decoding)', () => {
+    expect(decodeXmlEntities('a&#32;b')).toBe('a b');
+    expect(decodeXmlEntities('a&#x20;b')).toBe('a b');
+    expect(decodeXmlEntities('&lt;x&gt; &quot;q&quot; &apos;a&apos; a&amp;b')).toBe('<x> "q" \'a\' a&b');
+    expect(decodeXmlEntities('plain')).toBe('plain');
   });
 
   // ---- External references → refs[] ----
