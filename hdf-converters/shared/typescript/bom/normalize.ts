@@ -154,7 +154,7 @@ export function parseBom(input: string): ParseResult {
       // normalize into a BillOfMaterials; they are consumed by the
       // spdx-vex-to-hdf converter as HDF Amendments, not as a BOM.
       throw new Error(
-        'bom-parser: SPDX-3 security/VEX documents are not inventory BOMs (use spdx-vex-to-hdf)',
+        'bom-parser: SPDX-3 security/VEX documents are not inventory BOMs (use --from spdx-vex)',
       );
   }
 }

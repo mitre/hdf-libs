@@ -31,11 +31,6 @@ export const VexStatus = {
 export type VexStatus = (typeof VexStatus)[keyof typeof VexStatus];
 
 /**
- * Map an ecosystem-specific status string to the canonical VexStatus.
- * Returns undefined for values without a clean mapping — caller should warn
- * and skip, not guess.
- */
-/**
  * Normalize a justification token to snake_case lowercase so both the
  * snake_case vocabularies (OpenVEX / CSAF / CycloneDX) and the SPDX-3
  * camelCase vocabulary (vulnerableCodeNotInExecutePath) match the same switch
@@ -49,6 +44,11 @@ function canonicalizeJustification(raw: string): string {
     .toLowerCase();
 }
 
+/**
+ * Map an ecosystem-specific status string to the canonical VexStatus.
+ * Returns undefined for values without a clean mapping — caller should warn
+ * and skip, not guess.
+ */
 export function normalizeStatus(raw: string): VexStatus | undefined {
   switch (raw.trim().toLowerCase()) {
     case 'not_affected':

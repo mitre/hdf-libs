@@ -119,7 +119,8 @@ export async function convertSpdxVexToHdf(
 
   const overrides: StandaloneOverride[] = [];
   for (const el of graph) {
-    if (!(el.type ?? '') || VEX_STATUS_BY_TYPE[el.type ?? ''] === undefined) continue;
+    // A non-VEX element (or one with no type) maps to undefined and is skipped.
+    if (VEX_STATUS_BY_TYPE[el.type ?? ''] === undefined) continue;
     const o = relationshipToOverride(el, idx);
     if (o) overrides.push(o);
   }
@@ -181,6 +182,8 @@ function relationshipToOverride(
   rel: GraphElement,
   idx: GraphIndex,
 ): StandaloneOverride | undefined {
+  /* c8 ignore next 2 -- the caller only passes VEX-typed elements, so canonical
+     is always defined here; the guard is defensive. */
   const canonical = VEX_STATUS_BY_TYPE[rel.type ?? ''];
   if (canonical === undefined) return undefined;
   const target = importTargetFor(canonical);
@@ -343,6 +346,8 @@ export function cvssSeverity(raw: string | undefined): CVSSSeverity | undefined 
 }
 
 function supplierEvidenceFor(vuln: GraphElement | undefined): Evidence[] {
+  /* c8 ignore next -- vuln is guaranteed defined by the requirementId check in
+     the sole caller; the guard is defensive. */
   if (!vuln) return [];
   const out: Evidence[] = [];
   const seen = new Set<string>();
