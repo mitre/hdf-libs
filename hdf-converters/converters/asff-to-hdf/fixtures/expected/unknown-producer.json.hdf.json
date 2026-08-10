@@ -38,6 +38,9 @@
             "nist": [
               "SA-11",
               "RA-5"
+            ],
+            "types": [
+              "Software and Configuration Checks/Vulnerabilities/CVE"
             ]
           },
           "code": "{\n  \"SchemaVersion\": \"2018-10-08\",\n  \"Id\": \"acme/future-scanner/finding/0001\",\n  \"ProductArn\": \"arn:aws:securityhub:us-east-1::product/acme/future-scanner\",\n  \"GeneratorId\": \"AcmeScanner\",\n  \"AwsAccountId\": \"123456789012\",\n  \"Types\": [\n    \"Software and Configuration Checks/Vulnerabilities/CVE\"\n  ],\n  \"CreatedAt\": \"2026-01-02T03:04:05.000Z\",\n  \"UpdatedAt\": \"2026-01-02T03:04:05.000Z\",\n  \"Title\": \"CVE-2099-0001 - libexample\",\n  \"Description\": \"A vulnerability was detected in libexample.\",\n  \"Severity\": {\n    \"Label\": \"HIGH\",\n    \"Normalized\": 70\n  },\n  \"Resources\": [\n    {\n      \"Type\": \"AwsEc2Instance\",\n      \"Id\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0example0example0\",\n      \"Region\": \"us-east-1\"\n    }\n  ],\n  \"Vulnerabilities\": [\n    {\n      \"Id\": \"CVE-2099-0001\",\n      \"Cvss\": [\n        {\n          \"Version\": \"3.1\",\n          \"BaseScore\": 8.1,\n          \"Source\": \"NVD\"\n        }\n      ],\n      \"EpssScore\": 0.4212,\n      \"ExploitAvailable\": \"YES\",\n      \"FixAvailable\": \"YES\",\n      \"ReferenceUrls\": [\n        \"https://example.test/CVE-2099-0001\"\n      ],\n      \"VulnerablePackages\": [\n        {\n          \"Name\": \"libexample\",\n          \"Version\": \"1.2.3\",\n          \"FixedInVersion\": \"1.2.4\"\n        }\n      ]\n    }\n  ]\n}",

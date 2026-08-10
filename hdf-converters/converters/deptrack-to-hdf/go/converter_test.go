@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -343,12 +344,28 @@ func TestConvertDeptrack_NoVulnerabilities(t *testing.T) {
 
 // ---- Timestamp ----
 
+// Value-pin: the top-level timestamp is meta.timestamp verbatim (source-derived,
+// not wall-clock). The snapshot harness masks the timestamp key, so this is the
+// only guard on the actual mapped value.
 func TestConvertDeptrack_Timestamp(t *testing.T) {
 	input := loadFixture(t, "input/fpf-default.json")
 	result, err := ConvertDeptrackToHDF(input, testVersion)
 	require.NoError(t, err)
 
 	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2022-02-18T23:31:42Z", result.Timestamp.UTC().Format(time.RFC3339),
+		"top-level timestamp must be meta.timestamp, not wall-clock")
+}
+
+// Fallback branch: meta.timestamp absent → top-level timestamp falls back to a
+// valid wall-clock value (never nil, never zero).
+func TestConvertDeptrack_Timestamp_Fallback(t *testing.T) {
+	input := []byte(`{"meta":{},"project":{"uuid":"p1","name":"t"},"findings":[{"component":{"name":"c"},"vulnerability":{"severity":"LOW"},"matrix":"m1"}]}`)
+	result, err := ConvertDeptrackToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	assert.False(t, result.Timestamp.IsZero(), "fallback timestamp must be a valid non-zero time")
 }
 
 // ---- Result codeDesc includes recommendation ----

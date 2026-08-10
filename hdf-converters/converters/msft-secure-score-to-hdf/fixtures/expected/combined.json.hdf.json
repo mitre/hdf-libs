@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "The setting is not compliant.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T17:12:14Z",
               "status": "failed"
             }
           ],
@@ -22,7 +22,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false
           },
           "title": "Apps:spo_idle_session_timeout",
           "verificationMethod": "automated"
@@ -37,7 +38,7 @@
           "results": [
             {
               "codeDesc": "The setting is not compliant.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T17:12:14Z",
               "status": "failed"
             }
           ],
@@ -47,7 +48,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false
           },
           "title": "Apps:spo_legacy_auth",
           "verificationMethod": "automated"
@@ -70,18 +72,33 @@
           "results": [
             {
               "codeDesc": "Feature in place: false.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T04:34:13Z",
               "status": "failed"
             }
           ],
           "id": "Apps:McasFirewallLogUpload",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Moderate",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 82,
+            "service": "MCAS",
+            "threats": [
+              "Data Exfiltration"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Low"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/cloudapps/settings?tabid=discovery-autoUpload"
+            }
+          ],
           "title": "Deploy a log collector to discover shadow IT activity",
           "verificationMethod": "automated"
         },
@@ -103,18 +120,35 @@
           "results": [
             {
               "codeDesc": "Policy in place: false.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T04:34:13Z",
               "status": "failed"
             }
           ],
           "id": "Apps:McasCutomActivityPolicy",
           "impact": 0.2,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Low",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 80,
+            "service": "MCAS",
+            "threats": [
+              "Account Breach",
+              "Elevation of Privilege",
+              "Malicious Insider"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Moderate"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/cloudapps/policy/activity/create"
+            }
+          ],
           "title": "Create a custom activity policy to get alerts about suspicious usage patterns",
           "verificationMethod": "automated"
         },
@@ -136,18 +170,33 @@
           "results": [
             {
               "codeDesc": "Policy in place: false.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T04:34:13Z",
               "status": "failed"
             }
           ],
           "id": "Apps:McasCloudAppNotification",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Low",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 75,
+            "service": "MCAS",
+            "threats": [
+              "Data Exfiltration"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Moderate"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/cloudapps/policy/discovery/create"
+            }
+          ],
           "title": "Create an app discovery policy to identify new and trending cloud apps in your org ",
           "verificationMethod": "automated"
         },
@@ -169,18 +218,35 @@
           "results": [
             {
               "codeDesc": "Feature in place: false.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T04:34:13Z",
               "status": "failed"
             }
           ],
           "id": "Apps:McasOAuthAppNotification",
           "impact": 0.4,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Low",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 57,
+            "service": "MCAS",
+            "threats": [
+              "Account Breach",
+              "Elevation of Privilege",
+              "Malicious Insider"
+            ],
+            "tier": "Defense In Depth",
+            "user_impact": "Moderate"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/cloudapps/policy/app-permission/create"
+            }
+          ],
           "title": "Create an OAuth app policy to notify you about new OAuth applications",
           "verificationMethod": "automated"
         },
@@ -202,18 +268,30 @@
           "results": [
             {
               "codeDesc": "No implementation status provided",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T14:59:53Z",
               "status": "failed"
             }
           ],
           "id": "Identity:AATP_DefenderForIdentityIsNotInstalled",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "high",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 59,
+            "service": "Azure ATP",
+            "tier": "Core",
+            "user_impact": "low"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/settings/identities?tabid=sensor"
+            }
+          ],
           "title": "Start your Defender for Identity deployment, installing Sensors on Domain Controllers and other eligible servers.",
           "verificationMethod": "automated"
         },
@@ -235,18 +313,30 @@
           "results": [
             {
               "codeDesc": "No implementation status provided",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_atpprotection",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "High"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/safeattachmentv2?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Turn on Microsoft Defender for Office 365 in SharePoint, OneDrive, and Microsoft Teams",
           "verificationMethod": "automated"
         },
@@ -268,18 +358,30 @@
           "results": [
             {
               "codeDesc": "No implementation status provided",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Data:dlp_datalossprevention",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": true,
+            "rank": 128,
+            "service": "MIP",
+            "tier": "Core",
+            "user_impact": "High"
           },
+          "refs": [
+            {
+              "url": "https://compliance.microsoft.com/datalossprevention?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure DLP policies are enabled",
           "verificationMethod": "automated"
         },
@@ -301,18 +403,30 @@
           "results": [
             {
               "codeDesc": "No implementation status provided",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:exo_individualsharing",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 128,
+            "service": "EXO",
+            "tier": "Core",
+            "user_impact": "High"
           },
+          "refs": [
+            {
+              "url": "https://admin.exchange.microsoft.com/#/sharing"
+            }
+          ],
           "title": "Ensure 'External sharing' of calendars is not available",
           "verificationMethod": "automated"
         },
@@ -334,18 +448,30 @@
           "results": [
             {
               "codeDesc": "No implementation status provided",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_safedocuments",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "High"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/safeattachmentv2?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Turn on Safe Documents for Office Clients",
           "verificationMethod": "automated"
         },
@@ -367,18 +493,30 @@
           "results": [
             {
               "codeDesc": "The allowed IP addresses list in the connection filter policy is empty ",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_connectionfilter",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": true,
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Don't add allowed IP addresses in the connection filter policy ",
           "verificationMethod": "automated"
         },
@@ -392,7 +530,7 @@
           "results": [
             {
               "codeDesc": "The setting was not enabled.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -402,7 +540,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false
           },
           "title": "Data:mip_purviewlabelconsent",
           "verificationMethod": "automated"
@@ -425,18 +564,35 @@
           "results": [
             {
               "codeDesc": "Feature in place: false.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:CustomerLockBoxEnabled",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Moderate",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 127,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration",
+              "Data Deletion",
+              "Data Spillage"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Moderate"
           },
+          "refs": [
+            {
+              "url": "https://go.microsoft.com/fwlink/?linkid=2095515"
+            }
+          ],
           "title": "Ensure the customer lockbox feature is enabled",
           "verificationMethod": "automated"
         },
@@ -458,18 +614,33 @@
           "results": [
             {
               "codeDesc": "Modern authentication for Exchange Online is enabled",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:exo_oauth2clientprofileenabled",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "EXO",
+            "threats": [
+              "Account breach",
+              "Data Exfiltration"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/Exchange/clients-and-mobile-in-exchange-online/enable-or-disable-modern-authentication-in-exchange-online?redirectSourcePath=%252fen-us%252farticle%252fenable-or-disable-modern-authentication-in-exchange-online-58018196-f918-49cd-8238-56f57f38d662"
+            }
+          ],
           "title": "Ensure modern authentication for Exchange Online is enabled",
           "verificationMethod": "automated"
         },
@@ -491,18 +662,33 @@
           "results": [
             {
               "codeDesc": "MailTips for end users are disabled.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:exo_mailtipsenabled",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/exchange/clients-and-mobile-in-exchange-online/mailtips/mailtips"
+            }
+          ],
           "title": "Ensure MailTips are enabled for end users",
           "verificationMethod": "automated"
         },
@@ -524,18 +710,33 @@
           "results": [
             {
               "codeDesc": "Spam confidence level (SCL) is not configured in mail transport rules with specific domain",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:exo_transportrulesallowlistdomains",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": true,
+            "rank": 128,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://admin.exchange.microsoft.com/#/transportrules"
+            }
+          ],
           "title": "Ensure Spam confidence level (SCL) is configured in mail transport rules with specific domains",
           "verificationMethod": "automated"
         },
@@ -549,7 +750,7 @@
           "results": [
             {
               "codeDesc": "Microsoft 365 audit log search is enabled disabled",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -582,18 +783,32 @@
           "results": [
             {
               "codeDesc": "Mailbox auditing for all users is disabled",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:exo_mailboxaudit",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core"
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/microsoft-365/compliance/audit-mailboxes?view=o365-worldwide"
+            }
+          ],
           "title": "Ensure mailbox auditing for all users is Enabled",
           "verificationMethod": "automated"
         },
@@ -615,18 +830,33 @@
           "results": [
             {
               "codeDesc": "Additional storage providers are restricted in Outlook on the web is not configured correctly. Please follow next steps to correctly configure the control.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:exo_storageproviderrestricted",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://support.microsoft.com/en-us/topic/3rd-party-cloud-storage-services-supported-by-office-apps-fce12782-eccc-4cf5-8f4b-d1ebec513f72"
+            }
+          ],
           "title": "Ensure additional storage providers are restricted in Outlook on the web",
           "verificationMethod": "automated"
         },
@@ -648,18 +878,33 @@
           "results": [
             {
               "codeDesc": "Installing Outlook add-ins configuration is disabled",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:exo_outlookaddins",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "EXO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://support.microsoft.com/en-us/topic/3rd-party-cloud-storage-services-supported-by-office-apps-fce12782-eccc-4cf5-8f4b-d1ebec513f72"
+            }
+          ],
           "title": "Ensure users installing Outlook add-ins is not allowed",
           "verificationMethod": "automated"
         },
@@ -673,7 +918,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -698,7 +943,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -723,7 +968,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -756,18 +1001,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eBuilt-In Protection Policy - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_safeattachments",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "High"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/safeattachmentv2?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Turn on Safe Attachments in block mode",
           "verificationMethod": "automated"
         },
@@ -781,7 +1037,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eBuilt-In Protection Policy - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -814,18 +1070,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_commonattachmentsfilter",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "High"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antimalwarev2?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure the Common Attachment Types Filter is enabled",
           "verificationMethod": "automated"
         },
@@ -839,7 +1106,7 @@
           "results": [
             {
               "codeDesc": "Policies were published on 1 of the 1 users",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -864,7 +1131,7 @@
           "results": [
             {
               "codeDesc": "Policies were published on 0 of the 1 users",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -897,18 +1164,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_highconfidencespamaction",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set action to take on high confidence spam detection",
           "verificationMethod": "automated"
         },
@@ -930,18 +1208,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_phisspamacation",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set action to take on phishing detection",
           "verificationMethod": "automated"
         },
@@ -963,18 +1252,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_highconfidencephishaction",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set action to take on high confidence phishing detection",
           "verificationMethod": "automated"
         },
@@ -996,18 +1296,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_bulkspamaction",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set action to take on bulk spam detection",
           "verificationMethod": "automated"
         },
@@ -1029,18 +1340,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_quarantineretentionperiod",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Retain spam in quarantine for 30 days",
           "verificationMethod": "automated"
         },
@@ -1062,18 +1384,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_allowedsenderscombined",
           "impact": 0.2,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure that no sender domains are allowed for anti-spam policies",
           "verificationMethod": "automated"
         },
@@ -1095,18 +1428,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_bulkthreshold",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set the email bulk complaint level (BCL) threshold to be 6 or lower",
           "verificationMethod": "automated"
         },
@@ -1120,7 +1464,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
@@ -1153,18 +1497,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_autoforwardingmode",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set automatic email forwarding rules to be system controlled",
           "verificationMethod": "automated"
         },
@@ -1186,18 +1541,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_recipientexternallimitperhour",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set maximum number of external recipients that a user can email per hour",
           "verificationMethod": "automated"
         },
@@ -1219,18 +1585,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_recipientinternallimitperhour",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set maximum number of internal recipients that a user can send to within an hour",
           "verificationMethod": "automated"
         },
@@ -1252,18 +1629,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_recipientlimitperday",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antispam?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set a daily message limit",
           "verificationMethod": "automated"
         },
@@ -1277,7 +1665,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1310,18 +1698,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_enablemailboxintelligence",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antiphishing?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure that mailbox intelligence is enabled",
           "verificationMethod": "automated"
         },
@@ -1343,18 +1742,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_mailboxintelligenceprotection",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antiphishing?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure that intelligence for impersonation protection is enabled",
           "verificationMethod": "automated"
         },
@@ -1376,18 +1786,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_mailboxintelligenceprotectionaction",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antiphishing?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Move messages that are detected as impersonated users by mailbox intelligence",
           "verificationMethod": "automated"
         },
@@ -1409,18 +1830,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_enabledomainstoprotect",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antiphishing?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Enable impersonated domain protection",
           "verificationMethod": "automated"
         },
@@ -1442,18 +1874,29 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_phishthresholdlevel",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 128,
+            "service": "MDO",
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/antiphishing?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Set the phishing email level threshold at 2 or higher",
           "verificationMethod": "automated"
         },
@@ -1467,7 +1910,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1492,7 +1935,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1517,7 +1960,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1542,7 +1985,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1567,7 +2010,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1592,7 +2035,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1617,7 +2060,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1650,18 +2093,33 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured securely\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eBuilt-In Protection Policy - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Apps:mdo_safeattachmentpolicy",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "MDO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/safe-attachments-policies-configure?view=o365-worldwide\u0026tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure Safe Attachments policy is enabled",
           "verificationMethod": "automated"
         },
@@ -1675,7 +2133,7 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eBuilt-In Protection Policy - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
@@ -1708,18 +2166,34 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eOffice365 AntiPhish Default - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_antiphishingpolicies",
           "impact": 0.3,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "MDO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach",
+              "Password Cracking"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/anti-phishing-policies-about?view=o365-worldwide\u0026tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure that an anti-phishing policy has been created",
           "verificationMethod": "automated"
         },
@@ -1741,18 +2215,33 @@
           "results": [
             {
               "codeDesc": "\u003cp\u003e 100% of users are affected by policies that are configured less securely than is recommended\u0026nbsp;\u003c/p\u003e\u003cul\u003e\u003cli\u003eDefault - 1 users (100%)\u0026nbsp;\u003c/li\u003e\u003c/ul\u003e",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "failed"
             }
           ],
           "id": "Apps:mdo_blockmailforward",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Unknown",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 10,
+            "service": "MDO",
+            "threats": [
+              "Data Exfiltration",
+              "Account breach"
+            ],
+            "tier": "Core",
+            "user_impact": "Unknown"
           },
+          "refs": [
+            {
+              "url": "https://learn.microsoft.com/en-us/exchange/policy-and-compliance/mail-flow-rules/mail-flow-rule-procedures?view=exchserver-2019\u0026tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure all forms of mail forwarding are blocked and/or disabled",
           "verificationMethod": "automated"
         },
@@ -1774,18 +2263,34 @@
           "results": [
             {
               "codeDesc": "You have no user consent policy in place.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "failed"
             }
           ],
           "id": "Identity:IntegratedApps",
           "impact": 0.4,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Low",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 35,
+            "service": "AzureAD",
+            "threats": [
+              "Data Exfiltration",
+              "Data Spillage"
+            ],
+            "tier": "Defense In Depth",
+            "user_impact": "Moderate"
           },
+          "refs": [
+            {
+              "url": "https://go.microsoft.com/fwlink/?linkid=2119526"
+            }
+          ],
           "title": "Ensure user consent to apps accessing company data on their behalf is not allowed",
           "verificationMethod": "automated"
         },
@@ -1799,7 +2304,7 @@
           "results": [
             {
               "codeDesc": "Your current policy is set to let passwords expire.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -1824,7 +2329,7 @@
           "results": [
             {
               "codeDesc": "You have 0 of 0 users who don't have self-service password reset enabled.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -1857,18 +2362,33 @@
           "results": [
             {
               "codeDesc": "You have 0 of 1 users that don't have legacy authentication blocked.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
           "id": "Identity:BlockLegacyAuthentication",
           "impact": 0.8,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Moderate",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 68,
+            "service": "AzureAD",
+            "threats": [
+              "Password Cracking",
+              "Account Breach"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Moderate"
           },
+          "refs": [
+            {
+              "url": "https://go.microsoft.com/fwlink/?linkid=2095010"
+            }
+          ],
           "title": "Enable Conditional Access policies to block legacy authentication",
           "verificationMethod": "automated"
         },
@@ -1882,7 +2402,7 @@
           "results": [
             {
               "codeDesc": "You have 0 out of 1 users that aren’t registered with MFA.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -1915,18 +2435,34 @@
           "results": [
             {
               "codeDesc": "You have 0 out of 1 users with administrative roles that aren’t registered and protected with MFA.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
           "id": "Identity:AdminMFAV2",
           "impact": 1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Low",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "rank": 1,
+            "service": "AzureAD",
+            "threats": [
+              "Password Cracking",
+              "Account Breach",
+              "Elevation of Privilege"
+            ],
+            "tier": "Core",
+            "user_impact": "Low"
           },
+          "refs": [
+            {
+              "url": "https://go.microsoft.com/fwlink/?linkid=2095010"
+            }
+          ],
           "title": "Ensure multifactor authentication is enabled for all users in administrative roles",
           "verificationMethod": "automated"
         },
@@ -1940,7 +2476,7 @@
           "results": [
             {
               "codeDesc": "You have 0 of 1 users that don't have the sign-in risky policy turned on.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -1965,7 +2501,7 @@
           "results": [
             {
               "codeDesc": "You have 0 users out of 1 that do not have user risk policy enabled.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "passed"
             }
           ],
@@ -1990,7 +2526,7 @@
           "results": [
             {
               "codeDesc": "You currently have 1 global admins.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "failed"
             }
           ],
@@ -2015,7 +2551,7 @@
           "results": [
             {
               "codeDesc": "You have 0 users with least privileged administrative roles.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-07-11T01:07:39Z",
               "status": "failed"
             }
           ],
@@ -2054,7 +2590,7 @@
     "name": "msft-secure-score-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:30:23.256245Z",
+  "timestamp": "2024-01-01T00:00:00Z",
   "tool": {
     "name": "Microsoft Secure Score"
   }

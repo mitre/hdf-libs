@@ -48,9 +48,14 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 91,
+            "ref": "C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\state\\snapshot\\difflayer.go"
+          },
           "id": "G404",
           "impact": 0.7,
           "tags": {
+            "confidence": "MEDIUM",
             "nist": [
               "SC-13"
             ]
@@ -112,9 +117,14 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 86,
+            "ref": "C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\state\\pruner\\bloom.go"
+          },
           "id": "G304",
           "impact": 0.5,
           "tags": {
+            "confidence": "HIGH",
             "nist": [
               "SI-10"
             ]
@@ -176,9 +186,14 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 162,
+            "ref": "C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\txpool\\legacypool\\journal.go"
+          },
           "id": "G302",
           "impact": 0.5,
           "tags": {
+            "confidence": "HIGH",
             "nist": [
               "SI-2",
               "RA-5"
@@ -216,9 +231,14 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "line": 133,
+            "ref": "C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\rawdb\\freezer_table.go"
+          },
           "id": "G301",
           "impact": 0.5,
           "tags": {
+            "confidence": "HIGH",
             "nist": [
               "SI-2",
               "RA-5"
@@ -1168,9 +1188,14 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 243,
+            "ref": "C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\vm\\instructions.go"
+          },
           "id": "G104",
           "impact": 0.3,
           "tags": {
+            "confidence": "HIGH",
             "nist": [
               "SI-2",
               "RA-5"

@@ -346,6 +346,12 @@ func buildRequirement(id string, group []asffFinding) hdf.EvaluatedRequirement {
 	if cves := vulnCVEs(primary); len(cves) > 0 {
 		tags["cve"] = cves
 	}
+	// ASFF's Types[] finding-type taxonomy is otherwise dropped; surface the
+	// distinct values across the aggregated group (first-appearance order) in
+	// tags.types so the source categorization survives.
+	if types := groupTypes(group); len(types) > 0 {
+		tags["types"] = types
+	}
 
 	results := make([]hdf.RequirementResult, 0, len(group))
 	for _, f := range group {
@@ -466,6 +472,22 @@ func vulnCVEs(f asffFinding) []string {
 		if v.ID != "" && !seen[v.ID] {
 			seen[v.ID] = true
 			out = append(out, v.ID)
+		}
+	}
+	return out
+}
+
+// groupTypes collects the distinct ASFF Types[] taxonomy strings across a
+// requirement's finding group (dedup, first-appearance order) for tags.types.
+func groupTypes(group []asffFinding) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, f := range group {
+		for _, t := range f.Types {
+			if t != "" && !seen[t] {
+				seen[t] = true
+				out = append(out, t)
+			}
 		}
 	}
 	return out

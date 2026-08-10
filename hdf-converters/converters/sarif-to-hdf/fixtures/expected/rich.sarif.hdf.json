@@ -145,7 +145,7 @@
               "codeDesc": "URL : src/config/settings.go LINE : 8 COLUMN : 1",
               "message": "Suppressed: This is a test API key used only in development environments",
               "startTime": "2026-07-12T18:56:41.922814-04:00",
-              "status": "notReviewed"
+              "status": "failed"
             },
             {
               "codeDesc": "URL : src/config/db.go LINE : 15 COLUMN : 1",
@@ -154,15 +154,39 @@
             },
             {
               "codeDesc": "URL : src/config/tokens.go LINE : 5 COLUMN : 1",
-              "message": "Suppressed: Reviewing whether this token is still active; Marked as false positive by security team",
+              "message": "Suppressed: Marked as false positive by security team",
               "startTime": "2026-07-12T18:56:41.922814-04:00",
-              "status": "notReviewed"
+              "status": "failed"
             }
           ],
           "sourceLocation": {
             "line": 8,
             "ref": "src/config/settings.go"
           },
+          "statusOverrides": [
+            {
+              "appliedAt": "2026-08-09T17:25:53.193722-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-08-09T17:25:53.193722-04:00",
+              "reason": "This is a test API key used only in development environments",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-08-09T17:25:53.193722-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-08-09T17:25:53.193722-04:00",
+              "reason": "Marked as false positive by security team",
+              "status": "notApplicable",
+              "type": "falsePositive"
+            }
+          ],
           "id": "SEC-003",
           "impact": 0.7,
           "tags": {
@@ -183,6 +207,20 @@
               {
                 "justification": "This is a test API key used only in development environments",
                 "kind": "inSource",
+                "status": "accepted"
+              },
+              {
+                "kind": "external",
+                "status": "rejected"
+              },
+              {
+                "justification": "Reviewing whether this token is still active",
+                "kind": "inSource",
+                "status": "underReview"
+              },
+              {
+                "justification": "Marked as false positive by security team",
+                "kind": "external",
                 "status": "accepted"
               }
             ]

@@ -157,6 +157,58 @@ func TestConvert_RiskAdjustStaysActionable(t *testing.T) {
 	assert.Equal(t, false, sub(t, objs[0], "fields")["suppressed"])
 }
 
+// TestConvert_AugmentedHDFFields pins the exportmap-block keys the shared
+// passthrough omits but splunk-to-hdf round-trips: source_location,
+// verification_method, baseline version/title/checksum/groups, and the full
+// component. Each must appear only when the source carries it.
+func TestConvert_AugmentedHDFFields(t *testing.T) {
+	out, err := ConvertHDFToSplunk(fixture(t, "input", "override.json"), converterVersion)
+	require.NoError(t, err)
+	hdf := sub(t, sub(t, parseLines(t, out)[0], "event"), "hdf")
+
+	// source_location round-trips {ref, line}.
+	sl := hdf["source_location"].(map[string]interface{})
+	assert.Equal(t, "controls/stig.rb", sl["ref"])
+	assert.Equal(t, float64(1), sl["line"])
+
+	// baseline metadata beyond name.
+	assert.Equal(t, "1.0.0", hdf["baseline_version"])
+	assert.Equal(t, "RHEL 9 STIG Baseline", hdf["baseline_title"])
+	ck := hdf["baseline_checksum"].(map[string]interface{})
+	assert.Equal(t, "sha256", ck["algorithm"])
+	assert.Equal(t, "abc123", ck["value"])
+	groups := hdf["groups"].([]interface{})
+	require.Len(t, groups, 1)
+	assert.Equal(t, "controls/stig.rb", groups[0].(map[string]interface{})["id"])
+
+	// full component, plus CIM promotions on event/fields.
+	comp := hdf["component"].(map[string]interface{})
+	assert.Equal(t, "8f3b2c1a-0000-4a00-8000-000000000001", comp["componentId"])
+	assert.Equal(t, "10.0.0.50", comp["ipAddress"])
+	assert.Equal(t, "Red Hat Enterprise Linux 9", comp["osName"])
+	assert.Equal(t, "9.3", comp["osVersion"])
+	e := sub(t, parseLines(t, out)[0], "event")
+	assert.Equal(t, "Red Hat Enterprise Linux 9", e["os"])
+	assert.Equal(t, "10.0.0.50", e["dest_ip"])
+	assert.Equal(t, "10.0.0.50", sub(t, parseLines(t, out)[0], "fields")["dest_ip"])
+
+	// verificationMethod is absent here, so no key is emitted.
+	_, hasVM := hdf["verification_method"]
+	assert.False(t, hasVM, "verification_method omitted when source lacks it")
+
+	// verification_method carries through where the source has it.
+	cveOut, err := ConvertHDFToSplunk(fixture(t, "input", "cve.json"), converterVersion)
+	require.NoError(t, err)
+	cveHDF := sub(t, sub(t, parseLines(t, cveOut)[0], "event"), "hdf")
+	assert.Equal(t, "automated", cveHDF["verification_method"])
+	// cve baseline has version but no title/checksum/groups → those stay absent.
+	assert.Equal(t, "1.0.0", cveHDF["baseline_version"])
+	_, hasTitle := cveHDF["baseline_title"]
+	assert.False(t, hasTitle)
+	_, hasGroups := cveHDF["groups"]
+	assert.False(t, hasGroups)
+}
+
 func TestConvert_GoldenParity(t *testing.T) {
 	// The expected .ndjson files are the shared TS<->Go golden contract.
 	for _, name := range []string{"compliance", "cve", "override", "riskadjust"} {

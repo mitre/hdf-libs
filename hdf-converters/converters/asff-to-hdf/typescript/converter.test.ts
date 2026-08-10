@@ -382,6 +382,50 @@ describe('asff product special-cases', () => {
       expect(ctrl.cvss).toBeUndefined();
       expect((ctrl.tags as Record<string, unknown>).cve).toBeUndefined();
     });
+
+    // ASFF's Types[] taxonomy surfaces in tags.types when present, and is omitted
+    // (no fabrication) when the source finding carries no Types.
+    it('surfaces ASFF Types[] in tags.types, omitting it when the source has none', async () => {
+      const hdf = JSON.parse(await convertAsffToHdf(loadFixture('unknown-producer.json'), '1.0.0')) as HDFResults;
+      const byId = new Map(hdf.baselines[0]!.requirements.map((r) => [r.id, r]));
+
+      const v1 = byId.get('acme/future-scanner/finding/0001')!;
+      expect((v1.tags as Record<string, unknown>).types).toEqual([
+        'Software and Configuration Checks/Vulnerabilities/CVE',
+      ]);
+
+      const v2 = byId.get('acme/future-scanner/finding/0002')!;
+      expect((v2.tags as Record<string, unknown>).types).toBeUndefined();
+
+      const ctrl = byId.get('ACME.1')!;
+      expect((ctrl.tags as Record<string, unknown>).types).toBeUndefined();
+    });
+
+    // Distinct Types are collected across an aggregated finding group, in
+    // first-appearance order with duplicates removed.
+    it('dedupes Types across an aggregated group in first-seen order', async () => {
+      const input = JSON.stringify([
+        {
+          Id: 'g-1',
+          GeneratorId: 'AcmeAgg',
+          ProductArn: 'arn:aws:securityhub:us-east-1::product/acme/future-scanner',
+          Compliance: { Status: 'FAILED' },
+          Severity: { Label: 'LOW' },
+          Types: ['A', 'B'],
+        },
+        {
+          Id: 'g-2',
+          GeneratorId: 'AcmeAgg',
+          ProductArn: 'arn:aws:securityhub:us-east-1::product/acme/future-scanner',
+          Compliance: { Status: 'FAILED' },
+          Severity: { Label: 'LOW' },
+          Types: ['B', 'C'],
+        },
+      ]);
+      const hdf = JSON.parse(await convertAsffToHdf(input, '1.0.0')) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'AcmeAgg')!;
+      expect((req.tags as Record<string, unknown>).types).toEqual(['A', 'B', 'C']);
+    });
   });
 
   // FindingProviderFields.Severity — the provider's own rating — takes precedence

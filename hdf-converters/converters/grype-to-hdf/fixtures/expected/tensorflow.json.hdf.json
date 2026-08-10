@@ -114437,8 +114437,21 @@
   ],
   "components": [
     {
-      "name": "tensorflow/tensorflow:latest",
-      "type": "artifact"
+      "integrity": [
+        {
+          "algorithm": "sha256",
+          "value": "5ec32574bc7f466b5b8f7343e300e1368574a1a89a54735d332cf0f7b78aedf7"
+        }
+      ],
+      "labels": {
+        "architecture": "amd64"
+      },
+      "name": "tensorflow/tensorflow@sha256:821b11952acfa67764c1f433a0629747ee49e30a69291811a2dcbef77b67cf33",
+      "type": "containerImage",
+      "osName": "ubuntu",
+      "osVersion": "22.04",
+      "imageId": "sha256:8f6e945a1a52d428908c6b70f2741376279500f92c5381afbac9a790aa18c5b9",
+      "image": "tensorflow/tensorflow@sha256:821b11952acfa67764c1f433a0629747ee49e30a69291811a2dcbef77b67cf33"
     }
   ],
   "generator": {

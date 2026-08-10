@@ -61,13 +61,15 @@ func GoverningOverrideIndex(overrides []StatusOverrideInput, eligible func(int) 
 		ref = time.Now()
 	}
 	governing := -1
+	var best *StatusOverrideInput
 	for i := range overrides {
 		o := &overrides[i]
 		if !eligible(i) || o.expired(ref) {
 			continue
 		}
-		if governing == -1 || o.AppliedAt.After(overrides[governing].AppliedAt) {
+		if best == nil || o.AppliedAt.After(best.AppliedAt) {
 			governing = i
+			best = o
 		}
 	}
 	return governing

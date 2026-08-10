@@ -121,7 +121,8 @@ type GitLabRemediation struct {
 
 // GitLabFix identifies which vulnerability a remediation fixes.
 type GitLabFix struct {
-	ID string `json:"id,omitempty"`
+	ID  string `json:"id,omitempty"`
+	CVE string `json:"cve,omitempty"`
 }
 
 // --- Severity to impact ---
@@ -181,6 +182,49 @@ func buildNistTags(identifiers []GitLabIdentifier) []string {
 	return shared.DefaultStaticAnalysisNIST
 }
 
+// buildRefs collects external reference URLs for a vulnerability from its
+// links[] and identifiers[] (e.g. CWE/CVE pages), de-duplicated so a URL that
+// appears in both never shows up twice. Returns nil when the source carries none.
+func buildRefs(vuln GitLabVulnerability) []hdf.Reference {
+	var refs []hdf.Reference
+	seen := make(map[string]bool)
+	appendURL := func(u string) {
+		if u == "" || seen[u] {
+			return
+		}
+		seen[u] = true
+		urlCopy := u
+		refs = append(refs, hdf.Reference{URL: &urlCopy})
+	}
+	for _, link := range vuln.Links {
+		appendURL(link.URL)
+	}
+	for _, id := range vuln.Identifiers {
+		appendURL(id.URL)
+	}
+	return refs
+}
+
+// buildRemediationMap maps a vulnerability identifier (matched via a
+// remediation's fixes[].id or fixes[].cve) to the remediation summary text.
+// A remediation with no summary carries no guidance and is skipped.
+func buildRemediationMap(remediations []GitLabRemediation) map[string][]string {
+	result := make(map[string][]string)
+	for _, rem := range remediations {
+		if rem.Summary == "" {
+			continue
+		}
+		for _, fix := range rem.Fixes {
+			for _, key := range []string{fix.ID, fix.CVE} {
+				if key != "" {
+					result[key] = append(result[key], rem.Summary)
+				}
+			}
+		}
+	}
+	return result
+}
+
 // --- Collect identifier tags ---
 
 func collectIdentifierExtras(identifiers []GitLabIdentifier) map[string]interface{} {
@@ -211,6 +255,28 @@ func buildVulnCode(vuln GitLabVulnerability) string {
 		return "{}"
 	}
 	return buf.String()
+}
+
+// buildSourceLocation promotes a finding's file locus into the structured
+// requirement.sourceLocation field (machine-addressable, distinct from the
+// codeDesc freetext). Ref is the source file path; Line is the start line,
+// falling back to end_line only when start_line is absent. Returns nil when the
+// location carries no file (e.g. DAST URL findings) so the field is omitted.
+func buildSourceLocation(loc *GitLabLocation) *hdf.SourceLocation {
+	if loc == nil || loc.File == "" {
+		return nil
+	}
+	ref := loc.File
+	sl := &hdf.SourceLocation{Ref: &ref}
+	line := loc.StartLine
+	if line == nil {
+		line = loc.EndLine
+	}
+	if line != nil {
+		l := float64(*line)
+		sl.Line = &l
+	}
+	return sl
 }
 
 // --- Build code description by scan type ---
@@ -340,6 +406,8 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 
 	limitedVulns := shared.LimitSliceWithWarning(report.Vulnerabilities, 0, "vulnerability")
 
+	remediationMap := buildRemediationMap(report.Remediations)
+
 	var requirements []hdf.EvaluatedRequirement
 
 	for _, vuln := range limitedVulns {
@@ -372,6 +440,17 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 				Data:  vuln.Solution,
 			})
 		}
+		seenRem := make(map[string]bool)
+		for _, summary := range remediationMap[vuln.ID] {
+			if seenRem[summary] {
+				continue
+			}
+			seenRem[summary] = true
+			descriptions = append(descriptions, hdf.Description{
+				Label: "remediation",
+				Data:  summary,
+			})
+		}
 
 		// Build result
 		result := hdf.RequirementResult{
@@ -400,8 +479,10 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 			Results:            []hdf.RequirementResult{result},
 			Tags:               tags,
 			Descriptions:       descriptions,
+			Refs:               buildRefs(vuln),
 			ControlType:        shared.DeriveControlTypeFromTags(nistTags),
 			VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+			SourceLocation:     buildSourceLocation(vuln.Location),
 		}
 
 		requirements = append(requirements, req)

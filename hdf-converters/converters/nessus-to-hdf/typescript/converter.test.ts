@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertNessusToHdf } from './index.js';
+import { TargetType } from '@mitre/hdf-schema';
 import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 
@@ -160,6 +161,28 @@ describe('Nessus to HDF Converter', async () => {
       expect(req?.tags.cvss_base_score).toBe('6.4');
     });
 
+    it('preserves ACAS / Tenable.sc-shape fields (cvss3, IAVM xref, stig_severity)', async () => {
+      // ACAS emits the same NessusClientData_v2 schema as standalone Nessus and
+      // differs only by which optional fields are populated, so sample.nessus (a
+      // real scan carrying them) is the standing ACAS regression guard. Plugin
+      // 156888 (Oracle Java Jan-2022 CPU) has a CVSS v3 base score, an IAVA xref,
+      // and a STIG CAT together. cvss3 is promoted to a tag + cvss[] entry; the
+      // IAVM xref and stig_severity are preserved in the raw code blob (promoting
+      // those two to first-class tags is tracked as separate follow-up work).
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'sample.nessus'),
+        'utf-8'
+      );
+
+      const result = await convertNessusToHdf(nessusXml);
+      const req = findReqAcrossBaselines(result, '156888');
+
+      expect(req?.tags.cvss3_base_score).toBe('5.3');
+      expect(req?.cvss?.length).toBeGreaterThan(0);
+      expect(req?.code).toContain('"stig_severity": "I"');
+      expect(req?.code).toContain('IAVA:2022-A-0031');
+    });
+
     it('should split whitespace-separated see_also URLs into one ref per URL', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
@@ -242,11 +265,35 @@ describe('Nessus to HDF Converter', async () => {
       // Find the first host (10.0.0.3)
       const target = result.components!.find(t => t.name === '10.0.0.3');
       expect(target).toBeDefined();
+      expect(target?.type).toBe(TargetType.Host);
       expect(target?.osName).toContain('Ubuntu');
       expect(target?.ipAddress).toBe('10.0.0.3');
       // The short hostname HostProperty is carried into the dedicated field.
       expect(target?.hostname).toBe('s');
       expect(target?.fqdn).toBe('DESKTOP-TEST001.localdomain');
+    });
+
+    it('leaves optional identity fields undefined when the host carries no properties', async () => {
+      const nessusXml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Bare</policyName></Policy>
+  <Report name="Bare" xmlns:cm="http://www.nessus.org/cm">
+    <ReportHost name="bare-target">
+      <HostProperties></HostProperties>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+
+      const result = await convertNessusToHdf(nessusXml);
+      const target = result.components!.find(t => t.name === 'bare-target');
+      expect(target).toBeDefined();
+      expect(target?.type).toBe(TargetType.Host);
+      expect(target?.hostname).toBeUndefined();
+      expect(target?.fqdn).toBeUndefined();
+      expect(target?.ipAddress).toBeUndefined();
+      expect(target?.osName).toBeUndefined();
+      expect(target?.osVersion).toBeUndefined();
+      expect(target?.macAddress).toBeUndefined();
     });
 
     it('should set generator metadata', async () => {
@@ -882,6 +929,47 @@ describe('Nessus to HDF Converter', async () => {
         .replace(/[A-Z][a-z]{2} [A-Z][a-z]{2} [ 0-9]{1,2} [0-9:]{8} [0-9]{4}/g, 'not-a-date');
       const result = await convertNessusToHdf(xml);
       expectValidResults(result);
+    });
+  });
+
+  describe('synopsis description', () => {
+    it('carries the vulnerability synopsis as a "synopsis" description', async () => {
+      const nessusXml = readFileSync(join(FIXTURES_DIR, 'input', 'sample.nessus'), 'utf-8');
+      const result = await convertNessusToHdf(nessusXml);
+      // Plugin 10114 (ICMP Timestamp) has a synopsis in the source.
+      const req = findReqAcrossBaselines(result, '10114');
+      expect(req).toBeDefined();
+      const syn = req!.descriptions.find(d => d.label === 'synopsis');
+      expect(syn?.data).toBe('It is possible to determine the exact time set on the remote host.');
+    });
+
+    it('carries the compliance synopsis as a "synopsis" description', async () => {
+      const nessusXml = readFileSync(join(FIXTURES_DIR, 'input', 'compliance.nessus'), 'utf-8');
+      const result = await convertNessusToHdf(nessusXml);
+      const req = findReqAcrossBaselines(result, 'V-71849');
+      expect(req).toBeDefined();
+      const syn = req!.descriptions.find(d => d.label === 'synopsis');
+      expect(syn?.data).toBe('The remote Red Hat Enterprise Linux host does not comply with DISA STIG requirements.');
+    });
+
+    it('omits the synopsis description when the source has no synopsis element', async () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Test</policyName></Policy>
+  <Report name="Test">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="test" protocol="tcp" severity="0" pluginID="1" pluginName="Test" pluginFamily="Test">
+        <description>Test</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+      const result = await convertNessusToHdf(xml);
+      const syn = result.baselines[0].requirements[0].descriptions.find(d => d.label === 'synopsis');
+      expect(syn).toBeUndefined();
     });
   });
 });

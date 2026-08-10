@@ -512,7 +512,7 @@ describe('SARIF Converter', async () => {
   // --- Suppression tests ---
 
   describe('Suppressions', async () => {
-    it('should mark accepted suppression as notReviewed', async () => {
+    it('should turn a non-false-positive accepted suppression into a waiver override', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -528,7 +528,7 @@ describe('SARIF Converter', async () => {
               }
             }],
             suppressions: [
-              { kind: 'inSource', status: 'accepted', justification: 'false positive' }
+              { kind: 'inSource', status: 'accepted', justification: 'validated against allowlist' }
             ]
           }]
         }]
@@ -536,9 +536,155 @@ describe('SARIF Converter', async () => {
 
       const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
+      // De-laundering: raw result status stays the tool's failed.
       expect(req.results).toHaveLength(1);
-      expect(req.results[0].status).toBe('notReviewed');
-      expect(req.results[0].message).toContain('false positive');
+      expect(req.results[0].status).toBe('failed');
+      expect(req.results[0].message).toContain('validated against allowlist');
+
+      expect(req.statusOverrides).toHaveLength(1);
+      const ov = req.statusOverrides[0];
+      expect(ov.type).toBe('waiver');
+      expect(ov.status).toBe('passed');
+      expect(ov.reason).toBe('validated against allowlist');
+      expect(ov.appliedBy.identifier).toBe('sarif suppression');
+      expect(ov.appliedBy.type).toBe('other');
+      expect(typeof ov.appliedAt).toBe('string');
+      expect(new Date(ov.expiresAt).getUTCFullYear()).toBe(new Date(ov.appliedAt).getUTCFullYear() + 1);
+
+      expect(req.effectiveStatus).toBe('passed');
+      expect(req.disposition).toBe('waiver');
+    });
+
+    it('should turn a false-positive accepted suppression into a falsePositive override', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: { driver: { name: 'Test', version: '1.0' } },
+          results: [{
+            ruleId: 'TEST',
+            level: 'error',
+            message: { text: 'test: suppressed finding' },
+            locations: [{
+              physicalLocation: {
+                artifactLocation: { uri: 'file.go' },
+                region: { startLine: 1, startColumn: 1 }
+              }
+            }],
+            suppressions: [
+              { kind: 'external', status: 'accepted', justification: 'Confirmed false positive' }
+            ]
+          }]
+        }]
+      });
+
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.results[0].status).toBe('failed');
+      expect(req.statusOverrides).toHaveLength(1);
+      expect(req.statusOverrides[0].type).toBe('falsePositive');
+      expect(req.statusOverrides[0].status).toBe('notApplicable');
+      expect(req.effectiveStatus).toBe('notApplicable');
+      expect(req.disposition).toBe('falsePositive');
+    });
+
+    it('should NOT override an underReview suppression', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: { driver: { name: 'Test', version: '1.0' } },
+          results: [{
+            ruleId: 'TEST',
+            level: 'error',
+            message: { text: 'test: under review' },
+            locations: [{
+              physicalLocation: {
+                artifactLocation: { uri: 'file.go' },
+                region: { startLine: 1, startColumn: 1 }
+              }
+            }],
+            suppressions: [
+              { kind: 'inSource', status: 'underReview', justification: 'reviewing' }
+            ]
+          }]
+        }]
+      });
+
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.results[0].status).toBe('failed');
+      expect(req.results[0].message).toBeUndefined();
+      expect(req.statusOverrides).toBeUndefined();
+      expect(req.effectiveStatus).toBeUndefined();
+      expect(req.disposition).toBeUndefined();
+    });
+
+    it('should record the override but keep failed when an unsuppressed sibling remains', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: { driver: { name: 'Test', version: '1.0' } },
+          results: [
+            {
+              ruleId: 'SEC',
+              level: 'error',
+              message: { text: 'accepted one' },
+              locations: [{ physicalLocation: { artifactLocation: { uri: 'a.go' }, region: { startLine: 1 } } }],
+              suppressions: [{ kind: 'inSource', status: 'accepted', justification: 'test key in dev' }]
+            },
+            {
+              ruleId: 'SEC',
+              level: 'error',
+              message: { text: 'unsuppressed sibling' },
+              locations: [{ physicalLocation: { artifactLocation: { uri: 'b.go' }, region: { startLine: 2 } } }]
+            }
+          ]
+        }]
+      });
+
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.statusOverrides).toHaveLength(1);
+      expect(req.statusOverrides[0].type).toBe('waiver');
+      expect(req.effectiveStatus).toBeUndefined();
+      expect(req.disposition).toBeUndefined();
+    });
+
+    it('should keep BOTH accepted and underReview suppressions in the tag but emit one override', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: { driver: { name: 'Test', version: '1.0' } },
+          results: [{
+            ruleId: 'TEST',
+            level: 'error',
+            message: { text: 'test: mixed suppressions' },
+            locations: [{
+              physicalLocation: {
+                artifactLocation: { uri: 'file.go' },
+                region: { startLine: 1, startColumn: 1 }
+              }
+            }],
+            suppressions: [
+              { kind: 'inSource', status: 'underReview', justification: 'Reviewing whether this token is still active' },
+              { kind: 'external', status: 'accepted', justification: 'Marked as false positive by security team' }
+            ]
+          }]
+        }]
+      });
+
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+
+      // Exactly one override — from the accepted suppression only.
+      expect(req.statusOverrides).toHaveLength(1);
+      expect(req.statusOverrides[0].type).toBe('falsePositive');
+
+      // BOTH suppressions preserved losslessly in the tag.
+      expect(req.tags.suppressions).toHaveLength(2);
+      expect(req.tags.suppressions[0].status).toBe('underReview');
+      expect(req.tags.suppressions[0].justification).toBe('Reviewing whether this token is still active');
+      expect(req.tags.suppressions[1].status).toBe('accepted');
+      expect(req.tags.suppressions[1].justification).toBe('Marked as false positive by security team');
     });
 
     it('should keep failed status for rejected suppression', async () => {
@@ -990,15 +1136,24 @@ describe('SARIF Converter', async () => {
       expect(sec002.results).toHaveLength(1);
       expect(sec002.results[0].status).toBe('failed');
 
-      // SEC-003: HardcodedCredential — 3 results (accepted supp, rejected supp, multiple supps)
+      // SEC-003: HardcodedCredential — 3 results (accepted supp, rejected supp, multiple supps).
+      // De-laundering: raw statuses all stay failed; accepted suppressions become
+      // structured overrides. The unsuppressed rejected sibling keeps the
+      // requirement effectively failed, so no effectiveStatus/disposition is set.
       const sec003 = baseline.requirements[2];
       expect(sec003.id).toBe('SEC-003');
       expect(sec003.impact).toBe(0.7); // error
       expect(sec003.results).toHaveLength(3);
-      expect(sec003.results[0].status).toBe('notReviewed'); // accepted suppression
+      expect(sec003.results[0].status).toBe('failed'); // accepted suppression → waiver override
       expect(sec003.results[0].message).toContain('test API key');
-      expect(sec003.results[1].status).toBe('failed'); // rejected suppression
-      expect(sec003.results[2].status).toBe('notReviewed'); // multiple suppressions
+      expect(sec003.results[1].status).toBe('failed'); // rejected suppression → no override
+      expect(sec003.results[2].status).toBe('failed'); // underReview + accepted → falsePositive override
+      // Two accepted suppressions (results 0 and 2) → two overrides.
+      expect(sec003.statusOverrides).toHaveLength(2);
+      expect(sec003.statusOverrides[0].type).toBe('waiver');
+      expect(sec003.statusOverrides[1].type).toBe('falsePositive');
+      expect(sec003.effectiveStatus).toBeUndefined();
+      expect(sec003.disposition).toBeUndefined();
 
       // SEC-004: InfoLeak — 2 results (pass, review)
       const sec004 = baseline.requirements[3];
@@ -1152,10 +1307,16 @@ describe('SARIF Converter', async () => {
       expect(r0.impact).toBe(0.7);
       expect(r0.results[0].codeDesc).toContain('fmt.Sprintf');
 
-      // G304 — suppressed
+      // G304 — accepted #nosec suppression → waiver override. Raw stays failed,
+      // effectiveStatus passed, disposition waiver (single-result group).
       const r1 = baseline.requirements[1];
       expect(r1.id).toBe('G304');
-      expect(r1.results[0].status).toBe('notReviewed');
+      expect(r1.results[0].status).toBe('failed');
+      expect(r1.statusOverrides).toHaveLength(1);
+      expect(r1.statusOverrides[0].type).toBe('waiver');
+      expect(r1.statusOverrides[0].appliedBy.identifier).toBe('sarif suppression');
+      expect(r1.effectiveStatus).toBe('passed');
+      expect(r1.disposition).toBe('waiver');
       expect(r1.tags.cwe).toContain('CWE-22');
 
       // G401 — CWE from relationships

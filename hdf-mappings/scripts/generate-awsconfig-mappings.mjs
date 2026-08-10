@@ -10,15 +10,21 @@
 //     (no flag)  rewrite both mapping files and print a row-count + added/removed summary
 //     --check    report drift only; exit 1 if regenerating would change EITHER copy (CI gate)
 //
-// Provenance / tiers (a row's mapping comes from exactly one, in precedence order):
+// Provenance / tiers (a row's mapping comes from exactly one, in precedence order;
+// each row records its tier in the Source field):
 //   1. config-pack   — AWS Config "Operational Best Practices for NIST 800-53" docs
 //   2. security-hub   — Security Hub NIST 800-53 r5 standard control pages (Rev 5 only)
-//   3. derived        — strong-theme heuristic for the residual: a rule's name matches a
+//   3. derived-theme  — strong-theme heuristic for the residual: a rule's name matches a
 //                       theme (encryption/TLS/logging/public-access) and inherits that
 //                       theme's NIST core, computed from how AWS mapped same-theme rules
+//   4. crosswalk      — per-rev completeness: a rule mapped at exactly one revision gets
+//                       a row at the other by translating its controls through NIST's own
+//                       r4<->r5 crosswalk (nist-revision-crosswalk.json). When nothing
+//                       translates, an explicit empty-NIST-ID marker row is emitted.
 // Tiers 1-2 are authoritative; tier 3 never invents controls — it reuses the core AWS
-// already assigned to same-theme rules, at a >=75% confidence bar. Rules matching no
-// strong theme are left unmapped (the aws-config-to-hdf converter floors them to CM-6).
+// already assigned to same-theme rules, at a >=75% confidence bar. Tier 4 inherits the
+// confidence of the native row it was translated from. Rules matching no strong theme
+// stay unmapped (the aws-config-to-hdf converter floors them to CM-6).
 // Config-pack/security-hub take precedence over derived; no cross-source unioning within
 // the authoritative tiers, so every authoritative row is one AWS publication verbatim.
 
@@ -73,6 +79,37 @@ async function fetchText(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`fetch ${url}: HTTP ${res.status}`);
   return res.text();
+}
+
+// --- tier 4 support: NIST r4<->r5 crosswalk translation ---
+
+const CROSSWALK_FILE = join(REPO, 'hdf-mappings', 'src', 'data', 'nist-revision-crosswalk.json');
+// A trailing single-letter statement part, e.g. "AC-2(j)".
+const STATEMENT_LETTER = /^(.*)\(([a-z])\)$/;
+
+// Same resolution as the published Translate APIs (identity via rosters, edges
+// for redirects, statement letters preserved on identity), plus one generator
+// pragmatism: a token already valid at the destination revision passes through
+// even when NIST doesn't list it at the source revision — AWS occasionally
+// cites an old-rev control ID inside a newer-rev pack (e.g. SA-13 in a Rev 5
+// mapping), and dropping it would lose a valid destination-rev tag.
+function crosswalkTranslator() {
+  const xw = JSON.parse(readFileSync(CROSSWALK_FILE, 'utf-8'));
+  const rosters = new Map(Object.entries(xw.rosters).map(([rev, ids]) => [Number(rev), new Set(ids)]));
+  const edges = new Map(xw.edges.map((e) => [`${e.from}:${e.control}`, e]));
+  return (control, from, to) => {
+    const edge = edges.get(`${from}:${control}`);
+    if (edge) return edge.targets;
+    if (rosters.get(from).has(control) && rosters.get(to).has(control)) return [control];
+    const base = STATEMENT_LETTER.exec(control)?.[1];
+    if (base) {
+      const baseEdge = edges.get(`${from}:${base}`);
+      if (baseEdge) return baseEdge.targets;
+      if (rosters.get(from).has(base) && rosters.get(to).has(base)) return [control];
+    }
+    if (rosters.get(to).has(control) || (base && rosters.get(to).has(base))) return [control];
+    return [];
+  };
 }
 
 // --- normalizations (both are things AWS's raw docs need but our table already does) ---
@@ -230,11 +267,12 @@ async function main() {
 
   // Lexical (code-unit) sort — matches Go sort.Strings byte order for the ASCII
   // control IDs, so the two mapping copies and both converters stay in lockstep.
-  const rowFor = (rule, controls, rev) => ({
+  const rowFor = (rule, controls, rev, source) => ({
     AwsConfigRuleSourceIdentifier: sourceIdFor(rule, knownSourceId),
     AwsConfigRuleName: rule,
     'NIST-ID': [...controls].sort().join('|'),
     Rev: rev,
+    Source: source,
   });
 
   const rows = [];
@@ -242,7 +280,7 @@ async function main() {
   for (const rev of [5, 4]) {
     const byRule = parseConfigDocs(await fetchText(CONFIG_DOCS[rev]));
     for (const [rule, controls] of byRule) {
-      rows.push(rowFor(rule, controls, rev));
+      rows.push(rowFor(rule, controls, rev, 'config-pack'));
       seen.add(`${rev}:${rule}`);
     }
   }
@@ -254,7 +292,7 @@ async function main() {
   let shAdded = 0;
   for (const [rule, controls] of shRules) {
     if (seen.has(`5:${rule}`)) continue;
-    rows.push(rowFor(rule, controls, 5));
+    rows.push(rowFor(rule, controls, 5, 'security-hub'));
     seen.add(`5:${rule}`);
     shAdded += 1;
   }
@@ -274,11 +312,40 @@ async function main() {
       if (themeMatches(rule, include, exclude)) for (const c of cores.get(theme)) controls.add(c);
     }
     if (controls.size === 0) continue;
-    rows.push(rowFor(rule, controls, 5));
+    rows.push(rowFor(rule, controls, 5, 'derived-theme'));
     seen.add(`5:${rule}`);
     derivedAdded += 1;
   }
   console.log(`  derived: catalog ${catalog.size} rules, ${derivedAdded} residual rules matched a strong theme (rest fall to the CM-6 converter floor).`);
+
+  // tier 4: crosswalk. A rule mapped at exactly one revision gets a row at the other
+  // revision by translating its controls through NIST's own r4<->r5 crosswalk (see
+  // generate-nist-crosswalk.mjs). Native rows are never touched — this tier only fills
+  // (rule, rev) holes. When nothing translates (the whole control set is new at the
+  // native revision), an explicit empty-NIST-ID marker row is emitted: "no mapping
+  // exists at this revision" is an answer, not an omission.
+  const translate = crosswalkTranslator();
+  const nativeRevs = new Map(); // rule -> Map(rev -> controls[])
+  for (const r of rows) {
+    if (!nativeRevs.has(r.AwsConfigRuleName)) nativeRevs.set(r.AwsConfigRuleName, new Map());
+    nativeRevs.get(r.AwsConfigRuleName).set(r.Rev, r['NIST-ID'].split('|').filter(Boolean));
+  }
+  const backfilled = { 4: 0, 5: 0 };
+  let markers = 0;
+  for (const [rule, revs] of nativeRevs) {
+    for (const [native, other] of [
+      [5, 4],
+      [4, 5],
+    ]) {
+      if (!revs.has(native) || revs.has(other) || seen.has(`${other}:${rule}`)) continue;
+      const controls = new Set(revs.get(native).flatMap((c) => translate(c, native, other)));
+      rows.push(rowFor(rule, controls, other, 'crosswalk'));
+      seen.add(`${other}:${rule}`);
+      if (controls.size === 0) markers += 1;
+      else backfilled[other] += 1;
+    }
+  }
+  console.log(`  crosswalk: backfilled ${backfilled[4]} Rev4 + ${backfilled[5]} Rev5 rows, ${markers} explicit unmapped marker row(s).`);
 
   rows.sort((a, b) => a.Rev - b.Rev || (a.AwsConfigRuleName < b.AwsConfigRuleName ? -1 : a.AwsConfigRuleName > b.AwsConfigRuleName ? 1 : 0));
   const json = JSON.stringify(rows, null, 2) + '\n';

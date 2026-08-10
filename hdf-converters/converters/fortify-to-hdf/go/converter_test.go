@@ -491,6 +491,187 @@ func TestConvertFortifyToHDF_InstanceSeverityImpact(t *testing.T) {
 	assert.Equal(t, 0.2, req.Impact, "impact must use InstanceSeverity (1.0/5), not DefaultSeverity (5.0/5)")
 }
 
+// The Description's <Tips><Tip> guidance text must surface as a descriptions[]
+// entry labelled "tips", with the individual tips joined and markup stripped.
+func TestConvertFortifyToHDF_TipsDescription(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+
+	// Path Manipulation carries 3 tips.
+	pathManip := shared.MustFindRequirement(t, baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
+	tips := findDescription(t, pathManip.Descriptions, "tips")
+	assert.Contains(t, tips, "If the program is performing custom input validation")
+	// Multiple tips are joined into one body.
+	assert.Contains(t, tips, "Implementation of an effective blacklist")
+	assert.Contains(t, tips, "\n\n", "multiple tips are joined with a blank-line separator")
+
+	// A Description carrying entity-escaped markup (&lt;code&gt;) inside a Tip
+	// must have that markup stripped.
+	exc := shared.MustFindRequirement(t, baseline.Requirements, "8843F319-8A22-4101-A378-C2B2F2597988")
+	excTips := findDescription(t, exc.Descriptions, "tips")
+	assert.Contains(t, excTips, "Thread.sleep()")
+	assert.NotContains(t, excTips, "<code>")
+	assert.NotContains(t, excTips, "&lt;")
+}
+
+// A Description with no <Tips> must not emit a "tips" description.
+func TestConvertFortifyToHDF_TipsAbsent(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	deadCode := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E")
+	for _, d := range deadCode.Descriptions {
+		assert.NotEqual(t, "tips", d.Label, "requirement without <Tips> must not emit a tips description")
+	}
+}
+
+// External-URL References (carried in <Source>) must surface as refs[] entries,
+// de-duplicated and order-preserving. Standards-mapping references carry no URL.
+func TestConvertFortifyToHDF_Refs(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+
+	pathManip := shared.MustFindRequirement(t, baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
+	require.Len(t, pathManip.Refs, 2, "Path Manipulation has two external-URL references")
+	require.NotNil(t, pathManip.Refs[0].URL)
+	assert.Equal(t, "https://www.securecoding.cert.org/confluence/display/java/FIO00-J.+Do+not+operate+on+files+in+shared+directories", *pathManip.Refs[0].URL)
+	require.NotNil(t, pathManip.Refs[1].URL)
+	assert.Equal(t, "http://www.oracle.com/technetwork/java/seccodeguide-139067.html#5", *pathManip.Refs[1].URL)
+}
+
+// A Description whose References carry no external URL must leave refs unset.
+func TestConvertFortifyToHDF_Refs_Absent(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	deadCode := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E")
+	assert.Nil(t, deadCode.Refs, "refs must be unset when no reference carries an external URL")
+}
+
+func findDescription(t *testing.T, descs []hdf.Description, label string) string {
+	t.Helper()
+	for _, d := range descs {
+		if d.Label == label {
+			return d.Data
+		}
+	}
+	t.Fatalf("no description with label %q", label)
+	return ""
+}
+
+// The Fortify ClassInfo categorization (kingdom, class_type, subtype, analyzer)
+// must surface as requirement.tags, sourced from the representative finding.
+func TestConvertFortifyToHDF_ClassInfoTags(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+
+	// Empty Catch Block: all four ClassInfo fields present.
+	exc := shared.MustFindRequirement(t, baseline.Requirements, "8843F319-8A22-4101-A378-C2B2F2597988")
+	assert.Equal(t, "Errors", exc.Tags["kingdom"])
+	assert.Equal(t, "Poor Error Handling", exc.Tags["class_type"])
+	assert.Equal(t, "Empty Catch Block", exc.Tags["subtype"])
+	assert.Equal(t, "structural", exc.Tags["analyzer"])
+
+	// class_type must not collide with the NIST/CCI tags.
+	assert.NotNil(t, exc.Tags["nist"])
+
+	// Path Manipulation carries no <Subtype> — that key must be omitted while the
+	// other three are present.
+	pathManip := shared.MustFindRequirement(t, baseline.Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
+	assert.Equal(t, "Input Validation and Representation", pathManip.Tags["kingdom"])
+	assert.Equal(t, "Path Manipulation", pathManip.Tags["class_type"])
+	assert.Equal(t, "dataflow", pathManip.Tags["analyzer"])
+	_, hasSubtype := pathManip.Tags["subtype"]
+	assert.False(t, hasSubtype, "subtype must be omitted when the source ClassInfo carries none")
+}
+
+// A Description whose classID matches no vulnerability (no ClassInfo available)
+// must not emit any ClassInfo tags.
+func TestConvertFortifyToHDF_ClassInfoTags_Absent(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities/>
+<Description classID="NOVULN"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	for _, key := range []string{"kingdom", "class_type", "subtype", "analyzer"} {
+		_, ok := req.Tags[key]
+		assert.False(t, ok, "%s must be omitted when no ClassInfo is available", key)
+	}
+}
+
+// requirement.sourceLocation promotes the representative finding's file/line
+// locus (primary-trace default node) into the structured, machine-addressable
+// HDF field.
+func TestConvertFortifyToHDF_SourceLocation(t *testing.T) {
+	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	pathManip := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "823FE039-A7FE-4AAD-B976-9EC53FFE4A59")
+	require.NotNil(t, pathManip.SourceLocation, "sourceLocation must be promoted from the primary trace")
+	require.NotNil(t, pathManip.SourceLocation.Ref)
+	assert.Equal(t, "webgoat-lessons/challenge/src/main/java/org/owasp/webgoat/challenges/challenge7/MD5.java", *pathManip.SourceLocation.Ref)
+	require.NotNil(t, pathManip.SourceLocation.Line)
+	assert.Equal(t, 55.0, *pathManip.SourceLocation.Line)
+}
+
+// A non-numeric source line must yield Ref only, with Line omitted.
+func TestConvertFortifyToHDF_SourceLocation_NonNumericLine(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C7</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I7</InstanceID></InstanceInfo>
+    <AnalysisInfo><Unified><Trace><Primary>
+      <Entry><Node isDefault="true"><SourceLocation path="a.java" line="notanumber"/></Node></Entry>
+    </Primary></Trace></Unified></AnalysisInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C7"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	sl := result.Baselines[0].Requirements[0].SourceLocation
+	require.NotNil(t, sl)
+	require.NotNil(t, sl.Ref)
+	assert.Equal(t, "a.java", *sl.Ref)
+	assert.Nil(t, sl.Line, "Line must be omitted when the source line is non-numeric")
+}
+
+// A requirement whose representative finding carries no primary-trace path must
+// leave sourceLocation unset (NOT-IN-SOURCE) rather than fabricating one.
+func TestConvertFortifyToHDF_SourceLocation_Absent(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C8</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I8</InstanceID></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C8"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`)
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	assert.Nil(t, result.Baselines[0].Requirements[0].SourceLocation,
+		"sourceLocation must be unset when the finding carries no primary-trace path")
+}
+
 func TestConvertFortifyToHDF_VerificationMethod(t *testing.T) {
 	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
 	result, err := ConvertFortifyToHDF(inputData, converterVersion)

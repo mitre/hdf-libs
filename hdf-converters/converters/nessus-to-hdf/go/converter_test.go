@@ -57,6 +57,41 @@ func TestConvertNessusToHDF_ReportItemAnchor(t *testing.T) {
 		"sample.nessus: one requirement per <ReportItem>")
 }
 
+// TestConvertNessusToHDF_ACASFieldsPreserved locks in that ACAS / Tenable.sc-shape
+// fields survive conversion. ACAS emits the same NessusClientData_v2 schema as
+// standalone Nessus and differs only by which optional fields are populated, so
+// sample.nessus (a real scan that happens to carry them) is the standing ACAS
+// regression guard. cvss3_base_score is promoted to a structured tag and cvss[]
+// entry; the IAVM (IAVA/IAVB) xref and stig_severity (STIG CAT) are preserved in
+// the raw code blob — promoting those two to first-class tags is tracked as
+// separate follow-up work.
+func TestConvertNessusToHDF_ACASFieldsPreserved(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	var reqs []hdf.EvaluatedRequirement
+	for _, b := range result.Baselines {
+		reqs = append(reqs, b.Requirements...)
+	}
+
+	// Plugin 156888 (Oracle Java Jan-2022 CPU) is an ACAS-shaped finding: it
+	// carries a CVSS v3 base score, an IAVA xref, and a STIG CAT together.
+	req := shared.MustFindRequirement(t, reqs, "156888")
+
+	// CVSS v3 is promoted to structured HDF (tag + cvss[] entry), not dropped.
+	assert.Equal(t, "5.3", req.Tags["cvss3_base_score"], "ACAS cvss3_base_score must be captured as a tag")
+	require.NotEmpty(t, req.Cvss, "ACAS finding must carry a structured cvss[] entry")
+
+	// IAVM (IAVA/IAVB) and stig_severity are preserved in the raw code blob.
+	require.NotNil(t, req.Code)
+	assert.Contains(t, *req.Code, `"stig_severity": "I"`, "ACAS stig_severity (STIG CAT) must be preserved")
+	assert.Contains(t, *req.Code, "IAVA:2022-A-0031", "ACAS IAVM xref must be preserved")
+}
+
 func TestConvertNessusToHDF_Tool(t *testing.T) {
 	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
 	inputData, err := os.ReadFile(inputPath)
@@ -380,15 +415,36 @@ func TestConvertReportHostToTarget_HostnameAndFQDN(t *testing.T) {
 			{Name: "hostname", Value: "web01"},
 			{Name: "host-fqdn", Value: "web01.prod.example.com"},
 			{Name: "host-ip", Value: "10.0.0.3"},
+			{Name: "operating-system", Value: "Linux Kernel 5.13.0 on Ubuntu 20.04"},
 		}},
 	}
 	c := convertReportHostToTarget(host)
+	assert.Equal(t, hdf.Host, c.Type, "scan target is a host component")
+	assert.Equal(t, "10.0.0.3", c.Name)
 	require.NotNil(t, c.Hostname)
 	assert.Equal(t, "web01", *c.Hostname)
 	require.NotNil(t, c.FQDN)
 	assert.Equal(t, "web01.prod.example.com", *c.FQDN)
 	require.NotNil(t, c.IPAddress)
 	assert.Equal(t, "10.0.0.3", *c.IPAddress)
+	require.NotNil(t, c.OSName)
+	assert.Equal(t, "Linux Kernel 5.13.0 on Ubuntu 20.04", *c.OSName, "operating-system carried verbatim into OSName")
+}
+
+// A host whose name is neither an IP nor an FQDN and that carries no
+// HostProperties tags yields a host component with only Name+Type set; every
+// optional identity field stays nil (the absent branch).
+func TestConvertReportHostToTarget_AbsentProperties(t *testing.T) {
+	host := &ReportHost{Name: "bare-target"}
+	c := convertReportHostToTarget(host)
+	assert.Equal(t, hdf.Host, c.Type)
+	assert.Equal(t, "bare-target", c.Name)
+	assert.Nil(t, c.Hostname)
+	assert.Nil(t, c.FQDN)
+	assert.Nil(t, c.IPAddress)
+	assert.Nil(t, c.OSName)
+	assert.Nil(t, c.OSVersion)
+	assert.Nil(t, c.MACAddress)
 }
 
 // Real-fixture regression: the short hostname must survive end-to-end (it was
@@ -678,6 +734,63 @@ func TestEpssDate_FallsBackToToday(t *testing.T) {
 	assert.Len(t, got, 10)
 	assert.Equal(t, "-", got[4:5])
 	assert.Equal(t, "-", got[7:8])
+}
+
+// TestConvertNessusToHDF_Synopsis verifies the Nessus <synopsis> short summary
+// is carried through as a descriptions[] entry labelled "synopsis" for both
+// vulnerability and compliance findings, and is omitted when the source has
+// no synopsis element.
+func TestConvertNessusToHDF_Synopsis(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	// Plugin 10114 (ICMP Timestamp) has a synopsis in the source.
+	req := findReqAcrossBaselines(result, "10114")
+	require.NotNil(t, req, "plugin 10114 should be present")
+	syn := findDescription(req.Descriptions, "synopsis")
+	require.NotNil(t, syn, "vulnerability finding should carry a synopsis description")
+	assert.Equal(t, "It is possible to determine the exact time set on the remote host.", syn.Data)
+}
+
+func TestConvertNessusToHDF_SynopsisCompliance(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "compliance.nessus")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "V-71849")
+	syn := findDescription(req.Descriptions, "synopsis")
+	require.NotNil(t, syn, "compliance finding should carry a synopsis description")
+	assert.Equal(t, "The remote Red Hat Enterprise Linux host does not comply with DISA STIG requirements.", syn.Data)
+}
+
+// TestBuildDescriptions_SynopsisAbsent covers the branch where the source item
+// carries no synopsis element: no "synopsis" description is emitted.
+func TestBuildDescriptions_SynopsisAbsent(t *testing.T) {
+	descs := buildDescriptions(&ReportItem{PluginFamily: "General", Port: "0", Protocol: "tcp"}, false)
+	assert.Nil(t, findDescription(descs, "synopsis"), "no synopsis element => no synopsis description")
+
+	// Present-branch parity at the unit level, including HTML stripping.
+	descs = buildDescriptions(&ReportItem{Synopsis: "<b>Summary</b> text."}, false)
+	syn := findDescription(descs, "synopsis")
+	require.NotNil(t, syn)
+	assert.Equal(t, "Summary text.", syn.Data)
+}
+
+// findDescription returns the first description with the given label, or nil.
+func findDescription(descs []hdf.Description, label string) *hdf.Description {
+	for i := range descs {
+		if descs[i].Label == label {
+			return &descs[i]
+		}
+	}
+	return nil
 }
 
 // findReqAcrossBaselines searches all baselines for a requirement by ID.

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -412,16 +413,135 @@ func TestConvertDbprotect_CheckResults_NISTTags(t *testing.T) {
 	assert.NotEmpty(t, nistSlice, "NIST tags should not be empty")
 }
 
-// ---- Target ----
+// ---- check_category tag ----
 
+// The "Check Category" column is DBProtect's finding classification; it is
+// surfaced as the check_category tag, present in both report formats.
+func TestConvertDbprotect_CheckResults_CheckCategoryTag(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req.Tags)
+	assert.Equal(t, "Improper Access Controls", req.Tags["check_category"])
+
+	req2903 := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2903")
+	assert.Equal(t, "Misconfigurations", req2903.Tags["check_category"])
+}
+
+func TestConvertDbprotect_FindingsDetail_CheckCategoryTag(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2903")
+	assert.Equal(t, "Misconfigurations", req.Tags["check_category"])
+}
+
+// Absent branch: a finding with no Check Category value omits the tag entirely.
+func TestBuildRequirement_CheckCategoryAbsent(t *testing.T) {
+	req := buildRequirement("999", []finding{{"Check": "x", "Risk DV": "Low"}}, false)
+	_, present := req.Tags["check_category"]
+	assert.False(t, present, "check_category tag must be omitted when source field is absent")
+}
+
+// ---- Scan target component (database identity) ----
+
+// The scan target is a database asset built from the "IP Address, Port,
+// Instance" cell plus "Asset Type" (engine) and "Asset" (host name). Name is
+// the instance.
 func TestConvertDbprotect_CheckResults_Target(t *testing.T) {
 	input := loadFixture(t, "input/sample-check-results.xml")
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Components)
-	assert.Equal(t, "CONDS181", result.Components[0].Name)
-	assert.Equal(t, hdf.Host, result.Components[0].Type)
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.Database, comp.Type)
+	assert.Equal(t, "MSSQLSERVER", comp.Name)
+
+	require.NotNil(t, comp.IPAddress)
+	assert.Equal(t, "10.0.10.204", *comp.IPAddress)
+	require.NotNil(t, comp.Port)
+	assert.Equal(t, int64(1433), *comp.Port)
+	require.NotNil(t, comp.Engine)
+	assert.Equal(t, "Microsoft SQL Server", *comp.Engine)
+	require.NotNil(t, comp.Hostname)
+	assert.Equal(t, "CONDS181", *comp.Hostname)
+}
+
+func TestConvertDbprotect_FindingsDetail_Target(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.Database, comp.Type)
+	assert.Equal(t, "MSSQLSERVER", comp.Name)
+	require.NotNil(t, comp.IPAddress)
+	assert.Equal(t, "192.168.1.200", *comp.IPAddress)
+	require.NotNil(t, comp.Hostname)
+	assert.Equal(t, "HOST1", *comp.Hostname)
+}
+
+// parseTarget splits the combined identity cell; missing parts come back empty.
+func TestParseTarget(t *testing.T) {
+	ip, port, instance := parseTarget("10.0.10.204, 1433, MSSQLSERVER")
+	assert.Equal(t, "10.0.10.204", ip)
+	assert.Equal(t, "1433", port)
+	assert.Equal(t, "MSSQLSERVER", instance)
+
+	ip, port, instance = parseTarget("10.0.10.204, 1433")
+	assert.Equal(t, "10.0.10.204", ip)
+	assert.Equal(t, "1433", port)
+	assert.Empty(t, instance)
+
+	ip, port, instance = parseTarget("")
+	assert.Empty(t, ip)
+	assert.Empty(t, port)
+	assert.Empty(t, instance)
+}
+
+// Name falls back to IP:Port when no instance is present.
+func TestBuildScanTarget_NameFallsBackToIPPort(t *testing.T) {
+	comp := buildScanTarget(finding{"IP Address, Port, Instance": "10.0.10.204, 1433"})
+	require.NotNil(t, comp)
+	assert.Equal(t, "10.0.10.204:1433", comp.Name)
+	assert.Equal(t, hdf.Database, comp.Type)
+}
+
+// Name falls back to IP alone when there is neither instance nor port.
+func TestBuildScanTarget_NameFallsBackToIP(t *testing.T) {
+	comp := buildScanTarget(finding{"IP Address, Port, Instance": "10.0.10.204"})
+	require.NotNil(t, comp)
+	assert.Equal(t, "10.0.10.204", comp.Name)
+	assert.Nil(t, comp.Port)
+}
+
+// Name falls back to the raw Asset label when the identity cell is empty.
+func TestBuildScanTarget_NameFallsBackToAsset(t *testing.T) {
+	comp := buildScanTarget(finding{"Asset": "CONDS181"})
+	require.NotNil(t, comp)
+	assert.Equal(t, "CONDS181", comp.Name)
+	assert.Nil(t, comp.IPAddress)
+	require.NotNil(t, comp.Hostname)
+	assert.Equal(t, "CONDS181", *comp.Hostname)
+}
+
+// A non-numeric port is dropped rather than emitted as a bogus value.
+func TestBuildScanTarget_NonNumericPortDropped(t *testing.T) {
+	comp := buildScanTarget(finding{"IP Address, Port, Instance": "10.0.10.204, abc, INST"})
+	require.NotNil(t, comp)
+	assert.Equal(t, "INST", comp.Name)
+	assert.Nil(t, comp.Port)
+}
+
+// Absent branch: no identity columns at all -> no component (NOT-IN-SOURCE).
+func TestBuildScanTarget_AbsentReturnsNil(t *testing.T) {
+	assert.Nil(t, buildScanTarget(finding{}))
+	assert.Nil(t, buildScanTarget(finding{"Check": "x"}))
 }
 
 // ---- Findings Detail fixture ----
@@ -479,6 +599,59 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "dbprotect-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertDbprotectToHDF(input, "1.0.0")
 	})
+}
+
+// ---- Top-level timestamp (source-derived, value-pinned) ----
+
+// The snapshot harness masks the top-level timestamp, so the golden does not
+// verify its value. Pin the exact source-derived value here: the Findings Detail
+// report carries a "Start Date" column, which becomes the top-level timestamp.
+func TestConvertDbprotect_FindingsDetail_TimestampFromStartDate(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp, "timestamp must be populated from Start Date")
+	assert.Equal(t, "2021-02-18T15:55:00Z", result.Timestamp.UTC().Format(time.RFC3339))
+}
+
+// Fallback branch: the Check Results report has no "Start Date" column, so the
+// top-level timestamp falls back to the per-finding "Date" column.
+func TestConvertDbprotect_CheckResults_TimestampFallsBackToDate(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp, "timestamp must fall back to the Date column")
+	assert.Equal(t, "2021-02-18T15:57:00Z", result.Timestamp.UTC().Format(time.RFC3339))
+}
+
+// Determinism: converting the same input twice yields the identical top-level
+// timestamp (source-derived, never now()).
+func TestConvertDbprotect_TimestampDeterministic(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	first, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+	second, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, first.Timestamp)
+	require.NotNil(t, second.Timestamp)
+	assert.Equal(t, first.Timestamp.UTC(), second.Timestamp.UTC())
+}
+
+// scanTimestamp derivation, exercised directly to cover every branch.
+func TestScanTimestamp(t *testing.T) {
+	// Start Date preferred when present.
+	assert.Equal(t, "2021-02-18T15:55:00Z",
+		scanTimestamp(finding{"Start Date": "2021-02-18 15:55", "Date": "Feb 18 2021 15:57"}).UTC().Format(time.RFC3339))
+
+	// Falls back to Date when Start Date is absent.
+	assert.Equal(t, "2021-02-18T15:57:00Z",
+		scanTimestamp(finding{"Date": "Feb 18 2021 15:57"}).UTC().Format(time.RFC3339))
+
+	// Zero time when neither is parseable, so the caller omits the timestamp.
+	assert.True(t, scanTimestamp(finding{}).IsZero())
 }
 
 func TestConvertDbprotect_VerificationMethod(t *testing.T) {

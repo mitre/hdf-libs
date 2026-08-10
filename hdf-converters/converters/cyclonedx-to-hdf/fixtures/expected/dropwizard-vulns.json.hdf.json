@@ -35,6 +35,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-5mg8-w23w-74h3 (GITHUB)"
         },
         {
@@ -67,6 +72,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-7g45-4rm6-3mm3 (GITHUB)"
         },
         {
@@ -97,6 +107,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-5p34-5m6p-p58g (GITHUB)"
         },
         {
@@ -127,6 +142,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-27xj-rqx5-2255 (GITHUB)"
         },
         {
@@ -157,6 +177,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-58pp-9c76-5625 (GITHUB)"
         },
         {
@@ -187,6 +212,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-v3xw-c963-f5hc (GITHUB)"
         },
         {
@@ -217,6 +247,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-h4rc-386g-6m85 (GITHUB)"
         },
         {
@@ -247,6 +282,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-9vvp-fxw6-jcxr (GITHUB)"
         },
         {
@@ -277,6 +317,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-rf6r-2c4q-2vwg (GITHUB)"
         },
         {
@@ -307,6 +352,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-758m-v56v-grj4 (GITHUB)"
         },
         {
@@ -337,6 +387,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-95cm-88f5-f2c7 (GITHUB)"
         },
         {
@@ -367,6 +422,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-c2q3-4qrh-fm48 (GITHUB)"
         },
         {
@@ -397,6 +457,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-mc6h-4qgp-37qh (GITHUB)"
         },
         {
@@ -427,6 +492,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-j823-4qch-3rgm (GITHUB)"
         },
         {
@@ -457,6 +527,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-c265-37vj-cwcc (GITHUB)"
         },
         {
@@ -487,6 +562,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-4w82-r329-3q67 (GITHUB)"
         },
         {
@@ -517,6 +597,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-rpr3-cw39-3pxh (GITHUB)"
         },
         {
@@ -547,6 +632,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-fmmc-742q-jg75 (GITHUB)"
         },
         {
@@ -577,6 +667,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-gjmw-vf9h-g25v (GITHUB)"
         },
         {
@@ -607,6 +702,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-mx7p-6679-8g3q (GITHUB)"
         },
         {
@@ -637,6 +737,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-q93h-jc49-78gg (GITHUB)"
         },
         {
@@ -667,6 +772,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-p43x-xfjf-5jhr (GITHUB)"
         },
         {
@@ -698,6 +808,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-h3cw-g4mq-c5x2 (GITHUB)"
         },
         {
@@ -728,6 +843,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-qjw2-hr98-qgfh (GITHUB)"
         },
         {
@@ -758,6 +878,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-8w26-6f25-cm9x (GITHUB)"
         },
         {
@@ -788,6 +913,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-m6x4-97wx-4q27 (GITHUB)"
         },
         {
@@ -818,6 +948,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-v585-23hc-c647 (GITHUB)"
         },
         {
@@ -848,6 +983,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-r695-7vr9-jgc2 (GITHUB)"
         },
         {
@@ -878,6 +1018,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-vfqx-33qm-g869 (GITHUB)"
         },
         {
@@ -908,6 +1053,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-f9xh-2qgp-cq57 (GITHUB)"
         },
         {
@@ -938,6 +1088,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-cvm9-fjm9-3572 (GITHUB)"
         },
         {
@@ -968,6 +1123,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-9gph-22xh-8x98 (GITHUB)"
         },
         {
@@ -998,6 +1158,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-89qr-369f-5m5x (GITHUB)"
         },
         {
@@ -1028,6 +1193,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-8c4j-34r4-xr8g (GITHUB)"
         },
         {
@@ -1058,6 +1228,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-9m6f-7xcq-8vf8 (GITHUB)"
         },
         {
@@ -1088,6 +1263,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-5r5r-6hpj-8gg9 (GITHUB)"
         },
         {
@@ -1118,6 +1298,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-wh8g-3j2c-rqj5 (GITHUB)"
         },
         {
@@ -1149,6 +1334,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-r3gr-cxrf-hg25 (GITHUB)"
         },
         {
@@ -1180,6 +1370,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-jjjh-jjxp-wpff (GITHUB)"
         },
         {
@@ -1210,6 +1405,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-5949-rw7g-wx7w (GITHUB)"
         },
         {
@@ -1240,6 +1440,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-57j2-w4cx-62h2 (GITHUB)"
         },
         {
@@ -1270,6 +1475,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-288c-cq4h-88gq (GITHUB)"
         },
         {
@@ -1300,6 +1510,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-gww7-p5w4-wrfv (GITHUB)"
         },
         {
@@ -1331,6 +1546,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-rgv9-q543-rqg4 (GITHUB)"
         },
         {
@@ -1361,6 +1581,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-fqwf-pjwf-7vqv (GITHUB)"
         },
         {
@@ -1392,6 +1617,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-8jpx-m2wh-2v34 (GITHUB)"
         },
         {
@@ -1423,6 +1653,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-3mcp-9wr4-cjqf (GITHUB)"
         },
         {
@@ -1454,6 +1689,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-rvwf-54qp-4r6v (GITHUB)"
         },
         {
@@ -1485,6 +1725,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-9w3m-gqgf-c4p9 (GITHUB)"
         },
         {
@@ -1516,6 +1761,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-w37g-rhq8-7m4j (GITHUB)"
         },
         {
@@ -1547,6 +1797,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-c4r9-r8fh-9vj2 (GITHUB)"
         },
         {
@@ -1578,6 +1833,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-hhhw-99gj-p3c3 (GITHUB)"
         },
         {
@@ -1609,6 +1869,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-98wm-3w3q-mw94 (GITHUB)"
         },
         {
@@ -1640,6 +1905,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-3mc7-4q67-w48m (GITHUB)"
         },
         {
@@ -1671,6 +1941,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-mjmj-j48q-9wg2 (GITHUB)"
         },
         {
@@ -1701,6 +1976,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-668q-qrv7-99fm (GITHUB)"
         },
         {
@@ -1731,6 +2011,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-vmq6-5m68-f53m (GITHUB)"
         },
         {
@@ -1761,6 +2046,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-vmq6-5m68-f53m (GITHUB)"
         },
         {
@@ -1791,6 +2081,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-m394-8rww-3jr7 (GITHUB)"
         },
         {
@@ -1821,6 +2116,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-m6cp-vxjx-65j6 (GITHUB)"
         },
         {
@@ -1853,6 +2153,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-26vr-8j45-3r4w (GITHUB)"
         },
         {
@@ -1883,6 +2188,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-p26g-97m4-6q7c (GITHUB)"
         },
         {
@@ -1914,6 +2224,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-qw69-rqj8-6qw8 (GITHUB)"
         },
         {
@@ -1944,6 +2259,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-86wm-rrjm-8wh8 (GITHUB)"
         },
         {
@@ -1974,6 +2294,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-cj7v-27pg-wf7q (GITHUB)"
         },
         {
@@ -2005,6 +2330,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-hmr7-m48g-48f6 (GITHUB)"
         },
         {
@@ -2038,6 +2368,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-g3wg-6mcf-8jj6 (GITHUB)"
         },
         {
@@ -2068,6 +2403,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-58qw-p7qm-5rvh (GITHUB)"
         },
         {
@@ -2098,6 +2438,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-gwcr-j4wh-j3cq (GITHUB)"
         },
         {
@@ -2129,6 +2474,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-3gh6-v5v9-6v9j (GITHUB)"
         },
         {
@@ -2162,6 +2512,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-269g-pwp5-87pp (GITHUB)"
         },
         {
@@ -2248,6 +2603,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-j8jw-g6fq-mp7h (GITHUB)"
         },
         {
@@ -2278,6 +2638,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-8grg-q944-cch5 (GITHUB)"
         },
         {
@@ -2308,6 +2673,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-hwj3-m3p6-hj38 (GITHUB)"
         },
         {
@@ -2338,6 +2708,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-7r82-7xv7-xcpj (GITHUB)"
         },
         {
@@ -2368,6 +2743,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-jvfv-hrrc-6q72 (GITHUB)"
         },
         {
@@ -2399,6 +2779,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-wgmr-mf83-7x4j (GITHUB)"
         },
         {
@@ -2429,6 +2814,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-qppj-fm5r-hxr3 (GITHUB)"
         },
         {
@@ -2459,6 +2849,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-rggv-cv7r-mw98 (GITHUB)"
         },
         {
@@ -2489,6 +2884,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-qppj-fm5r-hxr3 (GITHUB)"
         },
         {
@@ -2519,6 +2919,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-wgh7-54f2-x98r (GITHUB)"
         },
         {
@@ -2550,6 +2955,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-w4g2-9hj6-5472 (GITHUB)"
         },
         {
@@ -2580,6 +2990,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-mm8h-8587-p46h (GITHUB)"
         },
         {
@@ -2610,6 +3025,11 @@
             ]
           },
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-h376-j262-vhq6 (GITHUB)"
         },
         {
@@ -2641,6 +3061,11 @@
               "RA-5"
             ]
           },
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
           "title": "GHSA-45hx-wfhj-473x (GITHUB)"
         }
       ],

@@ -3,6 +3,7 @@ package burpsuite
 import (
 	"encoding/xml"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -73,6 +74,35 @@ func parseCWEIDs(html string) []string {
 	return result
 }
 
+// --- Reference parsing ---
+
+var hrefRE = regexp.MustCompile(`(?i)href\s*=\s*["']([^"']+)["']`)
+
+// extractReferenceURLs pulls external link URLs from the BurpSuite references
+// field, which is typically an HTML blob of <a href="URL"> anchors (often CDATA).
+// It collects href targets; if none are present it falls back to whitespace-split
+// plain-text tokens. Only absolute URIs (containing a "://" scheme separator) are
+// returned. Returns nil when the field carries no usable URI.
+func extractReferenceURLs(references string) []string {
+	if references == "" {
+		return nil
+	}
+	var urls []string
+	for _, m := range hrefRE.FindAllStringSubmatch(references, -1) {
+		if u := strings.TrimSpace(m[1]); strings.Contains(u, "://") {
+			urls = append(urls, u)
+		}
+	}
+	if len(urls) == 0 {
+		for _, tok := range strings.Fields(hdfutil.StripHTML(references)) {
+			if strings.Contains(tok, "://") {
+				urls = append(urls, tok)
+			}
+		}
+	}
+	return urls
+}
+
 // --- Format code desc ---
 
 // formatCodeDesc builds a formatted code description string from issue fields,
@@ -91,6 +121,25 @@ func formatCodeDesc(hostIP, hostURL, location, issueDetail, confidence string) s
 	parts = append(parts, fmt.Sprintf("confidence: %s", confidence))
 
 	return strings.Join(parts, "\n") + "\n"
+}
+
+// --- Source location ---
+
+// buildSourceLocation builds the structured requirement locus from a BurpSuite
+// issue's host URL and URL path. BurpSuite is a DAST scanner: the locus is a URL
+// (no line number applies), so only Ref is emitted. When the host URL is present
+// it is prefixed onto the path to form a full URL; otherwise the path stands
+// alone. Returns nil when the issue carries no path.
+func buildSourceLocation(hostURL, path string) *hdf.SourceLocation {
+	p := strings.TrimSpace(path)
+	if p == "" {
+		return nil
+	}
+	ref := p
+	if h := strings.TrimSpace(hostURL); h != "" {
+		ref = h + p
+	}
+	return &hdf.SourceLocation{Ref: &ref}
 }
 
 // --- Timestamp parsing ---
@@ -267,6 +316,16 @@ func buildRequirement(issueType string, issues []BurpIssue, exportTime string) h
 		}
 	}
 
+	// Build external reference links from the references HTML blob
+	var hdfRefs []hdf.Reference
+	if refURLs := extractReferenceURLs(rep.References); len(refURLs) > 0 {
+		hdfRefs = make([]hdf.Reference, len(refURLs))
+		for i, u := range refURLs {
+			urlCopy := u
+			hdfRefs[i] = hdf.Reference{URL: &urlCopy}
+		}
+	}
+
 	impact := getImpact(rep.Severity)
 
 	return hdf.EvaluatedRequirement{
@@ -276,6 +335,8 @@ func buildRequirement(issueType string, issues []BurpIssue, exportTime string) h
 		Tags:               tags,
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		Descriptions:       descriptions,
+		Refs:               hdfRefs,
+		SourceLocation:     buildSourceLocation(rep.Host.Text, rep.Path),
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}

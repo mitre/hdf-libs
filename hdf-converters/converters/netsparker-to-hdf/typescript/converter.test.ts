@@ -49,6 +49,35 @@ describe('timestamp parse fallback', () => {
   });
 });
 
+describe('top-level timestamp from `generated` attribute', () => {
+  it('pins the top-level timestamp to the fixture `generated` value', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    // generated="03/07/2023 03:15 PM" parsed as UTC → 2023-03-07T15:15:00Z.
+    // The shared snapshot masks this value, so pin it explicitly here.
+    expect(hdf.timestamp as unknown as string).toBe('2023-03-07T15:15:00Z');
+  });
+
+  it('falls back to a valid timestamp when `generated` is absent', async () => {
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-generated</LookupId>
+			<name>No Generated Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    expect(hdf.timestamp).toBeDefined();
+    expect(Number.isNaN(new Date(hdf.timestamp as unknown as string).getTime())).toBe(false);
+  });
+});
+
 describe('Netsparker to HDF converter', () => {
   // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
   // Golden parity proves Go and TS agree, not that either is correct.
@@ -188,6 +217,36 @@ describe('Netsparker to HDF converter', () => {
     expect(req?.tags?.cci).toBeDefined();
   });
 
+  // ---- Classification tags (capec / wasc / iso27001 / pci32) ----
+
+  it('maps classification fields to tags with the source values', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+
+    // Vuln 1: capec=217, wasc=4, iso27001=A.14.1.3, pci32=6.5.4 (all present).
+    const v1 = findRequirement(hdf, 'e8b418ae-a532-4b43-5d9b-af9b04bbbca3');
+    expect(v1?.tags?.capec).toBe('217');
+    expect(v1?.tags?.wasc).toBe('4');
+    expect(v1?.tags?.iso27001).toBe('A.14.1.3');
+    expect(v1?.tags?.pci32).toBe('6.5.4');
+    // hipaa and owasppc are empty in every fixture vuln → never tagged.
+    expect(v1?.tags?.hipaa).toBeUndefined();
+    expect(v1?.tags?.owasppc).toBeUndefined();
+
+    // Vuln 2: wasc=15, iso27001=A.14.1.2; capec and pci32 empty → omitted.
+    const v2 = findRequirement(hdf, '9c3a51bf-6c1f-47c9-4646-afb704bb8fb0');
+    expect(v2?.tags?.wasc).toBe('15');
+    expect(v2?.tags?.iso27001).toBe('A.14.1.2');
+    expect(v2?.tags?.capec).toBeUndefined();
+    expect(v2?.tags?.pci32).toBeUndefined();
+
+    // Vuln 3: capec=103, iso27001=A.14.2.5; wasc empty → omitted.
+    const v3 = findRequirement(hdf, '8d8e6052-221d-41c4-8f1e-af9704473901');
+    expect(v3?.tags?.capec).toBe('103');
+    expect(v3?.tags?.iso27001).toBe('A.14.2.5');
+    expect(v3?.tags?.wasc).toBeUndefined();
+  });
+
   // ---- Descriptions ----
 
   it('should have default description', async () => {
@@ -208,6 +267,54 @@ describe('Netsparker to HDF converter', () => {
     const fix = findDescription(req!.descriptions!, 'fix');
     expect(fix).toBeDefined();
     expect(fix!.data.length).toBeGreaterThan(0);
+  });
+
+  // ---- External references → refs[] ----
+
+  it('maps <external-references> anchor links to refs[]', async () => {
+    const input = loadFixture('input/sample-netsparker-invicti.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'e8b418ae-a532-4b43-5d9b-af9b04bbbca3');
+    expect(req?.refs).toBeDefined();
+    expect(req!.refs).toHaveLength(5);
+    expect(req!.refs![0]!.url).toBe('https://wiki.owasp.org/index.php/Insecure_Configuration_Management');
+    expect(req!.refs![4]!.url).toBe('https://syslink.pl/cipherlist/');
+  });
+
+  it('omits refs[] when the vuln carries no external-references', async () => {
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target><url>https://example.com/</url></target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-refs</LookupId>
+			<name>No Refs Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'no-refs');
+    expect(req?.refs).toBeUndefined();
+  });
+
+  it('skips non-absolute hrefs (relative/fragment/blank) in external-references', async () => {
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target><url>https://example.com/</url></target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>mixed-refs</LookupId>
+			<name>Mixed Refs Vuln</name>
+			<severity>Low</severity>
+			<external-references><![CDATA[<a href="https://abs.example/x">abs</a><a href="/relative">rel</a><a href="#frag">f</a><a href="   ">blank</a>]]></external-references>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    const req = findRequirement(hdf, 'mixed-refs');
+    expect(req?.refs).toHaveLength(1);
+    expect(req!.refs![0]!.url).toBe('https://abs.example/x');
   });
 
   // ---- All results are Failed ----

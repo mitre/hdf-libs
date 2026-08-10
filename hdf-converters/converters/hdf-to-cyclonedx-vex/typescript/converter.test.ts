@@ -501,6 +501,130 @@ describe('convertHdfToCyclonedxVex — cvss ratings', () => {
   });
 });
 
+describe('convertHdfToCyclonedxVex — authors from override appliedBy', () => {
+  it('surfaces override-level appliedBy into metadata.authors when doc-level is absent', async () => {
+    const out = await convertHdfToCyclonedxVex(
+      loadInput('case1-not_affected-amendments.json'),
+      TEST_VERSION,
+    );
+    const bom = JSON.parse(out);
+    expect(bom.metadata.authors).toEqual([{ name: 'cyclonedx-vex-import' }]);
+  });
+
+  it('emits distinct override authors in order (email vs name)', async () => {
+    const a: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-0001',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Email, identifier: 'a@example.com' },
+          reason: 'one',
+        } as never,
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-0002',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team-b' },
+          reason: 'two',
+        } as never,
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-0003',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Email, identifier: 'a@example.com' },
+          reason: 'dup',
+        } as never,
+      ],
+    } as never;
+    const bom = JSON.parse(await convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION));
+    expect(bom.metadata.authors).toEqual([{ email: 'a@example.com' }, { name: 'team-b' }]);
+  });
+});
+
+describe('convertHdfToCyclonedxVex — externalReferences to advisories', () => {
+  it('maps href-bearing externalReferences to advisories and skips id-only refs', async () => {
+    const a: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2021-44228',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason: 'not affected',
+          externalReferences: [
+            {
+              sourceName: 'advisory',
+              href: 'https://logging.apache.org/security.html',
+              description: 'Apache Log4j Security Advisory',
+              kind: 'advisory',
+            },
+            { sourceName: 'cve', href: 'https://nvd.nist.gov/vuln/detail/CVE-2021-44228' },
+            { sourceName: 'cve', externalId: 'CVE-2021-44228' },
+          ],
+        } as never,
+      ],
+    } as never;
+    const bom = JSON.parse(await convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION));
+    expect(bom.vulnerabilities[0].advisories).toEqual([
+      { title: 'Apache Log4j Security Advisory', url: 'https://logging.apache.org/security.html' },
+      { url: 'https://nvd.nist.gov/vuln/detail/CVE-2021-44228' },
+    ]);
+  });
+});
+
+describe('convertHdfToCyclonedxVex — impact override to rating', () => {
+  it('maps a bare riskAdjustment impact override to an other-method rating', async () => {
+    const a: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.RiskAdjustment,
+          requirementId: 'CVE-2026-4242',
+          status: ResultStatus.Failed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason: 'downgraded impact',
+          impact: { value: 0.5 },
+        } as never,
+      ],
+    } as never;
+    const bom = JSON.parse(await convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION));
+    expect(bom.vulnerabilities[0].ratings).toEqual([
+      { score: 5, severity: 'medium', method: 'other' },
+    ]);
+  });
+
+  it('prefers the cvss block over impact when both are present', async () => {
+    const a = {
+      overrides: [
+        {
+          type: 'riskAdjustment',
+          requirementId: 'CVE-2026-4243',
+          status: 'failed',
+          appliedAt: '2026-01-01T00:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
+          appliedBy: { type: 'simple', identifier: 'team' },
+          reason: 'r',
+          impact: { value: 0.5 },
+          cvss: { version: '3.1', baseScore: 9.8, baseSeverity: 'critical' },
+        },
+      ],
+    };
+    const bom = JSON.parse(await convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION));
+    expect(bom.vulnerabilities[0].ratings).toHaveLength(1);
+    expect(bom.vulnerabilities[0].ratings[0].method).toBe('CVSSv31');
+  });
+});
+
 // Byte-for-byte equality with the SAME golden files the Go TestGoldenParity
 // asserts against — this is what keeps the TS and Go exporters from drifting.
 describe('convertHdfToCyclonedxVex — golden parity', () => {

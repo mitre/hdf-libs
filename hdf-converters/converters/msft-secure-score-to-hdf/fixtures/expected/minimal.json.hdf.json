@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "The setting is not compliant.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T17:12:14Z",
               "status": "failed"
             }
           ],
@@ -22,7 +22,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false
           },
           "title": "Apps:spo_idle_session_timeout",
           "verificationMethod": "automated"
@@ -45,18 +46,33 @@
           "results": [
             {
               "codeDesc": "Feature in place: false.",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T04:34:13Z",
               "status": "failed"
             }
           ],
           "id": "Apps:McasFirewallLogUpload",
           "impact": 0.1,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Moderate",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": false,
+            "rank": 82,
+            "service": "MCAS",
+            "threats": [
+              "Data Exfiltration"
+            ],
+            "tier": "Advanced",
+            "user_impact": "Low"
           },
+          "refs": [
+            {
+              "url": "https://security.microsoft.com/cloudapps/settings?tabid=discovery-autoUpload"
+            }
+          ],
           "title": "Deploy a log collector to discover shadow IT activity",
           "verificationMethod": "automated"
         },
@@ -78,18 +94,30 @@
           "results": [
             {
               "codeDesc": "No implementation status provided",
-              "startTime": "2024-01-01T00:00:00Z",
+              "startTime": "2024-01-01T13:58:47Z",
               "status": "passed"
             }
           ],
           "id": "Data:dlp_datalossprevention",
           "impact": 0.5,
           "tags": {
+            "action_type": "Config",
+            "implementation_cost": "Medium",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "on": true,
+            "rank": 128,
+            "service": "MIP",
+            "tier": "Core",
+            "user_impact": "High"
           },
+          "refs": [
+            {
+              "url": "https://compliance.microsoft.com/datalossprevention?tid=12345678-1234-1234-1234-1234567890abcd"
+            }
+          ],
           "title": "Ensure DLP policies are enabled",
           "verificationMethod": "automated"
         }
@@ -117,7 +145,7 @@
     "name": "msft-secure-score-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:30:23.258483Z",
+  "timestamp": "2024-01-01T00:00:00Z",
   "tool": {
     "name": "Microsoft Secure Score"
   }

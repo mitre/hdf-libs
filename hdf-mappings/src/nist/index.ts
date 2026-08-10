@@ -3,9 +3,17 @@
  */
 
 import type { NISTDescriptions } from './types.js';
-import rawNistData from '../data/nist-descriptions.json';
+import rawNistDataRev4 from '../data/nist-descriptions.json';
+import rawNistDataRev5 from '../data/nist-descriptions-rev5.json';
 
-const nistData = rawNistData as NISTDescriptions;
+// Descriptions are revision-specific: Rev 5 renamed titles ("... POLICY AND
+// PROCEDURES" -> "Policy and Procedures"), added the SR and PT families, and
+// withdrew Rev 4 controls (AU-15, IR-10, SA-12, ...). Each revision has its own
+// dataset; lookups select by the (optionally overridden) global revision.
+const nistDataByRev: Record<number, NISTDescriptions> = {
+  4: rawNistDataRev4 as NISTDescriptions,
+  5: rawNistDataRev5 as NISTDescriptions,
+};
 
 /**
  * NIST SP 800-53 revision selection.
@@ -19,6 +27,14 @@ const nistData = rawNistData as NISTDescriptions;
 
 /** The revision mappings emit when nothing overrides it. */
 export const DEFAULT_NIST_REVISION = 5;
+
+/**
+ * The description dataset for a revision, falling back to the default revision's
+ * data (then an empty set) for an unsupported revision.
+ */
+function descriptionsFor(rev: number): NISTDescriptions {
+  return nistDataByRev[rev] ?? nistDataByRev[DEFAULT_NIST_REVISION] ?? {};
+}
 
 /** Revisions every NIST-emitting mapping table has rows for. */
 export const SUPPORTED_NIST_REVISIONS: readonly number[] = [4, 5];
@@ -65,29 +81,37 @@ export function setNistStrict(strict: boolean): void {
 }
 
 /**
- * Get the description for a NIST control ID.
+ * Get the description for a NIST control ID at the selected revision.
  *
- * @param nistId - The NIST control ID (e.g., 'AC-01', 'AC-01 a', 'AC-01 a 01')
- * @returns The NIST control description, or undefined if not found
+ * @param nistId - The NIST control ID (e.g., 'AC-01', 'AC-01 a', 'AC-02 01')
+ * @param rev - NIST revision to look up; defaults to the module-global revision
+ * @returns The control's Rev-specific description, or undefined if not found at
+ *   that revision (e.g. a Rev 5-only SR/PT control at Rev 4, or a Rev 4 control
+ *   withdrawn in Rev 5)
  *
  * @example
  * ```typescript
- * const desc = getNISTDescription('AC-01');
- * // Returns: "ACCESS CONTROL POLICY AND PROCEDURES"
+ * getNISTDescription('AC-01');    // Rev 5 default -> "Policy and Procedures"
+ * getNISTDescription('AC-01', 4); // -> "ACCESS CONTROL POLICY AND PROCEDURES"
  * ```
  */
-export function getNISTDescription(nistId: string): string | undefined {
+export function getNISTDescription(
+  nistId: string,
+  rev: number = getCurrentNistRevision()
+): string | undefined {
   if (!nistId || typeof nistId !== 'string') {
     return undefined;
   }
 
-  return nistData[nistId];
+  return descriptionsFor(rev)[nistId];
 }
 
 /**
- * Get all NIST control IDs available in the database.
+ * Get all NIST control IDs present at the selected revision.
  *
- * @returns Array of all NIST control IDs
+ * @param rev - NIST revision to enumerate; defaults to the module-global revision
+ * @returns Array of NIST control IDs for that revision (Rev 5 includes the
+ *   SR/PT families; Rev 4 includes controls withdrawn in Rev 5)
  *
  * @example
  * ```typescript
@@ -95,15 +119,17 @@ export function getNISTDescription(nistId: string): string | undefined {
  * // Returns: ['AC-01', 'AC-01 a', 'AC-02', ...]
  * ```
  */
-export function getAllNISTIds(): string[] {
-  return Object.keys(nistData);
+export function getAllNISTIds(rev: number = getCurrentNistRevision()): string[] {
+  return Object.keys(descriptionsFor(rev));
 }
 
 /**
- * Check if a NIST control ID exists in the database.
+ * Check if a NIST control ID exists at the selected revision.
  *
  * @param nistId - The NIST control ID to check
- * @returns true if the NIST control exists, false otherwise
+ * @param rev - NIST revision to check against; defaults to the module-global revision
+ * @returns true if the control exists at that revision (e.g. an SR/PT control is
+ *   present at Rev 5 but not Rev 4)
  *
  * @example
  * ```typescript
@@ -112,19 +138,22 @@ export function getAllNISTIds(): string[] {
  * }
  * ```
  */
-export function nistExists(nistId: string): boolean {
+export function nistExists(nistId: string, rev: number = getCurrentNistRevision()): boolean {
   if (!nistId || typeof nistId !== 'string') {
     return false;
   }
 
-  return nistId in nistData;
+  return nistId in descriptionsFor(rev);
 }
 
 /**
- * Extract the NIST family from a NIST control ID.
+ * Extract the NIST family from a NIST control ID, if that family exists at the
+ * selected revision.
  *
  * @param nistId - The NIST control ID (e.g., 'AC-01', 'AC-01 a')
- * @returns The NIST family code (e.g., 'AC'), or undefined if invalid
+ * @param rev - NIST revision to validate against; defaults to the module-global revision
+ * @returns The NIST family code (e.g., 'AC'), or undefined if invalid or the
+ *   family is absent at that revision (the SR/PT families are Rev 5-only)
  *
  * @example
  * ```typescript
@@ -135,7 +164,10 @@ export function nistExists(nistId: string): boolean {
  * // Returns: 'AC'
  * ```
  */
-export function getNISTFamily(nistId: string): string | undefined {
+export function getNISTFamily(
+  nistId: string,
+  rev: number = getCurrentNistRevision()
+): string | undefined {
   if (!nistId || typeof nistId !== 'string') {
     return undefined;
   }
@@ -148,10 +180,10 @@ export function getNISTFamily(nistId: string): string | undefined {
 
   const family = match[1];
 
-  // Validate that this family exists in our database by checking
-  // if any controls start with this family
+  // Validate that this family exists at the selected revision by checking
+  // if any controls start with this family (the SR/PT families are Rev 5-only).
   const familyPrefix = `${family}-`;
-  const hasFamily = Object.keys(nistData).some((key) => key.startsWith(familyPrefix));
+  const hasFamily = Object.keys(descriptionsFor(rev)).some((key) => key.startsWith(familyPrefix));
 
   return hasFamily ? family : undefined;
 }
@@ -177,6 +209,15 @@ export const DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS: string[] = ['CM-8'];
 
 /** Configuration-compliance checks with no specific mapping (CM-6: Configuration Settings). */
 export const DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS: string[] = ['CM-6'];
+
+// Rev 4 <-> Rev 5 crosswalk
+export {
+  translateNistControl,
+  translateNistControls,
+  nistRosterSize,
+  nistControlsAtRevision,
+} from './crosswalk.js';
+export type { NistControlTranslation, NistCrosswalkRelation } from './crosswalk.js';
 
 // Re-export types
 export type { NISTDescriptions } from './types.js';

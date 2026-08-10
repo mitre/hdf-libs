@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"strings"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -78,6 +79,18 @@ func buildCSVRows(hdfData *hdf.HDFResults) [][]string {
 		"Verification Method",
 		"Applicability",
 		"Result Message",
+		"Effective Status",
+		"Effective Impact",
+		"Disposition",
+		"Override Reason",
+		"Applied By",
+		"Expires At",
+		"CVSS",
+		"CWE",
+		"EPSS",
+		"KEV",
+		"Target FQDN",
+		"Target IP",
 	}
 	rows = append(rows, header)
 
@@ -179,6 +192,54 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 		applicability = string(*requirement.Applicability)
 	}
 
+	// Post-override posture: effective columns fall back to the raw value when no
+	// override governs, so the column is always populated and sortable.
+	effStatus := status
+	if requirement.EffectiveStatus != nil {
+		effStatus = string(*requirement.EffectiveStatus)
+	}
+	effImpact := requirement.Impact
+	if requirement.EffectiveImpact != nil {
+		effImpact = *requirement.EffectiveImpact
+	}
+	disposition := ""
+	if requirement.Disposition != nil {
+		disposition = string(*requirement.Disposition)
+	}
+
+	// statusOverrides[] provenance — emit ALL overrides joined with "; ".
+	overrideReason := joinOverrides(requirement.StatusOverrides, func(o hdf.StatusOverride) string { return o.Reason })
+	appliedBy := joinOverrides(requirement.StatusOverrides, func(o hdf.StatusOverride) string { return o.AppliedBy.Identifier })
+	expiresAt := joinOverrides(requirement.StatusOverrides, func(o hdf.StatusOverride) string {
+		return o.ExpiresAt.UTC().Format(time.RFC3339Nano)
+	})
+
+	// Vulnerability metadata (CVE-scan HDFs).
+	cvss := cvssScores(requirement.Cvss)
+	cwe := strings.Join(requirement.Cwe, "; ")
+	epss := ""
+	if requirement.Epss != nil {
+		epss = fmt.Sprintf("%.5f", requirement.Epss.Score)
+	}
+	kev := ""
+	if requirement.Kev != nil {
+		if requirement.Kev.InKev {
+			kev = "true"
+		} else {
+			kev = "false"
+		}
+	}
+
+	// Asset identity beyond display name.
+	fqdn := ""
+	if target.FQDN != nil {
+		fqdn = *target.FQDN
+	}
+	ipAddress := ""
+	if target.IPAddress != nil {
+		ipAddress = *target.IPAddress
+	}
+
 	// Build row with sanitization
 	return []string{
 		sanitizeCSV(baseline.Name),
@@ -203,7 +264,46 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 		sanitizeCSV(verificationMethod),
 		sanitizeCSV(applicability),
 		sanitizeCSV(message),
+		sanitizeCSV(effStatus),
+		fmt.Sprintf("%.1f", effImpact),
+		sanitizeCSV(disposition),
+		sanitizeCSV(overrideReason),
+		sanitizeCSV(appliedBy),
+		sanitizeCSV(expiresAt),
+		sanitizeCSV(cvss),
+		sanitizeCSV(cwe),
+		sanitizeCSV(epss),
+		sanitizeCSV(kev),
+		sanitizeCSV(fqdn),
+		sanitizeCSV(ipAddress),
 	}
+}
+
+// joinOverrides applies pick to every status override and joins non-empty
+// results with "; ", matching the NIST/CCI multi-value column convention.
+func joinOverrides(overrides []hdf.StatusOverride, pick func(hdf.StatusOverride) string) string {
+	var out []string
+	for _, o := range overrides {
+		if v := pick(o); v != "" {
+			out = append(out, v)
+		}
+	}
+	return strings.Join(out, "; ")
+}
+
+// cvssScores renders each CVSS entry's score (computed when present, else base)
+// to one decimal, joined with "; " to preserve multi-CVE findings.
+func cvssScores(entries []hdf.Cvss) string {
+	var out []string
+	for _, c := range entries {
+		switch {
+		case c.ComputedScore != nil:
+			out = append(out, fmt.Sprintf("%.1f", *c.ComputedScore))
+		case c.BaseScore != nil:
+			out = append(out, fmt.Sprintf("%.1f", *c.BaseScore))
+		}
+	}
+	return strings.Join(out, "; ")
 }
 
 // descriptionByLabel returns the data of the first description matching a label, or "".

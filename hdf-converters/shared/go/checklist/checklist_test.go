@@ -3,6 +3,7 @@ package checklist
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -228,10 +229,10 @@ func TestRoundTripCKL(t *testing.T) {
 	assert.Equal(t, o.VulnDiscuss, n.VulnDiscuss)
 	assert.Equal(t, o.CheckContent, n.CheckContent)
 	assert.Equal(t, o.FixText, n.FixText)
-	// finding_details and comments occupy separate CKL fields and must stay
-	// separable through HDF: message carries only finding_details, comments
-	// round-trips through tags.
-	assert.Equal(t, o.FindingDetails, n.FindingDetails)
+	// finding_details is composed from every result's status+codeDesc+message on
+	// export, so it now carries the original message plus the synthesized codeDesc;
+	// comments stays separable and round-trips exactly through tags.
+	assert.Contains(t, n.FindingDetails, o.FindingDetails)
 	assert.Equal(t, o.Comments, n.Comments)
 
 	// And serialize back to valid CKL XML that re-parses.
@@ -245,7 +246,7 @@ func TestRoundTripCKL(t *testing.T) {
 	assert.Equal(t, o.VulnDiscuss, rv.VulnDiscuss)
 	assert.Equal(t, o.CheckContent, rv.CheckContent)
 	assert.Equal(t, o.FixText, rv.FixText)
-	assert.Equal(t, o.FindingDetails, rv.FindingDetails)
+	assert.Contains(t, rv.FindingDetails, o.FindingDetails)
 	assert.Equal(t, o.Comments, rv.Comments)
 }
 
@@ -273,8 +274,9 @@ func TestRoundTripCKLB(t *testing.T) {
 	assert.Equal(t, "Discussion text.", v.VulnDiscuss)
 	assert.Equal(t, "Check it.", v.CheckContent)
 	assert.Equal(t, "Fix it.", v.FixText)
-	// finding_details and comments stay in their own fields through HDF.
-	assert.Equal(t, "Out of date.", v.FindingDetails)
+	// finding_details is composed from all results on export (carries codeDesc +
+	// the original message); comments stays in its own field through HDF.
+	assert.Contains(t, v.FindingDetails, "Out of date.")
 	assert.Equal(t, "Reviewer note.", v.Comments)
 	// snake_case status in serialized output
 	assert.Contains(t, string(out), `"status": "open"`)
@@ -496,3 +498,138 @@ func TestSerializeCKLBTitleFallback(t *testing.T) {
 }
 
 func ptr(s string) *string { return &s }
+
+// --- export field-fidelity (a1-a4) -------------------------------------------
+
+// exportVuln runs a single requirement through the HDF->Checklist export path.
+func exportVuln(t *testing.T, req hdf.EvaluatedRequirement) Vuln {
+	t.Helper()
+	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{
+		Name: "b", Requirements: []hdf.EvaluatedRequirement{req},
+	}}}
+	b, err := json.Marshal(results)
+	require.NoError(t, err)
+	cl, err := HDFToChecklist(b)
+	require.NoError(t, err)
+	require.Len(t, cl.Stigs, 1)
+	require.Len(t, cl.Stigs[0].Vulns, 1)
+	return cl.Stigs[0].Vulns[0]
+}
+
+// a1: STATUS reflects effectiveStatus when present, not the raw result status.
+func TestExportStatusUsesEffectiveStatus(t *testing.T) {
+	eff := hdf.NotApplicable
+	v := exportVuln(t, hdf.EvaluatedRequirement{
+		ID:              "V-1",
+		EffectiveStatus: &eff,
+		Results:         []hdf.RequirementResult{{Status: hdf.Failed, CodeDesc: "check"}},
+	})
+	assert.Equal(t, StatusNotApplicable, v.Status, "effectiveStatus notApplicable overrides raw failed")
+
+	// Falls back to the raw result status when effectiveStatus is absent.
+	v = exportVuln(t, hdf.EvaluatedRequirement{
+		ID:      "V-2",
+		Results: []hdf.RequirementResult{{Status: hdf.Failed, CodeDesc: "check"}},
+	})
+	assert.Equal(t, StatusOpen, v.Status)
+}
+
+// a2: statusOverride provenance surfaces into COMMENTS + severity override.
+func TestExportOverrideProvenance(t *testing.T) {
+	applied := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	expires := time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC)
+	impact := 0.4
+	v := exportVuln(t, hdf.EvaluatedRequirement{
+		ID:      "V-1",
+		Impact:  0.7,
+		Results: []hdf.RequirementResult{{Status: hdf.Failed, CodeDesc: "check"}},
+		StatusOverrides: []hdf.StatusOverride{{
+			Type:      hdf.RiskAdjustment,
+			Reason:    "compensating control in place",
+			AppliedBy: hdf.Identity{Identifier: "jdoe"},
+			AppliedAt: applied,
+			ExpiresAt: expires,
+			Impact:    &hdf.ImpactOverride{Value: impact},
+		}},
+	})
+	assert.Equal(t, "Override [riskAdjustment]: compensating control in place "+
+		"(by jdoe, applied 2020-01-01T00:00:00Z, expires 2099-12-31T00:00:00Z)", v.Comments)
+	assert.Equal(t, "medium", v.SeverityOverride, "impact 0.4 -> medium")
+	assert.Equal(t, "compensating control in place", v.SeverityJustification)
+}
+
+// a2: existing comments and override provenance both survive, comments first.
+func TestExportCommentsMergeWithOverride(t *testing.T) {
+	v := exportVuln(t, hdf.EvaluatedRequirement{
+		ID:      "V-1",
+		Tags:    map[string]interface{}{"comments": "reviewer note"},
+		Results: []hdf.RequirementResult{{Status: hdf.Failed, CodeDesc: "check"}},
+		StatusOverrides: []hdf.StatusOverride{{
+			Type: hdf.OverrideTypeWaiver, Reason: "accepted risk",
+		}},
+	})
+	assert.Equal(t, "reviewer note\n\nOverride [waiver]: accepted risk", v.Comments)
+}
+
+// a2: disposition alone (no overrides array) is still surfaced.
+func TestExportDispositionFallback(t *testing.T) {
+	disp := hdf.FalsePositive
+	v := exportVuln(t, hdf.EvaluatedRequirement{
+		ID:          "V-1",
+		Disposition: &disp,
+		Results:     []hdf.RequirementResult{{Status: hdf.Failed, CodeDesc: "check"}},
+	})
+	assert.Equal(t, "Disposition: falsePositive", v.Comments)
+}
+
+// a3: finding_details composes from ALL results' status+codeDesc+message.
+func TestExportFindingDetailsAllResults(t *testing.T) {
+	v := exportVuln(t, hdf.EvaluatedRequirement{
+		ID: "V-1",
+		Results: []hdf.RequirementResult{
+			{Status: hdf.Passed, CodeDesc: "port 22 is closed"},
+			{Status: hdf.Failed, CodeDesc: "port 23 is closed", Message: ptr("telnet still open")},
+		},
+	})
+	assert.Equal(t, "[passed] port 22 is closed\n\n[failed] port 23 is closed\ntelnet still open", v.FindingDetails)
+}
+
+// a4 (ckl): tags.legacy_ids emit as LEGACY_ID STIG_DATA and round-trip.
+func TestExportLegacyIDToCKL(t *testing.T) {
+	cl := &Checklist{Format: "ckl", Stigs: []Stig{{
+		StigID: "S", Vulns: []Vuln{{
+			VulnNum: "V-1", Status: StatusOpen, LegacyIDs: []string{"V-9999", "SV-8888"},
+		}},
+	}}}
+	out, err := SerializeCKL(cl)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, "<VULN_ATTRIBUTE>LEGACY_ID</VULN_ATTRIBUTE>")
+	assert.Contains(t, s, "<ATTRIBUTE_DATA>V-9999</ATTRIBUTE_DATA>")
+	assert.Contains(t, s, "<ATTRIBUTE_DATA>SV-8888</ATTRIBUTE_DATA>")
+
+	reparsed, err := ParseCKL(out)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"V-9999", "SV-8888"}, reparsed.Stigs[0].Vulns[0].LegacyIDs)
+}
+
+// a4 (cklb): severity override emits as overrides.severity and round-trips;
+// absent one, overrides is an empty object.
+func TestExportCklbOverridesObject(t *testing.T) {
+	cl := &Checklist{Format: "cklb", Stigs: []Stig{{Vulns: []Vuln{
+		{VulnNum: "V-1", Status: StatusOpen, SeverityOverride: "low", SeverityJustification: "downgraded"},
+		{VulnNum: "V-2", Status: StatusOpen},
+	}}}}
+	out, err := SerializeCKLB(cl)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `"overrides": {}`, "no override -> empty overrides object")
+	assert.Contains(t, s, `"severity": "low"`)
+	assert.Contains(t, s, `"justification": "downgraded"`)
+
+	reparsed, err := ParseCKLB(out)
+	require.NoError(t, err)
+	rv := reparsed.Stigs[0].Vulns[0]
+	assert.Equal(t, "low", rv.SeverityOverride)
+	assert.Equal(t, "downgraded", rv.SeverityJustification)
+}

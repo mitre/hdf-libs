@@ -189,6 +189,42 @@ describe('Veracode to HDF converter', () => {
     expect((cweControl!.tags!.nist as string[]).length).toBeGreaterThan(0);
   });
 
+  it('should map each CWE standards cross-reference to a discrete tag', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const baseline = output.baselines[0]!;
+
+    // Category 18 (CWE-78) carries five of the six standards catalogs.
+    const cat18 = baseline.requirements.find(r => r.id === '18');
+    expect(cat18).toBeDefined();
+    expect(cat18!.tags!.owasp).toEqual(['1347']);
+    expect(cat18!.tags!.sans).toEqual(['864']);
+    expect(cat18!.tags!.certc).toEqual(['1165']);
+    expect(cat18!.tags!.certcpp).toEqual(['875']);
+    expect(cat18!.tags!.certjava).toEqual(['1134']);
+
+    // owaspmobile is absent from every fixture CWE (NOT-IN-SOURCE): key omitted.
+    expect(cat18!.tags!.owaspmobile).toBeUndefined();
+
+    // Category 7 (CWE-245) carries no standards attributes: none present.
+    const cat7 = baseline.requirements.find(r => r.id === '7');
+    expect(cat7).toBeDefined();
+    for (const key of ['owasp', 'sans', 'certc', 'certcpp', 'certjava', 'owaspmobile']) {
+      expect(cat7!.tags![key]).toBeUndefined();
+    }
+  });
+
+  it('should collapse repeated standards values to distinct entries in appearance order', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const baseline = output.baselines[0]!;
+
+    // Category 21 (CRLF Injection) spans three CWEs with owasp 1347, 1347, 1355.
+    const cat21 = baseline.requirements.find(r => r.id === '21');
+    expect(cat21).toBeDefined();
+    expect(cat21!.tags!.owasp).toEqual(['1347', '1355']);
+  });
+
   it('should have descriptions on CWE controls', async () => {
     const input = loadFixture('veracode.xml');
     const output: HDFResults = JSON.parse(await convert(input));
@@ -359,6 +395,35 @@ describe('veracode structured scoring (CVSS / CWE)', () => {
   });
 });
 
+describe('veracode remediation_status description', () => {
+  it('carries the flaws remediation_status as a requirement-level description', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const cwe = output.baselines[0]!.requirements.find(r => r.id === '18')!;
+    const remStatus = cwe.descriptions!.find(d => d.label === 'remediation_status');
+    expect(remStatus).toBeDefined();
+    expect(remStatus!.data).toBe('New');
+  });
+
+  it('omits the remediation_status description when no flaw carries it', async () => {
+    const xml = `<?xml version="1.0" encoding="ISO-8859-1"?>
+<detailedreport xmlns="https://www.veracode.com/schema/reports/export/1.0" app_name="NoStatus" first_build_submitted_date="2021-12-29 22:16:36 UTC">
+  <severity level="5">
+    <category categoryid="99" categoryname="No Status" pcirelated="false">
+      <cwe cweid="78" cwename="OS Command Injection" pcirelated="false">
+        <staticflaws>
+          <flaw severity="5" categoryname="No Status" count="1" issueid="1" module="app.war" type="exec" description="d" cweid="78" sourcefile="A.java" line="1" sourcefilepath="com/x/"/>
+        </staticflaws>
+      </cwe>
+    </category>
+  </severity>
+</detailedreport>`;
+    const output: HDFResults = JSON.parse(await convert(xml));
+    const req = output.baselines[0]!.requirements.find(r => r.id === '99')!;
+    expect(req.descriptions!.find(d => d.label === 'remediation_status')).toBeUndefined();
+  });
+});
+
 describe('veracode requirement.code (CODE-tab fill)', () => {
   it('sets a synthesized source-context code on static CWE requirements', async () => {
     const input = loadFixture('veracode.xml');
@@ -383,5 +448,25 @@ describe('veracode requirement.code (CODE-tab fill)', () => {
     expect(parsed.cve_id).toBe('CVE-2012-5783');
     expect(parsed.cvss_score).toBe('5.8');
     expect(parsed.components.length).toBeGreaterThan(0);
+  });
+});
+
+describe('veracode requirement.sourceLocation', () => {
+  it('promotes the first static flaw source-file:line into sourceLocation', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const cwe = output.baselines[0]!.requirements.find(r => r.id === '18');
+    expect(cwe!.sourceLocation).toBeDefined();
+    expect(cwe!.sourceLocation!.ref).toBe('ToolsController.java\nToolsController.java');
+    expect(cwe!.sourceLocation!.line).toBe(53);
+  });
+
+  it('emits ref without line on SCA CVE requirements (no source line)', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const cve = output.baselines[0]!.requirements.find(r => r.id === 'CVE-2012-5783');
+    expect(cve!.sourceLocation).toBeDefined();
+    expect(cve!.sourceLocation!.ref).toBeTruthy();
+    expect(cve!.sourceLocation!.line).toBeUndefined();
   });
 });

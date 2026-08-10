@@ -558,6 +558,175 @@ func TestConvertCheckovToHDF_CheckTypeTags(t *testing.T) {
 	assert.Equal(t, []string{"dockerfile"}, byID["CKV_DOCKER_7"].Tags["check_type"])
 }
 
+// ---- bc_check_id tag ----
+
+func TestConvertCheckovToHDF_BcCheckIDTag(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range result.Baselines[0].Requirements {
+		byID[r.ID] = r
+	}
+	require.Contains(t, byID, "CKV_TF_1")
+	require.Contains(t, byID, "CKV_AWS_18")
+	assert.Equal(t, "BC_CROSS_1", byID["CKV_TF_1"].Tags["bc_check_id"],
+		"bc_check_id must carry the Bridgecrew check identifier as a string")
+	assert.Equal(t, "BC_AWS_S3_13", byID["CKV_AWS_18"].Tags["bc_check_id"])
+}
+
+func TestConvertCheckovToHDF_BcCheckIDOmittedWhenAbsent(t *testing.T) {
+	// No bc_check_id key on the check → the tag must be omitted entirely.
+	input := []byte(`{
+		"check_type": "terraform",
+		"results": {
+			"passed_checks": [],
+			"failed_checks": [{
+				"check_id": "CKV_NOBC_1",
+				"check_name": "No bc_check_id",
+				"check_result": {"result": "FAILED"},
+				"severity": null,
+				"file_path": "/main.tf",
+				"file_line_range": [1, 5],
+				"resource": "aws_s3_bucket.test",
+				"guideline": null,
+				"code_block": null,
+				"check_class": "test"
+			}],
+			"skipped_checks": [],
+			"parsing_errors": []
+		},
+		"summary": {"passed": 0, "failed": 1, "skipped": 0, "parsing_errors": 0, "resource_count": 1, "checkov_version": "3.2.524"}
+	}`)
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	_, present := result.Baselines[0].Requirements[0].Tags["bc_check_id"]
+	assert.False(t, present, "bc_check_id tag must be absent when the source field is missing")
+}
+
+func TestConvertCheckovToHDF_BcCheckIDOmittedWhenNull(t *testing.T) {
+	// Explicit null bc_check_id → the tag must be omitted entirely.
+	input := []byte(`{
+		"check_type": "terraform",
+		"results": {
+			"passed_checks": [],
+			"failed_checks": [{
+				"check_id": "CKV_NULLBC_1",
+				"check_name": "Null bc_check_id",
+				"bc_check_id": null,
+				"check_result": {"result": "FAILED"},
+				"severity": null,
+				"file_path": "/main.tf",
+				"file_line_range": [1, 5],
+				"resource": "aws_s3_bucket.test",
+				"guideline": null,
+				"code_block": null,
+				"check_class": "test"
+			}],
+			"skipped_checks": [],
+			"parsing_errors": []
+		},
+		"summary": {"passed": 0, "failed": 1, "skipped": 0, "parsing_errors": 0, "resource_count": 1, "checkov_version": "3.2.524"}
+	}`)
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	_, present := result.Baselines[0].Requirements[0].Tags["bc_check_id"]
+	assert.False(t, present, "bc_check_id tag must be absent when the source field is null")
+}
+
+// ---- SourceLocation ----
+
+func TestConvertCheckovToHDF_SourceLocation(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range result.Baselines[0].Requirements {
+		byID[r.ID] = r
+	}
+	require.Contains(t, byID, "CKV_TF_1")
+	loc := byID["CKV_TF_1"].SourceLocation
+	require.NotNil(t, loc, "requirement must carry structured sourceLocation")
+	require.NotNil(t, loc.Ref)
+	assert.Equal(t, "/main.tf", *loc.Ref, "ref is file_path of the representative check")
+	require.NotNil(t, loc.Line, "line is the START of file_line_range [26,49]")
+	assert.InDelta(t, 26.0, *loc.Line, 0.001)
+
+	// A skipped check anchored elsewhere in the file.
+	require.Contains(t, byID, "CKV_AWS_18")
+	skipLoc := byID["CKV_AWS_18"].SourceLocation
+	require.NotNil(t, skipLoc)
+	require.NotNil(t, skipLoc.Line)
+	assert.InDelta(t, 115.0, *skipLoc.Line, 0.001, "line is START of file_line_range [115,119]")
+}
+
+func TestConvertCheckovToHDF_SourceLocationOmittedWhenNoFilePath(t *testing.T) {
+	// Empty file_path → the whole sourceLocation field must be omitted.
+	input := []byte(`{
+		"check_type": "terraform",
+		"results": {
+			"passed_checks": [],
+			"failed_checks": [{
+				"check_id": "CKV_NOLOC_1",
+				"check_name": "No file_path",
+				"check_result": {"result": "FAILED"},
+				"severity": null,
+				"file_path": "",
+				"file_line_range": [1, 5],
+				"resource": "aws_s3_bucket.test",
+				"guideline": null,
+				"code_block": null,
+				"check_class": "test"
+			}],
+			"skipped_checks": [],
+			"parsing_errors": []
+		},
+		"summary": {"passed": 0, "failed": 1, "skipped": 0, "parsing_errors": 0, "resource_count": 1, "checkov_version": "3.2.524"}
+	}`)
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	assert.Nil(t, result.Baselines[0].Requirements[0].SourceLocation,
+		"sourceLocation must be omitted when file_path is absent")
+}
+
+func TestConvertCheckovToHDF_SourceLocationRefOnlyWhenNoLineRange(t *testing.T) {
+	// file_path present but empty file_line_range → Ref only, Line omitted.
+	input := []byte(`{
+		"check_type": "terraform",
+		"results": {
+			"passed_checks": [],
+			"failed_checks": [{
+				"check_id": "CKV_NORANGE_1",
+				"check_name": "No line range",
+				"check_result": {"result": "FAILED"},
+				"severity": null,
+				"file_path": "/main.tf",
+				"file_line_range": [],
+				"resource": "aws_s3_bucket.test",
+				"guideline": null,
+				"code_block": null,
+				"check_class": "test"
+			}],
+			"skipped_checks": [],
+			"parsing_errors": []
+		},
+		"summary": {"passed": 0, "failed": 1, "skipped": 0, "parsing_errors": 0, "resource_count": 1, "checkov_version": "3.2.524"}
+	}`)
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	loc := result.Baselines[0].Requirements[0].SourceLocation
+	require.NotNil(t, loc)
+	require.NotNil(t, loc.Ref)
+	assert.Equal(t, "/main.tf", *loc.Ref)
+	assert.Nil(t, loc.Line, "line must be omitted when file_line_range is empty")
+}
+
 // ---- Empty checks ----
 
 func TestConvertCheckovToHDF_EmptyChecks(t *testing.T) {

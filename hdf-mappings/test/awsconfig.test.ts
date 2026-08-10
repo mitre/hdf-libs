@@ -180,20 +180,56 @@ describe('AWS Config Mapping Functions', () => {
       expect(awsConfigMappedRevisions('CLOUD_TRAIL_ENABLED', 'cloudtrail-enabled')).toEqual([4, 5]);
     });
 
-    it('returns only Rev 5 for a Rev5-only rule', () => {
-      expect(awsConfigMappedRevisions('API_GW_SSL_ENABLED', 'api-gw-ssl-enabled')).toEqual([5]);
+    it('returns both revisions for natively single-rev rules the crosswalk backfills', () => {
+      expect(awsConfigMappedRevisions('API_GW_SSL_ENABLED', 'api-gw-ssl-enabled')).toEqual([4, 5]);
+      expect(awsConfigMappedRevisions('EMR_KERBEROS_ENABLED', 'emr-kerberos-enabled')).toEqual([
+        4, 5,
+      ]);
     });
 
-    it('returns only Rev 4 for a Rev4-only rule', () => {
-      // emr-kerberos-enabled is in the Config Rev4 docs but neither the Config Rev5
-      // docs nor the Security Hub NIST r5 standard.
+    it('returns only Rev 5 when the whole control set has no Rev 4 equivalent', () => {
+      // secretsmanager-rotation-enabled-check maps solely to AC-3(15), new in
+      // Rev 5: its Rev 4 row is an explicit empty-NIST-ID marker.
       expect(
-        awsConfigMappedRevisions('EMR_KERBEROS_ENABLED', 'emr-kerberos-enabled')
-      ).toEqual([4]);
+        awsConfigMappedRevisions(
+          'SECRETSMANAGER_ROTATION_ENABLED_CHECK',
+          'secretsmanager-rotation-enabled-check'
+        )
+      ).toEqual([5]);
     });
 
     it('returns empty for an unmapped rule', () => {
       expect(awsConfigMappedRevisions('NOPE', 'no-such-rule')).toEqual([]);
+    });
+  });
+
+  describe('crosswalk backfill', () => {
+    it('marks native rows with their generator tier', () => {
+      const native = getAwsConfigNistMappingByName('access-keys-rotated', 4);
+      expect(native?.Source).toBe('config-pack');
+    });
+
+    it('backfills a Rev5-only rule at Rev 4 via the crosswalk', () => {
+      const backfilled = getAwsConfigNistMappingByName('api-gw-ssl-enabled', 4);
+      expect(backfilled?.Source).toBe('crosswalk');
+      expect(backfilled?.['NIST-ID']).toContain('SC-8');
+    });
+
+    it('backfills a Rev4-only rule at Rev 5 via the crosswalk', () => {
+      const backfilled = getAwsConfigNistMappingByName('emr-kerberos-enabled', 5);
+      expect(backfilled?.Source).toBe('crosswalk');
+      expect(backfilled?.['NIST-ID']).toContain('AC-3');
+    });
+
+    it('emits an explicit empty-NIST-ID marker when nothing translates', () => {
+      const marker = getAwsConfigNistMappingByName('secretsmanager-rotation-enabled-check', 4);
+      expect(marker?.Source).toBe('crosswalk');
+      expect(marker?.['NIST-ID']).toBe('');
+      // Substring resolution (the Security Hub decorated-name path) must also
+      // yield no controls for a marker row.
+      expect(
+        getAwsConfigNistControlsBySubstring('securityhub-secretsmanager-rotation-enabled-check-abc123', 4)
+      ).toEqual([]);
     });
   });
 });

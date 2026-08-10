@@ -52,6 +52,58 @@ describe('timestamp parse fallback', () => {
   });
 });
 
+// Value-pinning: the shared snapshot masks the top-level timestamp, so these
+// assertions pin the exact source-derived values (per the u6j3/timestamp audit)
+// and must stay byte-parity with the Go converter's pinned tests.
+describe('source-derived timestamps and tool.version', async () => {
+  it('pins result startTime to service_completed', async () => {
+    const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
+    const clamav = hdf.baselines.find(b => b.title?.includes('Clamav'));
+    expect(clamav).toBeDefined();
+    const req = clamav!.requirements.find(
+      r => r.id === '033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602',
+    );
+    expect(req).toBeDefined();
+    // service_completed = 2023-08-28T12:23:54.179435Z → trimmed-UTC millis.
+    expect(req!.results[0]!.startTime).toBe('2023-08-28T12:23:54.179Z');
+  });
+
+  it('pins tool.version to the first sorted service_version', async () => {
+    const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
+    expect(hdf.tool?.version).toBe('4.3.0.0');
+  });
+
+  it('pins top-level timestamp to api_response.times.completed', async () => {
+    const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
+    // times.completed = 2023-08-28T12:25:24.834217Z → trimmed-UTC millis.
+    expect(hdf.timestamp).toBe('2023-08-28T12:25:24.834Z');
+  });
+
+  it('falls back to the zero sentinel startTime when service_completed is absent', async () => {
+    const input = JSON.stringify({
+      api_response: { results: { r1: { sha256: 'abc', response: { service_name: 'Moldy' }, result: { score: 0, sections: [] } } } },
+    });
+    const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.startTime).toBe('0001-01-01T00:00:00Z');
+  });
+
+  it('falls back to now() for the top-level timestamp when times.completed is absent', async () => {
+    const input = JSON.stringify({
+      api_response: { results: { r1: { sha256: 'abc', response: { service_name: 'Moldy' }, result: { score: 0, sections: [] } } } },
+    });
+    const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
+    expect(new Date(hdf.timestamp!).getTime()).toBeGreaterThan(new Date('2020-01-01T00:00:00Z').getTime());
+  });
+
+  it('omits tool.version when no service_version is present', async () => {
+    const input = JSON.stringify({
+      api_response: { results: { r1: { sha256: 'abc', response: { service_name: 'Moldy' }, result: { score: 0, sections: [] } } } },
+    });
+    const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
+    expect(hdf.tool?.version).toBeUndefined();
+  });
+});
+
 describe('conveyor to HDF converter', async () => {
   describe('input validation', async () => {
     it('should throw when api_response is missing', async () => {

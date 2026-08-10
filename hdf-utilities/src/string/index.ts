@@ -74,6 +74,10 @@ export function parseTimestamp(s: string): Date | null {
     normalized = `${trimmed} GMT`;
   }
 
+  // parseTimestamp IS the sanctioned helper the guard routes callers to: it
+  // normalizes zone-less input to UTC above before constructing the Date, so
+  // this is not the host-local footgun the guard prevents.
+  // eslint-disable-next-line no-restricted-syntax -- sanctioned parse-helper implementation
   const parsed = new Date(normalized);
   if (isNaN(parsed.getTime())) {
     return null;

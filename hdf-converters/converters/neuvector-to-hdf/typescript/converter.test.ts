@@ -290,6 +290,38 @@ describe('neuvector to HDF converter', async () => {
     });
   });
 
+  describe('external references (refs[])', async () => {
+    it('maps vulnerability.link to refs[0].url', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req?.refs).toHaveLength(1);
+      expect(req!.refs![0]!.url).toBe('https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-36159');
+      expect(req!.refs![0]!.ref).toBeUndefined();
+      expect(req!.refs![0]!.uri).toBeUndefined();
+    });
+
+    it('omits refs[] when the vulnerability carries no link', async () => {
+      const input = JSON.stringify({
+        error_message: '',
+        report: {
+          image_id: 'a', registry: 'r', repository: 'x/y', tag: 't', digest: 'd',
+          size: 1, author: '', base_os: 'alpine', created_at: '2024-01-01T00:00:00Z',
+          cvedb_version: '1', cvedb_create_time: '2024-01-01T00:00:00Z', layers: [],
+          vulnerabilities: [{
+            name: 'CVE-2020-0002', score: 0, severity: 'High', vectors: '', description: 'x',
+            file_name: '', package_name: 'p', package_version: '1.0', fixed_version: '',
+            link: '', score_v3: 0, vectors_v3: '', published_timestamp: 1, last_modified_timestamp: 1,
+            feed_rating: 'High',
+          }],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.refs).toBeUndefined();
+    });
+  });
+
   describe('CVE tag (interim)', async () => {
     it('emits cves[] as tags.cve, distinct from the composite requirement id', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
@@ -337,6 +369,39 @@ describe('neuvector to HDF converter', async () => {
       });
       const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.tags?.['cve']).toBeUndefined();
+    });
+  });
+
+  describe('feed_rating tag', async () => {
+    it('maps vulnerability.feed_rating to tags.feed_rating as a string', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req!.tags?.['feed_rating']).toBe('Critical');
+
+      const medium = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36217/avahi/0.8-r0'
+      );
+      expect(medium!.tags?.['feed_rating']).toBe('Medium');
+    });
+
+    it('omits tags.feed_rating when the vulnerability carries no feed_rating', async () => {
+      const input = JSON.stringify({
+        error_message: '',
+        report: {
+          image_id: 'a', registry: 'r', repository: 'x/y', tag: 't', digest: 'd',
+          size: 1, author: '', base_os: 'alpine', created_at: '2024-01-01T00:00:00Z',
+          cvedb_version: '1', cvedb_create_time: '2024-01-01T00:00:00Z', layers: [],
+          vulnerabilities: [{
+            name: 'CVE-2020-0001', score: 5, severity: 'High', vectors: '', description: 'x',
+            file_name: '', package_name: 'pkg', package_version: '1.0', fixed_version: '',
+            link: '', score_v3: 0, vectors_v3: '', published_timestamp: 1, last_modified_timestamp: 1,
+          }],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.tags?.['feed_rating']).toBeUndefined();
     });
   });
 
@@ -492,6 +557,75 @@ describe('neuvector to HDF converter', async () => {
         expect(req.id).toBeTruthy();
         expect(req.results.length).toBeGreaterThan(0);
       }
+    });
+  });
+
+  describe('scan-target component identity', async () => {
+    it('enriches the containerImage component from image identity', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall.json'))) as HDFResults;
+      expect(hdf.components).toHaveLength(1);
+      const comp = hdf.components![0]!;
+      expect(comp.type).toBe('containerImage');
+      expect(comp.name).toBe('https://registry.hub.docker.com/mitre/heimdall:latest');
+      // base_os "alpine:3.12.1" → osName/osVersion
+      expect(comp.osName).toBe('alpine');
+      expect(comp.osVersion).toBe('3.12.1');
+      expect(comp.imageId).toBe('65785cbf46647c77caf8d7c40485900b013fca1290d1a7ab06c9039c3b29761c');
+      expect(comp.registry).toBe('https://registry.hub.docker.com');
+      expect(comp.repository).toBe('mitre/heimdall');
+      expect(comp.tag).toBe('latest');
+      // digest "sha256:54cb..." → integrity{sha256, hex without prefix}
+      expect(comp.integrity).toEqual([
+        { algorithm: 'sha256', value: '54cbfb34a9a8fe00c9a60d722aa1c12f25bec825c505139cfffaeabc91fb10e6' },
+      ]);
+    });
+
+    it('splits a different base_os (rhel:8.10)', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall2.json'))) as HDFResults;
+      const comp = hdf.components![0]!;
+      expect(comp.osName).toBe('rhel');
+      expect(comp.osVersion).toBe('8.10');
+    });
+
+    it('omits osName/osVersion/imageId/integrity when the report carries none', async () => {
+      const input = JSON.stringify({
+        report: {
+          registry: 'reg',
+          repository: 'repo',
+          tag: 'latest',
+          vulnerabilities: [
+            { name: 'CVE-2020-0001', package_name: 'pkg', package_version: '1.0', description: '' },
+          ],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      expect(hdf.components).toHaveLength(1);
+      const comp = hdf.components![0]!;
+      expect(comp.type).toBe('containerImage');
+      expect(comp.osName).toBeUndefined();
+      expect(comp.osVersion).toBeUndefined();
+      expect(comp.imageId).toBeUndefined();
+      expect(comp.integrity).toBeUndefined();
+      expect(comp.registry).toBe('reg');
+    });
+
+    it('folds a non-sha256 digest prefix into the algorithm', async () => {
+      const input = JSON.stringify({
+        report: {
+          registry: 'reg',
+          repository: 'repo',
+          tag: 'latest',
+          base_os: 'scratch',
+          digest: 'sha512:deadbeef',
+          vulnerabilities: [],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      const comp = hdf.components![0]!;
+      // base_os with no ":" → osName only, no osVersion
+      expect(comp.osName).toBe('scratch');
+      expect(comp.osVersion).toBeUndefined();
+      expect(comp.integrity).toEqual([{ algorithm: 'sha512', value: 'deadbeef' }]);
     });
   });
 });

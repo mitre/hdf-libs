@@ -207,6 +207,25 @@ describe('msft-secure-score to HDF converter', async () => {
     });
   });
 
+  describe('refs from profile actionUrl', async () => {
+    it('should emit a Reference url from the matching profile actionUrl', async () => {
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
+      expect(req?.refs).toHaveLength(1);
+      expect(req?.refs?.[0]?.url).toBe('https://security.microsoft.com/cloudapps/settings?tabid=discovery-autoUpload');
+
+      const req2 = hdf.baselines[0]!.requirements.find(r => r.id === 'Data:dlp_datalossprevention');
+      expect(req2?.refs).toHaveLength(1);
+      expect(req2?.refs?.[0]?.url).toBe('https://compliance.microsoft.com/datalossprevention?tid=12345678-1234-1234-1234-1234567890abcd');
+    });
+
+    it('should omit refs when no matching profile exists', async () => {
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:spo_idle_session_timeout');
+      expect(req?.refs).toBeUndefined();
+    });
+  });
+
   describe('NIST tags', async () => {
     it('should include default static analysis NIST tags', async () => {
       const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
@@ -218,10 +237,38 @@ describe('msft-secure-score to HDF converter', async () => {
   });
 
   describe('start_time', async () => {
-    it('should set start_time from createdDateTime', async () => {
+    it('should set start_time from the control lastSynced', async () => {
       const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
-      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
-      expect(req?.results[0]?.startTime).toBe('2024-01-01T00:00:00Z');
+      const reqs = hdf.baselines[0]!.requirements;
+      // Per-control lastSynced — NOT the score's createdDateTime.
+      const mcas = reqs.find(r => r.id === 'Apps:McasFirewallLogUpload');
+      expect(mcas?.results[0]?.startTime).toBe('2024-01-01T04:34:13Z');
+      const dlp = reqs.find(r => r.id === 'Data:dlp_datalossprevention');
+      expect(dlp?.results[0]?.startTime).toBe('2024-01-01T13:58:47Z');
+    });
+
+    it('falls back to createdDateTime when a control has no lastSynced', async () => {
+      const input = JSON.stringify({
+        secureScore: { value: [{
+          id: 'run-1',
+          azureTenantId: 't-1',
+          createdDateTime: '2024-03-14T09:00:00Z',
+          controlScores: [
+            { controlCategory: 'Apps', controlName: 'no_sync', description: 'd', score: 0, implementationStatus: 'x', scoreInPercentage: 0 },
+          ],
+        }] },
+        profiles: { value: [] },
+      });
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:no_sync');
+      expect(req?.results[0]?.startTime).toBe('2024-03-14T09:00:00Z');
+    });
+  });
+
+  describe('top-level timestamp', async () => {
+    it('is source-derived from the score createdDateTime (deterministic)', async () => {
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
+      expect(hdf.timestamp).toBe('2024-01-01T00:00:00Z');
     });
   });
 
@@ -235,6 +282,53 @@ describe('msft-secure-score to HDF converter', async () => {
       for (const req of hdf.baselines[0]!.requirements) {
         expect(req.results).toHaveLength(1);
       }
+    });
+  });
+
+  describe('source categorization/metadata tags', async () => {
+    it('maps profile metadata + on flag; omits empty threats', async () => {
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const reqs = hdf.baselines[0]!.requirements;
+
+      // dlp_datalossprevention: full profile metadata; threats is [] → omitted; on == "true".
+      const dlp = reqs.find(r => r.id === 'Data:dlp_datalossprevention')!;
+      expect(dlp.tags?.['rank']).toBe(128);
+      expect(dlp.tags?.['service']).toBe('MIP');
+      expect(dlp.tags?.['tier']).toBe('Core');
+      expect(dlp.tags?.['user_impact']).toBe('High');
+      expect(dlp.tags?.['action_type']).toBe('Config');
+      expect(dlp.tags?.['implementation_cost']).toBe('Medium');
+      expect(dlp.tags?.['on']).toBe(true);
+      expect(dlp.tags?.['threats']).toBeUndefined();
+
+      // McasFirewallLogUpload: non-empty threats array; on == "false".
+      const mcas = reqs.find(r => r.id === 'Apps:McasFirewallLogUpload')!;
+      expect(mcas.tags?.['threats']).toEqual(['Data Exfiltration']);
+      expect(mcas.tags?.['rank']).toBe(82);
+      expect(mcas.tags?.['service']).toBe('MCAS');
+      expect(mcas.tags?.['tier']).toBe('Advanced');
+      expect(mcas.tags?.['user_impact']).toBe('Low');
+      expect(mcas.tags?.['action_type']).toBe('Config');
+      expect(mcas.tags?.['implementation_cost']).toBe('Moderate');
+      expect(mcas.tags?.['on']).toBe(false);
+    });
+
+    it('omits profile tags when no profile matches but still emits on', async () => {
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:spo_idle_session_timeout')!;
+      for (const k of ['threats', 'rank', 'service', 'tier', 'user_impact', 'action_type', 'implementation_cost']) {
+        expect(req.tags?.[k]).toBeUndefined();
+      }
+      expect(req.tags?.['on']).toBe(false);
+    });
+
+    it('omits on when the control reports no enablement state (combined)', async () => {
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('combined.json'))) as HDFResults;
+      const reqs = hdf.baselines[0]!.requirements;
+      const withOn = reqs.filter(r => r.tags !== undefined && 'on' in r.tags);
+      const withoutOn = reqs.filter(r => r.tags === undefined || !('on' in r.tags));
+      expect(withOn.length).toBeGreaterThan(0);
+      expect(withoutOn.length).toBeGreaterThan(0);
     });
   });
 });

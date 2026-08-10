@@ -16,7 +16,7 @@ func TestCvssVersionFromVector(t *testing.T) {
 	}{
 		{"v2.0 prefix", "CVSS:2.0/AV:N/AC:L", hdf.The20},
 		{"v3.0 prefix", "CVSS:3.0/AV:N/AC:L", hdf.The30},
-		{"v3.1 prefix falls through to default", "CVSS:3.1/AV:N/AC:L", hdf.The31},
+		{"v3.1 prefix", "CVSS:3.1/AV:N/AC:L", hdf.The31},
 		{"v4.0 prefix", "CVSS:4.0/AV:N/AC:L", hdf.The40},
 		{"empty defaults to 3.1", "", hdf.The31},
 		{"malformed/unprefixed defaults to 3.1", "AV:N/AC:L", hdf.The31},
@@ -26,6 +26,17 @@ func TestCvssVersionFromVector(t *testing.T) {
 			assert.Equal(t, tc.want, CvssVersionFromVector(tc.vector))
 		})
 	}
+}
+
+func TestCvssVersionFromVector_Fallback(t *testing.T) {
+	// An explicit fallback sets the version for an absent/unrecognized prefix
+	// (e.g. Nessus historical output defaults to 3.0); a recognized prefix wins.
+	assert.Equal(t, hdf.The30, CvssVersionFromVector("", hdf.The30))
+	assert.Equal(t, hdf.The30, CvssVersionFromVector("AV:N/AC:L", hdf.The30))
+	assert.Equal(t, hdf.The31, CvssVersionFromVector("CVSS:3.1/AV:N", hdf.The30))
+	assert.Equal(t, hdf.The30, CvssVersionFromVector("CVSS:3.0/AV:N", hdf.The30))
+	// Omitting the fallback keeps the 3.1 default (existing callers unchanged).
+	assert.Equal(t, hdf.The31, CvssVersionFromVector(""))
 }
 
 func TestCvssVersionFromString(t *testing.T) {

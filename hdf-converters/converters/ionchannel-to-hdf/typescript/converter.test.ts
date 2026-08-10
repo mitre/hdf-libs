@@ -252,4 +252,130 @@ describe('ionchannel to HDF converter', async () => {
       expect(dep.labels?.ruleset_id).toBe('ruleset-002');
     });
   });
+
+  // The shared snapshot masks the top-level timestamp, so these pin the exact
+  // source-derived values the golden cannot verify.
+  describe('timestamp backfill', async () => {
+    it('sets the top-level timestamp from analysis updated_at', async () => {
+      // minimal.json analysis updated_at = 2024-01-15T10:35:00Z (scan completion).
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
+      expect(hdf.timestamp).toBe('2024-01-15T10:35:00Z');
+    });
+
+    it('sets a scan-summary result startTime from the scan created_at', async () => {
+      // edge-cases.json community scan created_at = 2024-02-20T14:00:00Z.
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
+      const community = hdf.baselines.find((b) => b.name === 'Ion Channel community Scan')!;
+      expect(community.requirements[0]!.results[0]!.startTime).toBe('2024-02-20T14:00:00Z');
+    });
+
+    it('falls back to analysis created_at when updated_at is absent', async () => {
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        passed: true,
+        created_at: '2024-03-14T09:00:00Z',
+        scan_summaries: [
+          { name: 'dependency', summary: '', results: { type: 'dependency', data: { dependencies: [] } } },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+      expect(hdf.timestamp).toBe('2024-03-14T09:00:00Z');
+    });
+
+    it('falls back to a valid now() when the analysis carries no time', async () => {
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        passed: true,
+        scan_summaries: [
+          { name: 'dependency', summary: '', results: { type: 'dependency', data: { dependencies: [] } } },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+      expect(hdf.timestamp).toBeTruthy();
+      expect(new Date(hdf.timestamp!).getTime()).toBeGreaterThan(0);
+    });
+
+    it('falls back scan startTime to updated_at then the sentinel', async () => {
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        passed: true,
+        scan_summaries: [
+          { name: 'dependency', summary: '', results: { type: 'dependency', data: { dependencies: [] } } },
+          // created_at absent → updated_at wins.
+          { name: 'community', summary: 's', updated_at: '2024-05-06T07:08:09Z', results: { type: 'community', data: {} } },
+          // neither present → zero sentinel, mirroring Go's zero time.Time.
+          { name: 'license', summary: 's', results: { type: 'license', data: {} } },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+      const community = hdf.baselines.find((b) => b.name === 'Ion Channel community Scan')!;
+      expect(community.requirements[0]!.results[0]!.startTime).toBe('2024-05-06T07:08:09Z');
+      const license = hdf.baselines.find((b) => b.name === 'Ion Channel license Scan')!;
+      expect(license.requirements[0]!.results[0]!.startTime).toBe('0001-01-01T00:00:00Z');
+    });
+  });
+
+  describe('analysis-level verdict tags on requirements', async () => {
+    it('should tag dependency requirements with the analysis verdict (passed=false)', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'dependency-n/a/requests')!;
+      expect(req.tags?.passed).toBe(false);
+      expect(req.tags?.risk).toBe('medium');
+      expect(req.tags?.ruleset_name).toBe('strict');
+      expect(req.tags?.ruleset_id).toBe('ruleset-002');
+    });
+
+    it('should tag non-dependency scan requirements with the analysis verdict', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
+      const community = hdf.baselines.find((b) => b.name === 'Ion Channel community Scan')!;
+      const req = community.requirements[0]!;
+      expect(req.tags?.passed).toBe(false);
+      expect(req.tags?.risk).toBe('medium');
+      expect(req.tags?.ruleset_name).toBe('strict');
+      expect(req.tags?.ruleset_id).toBe('ruleset-002');
+    });
+
+    it('should carry passed=true as a native boolean', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'dependency-expressjs/express')!;
+      expect(req.tags?.passed).toBe(true);
+      expect(req.tags?.risk).toBe('low');
+      expect(req.tags?.ruleset_name).toBe('default');
+      expect(req.tags?.ruleset_id).toBe('ruleset-001');
+    });
+
+    it('should omit empty verdict fields while keeping passed', async () => {
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        risk: '',
+        passed: true,
+        ruleset_id: '',
+        ruleset_name: '',
+        scan_summaries: [
+          {
+            name: 'dependency',
+            summary: '',
+            results: {
+              type: 'dependency',
+              data: {
+                dependencies: [
+                  { org: 'acme', name: 'widget', type: 'npm', version: '1.0.0', dependencies: [] },
+                ],
+              },
+            },
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'dependency-acme/widget')!;
+      expect(req.tags?.passed).toBe(true);
+      expect(req.tags && 'risk' in req.tags).toBe(false);
+      expect(req.tags && 'ruleset_name' in req.tags).toBe(false);
+      expect(req.tags && 'ruleset_id' in req.tags).toBe(false);
+    });
+  });
 });

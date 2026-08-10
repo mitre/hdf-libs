@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -262,6 +263,40 @@ func TestConvertMsftSecureScore_FixDescription(t *testing.T) {
 	assert.NotEmpty(t, fix.Data)
 }
 
+// ---- Refs from profile actionUrl ----
+
+func TestConvertMsftSecureScore_RefsFromActionURL(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// McasFirewallLogUpload profile carries actionUrl → one Reference{URL}.
+	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
+	require.Len(t, req.Refs, 1)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://security.microsoft.com/cloudapps/settings?tabid=discovery-autoUpload", *req.Refs[0].URL)
+
+	// dlp_datalossprevention profile carries a different actionUrl.
+	req2 := shared.MustFindRequirement(t, reqs, "Data:dlp_datalossprevention")
+	require.Len(t, req2.Refs, 1)
+	require.NotNil(t, req2.Refs[0].URL)
+	assert.Equal(t, "https://compliance.microsoft.com/datalossprevention?tid=12345678-1234-1234-1234-1234567890abcd", *req2.Refs[0].URL)
+}
+
+func TestConvertMsftSecureScore_RefsAbsentWhenNoProfile(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// spo_idle_session_timeout has no matching profile → refs omitted.
+	req := shared.MustFindRequirement(t, reqs, "Apps:spo_idle_session_timeout")
+	assert.Empty(t, req.Refs)
+}
+
 // ---- NIST tags (static analysis defaults) ----
 
 func TestConvertMsftSecureScore_NistTags(t *testing.T) {
@@ -277,7 +312,7 @@ func TestConvertMsftSecureScore_NistTags(t *testing.T) {
 	assert.NotEmpty(t, nist)
 }
 
-// ---- StartTime ----
+// ---- StartTime (value-pinned to control lastSynced) ----
 
 func TestConvertMsftSecureScore_StartTime(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
@@ -285,9 +320,39 @@ func TestConvertMsftSecureScore_StartTime(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
+	// McasFirewallLogUpload carries lastSynced "2024-01-01T04:34:13Z" — startTime
+	// must be that control's own sync time, NOT the score's createdDateTime.
 	req := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
 	require.NotEmpty(t, req.Results)
-	assert.NotNil(t, req.Results[0].StartTime, "result should have start_time from createdDateTime")
+	assert.Equal(t, "2024-01-01T04:34:13Z", req.Results[0].StartTime.UTC().Format(time.RFC3339))
+
+	// A different control has a distinct lastSynced — proves per-control mapping.
+	dlp := shared.MustFindRequirement(t, reqs, "Data:dlp_datalossprevention")
+	require.NotEmpty(t, dlp.Results)
+	assert.Equal(t, "2024-01-01T13:58:47Z", dlp.Results[0].StartTime.UTC().Format(time.RFC3339))
+}
+
+// StartTime fallback: a control missing lastSynced falls back to the score's
+// createdDateTime (never zero/empty — startTime is schema-required).
+func TestConvertMsftSecureScore_StartTimeFallback(t *testing.T) {
+	input := []byte(`{
+		"secureScore": {"value": [{
+			"id": "run-1",
+			"azureTenantId": "t-1",
+			"createdDateTime": "2024-03-14T09:00:00Z",
+			"controlScores": [
+				{"controlCategory": "Apps", "controlName": "no_sync", "description": "d", "score": 0, "implementationStatus": "x", "scoreInPercentage": 0}
+			]
+		}]},
+		"profiles": {"value": []}
+	}`)
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "Apps:no_sync")
+	require.NotEmpty(t, req.Results)
+	assert.Equal(t, "2024-03-14T09:00:00Z", req.Results[0].StartTime.UTC().Format(time.RFC3339),
+		"missing lastSynced should fall back to createdDateTime")
 }
 
 // ---- Full fixture smoke test ----
@@ -314,7 +379,75 @@ func TestConvertMsftSecureScore_Timestamp(t *testing.T) {
 	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	assert.NotNil(t, result.Timestamp)
+	// Top-level timestamp is source-derived from the score's createdDateTime,
+	// not wall-clock now — this is what makes conversion deterministic.
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2024-01-01T00:00:00Z", result.Timestamp.UTC().Format(time.RFC3339))
+}
+
+// ---- Source categorization/metadata tags ----
+
+func TestConvertMsftSecureScore_SourceMetadataTags(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+
+	// dlp_datalossprevention: full profile metadata; threats is [] → omitted; on == "true".
+	dlp := shared.MustFindRequirement(t, reqs, "Data:dlp_datalossprevention")
+	assert.EqualValues(t, 128, dlp.Tags["rank"])
+	assert.Equal(t, "MIP", dlp.Tags["service"])
+	assert.Equal(t, "Core", dlp.Tags["tier"])
+	assert.Equal(t, "High", dlp.Tags["user_impact"])
+	assert.Equal(t, "Config", dlp.Tags["action_type"])
+	assert.Equal(t, "Medium", dlp.Tags["implementation_cost"])
+	assert.Equal(t, true, dlp.Tags["on"])
+	_, hasThreats := dlp.Tags["threats"]
+	assert.False(t, hasThreats, "empty threats array should be omitted")
+
+	// McasFirewallLogUpload: non-empty threats array; on == "false".
+	mcas := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
+	assert.Equal(t, []interface{}{"Data Exfiltration"}, mcas.Tags["threats"])
+	assert.EqualValues(t, 82, mcas.Tags["rank"])
+	assert.Equal(t, "MCAS", mcas.Tags["service"])
+	assert.Equal(t, "Advanced", mcas.Tags["tier"])
+	assert.Equal(t, "Low", mcas.Tags["user_impact"])
+	assert.Equal(t, "Config", mcas.Tags["action_type"])
+	assert.Equal(t, "Moderate", mcas.Tags["implementation_cost"])
+	assert.Equal(t, false, mcas.Tags["on"])
+}
+
+func TestConvertMsftSecureScore_SourceMetadataTagsAbsentWhenNoProfile(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+
+	// spo_idle_session_timeout has no matching profile → no profile-derived tags,
+	// but `on` is still emitted from the control score itself ("false").
+	req := shared.MustFindRequirement(t, reqs, "Apps:spo_idle_session_timeout")
+	for _, k := range []string{"threats", "rank", "service", "tier", "user_impact", "action_type", "implementation_cost"} {
+		_, ok := req.Tags[k]
+		assert.Falsef(t, ok, "tag %q should be absent when no profile matches", k)
+	}
+	assert.Equal(t, false, req.Tags["on"])
+}
+
+func TestConvertMsftSecureScore_OnTagOmittedWhenNull(t *testing.T) {
+	input := loadFixture(t, "input/combined.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	var sawPresent, sawOmitted bool
+	for _, req := range result.Baselines[0].Requirements {
+		if _, ok := req.Tags["on"]; ok {
+			sawPresent = true
+		} else {
+			sawOmitted = true
+		}
+	}
+	assert.True(t, sawPresent, "controls with a true/false on flag emit the tag")
+	assert.True(t, sawOmitted, "controls with null/absent on omit the tag")
 }
 
 func TestSnapshots(t *testing.T) {

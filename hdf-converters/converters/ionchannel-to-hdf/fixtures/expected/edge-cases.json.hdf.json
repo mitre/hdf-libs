@@ -31,7 +31,11 @@
               "CM-8"
             ],
             "org": "n/a",
+            "passed": false,
             "requirement": "n/a",
+            "risk": "medium",
+            "ruleset_id": "ruleset-002",
+            "ruleset_name": "strict",
             "scope": "runtime",
             "type": "pypi",
             "version": "n/a"
@@ -64,7 +68,11 @@
               "CM-8"
             ],
             "org": "n/a",
+            "passed": false,
             "requirement": "n/a",
+            "risk": "medium",
+            "ruleset_id": "ruleset-002",
+            "ruleset_name": "strict",
             "scope": "runtime",
             "type": "pypi",
             "version": "2.31.0"
@@ -97,7 +105,11 @@
               "CM-8"
             ],
             "org": "example-corp",
+            "passed": false,
             "requirement": "\u003e=0.5.0",
+            "risk": "medium",
+            "ruleset_id": "ruleset-002",
+            "ruleset_name": "strict",
             "scope": "runtime",
             "type": "pypi",
             "version": "n/a"
@@ -135,7 +147,7 @@
           "results": [
             {
               "codeDesc": "community scan summary",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2024-02-20T14:00:00Z",
               "status": "notReviewed"
             }
           ],
@@ -143,6 +155,10 @@
           "impact": 0,
           "tags": {
             "name": "community",
+            "passed": false,
+            "risk": "medium",
+            "ruleset_id": "ruleset-002",
+            "ruleset_name": "strict",
             "type": "community"
           },
           "code": "{\n  \"committers\": 5,\n  \"name\": \"python-mixed\",\n  \"url\": \"https://github.com/example-org/python-mixed\",\n  \"stars\": 42\n}",
@@ -161,7 +177,7 @@
     "name": "ionchannel-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T20:08:49.791421-04:00",
+  "timestamp": "2024-02-20T14:05:00Z",
   "tool": {
     "name": "Ion Channel"
   }

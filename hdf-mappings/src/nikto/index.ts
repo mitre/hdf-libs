@@ -4,6 +4,14 @@
 
 import type { NiktoNistMappings } from './types.js';
 import rawMappings from '../data/nikto-nist-mappings.json';
+import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
+
+// Authored against Rev 4 (heimdall2's mapping; every control it carries is
+// identical at both revisions today — a test guards that invariant). Lookups
+// translate to the current module-global revision.
+const NATIVE_REVISION = 4;
+const atCurrentRevision = (nistId: string): string =>
+  nistControlsAtRevision(nistId.split('|'), NATIVE_REVISION, getCurrentNistRevision()).join('|');
 
 const mappings = rawMappings as NiktoNistMappings;
 
@@ -14,7 +22,8 @@ const mappings = rawMappings as NiktoNistMappings;
  */
 export function getNiktoNistControl(niktoId: string | number): string | undefined {
   const id = typeof niktoId === 'number' ? niktoId.toString() : niktoId;
-  return mappings[id];
+  const control = mappings[id];
+  return control === undefined ? undefined : atCurrentRevision(control);
 }
 
 /**

@@ -33,8 +33,10 @@
   ],
   "components": [
     {
-      "name": "Host: clean.example.com Port: 443",
-      "type": "application"
+      "name": "clean.example.com",
+      "type": "host",
+      "hostname": "clean.example.com",
+      "ipAddress": "10.0.0.1"
     }
   ],
   "generator": {

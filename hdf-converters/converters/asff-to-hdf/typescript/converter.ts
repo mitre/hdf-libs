@@ -435,6 +435,24 @@ function vulnCves(f: AsffFinding): string[] {
   return out;
 }
 
+/**
+ * Collects the distinct ASFF Types[] taxonomy strings across a requirement's
+ * finding group (dedup, first-appearance order) for tags.types.
+ */
+function groupTypes(group: AsffFinding[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const f of group) {
+    for (const t of f.Types ?? []) {
+      if (t && !seen.has(t)) {
+        seen.add(t);
+        out.push(t);
+      }
+    }
+  }
+  return out;
+}
+
 // trivyMessage summarizes a Trivy finding's product-specific detail for the
 // result message, dispatching on the finding shape Trivy's ASFF template emits:
 // a CVE reports the installed vs patched package, a misconfiguration reports the
@@ -493,6 +511,11 @@ function buildRequirement(id: string, group: AsffFinding[]): EvaluatedRequiremen
   // (interim, pending a first-class identifiers[] schema field).
   const cves = vulnCves(primary);
   if (cves.length > 0) tags.cve = cves;
+  // ASFF's Types[] finding-type taxonomy is otherwise dropped; surface the
+  // distinct values across the aggregated group (first-appearance order) in
+  // tags.types so the source categorization survives.
+  const types = groupTypes(group);
+  if (types.length > 0) tags.types = types;
 
   const results = group.map(buildResult);
 

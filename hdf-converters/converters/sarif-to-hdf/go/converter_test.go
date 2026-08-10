@@ -577,61 +577,62 @@ func TestKindMappingIntegration(t *testing.T) {
 
 // --- Suppression tests ---
 
-func TestApplySuppression(t *testing.T) {
+func TestAcceptedSuppressionReason(t *testing.T) {
 	tests := []struct {
-		name                string
-		suppressions        []Suppression
-		expectSuppressed    bool
-		expectJustification string
+		name         string
+		suppressions []Suppression
+		expect       string
 	}{
+		{"no suppressions", nil, ""},
 		{
-			"no suppressions",
-			nil,
-			false, "",
-		},
-		{
-			"accepted suppression",
+			"accepted with justification",
 			[]Suppression{{Kind: "inSource", Status: "accepted", Justification: "test key"}},
-			true, "test key",
+			"test key",
 		},
 		{
-			"rejected suppression",
-			[]Suppression{{Kind: "external", Status: "rejected"}},
-			false, "",
+			"accepted without justification falls back",
+			[]Suppression{{Kind: "inSource", Status: "accepted"}},
+			defaultSuppressionReason,
 		},
 		{
-			"underReview suppression",
+			"rejected is not accepted",
+			[]Suppression{{Kind: "external", Status: "rejected", Justification: "no"}},
+			"",
+		},
+		{
+			"underReview is not accepted",
 			[]Suppression{{Kind: "inSource", Status: "underReview", Justification: "reviewing"}},
-			true, "reviewing",
+			"",
 		},
 		{
-			"multiple suppressions combine justifications",
+			"only accepted justifications combine",
 			[]Suppression{
 				{Kind: "inSource", Status: "underReview", Justification: "reason A"},
 				{Kind: "external", Status: "accepted", Justification: "reason B"},
+				{Kind: "external", Status: "rejected", Justification: "reason C"},
 			},
-			true, "reason A; reason B",
-		},
-		{
-			"mixed rejected and accepted",
-			[]Suppression{
-				{Kind: "external", Status: "rejected"},
-				{Kind: "inSource", Status: "accepted", Justification: "valid"},
-			},
-			true, "valid",
+			"reason B",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			suppressed, justification := applySuppression(tt.suppressions)
-			assert.Equal(t, tt.expectSuppressed, suppressed)
-			assert.Equal(t, tt.expectJustification, justification)
+			assert.Equal(t, tt.expect, acceptedSuppressionReason(tt.suppressions))
 		})
 	}
 }
 
-func TestSuppressionIntegration_AcceptedOverridesStatus(t *testing.T) {
+func TestJustificationIndicatesFalsePositive(t *testing.T) {
+	assert.True(t, justificationIndicatesFalsePositive("Marked as false positive by security team"))
+	assert.True(t, justificationIndicatesFalsePositive("known FALSE-POSITIVE"))
+	assert.False(t, justificationIndicatesFalsePositive("validated against allowlist"))
+	assert.False(t, justificationIndicatesFalsePositive(""))
+}
+
+// An accepted suppression whose justification does NOT read as a false positive
+// becomes a waiver override: raw status stays failed, effectiveStatus → passed,
+// disposition → waiver. The full attributed, expiring override is present.
+func TestSuppressionIntegration_AcceptedWaiverOverride(t *testing.T) {
 	input := `{
 		"version": "2.1.0",
 		"runs": [{
@@ -647,7 +648,58 @@ func TestSuppressionIntegration_AcceptedOverridesStatus(t *testing.T) {
 					}
 				}],
 				"suppressions": [
-					{ "kind": "inSource", "status": "accepted", "justification": "false positive" }
+					{ "kind": "inSource", "status": "accepted", "justification": "validated against allowlist" }
+				]
+			}]
+		}]
+	}`
+
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	// De-laundering: raw result status stays the tool's failed.
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Failed, req.Results[0].Status)
+	require.NotNil(t, req.Results[0].Message)
+	assert.Contains(t, *req.Results[0].Message, "validated against allowlist")
+
+	require.Len(t, req.StatusOverrides, 1)
+	ov := req.StatusOverrides[0]
+	assert.Equal(t, hdf.OverrideTypeWaiver, ov.Type)
+	require.NotNil(t, ov.Status)
+	assert.Equal(t, hdf.Passed, *ov.Status)
+	assert.Equal(t, "validated against allowlist", ov.Reason)
+	assert.Equal(t, "sarif suppression", ov.AppliedBy.Identifier)
+	assert.Equal(t, hdf.IdentityTypeOther, ov.AppliedBy.Type)
+	assert.False(t, ov.AppliedAt.IsZero())
+	assert.Equal(t, ov.AppliedAt.AddDate(1, 0, 0), ov.ExpiresAt)
+
+	require.NotNil(t, req.EffectiveStatus)
+	assert.Equal(t, hdf.Passed, *req.EffectiveStatus)
+	require.NotNil(t, req.Disposition)
+	assert.Equal(t, hdf.OverrideTypeWaiver, *req.Disposition)
+}
+
+// An accepted suppression whose justification reads as a false positive becomes a
+// falsePositive override → effectiveStatus notApplicable, disposition falsePositive.
+func TestSuppressionIntegration_AcceptedFalsePositiveOverride(t *testing.T) {
+	input := `{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "Test", "version": "1.0" } },
+			"results": [{
+				"ruleId": "TEST",
+				"level": "error",
+				"message": { "text": "test: suppressed finding" },
+				"locations": [{
+					"physicalLocation": {
+						"artifactLocation": { "uri": "file.go" },
+						"region": { "startLine": 1, "startColumn": 1 }
+					}
+				}],
+				"suppressions": [
+					{ "kind": "external", "status": "accepted", "justification": "Confirmed false positive" }
 				]
 			}]
 		}]
@@ -658,9 +710,135 @@ func TestSuppressionIntegration_AcceptedOverridesStatus(t *testing.T) {
 
 	req := result.Baselines[0].Requirements[0]
 	require.Len(t, req.Results, 1)
-	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
-	require.NotNil(t, req.Results[0].Message)
-	assert.Contains(t, *req.Results[0].Message, "false positive")
+	assert.Equal(t, hdf.Failed, req.Results[0].Status)
+
+	require.Len(t, req.StatusOverrides, 1)
+	ov := req.StatusOverrides[0]
+	assert.Equal(t, hdf.FalsePositive, ov.Type)
+	require.NotNil(t, ov.Status)
+	assert.Equal(t, hdf.NotApplicable, *ov.Status)
+
+	require.NotNil(t, req.EffectiveStatus)
+	assert.Equal(t, hdf.NotApplicable, *req.EffectiveStatus)
+	require.NotNil(t, req.Disposition)
+	assert.Equal(t, hdf.FalsePositive, *req.Disposition)
+}
+
+// underReview and unsuppressed findings get NO override and keep their raw status.
+func TestSuppressionIntegration_UnderReviewNoOverride(t *testing.T) {
+	input := `{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "Test", "version": "1.0" } },
+			"results": [
+				{
+					"ruleId": "UR",
+					"level": "error",
+					"message": { "text": "under review" },
+					"locations": [{ "physicalLocation": { "artifactLocation": { "uri": "a.go" }, "region": { "startLine": 1 } } }],
+					"suppressions": [ { "kind": "inSource", "status": "underReview", "justification": "reviewing" } ]
+				},
+				{
+					"ruleId": "PLAIN",
+					"level": "error",
+					"message": { "text": "no suppression" },
+					"locations": [{ "physicalLocation": { "artifactLocation": { "uri": "b.go" }, "region": { "startLine": 1 } } }]
+				}
+			]
+		}]
+	}`
+
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		assert.Empty(t, req.StatusOverrides, "requirement %s should carry no override", req.ID)
+		assert.Nil(t, req.EffectiveStatus, "requirement %s should carry no effectiveStatus", req.ID)
+		assert.Nil(t, req.Disposition, "requirement %s should carry no disposition", req.ID)
+		require.Len(t, req.Results, 1)
+		assert.Equal(t, hdf.Failed, req.Results[0].Status)
+		assert.Nil(t, req.Results[0].Message, "requirement %s should carry no suppression message", req.ID)
+	}
+}
+
+// A result carrying BOTH an accepted and an underReview suppression keeps BOTH in
+// the suppressions tag (lossless — no source data dropped) while emitting exactly
+// one override from the accepted one.
+func TestSuppressionIntegration_MixedResultPreservesAllInTag(t *testing.T) {
+	input := `{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "Test", "version": "1.0" } },
+			"results": [{
+				"ruleId": "TEST",
+				"level": "error",
+				"message": { "text": "test: mixed suppressions" },
+				"locations": [{
+					"physicalLocation": {
+						"artifactLocation": { "uri": "file.go" },
+						"region": { "startLine": 1, "startColumn": 1 }
+					}
+				}],
+				"suppressions": [
+					{ "kind": "inSource", "status": "underReview", "justification": "Reviewing whether this token is still active" },
+					{ "kind": "external", "status": "accepted", "justification": "Marked as false positive by security team" }
+				]
+			}]
+		}]
+	}`
+
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+
+	// Exactly one override — from the accepted suppression only.
+	require.Len(t, req.StatusOverrides, 1)
+	assert.Equal(t, hdf.FalsePositive, req.StatusOverrides[0].Type)
+
+	// BOTH suppressions preserved losslessly in the tag.
+	supps, ok := req.Tags["suppressions"].([]map[string]string)
+	require.True(t, ok, "suppressions should be in tags")
+	require.Len(t, supps, 2)
+	assert.Equal(t, "underReview", supps[0]["status"])
+	assert.Equal(t, "Reviewing whether this token is still active", supps[0]["justification"])
+	assert.Equal(t, "accepted", supps[1]["status"])
+	assert.Equal(t, "Marked as false positive by security team", supps[1]["justification"])
+}
+
+// A requirement with an accepted suppression AND an unsuppressed sibling failure
+// records the override but does NOT flip effectiveStatus (the sibling still fails).
+func TestSuppressionIntegration_MixedGroupKeepsFailed(t *testing.T) {
+	input := `{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "Test", "version": "1.0" } },
+			"results": [
+				{
+					"ruleId": "SEC",
+					"level": "error",
+					"message": { "text": "accepted one" },
+					"locations": [{ "physicalLocation": { "artifactLocation": { "uri": "a.go" }, "region": { "startLine": 1 } } }],
+					"suppressions": [ { "kind": "inSource", "status": "accepted", "justification": "test key in dev" } ]
+				},
+				{
+					"ruleId": "SEC",
+					"level": "error",
+					"message": { "text": "unsuppressed sibling" },
+					"locations": [{ "physicalLocation": { "artifactLocation": { "uri": "b.go" }, "region": { "startLine": 2 } } }]
+				}
+			]
+		}]
+	}`
+
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.StatusOverrides, 1)
+	assert.Equal(t, hdf.OverrideTypeWaiver, req.StatusOverrides[0].Type)
+	assert.Nil(t, req.EffectiveStatus, "unsuppressed sibling failure keeps the requirement effectively failed")
+	assert.Nil(t, req.Disposition)
 }
 
 func TestSuppressionIntegration_RejectedKeepsStatus(t *testing.T) {
@@ -1155,19 +1333,29 @@ func TestConvertSarifToHDF_RichFixture(t *testing.T) {
 	require.Len(t, sec002.Results, 1)
 	assert.Equal(t, hdf.Failed, sec002.Results[0].Status)
 
-	// SEC-003: HardcodedCredential — 3 results (accepted suppression, rejected, multiple supps)
+	// SEC-003: HardcodedCredential — 3 results (accepted suppression, rejected, multiple supps).
+	// De-laundering: raw statuses all stay Failed; accepted suppressions become
+	// structured overrides. The unsuppressed rejected sibling keeps the requirement
+	// effectively failed, so no effectiveStatus/disposition is set.
 	sec003 := baseline.Requirements[2]
 	assert.Equal(t, "SEC-003", sec003.ID)
 	assert.Equal(t, 0.7, sec003.Impact) // error
 	require.Len(t, sec003.Results, 3)
-	// First result: accepted suppression → NotReviewed
-	assert.Equal(t, hdf.NotReviewed, sec003.Results[0].Status)
+	// First result: accepted suppression → Failed raw + waiver override.
+	assert.Equal(t, hdf.Failed, sec003.Results[0].Status)
 	require.NotNil(t, sec003.Results[0].Message)
 	assert.Contains(t, *sec003.Results[0].Message, "test API key")
-	// Second result: rejected suppression → Failed
+	// Second result: rejected suppression → Failed, no override.
 	assert.Equal(t, hdf.Failed, sec003.Results[1].Status)
-	// Third result: multiple suppressions (underReview + accepted) → NotReviewed
-	assert.Equal(t, hdf.NotReviewed, sec003.Results[2].Status)
+	// Third result: underReview + accepted → Failed raw + falsePositive override.
+	assert.Equal(t, hdf.Failed, sec003.Results[2].Status)
+	// Two accepted suppressions (results 0 and 2) → two overrides; sibling failure
+	// keeps effectiveStatus/disposition unset.
+	require.Len(t, sec003.StatusOverrides, 2)
+	assert.Equal(t, hdf.OverrideTypeWaiver, sec003.StatusOverrides[0].Type)
+	assert.Equal(t, hdf.FalsePositive, sec003.StatusOverrides[1].Type)
+	assert.Nil(t, sec003.EffectiveStatus)
+	assert.Nil(t, sec003.Disposition)
 
 	// SEC-004: InfoDisclosure — 2 results (pass, review)
 	sec004 := baseline.Requirements[3]
@@ -1426,10 +1614,12 @@ func TestConvertSarifToHDF_SpotBugsAnchor(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
-	// SARIF fixtures carry no run start time; conversion-time fallback.
-	shared.RunSnapshotTests(t, "sarif-to-hdf", func(input []byte) (interface{}, error) {
+	// SARIF fixtures carry no run start time; conversion-time fallback. Suppression
+	// overrides likewise carry no owner/date, so appliedAt/expiresAt are conversion-
+	// time — masked alongside startTime.
+	shared.RunSnapshotTestsMasking(t, "sarif-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertSarifToHDF(input, "1.0.0")
-	}, "*")
+	}, []string{"appliedAt", "expiresAt"}, "*")
 }
 
 func TestConvertSarifToHDF_ControlType(t *testing.T) {
@@ -1481,11 +1671,19 @@ func TestConvertSarifToHDF_GosecFixture(t *testing.T) {
 	require.Len(t, r0.Results, 1)
 	assert.Contains(t, r0.Results[0].CodeDesc, "fmt.Sprintf")
 
-	// G304 — suppressed (nosec annotation)
+	// G304 — accepted #nosec suppression → waiver override. Raw stays failed,
+	// effectiveStatus passed, disposition waiver (single-result group).
 	r1 := baseline.Requirements[1]
 	assert.Equal(t, "G304", r1.ID)
 	require.Len(t, r1.Results, 1)
-	assert.Equal(t, hdf.NotReviewed, r1.Results[0].Status)
+	assert.Equal(t, hdf.Failed, r1.Results[0].Status)
+	require.Len(t, r1.StatusOverrides, 1)
+	assert.Equal(t, hdf.OverrideTypeWaiver, r1.StatusOverrides[0].Type)
+	assert.Equal(t, "sarif suppression", r1.StatusOverrides[0].AppliedBy.Identifier)
+	require.NotNil(t, r1.EffectiveStatus)
+	assert.Equal(t, hdf.Passed, *r1.EffectiveStatus)
+	require.NotNil(t, r1.Disposition)
+	assert.Equal(t, hdf.OverrideTypeWaiver, *r1.Disposition)
 	cweIds1 := r1.Tags["cwe"].([]string)
 	assert.Contains(t, cweIds1, "CWE-22")
 

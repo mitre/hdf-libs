@@ -439,6 +439,34 @@ func TestConvertPrisma_Cvss_PositiveScoreOnNonCVERow(t *testing.T) {
 	assert.Nil(t, cvss[0].Source)
 }
 
+func TestConvertPrisma_Refs_CVEFinding(t *testing.T) {
+	input := loadFixture(t, "input/minimal.csv")
+	result, err := ConvertPrismaToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	host1 := findBaseline(result.Baselines, "host-1.example.com")
+	require.NotNil(t, host1)
+
+	// The populated "Vulnerability Link" column becomes a single refs[] URL.
+	req := shared.MustFindRequirement(t, host1.Requirements, "46-CVE-2021-44142")
+	require.Len(t, req.Refs, 1)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "http://example.com/security/cve/CVE-2021-44142", *req.Refs[0].URL)
+}
+
+func TestConvertPrisma_Refs_BlankLinkOmitted(t *testing.T) {
+	input := loadFixture(t, "input/minimal.csv")
+	result, err := ConvertPrismaToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	host1 := findBaseline(result.Baselines, "host-1.example.com")
+	require.NotNil(t, host1)
+
+	// Compliance finding carries a blank Vulnerability Link → no refs[].
+	req := shared.MustFindRequirement(t, host1.Requirements, "60522-redhat-RHEL7-high")
+	assert.Nil(t, req.Refs)
+}
+
 func TestSnapshots(t *testing.T) {
 	// Prisma Cloud export carries no scan time.
 	shared.RunSnapshotTests(t, "prisma-to-hdf", func(input []byte) (interface{}, error) {

@@ -216,6 +216,62 @@ describe('Fortify to HDF Converter', () => {
       expect(nist.length).toBeGreaterThan(0);
     });
 
+    it('should surface Description Tips as a "tips" description', async () => {
+      const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+
+      const pathManip = findRequirement(bl, '823FE039-A7FE-4AAD-B976-9EC53FFE4A59');
+      const descs = pathManip!.descriptions as Array<Record<string, unknown>>;
+      const tips = descs.find(d => d.label === 'tips');
+      expect(tips).toBeDefined();
+      const tipsData = tips!.data as string;
+      expect(tipsData).toContain('If the program is performing custom input validation');
+      // Multiple tips joined into one body.
+      expect(tipsData).toContain('Implementation of an effective blacklist');
+      expect(tipsData).toContain('\n\n');
+
+      // Entity-escaped markup (&lt;code&gt;) inside a Tip is stripped.
+      const exc = findRequirement(bl, '8843F319-8A22-4101-A378-C2B2F2597988');
+      const excDescs = exc!.descriptions as Array<Record<string, unknown>>;
+      const excTips = (excDescs.find(d => d.label === 'tips')!.data as string);
+      expect(excTips).toContain('Thread.sleep()');
+      expect(excTips).not.toContain('<code>');
+      expect(excTips).not.toContain('&lt;');
+    });
+
+    it('should leave a tips description off a Description without Tips', async () => {
+      const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const deadCode = findRequirement(bl, '3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E');
+      const descs = deadCode!.descriptions as Array<Record<string, unknown>>;
+      expect(descs.find(d => d.label === 'tips')).toBeUndefined();
+    });
+
+    it('should surface external-URL references as refs[]', async () => {
+      const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const pathManip = findRequirement(bl, '823FE039-A7FE-4AAD-B976-9EC53FFE4A59');
+      const refs = pathManip!.refs as Array<Record<string, unknown>>;
+      expect(refs).toHaveLength(2);
+      expect(refs[0]!.url).toBe(
+        'https://www.securecoding.cert.org/confluence/display/java/FIO00-J.+Do+not+operate+on+files+in+shared+directories',
+      );
+      expect(refs[1]!.url).toBe(
+        'http://www.oracle.com/technetwork/java/seccodeguide-139067.html#5',
+      );
+    });
+
+    it('should leave refs unset when no reference carries a URL', async () => {
+      const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+      const out = parseOutput(await convertFortifyToHdf(fvdl));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const deadCode = findRequirement(bl, '3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E');
+      expect(deadCode!.refs).toBeUndefined();
+    });
+
     it('should set all result statuses to failed', async () => {
       const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
       const out = parseOutput(await convertFortifyToHdf(fvdl));
@@ -605,5 +661,108 @@ describe('Fortify to HDF Converter', () => {
     const fix = descs.find(d => d.label === 'fix');
     expect(fix).toBeDefined();
     expect(fix!.data).toBe('Fix it');
+  });
+
+  // The Fortify ClassInfo categorization (kingdom, class_type, subtype, analyzer)
+  // must surface as requirement.tags from the representative finding.
+  it('should surface ClassInfo categorization as tags', async () => {
+    const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+
+    // Empty Catch Block: all four ClassInfo fields present.
+    const exc = findRequirement(bl, '8843F319-8A22-4101-A378-C2B2F2597988')!;
+    const excTags = exc.tags as Record<string, unknown>;
+    expect(excTags.kingdom).toBe('Errors');
+    expect(excTags.class_type).toBe('Poor Error Handling');
+    expect(excTags.subtype).toBe('Empty Catch Block');
+    expect(excTags.analyzer).toBe('structural');
+    // class_type must not clobber the NIST/CCI tags.
+    expect(excTags.nist).toBeDefined();
+
+    // Path Manipulation carries no <Subtype> — that key is omitted.
+    const pathManip = findRequirement(bl, '823FE039-A7FE-4AAD-B976-9EC53FFE4A59')!;
+    const pmTags = pathManip.tags as Record<string, unknown>;
+    expect(pmTags.kingdom).toBe('Input Validation and Representation');
+    expect(pmTags.class_type).toBe('Path Manipulation');
+    expect(pmTags.analyzer).toBe('dataflow');
+    expect('subtype' in pmTags).toBe(false);
+
+    void reqs;
+  });
+
+  // A Description whose classID matches no vulnerability (no ClassInfo) must not
+  // emit any ClassInfo tags.
+  it('should omit ClassInfo tags when no vulnerability is present', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities/>
+<Description classID="NOVULN"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    const tags = reqs[0]!.tags as Record<string, unknown>;
+    for (const key of ['kingdom', 'class_type', 'subtype', 'analyzer']) {
+      expect(key in tags).toBe(false);
+    }
+  });
+
+  // requirement.sourceLocation promotes the representative finding's file/line
+  // locus (primary-trace default node) into the structured, machine-addressable
+  // HDF field.
+  it('should promote the representative finding locus into sourceLocation', async () => {
+    const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const pathManip = findRequirement(bl, '823FE039-A7FE-4AAD-B976-9EC53FFE4A59')!;
+    const sl = pathManip.sourceLocation as Record<string, unknown>;
+    expect(sl).toBeDefined();
+    expect(sl.ref).toBe('webgoat-lessons/challenge/src/main/java/org/owasp/webgoat/challenges/challenge7/MD5.java');
+    expect(sl.line).toBe(55);
+  });
+
+  // A non-numeric source line must yield ref only, with line omitted.
+  it('should omit line when the source line is non-numeric', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C7</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I7</InstanceID></InstanceInfo>
+    <AnalysisInfo><Unified><Trace><Primary>
+      <Entry><Node isDefault="true"><SourceLocation path="a.java" line="notanumber"/></Node></Entry>
+    </Primary></Trace></Unified></AnalysisInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C7"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    const sl = reqs[0]!.sourceLocation as Record<string, unknown>;
+    expect(sl).toBeDefined();
+    expect(sl.ref).toBe('a.java');
+    expect('line' in sl).toBe(false);
+  });
+
+  // A finding whose representative trace carries no path must leave
+  // sourceLocation unset (NOT-IN-SOURCE) rather than fabricating one.
+  it('should omit sourceLocation when no primary-trace path is present', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C8</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I8</InstanceID></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C8"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    expect('sourceLocation' in reqs[0]!).toBe(false);
   });
 });

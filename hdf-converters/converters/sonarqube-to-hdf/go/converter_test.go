@@ -652,6 +652,78 @@ func TestConvertSonarqubeToHDF_ProjectRuleAnchor(t *testing.T) {
 		"mqr.json: one requirement per distinct (project, rule) pair")
 }
 
+// Backfilled source metadata: effort/debt/author (per-issue), lang/langName
+// (per-rule), and cleanCodeAttributeCategory (MQR-only, alongside the existing
+// cleanCodeAttribute). Values pinned against the mqr.json fixture.
+func TestConvertSonarqubeToHDF_MetadataTags(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMQRFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	var req *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "java:S1186" {
+			req = &result.Baselines[0].Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, req, "java:S1186 requirement not found")
+
+	assert.Equal(t, "5min", req.Tags["effort"], "effort should be pinned from the issue")
+	assert.Equal(t, "5min", req.Tags["debt"], "debt should be pinned from the issue")
+	assert.Equal(t, "dev@example.com", req.Tags["author"], "author should be pinned from the issue")
+	assert.Equal(t, "java", req.Tags["lang"], "lang should be pinned from the rule")
+	assert.Equal(t, "Java", req.Tags["langName"], "langName should be pinned from the rule")
+	assert.Equal(t, "INTENTIONAL", req.Tags["cleanCodeAttributeCategory"],
+		"cleanCodeAttributeCategory should be pinned in MQR mode")
+	// The existing cleanCodeAttribute tag must remain untouched.
+	assert.Equal(t, "COMPLETE", req.Tags["cleanCodeAttribute"])
+}
+
+// The absent branches: author is empty in minimal.json (legacy mode) so its tag
+// is omitted, and cleanCodeAttributeCategory is only emitted in MQR mode.
+func TestConvertSonarqubeToHDF_MetadataTags_AbsentBranches(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		assert.NotContains(t, req.Tags, "author",
+			"requirement %q should omit author when the issue carries none", req.ID)
+		assert.NotContains(t, req.Tags, "cleanCodeAttributeCategory",
+			"requirement %q should omit cleanCodeAttributeCategory in legacy mode", req.ID)
+		// effort/debt/lang/langName are present in the minimal fixture.
+		assert.Equal(t, "java", req.Tags["lang"], "lang should still resolve in legacy mode for %q", req.ID)
+		assert.Equal(t, "Java", req.Tags["langName"], "langName should still resolve in legacy mode for %q", req.ID)
+	}
+
+	var s1144 *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "java:S1144" {
+			s1144 = &result.Baselines[0].Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, s1144)
+	assert.Equal(t, "5min", s1144.Tags["effort"])
+	assert.Equal(t, "5min", s1144.Tags["debt"])
+}
+
+// lang/langName are dropped when the rule is not present in the rules[] lookup.
+func TestConvertSonarqubeToHDF_LangOmittedWithoutRule(t *testing.T) {
+	input := []byte(`{
+		"total": 1, "p": 1, "ps": 100,
+		"paging": {"pageIndex": 1, "pageSize": 100, "total": 1},
+		"issues": [{"key":"k1","rule":"unknown:rule","severity":"MAJOR","component":"proj:file","project":"proj","status":"OPEN","message":"msg","effort":"3min","creationDate":"2026-01-01T00:00:00+0000","updateDate":"2026-01-01T00:00:00+0000","type":"CODE_SMELL"}],
+		"components": [], "rules": []
+	}`)
+
+	result, err := ConvertSonarqubeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.NotContains(t, req.Tags, "lang", "lang should be omitted when the rule is unknown")
+	assert.NotContains(t, req.Tags, "langName", "langName should be omitted when the rule is unknown")
+	assert.Equal(t, "3min", req.Tags["effort"], "effort still resolves from the issue")
+}
+
 func TestSnapshots(t *testing.T) {
 	// SonarQube issues carry no scan time; conversion-time fallback.
 	shared.RunSnapshotTests(t, "sonarqube-to-hdf", func(input []byte) (interface{}, error) {

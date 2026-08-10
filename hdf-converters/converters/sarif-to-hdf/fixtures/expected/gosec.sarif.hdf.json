@@ -60,18 +60,33 @@
               "label": "rationale"
             }
           ],
+          "disposition": "waiver",
+          "effectiveStatus": "passed",
           "results": [
             {
               "codeDesc": "URL : internal/handlers/files.go LINE : 56 COLUMN : 15\n\tdata, err := os.ReadFile(filePath)",
               "message": "Suppressed: #nosec G304 -- filePath is validated against allowlist",
               "startTime": "2026-07-12T18:56:41.922525-04:00",
-              "status": "notReviewed"
+              "status": "failed"
             }
           ],
           "sourceLocation": {
             "line": 56,
             "ref": "internal/handlers/files.go"
           },
+          "statusOverrides": [
+            {
+              "appliedAt": "2026-08-09T17:25:53.193386-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-08-09T17:25:53.193386-04:00",
+              "reason": "#nosec G304 -- filePath is validated against allowlist",
+              "status": "passed",
+              "type": "waiver"
+            }
+          ],
           "id": "G304",
           "impact": 0.5,
           "tags": {

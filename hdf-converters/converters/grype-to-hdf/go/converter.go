@@ -31,9 +31,28 @@ type GrypeDescriptor struct {
 }
 
 type GrypeSource struct {
-	Target struct {
-		UserInput string `json:"userInput"`
-	} `json:"target"`
+	Type   string      `json:"type,omitempty"`
+	Target GrypeTarget `json:"target"`
+}
+
+// GrypeTarget mirrors source.target for an image scan. Grype carries the full
+// scanned-image identity here; the converter previously read only userInput and
+// dropped the rest. A directory scan emits target as a bare string instead, so
+// only UserInput is guaranteed across scan types.
+type GrypeTarget struct {
+	UserInput      string       `json:"userInput,omitempty"`
+	ImageID        string       `json:"imageID,omitempty"`
+	ManifestDigest string       `json:"manifestDigest,omitempty"`
+	RepoDigests    []string     `json:"repoDigests,omitempty"`
+	Tags           []string     `json:"tags,omitempty"`
+	Architecture   string       `json:"architecture,omitempty"`
+	OS             string       `json:"os,omitempty"`
+	Layers         []GrypeLayer `json:"layers,omitempty"`
+}
+
+type GrypeLayer struct {
+	Digest string `json:"digest,omitempty"`
+	Size   int64  `json:"size,omitempty"`
 }
 
 type GrypeDistro struct {
@@ -575,6 +594,68 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 	return requirement
 }
 
+// buildComponent surfaces the scan target's identity into a top-level HDF
+// component. An image scan yields a containerImage component carrying the image
+// digest, id, and distro OS; anything without image identity (e.g. a directory
+// scan) falls back to a bare artifact component named for the scan target.
+func buildComponent(report GrypeReport, targetName string) hdf.Component {
+	t := report.Source.Target
+	isImage := t.ImageID != "" || t.ManifestDigest != "" || len(t.RepoDigests) > 0 || len(t.Tags) > 0
+	if !isImage {
+		return hdf.Component{Name: targetName, Type: hdf.Artifact}
+	}
+
+	firstRepoDigest := firstNonEmpty(t.RepoDigests)
+	firstTag := firstNonEmpty(t.Tags)
+
+	name := firstRepoDigest
+	if name == "" {
+		name = firstTag
+	}
+	if name == "" {
+		name = t.ImageID
+	}
+
+	component := hdf.Component{Name: name, Type: hdf.ContainerImage}
+	if t.ImageID != "" {
+		component.ImageID = hdfutil.Ptr(t.ImageID)
+	}
+	// Image the container was started from: a repoDigest pins it exactly; a tag
+	// is the fallback when the scan carries no repoDigest.
+	if image := firstRepoDigest; image != "" {
+		component.Image = hdfutil.Ptr(image)
+	} else if firstTag != "" {
+		component.Image = hdfutil.Ptr(firstTag)
+	}
+	if report.Distro != nil {
+		if report.Distro.Name != "" {
+			component.OSName = hdfutil.Ptr(report.Distro.Name)
+		}
+		if report.Distro.Version != "" {
+			component.OSVersion = hdfutil.Ptr(report.Distro.Version)
+		}
+	}
+	if t.ManifestDigest != "" {
+		component.Integrity = []hdf.Checksum{{
+			Algorithm: hdf.Sha256,
+			Value:     strings.TrimPrefix(t.ManifestDigest, "sha256:"),
+		}}
+	}
+	if t.Architecture != "" {
+		component.Labels = map[string]string{"architecture": t.Architecture}
+	}
+	return component
+}
+
+func firstNonEmpty(values []string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 // ConvertGrypeToHDF converts Grype JSON to HDF
 func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	if len(input) == 0 {
@@ -644,11 +725,8 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ResultsChecksum: resultsChecksum,
 	}
 
-	// Build target from scan source
-	target := hdf.Component{
-		Name: targetName,
-		Type: hdf.Artifact,
-	}
+	// Build target component from scan source (image identity when present)
+	target := buildComponent(grypeData, targetName)
 
 	// Build HDF results
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{

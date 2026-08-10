@@ -28,6 +28,7 @@
               "Networking"
             ],
             "implementationEffort": "Moderate",
+            "policy_definition_id": "/providers/Microsoft.Authorization/policyDefinitions/aaaa1111-bbbb-2222-cccc-3333dddd4444",
             "severity": "Medium",
             "tactics": [
               "Discovery",
@@ -73,6 +74,7 @@
               "Compute"
             ],
             "implementationEffort": "Low",
+            "policy_definition_id": "/providers/Microsoft.Authorization/policyDefinitions/bbbb2222-cccc-3333-dddd-4444eeee5555",
             "severity": "High",
             "tactics": [
               "Collection"
@@ -117,6 +119,7 @@
               "Data"
             ],
             "implementationEffort": "Low",
+            "policy_definition_id": "/providers/Microsoft.Authorization/policyDefinitions/cccc3333-dddd-4444-eeee-5555ffff6666",
             "severity": "High",
             "tactics": [
               "InitialAccess",
@@ -161,6 +164,7 @@
               "Networking"
             ],
             "implementationEffort": "Low",
+            "policy_definition_id": "/providers/Microsoft.Authorization/policyDefinitions/dddd4444-eeee-5555-ffff-6666aaaa7777",
             "severity": "Medium",
             "tactics": [
               "CredentialAccess"
@@ -204,6 +208,7 @@
               "Networking"
             ],
             "implementationEffort": "Moderate",
+            "policy_definition_id": "/providers/Microsoft.Authorization/policyDefinitions/eeee5555-ffff-6666-aaaa-7777bbbb8888",
             "severity": "Low",
             "tactics": [
               "Exfiltration"
@@ -246,6 +251,7 @@
               "Compute"
             ],
             "implementationEffort": "Low",
+            "policy_definition_id": "/providers/Microsoft.Authorization/policyDefinitions/ffff6666-aaaa-7777-bbbb-8888cccc9999",
             "severity": "High",
             "tactics": [
               "DefenseEvasion"

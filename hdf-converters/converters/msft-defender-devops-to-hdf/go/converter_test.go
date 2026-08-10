@@ -212,6 +212,28 @@ func TestConvert_ResultProperties(t *testing.T) {
 	assert.Equal(t, "NoValidationRequested", props["Validation"])
 }
 
+// ---- Result rank ----
+
+func TestConvert_ResultRank(t *testing.T) {
+	input := loadFixture(t, "input/minimal.sarif")
+	result, err := ConvertMsftDefenderDevopsToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// credscan run: CSCAN-GENERAL0020 results carry rank 94.0 in the source,
+	// emitted as a numeric tag.
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	credscan := result.Baselines[0].Requirements[0]
+	rank, ok := credscan.Tags["rank"].(float64)
+	require.True(t, ok, "rank tag should be a number")
+	assert.Equal(t, 94.0, rank)
+
+	// checkov run: results carry no rank → tag omitted.
+	require.NotEmpty(t, result.Baselines[1].Requirements)
+	checkov := result.Baselines[1].Requirements[0]
+	_, hasRank := checkov.Tags["rank"]
+	assert.False(t, hasRank, "checkov results have no rank; tag must be omitted")
+}
+
 // ---- Generator name ----
 
 func TestConvert_GeneratorName(t *testing.T) {

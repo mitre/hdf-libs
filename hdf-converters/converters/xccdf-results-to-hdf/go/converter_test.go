@@ -403,6 +403,58 @@ func TestConvertXccdfResultsToHDF_StigCCIToNIST(t *testing.T) {
 	assert.NotEmpty(t, nistSlice, "NIST mapping should not be empty for CCI-000048")
 }
 
+// --- Rule/group identifier tags (stig_id, cce, legacy_id, gid, gtitle) ---
+
+func TestConvertXccdfResultsToHDF_StigRuleGroupTags(t *testing.T) {
+	input := loadFixture(t, "stig-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "SV-204393")
+
+	assert.Equal(t, "RHEL-07-010030", req.Tags["stig_id"], "stig_id from rule-result @version")
+	assert.Equal(t, "CCE-26970-4", req.Tags["cce"], "cce from CCE ident")
+	assert.Equal(t, []string{"V-71859", "SV-86483"}, req.Tags["legacy_id"], "legacy_id array in source order")
+	assert.Equal(t, "xccdf_mil.disa.stig_group_V-204393", req.Tags["gid"], "gid from enclosing Group @id")
+	assert.Equal(t, "SRG-OS-000023-GPOS-00006", req.Tags["gtitle"], "gtitle from Group title")
+}
+
+// rhel8 carries stig_id + gid/gtitle but no CCE or legacy idents — the
+// present/absent split proves each key is source-gated independently.
+func TestConvertXccdfResultsToHDF_Rhel8NoCCEorLegacy(t *testing.T) {
+	input := loadFixture(t, "xccdf-results-openscap-rhel8.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "SV-230221")
+
+	assert.Equal(t, "RHEL-08-010000", req.Tags["stig_id"])
+	assert.Equal(t, "xccdf_mil.disa.stig_group_V-230221", req.Tags["gid"])
+	assert.Equal(t, "SRG-OS-000480-GPOS-00227", req.Tags["gtitle"])
+
+	_, hasCCE := req.Tags["cce"]
+	assert.False(t, hasCCE, "no CCE ident in rhel8 → cce omitted")
+	_, hasLegacy := req.Tags["legacy_id"]
+	assert.False(t, hasLegacy, "no legacy ident in rhel8 → legacy_id omitted")
+}
+
+// minimal.xml has top-level rules with no version, no idents, no Group — every
+// added key must be absent (the fully-empty branch).
+func TestConvertXccdfResultsToHDF_MinimalNoRuleGroupTags(t *testing.T) {
+	input := loadFixture(t, "minimal.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		for _, key := range []string{"stig_id", "cce", "legacy_id", "gid", "gtitle"} {
+			_, ok := req.Tags[key]
+			assert.Falsef(t, ok, "%s should be absent for un-grouped, version-less rule", key)
+		}
+	}
+}
+
 func TestConvertXccdfResultsToHDF_StigTarget(t *testing.T) {
 	input := loadFixture(t, "stig-rhel7.xml")
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
@@ -613,6 +665,82 @@ func TestConvertXccdfResultsToHDF_Tool(t *testing.T) {
 	assert.Equal(t, "XCCDF", *result.Tool.Name)
 	require.NotNil(t, result.Tool.Format)
 	assert.Equal(t, "XCCDF", *result.Tool.Format)
+}
+
+// TestConvertXccdfResultsToHDF_ToolVersion pins the scanner version lifted from
+// the TestResult @test-system CPE ("cpe:/a:redhat:openscap:1.2.17"), proving the
+// value is source-derived rather than dropped.
+func TestConvertXccdfResultsToHDF_ToolVersion(t *testing.T) {
+	input := loadFixture(t, "stig-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Version)
+	assert.Equal(t, "1.2.17", *result.Tool.Version)
+	// Name/format stay the format identity; version enriches it.
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "XCCDF", *result.Tool.Name)
+}
+
+// TestConvertXccdfResultsToHDF_ToolVersion_SCC pins the SCC scanner version from
+// "cpe:/a:spawar:scc:5.4.2".
+func TestConvertXccdfResultsToHDF_ToolVersion_SCC(t *testing.T) {
+	input := loadFixture(t, "xccdf-results-scc-rhel8.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Version)
+	assert.Equal(t, "5.4.2", *result.Tool.Version)
+}
+
+// TestConvertXccdfResultsToHDF_ToolVersion_Absent covers the fallback branch: a
+// TestResult with no @test-system leaves tool.version unset (never fabricated).
+func TestConvertXccdfResultsToHDF_ToolVersion_Absent(t *testing.T) {
+	input := loadFixture(t, "minimal.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Tool)
+	assert.Nil(t, result.Tool.Version)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "XCCDF", *result.Tool.Name)
+}
+
+// TestConvertARF_ToolVersion pins the scanner version from the ARF report's
+// embedded TestResult @test-system ("cpe:/a:redhat:openscap:1.3.5").
+func TestConvertARF_ToolVersion(t *testing.T) {
+	input := loadFixture(t, "arf-minimal.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Version)
+	assert.Equal(t, "1.3.5", *result.Tool.Version)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "ARF", *result.Tool.Name)
+}
+
+// TestParseCPEVersion covers every branch of the CPE version parser directly,
+// including malformed inputs that no fixture exercises.
+func TestParseCPEVersion(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"openscap", "cpe:/a:redhat:openscap:1.3.5", "1.3.5"},
+		{"scc", "cpe:/a:spawar:scc:5.4.2", "5.4.2"},
+		{"empty", "", ""},
+		{"non-cpe", "OpenSCAP 1.3.6", ""},
+		{"cpe without version", "cpe:/a:redhat:openscap", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, parseCPEVersion(tc.input))
+		})
+	}
 }
 
 func TestConvertXccdfResultsToHDF_ResultsChecksum(t *testing.T) {

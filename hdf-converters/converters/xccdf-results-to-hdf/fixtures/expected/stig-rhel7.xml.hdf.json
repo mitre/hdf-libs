@@ -27,13 +27,21 @@
           ],
           "severity": "medium",
           "tags": {
+            "cce": "CCE-26970-4",
             "cci": [
               "CCI-000048"
+            ],
+            "gid": "xccdf_mil.disa.stig_group_V-204393",
+            "gtitle": "SRG-OS-000023-GPOS-00006",
+            "legacy_id": [
+              "V-71859",
+              "SV-86483"
             ],
             "nist": [
               "AC-8 a",
               "AC-8.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-07-010030"
           },
           "title": "The Red Hat Enterprise Linux operating system must display the Standard Mandatory DoD Notice and Consent Banner before granting local or remote access to the system via a graphical user logon."
         },
@@ -61,13 +69,21 @@
           ],
           "severity": "medium",
           "tags": {
+            "cce": "CCE-80112-6",
             "cci": [
               "CCI-000056"
+            ],
+            "gid": "xccdf_mil.disa.stig_group_V-204396",
+            "gtitle": "SRG-OS-000028-GPOS-00009",
+            "legacy_id": [
+              "SV-86515",
+              "V-71891"
             ],
             "nist": [
               "AC-11 b",
               "AC-11.1 (iii)"
-            ]
+            ],
+            "stig_id": "RHEL-07-010060"
           },
           "title": "The Red Hat Enterprise Linux operating system must enable a user session lock until that user re-establishes access using established identification and authentication procedures."
         },
@@ -98,10 +114,17 @@
             "cci": [
               "CCI-000192"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-204405",
+            "gtitle": "SRG-OS-000069-GPOS-00037",
+            "legacy_id": [
+              "SV-95715",
+              "V-81003"
+            ],
             "nist": [
               "IA-5 (1) (a)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-07-010118"
           },
           "title": "The Red Hat Enterprise Linux operating system must be configured so that /etc/pam.d/passwd implements /etc/pam.d/system-auth when changing passwords."
         },
@@ -129,13 +152,21 @@
           ],
           "severity": "high",
           "tags": {
+            "cce": "CCE-27286-4",
             "cci": [
               "CCI-000366"
+            ],
+            "gid": "xccdf_mil.disa.stig_group_V-204424",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
+            "legacy_id": [
+              "V-71937",
+              "SV-86561"
             ],
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-07-010290"
           },
           "title": "The Red Hat Enterprise Linux operating system must not have accounts configured with blank or null passwords."
         },
@@ -163,12 +194,20 @@
           ],
           "severity": "low",
           "tags": {
+            "cce": "CCE-80346-0",
             "cci": [
               "CCI-002617"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-204452",
+            "gtitle": "SRG-OS-000437-GPOS-00194",
+            "legacy_id": [
+              "V-71987",
+              "SV-86611"
+            ],
             "nist": [
               "SI-2 (6)"
-            ]
+            ],
+            "stig_id": "RHEL-07-020200"
           },
           "title": "The Red Hat Enterprise Linux operating system must remove all software components after updated versions have been installed."
         }
@@ -200,6 +239,7 @@
   "timestamp": "2021-12-17T10:39:29Z",
   "tool": {
     "format": "XCCDF",
-    "name": "XCCDF"
+    "name": "XCCDF",
+    "version": "1.2.17"
   }
 }

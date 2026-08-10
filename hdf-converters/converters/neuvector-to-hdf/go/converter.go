@@ -239,6 +239,16 @@ func marshalVulnCode(vuln NeuVectorVuln) string {
 	return strings.TrimSuffix(buf.String(), "\n")
 }
 
+// buildRefs emits a single external Reference for the vulnerability's advisory
+// link. Returns nil when the source carries no link so refs[] is omitted.
+func buildRefs(vuln NeuVectorVuln) []hdf.Reference {
+	if vuln.Link == "" {
+		return nil
+	}
+	url := vuln.Link
+	return []hdf.Reference{{URL: &url}}
+}
+
 // buildRequirement converts a NeuVector vulnerability to an EvaluatedRequirement.
 func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequirement {
 	cweIDs := extractCWEs(vuln.Description)
@@ -249,6 +259,9 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequi
 	extras := map[string]interface{}{}
 	if len(cveIDs) > 0 {
 		extras["cve"] = hdfutil.StringsToInterfaces(cveIDs)
+	}
+	if vuln.FeedRating != "" {
+		extras["feed_rating"] = vuln.FeedRating
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -283,6 +296,9 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequi
 	}
 	if cvss := buildCvssEntries(vuln); len(cvss) > 0 {
 		req.Cvss = cvss
+	}
+	if refs := buildRefs(vuln); len(refs) > 0 {
+		req.Refs = refs
 	}
 
 	// NeuVector scans container images; the package ecosystem isn't
@@ -323,6 +339,82 @@ func imageTitle(report NeuVectorScanReport) string {
 func targetName(report NeuVectorScanReport) string {
 	return fmt.Sprintf("%s/%s:%s",
 		report.Registry, report.Repository, report.Tag)
+}
+
+// digestAlgorithms maps a NeuVector digest's algorithm prefix to the HDF hash
+// algorithm. NeuVector emits `sha256:<hex>`; the others are defensive.
+var digestAlgorithms = map[string]hdf.HashAlgorithm{
+	"sha256": hdf.Sha256,
+	"sha384": hdf.Sha384,
+	"sha512": hdf.Sha512,
+	"blake3": hdf.Blake3,
+}
+
+// splitBaseOS splits NeuVector's base_os "name:version" form (e.g. "alpine:3.12.1")
+// into OS name and version. A value with no ":" is the name with no version; an
+// empty value yields two empty strings.
+func splitBaseOS(baseOS string) (name, version string) {
+	if baseOS == "" {
+		return "", ""
+	}
+	if i := strings.IndexByte(baseOS, ':'); i >= 0 {
+		return baseOS[:i], baseOS[i+1:]
+	}
+	return baseOS, ""
+}
+
+// digestIntegrity turns the report digest ("sha256:<hex>") into the component's
+// Integrity checksum, folding the algorithm prefix into Checksum.Algorithm.
+// Returns nil when the report carries no digest.
+func digestIntegrity(digest string) []hdf.Checksum {
+	if digest == "" {
+		return nil
+	}
+	algo := hdf.Sha256
+	value := digest
+	if i := strings.IndexByte(digest, ':'); i >= 0 {
+		if mapped, ok := digestAlgorithms[digest[:i]]; ok {
+			algo = mapped
+			value = digest[i+1:]
+		}
+	}
+	return []hdf.Checksum{{Algorithm: algo, Value: value}}
+}
+
+// buildComponent assembles the scan-wide containerImage component from the
+// report's image identity. base_os → OSName/OSVersion, digest → Integrity,
+// plus image_id/registry/repository/tag when the report carries them.
+func buildComponent(report NeuVectorScanReport) hdf.Component {
+	comp := hdf.Component{
+		Name: targetName(report),
+		Type: hdf.ContainerImage,
+		Labels: map[string]string{
+			"image":    fmt.Sprintf("%s/%s:%s", report.Registry, report.Repository, report.Tag),
+			"registry": report.Registry,
+		},
+	}
+	if osName, osVersion := splitBaseOS(report.BaseOS); osName != "" {
+		comp.OSName = &osName
+		if osVersion != "" {
+			comp.OSVersion = &osVersion
+		}
+	}
+	if report.ImageID != "" {
+		comp.ImageID = hdfutil.Ptr(report.ImageID)
+	}
+	if report.Registry != "" {
+		comp.Registry = hdfutil.Ptr(report.Registry)
+	}
+	if report.Repository != "" {
+		comp.Repository = hdfutil.Ptr(report.Repository)
+	}
+	if report.Tag != "" {
+		comp.Tag = hdfutil.Ptr(report.Tag)
+	}
+	if integrity := digestIntegrity(report.Digest); len(integrity) > 0 {
+		comp.Integrity = integrity
+	}
+	return comp
 }
 
 // ConvertNeuVectorToHDF converts NeuVector container vulnerability scan JSON output
@@ -390,16 +482,7 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ConverterVersion: converterVersion,
 		ToolName:         "NeuVector",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components: []hdf.Component{
-			{
-				Name: targetName(scan.Report),
-				Type: hdf.ContainerImage,
-				Labels: map[string]string{
-					"image":    fmt.Sprintf("%s/%s:%s", scan.Report.Registry, scan.Report.Repository, scan.Report.Tag),
-					"registry": scan.Report.Registry,
-				},
-			},
-		},
-		Timestamp: &now,
+		Components:       []hdf.Component{buildComponent(scan.Report)},
+		Timestamp:        &now,
 	}), nil
 }

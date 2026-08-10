@@ -42,6 +42,7 @@ type CheckovSummary struct {
 // CheckovCheck represents a single check result from checkov.
 type CheckovCheck struct {
 	CheckID       string             `json:"check_id"`
+	BcCheckID     *string            `json:"bc_check_id"`
 	CheckName     string             `json:"check_name"`
 	CheckResult   CheckovCheckResult `json:"check_result"`
 	Severity      *string            `json:"severity"`
@@ -195,6 +196,10 @@ func buildRequirement(checkID string, group []checkWithType, now time.Time) hdf.
 	if types := checkTypesOf(group); len(types) > 0 {
 		tags["check_type"] = types
 	}
+	// Bridgecrew check identifier (e.g. "BC_AWS_S3_16"); omit when null/absent.
+	if rep.BcCheckID != nil && *rep.BcCheckID != "" {
+		tags["bc_check_id"] = *rep.BcCheckID
+	}
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: rep.CheckName},
@@ -224,6 +229,16 @@ func buildRequirement(checkID string, group []checkWithType, now time.Time) hdf.
 	}
 	if code := renderCodeBlock(rep.CodeBlock); code != "" {
 		req.Code = &code
+	}
+	// Promote the finding's file/line locus into the structured, queryable
+	// sourceLocation. file_line_range is [start, end]; Line is the START line.
+	if rep.FilePath != "" {
+		loc := &hdf.SourceLocation{Ref: hdfutil.Ptr(rep.FilePath)}
+		if len(rep.FileLineRange) > 0 {
+			line := float64(rep.FileLineRange[0])
+			loc.Line = &line
+		}
+		req.SourceLocation = loc
 	}
 	return req
 }

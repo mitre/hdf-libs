@@ -186,6 +186,46 @@ describe('hdf-to-splunk converter', () => {
     expect(event.cve).toBeUndefined(); // non-CVE source -> no cve field
   });
 
+  it('surfaces source_location, verification_method, baseline metadata + full component', () => {
+    const o = lines(convertHdfToSplunk(input('override.json'), VERSION))[0];
+    const event = obj(o.event);
+    const hdf = obj(event.hdf);
+
+    // source_location round-trips {ref, line}
+    const sl = obj(hdf.source_location);
+    expect(sl.ref).toBe('controls/stig.rb');
+    expect(sl.line).toBe(1);
+
+    // baseline metadata beyond name
+    expect(hdf.baseline_version).toBe('1.0.0');
+    expect(hdf.baseline_title).toBe('RHEL 9 STIG Baseline');
+    expect(obj(hdf.baseline_checksum).algorithm).toBe('sha256');
+    expect(obj(hdf.baseline_checksum).value).toBe('abc123');
+    expect((hdf.groups as unknown[]).length).toBe(1);
+    expect(obj((hdf.groups as unknown[])[0]).id).toBe('controls/stig.rb');
+
+    // full component + CIM promotions
+    const comp = obj(hdf.component);
+    expect(comp.componentId).toBe('8f3b2c1a-0000-4a00-8000-000000000001');
+    expect(comp.ipAddress).toBe('10.0.0.50');
+    expect(comp.osName).toBe('Red Hat Enterprise Linux 9');
+    expect(comp.osVersion).toBe('9.3');
+    expect(event.os).toBe('Red Hat Enterprise Linux 9');
+    expect(event.dest_ip).toBe('10.0.0.50');
+    expect(obj(o.fields).dest_ip).toBe('10.0.0.50');
+
+    // verificationMethod absent here -> key omitted
+    expect(hdf.verification_method).toBeUndefined();
+
+    // verification_method carries through where the source has it; cve baseline
+    // has version but no title/checksum/groups -> those stay absent
+    const cveHdf = obj(obj(lines(convertHdfToSplunk(input('cve.json'), VERSION))[0].event).hdf);
+    expect(cveHdf.verification_method).toBe('automated');
+    expect(cveHdf.baseline_version).toBe('1.0.0');
+    expect(cveHdf.baseline_title).toBeUndefined();
+    expect(cveHdf.groups).toBeUndefined();
+  });
+
   it('is byte-identical to the Go golden output (TS<->Go parity)', () => {
     for (const name of ['compliance', 'cve', 'override', 'riskadjust']) {
       expect(convertHdfToSplunk(input(`${name}.json`), VERSION)).toBe(golden(`${name}.ndjson`));

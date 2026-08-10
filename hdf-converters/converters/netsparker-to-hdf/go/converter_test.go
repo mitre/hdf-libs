@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -241,6 +242,44 @@ func TestConvertNetsparker_Tags(t *testing.T) {
 	assert.True(t, ok, "owasp tag should be present")
 }
 
+// ---- Classification tags (capec / wasc / iso27001 / pci32) ----
+
+func TestConvertNetsparker_ClassificationTags(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// Vuln 1: capec=217, wasc=4, iso27001=A.14.1.3, pci32=6.5.4 (all present).
+	v1 := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
+	assert.Equal(t, "217", v1.Tags["capec"])
+	assert.Equal(t, "4", v1.Tags["wasc"])
+	assert.Equal(t, "A.14.1.3", v1.Tags["iso27001"])
+	assert.Equal(t, "6.5.4", v1.Tags["pci32"])
+	// hipaa and owasppc are empty in every fixture vuln → never tagged.
+	_, hasHipaa := v1.Tags["hipaa"]
+	assert.False(t, hasHipaa, "hipaa is empty in source → tag omitted")
+	_, hasOwasppc := v1.Tags["owasppc"]
+	assert.False(t, hasOwasppc, "owasppc is empty in source → tag omitted")
+
+	// Vuln 2: wasc=15, iso27001=A.14.1.2; capec and pci32 empty → omitted.
+	v2 := shared.MustFindRequirement(t, reqs, "9c3a51bf-6c1f-47c9-4646-afb704bb8fb0")
+	assert.Equal(t, "15", v2.Tags["wasc"])
+	assert.Equal(t, "A.14.1.2", v2.Tags["iso27001"])
+	_, hasCapec := v2.Tags["capec"]
+	assert.False(t, hasCapec, "empty capec → tag omitted")
+	_, hasPci := v2.Tags["pci32"]
+	assert.False(t, hasPci, "empty pci32 → tag omitted")
+
+	// Vuln 3: capec=103, iso27001=A.14.2.5; wasc empty → omitted.
+	v3 := shared.MustFindRequirement(t, reqs, "8d8e6052-221d-41c4-8f1e-af9704473901")
+	assert.Equal(t, "103", v3.Tags["capec"])
+	assert.Equal(t, "A.14.2.5", v3.Tags["iso27001"])
+	_, hasWasc := v3.Tags["wasc"]
+	assert.False(t, hasWasc, "empty wasc → tag omitted")
+}
+
 // ---- Descriptions ----
 
 func TestConvertNetsparker_Descriptions(t *testing.T) {
@@ -266,6 +305,71 @@ func TestConvertNetsparker_Descriptions(t *testing.T) {
 	require.NotNil(t, fix, "expected a 'fix' description")
 	assert.NotEmpty(t, fix.Data)
 	_ = check
+}
+
+// ---- External references → refs[] ----
+
+func TestConvertNetsparker_Refs(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
+
+	// First vuln's <external-references> carries five anchor links.
+	require.Len(t, req.Refs, 5)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://wiki.owasp.org/index.php/Insecure_Configuration_Management", *req.Refs[0].URL)
+	require.NotNil(t, req.Refs[4].URL)
+	assert.Equal(t, "https://syslink.pl/cipherlist/", *req.Refs[4].URL)
+}
+
+func TestConvertNetsparker_RefsAbsent(t *testing.T) {
+	// Crafted vuln with no <external-references> element → refs must stay unset.
+	xml := `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-refs</LookupId>
+			<name>No Refs Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`
+
+	result, err := ConvertNetsparkerToHDF([]byte(xml), testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "no-refs")
+	assert.Empty(t, req.Refs, "refs should be unset when the vuln carries no external-references")
+}
+
+func TestBuildRefs(t *testing.T) {
+	t.Run("empty input", func(t *testing.T) {
+		assert.Nil(t, buildRefs(""))
+	})
+	t.Run("no anchors", func(t *testing.T) {
+		assert.Nil(t, buildRefs("<div>plain text, no links</div>"))
+	})
+	t.Run("double-quoted href", func(t *testing.T) {
+		refs := buildRefs(`<a href="https://example.com/x">x</a>`)
+		require.Len(t, refs, 1)
+		require.NotNil(t, refs[0].URL)
+		assert.Equal(t, "https://example.com/x", *refs[0].URL)
+	})
+	t.Run("skips non-absolute hrefs", func(t *testing.T) {
+		refs := buildRefs(`<a href="https://example.com/x">abs</a><a href="/relative/path">rel</a><a href="#frag">frag</a><a href="   ">blank</a>`)
+		require.Len(t, refs, 1)
+		require.NotNil(t, refs[0].URL)
+		assert.Equal(t, "https://example.com/x", *refs[0].URL)
+	})
+	t.Run("nil when only non-absolute hrefs", func(t *testing.T) {
+		assert.Nil(t, buildRefs(`<a href="/relative">rel</a><a href="#frag">f</a>`))
+	})
 }
 
 // ---- Status: all results Failed ----
@@ -372,6 +476,43 @@ func TestConvertNetsparker_StartTime(t *testing.T) {
 
 	// StartTime should be non-zero (parsed from target initiated)
 	assert.False(t, req.Results[0].StartTime.IsZero(), "startTime should not be zero")
+}
+
+// ---- Top-level timestamp from `generated` attribute ----
+
+func TestConvertNetsparker_Timestamp(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Fixture carries `generated="03/07/2023 03:15 PM"`; parsed as UTC that is
+	// 2023-03-07T15:15:00Z. The shared snapshot masks the top-level timestamp,
+	// so pin the exact source-derived value here.
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2023-03-07T15:15:00Z", result.Timestamp.UTC().Format(time.RFC3339))
+}
+
+func TestConvertNetsparker_TimestampFallback(t *testing.T) {
+	// No `generated` attribute → the converter falls back to a valid, non-zero
+	// timestamp rather than omitting or emitting a zero value.
+	xml := `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>no-generated</LookupId>
+			<name>No Generated Vuln</name>
+			<severity>Low</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`
+
+	result, err := ConvertNetsparkerToHDF([]byte(xml), testVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Timestamp, "timestamp must fall back to a valid value when generated is absent")
+	assert.False(t, result.Timestamp.IsZero(), "fallback timestamp must be non-zero")
 }
 
 // ---- Netsparker root element detection ----

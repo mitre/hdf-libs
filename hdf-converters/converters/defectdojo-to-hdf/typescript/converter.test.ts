@@ -41,8 +41,8 @@ describe('defectdojo-to-hdf converter', () => {
     expect(byTriage(reqs, 'defectdojo/active').results[0].status).toBe('failed');
 
     const fp = byTriage(reqs, 'defectdojo/false_p');
-    expect(fp.results[0].status).toBe('failed'); // dismissal rides in the tag, not the status
-    expect(fp.effectiveStatus).toBeUndefined();
+    expect(fp.results[0].status).toBe('failed'); // raw stays failed
+    expect(fp.effectiveStatus).toBe('notApplicable'); // dismissal rides in a falsePositive override
 
     const mitigatedOnly = reqs.find(
       r => (r.tags as Record<string, unknown>)['defectdojo/is_mitigated'] === true && (r.tags as Record<string, unknown>)['defectdojo/false_p'] !== true,
@@ -66,6 +66,65 @@ describe('defectdojo-to-hdf converter', () => {
     expect(ov.appliedBy.identifier).toBe('defectdojo-user-1');
     expect(ov.appliedBy.type).toBe('simple');
     expect(String(ov.expiresAt)).toContain('2099'); // real expiration_date
+  });
+
+  it('emits a real falsePositive override from a false-positive dismissal', async () => {
+    // Finding 2 in the fixture: false_p=true, mitigated_by=1, mitigated=2026-07-26.
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    const fp = byTriage(hdf.baselines[0].requirements, 'defectdojo/false_p');
+
+    expect(fp.results[0].status).toBe('failed'); // raw stays failed
+    expect(fp.effectiveStatus).toBe('notApplicable'); // a vuln aggregator's FP → N/A
+    expect(fp.disposition).toBe('falsePositive');
+
+    expect(fp.statusOverrides).toHaveLength(1);
+    const ov = fp.statusOverrides![0];
+    expect(ov.type).toBe('falsePositive');
+    expect(ov.status).toBe('notApplicable');
+    expect(ov.reason).toBe('Some mitigation'); // the finding's mitigation note
+    expect(ov.appliedBy.identifier).toBe('defectdojo-user-1');
+    expect(ov.appliedBy.type).toBe('simple');
+    expect(String(ov.appliedAt)).toContain('2026'); // mitigated date
+    expect(String(ov.expiresAt)).toContain('2027'); // appliedAt + 1yr
+  });
+
+  it('emits no override for an untriaged finding (raw status unchanged)', async () => {
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    const active = byTriage(hdf.baselines[0].requirements, 'defectdojo/active');
+
+    expect(active.results[0].status).toBe('failed');
+    expect(active.effectiveStatus).toBeUndefined();
+    expect(active.disposition).toBeUndefined();
+    expect(active.statusOverrides).toBeUndefined();
+  });
+
+  it('pins the top-level timestamp to the newest finding date', async () => {
+    // The shared snapshot masks timestamp values, so assert the exact source
+    // value here. Newest finding date in the fixture is finding 4, 2024-01-04.
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    expect(hdf.timestamp).toBe('2024-01-04T00:00:00Z');
+  });
+
+  it('derives result startTime from the finding date (not now())', async () => {
+    // Go's ParseTimestamp has no date-only layout; both languages promote the
+    // bare date to UTC midnight so the startTime is source-derived and identical.
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    const byId = new Map(hdf.baselines[0].requirements.map(r => [r.id, r]));
+    expect(byId.get('DefectDojo-Finding-1')!.results[0].startTime).toBe('2021-01-06T00:00:00Z');
+    expect(byId.get('DefectDojo-Finding-4')!.results[0].startTime).toBe('2024-01-04T00:00:00Z');
+  });
+
+  it('is deterministic — converting twice yields byte-identical output', async () => {
+    // Every fixture finding carries a date, so no now() fallback runs; identical
+    // output proves the mapped timestamps are source-anchored, not wall-clock.
+    const a = await convertDefectDojoToHdf(load('findings.json'));
+    const b = await convertDefectDojoToHdf(load('findings.json'));
+    expect(a).toBe(b);
+  });
+
+  it('omits the top-level timestamp when no finding carries a date', async () => {
+    const hdf = JSON.parse(await convertDefectDojoToHdf(JSON.stringify([{id: 1, title: 't', severity: 'High'}]))) as HDFResults;
+    expect(hdf.timestamp).toBeUndefined();
   });
 
   it('synthesizes a passed placeholder for empty input', async () => {
@@ -147,6 +206,46 @@ describe('defectdojo-to-hdf converter', () => {
     // risk_accepted flag but no accepted_risks → no override
     const flagOnly = await convertOne({risk_accepted: true});
     expect(flagOnly.statusOverrides).toBeUndefined();
+  });
+
+  it('resolves false-positive reviewer identity, reason, and appliedAt by precedence', async () => {
+    const fp = (extra: Record<string, unknown>): Record<string, unknown> => ({false_p: true, ...extra});
+
+    const email = await convertOne(fp({mitigated_by: 1, mitigated_by_username: 'u', mitigated_by_email: 'a@b.com'}));
+    expect(email.statusOverrides![0].appliedBy).toMatchObject({type: 'email', identifier: 'a@b.com'});
+
+    const username = await convertOne(fp({mitigated_by: 1, mitigated_by_username: 'u'}));
+    expect(username.statusOverrides![0].appliedBy).toMatchObject({type: 'username', identifier: 'u'});
+
+    const simple = await convertOne(fp({mitigated_by: 7}));
+    expect(simple.statusOverrides![0].appliedBy).toMatchObject({type: 'simple', identifier: 'defectdojo-user-7'});
+
+    const system = await convertOne(fp({}));
+    expect(system.statusOverrides![0].appliedBy).toMatchObject({type: 'other', identifier: 'defectdojo (false positive triage)'});
+
+    // reason: mitigation note when present, else constant fallback
+    expect((await convertOne(fp({mitigation: 'note here'}))).statusOverrides![0].reason).toBe('note here');
+    expect((await convertOne(fp({}))).statusOverrides![0].reason).toBe('Marked as false positive in DefectDojo');
+
+    // appliedAt: mitigated date wins over the finding date; expiresAt is +1yr
+    const mit = await convertOne(fp({mitigated: '2030-05-01T00:00:00Z', date: '2020-01-01'}));
+    expect(String(mit.statusOverrides![0].appliedAt)).toContain('2030');
+    expect(String(mit.statusOverrides![0].expiresAt)).toContain('2031');
+
+    // no mitigated date → falls back to the finding date
+    const fromDate = await convertOne(fp({date: '2022-03-04'}));
+    expect(String(fromDate.statusOverrides![0].appliedAt)).toBe('2022-03-04T00:00:00Z');
+  });
+
+  it('prefers the waiver over the false-positive path when a finding is both', async () => {
+    const both = await convertOne({
+      false_p: true,
+      risk_accepted: true,
+      accepted_risks: [{name: 'AcceptName'}],
+    });
+    expect(both.disposition).toBe('waiver');
+    expect(both.effectiveStatus).toBe('passed');
+    expect(both.statusOverrides![0].type).toBe('waiver');
   });
 
   it('derives the requirement id from the tool ids with fallback', async () => {
@@ -264,5 +363,38 @@ describe('defectdojo-to-hdf converter', () => {
   it('names the baseline DefectDojo when no scanner is present', async () => {
     const hdf = JSON.parse(await convertDefectDojoToHdf(JSON.stringify([base]))) as HDFResults;
     expect(hdf.baselines[0].name).toBe('DefectDojo: DefectDojo');
+  });
+
+  it('promotes file_path/line into structured sourceLocation', async () => {
+    // Value-pin against the real fixture: finding 1 → src/first.cpp:13,
+    // finding 2 → src/two.cpp:135. Line is a bare number (byte-parity with Go).
+    const hdf = JSON.parse(await convertDefectDojoToHdf(load('findings.json'))) as HDFResults;
+    const byId = new Map(hdf.baselines[0].requirements.map(r => [r.id, r]));
+
+    expect(byId.get('DefectDojo-Finding-1')!.sourceLocation).toEqual({ref: 'src/first.cpp', line: 13});
+    expect(byId.get('DefectDojo-Finding-2')!.sourceLocation).toEqual({ref: 'src/two.cpp', line: 135});
+  });
+
+  it('covers every sourceLocation branch', async () => {
+    // primary file_path/line
+    expect((await convertOne({file_path: 'src/a.go', line: 42})).sourceLocation).toEqual({ref: 'src/a.go', line: 42});
+
+    // file_path present, line absent → ref only, line omitted
+    expect((await convertOne({file_path: 'src/a.go', line: null})).sourceLocation).toEqual({ref: 'src/a.go'});
+
+    // file_path absent → SAST source fallback used instead
+    expect((await convertOne({sast_source_file_path: 'sast/b.go', sast_source_line: 7})).sourceLocation).toEqual({
+      ref: 'sast/b.go',
+      line: 7,
+    });
+
+    // file_path present wins over sast_source_file_path when both are set
+    expect(
+      (await convertOne({file_path: 'src/a.go', line: 42, sast_source_file_path: 'sast/b.go', sast_source_line: 7}))
+        .sourceLocation,
+    ).toEqual({ref: 'src/a.go', line: 42});
+
+    // no locus at all → sourceLocation omitted
+    expect((await convertOne({})).sourceLocation).toBeUndefined();
   });
 });

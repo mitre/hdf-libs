@@ -93,6 +93,12 @@ type Vuln struct {
 	Status         CheckStatus
 	FindingDetails string
 	Comments       string
+	// SeverityOverride and SeverityJustification carry an assessor's manual
+	// severity adjustment: the CKL SEVERITY_OVERRIDE / SEVERITY_JUSTIFICATION
+	// pair and the CKLB rule.overrides.severity object. On export they are
+	// synthesized from an HDF impact-bearing statusOverride (risk adjustment).
+	SeverityOverride      string
+	SeverityJustification string
 	// Extra holds the rarely-used STIG_DATA / rule fields (false_positives,
 	// mitigations, responsibility, etc.) keyed by canonical name, preserved for
 	// round-trip fidelity without bloating the typed model.

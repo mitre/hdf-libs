@@ -5,8 +5,8 @@ import {
 } from '@mitre/hdf-mappings';
 import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
-import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description } from '@mitre/hdf-schema';
-import { ResultStatus, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
+import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, StatusOverride } from '@mitre/hdf-schema';
+import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 // --- SARIF 2.1.0 type definitions ---
 
@@ -228,7 +228,7 @@ function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum, t
 
   const requirements = groupOrder.map(ruleId => {
     const group = groupMap.get(ruleId)!;
-    return convertResultGroup(ruleId, group.rule, group.results);
+    return convertResultGroup(ruleId, group.rule, group.results, timestamp);
   });
 
   // Use tool name for baseline name if available
@@ -264,7 +264,7 @@ function buildRuleMap(run: SarifRun): Map<string, ReportingDescriptor> {
 
 // --- Result-group conversion (one EvaluatedRequirement per ruleId) ---
 
-function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefined, sarifResults: SarifResult[]): EvaluatedRequirement {
+function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefined, sarifResults: SarifResult[], timestamp: Date): EvaluatedRequirement {
   const firstResult = sarifResults[0]!;
 
   // Derive requirement-level metadata from the rule and first result
@@ -297,8 +297,13 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
   // Build descriptions from rule metadata and first result
   const descriptions = buildDescriptions(description, rule, firstResult);
 
+  // Aggregate every suppression across the grouped results so the suppressions
+  // tag is a lossless record (the tag is requirement-level; a group can hold
+  // suppressed and unsuppressed results).
+  const allSuppressions = sarifResults.flatMap(sr => sr.suppressions ?? []);
+
   // Build tags
-  const tags = buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls);
+  const tags = buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls, allSuppressions);
 
   const options: {
     sourceLocation?: { ref: string; line: number };
@@ -343,6 +348,38 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
   }
   if (packages.length > 0) {
     (req as EvaluatedRequirement).affectedPackages = packages;
+  }
+
+  // Reconstruct structured status overrides from accepted suppressions. Each
+  // accepted suppression across the grouped results becomes an attributed,
+  // expiring override; effectiveStatus/disposition are set only when the overrides
+  // actually change the requirement's rolled-up status (an unsuppressed sibling
+  // failure keeps the requirement effectively failed).
+  const overrides: StatusOverride[] = [];
+  const rawStatuses: ResultStatus[] = [];
+  const effStatuses: ResultStatus[] = [];
+  for (const sr of sarifResults) {
+    const raw = mapKindToStatus(sr.kind);
+    rawStatuses.push(raw);
+    if (raw === ResultStatus.Failed || raw === ResultStatus.Passed) {
+      const built = buildSuppressionOverride(sr, timestamp);
+      if (built) {
+        overrides.push(built.override);
+        effStatuses.push(built.effective);
+        continue;
+      }
+    }
+    effStatuses.push(raw);
+  }
+  if (overrides.length > 0) {
+    const r = req as EvaluatedRequirement;
+    r.statusOverrides = overrides;
+    const effRoll = rollupStatus(effStatuses);
+    const rawRoll = rollupStatus(rawStatuses);
+    if (effRoll !== rawRoll) {
+      r.effectiveStatus = effRoll;
+      r.disposition = governingDisposition(overrides, effRoll);
+    }
   }
   return req;
 }
@@ -394,17 +431,16 @@ function resolveRuleLevel(rule: ReportingDescriptor | undefined, results: SarifR
 
 // Converts a single SARIF result into one or more HDF RequirementResults.
 function convertSarifResultToHDFResults(result: SarifResult): RequirementResult[] {
-  // Map kind to HDF status
-  let status = mapKindToStatus(result.kind);
+  // Map kind to HDF status. The raw status stays the tool's — an accepted
+  // suppression becomes a structured, attributed override on the requirement
+  // (see convertResultGroup), not a laundered notReviewed status.
+  const status = mapKindToStatus(result.kind);
 
-  // Handle suppressions
+  // Surface an accepted suppression's justification as an informative per-result
+  // message; the requirement's Status_Override carries the authoritative record.
   let suppressionJustification = '';
   if (status === ResultStatus.Failed || status === ResultStatus.Passed) {
-    const suppResult = applySuppression(result.suppressions);
-    if (suppResult.suppressed) {
-      status = ResultStatus.NotReviewed;
-      suppressionJustification = suppResult.justification;
-    }
+    suppressionJustification = acceptedSuppressionReason(result.suppressions);
   }
 
   // Build backtrace from code flows
@@ -540,29 +576,97 @@ function mapKindToStatus(kind?: string): ResultStatus {
 
 // --- Suppression handling ---
 
-function applySuppression(suppressions?: Suppression[]): { suppressed: boolean; justification: string } {
-  if (!suppressions || suppressions.length === 0) {
-    return { suppressed: false, justification: '' };
+// Fallback Reason for an accepted suppression that carries no justification text
+// (reason is REQUIRED on a Status_Override).
+const DEFAULT_SUPPRESSION_REASON = 'Suppressed in SARIF source';
+
+// Returns the suppressions whose status is "accepted". underReview and rejected
+// suppressions are NOT overrides — an underReview decision is not final and a
+// rejected one was declined.
+function acceptedSuppressions(suppressions?: Suppression[]): Suppression[] {
+  return (suppressions ?? []).filter(s => s.status === 'accepted');
+}
+
+// Joins the justifications of a result's accepted suppressions, falling back to a
+// constant when none carry text. Empty when the result has no accepted suppression.
+function acceptedSuppressionReason(suppressions?: Suppression[]): string {
+  const accepted = acceptedSuppressions(suppressions);
+  if (accepted.length === 0) {
+    return '';
   }
+  const justifications = accepted.map(s => s.justification).filter((j): j is string => Boolean(j));
+  return justifications.length > 0 ? justifications.join('; ') : DEFAULT_SUPPRESSION_REASON;
+}
 
-  const justifications: string[] = [];
-  let hasSuppression = false;
+// Reports whether a suppression justification reads as a false-positive
+// determination rather than a risk-accepted waiver.
+function justificationIndicatesFalsePositive(justification?: string): boolean {
+  const lower = (justification ?? '').toLowerCase();
+  return lower.includes('false positive') || lower.includes('false-positive');
+}
 
-  for (const s of suppressions) {
-    if (s.status === 'rejected') {
-      continue;
+// Turns a result's accepted suppression(s) into an HDF Status_Override. SARIF
+// carries no owner or decision date, so appliedBy is an honest system identity and
+// appliedAt is the run/conversion time (expiresAt +1yr). A justification that reads
+// as a false positive maps to falsePositive → notApplicable (SARIF is a vuln/SAST
+// format); otherwise a risk-accepted waiver → passed. Returns undefined when the
+// result has no accepted suppression.
+function buildSuppressionOverride(result: SarifResult, timestamp: Date): { override: StatusOverride; effective: ResultStatus } | undefined {
+  const accepted = acceptedSuppressions(result.suppressions);
+  if (accepted.length === 0) {
+    return undefined;
+  }
+  const isFalsePositive = accepted.some(s => justificationIndicatesFalsePositive(s.justification));
+  const type = isFalsePositive ? OverrideType.FalsePositive : OverrideType.Waiver;
+  const effective = isFalsePositive ? ResultStatus.NotApplicable : ResultStatus.Passed;
+  // expiresAt = appliedAt + 1yr; setTime avoids the eslint new Date(value) ban.
+  const expiresAt = new Date();
+  expiresAt.setTime(timestamp.getTime());
+  expiresAt.setUTCFullYear(expiresAt.getUTCFullYear() + 1);
+  const override: StatusOverride = {
+    type,
+    status: effective,
+    reason: acceptedSuppressionReason(result.suppressions),
+    appliedBy: { type: IdentityType.Other, identifier: 'sarif suppression' },
+    appliedAt: timestamp,
+    expiresAt,
+  };
+  return { override, effective };
+}
+
+// Orders result statuses for requirement-level rollup (higher = worse). Used to
+// decide whether accepted suppressions actually change the effective status.
+const STATUS_SEVERITY_RANK: Record<string, number> = {
+  [ResultStatus.Failed]: 5,
+  [ResultStatus.Error]: 4,
+  [ResultStatus.NotReviewed]: 3,
+  [ResultStatus.Passed]: 2,
+  [ResultStatus.NotApplicable]: 1,
+};
+
+// Returns the worst status in the set — the requirement-level status.
+function rollupStatus(statuses: ResultStatus[]): ResultStatus {
+  let worst = statuses[0]!;
+  let worstRank = -1;
+  for (const s of statuses) {
+    const rank = STATUS_SEVERITY_RANK[s] ?? 0;
+    if (rank > worstRank) {
+      worstRank = rank;
+      worst = s;
     }
-    hasSuppression = true;
-    if (s.justification) {
-      justifications.push(s.justification);
+  }
+  return worst;
+}
+
+// Picks the override type that produced the effective rollup status (the governing
+// override); falls back to the first override.
+function governingDisposition(overrides: StatusOverride[], effective: ResultStatus): OverrideType {
+  for (const ov of overrides) {
+    if (ov.status === effective) {
+      return ov.type;
     }
   }
-
-  if (!hasSuppression) {
-    return { suppressed: false, justification: '' };
-  }
-
-  return { suppressed: true, justification: justifications.join('; ') };
+  return overrides[0]!.type;
 }
 
 // --- Code flow → backtrace ---
@@ -627,7 +731,8 @@ function buildTags(
   resolvedLevel: string,
   cweIds: string[],
   nistControls: string[],
-  cciControls: string[]
+  cciControls: string[],
+  allSuppressions: Suppression[]
 ): Record<string, unknown> {
   const tags: Record<string, unknown> = {
     severity: resolvedLevel,
@@ -644,8 +749,11 @@ function buildTags(
     tags.helpUri = rule.helpUri;
   }
 
-  if (result.suppressions && result.suppressions.length > 0) {
-    tags.suppressions = result.suppressions.map(s => {
+  // Store EVERY suppression across the grouped results — accepted, underReview,
+  // AND rejected — losslessly. Only accepted ones drive a statusOverride; the
+  // non-accepted records must still survive here so no source data is dropped.
+  if (allSuppressions.length > 0) {
+    tags.suppressions = allSuppressions.map(s => {
       const entry: Record<string, string> = { kind: s.kind };
       if (s.status) {
         entry.status = s.status;

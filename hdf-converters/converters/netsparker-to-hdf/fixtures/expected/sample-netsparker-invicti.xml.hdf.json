@@ -38,19 +38,40 @@
           "id": "e8b418ae-a532-4b43-5d9b-af9b04bbbca3",
           "impact": 0.5,
           "tags": {
+            "capec": "217",
             "cci": [
               "CCI-000366",
               "CCI-002450"
             ],
             "cweid": "327",
+            "iso27001": "A.14.1.3",
             "nist": [
               "CM-6",
               "SC-13"
             ],
-            "owasp": "A6"
+            "owasp": "A6",
+            "pci32": "6.5.4",
+            "wasc": "4"
           },
           "code": "[SSL Connection]",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://wiki.owasp.org/index.php/Insecure_Configuration_Management"
+            },
+            {
+              "url": "https://www.owasp.org/index.php/Top_10-2017_A3-Sensitive_Data_Exposure"
+            },
+            {
+              "url": "https://www.tripwire.com/state-of-security/vulnerability-management/zombie-poodle-goldendoodle/"
+            },
+            {
+              "url": "https://ssl-config.mozilla.org/"
+            },
+            {
+              "url": "https://syslink.pl/cipherlist/"
+            }
+          ],
           "title": "Weak Ciphers Enabled",
           "verificationMethod": "automated"
         },
@@ -80,13 +101,26 @@
               "CCI-000213"
             ],
             "cweid": "16",
+            "iso27001": "A.14.1.2",
             "nist": [
               "AC-3"
             ],
-            "owasp": "A5"
+            "owasp": "A5",
+            "wasc": "15"
           },
           "code": "GET / HTTP/1.1\nHost: mlrcommercial.vams-impl.cms.gov\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8\nAccept-Language: en-us,en;q=0.5\nCache-Control: no-cache\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36\n\n",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://www.netsparker.com/whitepaper-http-security-headers/#HTTPStrictTransportSecurityHSTSHTTPHeader"
+            },
+            {
+              "url": "https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security#Implementation"
+            },
+            {
+              "url": "https://hstspreload.org/"
+            }
+          ],
           "title": "HTTP Strict Transport Security (HSTS) Errors and Warnings",
           "verificationMethod": "automated"
         },
@@ -112,6 +146,7 @@
           "id": "8d8e6052-221d-41c4-8f1e-af9704473901",
           "impact": 0.3,
           "tags": {
+            "capec": "103",
             "cci": [
               "CCI-000183",
               "CCI-000213",
@@ -119,6 +154,7 @@
               "CCI-002042"
             ],
             "cweid": "693",
+            "iso27001": "A.14.2.5",
             "nist": [
               "AC-3",
               "IA-5"
@@ -127,6 +163,17 @@
           },
           "code": "GET / HTTP/1.1\nHost: mlrcommercial.vams-impl.cms.gov\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8\nAccept-Language: en-us,en;q=0.5\nCache-Control: no-cache\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36\n\n",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://owasp.org/www-community/attacks/Clickjacking"
+            },
+            {
+              "url": "http://caniuse.com/#search=X-Frame-Options"
+            },
+            {
+              "url": "https://www.netsparker.com/whitepaper-http-security-headers/#XFrameOptionsHTTPHeader"
+            }
+          ],
           "title": "Missing X-Frame-Options Header",
           "verificationMethod": "automated"
         }
@@ -149,6 +196,7 @@
     "name": "netsparker-to-hdf",
     "version": "1.0.0"
   },
+  "timestamp": "2023-03-07T15:15:00Z",
   "tool": {
     "name": "Invicti"
   }

@@ -5,7 +5,9 @@ import {
   type Tool,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
+  type Reference,
   type RequirementResult,
+  type SourceLocation,
   type HDFResults,
   ResultStatus,
   VerificationMethodEnum,
@@ -166,23 +168,42 @@ function buildRequirementCode(alert: ZapAlert): string | undefined {
   return parts.join('\n');
 }
 
-// --- Build check description ---
+// --- Source location ---
 
-function buildCheckDescription(alert: ZapAlert): string {
-  const parts: string[] = [];
-  if (alert.solution) {
-    const stripped = stripHTML(alert.solution);
-    if (stripped) {
-      parts.push(stripped);
-    }
+// buildSourceLocation promotes the affected URL of the alert's primary instance
+// into the structured requirement.sourceLocation. ZAP is a DAST tool, so the
+// locus is a URL (ref) with no line number — line is always omitted. The primary
+// instance is the first instance carrying a uri. Returns undefined when no
+// instance carries a uri, so the field is omitted rather than emitted empty.
+function buildSourceLocation(alert: ZapAlert): SourceLocation | undefined {
+  const inst = (alert.instances ?? []).find(i => i.uri);
+  if (!inst || !inst.uri) {
+    return undefined;
   }
-  if (alert.otherinfo) {
-    const stripped = stripHTML(alert.otherinfo);
-    if (stripped) {
-      parts.push(stripped);
-    }
+  return {ref: inst.uri};
+}
+
+// --- External references ---
+
+// REF_URL_RE extracts http(s) URLs from a ZAP alert's reference field. ZAP ships
+// reference as HTML — URLs wrapped in <p> tags, occasionally anchor tags — or as
+// whitespace-separated plain URLs; excluding whitespace, angle brackets and
+// quotes stops each match at the surrounding markup so the same pattern pulls the
+// real URIs from any of those shapes (including hrefs).
+const REF_URL_RE = /https?:\/\/[^\s<>"']+/g;
+
+// buildRefs turns a ZAP alert's reference field into one Reference per external
+// URL. Returns undefined when the field carries no URL (empty, absent, or markup
+// with no link), so refs[] is omitted rather than emitted empty.
+function buildRefs(reference: string | undefined): Reference[] | undefined {
+  if (!reference) {
+    return undefined;
   }
-  return parts.join('\n');
+  const urls = reference.match(REF_URL_RE);
+  if (!urls || urls.length === 0) {
+    return undefined;
+  }
+  return urls.map(url => ({url}));
 }
 
 // --- Per-site labeling ---
@@ -254,14 +275,19 @@ function buildSiteRequirements(site: ZapSite): EvaluatedRequirement[] {
       }
     }
 
-    // Build descriptions
+    // Build descriptions. solution is ZAP's remediation guidance (its own
+    // "solution" label); otherinfo is supplementary detail (kept as "check").
     const descriptions: Array<{label: string; data: string}> = [];
     if (alert.desc) {
       descriptions.push({label: 'default', data: stripHTML(alert.desc)});
     }
-    const checkDesc = buildCheckDescription(alert);
-    if (checkDesc) {
-      descriptions.push({label: 'check', data: checkDesc});
+    const solution = alert.solution ? stripHTML(alert.solution) : '';
+    if (solution) {
+      descriptions.push({label: 'solution', data: solution});
+    }
+    const otherInfo = alert.otherinfo ? stripHTML(alert.otherinfo) : '';
+    if (otherInfo) {
+      descriptions.push({label: 'check', data: otherInfo});
     }
 
     const impact = riskCodeToImpact(alert.riskcode ?? '');
@@ -289,6 +315,16 @@ function buildSiteRequirements(site: ZapSite): EvaluatedRequirement[] {
     const code = buildRequirementCode(alert);
     if (code !== undefined) {
       req.code = code;
+    }
+
+    const sourceLocation = buildSourceLocation(alert);
+    if (sourceLocation !== undefined) {
+      req.sourceLocation = sourceLocation;
+    }
+
+    const refs = buildRefs(alert.reference);
+    if (refs !== undefined) {
+      req.refs = refs;
     }
 
     requirements.push(req);

@@ -14,6 +14,10 @@
             {
               "data": "Careful handling of all untrusted data is critical in preventing injection attacks.   Using one or more of the following techniques provides defense-in-depth and minimizes the likelihood of an vulnerability.\nIf possible, use library calls rather than external processes to recreate the desired functionality.\nValidate user-supplied input using positive filters (white lists) to ensure that it conforms to the expected format, using centralized data validation routines when possible. \nSelect safe API routines.  Some APIs that execute system commands take an array of strings as input rather than a single string, which protects against some forms of command injection by ensuring that a user-supplied argument cannot be interpreted as part of the command.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -29,6 +33,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 53,
             "ref": "ToolsController.java\nToolsController.java"
           },
           "id": "18",
@@ -37,9 +42,24 @@
             "cci": [
               "CCI-001310"
             ],
+            "certc": [
+              "1165"
+            ],
+            "certcpp": [
+              "875"
+            ],
+            "certjava": [
+              "1134"
+            ],
             "cweDescription": "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection') Description: This call contains a command injection flaw.  The argument to the function is constructed using untrusted input.  If an attacker is allowed to specify all or part of the command, it may be possible to execute commands on the server with the privileges of the executing process.  The level of exposure depends on the effectiveness of input validation routines, if any.; ",
             "nist": [
               "SI-10"
+            ],
+            "owasp": [
+              "1347"
+            ],
+            "sans": [
+              "864"
             ]
           },
           "code": "java.lang.String ping(java.lang.String) at com/veracode/verademo/controller/ToolsController.java:53\njava.lang.String fortune(java.lang.String) at com/veracode/verademo/controller/ToolsController.java:83",
@@ -59,6 +79,10 @@
             {
               "data": "Several techniques can be used to prevent SQL injection attacks. These techniques complement each other and address security at different points in the application. Using multiple techniques provides defense-in-depth and minimizes the likelihood of a SQL injection vulnerability.\nUse parameterized prepared statements rather than dynamically constructing SQL queries.  This will prevent the database from interpreting the contents of bind variables as part of the query and is the most effective defense against SQL injection.\nValidate user-supplied input using positive filters (white lists) to ensure that it conforms to the expected format, using centralized data validation routines when possible. \nNormalize all user-supplied data before applying filters or regular expressions, or submitting the data to a database. This means that all URL-encoded (%xx), HTML-encoded (\u0026#xx;), or other encoding schemes should be reduced to the internal character representation expected by the application. This prevents attackers from using alternate encoding schemes to bypass filters.\nWhen using database abstraction libraries such as Hibernate, do not assume that all methods exposed by the API will automatically prevent SQL injection attacks.  Most libraries contain methods that pass arbitrary queries to the database in an unsafe manner.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -134,6 +158,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 467,
             "ref": "BlabController.java\nIgnoreCommand.java\nIgnoreCommand.java\nListenCommand.java\nListenCommand.java\nRemoveAccountCommand.java\nRemoveAccountCommand.java\nRemoveAccountCommand.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "19",
@@ -145,6 +170,12 @@
             "cweDescription": "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection') Description: This database query contains a SQL injection flaw.  The function call constructs a dynamic SQL query using a variable derived from untrusted input.  An attacker could exploit this flaw to execute arbitrary SQL queries against the database.; ",
             "nist": [
               "SI-10"
+            ],
+            "owasp": [
+              "1347"
+            ],
+            "sans": [
+              "864"
             ]
           },
           "code": "java.lang.String showBlabbers(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:467\nvoid execute(java.lang.String) at com/veracode/verademo/commands/IgnoreCommand.java:40\nvoid execute(java.lang.String) at com/veracode/verademo/commands/IgnoreCommand.java:47\nvoid execute(java.lang.String) at com/veracode/verademo/commands/ListenCommand.java:40\nvoid execute(java.lang.String) at com/veracode/verademo/commands/ListenCommand.java:47\nvoid execute(java.lang.String) at com/veracode/verademo/commands/RemoveAccountCommand.java:42\nvoid execute(java.lang.String) at com/veracode/verademo/commands/RemoveAccountCommand.java:49\nvoid execute(java.lang.String) at com/veracode/verademo/commands/RemoveAccountCommand.java:53\njava.lang.String processLogin(java.lang.String, java.lang.String, java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:165\njava.lang.String showPasswordHint(java.lang.String) at com/veracode/verademo/controller/UserController.java:249\njava.lang.String processRegister(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.springframework.ui.Model) at com/veracode/verademo/controller/UserController.java:310\njava.lang.String processRegisterFinish(java.lang.String, java.lang.String, java.lang.String, java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.springframework.ui.Model) at com/veracode/verademo/controller/UserController.java:374\njava.lang.String showProfile(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/UserController.java:479\njava.lang.String showProfile(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/UserController.java:490",
@@ -166,6 +197,10 @@
             {
               "data": "Apply robust input filtering for all user-supplied data, using centralized data validation routines when possible.  Use output filters to sanitize all output derived from user-supplied input, replacing non-alphanumeric characters with their HTML entity equivalents.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -371,6 +406,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 419,
             "ref": "UserController.java\nUserController.java\nUserController.java\nUtils.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nIgnoreCommand.java\nIgnoreCommand.java\nListenCommand.java\nListenCommand.java\nRemoveAccountCommand.java\nRemoveAccountCommand.java\nRemoveAccountCommand.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nToolsController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "21",
@@ -379,9 +415,16 @@
             "cci": [
               "CCI-001310"
             ],
+            "certjava": [
+              "1134"
+            ],
             "cweDescription": "CWE-93: Improper Neutralization of CRLF Sequences ('CRLF Injection') Description: A function call contains a CRLF Injection flaw.  Writing untrusted input to an interface or external application that treats the CRLF (carriage return line feed) sequence as a delimiter to separate lines or records can result in that data being misinterpreted.  FTP and SMTP are examples of protocols that treat CRLF as a delimiter when parsing commands.; \nCWE-113: Improper Neutralization of CRLF Sequences in HTTP Headers ('HTTP Response Splitting') Description: A function call contains an HTTP response splitting flaw.  Writing untrusted input into an HTTP header allows an attacker to manipulate the HTTP response rendered by the browser, leading to cache poisoning and cross-site scripting attacks.; \nCWE-117: Improper Output Neutralization for Logs Description: A function call could result in a log forging attack.  Writing untrusted data into a log file allows an attacker to forge log entries or inject malicious content into log files.  Corrupted log files can be used to cover an attacker's tracks or as a delivery mechanism for an attack on a log viewing or processing utility.  For example, if a web administrator uses a browser-based utility to review logs, a cross-site scripting attack might be possible.; ",
             "nist": [
               "SI-10"
+            ],
+            "owasp": [
+              "1347",
+              "1355"
             ]
           },
           "code": "void emailUser(java.lang.String) at com/veracode/verademo/controller/UserController.java:419\njava.lang.String downloadImage(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:678\njava.lang.String downloadImage(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:680\nvoid setCookie(javax.servlet.http.HttpServletResponse, java.lang.String, java.lang.String) at com/veracode/verademo/utils/Utils.java:55\njava.lang.String showFeed(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:60\njava.lang.String processFeed(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:213\njava.lang.String showBlab(java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:278\njava.lang.String processBlab(java.lang.String, java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:373\njava.lang.String showBlabbers(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:444\njava.lang.String showBlabbers(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:463\njava.lang.String processBlabbers(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:523\njava.lang.String processBlabbers(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:530\njava.lang.String processBlabbers(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:531\nvoid execute(java.lang.String) at com/veracode/verademo/commands/IgnoreCommand.java:39\nvoid execute(java.lang.String) at com/veracode/verademo/commands/IgnoreCommand.java:46\nvoid execute(java.lang.String) at com/veracode/verademo/commands/ListenCommand.java:39\nvoid execute(java.lang.String) at com/veracode/verademo/commands/ListenCommand.java:46\nvoid execute(java.lang.String) at com/veracode/verademo/commands/RemoveAccountCommand.java:41\nvoid execute(java.lang.String) at com/veracode/verademo/commands/RemoveAccountCommand.java:48\nvoid execute(java.lang.String) at com/veracode/verademo/commands/RemoveAccountCommand.java:52\njava.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:108\njava.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:131\njava.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:158\njava.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:192\njava.lang.String ping(java.lang.String) at com/veracode/verademo/controller/ToolsController.java:49\njava.lang.String showLogin(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:115\njava.lang.String processLogin(java.lang.String, java.lang.String, java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:228\njava.lang.String showPasswordHint(java.lang.String) at com/veracode/verademo/controller/UserController.java:235\njava.lang.String showPasswordHint(java.lang.String) at com/veracode/verademo/controller/UserController.java:247\njava.lang.String showPasswordHint(java.lang.String) at com/veracode/verademo/controller/UserController.java:253\njava.lang.String processRegisterFinish(java.lang.String, java.lang.String, java.lang.String, java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.springframework.ui.Model) at com/veracode/verademo/controller/UserController.java:375\njava.lang.String showProfile(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/UserController.java:477\njava.lang.String showProfile(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/UserController.java:488\njava.lang.String processProfile(java.lang.String, java.lang.String, java.lang.String, org.springframework.web.multipart.MultipartFile, org.springframework.web.multipart.MultipartHttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:541\njava.lang.String processProfile(java.lang.String, java.lang.String, java.lang.String, org.springframework.web.multipart.MultipartFile, org.springframework.web.multipart.MultipartHttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:627\njava.lang.String downloadImage(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:657\njava.lang.String downloadImage(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:661\njava.lang.String downloadImage(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:675\nboolean usernameExists(java.lang.String) at com/veracode/verademo/controller/UserController.java:760\nboolean updateUsername(java.lang.String, java.lang.String) at com/veracode/verademo/controller/UserController.java:814",
@@ -401,6 +444,10 @@
             {
               "data": "Avoid storing passwords in easily accessible locations, and never store any type of sensitive data in plaintext.  Avoid using hard-coded usernames, passwords, or hash constants whenever possible, particularly in relation to security-critical components.   Store passwords out-of-band from the application code.  Follow best practices for protecting credentials stored in alternate locations such as configuration or properties files.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -416,6 +463,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 1,
             "ref": "Constants.java\nConstants.java"
           },
           "id": "10",
@@ -425,10 +473,19 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "certjava": [
+              "1152"
+            ],
             "cweDescription": "CWE-259: Use of Hard-coded Password Description: A method uses a hard-coded password that may compromise system security in a way that cannot be easily remedied.  The use of a hard-coded password significantly increases the possibility that the account being protected will be compromised.  Moreover, the password cannot be changed without patching the software.  If a hard-coded password is compromised in a commercial product, all deployed instances may be vulnerable to attack.; ",
             "nist": [
               "SI-2",
               "RA-5"
+            ],
+            "owasp": [
+              "1353"
+            ],
+            "sans": [
+              "798"
             ]
           },
           "code": "UNKNOWN at com/veracode/verademo/utils/Constants.java:1\nvoid !ctor() at com/veracode/verademo/utils/Constants.java:13",
@@ -447,6 +504,10 @@
             {
               "data": "Several techniques can be used to prevent XSS attacks. These techniques complement each other and address security at different points in the application. Using multiple techniques provides defense-in-depth and minimizes the likelihood of a XSS vulnerability.\nUse output filtering to sanitize all output generated from user-supplied input, selecting the appropriate method of encoding based on the use case of the untrusted data.  For example, if the data is being written to the body of an HTML page, use HTML entity encoding.  However, if the data is being used to construct generated Javascript or if it is consumed by client-side methods that may interpret it as code (a common technique in Web 2.0 applications), additional restrictions may be necessary beyond simple HTML encoding.\nValidate user-supplied input using positive filters (white lists) to ensure that it conforms to the expected format, using centralized data validation routines when possible. \nDo not permit users to include HTML content in posts, notes, or other data that will be displayed by the application.  If users are permitted to include HTML tags, then carefully limit access to specific elements or attributes, and use strict validation filters to prevent abuse.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -632,6 +693,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 56,
             "ref": "blab.jsp\nblab.jsp\nblab.jsp\nblab.jsp\nblab.jsp\nblab.jsp\nblabbers.jsp\nblabbers.jsp\nblabbers.jsp\nBlabController.java\nfeed.jsp\nfeed.jsp\nfeed.jsp\nfeed.jsp\nfeed.jsp\nfeed.jsp\nlogin.jsp\nlogin.jsp\nlogin.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nprofile.jsp\nregister-finish.jsp\nregister-finish.jsp\nregister.jsp\nregister.jsp\ntools.jsp\ntools.jsp\ntools.jsp\nUserController.java\nUserController.java"
           },
           "id": "20",
@@ -645,6 +707,12 @@
             "nist": [
               "SI-2",
               "RA-5"
+            ],
+            "owasp": [
+              "1347"
+            ],
+            "sans": [
+              "79"
             ]
           },
           "code": "void _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/blab.jsp:56\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/blab.jsp:60\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/blab.jsp:68\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/blab.jsp:104\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/blab.jsp:108\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/blab.jsp:110\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/blabbers.jsp:65\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/blabbers.jsp:100\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/blabbers.jsp:103\njava.lang.String getMoreFeed(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:196\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/feed.jsp:58\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/feed.jsp:69\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/feed.jsp:93\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/feed.jsp:96\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/feed.jsp:98\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/feed.jsp:141\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/login.jsp:59\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/login.jsp:78\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/login.jsp:85\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/profile.jsp:62\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/profile.jsp:90\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/profile.jsp:101\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/profile.jsp:110\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/profile.jsp:119\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/profile.jsp:160\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/profile.jsp:163\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/profile.jsp:200\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/register-finish.jsp:59\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/register-finish.jsp:82\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/register.jsp:59\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/register.jsp:86\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/tools.jsp:64\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/tools.jsp:67\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/tools.jsp:77\njava.lang.String showPasswordHint(java.lang.String) at com/veracode/verademo/controller/UserController.java:254\njava.lang.String showPasswordHint(java.lang.String) at com/veracode/verademo/controller/UserController.java:259",
@@ -664,6 +732,10 @@
             {
               "data": "Select the appropriate type of cryptography for the intended purpose.  Avoid proprietary encryption algorithms as they typically rely on \"security through obscurity\" rather than sound mathematics.  Select key sizes appropriate for the data being protected; for high assurance applications, 256-bit symmetric keys and 2048-bit asymmetric keys are sufficient.  Follow best practices for key storage, and ensure that plaintext data and key material are not inadvertently exposed.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -714,6 +786,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 127,
             "ref": "ResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nUser.java\nUserController.java"
           },
           "id": "12",
@@ -722,9 +795,25 @@
             "cci": [
               "CCI-002450"
             ],
+            "certc": [
+              "1170"
+            ],
+            "certcpp": [
+              "883"
+            ],
+            "certjava": [
+              "1152"
+            ],
             "cweDescription": "CWE-331: Insufficient Entropy Description: Standard random number generators do not provide a sufficient amount of entropy when used for security purposes. Attackers can brute force the output of pseudorandom number generators such as rand().; \nCWE-327: Use of a Broken or Risky Cryptographic Algorithm Description: The use of a broken or risky cryptographic algorithm is an unnecessary risk that may result in the disclosure of sensitive information.; ",
             "nist": [
               "SC-13"
+            ],
+            "owasp": [
+              "1346"
+            ],
+            "sans": [
+              "327",
+              "866"
             ]
           },
           "code": "java.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:127\njava.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:152\njava.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:155\njava.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:178\njava.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:182\njava.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:186\njava.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:190\njava.lang.String md5(java.lang.String) at com/veracode/verademo/utils/User.java:103\njava.lang.String md5(java.lang.String) at com/veracode/verademo/controller/UserController.java:908",
@@ -744,6 +833,10 @@
             {
               "data": "Assume all user-supplied input is malicious.  Validate all user-supplied input to ensure that it conforms to the expected format, using centralized data validation routines when possible.  When using black lists, be sure that the sanitizing routine performs a sufficient number of iterations to remove all instances of disallowed characters and ensure that the end result is not dangerous.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -774,6 +867,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 229,
             "ref": "UserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "1",
@@ -782,9 +876,18 @@
             "cci": [
               "CCI-001310"
             ],
+            "certcpp": [
+              "877"
+            ],
             "cweDescription": "CWE-73: External Control of File Name or Path Description: This call contains a path manipulation flaw.  The argument to the function is a filename constructed using untrusted input.  If an attacker is allowed to specify all or part of the filename, it may be possible to gain unauthorized access to files on the server, including those outside the webroot, that would be normally be inaccessible to end users.  The level of exposure depends on the effectiveness of input validation routines, if any.; ",
             "nist": [
               "SI-10"
+            ],
+            "owasp": [
+              "1348"
+            ],
+            "sans": [
+              "22"
             ]
           },
           "code": "java.lang.String processLogin(java.lang.String, java.lang.String, java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:229\njava.lang.String processRegisterFinish(java.lang.String, java.lang.String, java.lang.String, java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.springframework.ui.Model) at com/veracode/verademo/controller/UserController.java:398\njava.lang.String processProfile(java.lang.String, java.lang.String, java.lang.String, org.springframework.web.multipart.MultipartFile, org.springframework.web.multipart.MultipartHttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:629\njava.lang.String downloadImage(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:666\nboolean updateUsername(java.lang.String, java.lang.String) at com/veracode/verademo/controller/UserController.java:818",
@@ -804,6 +907,10 @@
             {
               "data": "The wide variance of encapsulation issues makes it impractical to generalize how these issues should be addressed, beyond stating that encapsulation boundaries should be well-defined and adhered to.  Refer to individual categories for specific recommendations. ",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -814,6 +921,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 43,
             "ref": "UserFactory.java"
           },
           "id": "22",
@@ -822,9 +930,15 @@
             "cci": [
               "CCI-001310"
             ],
+            "certjava": [
+              "1148"
+            ],
             "cweDescription": "CWE-502: Deserialization of Untrusted Data Description: The application deserializes untrusted data without sufficiently verifying that the resulting data will be valid.; ",
             "nist": [
               "SI-10"
+            ],
+            "owasp": [
+              "1354"
             ]
           },
           "code": "User createFromRequest(javax.servlet.http.HttpServletRequest) at com/veracode/verademo/utils/UserFactory.java:43",
@@ -845,6 +959,10 @@
             {
               "data": "Validate input from untrusted sources before it is used. The untrusted data sources may include HTTP requests, file systems, databases, and any external systems that provide data to the application. In the case of HTTP requests, validate all parts of the request, including headers, form fields, cookies, and URL components that are used to transfer information from the browser to the server side application.\nDuplicate any client-side checks on the server side. This should be simple to implement in terms of time and difficulty, and will greatly reduce the likelihood of insecure parameter values being used in the application.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -865,6 +983,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 86,
             "ref": "UserController.java\nUserController.java\nBlabController.java"
           },
           "id": "25",
@@ -876,6 +995,13 @@
             "cweDescription": "CWE-601: URL Redirection to Untrusted Site ('Open Redirect') Description: A web application accepts a untrusted input that specifies a link to an external site, and uses that link to generate a redirect.  This enables phishing attacks.; \nCWE-470: Use of Externally-Controlled Input to Select Classes or Code ('Unsafe Reflection') Description: A call uses reflection in an unsafe manner.  An attacker can specify the class name to be instantiated, which may create unexpected control flow paths through the application.  Depending on how reflection is being used, the attack vector may allow the attacker to bypass security checks or otherwise cause the application to behave in an unexpected manner.  Even if the object does not implement the specified interface and a ClassCastException is thrown, the constructor of the untrusted class name will have already executed.; ",
             "nist": [
               "SI-10"
+            ],
+            "owasp": [
+              "1345",
+              "1347"
+            ],
+            "sans": [
+              "864"
             ]
           },
           "code": "java.lang.String showLogin(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:86\njava.lang.String showLogin(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:98\njava.lang.String processBlabbers(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:543",
@@ -895,6 +1021,10 @@
             {
               "data": "When calling API functions, be sure to fully understand and adhere to the specifications to avoid introducing security vulnerabilities.  Do not make assumptions about trustworthiness of the data returned from API calls or use the data in a context that was unintended by that API.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -985,6 +1115,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 69,
             "ref": "BlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nResetController.java\nResetController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "7",
@@ -1016,6 +1147,10 @@
             {
               "data": "Select the appropriate type of cryptography for the intended purpose.  Avoid proprietary encryption algorithms as they typically rely on \"security through obscurity\" rather than sound mathematics.  Select key sizes appropriate for the data being protected; for high assurance applications, 256-bit symmetric keys and 2048-bit asymmetric keys are sufficient.  Follow best practices for key storage, and ensure that plaintext data and key material are not inadvertently exposed.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -1026,6 +1161,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 55,
             "ref": "Utils.java"
           },
           "id": "12",
@@ -1037,6 +1173,12 @@
             "cweDescription": "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute Description: Setting the Secure attribute on an HTTP cookie instructs the web browser to send it only over a secure channel, such as a TLS connection.  Issuing a cookie without the Secure attribute allows the browser to transmit it over unencrypted connections, which are susceptible to eavesdropping.  It is particularly important to set the Secure attribute on any cookies containing sensitive data, such as authentication information (e.g. \"remember me\" style functionality).; ",
             "nist": [
               "SC-8"
+            ],
+            "owasp": [
+              "1349"
+            ],
+            "sans": [
+              "311"
             ]
           },
           "code": "void setCookie(javax.servlet.http.HttpServletResponse, java.lang.String, java.lang.String) at com/veracode/verademo/utils/Utils.java:55",
@@ -1057,6 +1199,10 @@
             {
               "data": "Configure applications and servers to return generic error messages and to suppress stack traces from being displayed to end users.  Ensure that errors generated by the application do not provide insight into specific backend issues.  \nRemove all backup files, binary archives, alternate versions of files, and test files from web-accessible directories of production servers.  The only files that should be present in the application's web document root are files required by the application.  Ensure that deployment procedures include the removal of these file types by an administrator.  Keep web and application servers fully patched to minimize exposure to publicly-disclosed information leakage vulnerabilities.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -1282,6 +1428,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 68,
             "ref": "blab.jsp\nblabbers.jsp\nfeed.jsp\nlogin.jsp\nprofile.jsp\nregister-finish.jsp\nregister.jsp\nUserController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nBlabController.java\nHomeController.java\nResetController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "8",
@@ -1291,10 +1438,17 @@
               "CCI-001643",
               "CCI-002605"
             ],
+            "certcpp": [
+              "880"
+            ],
             "cweDescription": "CWE-209: Generation of Error Message Containing Sensitive Information Description: The software generates an error message that includes sensitive information about its environment, users, or associated data.  The sensitive information may be valuable information on its own (such as a password), or it may be useful for launching other, more deadly attacks. If an attack fails, an attacker may use error information provided by the server to launch another more focused attack.  For example, file locations disclosed by an exception stack trace may be leveraged by an attacker to exploit a path traversal issue elsewhere in the application.; \nCWE-201: Insertion of Sensitive Information Into Sent Data Description: Sensitive information may be exposed as a result of outbound network connections made by the application.; ",
             "nist": [
               "SI-2",
               "RA-5"
+            ],
+            "owasp": [
+              "1348",
+              "1345"
             ]
           },
           "code": "void _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/blab.jsp:68\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/blabbers.jsp:65\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/feed.jsp:69\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/login.jsp:59\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/profile.jsp:62\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/register-finish.jsp:59\nvoid _jspService(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at /WEB-INF/views/register.jsp:59\nvoid emailExceptionsToAdmin(java.lang.Throwable) at com/veracode/verademo/controller/UserController.java:898\njava.lang.String showFeed(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:57\njava.lang.String processFeed(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:211\njava.lang.String processFeed(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:257\njava.lang.String processFeed(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:257\njava.lang.String processFeed(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:258\njava.lang.String processFeed(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:258\njava.lang.String showBlab(java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:275\njava.lang.String showBlab(java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:351\njava.lang.String showBlab(java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:351\njava.lang.String showBlab(java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:352\njava.lang.String showBlab(java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:352\njava.lang.String processBlab(java.lang.String, java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:370\njava.lang.String processBlab(java.lang.String, java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:419\njava.lang.String processBlab(java.lang.String, java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:419\njava.lang.String processBlab(java.lang.String, java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:420\njava.lang.String processBlab(java.lang.String, java.lang.Integer, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:420\njava.lang.String showBlabbers(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:441\njava.lang.String showBlabbers(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:501\njava.lang.String showBlabbers(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:502\njava.lang.String processBlabbers(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:520\njava.lang.String processBlabbers(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:527\njava.lang.String processBlabbers(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:568\njava.lang.String processBlabbers(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:568\njava.lang.String processBlabbers(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:569\njava.lang.String processBlabbers(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/BlabController.java:569\njava.lang.String renderGet(org.springframework.ui.Model, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/HomeController.java:20\njava.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model) at com/veracode/verademo/controller/ResetController.java:242\njava.lang.String showLogin(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:89\njava.lang.String showLogin(java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:101\njava.lang.String processLogin(java.lang.String, java.lang.String, java.lang.String, java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:229\njava.lang.String processLogout(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:283\njava.lang.String processRegisterFinish(java.lang.String, java.lang.String, java.lang.String, java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, org.springframework.ui.Model) at com/veracode/verademo/controller/UserController.java:398\njava.lang.String showProfile(java.lang.String, org.springframework.ui.Model, javax.servlet.http.HttpServletRequest) at com/veracode/verademo/controller/UserController.java:442\njava.lang.String downloadImage(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:654\njava.lang.String downloadImage(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse) at com/veracode/verademo/controller/UserController.java:678\nvoid emailExceptionsToAdmin(java.lang.Throwable) at com/veracode/verademo/controller/UserController.java:898",
@@ -1313,6 +1467,10 @@
             {
               "data": "The wide variance of code quality issues makes it impractical to generalize how these issues should be addressed.  Refer to individual categories for specific recommendations. ",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -1408,6 +1566,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 175,
             "ref": "BlabController.java\nIgnoreCommand.java\nIgnoreCommand.java\nListenCommand.java\nListenCommand.java\nRemoveAccountCommand.java\nRemoveAccountCommand.java\nToolsController.java\nToolsController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java\nUserController.java"
           },
           "id": "17",
@@ -1416,6 +1575,15 @@
             "cci": [
               "CCI-001643",
               "CCI-002605"
+            ],
+            "certc": [
+              "1162"
+            ],
+            "certcpp": [
+              "876"
+            ],
+            "certjava": [
+              "1147"
             ],
             "cweDescription": "CWE-404: Improper Resource Shutdown or Release Description: The application fails to release (or incorrectly releases) a system resource before it is made available for re-use.  This condition often occurs with resources such as database connections or file handles.  Most unreleased resource issues result in general software reliability problems, but if an attacker can intentionally trigger a resource leak, it may be possible to launch a denial of service attack by depleting the resource pool.; ",
             "nist": [
@@ -1439,6 +1607,10 @@
             {
               "data": "Compartmentalize the application and determine where the trust boundaries exist, then treat any input or control outside the trust boundary as potentially hostile.  In general, do not allow user-provided or otherwise untrusted data to control sensitive values.",
               "label": "fix"
+            },
+            {
+              "data": "New",
+              "label": "remediation_status"
             }
           ],
           "results": [
@@ -1454,6 +1626,7 @@
             }
           ],
           "sourceLocation": {
+            "line": 53,
             "ref": "ToolsController.java\nToolsController.java"
           },
           "id": "24",

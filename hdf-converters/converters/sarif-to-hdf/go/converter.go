@@ -501,8 +501,17 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 	// Build descriptions from rule metadata and first result
 	descriptions := buildDescriptions(description, rule, firstResult)
 
-	// Build tags — use rule-level severity and the aggregated suppression/fingerprint data from first result
-	tags := buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls)
+	// Aggregate every suppression across the grouped results so the suppressions
+	// tag is a lossless record (the tag is requirement-level; a group can hold
+	// suppressed and unsuppressed results).
+	var allSuppressions []Suppression
+	for _, sr := range sarifResults {
+		allSuppressions = append(allSuppressions, sr.Suppressions...)
+	}
+
+	// Build tags — rule-level severity, fingerprints from first result, and the
+	// full group suppression record.
+	tags := buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls, allSuppressions)
 
 	req := hdf.EvaluatedRequirement{
 		ID:                 ruleID,
@@ -549,6 +558,35 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 	}
 	if len(packages) > 0 {
 		req.AffectedPackages = packages
+	}
+
+	// Reconstruct structured status overrides from accepted suppressions. Each
+	// accepted suppression across the grouped results becomes an attributed,
+	// expiring override; effectiveStatus/disposition are set only when the
+	// overrides actually change the requirement's rolled-up status (an unsuppressed
+	// sibling failure keeps the requirement effectively failed).
+	var overrides []hdf.StatusOverride
+	rawStatuses := make([]hdf.ResultStatus, 0, len(sarifResults))
+	effStatuses := make([]hdf.ResultStatus, 0, len(sarifResults))
+	for _, sr := range sarifResults {
+		raw := mapKindToStatus(sr.Kind)
+		rawStatuses = append(rawStatuses, raw)
+		if raw == hdf.Failed || raw == hdf.Passed {
+			if ov, eff, ok := buildSuppressionOverride(sr, timestamp); ok {
+				overrides = append(overrides, ov)
+				effStatuses = append(effStatuses, eff)
+				continue
+			}
+		}
+		effStatuses = append(effStatuses, raw)
+	}
+	if len(overrides) > 0 {
+		req.StatusOverrides = overrides
+		if eff, rawRoll := rollupStatus(effStatuses), rollupStatus(rawStatuses); eff != rawRoll {
+			req.EffectiveStatus = &eff
+			disp := governingDisposition(overrides, eff)
+			req.Disposition = &disp
+		}
 	}
 	return req
 }
@@ -622,16 +660,16 @@ func resolveRuleLevel(rule *ReportingDescriptor, results []SarifResult) string {
 
 // convertSarifResultToHDFResults converts a single SARIF result into one or more HDF RequirementResults.
 func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescriptor, timestamp time.Time) []hdf.RequirementResult {
-	// Map kind to HDF status
+	// Map kind to HDF status. The raw status stays the tool's — an accepted
+	// suppression becomes a structured, attributed override on the requirement
+	// (see convertResultGroup), not a laundered notReviewed status.
 	status := mapKindToStatus(result.Kind)
 
-	// Handle suppressions — may override status
+	// Surface an accepted suppression's justification as an informative per-result
+	// message; the requirement's Status_Override carries the authoritative record.
 	suppressionJustification := ""
 	if status == hdf.Failed || status == hdf.Passed {
-		if override, justification := applySuppression(result.Suppressions); override {
-			status = hdf.NotReviewed
-			suppressionJustification = justification
-		}
+		suppressionJustification = acceptedSuppressionReason(result.Suppressions)
 	}
 
 	// Build backtrace from code flows
@@ -789,31 +827,128 @@ func mapKindToStatus(kind string) hdf.ResultStatus {
 
 // --- Suppression handling ---
 
-// applySuppression checks whether any non-rejected suppression exists.
-// Returns (true, justification) if the result should be marked as suppressed.
-func applySuppression(suppressions []Suppression) (bool, string) {
-	if len(suppressions) == 0 {
-		return false, ""
-	}
+// defaultSuppressionReason is the fallback Reason for an accepted suppression
+// that carries no justification text (Reason is REQUIRED on a Status_Override).
+const defaultSuppressionReason = "Suppressed in SARIF source"
 
-	var justifications []string
-	hasSuppression := false
-
+// acceptedSuppressions returns the suppressions whose status is "accepted".
+// underReview and rejected suppressions are NOT overrides — an underReview
+// decision is not final and a rejected one was declined.
+func acceptedSuppressions(suppressions []Suppression) []Suppression {
+	var out []Suppression
 	for _, s := range suppressions {
-		if s.Status == "rejected" {
-			continue
+		if s.Status == "accepted" {
+			out = append(out, s)
 		}
-		hasSuppression = true
+	}
+	return out
+}
+
+// acceptedSuppressionReason joins the justifications of a result's accepted
+// suppressions, falling back to a constant when none carry text. Empty when the
+// result has no accepted suppression.
+func acceptedSuppressionReason(suppressions []Suppression) string {
+	accepted := acceptedSuppressions(suppressions)
+	if len(accepted) == 0 {
+		return ""
+	}
+	var justifications []string
+	for _, s := range accepted {
 		if s.Justification != "" {
 			justifications = append(justifications, s.Justification)
 		}
 	}
-
-	if !hasSuppression {
-		return false, ""
+	if len(justifications) == 0 {
+		return defaultSuppressionReason
 	}
+	return strings.Join(justifications, "; ")
+}
 
-	return true, strings.Join(justifications, "; ")
+// justificationIndicatesFalsePositive reports whether a suppression justification
+// reads as a false-positive determination rather than a risk-accepted waiver.
+func justificationIndicatesFalsePositive(justification string) bool {
+	lower := strings.ToLower(justification)
+	return strings.Contains(lower, "false positive") || strings.Contains(lower, "false-positive")
+}
+
+// buildSuppressionOverride turns a result's accepted suppression(s) into an HDF
+// Status_Override. SARIF carries no owner or decision date, so appliedBy is an
+// honest system identity and appliedAt is the run/conversion time (expiresAt +1yr).
+// A justification that reads as a false positive maps to falsePositive →
+// notApplicable (SARIF is a vuln/SAST format); otherwise a risk-accepted waiver →
+// passed. Returns (override, implied effective status, true) when an accepted
+// suppression exists; otherwise ok=false.
+func buildSuppressionOverride(result SarifResult, timestamp time.Time) (hdf.StatusOverride, hdf.ResultStatus, bool) {
+	accepted := acceptedSuppressions(result.Suppressions)
+	if len(accepted) == 0 {
+		return hdf.StatusOverride{}, "", false
+	}
+	isFalsePositive := false
+	for _, s := range accepted {
+		if justificationIndicatesFalsePositive(s.Justification) {
+			isFalsePositive = true
+			break
+		}
+	}
+	overrideType := hdf.OverrideTypeWaiver
+	effective := hdf.Passed
+	if isFalsePositive {
+		overrideType = hdf.FalsePositive
+		effective = hdf.NotApplicable
+	}
+	override := hdf.StatusOverride{
+		Type:      overrideType,
+		Status:    &effective,
+		Reason:    acceptedSuppressionReason(result.Suppressions),
+		AppliedBy: hdf.Identity{Type: hdf.IdentityTypeOther, Identifier: "sarif suppression"},
+		AppliedAt: timestamp,
+		ExpiresAt: timestamp.AddDate(1, 0, 0),
+	}
+	return override, effective, true
+}
+
+// statusSeverityRank orders result statuses for requirement-level rollup
+// (higher = worse). Used to decide whether accepted suppressions actually change
+// the requirement's effective status.
+func statusSeverityRank(s hdf.ResultStatus) int {
+	switch s {
+	case hdf.Failed:
+		return 5
+	case hdf.Error:
+		return 4
+	case hdf.NotReviewed:
+		return 3
+	case hdf.Passed:
+		return 2
+	case hdf.NotApplicable:
+		return 1
+	default:
+		return 0
+	}
+}
+
+// rollupStatus returns the worst status in the set — the requirement-level status.
+func rollupStatus(statuses []hdf.ResultStatus) hdf.ResultStatus {
+	worst := hdf.ResultStatus("")
+	worstRank := -1
+	for _, s := range statuses {
+		if r := statusSeverityRank(s); r > worstRank {
+			worstRank = r
+			worst = s
+		}
+	}
+	return worst
+}
+
+// governingDisposition picks the override type that produced the effective
+// rollup status (the governing override); falls back to the first override.
+func governingDisposition(overrides []hdf.StatusOverride, effective hdf.ResultStatus) hdf.OverrideType {
+	for _, ov := range overrides {
+		if ov.Status != nil && *ov.Status == effective {
+			return ov.Type
+		}
+	}
+	return overrides[0].Type
 }
 
 // --- Code flow → backtrace ---
@@ -897,7 +1032,7 @@ func buildDescriptions(defaultDesc string, rule *ReportingDescriptor, result Sar
 
 // --- Tag building ---
 
-func buildTags(result SarifResult, rule *ReportingDescriptor, resolvedLevel string, cweIds, nistControls, cciControls []string) map[string]interface{} {
+func buildTags(result SarifResult, rule *ReportingDescriptor, resolvedLevel string, cweIds, nistControls, cciControls []string, allSuppressions []Suppression) map[string]interface{} {
 	tags := make(map[string]interface{})
 
 	tags["severity"] = resolvedLevel
@@ -913,10 +1048,12 @@ func buildTags(result SarifResult, rule *ReportingDescriptor, resolvedLevel stri
 		tags["helpUri"] = rule.HelpURI
 	}
 
-	// Store suppressions in tags
-	if len(result.Suppressions) > 0 {
-		supps := make([]map[string]string, 0, len(result.Suppressions))
-		for _, s := range result.Suppressions {
+	// Store EVERY suppression across the grouped results — accepted, underReview,
+	// AND rejected — losslessly. Only accepted ones drive a statusOverride; the
+	// non-accepted records must still survive here so no source data is dropped.
+	if len(allSuppressions) > 0 {
+		supps := make([]map[string]string, 0, len(allSuppressions))
+		for _, s := range allSuppressions {
 			entry := map[string]string{"kind": s.Kind}
 			if s.Status != "" {
 				entry["status"] = s.Status

@@ -513,6 +513,43 @@ func TestUnknownProducer_StructuredScoring(t *testing.T) {
 	assert.False(t, hasCVE)
 }
 
+// tags.types surfaces ASFF's Types[] taxonomy: present when a finding in the
+// group carries Types, absent otherwise. No fabrication when the source omits it.
+func TestTagsTypes_PresentAndAbsent(t *testing.T) {
+	result, err := ConvertAsffToHDF(loadFixture(t, "unknown-producer.json"), "1.0.0")
+	require.NoError(t, err)
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range result.Baselines[0].Requirements {
+		byID[r.ID] = r
+	}
+
+	// 0001 carries Types → tags.types pins the source taxonomy string.
+	v1 := byID["acme/future-scanner/finding/0001"]
+	assert.Equal(t, []string{"Software and Configuration Checks/Vulnerabilities/CVE"}, v1.Tags["types"])
+
+	// 0002 has no Types → the key is omitted.
+	v2 := byID["acme/future-scanner/finding/0002"]
+	_, hasV2 := v2.Tags["types"]
+	assert.False(t, hasV2, "no Types in source → no tags.types")
+
+	// The compliance finding carries no Types → key omitted.
+	ctrl := byID["ACME.1"]
+	_, hasCtrl := ctrl.Tags["types"]
+	assert.False(t, hasCtrl)
+}
+
+// groupTypes dedupes Types across an aggregated group, preserving first-seen
+// order, and no-ops when no finding carries Types.
+func TestGroupTypes_DedupAndEmpty(t *testing.T) {
+	group := []asffFinding{
+		{Types: []string{"A", "B"}},
+		{Types: []string{"B", "C"}},
+		{Types: nil},
+	}
+	assert.Equal(t, []string{"A", "B", "C"}, groupTypes(group))
+	assert.Empty(t, groupTypes([]asffFinding{{Types: nil}, {}}))
+}
+
 // FindingProviderFields.Severity is the finding provider's authoritative rating
 // and takes precedence over the top-level Severity that Security Hub may overwrite.
 func TestFindingImpact_FindingProviderFieldsPrecedence(t *testing.T) {

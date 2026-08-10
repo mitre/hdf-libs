@@ -48,26 +48,39 @@ type cklbStig struct {
 }
 
 type cklbRule struct {
-	GroupID         string   `json:"group_id"`
-	GroupTitle      string   `json:"group_title"`
-	RuleID          string   `json:"rule_id"`
-	RuleVersion     string   `json:"rule_version"`
-	RuleTitle       string   `json:"rule_title"`
-	Severity        string   `json:"severity"`
-	Weight          string   `json:"weight"`
-	CheckContent    string   `json:"check_content"`
-	FixText         string   `json:"fix_text"`
-	Discussion      string   `json:"discussion"`
-	Classification  string   `json:"classification,omitempty"`
-	CCIs            []string `json:"ccis"`
-	LegacyIDs       []string `json:"legacy_ids,omitempty"`
-	UUID            string   `json:"uuid,omitempty"`
-	StigUUID        string   `json:"stig_uuid,omitempty"`
-	SrgID           string   `json:"srg_id,omitempty"`
-	Status          string   `json:"status"`
-	Comments        string   `json:"comments"`
-	FindingDetails  string   `json:"finding_details"`
-	ThirdPartyTools string   `json:"third_party_tools,omitempty"`
+	GroupID         string        `json:"group_id"`
+	GroupTitle      string        `json:"group_title"`
+	RuleID          string        `json:"rule_id"`
+	RuleVersion     string        `json:"rule_version"`
+	RuleTitle       string        `json:"rule_title"`
+	Severity        string        `json:"severity"`
+	Weight          string        `json:"weight"`
+	CheckContent    string        `json:"check_content"`
+	FixText         string        `json:"fix_text"`
+	Discussion      string        `json:"discussion"`
+	Classification  string        `json:"classification,omitempty"`
+	CCIs            []string      `json:"ccis"`
+	LegacyIDs       []string      `json:"legacy_ids,omitempty"`
+	UUID            string        `json:"uuid,omitempty"`
+	StigUUID        string        `json:"stig_uuid,omitempty"`
+	SrgID           string        `json:"srg_id,omitempty"`
+	Status          string        `json:"status"`
+	Overrides       cklbOverrides `json:"overrides"`
+	Comments        string        `json:"comments"`
+	FindingDetails  string        `json:"finding_details"`
+	ThirdPartyTools string        `json:"third_party_tools,omitempty"`
+}
+
+// cklbOverrides is the STIG Viewer 3 rule.overrides object. Only the severity
+// override is modeled; an empty object marshals to "overrides": {} as real
+// STIG Viewer output does.
+type cklbOverrides struct {
+	Severity *cklbSeverityOverride `json:"severity,omitempty"`
+}
+
+type cklbSeverityOverride struct {
+	Severity      string `json:"severity"`
+	Justification string `json:"justification"`
 }
 
 // ---------------------------------------------------------------------------
@@ -132,7 +145,7 @@ func ParseCKLB(input []byte) (*Checklist, error) {
 			if r.SrgID != "" {
 				extra["SRG_ID"] = r.SrgID
 			}
-			stig.Vulns = append(stig.Vulns, Vuln{
+			vuln := Vuln{
 				VulnNum:        r.GroupID,
 				RuleID:         r.RuleID,
 				RuleVer:        r.RuleVersion,
@@ -151,7 +164,12 @@ func ParseCKLB(input []byte) (*Checklist, error) {
 				FindingDetails: r.FindingDetails,
 				Comments:       r.Comments,
 				Extra:          extra,
-			})
+			}
+			if r.Overrides.Severity != nil {
+				vuln.SeverityOverride = r.Overrides.Severity.Severity
+				vuln.SeverityJustification = r.Overrides.Severity.Justification
+			}
+			stig.Vulns = append(stig.Vulns, vuln)
 		}
 		cl.Stigs = append(cl.Stigs, stig)
 	}
@@ -224,6 +242,7 @@ func SerializeCKLB(cl *Checklist) ([]byte, error) {
 				CCIs:            orEmpty(v.CCIs),
 				LegacyIDs:       v.LegacyIDs,
 				Status:          v.Status.CKLBString(),
+				Overrides:       buildCklbOverrides(v),
 				Comments:        v.Comments,
 				FindingDetails:  v.FindingDetails,
 				ThirdPartyTools: v.Extra["Third_Party_Tools"],
@@ -238,6 +257,18 @@ func SerializeCKLB(cl *Checklist) ([]byte, error) {
 		return nil, fmt.Errorf("serialize cklb: %w", err)
 	}
 	return out, nil
+}
+
+// buildCklbOverrides emits rule.overrides.severity from a synthesized severity
+// override; absent one it returns the zero value, which marshals to {}.
+func buildCklbOverrides(v *Vuln) cklbOverrides {
+	if v.SeverityOverride != "" {
+		return cklbOverrides{Severity: &cklbSeverityOverride{
+			Severity:      v.SeverityOverride,
+			Justification: v.SeverityJustification,
+		}}
+	}
+	return cklbOverrides{}
 }
 
 func cklbTitle(cl *Checklist) string {

@@ -15,6 +15,10 @@
             {
               "data": "The best way to prevent path manipulation is with a level of indirection: create a list of legitimate resource names that a user is allowed to specify, and only allow the user to select from the list. With this approach the input provided by the user is never used directly to specify the resource name. In some situations this approach is impractical because the set of legitimate resource names is too large or too hard to keep track of. Programmers often resort to blacklisting in these situations. Blacklisting selectively rejects or escapes potentially dangerous characters before using the input. However, any such list of unsafe characters is likely to be incomplete and will almost certainly become out of date. A better approach is to create a whitelist of characters that are allowed to appear in the resource name and accept input composed exclusively of characters in the approved set.",
               "label": "fix"
+            },
+            {
+              "data": "If the program is performing custom input validation you are satisfied with, use the Fortify Custom Rules Editor to create a cleanse rule for the validation routine.\n\nImplementation of an effective blacklist is notoriously difficult. One should be skeptical if validation logic requires blacklisting. Consider different types of input encoding and different sets of meta-characters that might have special meaning when interpreted by different operating systems, databases, or other resources. Determine whether or not the blacklist can be updated easily, correctly, and completely if these requirements ever change.\n\nA number of modern web frameworks provide mechanisms to perform user input validation (including Struts and Spring MVC). To highlight the unvalidated sources of input, the Fortify Secure Coding Rulepacks dynamically re-prioritize the issues reported by Fortify Static Code Analyzer by lowering their probability of exploit and providing pointers to the supporting evidence whenever the framework validation mechanism is in use. We refer to this feature as Context-Sensitive Ranking. To further assist the Fortify user with the auditing process, the Fortify Software Security Research group makes available the Data Validation project template that groups the issues into folders based on the validation mechanism applied to their source of input.",
+              "label": "tips"
             }
           ],
           "results": [
@@ -24,18 +28,33 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 55,
+            "ref": "webgoat-lessons/challenge/src/main/java/org/owasp/webgoat/challenges/challenge7/MD5.java"
+          },
           "id": "823FE039-A7FE-4AAD-B976-9EC53FFE4A59",
           "impact": 0.6,
           "tags": {
+            "analyzer": "dataflow",
             "cci": [
               "CCI-001310"
             ],
+            "class_type": "Path Manipulation",
+            "kingdom": "Input Validation and Representation",
             "nist": [
               "SI-10"
             ]
           },
           "code": "} else {\n            for (String element : args) {\n                try {\n                    System.out.println(MD5.getHashString(new File(element)) + \" \" + element);\n                } catch (IOException x) {\n                    System.err.println(x.getMessage());\n                }",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://www.securecoding.cert.org/confluence/display/java/FIO00-J.+Do+not+operate+on+files+in+shared+directories"
+            },
+            {
+              "url": "http://www.oracle.com/technetwork/java/seccodeguide-139067.html#5"
+            }
+          ],
           "title": "Attackers are able to control the file system path argument to at line , which allows them to access or modify otherwise protected files. Allowing user input to control paths used in file system operations could enable an attacker to access or modify otherwise protected system resources.",
           "verificationMethod": "automated"
         },
@@ -51,6 +70,10 @@
             {
               "data": "At a minimum, log the fact that the exception was thrown so that it will be possible to come back later and make sense of the resulting program behavior. Better yet, abort the current operation. If the exception is being ignored because the caller cannot properly handle it but the context makes it inconvenient or impossible for the caller to declare that it throws the exception itself, consider throwing a RuntimeException or an Error , both of which are unchecked exceptions. As of JDK 1.4, RuntimeException has a constructor that makes it easy to wrap another exception. Example 2: The code in Example 1 could be rewritten in the following way: try { doExchange(); } catch (RareException e) { throw new RuntimeException(\"This can never happen\", e); }",
               "label": "fix"
+            },
+            {
+              "data": "There are rare types of exceptions that can be discarded in some contexts. For instance, Thread.sleep() throws InterruptedException , and in many situations the program should behave the same way whether or not it was awoken prematurely. try { Thread.sleep(1000); } catch (InterruptedException e){ // The thread has been woken up prematurely, but its // behavior should be the same either way. }",
+              "label": "tips"
             }
           ],
           "results": [
@@ -60,18 +83,31 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 94,
+            "ref": "webgoat-lessons/password-reset/src/main/java/org/owasp/webgoat/password_reset/ResetLinkAssignmentForgotPassword.java"
+          },
           "id": "8843F319-8A22-4101-A378-C2B2F2597988",
           "impact": 0.4,
           "tags": {
+            "analyzer": "structural",
             "cci": [
               "CCI-001312"
             ],
+            "class_type": "Poor Error Handling",
+            "kingdom": "Errors",
             "nist": [
               "SI-11"
-            ]
+            ],
+            "subtype": "Empty Catch Block"
           },
           "code": "HttpHeaders httpHeaders = new HttpHeaders();\n            HttpEntity httpEntity = new HttpEntity(httpHeaders);\n            new RestTemplate().exchange(String.format(\"http://%s/PasswordReset/reset/reset-password/%s\", host, resetLink), HttpMethod.GET, httpEntity, Void.class);\n        } catch (Exception e) {\n            //don't care\n        }\n    }\n}",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://www.securecoding.cert.org/confluence/display/java/ERR00-J.+Do+not+suppress+or+ignore+checked+exceptions"
+            }
+          ],
           "title": "The method in ignores an exception on line , which could cause the program to overlook unexpected states and conditions. Ignoring an exception can cause the program to overlook unexpected states and conditions.",
           "verificationMethod": "automated"
         },
@@ -87,6 +123,10 @@
             {
               "data": "Write error messages with security in mind. In production environments, turn off detailed error information in favor of brief messages. Restrict the generation and storage of detailed output that can help administrators and programmers diagnose problems. Be careful, debugging traces can sometimes appear in non-obvious places (embedded in comments in the HTML for an error page, for example). Even brief error messages that do not reveal stack traces or database dumps can potentially aid an attacker. For example, an \"Access Denied\" message can reveal that a file or user exists on the system. If you are concerned about leaking system data via NFC on an Android device, you could do one of the following three things. Either do not include system data in the messages pushed to other devices in range, or encrypt the payload of the message, or establish secure communication channel at a higher layer.",
               "label": "fix"
+            },
+            {
+              "data": "Do not rely on wrapper scripts, corporate IT policy, or quick-thinking system administrators to prevent system information leaks. Write software that is secure on its own.\n\nThis category of vulnerability does not apply to all types of programs. For example, if your application executes on a client machine where system information is already available to an attacker, or if you print system information only to a trusted log file, you can use AuditGuide to filter out this category.\n\nFortify RTA adds protection against this category.",
+              "label": "tips"
             }
           ],
           "results": [
@@ -111,14 +151,21 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 114,
+            "ref": "webgoat-lessons/missing-function-ac/src/main/java/org/owasp/webgoat/missing_ac/Users.java"
+          },
           "id": "FE4EADF2-7055-4C36-863E-5A01C4A0E1A4",
           "impact": 0.6,
           "tags": {
+            "analyzer": "semantic",
             "cci": [
               "CCI-001312",
               "CCI-001368",
               "CCI-001414"
             ],
+            "class_type": "System Information Leak",
+            "kingdom": "Encapsulation",
             "nist": [
               "AC-4",
               "SI-11"
@@ -126,6 +173,23 @@
           },
           "code": "HashMap\u003cString,String\u003e errMap = new HashMap() {{\n                put(\"err\",e.getMessage() + \"::\" + e.getCause());\n            }};\n            e.printStackTrace();\n            return new HashMap\u003cInteger,HashMap\u003e() {{\n                put(0,errMap);\n            }};",
           "controlType": "technical",
+          "refs": [
+            {
+              "url": "http://ece.wpi.edu/~dchasaki/papers/Security%20in%20NFC.pdf"
+            },
+            {
+              "url": "https://www.securecoding.cert.org/confluence/display/java/ERR01-J.+Do+not+allow+exceptions+to+expose+sensitive+information"
+            },
+            {
+              "url": "https://www.securecoding.cert.org/confluence/display/java/ENV02-J.+Do+not+trust+the+values+of+environment+variables"
+            },
+            {
+              "url": "http://www.oracle.com/technetwork/java/seccodeguide-139067.html#0"
+            },
+            {
+              "url": "http://www.oracle.com/technetwork/java/seccodeguide-139067.html#2"
+            }
+          ],
           "title": "The function in might reveal system data or debugging information by calling on line . The information revealed by could help an adversary form a plan of attack. Revealing system data or debugging information helps an adversary learn about the system and form a plan of attack.",
           "verificationMethod": "automated"
         },
@@ -150,17 +214,25 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 55,
+            "ref": "webgoat-lessons/sql-injection/src/main/java/org/owasp/webgoat/sql_injection/mitigation/Servers.java"
+          },
           "id": "3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E",
           "impact": 0.4,
           "tags": {
+            "analyzer": "structural",
             "cci": [
               "CCI-001643",
               "CCI-003173"
             ],
+            "class_type": "Dead Code",
+            "kingdom": "Code Quality",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "subtype": "Unused Field"
           },
           "code": "private String id;\n        private String hostname;\n        private String ip;\n        private String mac;\n        private String status;\n        private String description;\n    }",
           "title": "The field is never used. This field is never used.",
@@ -187,17 +259,25 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "line": 94,
+            "ref": "webgoat-lessons/sql-injection/src/main/java/org/owasp/webgoat/sql_injection/mitigation/SqlInjectionLesson10b.java"
+          },
           "id": "B30AA17C-87EC-42CF-9160-CFDF122CE28E",
           "impact": 0.4,
           "tags": {
+            "analyzer": "structural",
             "cci": [
               "CCI-001643",
               "CCI-003173"
             ],
+            "class_type": "Poor Style",
+            "kingdom": "Code Quality",
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "subtype": "Value Never Read"
           },
           "code": "JavaFileObject javaObjectFromString = getJavaFileContentsAsString(s);\n        Iterable fileObjects = Arrays.asList(javaObjectFromString);\n        JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnosticsCollector, null, null, fileObjects);\n        Boolean result = task.call();\n        List\u003cDiagnostic\u003e diagnostics = diagnosticsCollector.getDiagnostics();\n        return diagnostics;\n    }\nJavaFileObject javaObjectFromString = getJavaFileContentsAsString(s);\n        Iterable fileObjects = Arrays.asList(javaObjectFromString);\n        JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnosticsCollector, null, null, fileObjects);\n        Boolean result = task.call();\n        List\u003cDiagnostic\u003e diagnostics = diagnosticsCollector.getDiagnostics();\n        return diagnostics;\n    }",
           "title": "The method in never uses the value it assigns to the variable on line . The variable's value is assigned but never used, making it a dead store.",

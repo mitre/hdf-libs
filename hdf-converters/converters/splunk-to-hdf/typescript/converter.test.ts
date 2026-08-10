@@ -42,6 +42,28 @@ describe('splunk-to-hdf ground-truth anchor', () => {
   });
 });
 
+describe('tool.version from header.version', () => {
+  it('pins tool.version to the header.version of both fixtures', async () => {
+    for (const fixture of ['splunk-events.json', 'splunk-minimal.json']) {
+      const hdf = JSON.parse(await convertSplunkToHdf(loadFixture(fixture))) as HDFResults;
+      expect(hdf.tool?.version).toBe('4.16.0');
+    }
+  });
+
+  it('leaves tool.version absent when header.version is missing', async () => {
+    const input = JSON.stringify([
+      {
+        meta: { guid: 'g', subtype: 'header', hdf_splunk_schema: '1.0', filetype: 'evaluation', filename: 't.json' },
+        profiles: [],
+        platform: { name: 'centos', release: '7' },
+        statistics: {},
+      },
+    ]);
+    const hdf = JSON.parse(await convertSplunkToHdf(input)) as HDFResults;
+    expect(hdf.tool?.version).toBeUndefined();
+  });
+});
+
 describe('timestamp parse fallback', () => {
   it('falls back to a valid startTime when result.start_time is unparseable', async () => {
     const input = loadFixture('splunk-events.json').replace(/2019-11-04T16:17:17-05:00/g, 'not-a-date');

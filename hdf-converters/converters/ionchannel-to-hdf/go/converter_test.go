@@ -320,6 +320,78 @@ func TestConvert_EdgeCases_AnalysisVerdict(t *testing.T) {
 	assert.Equal(t, "ruleset-002", dep.Labels["ruleset_id"])
 }
 
+// ---- Analysis-level verdict tags on requirements ----
+
+func TestConvert_AnalysisTags_OnDependencyRequirement(t *testing.T) {
+	// edge-cases.json: passed=false, risk=medium, ruleset_name=strict, ruleset_id=ruleset-002
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-n/a/requests")
+	assert.Equal(t, false, req.Tags["passed"], "passed must be a native boolean")
+	assert.Equal(t, "medium", req.Tags["risk"])
+	assert.Equal(t, "strict", req.Tags["ruleset_name"])
+	assert.Equal(t, "ruleset-002", req.Tags["ruleset_id"])
+}
+
+func TestConvert_AnalysisTags_OnScanRequirement(t *testing.T) {
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	community := findBaseline(t, result, "Ion Channel community Scan")
+	req := community.Requirements[0]
+	assert.Equal(t, false, req.Tags["passed"], "passed must be a native boolean")
+	assert.Equal(t, "medium", req.Tags["risk"])
+	assert.Equal(t, "strict", req.Tags["ruleset_name"])
+	assert.Equal(t, "ruleset-002", req.Tags["ruleset_id"])
+}
+
+func TestConvert_AnalysisTags_PassedTrue(t *testing.T) {
+	// minimal.json: passed=true, risk=low, ruleset_name=default, ruleset_id=ruleset-001
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-expressjs/express")
+	assert.Equal(t, true, req.Tags["passed"], "passed must be a native boolean")
+	assert.Equal(t, "low", req.Tags["risk"])
+	assert.Equal(t, "default", req.Tags["ruleset_name"])
+	assert.Equal(t, "ruleset-001", req.Tags["ruleset_id"])
+}
+
+func TestBuildTags_OmitsAbsentVerdictFields(t *testing.T) {
+	// When risk/ruleset_name/ruleset_id are empty the keys are omitted, but the
+	// boolean passed is always present.
+	dep := contextualizedDependency{
+		Dependency:         Dependency{Org: "acme", Name: "widget"},
+		ParentDependencies: []string{},
+	}
+	tags := buildTags(dep, IonChannelAnalysis{Passed: true})
+
+	assert.Equal(t, true, tags["passed"])
+	_, hasRisk := tags["risk"]
+	assert.False(t, hasRisk, "risk must be omitted when empty")
+	_, hasName := tags["ruleset_name"]
+	assert.False(t, hasName, "ruleset_name must be omitted when empty")
+	_, hasID := tags["ruleset_id"]
+	assert.False(t, hasID, "ruleset_id must be omitted when empty")
+}
+
+func TestBuildScanRequirement_OmitsAbsentVerdictFields(t *testing.T) {
+	scan := ScanSummary{Name: "community", Results: ScanResults{Type: "community"}}
+	req := buildScanRequirement(scan, IonChannelAnalysis{Passed: false})
+
+	assert.Equal(t, false, req.Tags["passed"])
+	_, hasRisk := req.Tags["risk"]
+	assert.False(t, hasRisk, "risk must be omitted when empty")
+	_, hasName := req.Tags["ruleset_name"]
+	assert.False(t, hasName, "ruleset_name must be omitted when empty")
+	_, hasID := req.Tags["ruleset_id"]
+	assert.False(t, hasID, "ruleset_id must be omitted when empty")
+}
+
 // ---- Helper function tests ----
 
 func TestBuildTitle_Standard(t *testing.T) {
@@ -398,6 +470,60 @@ func TestBuildDependencyGraph_ParentAssociation(t *testing.T) {
 			assert.Contains(t, dep.ParentDependencies, "parent-org/parent")
 		}
 	}
+}
+
+// ---- Timestamp backfill (value-pinning) ----
+//
+// The shared snapshot masks the top-level timestamp, so these unit tests pin the
+// exact source-derived values the golden cannot verify.
+
+func TestConvert_TopLevelTimestamp_FromUpdatedAt(t *testing.T) {
+	// minimal.json analysis updated_at = 2024-01-15T10:35:00Z (scan completion).
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	b, err := json.Marshal(result.Timestamp)
+	require.NoError(t, err)
+	assert.Equal(t, `"2024-01-15T10:35:00Z"`, string(b))
+}
+
+func TestConvert_ScanStartTime_FromCreatedAt(t *testing.T) {
+	// edge-cases.json community scan created_at = 2024-02-20T14:00:00Z.
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	community := findBaseline(t, result, "Ion Channel community Scan")
+	require.Len(t, community.Requirements, 1)
+	require.Len(t, community.Requirements[0].Results, 1)
+
+	b, err := json.Marshal(community.Requirements[0].Results[0].StartTime)
+	require.NoError(t, err)
+	assert.Equal(t, `"2024-02-20T14:00:00Z"`, string(b))
+}
+
+func TestAnalysisTimestamp_FallsBackToCreatedAt(t *testing.T) {
+	ts := analysisTimestamp(IonChannelAnalysis{CreatedAt: "2024-03-14T09:00:00Z"})
+	assert.Equal(t, "2024-03-14T09:00:00Z", ts.UTC().Format("2006-01-02T15:04:05Z07:00"))
+}
+
+func TestAnalysisTimestamp_FallsBackToNow(t *testing.T) {
+	// No parseable analysis time → wall-clock fallback (a valid, non-zero time).
+	ts := analysisTimestamp(IonChannelAnalysis{})
+	assert.False(t, ts.IsZero(), "missing analysis time must fall back to a valid now()")
+}
+
+func TestScanStartTime_FallsBackToUpdatedAt(t *testing.T) {
+	st := scanStartTime(ScanSummary{UpdatedAt: "2024-05-06T07:08:09Z"})
+	assert.Equal(t, "2024-05-06T07:08:09Z", st.UTC().Format("2006-01-02T15:04:05Z07:00"))
+}
+
+func TestScanStartTime_FallsBackToZeroSentinel(t *testing.T) {
+	// No parseable scan time → zero sentinel (mirrors the TS Date sentinel).
+	st := scanStartTime(ScanSummary{})
+	assert.True(t, st.IsZero(), "timeless scan must fall back to the zero sentinel")
 }
 
 func TestSnapshots(t *testing.T) {

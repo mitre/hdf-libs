@@ -24,7 +24,7 @@
     "security:ts": "echo '── prod deps (fail on moderate+) ──' && pnpm audit --prod --audit-level=moderate && echo '── dev deps (fail on high+) ──' && pnpm audit --dev --audit-level=high",
     "security:go": "pnpm --filter hdf-cli run security:vuln && pnpm --filter hdf-cli run security:sast",
     "lint": "pnpm -r run lint",
-    "lint:go": "pnpm --filter hdf-cli run lint && pnpm --filter @mitre/hdf-converters run lint:go",
+    "lint:go": "pnpm --filter hdf-cli run lint && pnpm --filter @mitre/hdf-converters run lint:go && pnpm --filter @mitre/hdf-utilities run lint:go",
     "lint:timestamps": "node scripts/check-timestamp-usage.mjs",
     "lint:fix": "pnpm -r run lint:fix",
     "clean": "pnpm -r run clean",

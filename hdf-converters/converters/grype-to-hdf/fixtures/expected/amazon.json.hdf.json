@@ -1266,8 +1266,21 @@
   ],
   "components": [
     {
+      "integrity": [
+        {
+          "algorithm": "sha256",
+          "value": "256ebbfc5c837807131c5cdfbfb6b7654b75fdac1783ea0ada96f04027c781af"
+        }
+      ],
+      "labels": {
+        "architecture": "arm64"
+      },
       "name": "cloudwatch_to_s3:latest",
-      "type": "artifact"
+      "type": "containerImage",
+      "osName": "amazonlinux",
+      "osVersion": "2",
+      "imageId": "sha256:7e36b65761f2da06282720b87b0d5924a7c3478fb655d38e39f8c5eee55b8317",
+      "image": "cloudwatch_to_s3:latest"
     }
   ],
   "generator": {

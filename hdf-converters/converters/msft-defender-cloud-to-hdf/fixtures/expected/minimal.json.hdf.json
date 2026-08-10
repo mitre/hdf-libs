@@ -28,6 +28,7 @@
               "Networking"
             ],
             "implementationEffort": "Moderate",
+            "policy_definition_id": "/providers/Microsoft.Authorization/policyDefinitions/aaaa1111-bbbb-2222-cccc-3333dddd4444",
             "severity": "Medium",
             "tactics": [
               "Discovery",
@@ -73,6 +74,7 @@
               "Compute"
             ],
             "implementationEffort": "Low",
+            "policy_definition_id": "/providers/Microsoft.Authorization/policyDefinitions/bbbb2222-cccc-3333-dddd-4444eeee5555",
             "severity": "High",
             "tactics": [
               "Collection"

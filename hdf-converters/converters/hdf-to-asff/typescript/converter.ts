@@ -4,6 +4,7 @@ import {
   asArr,
   getStr,
   setIf,
+  stringSlice,
   statusOf,
   defaultDescription,
   firstResultStartTime,
@@ -54,6 +55,8 @@ export function convertHdfToAsff(input: string, converterVersion = '0.1.0'): str
 
   const docTimestamp = getStr(doc, 'timestamp');
   const component = firstComponent(doc);
+  const toolName = getStr(asMap(doc.tool), 'name');
+  const generatorName = getStr(asMap(doc.generator), 'name');
   const accountID = recoverAccountID(doc);
   const productArn = `arn:aws:securityhub:${PLACEHOLDER_REGION}:${accountID}:product/${accountID}/default`;
 
@@ -62,14 +65,39 @@ export function convertHdfToAsff(input: string, converterVersion = '0.1.0'): str
     const baseline = asMap(bRaw);
     if (!baseline) continue;
     const baselineName = getStr(baseline, 'name');
+    const baselineVersion = getStr(baseline, 'version');
     const reqs = asArr(baseline.requirements) ?? [];
     for (const rRaw of reqs) {
       const req = asMap(rRaw);
       if (!req) continue;
-      findings.push(buildFinding(req, baselineName, docTimestamp, component, accountID, productArn, converterVersion));
+      findings.push(buildFinding(req, {
+        baselineName,
+        baselineVersion,
+        toolName,
+        generatorName,
+        docTimestamp,
+        component,
+        accountID,
+        productArn,
+        exporterVersion: converterVersion,
+      }));
     }
   }
   return stringifyLine(canonicalize({Findings: findings})) + '\n';
+}
+
+// FindingContext carries the doc-/baseline-level values one finding needs beyond
+// its own requirement, keeping buildFinding's signature stable as fields grow.
+interface FindingContext {
+  baselineName: string;
+  baselineVersion: string;
+  toolName: string;
+  generatorName: string;
+  docTimestamp: string;
+  component: Obj | undefined;
+  accountID: string;
+  productArn: string;
+  exporterVersion: string;
 }
 
 // recoverAccountID reads AwsAccountId back out of a cloudAccount component (the
@@ -84,15 +112,7 @@ function recoverAccountID(doc: Obj): string {
   return PLACEHOLDER_ACCOUNT_ID;
 }
 
-function buildFinding(
-  req: Obj,
-  baselineName: string,
-  docTimestamp: string,
-  component: Obj | undefined,
-  accountID: string,
-  productArn: string,
-  converterVersion: string,
-): Obj {
+function buildFinding(req: Obj, ctx: FindingContext): Obj {
   const controlID = getStr(req, 'id');
   const st = statusOf(req);
 
@@ -102,29 +122,29 @@ function buildFinding(
   const cvssList = asArr(req.cvss);
   const hasCVSS = cvssList !== undefined && cvssList.length > 0;
 
-  const ts = canonicalTime(firstResultStartTime(req, docTimestamp));
-  const id = findingID(accountID, baselineName, controlID);
+  const ts = canonicalTime(firstResultStartTime(req, ctx.docTimestamp));
+  const id = findingID(ctx.accountID, ctx.baselineName, controlID);
 
   const finding: Obj = {
     SchemaVersion: ASFF_SCHEMA_VERSION,
     Id: id,
-    ProductArn: productArn,
+    ProductArn: ctx.productArn,
     GeneratorId: controlID,
-    AwsAccountId: accountID,
+    AwsAccountId: ctx.accountID,
     CreatedAt: ts,
     UpdatedAt: ts,
     Title: truncate(title, MAX_TITLE),
     Description: truncate(desc, MAX_DESCRIPTION),
     Types: asffTypes(hasCVSS),
     Severity: severity(req),
-    Resources: resources(component, id),
+    Resources: resources(ctx.component, id),
     RecordState: 'ACTIVE',
-    Compliance: {Status: complianceStatus(st.rollup)},
+    Compliance: complianceBlock(req, st.rollup),
   };
   if (st.suppressed) {
     finding.Workflow = {Status: 'SUPPRESSED'};
   }
-  const pf = productFields(baselineName, controlID, converterVersion);
+  const pf = productFields(ctx, controlID);
   if (Object.keys(pf).length > 0) {
     finding.ProductFields = pf;
   }
@@ -132,7 +152,117 @@ function buildFinding(
   if (rem) {
     finding.Remediation = rem;
   }
+  // Vulnerabilities[] carries the structured CVSS/CVE data (and any additional
+  // reference URLs) so asff-to-hdf reconstructs requirement.cvss[], the CVE, and
+  // the full refs[]. Extra refs ride the first vuln's ReferenceUrls; when a
+  // requirement carries refs but no CVSS, the first ref falls back to SourceUrl.
+  const vulns = vulnerabilities(req);
+  const refs = allRefURLs(req);
+  if (refs.length > 0) {
+    if (vulns.length > 0) {
+      vulns[0]!.ReferenceUrls = refs;
+    } else {
+      finding.SourceUrl = refs[0];
+    }
+  }
+  if (vulns.length > 0) {
+    finding.Vulnerabilities = vulns;
+  }
   return finding;
+}
+
+// complianceBlock builds the ASFF Compliance object: the rolled-up status, the
+// NIST/CCI control ids as RelatedRequirements, and the parsed status-reason
+// message as StatusReasons (the reverse of asff-to-hdf's statusReason flatten).
+function complianceBlock(req: Obj, rollup: string): Obj {
+  const comp: Obj = {Status: complianceStatus(rollup)};
+  const rr = relatedRequirements(req);
+  if (rr.length > 0) comp.RelatedRequirements = rr;
+  const sr = statusReasons(req);
+  if (sr.length > 0) comp.StatusReasons = sr;
+  return comp;
+}
+
+// relatedRequirements collects a requirement's NIST controls and CCI ids (in that
+// order) for ASFF Compliance.RelatedRequirements.
+function relatedRequirements(req: Obj): string[] {
+  const tags = asMap(req.tags);
+  if (!tags) return [];
+  const out: string[] = [];
+  for (const key of ['nist', 'cci']) {
+    for (const id of stringSlice(tags[key])) {
+      if (id !== '') out.push(id);
+    }
+  }
+  return out;
+}
+
+// statusReasons parses the first result message shaped as "ReasonCode: X" /
+// "Description: Y" lines back into ASFF Compliance.StatusReasons[] — the exact
+// inverse of asff-to-hdf's statusReason flatten. A free-form message yields nothing.
+function statusReasons(req: Obj): Obj[] {
+  const msg = firstResultMessage(req);
+  if (msg === '') return [];
+  const out: Obj[] = [];
+  let cur: Obj | undefined;
+  for (const line of msg.split('\n')) {
+    if (line.startsWith('ReasonCode: ')) {
+      cur = {ReasonCode: line.slice('ReasonCode: '.length)};
+      out.push(cur);
+    } else if (line.startsWith('Description: ')) {
+      const desc = line.slice('Description: '.length);
+      if (!cur) {
+        cur = {};
+        out.push(cur);
+      }
+      cur.Description = desc;
+    }
+  }
+  return out;
+}
+
+// firstResultMessage returns the first non-empty results[].message.
+function firstResultMessage(req: Obj): string {
+  for (const rRaw of asArr(req.results) ?? []) {
+    const m = getStr(asMap(rRaw), 'message');
+    if (m !== '') return m;
+  }
+  return '';
+}
+
+// vulnerabilities builds ASFF Vulnerabilities[] from requirement.cvss[]: one
+// vulnerability per CVSS entry, its Id the CVSS source (the CVE id) and its
+// Cvss[] the structured version/base-score/vector/source. asff-to-hdf reads these
+// back into requirement.cvss[] and the CVE, closing the round-trip.
+function vulnerabilities(req: Obj): Obj[] {
+  const out: Obj[] = [];
+  for (const cRaw of asArr(req.cvss) ?? []) {
+    const c = asMap(cRaw);
+    if (!c) continue;
+    const cvssEntry: Obj = {};
+    setIf(cvssEntry, 'Version', getStr(c, 'version'));
+    if (c.baseScore !== undefined && c.baseScore !== null) cvssEntry.BaseScore = c.baseScore;
+    setIf(cvssEntry, 'BaseVector', getStr(c, 'baseVector'));
+    setIf(cvssEntry, 'Source', getStr(c, 'source'));
+    const vuln: Obj = {Cvss: [cvssEntry]};
+    setIf(vuln, 'Id', getStr(c, 'source'));
+    out.push(vuln);
+  }
+  return out;
+}
+
+// allRefURLs returns every requirement.refs[].url (deduped, source order).
+function allRefURLs(req: Obj): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const rRaw of asArr(req.refs) ?? []) {
+    const url = getStr(asMap(rRaw), 'url');
+    if (url !== '' && !seen.has(url)) {
+      seen.add(url);
+      out.push(url);
+    }
+  }
+  return out;
 }
 
 function findingID(accountID: string, baselineName: string, controlID: string): string {
@@ -183,11 +313,14 @@ function resources(component: Obj | undefined, id: string): Obj[] {
   return [res];
 }
 
-function productFields(baselineName: string, controlID: string, converterVersion: string): Obj {
+function productFields(ctx: FindingContext, controlID: string): Obj {
   const pf: Obj = {};
-  setIf(pf, 'hdf/baseline', baselineName);
+  setIf(pf, 'hdf/baseline', ctx.baselineName);
+  setIf(pf, 'hdf/baseline_version', ctx.baselineVersion);
   setIf(pf, 'hdf/control_id', controlID);
-  setIf(pf, 'hdf/exporter_version', converterVersion);
+  setIf(pf, 'hdf/exporter_version', ctx.exporterVersion);
+  setIf(pf, 'hdf/generator', ctx.generatorName);
+  setIf(pf, 'hdf/tool', ctx.toolName);
   return pf;
 }
 

@@ -28,6 +28,7 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Improper Access Controls",
             "nist": [
               "SA-11",
               "RA-5"
@@ -58,6 +59,7 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Misconfigurations",
             "nist": [
               "SA-11",
               "RA-5"
@@ -88,6 +90,7 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Misconfigurations",
             "nist": [
               "SA-11",
               "RA-5"
@@ -123,6 +126,7 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Improper Access Controls",
             "nist": [
               "SA-11",
               "RA-5"
@@ -153,6 +157,7 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Improper Access Controls",
             "nist": [
               "SA-11",
               "RA-5"
@@ -183,6 +188,7 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Misconfigurations",
             "nist": [
               "SA-11",
               "RA-5"
@@ -205,15 +211,19 @@
   ],
   "components": [
     {
-      "name": "CONDS181",
-      "type": "host"
+      "name": "MSSQLSERVER",
+      "type": "database",
+      "hostname": "CONDS181",
+      "ipAddress": "10.0.10.204",
+      "engine": "Microsoft SQL Server",
+      "port": 1433
     }
   ],
   "generator": {
     "name": "dbprotect-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:39:51.936729Z",
+  "timestamp": "2021-02-18T15:57:00Z",
   "tool": {
     "name": "DBProtect"
   }

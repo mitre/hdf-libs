@@ -8093,8 +8093,21 @@
   ],
   "components": [
     {
-      "name": "golang:1.12-alpine",
-      "type": "artifact"
+      "integrity": [
+        {
+          "algorithm": "sha256",
+          "value": "5b6d42c254b9928b3cbc541bbcd52c6e91b239d2246e8e6f9825246980ed1664"
+        }
+      ],
+      "labels": {
+        "architecture": "arm64"
+      },
+      "name": "golang@sha256:3f8e3ad3e7c128d29ac3004ac8314967c5ddbfa5bfa7caa59b0de493fc01686a",
+      "type": "containerImage",
+      "osName": "alpine",
+      "osVersion": "3.11.3",
+      "imageId": "sha256:9d993b748f324b8291a4f202c2bc07b3485f7b9c7c799ee8925f657a760749cd",
+      "image": "golang@sha256:3f8e3ad3e7c128d29ac3004ac8314967c5ddbfa5bfa7caa59b0de493fc01686a"
     }
   ],
   "generator": {

@@ -320,6 +320,77 @@ func TestConvertSnyk_Description(t *testing.T) {
 	assert.Contains(t, desc.Data, "adm-zip")
 }
 
+// ---- External references (refs[]) ----
+
+func TestConvertSnyk_Refs(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
+
+	require.Len(t, req.Refs, 1)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://github.com/cthackers/adm-zip/commit/119dcad6599adccc77982feb14a0c7440fa63013", *req.Refs[0].URL)
+}
+
+func TestBuildSnykRefs_Branches(t *testing.T) {
+	// No references → nil (field omitted)
+	assert.Nil(t, buildSnykRefs(nil))
+	assert.Nil(t, buildSnykRefs([]SnykReference{}))
+
+	// Title-only reference (no URL) is skipped
+	assert.Nil(t, buildSnykRefs([]SnykReference{{Title: "no link"}}))
+
+	// URL present → one Reference per URL, title dropped
+	refs := buildSnykRefs([]SnykReference{
+		{Title: "a", URL: "https://example.com/a"},
+		{Title: "b"},
+		{Title: "c", URL: "https://example.com/c"},
+	})
+	require.Len(t, refs, 2)
+	require.NotNil(t, refs[0].URL)
+	assert.Equal(t, "https://example.com/a", *refs[0].URL)
+	require.NotNil(t, refs[1].URL)
+	assert.Equal(t, "https://example.com/c", *refs[1].URL)
+}
+
+// ---- upgradePath remediation description ----
+
+func TestConvertSnyk_UpgradePathDescription(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// SNYK-JS-ADMZIP-1065796 upgradePath is [false, "adm-zip@0.5.2"]
+	withPath := shared.MustFindRequirement(t, reqs, "SNYK-JS-ADMZIP-1065796")
+	desc := findDescription(withPath.Descriptions, "upgradePath")
+	require.NotNil(t, desc, "expected an 'upgradePath' description")
+	assert.Equal(t, "adm-zip@0.5.2", desc.Data)
+
+	// SNYK-JS-HBS-1566555 has an empty upgradePath → no description emitted
+	noPath := shared.MustFindRequirement(t, reqs, "SNYK-JS-HBS-1566555")
+	assert.Nil(t, findDescription(noPath.Descriptions, "upgradePath"),
+		"empty upgradePath must not emit an upgradePath description")
+}
+
+func TestFormatUpgradePath_Branches(t *testing.T) {
+	// Empty / bool-only (structural noise) → ""
+	assert.Equal(t, "", formatUpgradePath(nil))
+	assert.Equal(t, "", formatUpgradePath([]interface{}{}))
+	assert.Equal(t, "", formatUpgradePath([]interface{}{false}))
+
+	// Single package step
+	assert.Equal(t, "adm-zip@0.5.2", formatUpgradePath([]interface{}{false, "adm-zip@0.5.2"}))
+
+	// Multi-step chain joined with " > ", empty strings dropped
+	assert.Equal(t, "tap@11.1.5 > handlebars@4.5.3",
+		formatUpgradePath([]interface{}{false, "tap@11.1.5", "", "handlebars@4.5.3"}))
+}
+
 // ---- Requirement title and ID ----
 
 func TestConvertSnyk_RequirementTitleAndID(t *testing.T) {

@@ -223,6 +223,9 @@ func buildRequirement(assessmentID string, assessments []assessment, scanTime ti
 	if meta.AssessmentType != "" {
 		tags["assessmentType"] = meta.AssessmentType
 	}
+	if meta.PolicyDefinitionID != "" {
+		tags["policy_definition_id"] = meta.PolicyDefinitionID
+	}
 
 	// Descriptions
 	descriptions := []hdf.Description{

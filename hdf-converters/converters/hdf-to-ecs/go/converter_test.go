@@ -99,6 +99,7 @@ func TestConvertHDFToECS_Compliance(t *testing.T) {
 		hdf := sub(t, o, "hdf")
 		assert.NotNil(t, hdf["nist"], "hdf.nist present")
 		assert.NotNil(t, hdf["cci"], "hdf.cci present")
+		assert.NotEmpty(t, hdf["control_type"], "controlType surfaced into hdf.control_type")
 		assert.Equal(t, converterVersion, hdf["exporter_version"])
 		// event.category is exactly ["configuration"]
 		assert.Equal(t, []interface{}{"configuration"}, event["category"])
@@ -119,12 +120,26 @@ func TestConvertHDFToECS_CVE(t *testing.T) {
 		id, _ := vuln["id"].(string)
 		assert.True(t, strings.HasPrefix(id, "CVE-"), "vulnerability.id should be a CVE: %v", id)
 		assert.Equal(t, "CVE", vuln["enumeration"])
-		assert.Equal(t, "CVSS", vuln["classification"])
+		// classification is derived from the real cvss[] version, not the literal "CVSS".
+		assert.Equal(t, "CVSS v3.0", vuln["classification"])
 		score := sub(t, o, "vulnerability")["score"].(map[string]interface{})
 		assert.NotNil(t, score["base"], "vulnerability.score.base present")
+		assert.Equal(t, "3.0", score["version"])
 		scanner := vuln["scanner"].(map[string]interface{})
 		assert.Equal(t, "Nessus", scanner["vendor"])
+		// verificationMethod surfaced into the lossless hdf.* block.
+		assert.Equal(t, "automated", sub(t, o, "hdf")["verification_method"])
 	}
+
+	// First requirement carries two refs — both must reach rule.reference AND
+	// vulnerability.reference (multivalue), not just the first.
+	first := objs[0]
+	wantRefs := []interface{}{
+		"https://www.oracle.com/a/tech/docs/cpujan2022cvrf.xml",
+		"https://www.oracle.com/security-alerts/cpujan2022.html#AppendixJAVA",
+	}
+	assert.Equal(t, wantRefs, sub(t, first, "rule")["reference"], "all refs -> rule.reference")
+	assert.Equal(t, wantRefs, sub(t, first, "vulnerability")["reference"], "all refs -> vulnerability.reference")
 }
 
 func TestConvertHDFToECS_Override(t *testing.T) {
@@ -134,10 +149,14 @@ func TestConvertHDFToECS_Override(t *testing.T) {
 	require.Len(t, objs, 1)
 	o := objs[0]
 
-	// raw-primary: the result is failed and a waiver makes effectiveStatus passed,
-	// but event.outcome follows the RAW verdict (a waived failure is still failure);
-	// hdf.suppressed carries the acceptance axis.
-	assert.Equal(t, "failure", sub(t, o, "event")["outcome"], "raw verdict drives event.outcome")
+	// effective-primary: the raw result is failed but a waiver makes
+	// effectiveStatus passed, so event.outcome follows the GOVERNING verdict;
+	// hdf.status keeps the raw verdict and hdf.suppressed carries acceptance.
+	event := sub(t, o, "event")
+	assert.Equal(t, "success", event["outcome"], "effective (waived) verdict drives event.outcome")
+	// per-result timing surfaces to event.start / event.duration (0.1s -> 1e8 ns).
+	assert.Equal(t, "2024-01-01T00:00:00Z", event["start"])
+	assert.EqualValues(t, 100000000, event["duration"])
 
 	hdf := sub(t, o, "hdf")
 	assert.Equal(t, "failed", hdf["status"], "hdf.status is the lossless raw status")
@@ -145,11 +164,28 @@ func TestConvertHDFToECS_Override(t *testing.T) {
 	assert.Equal(t, "passed", hdf["effective_status"], "hdf.effective_status is the override outcome")
 	assert.Equal(t, "waiver", hdf["disposition"], "hdf.disposition promoted flat")
 	assert.Equal(t, true, hdf["overridden"])
+	// baseline title + integrity checksum, previously dropped by the fixed allowlist.
+	assert.Equal(t, "RHEL 9 STIG Baseline", hdf["baseline_title"])
+	assert.Equal(t, map[string]interface{}{"algorithm": "sha256", "value": "abc123"}, hdf["baseline_checksum"])
 	overrides, ok := hdf["status_overrides"].([]interface{})
 	require.True(t, ok, "hdf.status_overrides present")
 	require.Len(t, overrides, 1)
 	first := overrides[0].(map[string]interface{})
 	assert.Equal(t, "waiver", first["type"])
+
+	// override provenance surfaced into labels.*
+	labels := sub(t, o, "labels")
+	assert.Equal(t, "waiver", labels["hdf_disposition"])
+	assert.Equal(t, "waiver", labels["hdf_override_type"])
+	assert.Equal(t, "issm@example.com", labels["hdf_override_applied_by"])
+	assert.Equal(t, "2024-01-15T00:00:00Z", labels["hdf_override_applied_at"])
+	assert.Equal(t, "2099-12-31T00:00:00Z", labels["hdf_override_expires_at"])
+	assert.NotEmpty(t, labels["hdf_override_reason"])
+
+	// sourceLocation -> log.origin.file.{name,line}
+	logFile := sub(t, sub(t, sub(t, o, "log"), "origin"), "file")
+	assert.Equal(t, "controls/stig.rb", logFile["name"])
+	assert.EqualValues(t, 1, logFile["line"])
 
 	// host projected from the component (with componentId -> host.id)
 	host := sub(t, o, "host")
@@ -169,10 +205,19 @@ func TestConvertHDFToECS_RiskAdjustStaysActionable(t *testing.T) {
 	objs := parseLines(t, out)
 	require.Len(t, objs, 1)
 	o := objs[0]
+	// effectiveStatus is still failed, so the effective outcome stays failure.
 	assert.Equal(t, "failure", sub(t, o, "event")["outcome"], "risk-adjusted failure is still failure")
 	hdf := sub(t, o, "hdf")
 	assert.Equal(t, false, hdf["suppressed"], "risk adjustment does NOT suppress")
 	assert.Equal(t, "riskAdjustment", hdf["disposition"])
+	// disposition + override type still surface into labels.* even when not suppressed.
+	labels := sub(t, o, "labels")
+	assert.Equal(t, "riskAdjustment", labels["hdf_disposition"])
+	assert.Equal(t, "riskAdjustment", labels["hdf_override_type"])
+	assert.Equal(t, "isso@example.com", labels["hdf_override_applied_by"])
+	// sourceLocation line 2 -> log.origin.file.line
+	logFile := sub(t, sub(t, sub(t, o, "log"), "origin"), "file")
+	assert.EqualValues(t, 2, logFile["line"])
 }
 
 func TestConvertHDFToECS_ThreatFromAttackTags(t *testing.T) {

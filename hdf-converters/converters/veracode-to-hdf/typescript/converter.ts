@@ -123,6 +123,48 @@ function formatCWEDesc(cwes: Record<string, unknown>[]): string {
   }).join('\n');
 }
 
+/**
+ * Collect the distinct remediation_status values across a category's flaws, in
+ * order of first appearance. Returns '' when no flaw carries the field (the
+ * NOT-IN-SOURCE case).
+ */
+function formatRemediationStatus(cwes: Record<string, unknown>[]): string {
+  const statuses: string[] = [];
+  const seen = new Set<string>();
+  for (const c of cwes) {
+    const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
+    const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
+    for (const flaw of flaws) {
+      const status = attr(flaw, 'remediation_status');
+      if (status && !seen.has(status)) {
+        seen.add(status);
+        statuses.push(status);
+      }
+    }
+  }
+  return statuses.join('\n');
+}
+
+/**
+ * Return the line number of the first flaw carrying a parseable numeric line
+ * across a category's CWEs — the locus paired with the first source file in the
+ * joined ref. Returns undefined when no flaw carries a numeric line (SCA/absent
+ * case), so sourceLocation.line is omitted.
+ */
+function firstFlawLine(cwes: Record<string, unknown>[]): number | undefined {
+  for (const c of cwes) {
+    const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
+    const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
+    for (const flaw of flaws) {
+      const lineStr = attr(flaw, 'line');
+      if (!lineStr) continue;
+      const n = Number(lineStr);
+      if (Number.isFinite(n)) return n;
+    }
+  }
+  return undefined;
+}
+
 /** Format a static flaw as a code description. */
 function formatFlawCodeDesc(flaw: Record<string, unknown>): string {
   const sourcefilepath = attr(flaw, 'sourcefilepath');
@@ -244,6 +286,36 @@ function buildSCACode(vuln: Record<string, unknown>, components: Record<string, 
 
 // ---- Requirement builders ----
 
+// The standards cross-reference attributes Veracode records on each <cwe>. Each
+// maps to a discrete tag of the same name. Order is deterministic and shared
+// with the Go twin (cweStandardTags).
+const CWE_STANDARD_ATTRS = [
+  'owasp',
+  'sans',
+  'certc',
+  'certcpp',
+  'certjava',
+  'owaspmobile',
+];
+
+/**
+ * Collect the distinct non-empty values of one standards cross-reference
+ * attribute across a category's CWEs, in first-appearance order. Returns [] when
+ * no CWE carries the attribute (the NOT-IN-SOURCE case).
+ */
+function collectCWEStandard(cwes: Record<string, unknown>[], key: string): string[] {
+  const values: string[] = [];
+  const seen = new Set<string>();
+  for (const c of cwes) {
+    const v = attr(c, key);
+    if (v && !seen.has(v)) {
+      seen.add(v);
+      values.push(v);
+    }
+  }
+  return values;
+}
+
 /** Build CWE-based requirements from severity categories. */
 function buildCWERequirements(severities: Record<string, unknown>[], firstBuildDate: string): EvaluatedRequirement[] {
   const requirements: EvaluatedRequirement[] = [];
@@ -274,6 +346,15 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
   const cweDescStr = formatCWEDesc(cwes);
   if (cweDescStr) extras.cweDescription = cweDescStr;
 
+  // Veracode cross-references each CWE to external standards catalogs (OWASP,
+  // SANS/CWE Top 25, CERT C/C++/Java, OWASP Mobile). Each becomes a discrete tag
+  // carrying the category's distinct referenced entries; absent catalogs are
+  // omitted (NOT-IN-SOURCE).
+  for (const key of CWE_STANDARD_ATTRS) {
+    const values = collectCWEStandard(cwes, key);
+    if (values.length > 0) extras[key] = values;
+  }
+
   const tags = buildNistCciTags(nist, cciTags, extras);
 
   // First-class CWE identifiers ("CWE-NN"). The category cweid attributes are
@@ -287,6 +368,14 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
   const recText = formatRecommendations(cat.recommendations as Record<string, unknown> | undefined);
   if (recText) {
     descriptions.push({ label: 'fix', data: recText });
+  }
+
+  // Carry each flaw's remediation_status (e.g. "New", "Fixed", "Cannot Fix").
+  // Descriptions are requirement-level while the field is per-flaw, so the
+  // distinct values across the category's flaws are collected into one entry.
+  const remStatus = formatRemediationStatus(cwes);
+  if (remStatus) {
+    descriptions.push({ label: 'remediation_status', data: remStatus });
   }
 
   // Collect all flaws from all CWEs in this category
@@ -303,6 +392,7 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
     return flaws.map(flaw => attr(flaw, 'sourcefile')).filter(Boolean);
   }).join('\n');
+  const sourceLine = firstFlawLine(cwes);
 
   // Static findings carry no raw snippet; the code-locus (function prototype at
   // source-file:line) is the richest source context Veracode provides. Leave
@@ -319,7 +409,14 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     descriptions,
     impact,
     results,
-    { tags, sourceLocation: sourceRef ? { ref: sourceRef } : undefined },
+    {
+      tags,
+      sourceLocation: sourceRef
+        ? sourceLine !== undefined
+          ? { line: sourceLine, ref: sourceRef }
+          : { ref: sourceRef }
+        : undefined,
+    },
   ) as EvaluatedRequirement;
 
   const controlType = deriveControlTypeFromTags(nist);

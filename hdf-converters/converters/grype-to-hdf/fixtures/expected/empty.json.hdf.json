@@ -31,8 +31,18 @@
   ],
   "components": [
     {
+      "integrity": [
+        {
+          "algorithm": "sha256",
+          "value": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
       "name": "alpine:3.20",
-      "type": "artifact"
+      "type": "containerImage",
+      "osName": "alpine",
+      "osVersion": "3.20.0",
+      "imageId": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "image": "alpine:3.20"
     }
   ],
   "generator": {

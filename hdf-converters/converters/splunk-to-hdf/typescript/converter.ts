@@ -177,6 +177,7 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
   const allBaselines: EvaluatedBaseline[] = [];
   const components: Component[] = [];
   let statistics: Statistics | undefined;
+  let toolVersion: string | undefined;
 
   for (const guid of [...eventsByGuid.keys()].sort()) {
     const guidEvents = eventsByGuid.get(guid)!;
@@ -214,6 +215,7 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
     }
     components.push(component);
     statistics = convertStatistics(header.statistics);
+    toolVersion = header.version || undefined;
 
     // Group controls by their profile_sha256
     const controlsByProfile = new Map<string, SplunkControl[]>();
@@ -337,6 +339,7 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
     generatorName: 'splunk-to-hdf',
     converterVersion,
     toolName: 'Splunk',
+    toolVersion,
     baselines: allBaselines,
     components,
     statistics,

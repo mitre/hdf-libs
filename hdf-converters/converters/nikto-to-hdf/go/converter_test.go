@@ -238,6 +238,58 @@ func TestConvertNiktoToHDF_RequirementTitle(t *testing.T) {
 	assert.Equal(t, "Retrieved access-control-allow-origin header: *", *req.Title)
 }
 
+func TestConvertNiktoToHDF_HostComponent(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNiktoToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.Host, comp.Type)
+	assert.Equal(t, "example.com", comp.Name)
+	require.NotNil(t, comp.Hostname)
+	assert.Equal(t, "example.com", *comp.Hostname)
+	require.NotNil(t, comp.IPAddress)
+	assert.Equal(t, "93.184.216.34", *comp.IPAddress)
+	assert.Nil(t, comp.ComponentID, "componentId must not be set")
+}
+
+func TestConvertNiktoToHDF_HostComponentIPOnly(t *testing.T) {
+	input := []byte(`{"ip":"10.1.2.3","vulnerabilities":[]}`)
+	result, err := ConvertNiktoToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.Host, comp.Type)
+	assert.Equal(t, "10.1.2.3", comp.Name)
+	assert.Nil(t, comp.Hostname)
+	require.NotNil(t, comp.IPAddress)
+	assert.Equal(t, "10.1.2.3", *comp.IPAddress)
+}
+
+func TestConvertNiktoToHDF_HostComponentHostOnly(t *testing.T) {
+	input := []byte(`{"host":"web.example.com","vulnerabilities":[]}`)
+	result, err := ConvertNiktoToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Components, 1)
+	comp := result.Components[0]
+	assert.Equal(t, hdf.Host, comp.Type)
+	assert.Equal(t, "web.example.com", comp.Name)
+	require.NotNil(t, comp.Hostname)
+	assert.Equal(t, "web.example.com", *comp.Hostname)
+	assert.Nil(t, comp.IPAddress)
+}
+
+func TestConvertNiktoToHDF_HostComponentAbsent(t *testing.T) {
+	input := []byte(`{"banner":"nginx","vulnerabilities":[]}`)
+	result, err := ConvertNiktoToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	assert.Empty(t, result.Components, "no host component when host and ip are absent")
+}
+
 func TestConverterContract(t *testing.T) {
 	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
 		ConverterName:  "nikto-to-hdf",

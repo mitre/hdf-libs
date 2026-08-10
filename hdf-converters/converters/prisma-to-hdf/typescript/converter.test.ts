@@ -357,6 +357,23 @@ describe('prisma to HDF converter', () => {
     });
   });
 
+  describe('external references (refs[])', () => {
+    it('maps a populated Vulnerability Link to a single refs[] URL', async () => {
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
+      const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
+      const req = findRequirement(host1!.requirements, '46-CVE-2021-44142');
+      expect(req?.refs).toHaveLength(1);
+      expect(req!.refs![0]!.url).toBe('http://example.com/security/cve/CVE-2021-44142');
+    });
+
+    it('omits refs[] when the Vulnerability Link column is blank', async () => {
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
+      const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
+      const req = findRequirement(host1!.requirements, '60522-redhat-RHEL7-high');
+      expect(req?.refs).toBeUndefined();
+    });
+  });
+
   describe('affectedPackages from CSV columns', () => {
     function fixtureCsv(rows: Record<string, string>[]): string {
       const header = [

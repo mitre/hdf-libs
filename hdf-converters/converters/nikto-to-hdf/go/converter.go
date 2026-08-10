@@ -169,9 +169,25 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ResultsChecksum: resultsChecksum,
 	}
 
-	target := hdf.Component{
-		Name: targetName,
-		Type: hdf.Application,
+	// Surface the scan target's host identity. Nikto scans a single web host;
+	// `host`/`ip` name it. Omit the component entirely when neither is present.
+	var components []hdf.Component
+	if niktoData.Host != "" || niktoData.IP != "" {
+		name := niktoData.Host
+		if name == "" {
+			name = niktoData.IP
+		}
+		host := hdf.Component{
+			Name: name,
+			Type: hdf.Host,
+		}
+		if niktoData.Host != "" {
+			host.Hostname = hdfutil.Ptr(niktoData.Host)
+		}
+		if niktoData.IP != "" {
+			host.IPAddress = hdfutil.Ptr(niktoData.IP)
+		}
+		components = append(components, host)
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
@@ -179,7 +195,7 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ConverterVersion: converterVersion,
 		ToolName:         "Nikto",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components:       []hdf.Component{target},
+		Components:       components,
 	})
 
 	return hdfResult, nil

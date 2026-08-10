@@ -47,8 +47,14 @@ interface CSAFVexDocument {
       generator?: { engine: { name: string; version: string }; date: string };
     };
   };
-  product_tree: { full_product_names: { name: string; product_id: string }[] };
+  product_tree: { full_product_names: CsafFullProductName[] };
   vulnerabilities: Vulnerability[];
+}
+
+interface CsafFullProductName {
+  name: string;
+  product_id: string;
+  product_identification_helper?: { purl?: string; cpe?: string };
 }
 
 interface Vulnerability {
@@ -62,7 +68,7 @@ interface Vulnerability {
   };
   flags?: { label: string; date?: string; product_ids: string[] }[];
   threats?: { category: string; details: string; product_ids?: string[] }[];
-  remediations?: { category: string; details: string; product_ids?: string[] }[];
+  remediations?: { category: string; details: string; date?: string; product_ids?: string[] }[];
   references?: { category?: string; summary?: string; url: string }[];
   scores?: CsafScore[];
 }
@@ -100,15 +106,17 @@ export function convertHdfToCsafVex(input: string, converterVersion: string): st
   validateInputSize(input, 'hdf-to-csaf-vex');
   const amendments = parseHdf<HDFAmendments>(input);
   const groups = groupByCVE(amendments.overrides ?? []);
-  const productSet = new Map<string, true>();
+  const registry = new Map<string, CsafFullProductName>();
   const vulnerabilities: Vulnerability[] = [];
 
   for (const group of groups) {
     const v = buildVulnerability(group);
     if (!v) continue;
     vulnerabilities.push(v);
-    for (const p of productIDsForGroup(group)) productSet.set(p, true);
-    for (const p of fixedProductIDsForGroup(group)) productSet.set(p, true);
+    for (const o of group.overrides) {
+      for (const fpn of productEntriesFor(o)) registerProductEntry(registry, fpn);
+      for (const fpn of fixedProductEntriesFor(o)) registerProductEntry(registry, fpn);
+    }
   }
 
   if (vulnerabilities.length === 0) {
@@ -117,15 +125,25 @@ export function convertHdfToCsafVex(input: string, converterVersion: string): st
     );
   }
 
-  const products = [...productSet.keys()].sort();
+  // Global product-id sort (byte order, matching Go's `<`) so multi-product
+  // docs are deterministic and byte-identical across languages.
+  const names = [...registry.values()].sort((a, b) =>
+    a.product_id < b.product_id ? -1 : a.product_id > b.product_id ? 1 : 0,
+  );
   const doc = buildDocument(amendments, converterVersion);
   doc.vulnerabilities = vulnerabilities;
   doc.product_tree.full_product_names =
-    products.length > 0
-      ? products.map((p) => ({ name: p, product_id: p }))
-      : [{ name: DEFAULT_PRODUCT_ID, product_id: DEFAULT_PRODUCT_ID }];
+    names.length > 0 ? names : [{ name: DEFAULT_PRODUCT_ID, product_id: DEFAULT_PRODUCT_ID }];
 
   return JSON.stringify(doc, null, 2);
+}
+
+function registerProductEntry(
+  registry: Map<string, CsafFullProductName>,
+  fpn: CsafFullProductName,
+): void {
+  if (!fpn.product_id || registry.has(fpn.product_id)) return;
+  registry.set(fpn.product_id, fpn);
 }
 
 interface CveGroup {
@@ -147,24 +165,56 @@ function groupByCVE(overrides: StandaloneOverride[]): CveGroup[] {
   return [...groups.values()].sort((a, b) => a.cve.localeCompare(b.cve));
 }
 
-function productIDsForGroup(group: CveGroup): string[] {
-  const seen = new Set<string>();
-  for (const o of group.overrides) {
-    for (const p of productIDsFor(o)) seen.add(p);
+/**
+ * product_tree entries for an override, mirroring productIDsFor but carrying a
+ * product_identification_helper (purl/cpe) when affectedPackages supply a
+ * portable identifier. The reverse importer reads that helper to recover the
+ * structured AffectedPackage; the product_id itself is unchanged.
+ */
+function productEntriesFor(o: StandaloneOverride): CsafFullProductName[] {
+  if (o.affectedPackages && o.affectedPackages.length > 0) {
+    const out: CsafFullProductName[] = [];
+    for (const p of o.affectedPackages) {
+      const id = affectedPackageToIdentifier(p);
+      if (!id) continue;
+      out.push(fullProductNameFor(id, p));
+    }
+    if (out.length > 0) return out;
   }
-  return [...seen].sort();
+  if (o.componentRef) return [{ name: o.componentRef, product_id: o.componentRef }];
+  const m = PRODUCTS_LINE.exec(o.reason ?? '');
+  if (m && m[1]) {
+    const parts = m[1]
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (parts.length > 0) return parts.map((p) => ({ name: p, product_id: p }));
+  }
+  return [{ name: DEFAULT_PRODUCT_ID, product_id: DEFAULT_PRODUCT_ID }];
 }
 
-/** Synthesized fixed-version product ids across a group's affectedPackages. */
-function fixedProductIDsForGroup(group: CveGroup): string[] {
-  const ids: string[] = [];
-  for (const o of group.overrides) {
-    for (const p of o.affectedPackages ?? []) {
-      const f = fixedPackageIdentifier(p);
-      if (f) ids.push(f);
-    }
+/** product_tree entries for the synthesized fixed-version products. */
+function fixedProductEntriesFor(o: StandaloneOverride): CsafFullProductName[] {
+  const out: CsafFullProductName[] = [];
+  for (const p of o.affectedPackages ?? []) {
+    const id = fixedPackageIdentifier(p);
+    if (!id) continue;
+    const fpn: CsafFullProductName = { name: id, product_id: id };
+    if (p.purl) fpn.product_identification_helper = { purl: id };
+    out.push(fpn);
   }
-  return ids;
+  return out;
+}
+
+/** Build a product_tree leaf, attaching purl (preferred) or cpe as a helper. */
+function fullProductNameFor(
+  id: string,
+  pkg: NonNullable<StandaloneOverride['affectedPackages']>[number],
+): CsafFullProductName {
+  const fpn: CsafFullProductName = { name: id, product_id: id };
+  if (pkg.purl) fpn.product_identification_helper = { purl: pkg.purl };
+  else if (pkg.cpe) fpn.product_identification_helper = { cpe: pkg.cpe };
+  return fpn;
 }
 
 export function productIDsFor(o: StandaloneOverride): string[] {
@@ -190,6 +240,27 @@ export function productIDsFor(o: StandaloneOverride): string[] {
 
 export function stripProductsLine(reason: string): string {
   return reason.replace(PRODUCTS_LINE, '').replace(/\n+$/, '');
+}
+
+/**
+ * Surface the override reason prose as a CSAF description note. Used on the
+ * not_affected/fixed paths, which otherwise drop reason (the affected path
+ * keeps it as threats[impact]).
+ */
+function appendReasonNote(v: Vulnerability, reason: string | undefined): void {
+  const text = stripProductsLine(reason ?? '');
+  if (!text) return;
+  v.notes = v.notes ?? [];
+  v.notes.push({ category: 'description', text });
+}
+
+/**
+ * Render a CSAF remediation date from a milestone: the actual completion when
+ * present, else the estimate. Undefined when neither is set.
+ */
+function milestoneDate(m: NonNullable<StandaloneOverride['milestones']>[number]): string | undefined {
+  const t = hdfTime(m.completedAt) ?? hdfTime(m.estimatedCompletion);
+  return t ? formatTimestampSeconds(t) : undefined;
 }
 
 function allMilestonesCompleted(o: StandaloneOverride): boolean {
@@ -253,13 +324,25 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
           product_ids: pids,
         });
       }
+      // The not_affected path historically dropped the override reason (only
+      // the affected path surfaced it as threats[impact]). Emit it as a
+      // description note — the reverse importer reads that back into
+      // override.reason, restoring the prose on round-trip.
+      appendReasonNote(v, o.reason);
       emitted = true;
     } else if (canonical === VexStatus.Fixed) {
       status.fixed = (status.fixed ?? []).concat(pids);
+      appendReasonNote(v, o.reason);
       for (const m of o.milestones ?? []) {
         if (!m.description) continue;
         v.remediations = v.remediations ?? [];
-        v.remediations.push({ category: 'vendor_fix', details: m.description, product_ids: pids });
+        const date = milestoneDate(m);
+        v.remediations.push({
+          category: 'vendor_fix',
+          details: m.description,
+          ...(date && { date }),
+          product_ids: pids,
+        });
       }
       emitted = true;
     } else if (canonical === VexStatus.Affected) {
@@ -276,9 +359,11 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
         for (const m of o.milestones ?? []) {
           if (!m.description) continue;
           v.remediations = v.remediations ?? [];
+          const date = milestoneDate(m);
           v.remediations.push({
             category: 'workaround',
             details: m.description,
+            ...(date && { date }),
             product_ids: pids,
           });
         }
@@ -290,6 +375,14 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
       if (e.type !== 'url' || !e.data) continue;
       v.references = v.references ?? [];
       v.references.push({ category: 'external', summary: e.description ?? '', url: e.data });
+    }
+
+    // externalReferences carry advisory/CTI context (STIX, vendor advisories)
+    // distinct from url evidence; both share the CSAF references[] home.
+    for (const r of o.externalReferences ?? []) {
+      if (!r.href) continue;
+      v.references = v.references ?? [];
+      v.references.push({ category: 'external', summary: r.description ?? '', url: r.href });
     }
   }
 

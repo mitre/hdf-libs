@@ -30,10 +30,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230221",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010000"
           },
           "title": "RHEL 8 must be a vendor-supported release."
         },
@@ -64,10 +67,13 @@
             "cci": [
               "CCI-000068"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230223",
+            "gtitle": "SRG-OS-000033-GPOS-00014",
             "nist": [
               "AC-17 (2)",
               "AC-17 (2).1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010020"
           },
           "title": "RHEL 8 must implement NIST FIPS-validated cryptography for the following: to provision digital signatures, to generate cryptographic hashes, and to protect data requiring data-at-rest protections in accordance with applicable federal laws, Executive Orders, directives, policies, regulations, and standards."
         },
@@ -98,10 +104,13 @@
             "cci": [
               "CCI-000196"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230231",
+            "gtitle": "SRG-OS-000073-GPOS-00041",
             "nist": [
               "IA-5 (1) (c)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010110"
           },
           "title": "RHEL 8 must encrypt all stored passwords with a FIPS 140-2 approved cryptographic hashing algorithm."
         },
@@ -132,10 +141,13 @@
             "cci": [
               "CCI-000196"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230232",
+            "gtitle": "SRG-OS-000073-GPOS-00041",
             "nist": [
               "IA-5 (1) (c)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010120"
           },
           "title": "RHEL 8 must employ FIPS 140-2 approved cryptographic hashing algorithms for all stored passwords."
         },
@@ -166,10 +178,13 @@
             "cci": [
               "CCI-000196"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230233",
+            "gtitle": "SRG-OS-000073-GPOS-00041",
             "nist": [
               "IA-5 (1) (c)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010130"
           },
           "title": "The RHEL 8 password-auth file must be configured to use a sufficient number of hashing rounds."
         },
@@ -200,10 +215,13 @@
             "cci": [
               "CCI-000213"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230234",
+            "gtitle": "SRG-OS-000080-GPOS-00048",
             "nist": [
               "AC-3",
               "AC-3.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010140"
           },
           "title": "RHEL 8 operating systems booted with United Extensible Firmware Interface (UEFI) must require authentication upon booting into single-user mode and maintenance."
         },
@@ -234,10 +252,13 @@
             "cci": [
               "CCI-000213"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230235",
+            "gtitle": "SRG-OS-000080-GPOS-00048",
             "nist": [
               "AC-3",
               "AC-3.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010150"
           },
           "title": "RHEL 8 operating systems booted with a BIOS must require authentication upon booting into single-user and maintenance modes."
         },
@@ -268,10 +289,13 @@
             "cci": [
               "CCI-000213"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230236",
+            "gtitle": "SRG-OS-000080-GPOS-00048",
             "nist": [
               "AC-3",
               "AC-3.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010151"
           },
           "title": "RHEL 8 operating systems must require authentication upon booting into rescue mode."
         },
@@ -302,10 +326,13 @@
             "cci": [
               "CCI-000803"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230237",
+            "gtitle": "SRG-OS-000120-GPOS-00061",
             "nist": [
               "IA-7",
               "IA-7.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010160"
           },
           "title": "The RHEL 8 pam_unix.so module must be configured in the password-auth file to use a FIPS 140-2 approved cryptographic hashing algorithm for system authentication."
         },
@@ -336,10 +363,13 @@
             "cci": [
               "CCI-000803"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230238",
+            "gtitle": "SRG-OS-000120-GPOS-00061",
             "nist": [
               "IA-7",
               "IA-7.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010161"
           },
           "title": "RHEL 8 must prevent system daemons from using Kerberos for authentication."
         },
@@ -370,10 +400,13 @@
             "cci": [
               "CCI-000803"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230239",
+            "gtitle": "SRG-OS-000120-GPOS-00061",
             "nist": [
               "IA-7",
               "IA-7.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010162"
           },
           "title": "The krb5-workstation package must not be installed on RHEL 8."
         },
@@ -404,10 +437,13 @@
             "cci": [
               "CCI-001084"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230241",
+            "gtitle": "SRG-OS-000134-GPOS-00068",
             "nist": [
               "SC-3",
               "SC-3.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010171"
           },
           "title": "RHEL 8 must have policycoreutils package installed."
         },
@@ -438,10 +474,13 @@
             "cci": [
               "CCI-001133"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230244",
+            "gtitle": "SRG-OS-000163-GPOS-00072",
             "nist": [
               "SC-10",
               "SC-10.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010200"
           },
           "title": "RHEL 8 must be configured so that all network connections associated with SSH traffic are terminated at the end of the session or after 10 minutes of inactivity, except to fulfill documented and validated mission requirements."
         },
@@ -472,11 +511,14 @@
             "cci": [
               "CCI-001314"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230245",
+            "gtitle": "SRG-OS-000206-GPOS-00084",
             "nist": [
               "SI-11 b",
               "SI-11 c",
               "SI-11.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010210"
           },
           "title": "The RHEL 8 /var/log/messages file must have mode 0640 or less permissive."
         },
@@ -507,11 +549,14 @@
             "cci": [
               "CCI-001314"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230246",
+            "gtitle": "SRG-OS-000206-GPOS-00084",
             "nist": [
               "SI-11 b",
               "SI-11 c",
               "SI-11.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010220"
           },
           "title": "The RHEL 8 /var/log/messages file must be owned by root."
         },
@@ -542,11 +587,14 @@
             "cci": [
               "CCI-001314"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230247",
+            "gtitle": "SRG-OS-000206-GPOS-00084",
             "nist": [
               "SI-11 b",
               "SI-11 c",
               "SI-11.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010230"
           },
           "title": "The RHEL 8 /var/log/messages file must be group-owned by root."
         },
@@ -577,11 +625,14 @@
             "cci": [
               "CCI-001314"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230248",
+            "gtitle": "SRG-OS-000206-GPOS-00084",
             "nist": [
               "SI-11 b",
               "SI-11 c",
               "SI-11.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010240"
           },
           "title": "The RHEL 8 /var/log directory must have mode 0755 or less permissive."
         },
@@ -612,11 +663,14 @@
             "cci": [
               "CCI-001314"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230249",
+            "gtitle": "SRG-OS-000206-GPOS-00084",
             "nist": [
               "SI-11 b",
               "SI-11 c",
               "SI-11.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010250"
           },
           "title": "The RHEL 8 /var/log directory must be owned by root."
         },
@@ -647,11 +701,14 @@
             "cci": [
               "CCI-001314"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230250",
+            "gtitle": "SRG-OS-000206-GPOS-00084",
             "nist": [
               "SI-11 b",
               "SI-11 c",
               "SI-11.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010260"
           },
           "title": "The RHEL 8 /var/log directory must be group-owned by root."
         },
@@ -682,10 +739,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230253",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010292"
           },
           "title": "RHEL 8 must ensure the SSH server uses strong entropy."
         },
@@ -716,10 +776,13 @@
             "cci": [
               "CCI-001453"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230255",
+            "gtitle": "SRG-OS-000250-GPOS-00093",
             "nist": [
               "AC-17 (2)",
               "AC-17 (2).1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010294"
           },
           "title": "The RHEL 8 operating system must implement DoD-approved TLS encryption in the OpenSSL package."
         },
@@ -750,10 +813,13 @@
             "cci": [
               "CCI-001499"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230257",
+            "gtitle": "SRG-OS-000259-GPOS-00100",
             "nist": [
               "CM-5 (6)",
               "CM-5 (6).1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010300"
           },
           "title": "RHEL 8 system commands must have mode 755 or less permissive."
         },
@@ -784,10 +850,13 @@
             "cci": [
               "CCI-001499"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230258",
+            "gtitle": "SRG-OS-000259-GPOS-00100",
             "nist": [
               "CM-5 (6)",
               "CM-5 (6).1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010310"
           },
           "title": "RHEL 8 system commands must be owned by root."
         },
@@ -818,10 +887,13 @@
             "cci": [
               "CCI-001499"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230259",
+            "gtitle": "SRG-OS-000259-GPOS-00100",
             "nist": [
               "CM-5 (6)",
               "CM-5 (6).1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010320"
           },
           "title": "RHEL 8 system commands must be group-owned by root or a system account."
         },
@@ -852,9 +924,12 @@
             "cci": [
               "CCI-001749"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230264",
+            "gtitle": "SRG-OS-000366-GPOS-00153",
             "nist": [
               "CM-5 (3)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010370"
           },
           "title": "RHEL 8 must prevent the installation of software, patches, service packs, device drivers, or operating system components from a repository without verification they have been digitally signed using a certificate that is issued by a Certificate Authority (CA) that is recognized and approved by the organization."
         },
@@ -885,9 +960,12 @@
             "cci": [
               "CCI-001749"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230265",
+            "gtitle": "SRG-OS-000366-GPOS-00153",
             "nist": [
               "CM-5 (3)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010371"
           },
           "title": "RHEL 8 must prevent the installation of software, patches, service packs, device drivers, or operating system components of local packages without verification they have been digitally signed using a certificate that is issued by a Certificate Authority (CA) that is recognized and approved by the organization."
         },
@@ -918,9 +996,12 @@
             "cci": [
               "CCI-001749"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230266",
+            "gtitle": "SRG-OS-000366-GPOS-00153",
             "nist": [
               "CM-5 (3)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010372"
           },
           "title": "RHEL 8 must prevent the loading of a new kernel for later execution."
         },
@@ -951,9 +1032,12 @@
             "cci": [
               "CCI-002165"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230267",
+            "gtitle": "SRG-OS-000312-GPOS-00122",
             "nist": [
               "AC-3 (4)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010373"
           },
           "title": "RHEL 8 must enable kernel parameters to enforce discretionary access control on symlinks."
         },
@@ -984,9 +1068,12 @@
             "cci": [
               "CCI-002165"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230268",
+            "gtitle": "SRG-OS-000312-GPOS-00122",
             "nist": [
               "AC-3 (4)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010374"
           },
           "title": "RHEL 8 must enable kernel parameters to enforce discretionary access control on hardlinks."
         },
@@ -1017,10 +1104,13 @@
             "cci": [
               "CCI-001090"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230269",
+            "gtitle": "SRG-OS-000138-GPOS-00069",
             "nist": [
               "SC-4",
               "SC-4.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010375"
           },
           "title": "RHEL 8 must restrict access to the kernel message buffer."
         },
@@ -1051,10 +1141,13 @@
             "cci": [
               "CCI-001090"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230270",
+            "gtitle": "SRG-OS-000138-GPOS-00069",
             "nist": [
               "SC-4",
               "SC-4.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010376"
           },
           "title": "RHEL 8 must prevent kernel profiling by unprivileged users."
         },
@@ -1085,9 +1178,12 @@
             "cci": [
               "CCI-002038"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230271",
+            "gtitle": "SRG-OS-000373-GPOS-00156",
             "nist": [
               "IA-11"
-            ]
+            ],
+            "stig_id": "RHEL-08-010380"
           },
           "title": "RHEL 8 must require users to provide a password for privilege escalation."
         },
@@ -1118,9 +1214,12 @@
             "cci": [
               "CCI-002038"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230272",
+            "gtitle": "SRG-OS-000373-GPOS-00156",
             "nist": [
               "IA-11"
-            ]
+            ],
+            "stig_id": "RHEL-08-010381"
           },
           "title": "RHEL 8 must require users to reauthenticate for privilege escalation."
         },
@@ -1151,9 +1250,12 @@
             "cci": [
               "CCI-001948"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230273",
+            "gtitle": "SRG-OS-000375-GPOS-00160",
             "nist": [
               "IA-2 (11)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010390"
           },
           "title": "RHEL 8 must have the packages required for multifactor authentication installed."
         },
@@ -1184,9 +1286,12 @@
             "cci": [
               "CCI-002617"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230281",
+            "gtitle": "SRG-OS-000437-GPOS-00194",
             "nist": [
               "SI-2 (6)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010440"
           },
           "title": "YUM must remove all software components after updated versions have been installed on RHEL 8."
         },
@@ -1217,9 +1322,12 @@
             "cci": [
               "CCI-002696"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230282",
+            "gtitle": "SRG-OS-000445-GPOS-00199",
             "nist": [
               "SI-6 a"
-            ]
+            ],
+            "stig_id": "RHEL-08-010450"
           },
           "title": "RHEL 8 must enable the SELinux targeted policy."
         },
@@ -1250,10 +1358,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230283",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010460"
           },
           "title": "There must be no shosts.equiv files on the RHEL 8 operating system."
         },
@@ -1284,10 +1395,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230284",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010470"
           },
           "title": "There must be no .shosts files on the RHEL 8 operating system."
         },
@@ -1318,10 +1432,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230286",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010480"
           },
           "title": "The RHEL 8 SSH public host key files must have mode 0644 or less permissive."
         },
@@ -1352,10 +1469,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230287",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010490"
           },
           "title": "The RHEL 8 SSH private host key files must have mode 0600 or less permissive."
         },
@@ -1386,10 +1506,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230288",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010500"
           },
           "title": "The RHEL 8 SSH daemon must perform strict mode checking of home directory configuration files."
         },
@@ -1420,10 +1543,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230289",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010510"
           },
           "title": "The RHEL 8 SSH daemon must not allow compression or must only allow compression after successful authentication."
         },
@@ -1454,10 +1580,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230290",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010520"
           },
           "title": "The RHEL 8 SSH daemon must not allow authentication using known host’s authentication."
         },
@@ -1488,10 +1617,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230291",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010521"
           },
           "title": "The RHEL 8 SSH daemon must not allow Kerberos authentication, except to fulfill documented and validated mission requirements."
         },
@@ -1522,10 +1654,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230292",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010540"
           },
           "title": "RHEL 8 must use a separate file system for /var."
         },
@@ -1556,10 +1691,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230293",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010541"
           },
           "title": "RHEL 8 must use a separate file system for /var/log."
         },
@@ -1590,10 +1728,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230294",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010542"
           },
           "title": "RHEL 8 must use a separate file system for the system audit data path."
         },
@@ -1624,10 +1765,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230295",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010543"
           },
           "title": "A separate RHEL 8 filesystem must be used for the /tmp directory."
         },
@@ -1658,11 +1802,14 @@
             "cci": [
               "CCI-000770"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230296",
+            "gtitle": "SRG-OS-000109-GPOS-00056",
             "nist": [
               "IA-2 (5)",
               "IA-2 (5) (b)",
               "IA-2 (5).2 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010550"
           },
           "title": "RHEL 8 must not permit direct logons to the root account using remote access via SSH."
         },
@@ -1693,10 +1840,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230297",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010560"
           },
           "title": "The auditd service must be running in RHEL 8."
         },
@@ -1727,10 +1877,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230298",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010561"
           },
           "title": "The rsyslog service must be running in RHEL 8."
         },
@@ -1761,10 +1914,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230300",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010571"
           },
           "title": "RHEL 8 must prevent files with the setuid and setgid bit set from being executed on the /boot directory."
         },
@@ -1795,10 +1951,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230301",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010580"
           },
           "title": "RHEL 8 must prevent special devices on non-root local partitions."
         },
@@ -1829,10 +1988,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230306",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010630"
           },
           "title": "RHEL 8 must prevent code from being executed on file systems that are imported via Network File System (NFS)."
         },
@@ -1863,10 +2025,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230307",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010640"
           },
           "title": "RHEL 8 must prevent special devices on file systems that are imported via Network File System (NFS)."
         },
@@ -1897,10 +2062,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230308",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010650"
           },
           "title": "RHEL 8 must prevent files with the setuid and setgid bit set from being executed on file systems that are imported via Network File System (NFS)."
         },
@@ -1931,10 +2099,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230311",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010671"
           },
           "title": "RHEL 8 must disable the kernel.core_pattern."
         },
@@ -1965,10 +2136,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230313",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010673"
           },
           "title": "RHEL 8 must disable core dumps for all users."
         },
@@ -1999,10 +2173,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230314",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010674"
           },
           "title": "RHEL 8 must disable storing core dumps."
         },
@@ -2033,10 +2210,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230315",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010675"
           },
           "title": "RHEL 8 must disable core dump backtraces."
         },
@@ -2067,10 +2247,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230324",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010760"
           },
           "title": "All RHEL 8 local interactive user accounts must be assigned a home directory upon creation."
         },
@@ -2101,10 +2284,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230330",
+            "gtitle": "SRG-OS-000480-GPOS-00229",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010830"
           },
           "title": "RHEL 8 must not allow users to override SSH environment variables."
         },
@@ -2135,10 +2321,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230332",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020010"
           },
           "title": "RHEL 8 must automatically lock an account when three unsuccessful logon attempts occur."
         },
@@ -2169,10 +2358,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230333",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020011"
           },
           "title": "RHEL 8 must automatically lock an account when three unsuccessful logon attempts occur."
         },
@@ -2203,10 +2395,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230334",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020012"
           },
           "title": "RHEL 8 must automatically lock an account when three unsuccessful logon attempts occur during a 15-minute time period."
         },
@@ -2237,10 +2432,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230335",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020013"
           },
           "title": "RHEL 8 must automatically lock an account when three unsuccessful logon attempts occur during a 15-minute time period."
         },
@@ -2271,10 +2469,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230336",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020014"
           },
           "title": "RHEL 8 must automatically lock an account until the locked account is released by an administrator when three unsuccessful logon attempts occur during a 15-minute time period."
         },
@@ -2305,10 +2506,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230337",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020015"
           },
           "title": "RHEL 8 must automatically lock an account until the locked account is released by an administrator when three unsuccessful logon attempts occur during a 15-minute time period."
         },
@@ -2339,10 +2543,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230340",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020018"
           },
           "title": "RHEL 8 must prevent system messages from being presented when three unsuccessful logon attempts occur."
         },
@@ -2373,10 +2580,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230341",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020019"
           },
           "title": "RHEL 8 must prevent system messages from being presented when three unsuccessful logon attempts occur."
         },
@@ -2407,10 +2617,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230342",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020020"
           },
           "title": "RHEL 8 must log user name information when unsuccessful logon attempts occur."
         },
@@ -2441,10 +2654,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230343",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020021"
           },
           "title": "RHEL 8 must log user name information when unsuccessful logon attempts occur."
         },
@@ -2475,10 +2691,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230344",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020022"
           },
           "title": "RHEL 8 must include root when automatically locking an account until the locked account is released by an administrator when three unsuccessful logon attempts occur during a 15-minute time period."
         },
@@ -2509,10 +2728,13 @@
             "cci": [
               "CCI-000044"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230345",
+            "gtitle": "SRG-OS-000021-GPOS-00005",
             "nist": [
               "AC-7 a",
               "AC-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020023"
           },
           "title": "RHEL 8 must include root when automatically locking an account until the locked account is released by an administrator when three unsuccessful logon attempts occur during a 15-minute time period."
         },
@@ -2543,10 +2765,13 @@
             "cci": [
               "CCI-000054"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230346",
+            "gtitle": "SRG-OS-000027-GPOS-00008",
             "nist": [
               "AC-10",
               "AC-10.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020024"
           },
           "title": "RHEL 8 must limit the number of concurrent sessions to ten for all accounts and/or account types."
         },
@@ -2577,10 +2802,13 @@
             "cci": [
               "CCI-000056"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230348",
+            "gtitle": "SRG-OS-000028-GPOS-00009",
             "nist": [
               "AC-11 b",
               "AC-11.1 (iii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020040"
           },
           "title": "RHEL 8 must enable a user session lock until that user re-establishes access using established identification and authentication procedures for command line sessions."
         },
@@ -2611,10 +2839,13 @@
             "cci": [
               "CCI-000056"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230349",
+            "gtitle": "SRG-OS-000028-GPOS-00009",
             "nist": [
               "AC-11 b",
               "AC-11.1 (iii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020041"
           },
           "title": "RHEL 8 must ensure session control is automatically started at shell initialization."
         },
@@ -2645,10 +2876,13 @@
             "cci": [
               "CCI-000056"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230350",
+            "gtitle": "SRG-OS-000028-GPOS-00009",
             "nist": [
               "AC-11 b",
               "AC-11.1 (iii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020042"
           },
           "title": "RHEL 8 must prevent users from disabling session control mechanisms."
         },
@@ -2679,10 +2913,13 @@
             "cci": [
               "CCI-000192"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230356",
+            "gtitle": "SRG-OS-000069-GPOS-00037",
             "nist": [
               "IA-5 (1) (a)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020100"
           },
           "title": "RHEL 8 must ensure a password complexity module is enabled."
         },
@@ -2713,10 +2950,13 @@
             "cci": [
               "CCI-000192"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230357",
+            "gtitle": "SRG-OS-000069-GPOS-00037",
             "nist": [
               "IA-5 (1) (a)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020110"
           },
           "title": "RHEL 8 must enforce password complexity by requiring that at least one uppercase character be used."
         },
@@ -2747,10 +2987,13 @@
             "cci": [
               "CCI-000193"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230358",
+            "gtitle": "SRG-OS-000070-GPOS-00038",
             "nist": [
               "IA-5 (1) (a)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020120"
           },
           "title": "RHEL 8 must enforce password complexity by requiring that at least one lower-case character be used."
         },
@@ -2781,10 +3024,13 @@
             "cci": [
               "CCI-000194"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230359",
+            "gtitle": "SRG-OS-000071-GPOS-00039",
             "nist": [
               "IA-5 (1) (a)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020130"
           },
           "title": "RHEL 8 must enforce password complexity by requiring that at least one numeric character be used."
         },
@@ -2815,10 +3061,13 @@
             "cci": [
               "CCI-000195"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230360",
+            "gtitle": "SRG-OS-000072-GPOS-00040",
             "nist": [
               "IA-5 (1) (b)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020140"
           },
           "title": "RHEL 8 must require the maximum number of repeating characters of the same character class be limited to four when passwords are changed."
         },
@@ -2849,10 +3098,13 @@
             "cci": [
               "CCI-000195"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230361",
+            "gtitle": "SRG-OS-000072-GPOS-00040",
             "nist": [
               "IA-5 (1) (b)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020150"
           },
           "title": "RHEL 8 must require the maximum number of repeating characters be limited to three when passwords are changed."
         },
@@ -2883,10 +3135,13 @@
             "cci": [
               "CCI-000195"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230362",
+            "gtitle": "SRG-OS-000072-GPOS-00040",
             "nist": [
               "IA-5 (1) (b)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020160"
           },
           "title": "RHEL 8 must require the change of at least four character classes when passwords are changed."
         },
@@ -2917,10 +3172,13 @@
             "cci": [
               "CCI-000195"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230363",
+            "gtitle": "SRG-OS-000072-GPOS-00040",
             "nist": [
               "IA-5 (1) (b)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020170"
           },
           "title": "RHEL 8 must require the change of at least 8 characters when passwords are changed."
         },
@@ -2951,10 +3209,13 @@
             "cci": [
               "CCI-000198"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230364",
+            "gtitle": "SRG-OS-000075-GPOS-00043",
             "nist": [
               "IA-5 (1) (d)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020180"
           },
           "title": "RHEL 8 passwords must have a 24 hours/1 day minimum password lifetime restriction in /etc/shadow."
         },
@@ -2985,10 +3246,13 @@
             "cci": [
               "CCI-000198"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230365",
+            "gtitle": "SRG-OS-000075-GPOS-00043",
             "nist": [
               "IA-5 (1) (d)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020190"
           },
           "title": "RHEL 8 passwords for new users or password changes must have a 24 hours/1 day minimum password lifetime restriction in /etc/logins.def."
         },
@@ -3019,10 +3283,13 @@
             "cci": [
               "CCI-000199"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230366",
+            "gtitle": "SRG-OS-000076-GPOS-00044",
             "nist": [
               "IA-5 (1) (d)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020200"
           },
           "title": "RHEL 8 user account passwords must have a 60-day maximum password lifetime restriction."
         },
@@ -3053,10 +3320,13 @@
             "cci": [
               "CCI-000199"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230367",
+            "gtitle": "SRG-OS-000076-GPOS-00044",
             "nist": [
               "IA-5 (1) (d)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020210"
           },
           "title": "RHEL 8 user account passwords must be configured so that existing passwords are restricted to a 60-day maximum lifetime."
         },
@@ -3087,10 +3357,13 @@
             "cci": [
               "CCI-000200"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230368",
+            "gtitle": "SRG-OS-000077-GPOS-00045",
             "nist": [
               "IA-5 (1) (e)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020220"
           },
           "title": "RHEL 8 passwords must be prohibited from reuse for a minimum of five generations."
         },
@@ -3121,10 +3394,13 @@
             "cci": [
               "CCI-000205"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230369",
+            "gtitle": "SRG-OS-000078-GPOS-00046",
             "nist": [
               "IA-5 (1) (a)",
               "IA-5 (1).1 (i)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020230"
           },
           "title": "RHEL 8 passwords must have a minimum of 15 characters."
         },
@@ -3155,10 +3431,13 @@
             "cci": [
               "CCI-000205"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230370",
+            "gtitle": "SRG-OS-000078-GPOS-00046",
             "nist": [
               "IA-5 (1) (a)",
               "IA-5 (1).1 (i)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020231"
           },
           "title": "RHEL 8 passwords for new users must have a minimum of 15 characters."
         },
@@ -3189,10 +3468,13 @@
             "cci": [
               "CCI-000795"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230373",
+            "gtitle": "SRG-OS-000118-GPOS-00060",
             "nist": [
               "IA-4 e",
               "IA-4.1 (iii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020260"
           },
           "title": "RHEL 8 account identifiers (individuals, groups, roles, and devices) must be disabled after 35 days of inactivity."
         },
@@ -3223,10 +3505,13 @@
             "cci": [
               "CCI-001619"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230375",
+            "gtitle": "SRG-OS-000266-GPOS-00101",
             "nist": [
               "IA-5 (1) (a)",
               "IA-5 (1).1 (v)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020280"
           },
           "title": "All RHEL 8 passwords must contain at least one special character."
         },
@@ -3257,10 +3542,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230377",
+            "gtitle": "SRG-OS-000480-GPOS-00225",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020300"
           },
           "title": "RHEL 8 must prevent the use of dictionary words for passwords."
         },
@@ -3291,10 +3579,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230378",
+            "gtitle": "SRG-OS-000480-GPOS-00226",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020310"
           },
           "title": "RHEL 8 must enforce a delay of at least four seconds between logon prompts following a failed logon attempt."
         },
@@ -3325,10 +3616,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230380",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020330"
           },
           "title": "RHEL 8 must not allow accounts configured with blank or null passwords."
         },
@@ -3359,10 +3653,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230382",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020350"
           },
           "title": "RHEL 8 must display the date and time of the last successful account logon upon an SSH logon."
         },
@@ -3393,10 +3690,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230383",
+            "gtitle": "SRG-OS-000480-GPOS-00228",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-020351"
           },
           "title": "RHEL 8 must define default permissions for all authenticated users in such a way that the user can only read and modify their own files."
         },
@@ -3427,9 +3727,12 @@
             "cci": [
               "CCI-002233"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230386",
+            "gtitle": "SRG-OS-000326-GPOS-00126",
             "nist": [
               "AC-6 (8)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030000"
           },
           "title": "The RHEL 8 audit system must be configured to audit the execution of privileged functions and prevent all software from executing at higher privilege levels than users executing the software."
         },
@@ -3460,10 +3763,13 @@
             "cci": [
               "CCI-000139"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230388",
+            "gtitle": "SRG-OS-000046-GPOS-00022",
             "nist": [
               "AU-5 a",
               "AU-5.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030020"
           },
           "title": "The RHEL 8 System Administrator (SA) and Information System Security Officer (ISSO) (at a minimum) must be alerted of an audit processing failure event."
         },
@@ -3494,10 +3800,13 @@
             "cci": [
               "CCI-000140"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230390",
+            "gtitle": "SRG-OS-000047-GPOS-00023",
             "nist": [
               "AU-5 b",
               "AU-5.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030040"
           },
           "title": "The RHEL 8 System must take appropriate action when an audit processing failure occurs."
         },
@@ -3528,10 +3837,13 @@
             "cci": [
               "CCI-000140"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230391",
+            "gtitle": "SRG-OS-000047-GPOS-00023",
             "nist": [
               "AU-5 b",
               "AU-5.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030050"
           },
           "title": "The RHEL 8 System Administrator (SA) and Information System Security Officer (ISSO) (at a minimum) must be alerted when the audit storage volume is full."
         },
@@ -3562,10 +3874,13 @@
             "cci": [
               "CCI-000140"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230392",
+            "gtitle": "SRG-OS-000047-GPOS-00023",
             "nist": [
               "AU-5 b",
               "AU-5.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030060"
           },
           "title": "The RHEL 8 audit system must take appropriate action when the audit storage volume is full."
         },
@@ -3596,10 +3911,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230393",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030061"
           },
           "title": "The RHEL 8 audit system must audit local events."
         },
@@ -3630,9 +3948,12 @@
             "cci": [
               "CCI-001851"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230394",
+            "gtitle": "SRG-OS-000342-GPOS-00133",
             "nist": [
               "AU-4 (1)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030062"
           },
           "title": "RHEL 8 must label all off-loaded audit logs before sending them to the central log server."
         },
@@ -3663,10 +3984,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230395",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030063"
           },
           "title": "RHEL 8 must resolve audit information before writing to disk."
         },
@@ -3697,10 +4021,13 @@
             "cci": [
               "CCI-000162"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230396",
+            "gtitle": "SRG-OS-000057-GPOS-00027",
             "nist": [
               "AU-9",
               "AU-9.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-030070"
           },
           "title": "RHEL 8 audit logs must have a mode of 0600 or less permissive to prevent unauthorized read access."
         },
@@ -3731,10 +4058,13 @@
             "cci": [
               "CCI-000162"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230397",
+            "gtitle": "SRG-OS-000057-GPOS-00027",
             "nist": [
               "AU-9",
               "AU-9.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-030080"
           },
           "title": "RHEL 8 audit logs must be owned by root to prevent unauthorized read access."
         },
@@ -3765,10 +4095,13 @@
             "cci": [
               "CCI-000162"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230398",
+            "gtitle": "SRG-OS-000057-GPOS-00027",
             "nist": [
               "AU-9",
               "AU-9.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-030090"
           },
           "title": "RHEL 8 audit logs must be group-owned by root to prevent unauthorized read access."
         },
@@ -3799,10 +4132,13 @@
             "cci": [
               "CCI-000162"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230399",
+            "gtitle": "SRG-OS-000057-GPOS-00027",
             "nist": [
               "AU-9",
               "AU-9.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-030100"
           },
           "title": "RHEL 8 audit log directory must be owned by root to prevent unauthorized read access."
         },
@@ -3833,10 +4169,13 @@
             "cci": [
               "CCI-000162"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230400",
+            "gtitle": "SRG-OS-000057-GPOS-00027",
             "nist": [
               "AU-9",
               "AU-9.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-030110"
           },
           "title": "RHEL 8 audit log directory must be group-owned by root to prevent unauthorized read access."
         },
@@ -3867,10 +4206,13 @@
             "cci": [
               "CCI-000162"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230401",
+            "gtitle": "SRG-OS-000057-GPOS-00027",
             "nist": [
               "AU-9",
               "AU-9.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-030120"
           },
           "title": "RHEL 8 audit log directory must have a mode of 0700 or less permissive to prevent unauthorized read access."
         },
@@ -3901,10 +4243,13 @@
             "cci": [
               "CCI-000162"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230402",
+            "gtitle": "SRG-OS-000057-GPOS-00027",
             "nist": [
               "AU-9",
               "AU-9.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-030121"
           },
           "title": "RHEL 8 audit system must protect auditing rules from unauthorized change."
         },
@@ -3935,10 +4280,13 @@
             "cci": [
               "CCI-000162"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230403",
+            "gtitle": "SRG-OS-000057-GPOS-00027",
             "nist": [
               "AU-9",
               "AU-9.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-030122"
           },
           "title": "RHEL 8 audit system must protect logon UIDs from unauthorized change."
         },
@@ -3969,10 +4317,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230404",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030130"
           },
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/shadow."
         },
@@ -4003,10 +4354,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230405",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030140"
           },
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/security/opasswd."
         },
@@ -4037,10 +4391,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230406",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030150"
           },
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/passwd."
         },
@@ -4071,10 +4428,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230407",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030160"
           },
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/gshadow."
         },
@@ -4105,10 +4465,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230408",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030170"
           },
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/group."
         },
@@ -4139,10 +4502,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230409",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030171"
           },
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/sudoers."
         },
@@ -4173,10 +4539,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230410",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030172"
           },
           "title": "RHEL 8 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/sudoers.d/."
         },
@@ -4207,10 +4576,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230411",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030180"
           },
           "title": "The RHEL 8 audit package must be installed."
         },
@@ -4241,10 +4613,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230412",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030190"
           },
           "title": "Successful/unsuccessful uses of the su command in RHEL 8 must generate an audit record."
         },
@@ -4275,10 +4650,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230413",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030200"
           },
           "title": "The RHEL 8 audit system must be configured to audit any usage of the lremovexattr system call."
         },
@@ -4309,10 +4687,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230414",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030210"
           },
           "title": "The RHEL 8 audit system must be configured to audit any usage of the removexattr system call."
         },
@@ -4343,10 +4724,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230415",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030220"
           },
           "title": "The RHEL 8 audit system must be configured to audit any usage of the lsetxattr system call."
         },
@@ -4377,10 +4761,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230416",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030230"
           },
           "title": "The RHEL 8 audit system must be configured to audit any usage of the fsetxattr system call."
         },
@@ -4411,10 +4798,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230417",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030240"
           },
           "title": "The RHEL 8 audit system must be configured to audit any usage of the fremovexattr system call."
         },
@@ -4445,10 +4835,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230418",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030250"
           },
           "title": "Successful/unsuccessful uses of the chage command in RHEL 8 must generate an audit record."
         },
@@ -4479,10 +4872,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230419",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030260"
           },
           "title": "Successful/unsuccessful uses of the chcon command in RHEL 8 must generate an audit record."
         },
@@ -4513,10 +4909,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230420",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030270"
           },
           "title": "The RHEL 8 audit system must be configured to audit any usage of the setxattr system call."
         },
@@ -4547,10 +4946,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230421",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030280"
           },
           "title": "Successful/unsuccessful uses of the ssh-agent in RHEL 8 must generate an audit record."
         },
@@ -4581,10 +4983,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230422",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030290"
           },
           "title": "Successful/unsuccessful uses of the passwd command in RHEL 8 must generate an audit record."
         },
@@ -4615,10 +5020,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230423",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030300"
           },
           "title": "Successful/unsuccessful uses of the mount command in RHEL 8 must generate an audit record."
         },
@@ -4649,10 +5057,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230424",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030301"
           },
           "title": "Successful/unsuccessful uses of the umount command in RHEL 8 must generate an audit record."
         },
@@ -4683,10 +5094,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230425",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030302"
           },
           "title": "Successful/unsuccessful uses of the mount syscall in RHEL 8 must generate an audit record."
         },
@@ -4717,10 +5131,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230426",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030310"
           },
           "title": "Successful/unsuccessful uses of the unix_update in RHEL 8 must generate an audit record."
         },
@@ -4751,10 +5168,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230427",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030311"
           },
           "title": "Successful/unsuccessful uses of postdrop in RHEL 8 must generate an audit record."
         },
@@ -4785,10 +5205,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230428",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030312"
           },
           "title": "Successful/unsuccessful uses of postqueue in RHEL 8 must generate an audit record."
         },
@@ -4819,10 +5242,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230429",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030313"
           },
           "title": "Successful/unsuccessful uses of semanage in RHEL 8 must generate an audit record."
         },
@@ -4853,10 +5279,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230430",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030314"
           },
           "title": "Successful/unsuccessful uses of setfiles in RHEL 8 must generate an audit record."
         },
@@ -4887,10 +5316,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230431",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030315"
           },
           "title": "Successful/unsuccessful uses of userhelper in RHEL 8 must generate an audit record."
         },
@@ -4921,10 +5353,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230432",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030316"
           },
           "title": "Successful/unsuccessful uses of setsebool in RHEL 8 must generate an audit record."
         },
@@ -4955,10 +5390,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230433",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030317"
           },
           "title": "Successful/unsuccessful uses of unix_chkpwd in RHEL 8 must generate an audit record."
         },
@@ -4989,10 +5427,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230434",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030320"
           },
           "title": "Successful/unsuccessful uses of the ssh-keysign in RHEL 8 must generate an audit record."
         },
@@ -5023,10 +5464,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230435",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030330"
           },
           "title": "Successful/unsuccessful uses of the setfacl command in RHEL 8 must generate an audit record."
         },
@@ -5057,10 +5501,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230436",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030340"
           },
           "title": "Successful/unsuccessful uses of the pam_timestamp_check command in RHEL 8 must generate an audit record."
         },
@@ -5091,10 +5538,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230437",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030350"
           },
           "title": "Successful/unsuccessful uses of the newgrp command in RHEL 8 must generate an audit record."
         },
@@ -5125,10 +5575,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230438",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030360"
           },
           "title": "Successful/unsuccessful uses of the init_module command in RHEL 8 must generate an audit record."
         },
@@ -5159,10 +5612,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230439",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030361"
           },
           "title": "Successful/unsuccessful uses of the rename command in RHEL 8 must generate an audit record."
         },
@@ -5193,10 +5649,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230440",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030362"
           },
           "title": "Successful/unsuccessful uses of the renameat command in RHEL 8 must generate an audit record."
         },
@@ -5227,10 +5686,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230441",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030363"
           },
           "title": "Successful/unsuccessful uses of the rmdir command in RHEL 8 must generate an audit record."
         },
@@ -5261,10 +5723,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230442",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030364"
           },
           "title": "Successful/unsuccessful uses of the unlink command in RHEL 8 must generate an audit record."
         },
@@ -5295,10 +5760,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230443",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030365"
           },
           "title": "Successful/unsuccessful uses of the unlinkat command in RHEL 8 must generate an audit record."
         },
@@ -5329,10 +5797,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230444",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030370"
           },
           "title": "Successful/unsuccessful uses of the gpasswd command in RHEL 8 must generate an audit record."
         },
@@ -5363,10 +5834,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230445",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030380"
           },
           "title": "Successful/unsuccessful uses of the finit_module command in RHEL 8 must generate an audit record."
         },
@@ -5397,10 +5871,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230446",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030390"
           },
           "title": "Successful/unsuccessful uses of the delete_module command in RHEL 8 must generate an audit record."
         },
@@ -5431,10 +5908,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230447",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030400"
           },
           "title": "Successful/unsuccessful uses of the crontab command in RHEL 8 must generate an audit record."
         },
@@ -5465,10 +5945,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230448",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030410"
           },
           "title": "Successful/unsuccessful uses of the chsh command in RHEL 8 must generate an audit record."
         },
@@ -5499,10 +5982,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230449",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030420"
           },
           "title": "Successful/unsuccessful uses of the truncate command in RHEL 8 must generate an audit record."
         },
@@ -5533,10 +6019,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230450",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030430"
           },
           "title": "Successful/unsuccessful uses of the openat system call in RHEL 8 must generate an audit record."
         },
@@ -5567,10 +6056,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230451",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030440"
           },
           "title": "Successful/unsuccessful uses of the open system call in RHEL 8 must generate an audit record."
         },
@@ -5601,10 +6093,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230452",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030450"
           },
           "title": "Successful/unsuccessful uses of the open_by_handle_at system call in RHEL 8 must generate an audit record."
         },
@@ -5635,10 +6130,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230453",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030460"
           },
           "title": "Successful/unsuccessful uses of the ftruncate command in RHEL 8 must generate an audit record."
         },
@@ -5669,10 +6167,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230454",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030470"
           },
           "title": "Successful/unsuccessful uses of the creat system call in RHEL 8 must generate an audit record."
         },
@@ -5703,10 +6204,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230455",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030480"
           },
           "title": "Successful/unsuccessful uses of the chown command in RHEL 8 must generate an audit record."
         },
@@ -5737,10 +6241,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230456",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030490"
           },
           "title": "Successful/unsuccessful uses of the chmod command in RHEL 8 must generate an audit record."
         },
@@ -5771,10 +6278,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230457",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030500"
           },
           "title": "Successful/unsuccessful uses of the lchown system call in RHEL 8 must generate an audit record."
         },
@@ -5805,10 +6315,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230458",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030510"
           },
           "title": "Successful/unsuccessful uses of the fchownat system call in RHEL 8 must generate an audit record."
         },
@@ -5839,10 +6352,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230459",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030520"
           },
           "title": "Successful/unsuccessful uses of the fchown system call in RHEL 8 must generate an audit record."
         },
@@ -5873,10 +6389,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230460",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030530"
           },
           "title": "Successful/unsuccessful uses of the fchmodat system call in RHEL 8 must generate an audit record."
         },
@@ -5907,10 +6426,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230461",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030540"
           },
           "title": "Successful/unsuccessful uses of the fchmod system call in RHEL 8 must generate an audit record."
         },
@@ -5941,10 +6463,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230462",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030550"
           },
           "title": "Successful/unsuccessful uses of the sudo command in RHEL 8 must generate an audit record."
         },
@@ -5975,10 +6500,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230463",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030560"
           },
           "title": "Successful/unsuccessful uses of the usermod command in RHEL 8 must generate an audit record."
         },
@@ -6009,10 +6537,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230464",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030570"
           },
           "title": "Successful/unsuccessful uses of the chacl command in RHEL 8 must generate an audit record."
         },
@@ -6043,10 +6574,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230465",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030580"
           },
           "title": "Successful/unsuccessful uses of the kmod command in RHEL 8 must generate an audit record."
         },
@@ -6077,10 +6611,13 @@
             "cci": [
               "CCI-000169"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230467",
+            "gtitle": "SRG-OS-000062-GPOS-00031",
             "nist": [
               "AU-12 a",
               "AU-12.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030600"
           },
           "title": "Successful/unsuccessful modifications to the lastlog file in RHEL 8 must generate an audit record."
         },
@@ -6111,10 +6648,13 @@
             "cci": [
               "CCI-000171"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230471",
+            "gtitle": "SRG-OS-000063-GPOS-00032",
             "nist": [
               "AU-12 b",
               "AU-12.1 (iii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030610"
           },
           "title": "RHEL 8 must allow only the Information System Security Manager (ISSM) (or individuals or roles appointed by the ISSM) to select which auditable events are to be audited."
         },
@@ -6145,10 +6685,13 @@
             "cci": [
               "CCI-001493"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230472",
+            "gtitle": "SRG-OS-000256-GPOS-00097",
             "nist": [
               "AU-9",
               "AU-9.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-030620"
           },
           "title": "RHEL 8 audit tools must have a mode of 0755 or less permissive."
         },
@@ -6179,10 +6722,13 @@
             "cci": [
               "CCI-001493"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230473",
+            "gtitle": "SRG-OS-000256-GPOS-00097",
             "nist": [
               "AU-9",
               "AU-9.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-030630"
           },
           "title": "RHEL 8 audit tools must be owned by root."
         },
@@ -6213,10 +6759,13 @@
             "cci": [
               "CCI-001493"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230474",
+            "gtitle": "SRG-OS-000256-GPOS-00097",
             "nist": [
               "AU-9",
               "AU-9.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-030640"
           },
           "title": "RHEL 8 audit tools must be group-owned by root."
         },
@@ -6247,10 +6796,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230477",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030670"
           },
           "title": "RHEL 8 must have the packages required for offloading audit logs installed."
         },
@@ -6281,10 +6833,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230478",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030680"
           },
           "title": "RHEL 8 must have the packages required for encrypting offloaded audit logs installed."
         },
@@ -6315,9 +6870,12 @@
             "cci": [
               "CCI-001851"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230480",
+            "gtitle": "SRG-OS-000342-GPOS-00133",
             "nist": [
               "AU-4 (1)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030700"
           },
           "title": "RHEL 8 must take appropriate action when the internal event queue is full."
         },
@@ -6348,9 +6906,12 @@
             "cci": [
               "CCI-001855"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230483",
+            "gtitle": "SRG-OS-000343-GPOS-00134",
             "nist": [
               "AU-5 (1)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030730"
           },
           "title": "RHEL 8 must take action when allocated audit record storage volume reaches 75 percent of the repository maximum audit record storage capacity."
         },
@@ -6381,11 +6942,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230485",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030741"
           },
           "title": "RHEL 8 must disable the chrony daemon from acting as a server."
         },
@@ -6416,11 +6980,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230486",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-030742"
           },
           "title": "RHEL 8 must disable network management of the chrony daemon."
         },
@@ -6451,11 +7018,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230487",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040000"
           },
           "title": "RHEL 8 must not have the telnet-server package installed."
         },
@@ -6486,11 +7056,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230488",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040001"
           },
           "title": "RHEL 8 must not have any automated bug reporting tools installed."
         },
@@ -6521,11 +7094,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230489",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040002"
           },
           "title": "RHEL 8 must not have the sendmail package installed."
         },
@@ -6556,11 +7132,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230492",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040010"
           },
           "title": "RHEL 8 must not have the rsh-server package installed."
         },
@@ -6591,11 +7170,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230494",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040021"
           },
           "title": "RHEL 8 must disable the asynchronous transfer mode (ATM) protocol."
         },
@@ -6626,11 +7208,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230495",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040022"
           },
           "title": "RHEL 8 must disable the controller area network (CAN) protocol."
         },
@@ -6661,11 +7246,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230496",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040023"
           },
           "title": "RHEL 8 must disable the stream control transmission protocol (SCTP)."
         },
@@ -6696,11 +7284,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230497",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040024"
           },
           "title": "RHEL 8 must disable the transparent inter-process communication (TIPC) protocol."
         },
@@ -6731,11 +7322,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230498",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040025"
           },
           "title": "RHEL 8 must disable mounting of cramfs."
         },
@@ -6766,11 +7360,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230499",
+            "gtitle": "SRG-OS-000095-GPOS-00049",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040026"
           },
           "title": "RHEL 8 must disable IEEE 1394 (FireWire) Support."
         },
@@ -6801,10 +7398,13 @@
             "cci": [
               "CCI-000778"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230503",
+            "gtitle": "SRG-OS-000114-GPOS-00059",
             "nist": [
               "IA-3",
               "IA-3.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040080"
           },
           "title": "RHEL 8 must be configured to disable USB mass storage."
         },
@@ -6835,10 +7435,13 @@
             "cci": [
               "CCI-001443"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230507",
+            "gtitle": "SRG-OS-000300-GPOS-00118",
             "nist": [
               "AC-18 (1)",
               "AC-18 (1).1"
-            ]
+            ],
+            "stig_id": "RHEL-08-040111"
           },
           "title": "RHEL 8 Bluetooth must be disabled."
         },
@@ -6869,9 +7472,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230508",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040120"
           },
           "title": "RHEL 8 must mount /dev/shm with the nodev option."
         },
@@ -6902,9 +7508,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230509",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040121"
           },
           "title": "RHEL 8 must mount /dev/shm with the nosuid option."
         },
@@ -6935,9 +7544,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230510",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040122"
           },
           "title": "RHEL 8 must mount /dev/shm with the noexec option."
         },
@@ -6968,9 +7580,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230511",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040123"
           },
           "title": "RHEL 8 must mount /tmp with the nodev option."
         },
@@ -7001,9 +7616,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230512",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040124"
           },
           "title": "RHEL 8 must mount /tmp with the nosuid option."
         },
@@ -7034,9 +7652,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230513",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040125"
           },
           "title": "RHEL 8 must mount /tmp with the noexec option."
         },
@@ -7067,9 +7688,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230514",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040126"
           },
           "title": "RHEL 8 must mount /var/log with the nodev option."
         },
@@ -7100,9 +7724,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230515",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040127"
           },
           "title": "RHEL 8 must mount /var/log with the nosuid option."
         },
@@ -7133,9 +7760,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230516",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040128"
           },
           "title": "RHEL 8 must mount /var/log with the noexec option."
         },
@@ -7166,9 +7796,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230517",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040129"
           },
           "title": "RHEL 8 must mount /var/log/audit with the nodev option."
         },
@@ -7199,9 +7832,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230518",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040130"
           },
           "title": "RHEL 8 must mount /var/log/audit with the nosuid option."
         },
@@ -7232,9 +7868,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230519",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040131"
           },
           "title": "RHEL 8 must mount /var/log/audit with the noexec option."
         },
@@ -7265,9 +7904,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230520",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040132"
           },
           "title": "RHEL 8 must mount /var/tmp with the nodev option."
         },
@@ -7298,9 +7940,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230521",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040133"
           },
           "title": "RHEL 8 must mount /var/tmp with the nosuid option."
         },
@@ -7331,9 +7976,12 @@
             "cci": [
               "CCI-001764"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230522",
+            "gtitle": "SRG-OS-000368-GPOS-00154",
             "nist": [
               "CM-7 (2)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040134"
           },
           "title": "RHEL 8 must mount /var/tmp with the noexec option."
         },
@@ -7364,9 +8012,12 @@
             "cci": [
               "CCI-002418"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230526",
+            "gtitle": "SRG-OS-000423-GPOS-00187",
             "nist": [
               "SC-8"
-            ]
+            ],
+            "stig_id": "RHEL-08-040160"
           },
           "title": "All RHEL 8 networked systems must have and implement SSH to protect the confidentiality and integrity of transmitted and received information, as well as information during preparation for transmission."
         },
@@ -7397,10 +8048,13 @@
             "cci": [
               "CCI-000068"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230527",
+            "gtitle": "SRG-OS-000033-GPOS-00014",
             "nist": [
               "AC-17 (2)",
               "AC-17 (2).1"
-            ]
+            ],
+            "stig_id": "RHEL-08-040161"
           },
           "title": "RHEL 8 must force a frequent session key renegotiation for SSH connections to the server."
         },
@@ -7431,10 +8085,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230531",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040172"
           },
           "title": "The systemd Ctrl-Alt-Delete burst key sequence in RHEL 8 must be disabled."
         },
@@ -7465,10 +8122,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230533",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040190"
           },
           "title": "The Trivial File Transfer Protocol (TFTP) server package must not be installed if not required for RHEL 8 operational support."
         },
@@ -7499,10 +8159,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230534",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040200"
           },
           "title": "The root account must be the only account having unrestricted access to the RHEL 8 system."
         },
@@ -7533,10 +8196,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230535",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040210"
           },
           "title": "RHEL 8 must prevent IPv6 Internet Control Message Protocol (ICMP) redirect messages from being accepted."
         },
@@ -7567,10 +8233,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230536",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040220"
           },
           "title": "RHEL 8 must not send Internet Control Message Protocol (ICMP) redirects."
         },
@@ -7601,10 +8270,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230537",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040230"
           },
           "title": "RHEL 8 must not respond to Internet Control Message Protocol (ICMP) echoes sent to a broadcast address."
         },
@@ -7635,10 +8307,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230538",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040240"
           },
           "title": "RHEL 8 must not forward IPv6 source-routed packets."
         },
@@ -7669,10 +8344,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230539",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040250"
           },
           "title": "RHEL 8 must not forward IPv6 source-routed packets by default."
         },
@@ -7703,10 +8381,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230540",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040260"
           },
           "title": "RHEL 8 must not enable IPv6 packet forwarding unless the system is a router."
         },
@@ -7737,10 +8418,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230541",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040261"
           },
           "title": "RHEL 8 must not accept router advertisements on all IPv6 interfaces."
         },
@@ -7771,10 +8455,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230542",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040262"
           },
           "title": "RHEL 8 must not accept router advertisements on all IPv6 interfaces by default."
         },
@@ -7805,10 +8492,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230543",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040270"
           },
           "title": "RHEL 8 must not allow interfaces to perform Internet Control Message Protocol (ICMP) redirects by default."
         },
@@ -7839,10 +8529,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230544",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040280"
           },
           "title": "RHEL 8 must ignore IPv6 Internet Control Message Protocol (ICMP) redirect messages."
         },
@@ -7873,10 +8566,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230545",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040281"
           },
           "title": "RHEL 8 must disable access to network bpf syscall from unprivileged processes."
         },
@@ -7907,10 +8603,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230546",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040282"
           },
           "title": "RHEL 8 must restrict usage of ptrace to descendant  processes."
         },
@@ -7941,10 +8640,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230547",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040283"
           },
           "title": "RHEL 8 must restrict exposed kernel pointer addresses access."
         },
@@ -7975,10 +8677,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230548",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040284"
           },
           "title": "RHEL 8 must disable the use of user namespaces."
         },
@@ -8009,10 +8714,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230549",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040285"
           },
           "title": "RHEL 8 must use reverse path filtering on all IPv4 interfaces."
         },
@@ -8043,10 +8751,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230550",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040290"
           },
           "title": "RHEL 8 must be configured to prevent unrestricted mail relaying."
         },
@@ -8077,10 +8788,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230555",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040340"
           },
           "title": "RHEL 8 remote X connections for interactive users must be disabled unless to fulfill documented and validated mission requirements."
         },
@@ -8111,10 +8825,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230556",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040341"
           },
           "title": "The RHEL 8 SSH daemon must prevent remote hosts from connecting to the proxy display."
         },
@@ -8145,10 +8862,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230557",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040350"
           },
           "title": "If the Trivial File Transfer Protocol (TFTP) server is required, the RHEL 8 TFTP daemon must be configured to operate in secure mode."
         },
@@ -8179,10 +8899,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230558",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040360"
           },
           "title": "A File Transfer Protocol (FTP) server package must not be installed unless mission essential on RHEL 8."
         },
@@ -8213,11 +8936,14 @@
             "cci": [
               "CCI-000381"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230559",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-7",
               "CM-7 a",
               "CM-7.1 (ii)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040370"
           },
           "title": "The gssproxy package must not be installed unless mission essential on RHEL 8."
         },
@@ -8248,10 +8974,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230560",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040380"
           },
           "title": "The iprutils package must not be installed unless mission essential on RHEL 8."
         },
@@ -8282,10 +9011,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-230561",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-040390"
           },
           "title": "The tuned package must not be installed unless mission essential on RHEL 8."
         },
@@ -8316,10 +9048,13 @@
             "cci": [
               "CCI-000803"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-237640",
+            "gtitle": "SRG-OS-000120-GPOS-00061",
             "nist": [
               "IA-7",
               "IA-7.1"
-            ]
+            ],
+            "stig_id": "RHEL-08-010163"
           },
           "title": "The krb5-server package must not be installed on RHEL 8."
         },
@@ -8350,10 +9085,13 @@
             "cci": [
               "CCI-000366"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-237641",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "CM-6 b",
               "CM-6.1 (iv)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010382"
           },
           "title": "RHEL 8 must restrict privilege elevation to authorized personnel."
         },
@@ -8384,9 +9122,12 @@
             "cci": [
               "CCI-002227"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-237642",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
               "AC-6 (5)"
-            ]
+            ],
+            "stig_id": "RHEL-08-010383"
           },
           "title": "RHEL 8 must use the invoking user's password for privilege escalation when using \"sudo\"."
         },
@@ -8417,9 +9158,12 @@
             "cci": [
               "CCI-002038"
             ],
+            "gid": "xccdf_mil.disa.stig_group_V-237643",
+            "gtitle": "SRG-OS-000373-GPOS-00156",
             "nist": [
               "IA-11"
-            ]
+            ],
+            "stig_id": "RHEL-08-010384"
           },
           "title": "RHEL 8 must require re-authentication when using the \"sudo\" command."
         }
@@ -8451,6 +9195,7 @@
   "timestamp": "2021-11-12T16:37:26Z",
   "tool": {
     "format": "XCCDF",
-    "name": "XCCDF"
+    "name": "XCCDF",
+    "version": "1.3.5"
   }
 }

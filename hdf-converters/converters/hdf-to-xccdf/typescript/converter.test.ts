@@ -247,6 +247,64 @@ describe('hdf-to-xccdf Converter', () => {
     });
   });
 
+  // Export-fidelity value pins (fields the export formerly dropped). Mirror Go.
+  describe('Export fidelity', () => {
+    it('emits baseline.summary as Benchmark/description', () => {
+      const result = convertHdfToXccdf(loadFixture('stig-rhel7.json'));
+      expect(result).toContain(
+        '<description>This Security Technical Implementation Guide is published',
+      );
+    });
+
+    it('carries statistics.duration in end-time (not collapsed to start-time)', () => {
+      const result = convertHdfToXccdf(loadFixture('stig-rhel7.json'));
+      // timestamp 2021-12-17T10:39:29Z + 89s duration = 10:40:58Z.
+      expect(result).toContain('start-time="2021-12-17T10:39:29Z"');
+      expect(result).toContain('end-time="2021-12-17T10:40:58Z"');
+    });
+
+    it('restores STIG identifier tags and the Group hierarchy', () => {
+      const result = convertHdfToXccdf(loadFixture('stig-rhel7.json'));
+      expect(result).toContain('<Group id="xccdf_mil.disa.stig_group_V-204393">');
+      expect(result).toContain('<title>SRG-OS-000023-GPOS-00006</title>');
+      expect(result).toContain('<version>RHEL-07-010030</version>'); // stig_id
+      expect(result).toContain('<ident system="http://cce.mitre.org">CCE-26970-4</ident>');
+      expect(result).toContain('<ident system="http://cyber.mil/legacy">V-71859</ident>');
+      expect(result).toContain('version="RHEL-07-010030"'); // rule-result @version
+    });
+
+    it('emits tool.version as @test-system CPE', () => {
+      const result = convertHdfToXccdf(loadFixture('stig-rhel7.json'));
+      expect(result).toContain('test-system="cpe:/a:xccdf:xccdf:1.2.17"');
+    });
+
+    it('projects effectiveStatus onto rule-result/result', () => {
+      const input = JSON.stringify({
+        baselines: [{ name: 'b', requirements: [{
+          id: 'SV-1', impact: 0.5, title: 'req', tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          effectiveStatus: 'notApplicable',
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }] }],
+      });
+      const result = convertHdfToXccdf(input);
+      expect(result).toContain('<result>notapplicable</result>');
+      expect(result).not.toContain('<result>fail</result>');
+    });
+
+    it('keeps raw status when no override is present', () => {
+      const input = JSON.stringify({
+        baselines: [{ name: 'b', requirements: [{
+          id: 'SV-1', impact: 0.5, title: 'req', tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }] }],
+      });
+      const result = convertHdfToXccdf(input);
+      expect(result).toContain('<result>fail</result>');
+    });
+  });
+
   // Whole-output goldens against the SAME files the Go TestGoldenParity asserts,
   // under the SAME shared normalization — this is the TS<->Go parity guarantee.
   describe('Golden parity', () => {

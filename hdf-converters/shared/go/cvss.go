@@ -7,20 +7,27 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
-// CvssVersionFromVector returns the schema CVSS Version enum corresponding to a
-// vector string prefix (CVSS:2.0/, CVSS:3.0/, CVSS:4.0/). When the prefix is
-// absent or unrecognized (including the CVSS:3.1/ prefix), it defaults to "3.1"
-// — the version modern scanners emit most often.
-func CvssVersionFromVector(vector string) hdf.Version {
+// CvssVersionFromVector returns the schema CVSS Version enum for a vector
+// string's prefix (CVSS:2.0/, CVSS:3.0/, CVSS:3.1/, CVSS:4.0/). An optional
+// fallback sets the version returned when the vector carries no recognized
+// prefix (e.g. historical Nessus output with no prefix passes 3.0); when
+// omitted the fallback is 3.1, the version modern scanners emit most often.
+func CvssVersionFromVector(vector string, fallback ...hdf.Version) hdf.Version {
+	def := hdf.The31
+	if len(fallback) > 0 {
+		def = fallback[0]
+	}
 	switch {
 	case strings.HasPrefix(vector, "CVSS:2.0/"):
 		return hdf.The20
 	case strings.HasPrefix(vector, "CVSS:3.0/"):
 		return hdf.The30
+	case strings.HasPrefix(vector, "CVSS:3.1/"):
+		return hdf.The31
 	case strings.HasPrefix(vector, "CVSS:4.0/"):
 		return hdf.The40
 	default:
-		return hdf.The31
+		return def
 	}
 }
 

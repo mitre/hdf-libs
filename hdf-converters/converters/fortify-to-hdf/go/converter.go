@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -141,6 +142,12 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 	cciTags := cci.NISTToCCI(nistTags)
 	tags := shared.BuildNISTCCITags(nistTags, cciTags)
 
+	// Surface the Fortify ClassInfo categorization (Seven Pernicious Kingdoms
+	// category, vulnerability class/subtype, analyzer) from the representative
+	// finding. These are parsed but were otherwise dropped. Emit each only when
+	// present in the source.
+	addClassInfoTags(tags, vulns)
+
 	// Title from Abstract (HTML stripped)
 	titleStr := hdfutil.StripHTML(desc.Abstract)
 
@@ -158,6 +165,14 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
 			Data:  hdfutil.StripHTML(desc.Recommendations),
+		})
+	}
+
+	// Tips description from the Description's <Tips><Tip> guidance text.
+	if tips := buildTipsData(desc.Tips.Tip); tips != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "tips",
+			Data:  tips,
 		})
 	}
 
@@ -185,13 +200,79 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 		req.Cwe = cweIDs
 	}
 
+	// External reference links: Fortify Description References carry an
+	// external URL in <Source>. Emit one hdf.Reference{URL} per distinct URL,
+	// preserving order. Standards-mapping references (NIST/CWE/etc.) carry no
+	// Source URL and are already handled via tags.
+	if refs := buildRefs(desc.References.Reference); len(refs) > 0 {
+		req.Refs = refs
+	}
+
 	// requirement.code = raw source snippet from the representative finding's
 	// primary trace (Heimdall CODE tab). Left unset when no snippet is present.
 	if code := buildRequirementCode(vulns, snippetMap); code != nil {
 		req.Code = code
 	}
 
+	// requirement.sourceLocation = machine-addressable file/line locus of the
+	// representative finding, promoted from the primary trace. Left unset when
+	// no trace node carries a path.
+	if sl := buildSourceLocation(vulns); sl != nil {
+		req.SourceLocation = sl
+	}
+
 	return req
+}
+
+// buildSourceLocation promotes the representative finding's file/line locus into
+// the structured HDF SourceLocation. It uses the first primary-trace node that
+// carries a path (the default/sink node in every observed FVDL). Line is parsed
+// to a number and omitted when the source line is absent or non-numeric. Returns
+// nil when no node carries a path.
+func buildSourceLocation(vulns []Vulnerability) *hdf.SourceLocation {
+	if len(vulns) == 0 {
+		return nil
+	}
+	for _, entry := range vulns[0].AnalysisInfo.Unified.Trace.Primary.Entries {
+		if entry.Node == nil {
+			continue
+		}
+		path := entry.Node.SourceLocation.Path
+		if path == "" {
+			continue
+		}
+		sl := &hdf.SourceLocation{Ref: &path}
+		if lineStr := entry.Node.SourceLocation.Line; lineStr != "" {
+			if line, err := strconv.ParseFloat(lineStr, 64); err == nil {
+				sl.Line = &line
+			}
+		}
+		return sl
+	}
+	return nil
+}
+
+// addClassInfoTags copies the Fortify ClassInfo categorization from the
+// representative finding into tags. Keys: kingdom (Seven Pernicious Kingdoms),
+// class_type (vulnerability class — "class_type" avoids colliding with any
+// generic "type" tag), subtype, analyzer. Absent source fields are omitted.
+func addClassInfoTags(tags map[string]interface{}, vulns []Vulnerability) {
+	if len(vulns) == 0 {
+		return
+	}
+	ci := vulns[0].ClassInfo
+	if ci.Kingdom != "" {
+		tags["kingdom"] = ci.Kingdom
+	}
+	if ci.Type != "" {
+		tags["class_type"] = ci.Type
+	}
+	if ci.Subtype != "" {
+		tags["subtype"] = ci.Subtype
+	}
+	if ci.AnalyzerName != "" {
+		tags["analyzer"] = ci.AnalyzerName
+	}
 }
 
 // buildRequirementCode extracts the raw source snippet text from the first
@@ -281,6 +362,44 @@ func buildCodeDesc(vuln *Vulnerability, snippetMap map[string]*Snippet) string {
 func formatSnippet(s *Snippet) string {
 	text := strings.TrimSpace(s.Text)
 	return fmt.Sprintf("Path: %s\nStartLine: %s, EndLine: %s\nCode:\n%s", s.File, s.StartLine, s.EndLine, text)
+}
+
+// buildTipsData strips markup from each <Tip> and joins the non-empty tips
+// into a single description body. Returns "" when there are no usable tips.
+func buildTipsData(tips []string) string {
+	var parts []string
+	for _, tip := range tips {
+		if text := hdfutil.StripHTML(tip); text != "" {
+			parts = append(parts, text)
+		}
+	}
+	return strings.Join(parts, "\n\n")
+}
+
+// buildRefs emits one hdf.Reference{URL} per distinct external URL carried in a
+// Description's References (<Source> element), preserving first-seen order.
+// Returns nil when no reference carries an external URL.
+func buildRefs(refs []Reference) []hdf.Reference {
+	var hdfRefs []hdf.Reference
+	seen := make(map[string]struct{})
+	for _, ref := range refs {
+		u := strings.TrimSpace(ref.Source)
+		if !isExternalURL(u) {
+			continue
+		}
+		if _, ok := seen[u]; ok {
+			continue
+		}
+		seen[u] = struct{}{}
+		urlCopy := u
+		hdfRefs = append(hdfRefs, hdf.Reference{URL: &urlCopy})
+	}
+	return hdfRefs
+}
+
+// isExternalURL reports whether s is an http(s) URL.
+func isExternalURL(s string) bool {
+	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
 
 // extractNISTFromReferences finds the NIST 800-53 reference in the Description

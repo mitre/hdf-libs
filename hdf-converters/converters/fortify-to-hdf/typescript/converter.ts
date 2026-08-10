@@ -21,6 +21,8 @@ import type {
   Checksum,
   Tool,
   Description,
+  Reference,
+  SourceLocation,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -114,6 +116,9 @@ interface FVDLDescription {
   Abstract?: string;
   Explanation?: string;
   Recommendations?: string;
+  Tips?: {
+    Tip?: string | string[];
+  };
   References?: {
     Reference?: FVDLReference | FVDLReference[];
   };
@@ -226,6 +231,38 @@ function mergeCweNist(nist: string[], cweIDs: string[]): string[] {
   return merged;
 }
 
+// Strip markup from each <Tip> and join the non-empty tips into a single
+// description body. Returns '' when there are no usable tips.
+function buildTipsData(tips: string[]): string {
+  const parts: string[] = [];
+  for (const tip of tips) {
+    const text = stripFvdlMarkup(tip);
+    if (text) parts.push(text);
+  }
+  return parts.join('\n\n');
+}
+
+// Reports whether s is an http(s) URL.
+function isExternalURL(s: string): boolean {
+  return s.startsWith('http://') || s.startsWith('https://');
+}
+
+// Emit one Reference{url} per distinct external URL carried in a Description's
+// References (<Source> element), preserving first-seen order. Returns undefined
+// when no reference carries an external URL.
+function buildRefs(refs: FVDLReference[]): Reference[] | undefined {
+  const hdfRefs: Reference[] = [];
+  const seen = new Set<string>();
+  for (const ref of refs) {
+    const url = (ref.Source ?? '').trim();
+    if (!isExternalURL(url)) continue;
+    if (seen.has(url)) continue;
+    seen.add(url);
+    hdfRefs.push({ url });
+  }
+  return hdfRefs.length > 0 ? hdfRefs : undefined;
+}
+
 function formatSnippet(snippet: FVDLSnippet): string {
   const text = (snippet.Text ?? '').trim();
   return `Path: ${snippet.File ?? ''}\nStartLine: ${snippet.StartLine ?? ''}, EndLine: ${snippet.EndLine ?? ''}\nCode:\n${text}`;
@@ -288,6 +325,46 @@ function buildRequirementCode(
   return parts.join('\n');
 }
 
+// requirement.sourceLocation = machine-addressable file/line locus of the
+// representative finding, promoted from the primary trace's first node carrying
+// a path (the default/sink node in every observed FVDL). Line is a number,
+// omitted when the source line is absent or non-numeric. Returns undefined when
+// no trace node carries a path.
+function buildSourceLocation(
+  vulns: FVDLVulnerability[],
+): SourceLocation | undefined {
+  if (vulns.length === 0) return undefined;
+  const entries = ensureArray(vulns[0]!.AnalysisInfo?.Unified?.Trace?.Primary?.Entry);
+  for (const entry of entries) {
+    const path = entry.Node?.SourceLocation?.path;
+    if (!path) continue;
+    const sl: SourceLocation = { ref: path };
+    const lineStr = entry.Node?.SourceLocation?.line;
+    if (lineStr !== undefined && lineStr !== '') {
+      const line = Number(lineStr);
+      if (!Number.isNaN(line)) sl.line = line;
+    }
+    return sl;
+  }
+  return undefined;
+}
+
+// Copy the Fortify ClassInfo categorization from the representative finding into
+// tags. Keys: kingdom (Seven Pernicious Kingdoms), class_type (vulnerability
+// class — "class_type" avoids colliding with any generic "type" tag), subtype,
+// analyzer. Absent source fields are omitted.
+function addClassInfoTags(
+  tags: Record<string, unknown>,
+  vulns: FVDLVulnerability[],
+): void {
+  if (vulns.length === 0) return;
+  const ci = vulns[0]!.ClassInfo;
+  if (ci?.Kingdom) tags.kingdom = ci.Kingdom;
+  if (ci?.Type) tags.class_type = ci.Type;
+  if (ci?.Subtype) tags.subtype = ci.Subtype;
+  if (ci?.AnalyzerName) tags.analyzer = ci.AnalyzerName;
+}
+
 function buildRequirement(
   desc: FVDLDescription,
   vulns: FVDLVulnerability[],
@@ -304,6 +381,12 @@ function buildRequirement(
   }
   const cciTags = nistToCci(nistTags);
   const tags = buildNistCciTags(nistTags, cciTags);
+
+  // Surface the Fortify ClassInfo categorization (Seven Pernicious Kingdoms
+  // category, vulnerability class/subtype, analyzer) from the representative
+  // finding. These are parsed but were otherwise dropped. Emit each only when
+  // present in the source.
+  addClassInfoTags(tags, vulns);
 
   // Title from Abstract (HTML stripped)
   const title = stripFvdlMarkup(desc.Abstract ?? '');
@@ -323,6 +406,12 @@ function buildRequirement(
       label: 'fix',
       data: stripFvdlMarkup(desc.Recommendations),
     });
+  }
+
+  // Tips description from the Description's <Tips><Tip> guidance text.
+  const tipsData = buildTipsData(ensureArray(desc.Tips?.Tip));
+  if (tipsData) {
+    descriptions.push({ label: 'tips', data: tipsData });
   }
 
   // Impact from the representative instance's per-instance severity / 5.
@@ -360,6 +449,12 @@ function buildRequirement(
     req.cwe = cweIDs;
   }
 
+  // External reference links from Description References (<Source> URL).
+  const refsList = buildRefs(refs);
+  if (refsList !== undefined) {
+    req.refs = refsList;
+  }
+
   const controlType = deriveControlTypeFromTags(nistTags);
   if (controlType !== undefined) {
     req.controlType = controlType;
@@ -368,6 +463,11 @@ function buildRequirement(
   const code = buildRequirementCode(vulns, snippetMap);
   if (code !== undefined) {
     req.code = code;
+  }
+
+  const sourceLocation = buildSourceLocation(vulns);
+  if (sourceLocation !== undefined) {
+    req.sourceLocation = sourceLocation;
   }
 
   return req;

@@ -3,6 +3,7 @@ package netsparker
 import (
 	"encoding/xml"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -68,6 +69,7 @@ type NetsparkerClassification struct {
 	WASC     string         `xml:"wasc"`
 	CWE      string         `xml:"cwe"`
 	CAPEC    string         `xml:"capec"`
+	PCI32    string         `xml:"pci32"`
 	ISO27001 string         `xml:"iso27001"`
 	CVSS     NetsparkerCVSS `xml:"cvss"`
 	CVSS31   NetsparkerCVSS `xml:"cvss31"`
@@ -242,6 +244,32 @@ func buildNetsparkerCvss(c NetsparkerClassification) []hdf.Cvss {
 	return out
 }
 
+// hrefPattern extracts the URL from each anchor tag in Netsparker's
+// <external-references> HTML blob (single- or double-quoted href).
+var hrefPattern = regexp.MustCompile(`href=['"]([^'"]+)['"]`)
+
+// buildRefs turns Netsparker's <external-references> HTML anchor blob into one
+// hdf.Reference per external URL. Returns nil when the field is empty or carries
+// no links, so refs[] is omitted entirely.
+func buildRefs(externalReferences string) []hdf.Reference {
+	matches := hrefPattern.FindAllStringSubmatch(externalReferences, -1)
+	refs := make([]hdf.Reference, 0, len(matches))
+	for _, m := range matches {
+		// Reference.url is schema-constrained to format "uri"; only emit
+		// absolute hrefs (a scheme is present), skipping empty/relative/fragment.
+		url := strings.TrimSpace(m[1])
+		if !strings.Contains(url, "://") {
+			continue
+		}
+		u := url
+		refs = append(refs, hdf.Reference{URL: &u})
+	}
+	if len(refs) == 0 {
+		return nil
+	}
+	return refs
+}
+
 // buildRequirement converts a single vulnerability into an EvaluatedRequirement.
 func buildRequirement(vuln *NetsparkerVuln, initiated string) hdf.EvaluatedRequirement {
 	cweID := vuln.Classification.CWE
@@ -256,6 +284,20 @@ func buildRequirement(vuln *NetsparkerVuln, initiated string) hdf.EvaluatedRequi
 	}
 	if owaspID != "" {
 		extras["owasp"] = owaspID
+	}
+	// Source-native categorization strings Netsparker/Invicti carries in
+	// <classification>. Each is single-valued; omit the tag when empty.
+	if capec := vuln.Classification.CAPEC; capec != "" {
+		extras["capec"] = capec
+	}
+	if wasc := vuln.Classification.WASC; wasc != "" {
+		extras["wasc"] = wasc
+	}
+	if iso := vuln.Classification.ISO27001; iso != "" {
+		extras["iso27001"] = iso
+	}
+	if pci := vuln.Classification.PCI32; pci != "" {
+		extras["pci32"] = pci
 	}
 
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
@@ -337,6 +379,10 @@ func buildRequirement(vuln *NetsparkerVuln, initiated string) hdf.EvaluatedRequi
 	if cvss := buildNetsparkerCvss(vuln.Classification); len(cvss) > 0 {
 		req.Cvss = cvss
 	}
+
+	// requirement.refs = external reference links Netsparker carries in the
+	// <external-references> HTML blob. Left unset when the vuln carries none.
+	req.Refs = buildRefs(vuln.ExternalReferences)
 
 	return req
 }
@@ -443,10 +489,19 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		ResultsChecksum: resultsChecksum,
 	}
 
+	// Top-level timestamp is the report's `generated` attribute (parsed as UTC).
+	// Fall back to now() only when the source omits or malforms it, so a source
+	// with `generated` converts deterministically.
+	timestamp := parseNetsparkerTimestamp(netsparkerData.Generated)
+	if timestamp.IsZero() {
+		timestamp = time.Now().UTC()
+	}
+
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "netsparker-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         toolName,
+		Timestamp:        &timestamp,
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{

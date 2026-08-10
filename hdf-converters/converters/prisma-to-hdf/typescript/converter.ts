@@ -21,6 +21,7 @@ import type {
   Checksum,
   Cvss,
   Description,
+  Reference,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -197,7 +198,22 @@ function buildRequirement(rec: PrismaRecord, scanTime: Date): EvaluatedRequireme
       (req as EvaluatedRequirement).affectedPackages = [pkg];
     }
   }
+
+  const refs = buildRefs(rec);
+  if (refs) {
+    (req as EvaluatedRequirement).refs = refs;
+  }
   return req as EvaluatedRequirement;
+}
+
+/**
+ * Maps the "Vulnerability Link" CSV column to a single external Reference URL.
+ * Returns undefined when the column is blank.
+ */
+function buildRefs(rec: PrismaRecord): Reference[] | undefined {
+  const url = rec['Vulnerability Link']?.trim();
+  if (!url) return undefined;
+  return [{ url }];
 }
 
 /**

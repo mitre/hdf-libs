@@ -59,6 +59,50 @@ describe('hdfcsv Converter', () => {
     });
   });
 
+  describe('Export field-loss columns', () => {
+    const input = loadFixture('input', 'minimal.json');
+    const result = convertHdfToCsv(input);
+    const lines = result.split('\n');
+    const header = lines[0];
+
+    it('appends the new columns to the header in a stable order', () => {
+      expect(header).toContain(
+        'Result Message,Effective Status,Effective Impact,Disposition,' +
+          'Override Reason,Applied By,Expires At,CVSS,CWE,EPSS,KEV,' +
+          'Target FQDN,Target IP'
+      );
+    });
+
+    it('emits component fqdn/ipAddress on every row', () => {
+      // Present on all three data rows (single component).
+      const fqdnCount = (result.match(/test-server-01\.example\.com/g) ?? []).length;
+      expect(fqdnCount).toBe(3);
+      expect(result).toContain('10.1.2.3');
+    });
+
+    it('surfaces override provenance and effective posture for the waived control', () => {
+      const row = lines.find(l => l.startsWith('Example STIG Baseline,1.0.0,')
+        && l.includes('SV-123457'));
+      expect(row).toBeDefined();
+      // Raw Status stays failed; Effective Status/Impact reflect the override.
+      expect(row).toContain(',failed,'); // raw Status column
+      expect(row).toContain('falsePositive');
+      expect(row).toContain('Authentication logging is handled by an external SIEM');
+      expect(row).toContain(',jdoe,');
+      expect(row).toContain('2099-12-31T00:00:00Z');
+    });
+
+    it('surfaces the CVSS/CWE/EPSS/KEV quartet for the CVE finding', () => {
+      const row = lines.find(l => l.includes('CVE-2021-44228'));
+      expect(row).toBeDefined();
+      expect(row).toContain('10.0');
+      expect(row).toContain('CWE-502; CWE-917');
+      expect(row).toContain('0.94360');
+      // KEV boolean present as its own cell.
+      expect(row).toContain(',true,');
+    });
+  });
+
   describe('Multiple baselines and targets', () => {
     it('should handle multiple baselines', () => {
       const input = JSON.stringify({

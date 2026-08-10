@@ -30,7 +30,7 @@ func TestConvertHDFToCSV_Minimal(t *testing.T) {
 	require.NoError(t, err, "Should parse CSV")
 
 	// Verify structure
-	require.Len(t, records, 3, "Should have header + 2 data rows")
+	require.Len(t, records, 4, "Should have header + 3 data rows")
 
 	// Verify header
 	header := records[0]
@@ -40,15 +40,31 @@ func TestConvertHDFToCSV_Minimal(t *testing.T) {
 
 	// Column order: 0 Baseline ID .. 7 Description, 8 Check, 9 Fix, 10 Rationale,
 	// 11 Code, 12 References, 13 Severity, 14 Impact, 15 Status, 16 NIST, 17 CCI,
-	// 18 Control Type, 19 Verification Method, 20 Applicability, 21 Result Message.
+	// 18 Control Type, 19 Verification Method, 20 Applicability, 21 Result Message,
+	// 22 Effective Status, 23 Effective Impact, 24 Disposition, 25 Override Reason,
+	// 26 Applied By, 27 Expires At, 28 CVSS, 29 CWE, 30 EPSS, 31 KEV, 32 Target FQDN,
+	// 33 Target IP.
 	assert.Equal(t, "Description", header[7])
 	assert.Equal(t, "Check", header[8])
 	assert.Equal(t, "Fix", header[9])
 	assert.Equal(t, "Rationale", header[10])
 	assert.Equal(t, "Code", header[11])
 	assert.Equal(t, "References", header[12])
+	assert.Equal(t, "Effective Status", header[22])
+	assert.Equal(t, "Effective Impact", header[23])
+	assert.Equal(t, "Disposition", header[24])
+	assert.Equal(t, "Override Reason", header[25])
+	assert.Equal(t, "Applied By", header[26])
+	assert.Equal(t, "Expires At", header[27])
+	assert.Equal(t, "CVSS", header[28])
+	assert.Equal(t, "CWE", header[29])
+	assert.Equal(t, "EPSS", header[30])
+	assert.Equal(t, "KEV", header[31])
+	assert.Equal(t, "Target FQDN", header[32])
+	assert.Equal(t, "Target IP", header[33])
 
-	// Verify first data row — populated check/fix/rationale/code/refs
+	// Verify first data row — populated check/fix/rationale/code/refs; no override
+	// or CVE data, so effective columns fall back to raw values.
 	row1 := records[1]
 	assert.Equal(t, "Example STIG Baseline", row1[0])                                         // Baseline ID
 	assert.Equal(t, "SV-123456", row1[5])                                                     // Requirement ID
@@ -60,17 +76,35 @@ func TestConvertHDFToCSV_Minimal(t *testing.T) {
 	assert.Equal(t, "passed", row1[15])                                                       // Status
 	assert.Contains(t, row1[16], "IA-5 (1)")                                                  // NIST Controls
 	assert.Contains(t, row1[17], "CCI-000192")                                                // CCI Controls
+	assert.Equal(t, "passed", row1[22])                                                       // Effective Status (fallback)
+	assert.Equal(t, "0.7", row1[23])                                                          // Effective Impact (fallback)
+	assert.Equal(t, "", row1[24])                                                             // Disposition
+	assert.Equal(t, "test-server-01.example.com", row1[32])                                   // Target FQDN
+	assert.Equal(t, "10.1.2.3", row1[33])                                                     // Target IP
 
-	// Verify second data row — new columns empty (exercises the absent path)
+	// Verify second data row — waived-but-failing control: raw Status stays failed
+	// while Effective Status/Impact reflect the falsePositive override.
 	row2 := records[2]
-	assert.Equal(t, "SV-123457", row2[5])                        // Requirement ID
-	assert.Equal(t, "", row2[8])                                 // Check
-	assert.Equal(t, "", row2[9])                                 // Fix
-	assert.Equal(t, "", row2[10])                                // Rationale
-	assert.Equal(t, "", row2[11])                                // Code
-	assert.Equal(t, "", row2[12])                                // References
-	assert.Equal(t, "failed", row2[15])                          // Status
-	assert.Equal(t, "Audit logging is not configured", row2[21]) // Result Message
+	assert.Equal(t, "SV-123457", row2[5])                                                                         // Requirement ID
+	assert.Equal(t, "", row2[8])                                                                                  // Check
+	assert.Equal(t, "failed", row2[15])                                                                           // Status (raw)
+	assert.Equal(t, "Audit logging is not configured", row2[21])                                                  // Result Message
+	assert.Equal(t, "passed", row2[22])                                                                           // Effective Status (override)
+	assert.Equal(t, "0.0", row2[23])                                                                              // Effective Impact (override)
+	assert.Equal(t, "falsePositive", row2[24])                                                                    // Disposition
+	assert.Equal(t, "Authentication logging is handled by an external SIEM the scanner cannot observe", row2[25]) // Override Reason
+	assert.Equal(t, "jdoe", row2[26])                                                                             // Applied By
+	assert.Equal(t, "2099-12-31T00:00:00Z", row2[27])                                                             // Expires At
+
+	// Verify third data row — CVE-scan finding carries the vulnerability quartet.
+	row3 := records[3]
+	assert.Equal(t, "CVE-2021-44228", row3[5])    // Requirement ID
+	assert.Equal(t, "failed", row3[15])           // Status
+	assert.Equal(t, "failed", row3[22])           // Effective Status (fallback)
+	assert.Equal(t, "10.0", row3[28])             // CVSS
+	assert.Equal(t, "CWE-502; CWE-917", row3[29]) // CWE
+	assert.Equal(t, "0.94360", row3[30])          // EPSS
+	assert.Equal(t, "true", row3[31])             // KEV
 }
 
 func TestConvertHDFToCSV_EmptyBaselines(t *testing.T) {

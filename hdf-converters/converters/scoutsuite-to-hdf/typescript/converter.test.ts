@@ -270,6 +270,96 @@ describe('ScoutSuite to HDF Converter', () => {
       expect(fixDesc!.data).toContain('CloudWatch Logs group');
     });
 
+    it('should map references[] to refs[]', async () => {
+      const input = loadFixture('input/scoutsuite_sample.js');
+      const out = parseOutput(await convertScoutsuiteToHdf(input));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, 'cloudtrail-not-configured');
+      expect(req).toBeDefined();
+      const refs = req!.refs as Array<Record<string, unknown>>;
+      expect(refs).toHaveLength(1);
+      expect(refs[0].url).toBe(
+        'https://docs.aws.amazon.com/awscloudtrail/latest/userguide/best-practices-security.html',
+      );
+    });
+
+    it('should omit refs[] when references is null', async () => {
+      const input = loadFixture('input/scoutsuite_sample.js');
+      const out = parseOutput(await convertScoutsuiteToHdf(input));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, 'cloudtrail-no-cloudwatch-integration');
+      expect(req).toBeDefined();
+      expect(req!.refs).toBeUndefined();
+    });
+
+    it('should map the finding path to sourceLocation.ref', async () => {
+      const input = loadFixture('input/scoutsuite_sample.js');
+      const out = parseOutput(await convertScoutsuiteToHdf(input));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, 'cloudtrail-not-configured');
+      expect(req).toBeDefined();
+      const loc = req!.sourceLocation as Record<string, unknown>;
+      expect(loc).toBeDefined();
+      expect(loc.ref).toBe('cloudtrail.regions.id');
+      expect(loc.line).toBeUndefined();
+    });
+
+    it('should omit sourceLocation when the finding has no path', async () => {
+      const input = JSON.stringify({
+        account_id: '123',
+        provider_name: 'AWS',
+        services: {
+          svc: {
+            findings: {
+              'rule-x': {
+                checked_items: 1,
+                flagged_items: 0,
+                description: 'd',
+                level: 'warning',
+                rationale: 'r',
+                items: [],
+              },
+            },
+          },
+        },
+        last_run: {
+          time: '2021-01-01 00:00:00+0000',
+          version: '5.0.0',
+          ruleset_name: 'test',
+          ruleset_about: 'test',
+        },
+      });
+      const out = parseOutput(await convertScoutsuiteToHdf(input));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, 'rule-x');
+      expect(req).toBeDefined();
+      expect(req!.sourceLocation).toBeUndefined();
+    });
+
+    it('should map compliance references to the compliance tag', async () => {
+      const input = loadFixture('input/scoutsuite_sample.js');
+      const out = parseOutput(await convertScoutsuiteToHdf(input));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, 'cloudtrail-no-cloudwatch-integration');
+      expect(req).toBeDefined();
+      const tags = req!.tags as Record<string, unknown>;
+      expect(tags.compliance).toEqual([
+        'CIS Amazon Web Services Foundations 2.4 (v1.0.0)',
+        'CIS Amazon Web Services Foundations 2.4 (v1.1.0)',
+        'CIS Amazon Web Services Foundations 2.4 (v1.2.0)',
+      ]);
+    });
+
+    it('should omit the compliance tag when source has none', async () => {
+      const input = loadFixture('input/scoutsuite_sample.js');
+      const out = parseOutput(await convertScoutsuiteToHdf(input));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, 'cloudtrail-not-configured');
+      expect(req).toBeDefined();
+      const tags = req!.tags as Record<string, unknown>;
+      expect(tags.compliance).toBeUndefined();
+    });
+
     it('should set requirement title from description field', async () => {
       const input = loadFixture('input/scoutsuite_sample.js');
       const out = parseOutput(await convertScoutsuiteToHdf(input));

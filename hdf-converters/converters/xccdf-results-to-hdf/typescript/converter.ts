@@ -156,6 +156,7 @@ interface TestResultElement {
   id?: string;
   'start-time'?: string;
   'end-time'?: string;
+  'test-system'?: string;
   title?: string | TextElement;
   target?: string;
   'target-address'?: string[];
@@ -305,6 +306,21 @@ function parseStartTime(raw: string | undefined): Date {
   return new Date();
 }
 
+// Extract the scanner version from an XCCDF TestResult @test-system value.
+// Scanners populate it with a CPE 2.2 URI naming the tool that ran the
+// benchmark, e.g. "cpe:/a:redhat:openscap:1.3.5" or "cpe:/a:spawar:scc:5.4.2",
+// where the colon-separated fields after "cpe:/" are part, vendor, product,
+// version. Returns '' for a non-CPE or version-less value so tool.version stays
+// unset rather than fabricated. Mirrors the Go parseCPEVersion.
+function parseCpeVersion(testSystem: string | undefined): string {
+  const prefix = 'cpe:/';
+  if (!testSystem || !testSystem.startsWith(prefix)) {
+    return '';
+  }
+  const parts = testSystem.slice(prefix.length).split(':');
+  return parts.length >= 4 ? parts[3]! : '';
+}
+
 export async function convertXccdfResultsToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || !input.trim()) {
     throw new Error('Empty input');
@@ -432,6 +448,7 @@ async function convertBenchmarkResultsToHdf(
   const testResult = benchmark.TestResult!;
 
   const ruleIndex = buildRuleIndex(benchmark);
+  const groupIndex = buildGroupIndex(benchmark);
 
   const ruleResults = testResult['rule-result'] ?? [];
   const { items: limitedRuleResults, truncated: truncatedRR } = limitArray(ruleResults);
@@ -445,7 +462,7 @@ async function convertBenchmarkResultsToHdf(
   const scanTime = parseStartTime(testResult['start-time']);
 
   const requirements = limitedRuleResults.map((rr) =>
-    ruleResultToRequirement(rr, ruleIndex, scanTime)
+    ruleResultToRequirement(rr, ruleIndex, groupIndex, scanTime)
   );
 
   if (requirements.length === 0) {
@@ -475,10 +492,16 @@ async function convertBenchmarkResultsToHdf(
   baseline.status = 'loaded';
   baseline.summary = stripHTML(extractText(benchmark.description));
 
+  const tool: HDFResults['tool'] = { name: 'XCCDF', format: 'XCCDF' };
+  const toolVersion = parseCpeVersion(testResult['test-system']);
+  if (toolVersion) {
+    tool.version = toolVersion;
+  }
+
   const hdf: HDFResults = {
     baselines: [baseline],
     generator: { name: 'xccdf-results-to-hdf', version: converterVersion },
-    tool: { name: 'XCCDF', format: 'XCCDF' },
+    tool,
     components: buildTargets(testResult),
     timestamp: scanTime,
     statistics: { duration: calculateDuration(testResult) },
@@ -643,10 +666,13 @@ async function convertArfCollection(
   // Find the Benchmark from data-stream-collection components
   const benchmark = findBenchmarkInArf(arc);
 
-  // Build rule index from Benchmark
+  // Build rule + group indexes from Benchmark
   const ruleIndex = benchmark
     ? buildRuleIndex(benchmark)
     : new Map<string, RuleElement>();
+  const groupIndex = benchmark
+    ? buildGroupIndex(benchmark)
+    : new Map<string, GroupElement>();
 
   // Build asset metadata map: asset ID -> asset element
   const assetMap = new Map<string, ArfAssetElement>();
@@ -669,6 +695,7 @@ async function convertArfCollection(
   const components: Component[] = [];
   let firstTimestamp: Date | undefined;
   let totalDuration = 0;
+  let toolVersion = '';
 
   for (const report of arc.reports?.report ?? []) {
     const testResult = report.content?.TestResult;
@@ -684,6 +711,9 @@ async function convertArfCollection(
     if (!firstTimestamp) {
       firstTimestamp = scanTime;
     }
+    if (!toolVersion) {
+      toolVersion = parseCpeVersion(testResult['test-system']);
+    }
     totalDuration += calculateDuration(testResult);
 
     // Convert rule-results
@@ -695,7 +725,7 @@ async function convertArfCollection(
     console.warn(`WARNING: Input truncated at ${limitedARFRuleResults.length} rule-result items (original: ${ruleResults.length})`);
     }
     const requirements = limitedARFRuleResults.map((rr) =>
-      ruleResultToRequirement(rr, ruleIndex, scanTime)
+      ruleResultToRequirement(rr, ruleIndex, groupIndex, scanTime)
     );
 
     if (requirements.length === 0) {
@@ -750,10 +780,15 @@ async function convertArfCollection(
     throw new Error('ARF document contains no XCCDF TestResult reports');
   }
 
+  const tool: HDFResults['tool'] = { name: 'ARF', format: 'ARF' };
+  if (toolVersion) {
+    tool.version = toolVersion;
+  }
+
   const hdf: HDFResults = {
     baselines,
     generator: { name: 'xccdf-results-to-hdf', version: converterVersion },
-    tool: { name: 'ARF', format: 'ARF' },
+    tool,
     components,
     timestamp: firstTimestamp ?? new Date(),
     statistics: { duration: totalDuration },
@@ -848,15 +883,30 @@ function buildRuleIndex(benchmark: BenchmarkElement): Map<string, RuleElement> {
 }
 
 /**
+ * Builds an index of the enclosing Group for each grouped rule, keyed by rule
+ * @id. Top-level Benchmark rules have no Group and are absent, so the results
+ * path emits gid/gtitle only for grouped rules — matching the baseline path.
+ */
+function buildGroupIndex(benchmark: BenchmarkElement): Map<string, GroupElement> {
+  const index = new Map<string, GroupElement>();
+  for (const { rule, group } of flattenGroups(benchmark.Group ?? [])) {
+    index.set(rule.id!, group);
+  }
+  return index;
+}
+
+/**
  * Convert a single <rule-result> into an EvaluatedRequirement.
  */
 function ruleResultToRequirement(
   rr: RuleResultElement,
   ruleIndex: Map<string, RuleElement>,
+  groupIndex: Map<string, GroupElement>,
   scanTime: Date
 ): EvaluatedRequirement {
   const ruleId = rr.idref ?? '';
   const ruleDef = ruleIndex.get(ruleId);
+  const group = groupIndex.get(ruleId);
 
   const id = ruleDef?.id ? extractRuleID(ruleDef.id) : ruleId;
   const title = extractText(ruleDef?.title) || ruleId;
@@ -891,8 +941,29 @@ function ruleResultToRequirement(
     startTime: perRuleTime ?? scanTime,
   };
 
-  const tags = buildCciNistTags(extractCCIs([...(rr.ident ?? []), ...(ruleDef?.ident ?? [])]));
+  const idents = [...(rr.ident ?? []), ...(ruleDef?.ident ?? [])];
+  const tags = buildCciNistTags(extractCCIs(idents));
   const nistTags = tags['nist'] as string[];
+
+  // Carry the STIG rule/group identifiers the results path formerly dropped.
+  // Each key is emitted only when the source populates it.
+  const stigId = rr.version || extractVersion(ruleDef?.version);
+  if (stigId) {
+    tags['stig_id'] = stigId;
+  }
+  // CCE is single-valued per STIG rule; emit the first (deduped) value.
+  const cces = extractIdentsBySystem(idents, 'cce');
+  if (cces.length > 0) {
+    tags['cce'] = cces[0];
+  }
+  const legacyIds = extractIdentsBySystem(idents, 'legacy');
+  if (legacyIds.length > 0) {
+    tags['legacy_id'] = legacyIds;
+  }
+  if (group) {
+    tags['gid'] = group.id;
+    tags['gtitle'] = extractText(group.title);
+  }
 
   const req = createRequirement(
     id,
@@ -1188,6 +1259,18 @@ function extractCCIs(idents: IdentElement[]): string[] {
     .map((i) => i['#text'] ?? '')
     .filter((v) => v.length > 0);
   return [...new Set(ccis)];
+}
+
+/**
+ * Extract ident values whose @system contains the given marker (e.g. 'cce',
+ * 'legacy'), deduplicated in first-seen order. Mirrors extractCCIs.
+ */
+function extractIdentsBySystem(idents: IdentElement[], marker: string): string[] {
+  const values = idents
+    .filter((i) => (i.system ?? '').toLowerCase().includes(marker))
+    .map((i) => i['#text'] ?? '')
+    .filter((v) => v.length > 0);
+  return [...new Set(values)];
 }
 
 /**
