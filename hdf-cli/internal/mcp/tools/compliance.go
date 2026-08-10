@@ -99,11 +99,11 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in complianceInput) (*sdkmcp.CallToolResult, complianceOutput, error) {
 		resolved, terr := resolveSource(in.Source, ldr)
 		if terr != nil {
-			return toolError(terr), complianceOutput{}, nil
+			return toolError(terr), errorComplianceOutput(), nil
 		}
 		encoded, err := handle.Encode(resolved.Handle)
 		if err != nil {
-			return nil, complianceOutput{}, fmt.Errorf("encoding handle: %w", err)
+			return nil, errorComplianceOutput(), fmt.Errorf("encoding handle: %w", err)
 		}
 
 		toResults, ok := queryDispatch[resolved.Load.DocType]
@@ -112,13 +112,13 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 				fmt.Sprintf("hdf_compliance rolls up requirements in results and baseline documents; a %s document has no requirements to score", resolved.Load.DocType),
 				map[string]any{"docType": resolved.Load.DocType}).
 				WithNextCall("call hdf_inspect to view this document's structure (hdf_compliance is results/baseline only)")
-			return toolError(e), complianceOutput{}, nil
+			return toolError(e), errorComplianceOutput(), nil
 		}
 		if !resolved.Load.Valid {
 			e := mcperr.New(mcperr.SchemaInvalid,
 				fmt.Sprintf("the document is %s but failed schema validation, so it cannot be scored", resolved.Load.DocType),
 				map[string]any{"docType": resolved.Load.DocType})
-			return toolError(e), complianceOutput{}, nil
+			return toolError(e), errorComplianceOutput(), nil
 		}
 
 		results := toResults(resolved.Load)
@@ -138,7 +138,7 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 		if in.GroupBy != "" {
 			groups, gerr := groupedRollups(results, in.GroupBy)
 			if gerr != nil {
-				return toolError(gerr), complianceOutput{}, nil
+				return toolError(gerr), errorComplianceOutput(), nil
 			}
 			out.GroupBy = in.GroupBy
 			out.Groups = groups
@@ -147,7 +147,7 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 		if in.Threshold != nil {
 			cfg, therr := resolveThreshold(in.Threshold)
 			if therr != nil {
-				return toolError(therr), complianceOutput{}, nil
+				return toolError(therr), errorComplianceOutput(), nil
 			}
 			if cfg != nil {
 				failures := hdfengine.ValidateThresholds(cfg, counts, out.Compliance, hdfengine.MapControlIDs(results))
@@ -169,6 +169,15 @@ func agentComplianceDelta(results hdf.HDFResults) float64 {
 	withAgent := hdfengine.CalculateCompliance(countByEffectiveStatus(results))
 	withoutAgent := hdfengine.CalculateCompliance(hdfengine.CountControlsByStatus(results, effectiveStatusExcludingAgent))
 	return math.Round((withAgent-withoutAgent)*100) / 100
+}
+
+// errorComplianceOutput is the structured output returned alongside a toolError.
+// counts is a required, non-nullable object in the output schema (value-typed,
+// lj0g.3), so a zero-value complianceOutput{} (nil counts → JSON null) fails the
+// SDK's output-schema validation and masks the real toolError (lj0g.10). An
+// empty (non-nil) counts map serializes as {} and validates.
+func errorComplianceOutput() complianceOutput {
+	return complianceOutput{Counts: map[string]map[string]int{}}
 }
 
 // countsToNestedInt projects StatusCounts to a status → severity → int map, so

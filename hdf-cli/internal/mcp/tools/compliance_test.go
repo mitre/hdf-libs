@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,77 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
+
+// driveToolCall drives a real initialize + tools/call round-trip through the SDK
+// session so SDK output-schema validation runs — unlike callCompliance, which
+// invokes the handler directly and never exercises the wire-level validation.
+// Returns the full JSON-RPC response message for id 2 (result or error).
+func driveToolCall(t *testing.T, s *sdkmcp.Server, name string, args map[string]any) map[string]any {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5e9)
+	defer cancel()
+	reqR, reqW := io.Pipe()
+	respR, respW := io.Pipe()
+	go func() { _ = s.Run(ctx, &sdkmcp.IOTransport{Reader: reqR, Writer: respW}); _ = respW.Close() }()
+	call, _ := json.Marshal(map[string]any{
+		"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+		"params": map[string]any{"name": name, "arguments": args},
+	})
+	go func() {
+		_, _ = reqW.Write([]byte(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"c","version":"1"}}}` + "\n" +
+			`{"jsonrpc":"2.0","method":"notifications/initialized"}` + "\n" +
+			string(call) + "\n"))
+	}()
+	dec := json.NewDecoder(respR)
+	for {
+		var m map[string]any
+		if err := dec.Decode(&m); err != nil {
+			t.Fatalf("no tools/call response: %v", err)
+		}
+		if m["id"] == float64(2) {
+			_ = reqW.Close()
+			cancel()
+			return m
+		}
+	}
+}
+
+// TestHdfCompliance_ErrorReturnSurfacesToolErrorThroughSDK is the lj0g.10
+// regression guard. An error-path tools/call must surface its taxonomy toolError
+// through the real SDK session; the pre-fix handler returned a zero-value
+// complianceOutput{} whose nil counts map failed output-schema validation, so the
+// SDK replaced the WRONG_DOC_TYPE toolError with a confusing "validating tool
+// output: ... counts ... null" JSON-RPC error. Fails on pre-fix code.
+func TestHdfCompliance_ErrorReturnSurfacesToolErrorThroughSDK(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+	if err := os.WriteFile(filepath.Join(root, "system.json"), readCLIFixture(t, "system.json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "t", Version: "1"}, nil)
+	RegisterAll(s)
+
+	m := driveToolCall(t, s, "hdf_compliance", map[string]any{"source": map[string]any{"path": "system.json"}})
+
+	if e, ok := m["error"]; ok {
+		t.Fatalf("error-path tools/call was masked by an SDK output-validation error instead of surfacing the toolError: %v", e)
+	}
+	res, ok := m["result"].(map[string]any)
+	if !ok {
+		t.Fatalf("no result in tools/call response: %v", m)
+	}
+	if isErr, _ := res["isError"].(bool); !isErr {
+		t.Fatalf("expected an isError toolResult, got %v", res)
+	}
+	content, _ := res["content"].([]any)
+	if len(content) == 0 {
+		t.Fatal("toolResult carried no content")
+	}
+	text, _ := content[0].(map[string]any)["text"].(string)
+	if !strings.Contains(text, string(mcperr.WrongDocType)) {
+		t.Errorf("toolError should name %s, got %q", mcperr.WrongDocType, text)
+	}
+}
 
 func sevPtr(s hdf.Severity) *hdf.Severity { return &s }
 
