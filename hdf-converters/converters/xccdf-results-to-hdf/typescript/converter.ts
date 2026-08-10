@@ -9,6 +9,7 @@ import type {
   RequirementResult,
   Checksum,
   Description,
+  Reference,
   RequirementGroup,
   Component,
 } from '@mitre/hdf-schema';
@@ -127,8 +128,25 @@ interface RuleElement {
   description?: string | TextElement;
   version?: string | VersionElement;
   fixtext?: string | FixtextElement;
+  rationale?: string | TextElement;
+  warning?: string | TextElement;
   ident?: IdentElement[];
   check?: CheckElement | CheckElement[];
+  reference?: ReferenceElement[];
+}
+
+/**
+ * An XCCDF <reference> on a Rule. STIG content carries Dublin Core child
+ * elements (publisher/identifier/type); SSG/CIS content carries a plain-text
+ * body plus an href. The `title`/`subject` DC fields are intentionally not
+ * consumed (heimdall2 drops them too).
+ */
+interface ReferenceElement {
+  href?: string;
+  '#text'?: string;
+  publisher?: string;
+  identifier?: string;
+  type?: string;
 }
 
 export interface CheckElement {
@@ -258,6 +276,7 @@ const ARRAY_TAGS = [
   'target-address',
   'platform',
   'check-content',
+  'reference',
   // ARF-specific array tags
   'report',
   'report-request',
@@ -600,14 +619,24 @@ function ruleToBaselineRequirement(
   }];
 
   const check = selectCheck(rule.check);
-  const checkContent = extractCheckContent(check);
-  if (checkContent) {
-    descriptions.push({ label: 'check', data: stripHTML(checkContent) });
+  const checkDesc = checkDescriptionData(check);
+  if (checkDesc) {
+    descriptions.push({ label: 'check', data: checkDesc });
   }
 
   const fixtext = extractFixtext(rule.fixtext);
   if (fixtext) {
     descriptions.push({ label: 'fix', data: stripHTML(fixtext) });
+  }
+
+  const rationale = extractText(rule.rationale).trim();
+  if (rationale) {
+    descriptions.push({ label: 'rationale', data: stripHTML(rationale) });
+  }
+
+  const warning = extractText(rule.warning).trim();
+  if (warning) {
+    descriptions.push({ label: 'warning', data: stripHTML(warning) });
   }
 
   const tags = buildCciNistTags(extractCCIs(rule.ident ?? []));
@@ -638,6 +667,11 @@ function ruleToBaselineRequirement(
     descriptions,
     tags,
   };
+
+  const refs = buildRefs(rule.reference);
+  if (refs.length > 0) {
+    req.refs = refs;
+  }
 
   const hdfSeverity = xccdfSeverityToHdf(severity);
   if (hdfSeverity) {
@@ -912,23 +946,38 @@ function ruleResultToRequirement(
   const title = extractText(ruleDef?.title) || ruleId;
 
   const severity = (rr.severity || ruleDef?.severity || '').toLowerCase();
-  const impact = severity ? severityToImpact(severity) : 0.5;
+  const xccdfResult = (rr.result ?? '').trim().toLowerCase();
+  // A rule-result that was not applicable, not selected, or purely informational
+  // carries no risk weight, so its impact is zeroed regardless of severity
+  // (matching heimdall2); status still records the disposition.
+  const impactZeroed =
+    xccdfResult === 'notselected' ||
+    xccdfResult === 'notapplicable' ||
+    xccdfResult === 'informational';
+  const impact = impactZeroed ? 0 : severity ? severityToImpact(severity) : 0.5;
 
   const descriptions: Description[] = [{
     label: 'default',
     data: stripHTML(extractVulnDiscussion(extractText(ruleDef?.description))),
   }];
   const check = selectCheck(ruleDef?.check);
-  const checkContent = extractCheckContent(check);
-  if (checkContent) {
-    descriptions.push({ label: 'check', data: stripHTML(checkContent) });
+  const checkDesc = checkDescriptionData(check);
+  if (checkDesc) {
+    descriptions.push({ label: 'check', data: checkDesc });
   }
   const fixtext = extractFixtext(ruleDef?.fixtext);
   if (fixtext) {
     descriptions.push({ label: 'fix', data: stripHTML(fixtext) });
   }
+  const rationale = extractText(ruleDef?.rationale).trim();
+  if (rationale) {
+    descriptions.push({ label: 'rationale', data: stripHTML(rationale) });
+  }
+  const warning = extractText(ruleDef?.warning).trim();
+  if (warning) {
+    descriptions.push({ label: 'warning', data: stripHTML(warning) });
+  }
 
-  const xccdfResult = (rr.result ?? '').trim().toLowerCase();
   const status = STATUS_MAP[xccdfResult] ?? ResultStatus.Error;
 
   // Prefer each rule-result's own @time (per-finding evaluation time), matching
@@ -977,6 +1026,11 @@ function ruleResultToRequirement(
   const code = buildCheckCode(check);
   if (code) {
     req.code = code;
+  }
+
+  const refs = buildRefs(ruleDef?.reference);
+  if (refs.length > 0) {
+    req.refs = refs;
   }
 
   // Mirror the baseline path: set the explicit severity enum, omitting it when
@@ -1197,6 +1251,64 @@ export function extractCheckContentRef(
     return { name: '', href: '' };
   }
   return { name: ref.name ?? '', href: ref.href ?? '' };
+}
+
+/**
+ * Text for the "check" description: the inline <check-content> when the content
+ * author embedded it, else the automated check's OVAL/SCE definition name
+ * (check-content-ref/@name), which SCAP content carries instead of inline logic.
+ * Empty when the check has neither. Mirrors the Go checkDescriptionData.
+ */
+function checkDescriptionData(check: CheckElement | undefined): string {
+  const content = extractCheckContent(check).trim();
+  if (content) {
+    return stripHTML(content);
+  }
+  return extractCheckContentRef(check).name;
+}
+
+/**
+ * Convert a rule's <reference> elements into HDF references. A Dublin Core
+ * reference (publisher/identifier/type present) becomes a single-element object
+ * array carrying those attributes; a plain-text reference becomes a string. The
+ * href, when present, populates url. References that carry nothing are skipped.
+ * Inner keys are inserted alphabetically to match Go's map JSON ordering.
+ */
+function buildRefs(refs: ReferenceElement[] | undefined): Reference[] {
+  if (!refs) {
+    return [];
+  }
+  const out: Reference[] = [];
+  for (const r of refs) {
+    const text = (typeof r['#text'] === 'string' ? r['#text']! : '').trim();
+
+    let ref: { [key: string]: string }[] | string | undefined;
+    if (r.publisher || r.identifier || r.type) {
+      const obj: Record<string, string> = {};
+      if (r.identifier) obj.identifier = r.identifier;
+      if (r.publisher) obj.publisher = r.publisher;
+      if (text) obj.text = text;
+      if (r.type) obj.type = r.type;
+      ref = [obj];
+    } else if (text) {
+      ref = text;
+    }
+
+    const href = r.href ?? '';
+    if (ref === undefined && !href) {
+      continue;
+    }
+
+    const reference: Reference = {};
+    if (ref !== undefined) {
+      reference.ref = ref;
+    }
+    if (href) {
+      reference.url = href;
+    }
+    out.push(reference);
+  }
+  return out;
 }
 
 /**

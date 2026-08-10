@@ -9,6 +9,10 @@
             {
               "data": "Description",
               "label": "default"
+            },
+            {
+              "data": "oval:x:def:1",
+              "label": "check"
             }
           ],
           "id": "xccdf_com.example.www_rule_test-fail",

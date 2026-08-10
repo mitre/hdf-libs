@@ -93,16 +93,30 @@ func flattenGroups(groups []Group) []groupedRule {
 
 // Rule represents an XCCDF Rule within a Group or top-level Benchmark.
 type Rule struct {
-	ID          string  `xml:"id,attr"`
-	Selected    string  `xml:"selected,attr"`
-	Severity    string  `xml:"severity,attr"`
-	Weight      string  `xml:"weight,attr"`
-	Version     string  `xml:"version"`
-	Title       string  `xml:"title"`
-	Description string  `xml:"description"`
-	Fixtext     Fixtext `xml:"fixtext"`
-	Idents      []Ident `xml:"ident"`
-	Checks      []Check `xml:"check"`
+	ID          string          `xml:"id,attr"`
+	Selected    string          `xml:"selected,attr"`
+	Severity    string          `xml:"severity,attr"`
+	Weight      string          `xml:"weight,attr"`
+	Version     string          `xml:"version"`
+	Title       string          `xml:"title"`
+	Description string          `xml:"description"`
+	Rationale   string          `xml:"rationale"`
+	Warning     string          `xml:"warning"`
+	Fixtext     Fixtext         `xml:"fixtext"`
+	Idents      []Ident         `xml:"ident"`
+	Checks      []Check         `xml:"check"`
+	References  []RuleReference `xml:"reference"`
+}
+
+// RuleReference is an XCCDF <reference> on a Rule. STIG content uses a Dublin
+// Core reference (publisher/identifier/type in child elements); SSG/CIS content
+// uses a plain text body plus an href. Both shapes flow into requirement.refs.
+type RuleReference struct {
+	Href       string `xml:"href,attr"`
+	Text       string `xml:",chardata"`
+	Publisher  string `xml:"publisher"`
+	Identifier string `xml:"identifier"`
+	Type       string `xml:"type"`
 }
 
 // Fixtext represents an XCCDF fixtext element with optional fixref attribute.
@@ -208,6 +222,69 @@ func buildCheckCode(check Check) string {
 		return ""
 	}
 	return strings.TrimSuffix(buf.String(), "\n")
+}
+
+// buildRefs converts a rule's <reference> elements into HDF references. A Dublin
+// Core reference (publisher/identifier/type present) becomes a single-element
+// object array carrying those attributes; a plain-text reference becomes a
+// string. The href, when present, populates url. References that carry nothing
+// are skipped rather than emitting an empty entry. Map keys are emitted in Go's
+// alphabetical order so the output stays byte-identical to the TypeScript twin.
+func buildRefs(refs []RuleReference) []hdf.Reference {
+	var out []hdf.Reference
+	for i := range refs {
+		r := refs[i]
+		text := strings.TrimSpace(r.Text)
+
+		var ref hdf.Ref
+		switch {
+		case r.Publisher != "" || r.Identifier != "" || r.Type != "":
+			m := map[string]interface{}{}
+			if text != "" {
+				m["text"] = text
+			}
+			if r.Publisher != "" {
+				m["publisher"] = r.Publisher
+			}
+			if r.Identifier != "" {
+				m["identifier"] = r.Identifier
+			}
+			if r.Type != "" {
+				m["type"] = r.Type
+			}
+			ref.AnythingMapArray = []map[string]interface{}{m}
+		case text != "":
+			ref.String = &text
+		}
+
+		hasRef := ref.AnythingMapArray != nil || ref.String != nil
+		if !hasRef && r.Href == "" {
+			continue
+		}
+
+		reference := hdf.Reference{}
+		if hasRef {
+			refCopy := ref
+			reference.Ref = &refCopy
+		}
+		if r.Href != "" {
+			href := r.Href
+			reference.URL = &href
+		}
+		out = append(out, reference)
+	}
+	return out
+}
+
+// checkDescriptionData returns the text for the "check" description: the inline
+// <check-content> when the content author embedded it, else the automated
+// check's OVAL/SCE definition name (check-content-ref/@name), which SCAP content
+// carries instead of inline logic. Empty when the check has neither.
+func checkDescriptionData(check Check) string {
+	if cc := strings.TrimSpace(check.CheckContent); cc != "" {
+		return hdfutil.StripHTML(cc)
+	}
+	return check.CheckContentRef.Name
 }
 
 // TestResult represents the XCCDF TestResult element containing scan results.
@@ -703,6 +780,7 @@ func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequ
 		Impact:       impact,
 		Severity:     severityPtr,
 		Descriptions: descriptions,
+		Refs:         buildRefs(rule.References),
 		Tags:         tags,
 		ControlType:  shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
 	}
@@ -725,10 +803,10 @@ func buildBaselineDescriptions(rule *Rule) []hdf.Description {
 		})
 	}
 
-	if cc := selectCheck(rule.Checks).CheckContent; cc != "" {
+	if data := checkDescriptionData(selectCheck(rule.Checks)); data != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "check",
-			Data:  hdfutil.StripHTML(cc),
+			Data:  data,
 		})
 	}
 
@@ -736,6 +814,20 @@ func buildBaselineDescriptions(rule *Rule) []hdf.Description {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
 			Data:  hdfutil.StripHTML(rule.Fixtext.Text),
+		})
+	}
+
+	if r := strings.TrimSpace(rule.Rationale); r != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "rationale",
+			Data:  hdfutil.StripHTML(r),
+		})
+	}
+
+	if w := strings.TrimSpace(rule.Warning); w != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "warning",
+			Data:  hdfutil.StripHTML(w),
 		})
 	}
 
@@ -1126,6 +1218,9 @@ func convertRuleResult(rr *RuleResult, rule *Rule, group *Group, fallback time.T
 		if code := buildCheckCode(selectCheck(rule.Checks)); code != "" {
 			req.Code = &code
 		}
+		if refs := buildRefs(rule.References); len(refs) > 0 {
+			req.Refs = refs
+		}
 	}
 
 	return req
@@ -1150,9 +1245,16 @@ func determineTitle(rr *RuleResult, rule *Rule) string {
 	return rr.IDRef
 }
 
-// determineImpact maps the severity to a numeric impact. Checks the
-// rule-result severity first, then the Rule severity.
+// determineImpact maps the severity to a numeric impact. A rule-result that was
+// not applicable, not selected, or purely informational carries no risk weight,
+// so its impact is zeroed regardless of severity (matching heimdall2); status
+// still records the disposition. Otherwise the rule-result severity is preferred,
+// then the Rule severity.
 func determineImpact(rr *RuleResult, rule *Rule) float64 {
+	switch strings.ToLower(strings.TrimSpace(rr.Result)) {
+	case "notselected", "notapplicable", "informational":
+		return 0
+	}
 	severity := strings.ToLower(rr.Severity)
 	if severity == "" && rule != nil {
 		severity = strings.ToLower(rule.Severity)
@@ -1190,19 +1292,35 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 		})
 	}
 
-	if rule != nil {
-		if cc := selectCheck(rule.Checks).CheckContent; cc != "" {
-			descriptions = append(descriptions, hdf.Description{
-				Label: "check",
-				Data:  hdfutil.StripHTML(cc),
-			})
-		}
+	if rule == nil {
+		return descriptions
 	}
 
-	if rule != nil && rule.Fixtext.Text != "" {
+	if data := checkDescriptionData(selectCheck(rule.Checks)); data != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "check",
+			Data:  data,
+		})
+	}
+
+	if rule.Fixtext.Text != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
 			Data:  hdfutil.StripHTML(rule.Fixtext.Text),
+		})
+	}
+
+	if r := strings.TrimSpace(rule.Rationale); r != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "rationale",
+			Data:  hdfutil.StripHTML(r),
+		})
+	}
+
+	if w := strings.TrimSpace(rule.Warning); w != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "warning",
+			Data:  hdfutil.StripHTML(w),
 		})
 	}
 
