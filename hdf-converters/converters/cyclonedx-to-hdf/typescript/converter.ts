@@ -18,7 +18,6 @@ import type {
   EvaluatedRequirement,
   Checksum,
   Reference,
-  RequirementResult,
   StatusOverride,
   Version as CvssVersion,
 } from '@mitre/hdf-schema';
@@ -64,7 +63,20 @@ interface CycloneDXComponent {
   version?: string;
   group?: string;
   'bom-ref'?: string;
+  description?: string;
+  licenses?: CycloneDXLicenseEntry[];
   components?: CycloneDXComponent[];
+}
+
+interface CycloneDXLicenseEntry {
+  license?: CycloneDXLicense;
+  expression?: string;
+}
+
+interface CycloneDXLicense {
+  id?: string;
+  name?: string;
+  url?: string;
 }
 
 interface CycloneDXVulnerability {
@@ -257,6 +269,139 @@ function formatCodeDesc(
     name += '@' + comp.version;
   }
   return `Component ${name} is vulnerable`;
+}
+
+// Empty string -> undefined, so JSON.stringify drops the key exactly as Go's
+// `omitempty` drops a zero-value string. Keeps the code/message projections
+// byte-identical across the two languages.
+function orUndef(s: string | undefined): string | undefined {
+  return s ? s : undefined;
+}
+
+function projectSource(
+  s: CycloneDXSource | undefined
+): Record<string, unknown> | undefined {
+  if (!s) {
+    return undefined;
+  }
+  return { name: orUndef(s.name), url: orUndef(s.url) };
+}
+
+function projectReference(r: CycloneDXReference): Record<string, unknown> {
+  return { id: orUndef(r.id), source: projectSource(r.source) };
+}
+
+function projectAdvisory(a: CycloneDXAdvisory): Record<string, unknown> {
+  return { title: orUndef(a.title), url: orUndef(a.url) };
+}
+
+function projectRating(r: CycloneDXRating): Record<string, unknown> {
+  return {
+    source: projectSource(r.source),
+    score: r.score === undefined || r.score === null ? undefined : r.score,
+    severity: orUndef(r.severity),
+    method: orUndef(r.method),
+    vector: orUndef(r.vector),
+  };
+}
+
+function projectAnalysis(
+  a: CycloneDXAnalysis | undefined
+): Record<string, unknown> | undefined {
+  if (!a) {
+    return undefined;
+  }
+  return {
+    state: orUndef(a.state),
+    justification: orUndef(a.justification),
+    response: a.response && a.response.length > 0 ? a.response : undefined,
+    detail: orUndef(a.detail),
+  };
+}
+
+function projectLicenseEntry(l: CycloneDXLicenseEntry): Record<string, unknown> {
+  return {
+    license: l.license
+      ? {
+          id: orUndef(l.license.id),
+          name: orUndef(l.license.name),
+          url: orUndef(l.license.url),
+        }
+      : undefined,
+    expression: orUndef(l.expression),
+  };
+}
+
+/**
+ * Projects the parsed vulnerability into requirement.code, giving the Heimdall
+ * CODE tab the raw finding (id, source, references, advisories, ratings, cwes,
+ * descriptions, timestamps, VEX analysis) in one place. `affects` is omitted —
+ * that linkage rides on each result's code_desc and the component inventory.
+ * Field order and empty-dropping stay in lockstep with the Go codeVuln struct so
+ * both languages emit byte-identical code strings. JSON.stringify never escapes
+ * `&`/`<`/`>`, matching Go's SetEscapeHTML(false).
+ */
+function buildVulnCode(vuln: CycloneDXVulnerability): string {
+  const proj = {
+    id: vuln.id,
+    source: projectSource(vuln.source),
+    references:
+      vuln.references && vuln.references.length > 0
+        ? vuln.references.map(projectReference)
+        : undefined,
+    advisories:
+      vuln.advisories && vuln.advisories.length > 0
+        ? vuln.advisories.map(projectAdvisory)
+        : undefined,
+    ratings:
+      vuln.ratings && vuln.ratings.length > 0
+        ? vuln.ratings.map(projectRating)
+        : undefined,
+    cwes: vuln.cwes && vuln.cwes.length > 0 ? vuln.cwes : undefined,
+    description: orUndef(vuln.description),
+    detail: orUndef(vuln.detail),
+    recommendation: orUndef(vuln.recommendation),
+    created: orUndef(vuln.created),
+    published: orUndef(vuln.published),
+    updated: orUndef(vuln.updated),
+    analysis: projectAnalysis(vuln.analysis),
+  };
+  return JSON.stringify(proj, null, 2);
+}
+
+/**
+ * Builds the per-result "-Component Summary-" message from the affected
+ * component's inventory fields (type, bom-ref, group, name, version, description,
+ * licenses), mirroring heimdall2's field selection and order. Returns undefined
+ * for an unresolved ref (VEX dummy components) so the result carries no message.
+ * Kept in lockstep with the Go twin for byte-identical output.
+ */
+function componentSummary(
+  componentLookup: Map<string, CycloneDXComponent>,
+  ref: string
+): string | undefined {
+  const comp = componentLookup.get(ref);
+  if (!comp) {
+    return undefined;
+  }
+  const parts: string[] = ['-Component Summary-'];
+  const addField = (label: string, val: string | undefined): void => {
+    if (val) {
+      parts.push(`\n\n- ${label}: ${val}`);
+    }
+  };
+  addField('Type', comp.type);
+  addField('Bom-ref', comp['bom-ref']);
+  addField('Group', comp.group);
+  addField('Name', comp.name);
+  addField('Version', comp.version);
+  addField('Description', comp.description);
+  if (comp.licenses && comp.licenses.length > 0) {
+    parts.push(
+      `\n\n- Licenses: ${JSON.stringify(comp.licenses.map(projectLicenseEntry), null, 2)}`
+    );
+  }
+  return parts.join('');
 }
 
 /**
@@ -537,13 +682,23 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
     // All vulnerabilities are Failed — info/unknown severity affects impact
     // score but not status.
     const affects = vuln.affects ?? [];
-    // CycloneDX carries no per-affect explanation, so results carry no message key.
-    const toResult = (codeDesc: string): RequirementResult =>
-      createResult(ResultStatus.Failed, undefined, { codeDesc, startTime: scanTime });
+    // Each affected result carries a "-Component Summary-" message assembled from
+    // the resolved component's inventory fields; unresolved refs (VEX) get none.
     const results =
       affects.length > 0
-        ? affects.map((affect) => toResult(formatCodeDesc(componentLookup, affect.ref)))
-        : [toResult(`Vulnerability ${vuln.id}`)];
+        ? affects.map((affect) =>
+            createResult(
+              ResultStatus.Failed,
+              componentSummary(componentLookup, affect.ref),
+              { codeDesc: formatCodeDesc(componentLookup, affect.ref), startTime: scanTime }
+            )
+          )
+        : [
+            createResult(ResultStatus.Failed, undefined, {
+              codeDesc: `Vulnerability ${vuln.id}`,
+              startTime: scanTime,
+            }),
+          ];
 
     const title = vuln.source?.name
       ? `${vuln.id} (${vuln.source.name})`
@@ -555,6 +710,8 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
     // cannot reliably distinguish the two, so stamping "automated" would
     // misclassify VEX-derived requirements.
     const req = createRequirement(vuln.id, title, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+    // requirement.code carries the raw finding for the Heimdall CODE tab.
+    req.code = buildVulnCode(vuln);
     if (cvssEntries.length > 0) {
       req.cvss = cvssEntries;
     }

@@ -3,6 +3,7 @@ package cyclonedx_to_hdf
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -848,4 +849,74 @@ func TestCvssVersionFromMethod(t *testing.T) {
 			assert.Equal(t, c.want, cvssVersionFromMethod(c.method, c.vector))
 		})
 	}
+}
+
+// ---- requirement.code raw finding passthrough ----
+
+func TestConvertCycloneDX_RequirementCode(t *testing.T) {
+	input := loadFixture(t, "input/vex.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
+	require.NotNil(t, req.Code, "requirement.code must carry the raw finding passthrough")
+	code := *req.Code
+
+	// Fixed field-order projection, 2-space indent, id first.
+	assert.True(t, strings.HasPrefix(code, "{\n  \"id\": \"CVE-2020-25649\""), "code = %s", code)
+	// affects is deliberately omitted (carried by code_desc / component inventory).
+	assert.NotContains(t, code, "\"affects\"")
+	// Ampersands in advisory/CVSS URLs stay literal (SetEscapeHTML off) so the
+	// string is byte-identical to the TS JSON.stringify twin.
+	assert.Contains(t, code, "&version=3.1")
+	assert.NotContains(t, code, "\\u0026")
+	// Structured sub-objects survive: ratings/source/analysis.
+	assert.Contains(t, code, "\"score\": 7.5")
+	assert.Contains(t, code, "\"analysis\": {")
+	assert.Contains(t, code, "\"state\": \"not_affected\"")
+}
+
+func TestConvertCycloneDX_RequirementCodeSetForEveryVuln(t *testing.T) {
+	input := loadFixture(t, "input/dropwizard-vulns.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	for _, req := range result.Baselines[0].Requirements {
+		require.NotNil(t, req.Code, "requirement %q: code must be set", req.ID)
+		assert.Contains(t, *req.Code, "\"id\": \""+req.ID+"\"")
+	}
+}
+
+// ---- result.message component summary ----
+
+func TestConvertCycloneDX_ComponentSummaryMessage(t *testing.T) {
+	input := loadFixture(t, "input/dropwizard-vulns.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// GHSA-5mg8-w23w-74h3 affects guava, which carries a license.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "GHSA-5mg8-w23w-74h3")
+	require.NotEmpty(t, req.Results)
+	require.NotNil(t, req.Results[0].Message, "affected result must carry a component-summary message")
+	msg := *req.Results[0].Message
+
+	assert.True(t, strings.HasPrefix(msg, "-Component Summary-"), "msg = %s", msg)
+	assert.Contains(t, msg, "\n\n- Type: library")
+	assert.Contains(t, msg, "\n\n- Group: com.google.guava")
+	assert.Contains(t, msg, "\n\n- Name: guava")
+	assert.Contains(t, msg, "\n\n- Version: 24.1.1-jre")
+	// Array-valued licenses are rendered as indented JSON (byte-parity with TS).
+	assert.Contains(t, msg, "\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"")
+}
+
+func TestConvertCycloneDX_NoMessageForUnresolvedRef(t *testing.T) {
+	// vex.json's affect ref matches no component (dummy VEX target) -> no message.
+	input := loadFixture(t, "input/vex.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
+	require.NotEmpty(t, req.Results)
+	assert.Nil(t, req.Results[0].Message, "unresolved component ref must not produce a message")
 }

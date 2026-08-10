@@ -770,3 +770,70 @@ describe('cyclonedx to HDF converter', async () => {
     });
   });
 });
+
+describe('requirement.code raw finding passthrough', async () => {
+  it('sets code to a fixed-order projection of the vulnerability', async () => {
+    const hdf = JSON.parse(
+      await convertCyclonedxToHdf(loadFixture('vex.json'))
+    ) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find(
+      (r) => r.id === 'CVE-2020-25649'
+    )!;
+    const code = req.code!;
+    expect(code).toBeTypeOf('string');
+    // Fixed field-order projection, 2-space indent, id first.
+    expect(code.startsWith('{\n  "id": "CVE-2020-25649"')).toBe(true);
+    // affects is omitted (carried by code_desc / component inventory).
+    expect(code).not.toContain('"affects"');
+    // Ampersands stay literal (matches Go SetEscapeHTML(false)) for byte-parity.
+    expect(code).toContain('&version=3.1');
+    expect(code).not.toContain('\\u0026');
+    // Structured sub-objects survive.
+    expect(code).toContain('"score": 7.5');
+    expect(code).toContain('"analysis": {');
+    expect(code).toContain('"state": "not_affected"');
+  });
+
+  it('sets code for every vulnerability', async () => {
+    const hdf = JSON.parse(
+      await convertCyclonedxToHdf(loadFixture('dropwizard-vulns.json'))
+    ) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs.length).toBeGreaterThan(0);
+    for (const req of reqs) {
+      expect(req.code).toBeTypeOf('string');
+      expect(req.code).toContain(`"id": "${req.id}"`);
+    }
+  });
+});
+
+describe('result.message component summary', async () => {
+  it('builds a -Component Summary- message from the affected component', async () => {
+    const hdf = JSON.parse(
+      await convertCyclonedxToHdf(loadFixture('dropwizard-vulns.json'))
+    ) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find(
+      (r) => r.id === 'GHSA-5mg8-w23w-74h3'
+    )!;
+    const msg = req.results[0]!.message!;
+    expect(msg.startsWith('-Component Summary-')).toBe(true);
+    expect(msg).toContain('\n\n- Type: library');
+    expect(msg).toContain('\n\n- Group: com.google.guava');
+    expect(msg).toContain('\n\n- Name: guava');
+    expect(msg).toContain('\n\n- Version: 24.1.1-jre');
+    // Array-valued licenses render as indented JSON (byte-parity with Go).
+    expect(msg).toContain(
+      '\n\n- Licenses: [\n  {\n    "license": {\n      "id": "Apache-2.0"'
+    );
+  });
+
+  it('omits the message when the affected ref resolves to no component', async () => {
+    const hdf = JSON.parse(
+      await convertCyclonedxToHdf(loadFixture('vex.json'))
+    ) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find(
+      (r) => r.id === 'CVE-2020-25649'
+    )!;
+    expect(req.results[0]!.message).toBeUndefined();
+  });
+});

@@ -1,6 +1,7 @@
 package cyclonedx_to_hdf
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -39,12 +40,29 @@ type CDXMetadataComponent struct {
 
 // CDXComponent represents a single CycloneDX component.
 type CDXComponent struct {
-	Type       string         `json:"type"`
-	Name       string         `json:"name"`
-	Version    string         `json:"version"`
-	Group      string         `json:"group"`
-	BomRef     string         `json:"bom-ref"`
-	Components []CDXComponent `json:"components"`
+	Type        string            `json:"type"`
+	Name        string            `json:"name"`
+	Version     string            `json:"version"`
+	Group       string            `json:"group"`
+	BomRef      string            `json:"bom-ref"`
+	Description string            `json:"description,omitempty"`
+	Licenses    []CDXLicenseEntry `json:"licenses,omitempty"`
+	Components  []CDXComponent    `json:"components"`
+}
+
+// CDXLicenseEntry is a single CycloneDX license choice (id/name license or an
+// SPDX expression). Field order and omitempty mirror the TS projection so the
+// per-result component-summary message serializes byte-identically.
+type CDXLicenseEntry struct {
+	License    *CDXLicense `json:"license,omitempty"`
+	Expression string      `json:"expression,omitempty"`
+}
+
+// CDXLicense identifies a license by SPDX id or free-text name, with an optional URL.
+type CDXLicense struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
+	URL  string `json:"url,omitempty"`
 }
 
 // CDXVulnerability represents a single vulnerability entry.
@@ -65,31 +83,32 @@ type CDXVulnerability struct {
 	Analysis       *CDXAnalysis   `json:"analysis"`
 }
 
-// CDXSource identifies the advisory source.
+// CDXSource identifies the advisory source. omitempty keeps the code
+// passthrough byte-identical with the TS projection (undefined-dropping).
 type CDXSource struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	Name string `json:"name,omitempty"`
+	URL  string `json:"url,omitempty"`
 }
 
 // CDXReference is a cross-referenced vulnerability identifier and its source.
 type CDXReference struct {
-	ID     string     `json:"id"`
-	Source *CDXSource `json:"source"`
+	ID     string     `json:"id,omitempty"`
+	Source *CDXSource `json:"source,omitempty"`
 }
 
 // CDXAdvisory is an external advisory link for a vulnerability.
 type CDXAdvisory struct {
-	Title string `json:"title"`
-	URL   string `json:"url"`
+	Title string `json:"title,omitempty"`
+	URL   string `json:"url,omitempty"`
 }
 
 // CDXRating holds a vulnerability rating (CVSS score and/or severity).
 type CDXRating struct {
-	Source   *CDXSource `json:"source"`
-	Score    *float64   `json:"score"`
-	Severity string     `json:"severity"`
-	Method   string     `json:"method"`
-	Vector   string     `json:"vector"`
+	Source   *CDXSource `json:"source,omitempty"`
+	Score    *float64   `json:"score,omitempty"`
+	Severity string     `json:"severity,omitempty"`
+	Method   string     `json:"method,omitempty"`
+	Vector   string     `json:"vector,omitempty"`
 }
 
 // CDXAffect identifies a component affected by a vulnerability.
@@ -99,10 +118,97 @@ type CDXAffect struct {
 
 // CDXAnalysis holds the vulnerability analysis (VEX).
 type CDXAnalysis struct {
-	State         string   `json:"state"`
-	Justification string   `json:"justification"`
-	Response      []string `json:"response"`
-	Detail        string   `json:"detail"`
+	State         string   `json:"state,omitempty"`
+	Justification string   `json:"justification,omitempty"`
+	Response      []string `json:"response,omitempty"`
+	Detail        string   `json:"detail,omitempty"`
+}
+
+// codeVuln is the fixed field-order projection of a vulnerability serialized into
+// requirement.code (the Heimdall CODE tab). affects is omitted — that linkage is
+// already carried by each result's code_desc and the component inventory. Field
+// order and omitempty must stay in lockstep with buildVulnCode in the TS twin so
+// the two languages emit byte-identical code strings.
+type codeVuln struct {
+	ID             string         `json:"id"`
+	Source         *CDXSource     `json:"source,omitempty"`
+	References     []CDXReference `json:"references,omitempty"`
+	Advisories     []CDXAdvisory  `json:"advisories,omitempty"`
+	Ratings        []CDXRating    `json:"ratings,omitempty"`
+	CWEs           []int          `json:"cwes,omitempty"`
+	Description    string         `json:"description,omitempty"`
+	Detail         string         `json:"detail,omitempty"`
+	Recommendation string         `json:"recommendation,omitempty"`
+	Created        string         `json:"created,omitempty"`
+	Published      string         `json:"published,omitempty"`
+	Updated        string         `json:"updated,omitempty"`
+	Analysis       *CDXAnalysis   `json:"analysis,omitempty"`
+}
+
+// marshalFixedJSON renders v as 2-space-indented JSON with HTML escaping OFF, so
+// that ampersands and angle brackets (common in advisory URLs and CVSS vectors)
+// stay literal — matching TS JSON.stringify(v, null, 2), which never escapes
+// them. The trailing newline json.Encoder appends is trimmed.
+func marshalFixedJSON(v interface{}) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(v); err != nil {
+		return ""
+	}
+	return strings.TrimRight(buf.String(), "\n")
+}
+
+// buildVulnCode projects the parsed vulnerability into requirement.code, giving
+// the Heimdall CODE tab the raw finding (id, source, references, advisories,
+// ratings, cwes, descriptions, timestamps, VEX analysis) in one place.
+func buildVulnCode(vuln CDXVulnerability) string {
+	return marshalFixedJSON(codeVuln{
+		ID:             vuln.ID,
+		Source:         vuln.Source,
+		References:     vuln.References,
+		Advisories:     vuln.Advisories,
+		Ratings:        vuln.Ratings,
+		CWEs:           vuln.CWEs,
+		Description:    vuln.Description,
+		Detail:         vuln.Detail,
+		Recommendation: vuln.Recommendation,
+		Created:        vuln.Created,
+		Published:      vuln.Published,
+		Updated:        vuln.Updated,
+		Analysis:       vuln.Analysis,
+	})
+}
+
+// componentSummary builds the per-result "-Component Summary-" message from the
+// affected component's inventory fields (type, bom-ref, group, name, version,
+// description, licenses), mirroring heimdall2's field selection and order.
+// Returns "" for an unresolved ref (VEX dummy components) so the result carries
+// no message. Kept in lockstep with the TS twin for byte-identical output.
+func componentSummary(componentLookup map[string]CDXComponent, ref string) string {
+	comp, found := componentLookup[ref]
+	if !found {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("-Component Summary-")
+	addField := func(label, val string) {
+		if val == "" {
+			return
+		}
+		b.WriteString("\n\n- " + label + ": " + val)
+	}
+	addField("Type", comp.Type)
+	addField("Bom-ref", comp.BomRef)
+	addField("Group", comp.Group)
+	addField("Name", comp.Name)
+	addField("Version", comp.Version)
+	addField("Description", comp.Description)
+	if len(comp.Licenses) > 0 {
+		b.WriteString("\n\n- Licenses: " + marshalFixedJSON(comp.Licenses))
+	}
+	return b.String()
 }
 
 // vexJustification maps a CycloneDX analysis.justification value to the HDF
@@ -536,11 +642,15 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		var results []hdf.RequirementResult
 		if len(vuln.Affects) > 0 {
 			for _, affect := range vuln.Affects {
-				results = append(results, hdf.RequirementResult{
+				result := hdf.RequirementResult{
 					Status:    hdf.Failed,
 					CodeDesc:  formatCodeDesc(componentLookup, affect.Ref),
 					StartTime: scanTime,
-				})
+				}
+				if msg := componentSummary(componentLookup, affect.Ref); msg != "" {
+					result.Message = &msg
+				}
+				results = append(results, result)
 			}
 		} else {
 			results = append(results, hdf.RequirementResult{
@@ -567,6 +677,7 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			Tags:         tags,
 			Cvss:         buildCvssEntries(ratings),
 			Cwe:          cwes,
+			Code:         hdfutil.Ptr(buildVulnCode(vuln)),
 			ControlType:  shared.DeriveControlTypeFromTags(nist),
 			Descriptions: descriptions,
 			Refs:         buildRefs(vuln),
