@@ -443,4 +443,105 @@ describe('ionchannel to HDF converter', async () => {
       expect(req.tags && 'ruleset_id' in req.tags).toBe(false);
     });
   });
+
+  describe('auxiliary tool metadata (extensions + namespaced tags)', async () => {
+    it('surfaces run-scope metadata in baseline.extensions.ionchannel', async () => {
+      // All fields below carry data in minimal.json; text is "" so it is omitted.
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis')!;
+      const ion = dep.extensions?.ionchannel as Record<string, unknown>;
+      expect(ion).toEqual({
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        analysis_id: 'analysis-001-abcdef',
+        team_id: 'team-001-ghijkl',
+        project_id: 'project-001-mnopqr',
+        name: 'example-project',
+        type: 'git',
+        branch: 'main',
+        description: 'Example project for dependency analysis',
+        status: 'finished',
+        duration: 12345,
+        public: false,
+      });
+    });
+
+    it('emits run-scope metadata once, only on the primary baseline', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
+      const community = hdf.baselines.find((b) => b.name === 'Ion Channel community Scan')!;
+      expect(community.extensions).toBeUndefined();
+    });
+
+    it('omits absent run-metadata fields and the extensions block entirely', async () => {
+      // No homeless run metadata → extensions omitted.
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        passed: true,
+        scan_summaries: [
+          { name: 'dependency', summary: '', results: { type: 'dependency', data: { dependencies: [] } } },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+      const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis')!;
+      expect(dep.extensions).toBeUndefined();
+    });
+
+    it('emits public:false but omits absent sibling fields', async () => {
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        passed: true,
+        name: 'proj',
+        public: false,
+        scan_summaries: [
+          { name: 'dependency', summary: '', results: { type: 'dependency', data: { dependencies: [] } } },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+      const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis')!;
+      const ion = dep.extensions?.ionchannel as Record<string, unknown>;
+      expect(ion).toEqual({ name: 'proj', public: false });
+    });
+
+    it('tags dependency requirements with namespaced trigger fields', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'dependency-expressjs/express')!;
+      expect(req.tags?.['ionchannel/trigger_hash']).toBe('abc123def456');
+      expect(req.tags?.['ionchannel/trigger_text']).toBe('feat: add new feature');
+      expect(req.tags?.['ionchannel/trigger_author']).toBe('developer@example.com');
+      expect(req.tags?.['ionchannel/trigger']).toBe('source_commit');
+    });
+
+    it('tags non-dependency scan requirements with namespaced trigger fields', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
+      const community = hdf.baselines.find((b) => b.name === 'Ion Channel community Scan')!;
+      const req = community.requirements[0]!;
+      expect(req.tags?.['ionchannel/trigger_hash']).toBe('def789ghi012');
+      expect(req.tags?.['ionchannel/trigger_text']).toBe('fix: update deps');
+      expect(req.tags?.['ionchannel/trigger_author']).toBe('admin@example.com');
+      expect(req.tags?.['ionchannel/trigger']).toBe('source_commit');
+    });
+
+    it('omits namespaced trigger tags when the analysis carries no triggers', async () => {
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        passed: true,
+        scan_summaries: [
+          {
+            name: 'dependency',
+            summary: '',
+            results: {
+              type: 'dependency',
+              data: { dependencies: [{ org: 'acme', name: 'widget', type: 'npm', version: '1.0.0', dependencies: [] }] },
+            },
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'dependency-acme/widget')!;
+      const triggerKeys = Object.keys(req.tags ?? {}).filter((k) => k.startsWith('ionchannel/'));
+      expect(triggerKeys).toEqual([]);
+    });
+  });
 });

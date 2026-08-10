@@ -50,7 +50,7 @@ interface IonChannelAnalysis {
   trigger_text: string;
   trigger_author: string;
   trigger: string;
-  public: boolean;
+  public?: boolean;
   scan_summaries: ScanSummary[];
 }
 
@@ -179,6 +179,41 @@ function analysisTags(a: IonChannelAnalysis): Record<string, unknown> {
   return tags;
 }
 
+// IonChannel run-scope analysis metadata with no typed HDF home, for
+// baseline.extensions["ionchannel"] (the auxiliary tool-metadata convention).
+// Typed fields (source, summary, risk, passed, ruleset_*, timestamps) are
+// excluded — they already have homes. Each field is emitted only when the source
+// carries it; returns undefined when none is present.
+function ionchannelRunMetadata(a: IonChannelAnalysis): Record<string, unknown> | undefined {
+  const meta: Record<string, unknown> = {};
+  if (a.id) meta.id = a.id;
+  if (a.analysis_id) meta.analysis_id = a.analysis_id;
+  if (a.team_id) meta.team_id = a.team_id;
+  if (a.project_id) meta.project_id = a.project_id;
+  if (a.name) meta.name = a.name;
+  if (a.text) meta.text = a.text;
+  if (a.type) meta.type = a.type;
+  if (a.branch) meta.branch = a.branch;
+  if (a.description) meta.description = a.description;
+  if (a.status) meta.status = a.status;
+  if (a.duration) meta.duration = a.duration;
+  if (a.public !== undefined) meta.public = a.public;
+  return Object.keys(meta).length > 0 ? meta : undefined;
+}
+
+// IonChannel run-trigger fields (what kicked off the analysis) as namespaced
+// requirement tags. Per the auxiliary-metadata convention these homeless
+// per-analysis fields land under the "ionchannel/" tag namespace. Each is
+// emitted only when the source carries it.
+function triggerTags(a: IonChannelAnalysis): Record<string, unknown> {
+  const tags: Record<string, unknown> = {};
+  if (a.trigger_hash) tags['ionchannel/trigger_hash'] = a.trigger_hash;
+  if (a.trigger_text) tags['ionchannel/trigger_text'] = a.trigger_text;
+  if (a.trigger_author) tags['ionchannel/trigger_author'] = a.trigger_author;
+  if (a.trigger) tags['ionchannel/trigger'] = a.trigger;
+  return tags;
+}
+
 function buildTags(
   dep: ContextualizedDependency,
   analysis: IonChannelAnalysis,
@@ -208,6 +243,7 @@ function buildTags(
   }
 
   Object.assign(extras, analysisTags(analysis));
+  Object.assign(extras, triggerTags(analysis));
 
   return buildNistCciTags(nist, cciTags, extras);
 }
@@ -256,7 +292,12 @@ function buildScanRequirement(
   ];
 
   const req = createRequirement(`scan-${scan.name}`, title, descriptions, 0.0, results, {
-    tags: { name: scan.name, type: scan.results?.type ?? '', ...analysisTags(analysis) },
+    tags: {
+      name: scan.name,
+      type: scan.results?.type ?? '',
+      ...analysisTags(analysis),
+      ...triggerTags(analysis),
+    },
   }) as EvaluatedRequirement;
   req.code = JSON.stringify(scan.results?.data ?? {}, null, 2);
   req.verificationMethod = VerificationMethodEnum.Automated;
@@ -381,6 +422,8 @@ export async function convertIonchannelToHdf(input: string, converterVersion = '
   baseline.maintainer = 'saf@groups.mitre.org';
   baseline.description = verdictDescription(analysis);
   baseline.labels = verdictLabels(analysis);
+  const runMetadata = ionchannelRunMetadata(analysis);
+  if (runMetadata) baseline.extensions = { ionchannel: runMetadata };
 
   const baselines: EvaluatedBaseline[] = [baseline];
 
