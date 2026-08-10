@@ -84,6 +84,7 @@ export function runSnapshotTests(
   convertFn: SnapshotConvertFn,
   maskStartTime: string[] = [],
   resolveInput?: SnapshotInputResolver,
+  extraMask: string[] = [],
 ): void {
   const expectedDir = join(convertersDir(), converterName, 'fixtures', 'expected');
   const inputDir = join(convertersDir(), converterName, 'fixtures', 'input');
@@ -104,6 +105,10 @@ export function runSnapshotTests(
       it(inputName, async () => {
         const mask = new Set(ALWAYS_MASK);
         if (synthetic.has('*') || synthetic.has(inputName)) mask.add('startTime');
+        // extraMask lets a converter mask fields with no deterministic source value
+        // (e.g. SARIF suppression overrides carry no owner/date → appliedAt/expiresAt
+        // are conversion-time). Opt-in and scoped; other converters are unaffected.
+        for (const k of extraMask) mask.add(k);
         const input = resolveInput?.(inputName) ?? readFileSync(join(inputDir, inputName), 'utf-8');
         const actual = normalizeVolatileFields(toDocument(await convertFn(input)), mask);
         const expectedDoc = normalizeVolatileFields(

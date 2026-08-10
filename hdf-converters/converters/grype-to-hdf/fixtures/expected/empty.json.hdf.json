@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "Grype scanned alpine:3.20 and reported zero vulnerable components.",
-              "startTime": "2026-08-01T23:52:44.056919Z",
+              "startTime": "2026-07-12T23:26:56.631377Z",
               "status": "passed"
             }
           ],
@@ -31,8 +31,18 @@
   ],
   "components": [
     {
+      "integrity": [
+        {
+          "algorithm": "sha256",
+          "value": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
       "name": "alpine:3.20",
-      "type": "artifact"
+      "type": "containerImage",
+      "osName": "alpine",
+      "osVersion": "3.20.0",
+      "imageId": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "image": "alpine:3.20"
     }
   ],
   "generator": {

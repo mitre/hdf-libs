@@ -76,7 +76,7 @@ interface DeptrackVulnerability {
   cwes?: DeptrackCwe[];
   description?: string;
   recommendation?: string;
-  aliases?: unknown[];
+  aliases?: DeptrackAlias[];
   cvssV2BaseScore?: number;
   cvssV3BaseScore?: number;
   epssScore?: number;
@@ -86,6 +86,15 @@ interface DeptrackVulnerability {
 interface DeptrackCwe {
   cweId: number;
   name: string;
+}
+
+/**
+ * A cross-reference to the same vulnerability under another naming scheme.
+ * Dependency-Track's finding.matrix (the requirement id) is a UUID composite,
+ * not the CVE, so aliases[].cveId is where the CVE identifier lives.
+ */
+interface DeptrackAlias {
+  cveId?: string;
 }
 
 interface DeptrackAnalysis {
@@ -146,10 +155,29 @@ function getCweIDs(cwes: DeptrackCwe[] | undefined): string[] {
 }
 
 /**
+ * Collects CVE identifiers from vulnerability.aliases[].cveId, deduped in
+ * first-seen order. The finding.matrix (requirement id) is a UUID composite, so
+ * the CVE has no other home; it goes to tags.cve (interim, pending an
+ * identifiers[] schema field).
+ */
+function getCVEs(vuln: DeptrackVulnerability): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const alias of vuln.aliases ?? []) {
+    if (alias.cveId && !seen.has(alias.cveId)) {
+      seen.add(alias.cveId);
+      out.push(alias.cveId);
+    }
+  }
+  return out;
+}
+
+/**
  * Builds a single EvaluatedRequirement from a Dependency-Track finding.
  */
 function buildRequirement(finding: DeptrackFinding, timestamp: string | undefined): EvaluatedRequirement {
   const cweIDs = getCweIDs(finding.vulnerability.cwes);
+  const cveIDs = getCVEs(finding.vulnerability);
   const nist = mapCWEToNIST(cweIDs, DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
   const cciTags = nistToCci(nist);
 
@@ -158,8 +186,8 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
     cci: cciTags,
   };
 
-  if (cweIDs.length > 0) {
-    tags['cweIds'] = cweIDs;
+  if (cveIDs.length > 0) {
+    tags['cve'] = cveIDs;
   }
 
   // Build descriptions: default, check, fix
@@ -194,9 +222,19 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
   ) as EvaluatedRequirement;
   req.verificationMethod = VerificationMethodEnum.Automated;
 
+  // Dependency-Track carries no literal source snippet, so code holds the whole
+  // finding serialized as indented JSON (byte-identical to the Go twin's
+  // json.Indent output). This preserves every field the typed interfaces drop
+  // (aliases, epssScore, source, vulnId) for the Heimdall CODE tab.
+  req.code = JSON.stringify(finding, null, 2);
+
   const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {
     req.controlType = controlType;
+  }
+
+  if (cweIDs.length > 0) {
+    req.cwe = cweIDs;
   }
 
   const pkg = buildAffectedPackageFromComponent(finding.component);
@@ -287,6 +325,11 @@ export async function convertDeptrackToHdf(input: string, converterVersion = '1.
 
   const targetName = parsed.project?.name ?? parsed.project?.uuid ?? '';
 
+  // Top-level timestamp is the scan time from meta.timestamp (source-derived, so
+  // converting the same input twice is deterministic). Fall back to wall-clock
+  // only when the source omits it or it is unparseable.
+  const docTimestamp = (parsed.meta?.timestamp ? parseTimestamp(parsed.meta.timestamp) : null) ?? new Date();
+
   return buildHdfResults({
     generatorName: 'deptrack-to-hdf',
     converterVersion,
@@ -294,6 +337,6 @@ export async function convertDeptrackToHdf(input: string, converterVersion = '1.
     toolFormat: 'FPF',
     baselines: [baseline],
     components: [{ name: targetName, type: TargetType.Application }],
-    timestamp: new Date(),
+    timestamp: docTimestamp,
   });
 }

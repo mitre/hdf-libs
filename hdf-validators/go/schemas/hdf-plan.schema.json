@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.4.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.5.0",
   "title": "HDF Plan",
   "description": "Defines an assessment plan — what baselines to run against which targets, with resolved inputs and scheduling. Maps to OSCAL Assessment Plan.",
   "type": "object",
@@ -10,6 +10,13 @@
     "assessments"
   ],
   "properties": {
+    "externalReferences": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/External_Reference"
+      },
+      "description": "Optional references to external artifacts relevant to this assessment plan (CTI/STIX, advisories, methodology docs, or any URI-addressable artifact). Inert context; see External_Reference."
+    },
     "planId": {
       "type": "string",
       "format": "uuid",
@@ -20,7 +27,7 @@
       "description": "Human-readable plan name. Example: 'Portal Monthly Assessment'."
     },
     "type": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.4.0#/$defs/Plan_Type",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.5.0#/$defs/Plan_Type",
       "description": "The type of assessment plan."
     },
     "description": {
@@ -36,12 +43,12 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.4.0#/$defs/Assessment"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.5.0#/$defs/Assessment"
       },
       "description": "The assessments to perform. Each assessment pairs a baseline with targets and resolved inputs."
     },
     "schedule": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.4.0#/$defs/Schedule",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.5.0#/$defs/Schedule",
       "description": "Optional scheduling configuration for recurring assessments."
     },
     "labels": {
@@ -52,7 +59,7 @@
       "description": "Optional key-value labels for grouping and querying plans."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this plan document has not been tampered with."
     },
     "version": {
@@ -60,7 +67,7 @@
       "description": "Version of this plan document."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/Generator",
       "description": "Information about the tool that generated this plan."
     }
   },
@@ -94,279 +101,140 @@
     }
   ],
   "$defs": {
-    "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.4.0",
-      "title": "HDF Plan Primitives",
-      "description": "Types for defining assessment plans — what to scan, how to configure it, and when to run.",
-      "$defs": {
-        "Plan_Type": {
-          "type": "string",
-          "enum": [
-            "automated",
-            "manual",
-            "hybrid"
-          ],
-          "description": "The type of assessment. 'automated' for scanner-driven, 'manual' for human-performed, 'hybrid' for both.",
-          "title": "Plan Type"
-        },
-        "Runner_Config": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "Name of the assessment runner. Example: 'cinc-auditor', 'inspec', 'openscap'."
-            },
-            "version": {
-              "type": "string",
-              "description": "Version of the runner."
-            }
-          },
-          "description": "Configuration for the assessment runner/scanner.",
-          "title": "Runner Config"
-        },
-        "Assessment": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "baselineRef"
-          ],
-          "properties": {
-            "baselineRef": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "Reference to the baseline to evaluate. May be a baseline name (e.g. 'RHEL9-STIG'), a relative path to an HDF Baseline document (e.g. 'rhel9-stig.hdf-baseline.json'), or an absolute URI."
-            },
-            "componentRef": {
-              "type": "string",
-              "format": "uuid",
-              "description": "componentId of the system component this assessment targets. Use for direct component binding. Alternative to targetSelector."
-            },
-            "targetSelector": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Target_Selector",
-              "description": "Label selector to match targets for this assessment. Overrides the system component's targetSelector if provided."
-            },
-            "inputs": {
-              "type": "object",
-              "additionalProperties": true,
-              "description": "Resolved input values for this assessment. Keys are input names, values are the final resolved values (after baseline defaults + system overrides)."
-            },
-            "runner": {
-              "$ref": "#/$defs/Runner_Config",
-              "description": "Runner/scanner configuration for this assessment."
-            },
-            "description": {
-              "type": "string",
-              "description": "Description of this assessment's purpose."
-            }
-          },
-          "examples": [
-            {
-              "baselineRef": "RHEL9-STIG",
-              "targetSelector": {
-                "labels.component": "WebTier"
-              },
-              "inputs": {
-                "max_concurrent_sessions": 5,
-                "password_min_length": 15
-              },
-              "runner": {
-                "name": "cinc-auditor",
-                "version": "6.8.1"
-              }
-            }
-          ],
-          "description": "A single assessment within a plan — defines which baseline to run against which targets with what configuration.",
-          "title": "Assessment"
-        },
-        "Schedule": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "properties": {
-            "cron": {
-              "type": "string",
-              "description": "Cron expression for recurring assessments. Example: '0 2 1 * *' (2 AM on the 1st of each month)."
-            },
-            "startDate": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Earliest date to begin assessments. ISO 8601 format."
-            },
-            "endDate": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Date after which assessments should no longer run. ISO 8601 format."
-            },
-            "notifyOnRegression": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "description": "Email addresses or notification endpoints to alert when regressions are detected."
-            },
-            "notifyOnCompletion": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "description": "Email addresses or notification endpoints to alert when assessments complete."
-            }
-          },
-          "examples": [
-            {
-              "cron": "0 2 1 * *",
-              "notifyOnRegression": [
-                "security-team@agency.gov"
-              ]
-            }
-          ],
-          "description": "Scheduling configuration for recurring assessments.",
-          "title": "Schedule"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0",
-      "title": "HDF System Primitives",
-      "description": "Types for describing system architecture, authorization boundaries, and components.",
-      "$defs": {
-        "Authorization_Status": {
-          "type": "string",
-          "enum": [
-            "authorized",
-            "denied",
-            "pendingAuthorization",
-            "conditionallyAuthorized",
-            "notYetRequested",
-            "revoked"
-          ],
-          "description": "Authorization to Operate (ATO) status for the system.",
-          "title": "Authorization Status"
-        },
-        "Categorization_Level": {
-          "type": "string",
-          "enum": [
-            "low",
-            "moderate",
-            "high"
-          ],
-          "description": "FIPS 199 security categorization level (impact level).",
-          "title": "Categorization Level"
-        },
-        "Input_Override": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "inputName",
-            "value"
-          ],
-          "properties": {
-            "baselineRef": {
-              "type": "string",
-              "description": "Name of the baseline this override applies to. If omitted, applies to all baselines that define this input."
-            },
-            "inputName": {
-              "type": "string",
-              "description": "Name of the input being overridden. Must match an Input.name in the referenced baseline."
-            },
-            "value": {
-              "description": "The overridden value. Should match the type of the original input."
-            },
-            "justification": {
-              "type": "string",
-              "description": "Rationale for why this override is needed."
-            },
-            "approvedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
-              "description": "Identity of the person or system that approved this override."
-            }
-          },
-          "description": "An override of a baseline input value for a specific component. Enables system-specific tailoring of baseline parameters.",
-          "title": "Input Override"
-        },
-        "Target_Selector": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "A label selector that matches targets by label key-value pairs. All specified labels must match (AND logic). Example: { \"labels.component\": \"WebTier\" } matches targets with labels.component = \"WebTier\".",
-          "title": "Target Selector"
-        },
-        "Control_Designation": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "controlId",
-            "designation",
-            "description"
-          ],
-          "properties": {
-            "controlId": {
-              "type": "string",
-              "description": "The control identifier (e.g., 'SC-7', 'AC-2 (1)'). Must match a NIST tag in a baseline requirement's tags."
-            },
-            "designation": {
-              "type": "string",
-              "title": "Designation",
-              "enum": [
-                "common",
-                "system-specific",
-                "hybrid"
-              ],
-              "description": "NIST SP 800-53 control designation. 'common': fully provided by another component or system. 'system-specific': implemented by the inheriting component(s) only. 'hybrid': shared responsibility between provider and inheritor."
-            },
-            "providedBy": {
-              "type": "string",
-              "format": "uuid",
-              "description": "componentId of a local component that provides this control. Omit when the provider is an external system."
-            },
-            "systemRef": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "Reference to another hdf-system document whose component provides this control. Use when the provider is in a different system. Omit when the provider is local."
-            },
-            "inheritedBy": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "description": "componentIds that inherit this control. If omitted, all components in the system inherit it."
-            },
-            "description": {
-              "type": "string",
-              "description": "Justification for this designation — who provides the control, why it's inherited, and any relevant authorization references."
-            }
-          },
-          "examples": [
-            {
-              "controlId": "IA-2",
-              "designation": "common",
-              "providedBy": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-              "inheritedBy": [
-                "11111111-2222-3333-4444-555555555555"
-              ],
-              "description": "User identification and authentication provided by Keycloak SSO via SAML 2.0."
-            },
-            {
-              "controlId": "PE-2",
-              "designation": "common",
-              "description": "Physical access authorizations provided by AWS GovCloud per FedRAMP High authorization."
-            }
-          ],
-          "description": "Declares a control's designation within a system — whether it is common (provided by another component or system), system-specific (implemented locally), or hybrid (shared responsibility). Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component provided/inherited semantics.",
-          "title": "Control Designation"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0",
       "title": "HDF Common Primitives",
       "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
       "$defs": {
+        "External_Reference": {
+          "type": "object",
+          "title": "External Reference",
+          "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property. Purpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category. `sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible. A reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
+          "required": [
+            "sourceName"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "externalId"
+              ]
+            },
+            {
+              "required": [
+                "href"
+              ]
+            },
+            {
+              "required": [
+                "description"
+              ]
+            }
+          ],
+          "properties": {
+            "sourceName": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Name of the external system/source being referenced (e.g., 'cve', 'mitre-att&ck', 'stix', 'taxii', or any vendor label). Open string — not a closed enum. Use the `x-` prefix convention for custom/experimental sources, mirroring `bomType`."
+            },
+            "externalId": {
+              "type": "string",
+              "description": "Identifier of the artifact within `sourceName` (e.g., 'CVE-2021-44228' for source 'cve', 'T1059' for 'mitre-att&ck'). Cite by id without needing a URL. Together with `sourceName` this is a URN."
+            },
+            "href": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Location of the artifact. `uri-reference` (not `uri`) so a bare internal `#fragment`/`#uuid` reference is expressible alongside absolute URLs. `checksum`/`mediaType` apply only to a retrievable `href`."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of what is referenced. Satisfies the at-least-one rule on its own when neither id nor href is available."
+            },
+            "rel": {
+              "type": "string",
+              "description": "Open relationship token describing how this reference relates to the referencing object. Deliberately open (cf. OSCAL `rel` allow-other, RFC 8288 extension relations). Documented starter vocabulary: 'reference' (generic), 'definition' (defines the concept), 'evidence' (supporting evidence), 'investigate' (a live pivot to investigate), 'canonical' (the authoritative source)."
+            },
+            "mediaType": {
+              "type": "string",
+              "description": "IANA media type of the referenced artifact when retrievable (RFC 6838), e.g., 'application/json'. Meaningful only with `href`."
+            },
+            "checksum": {
+              "$ref": "#/$defs/Checksum",
+              "description": "Integrity hash of the referenced artifact. Reuses the HDF `Checksum` primitive (not STIX `hashes`). Meaningful only with a retrievable `href`."
+            },
+            "addedBy": {
+              "$ref": "#/$defs/Identity",
+              "description": "Who attached this reference. Lightweight, flat attribution — a reference overrides nothing, so it has no chaining/superseding/disposition."
+            },
+            "addedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When this reference was attached (RFC 3339 / trimmed-UTC per HDF timestamp convention)."
+            },
+            "kind": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Open token classifying the referenced/embedded payload, turning a bare reference into an enrichment envelope. Deliberately open (like `sourceName`/`rel`), not a closed enum. Documented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory' (vendor/security advisory). Use the `x-` prefix for custom kinds."
+            },
+            "document": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim. Composes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed. HDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
+            }
+          },
+          "unevaluatedProperties": false,
+          "examples": [
+            {
+              "$comment": "By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228.",
+              "sourceName": "cve",
+              "externalId": "CVE-2021-44228",
+              "rel": "definition"
+            },
+            {
+              "$comment": "By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL.",
+              "sourceName": "mitre-att&ck",
+              "externalId": "T1059",
+              "href": "https://attack.mitre.org/techniques/T1059/",
+              "rel": "canonical"
+            },
+            {
+              "$comment": "By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution.",
+              "sourceName": "stix",
+              "href": "https://cti.example.org/bundles/log4shell.json",
+              "rel": "investigate",
+              "mediaType": "application/json",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "addedBy": {
+                "type": "email",
+                "identifier": "analyst@agency.gov"
+              },
+              "addedAt": "2026-07-26T00:00:00Z"
+            },
+            {
+              "$comment": "Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields.",
+              "sourceName": "stix",
+              "externalId": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+              "href": "https://cti.example.org/bundles/log4shell.json#vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+              "rel": "investigate",
+              "kind": "threat-intel",
+              "document": {
+                "type": "vulnerability",
+                "spec_version": "2.1",
+                "id": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+                "name": "CVE-2021-44228",
+                "external_references": [
+                  {
+                    "source_name": "cve",
+                    "external_id": "CVE-2021-44228"
+                  }
+                ]
+              }
+            }
+          ]
+        },
         "Hash_Algorithm": {
           "type": "string",
           "enum": [
@@ -990,6 +858,13 @@
         "Baseline_Metadata": {
           "type": "object",
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/External_Reference"
+              },
+              "description": "Optional references to external artifacts relevant to this baseline (CTI/STIX, advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline definition. Inert context; see External_Reference."
+            },
             "name": {
               "type": "string",
               "description": "The name - must be unique."
@@ -1067,6 +942,13 @@
         "Requirement_Core": {
           "type": "object",
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/External_Reference"
+              },
+              "description": "Optional references to external artifacts relevant to this requirement (CTI/STIX correlation, advisories, control/definition sources, or any URI-addressable artifact). Applies to both baseline requirement definitions and evaluated requirements. Inert context; see External_Reference."
+            },
             "id": {
               "type": "string",
               "description": "The requirement identifier. Example: 'SV-238196'."
@@ -1153,7 +1035,7 @@
           },
           "examples": [
             {
-              "$comment": "v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape under v3.4.0 (backward compatibility).",
+              "$comment": "v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape under v3.5.0 (backward compatibility).",
               "id": "SV-238196",
               "title": "The Ubuntu operating system must enforce password complexity",
               "impact": 0.5,
@@ -1290,9 +1172,276 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.5.0",
+      "title": "HDF Plan Primitives",
+      "description": "Types for defining assessment plans — what to scan, how to configure it, and when to run.",
+      "$defs": {
+        "Plan_Type": {
+          "type": "string",
+          "enum": [
+            "automated",
+            "manual",
+            "hybrid"
+          ],
+          "description": "The type of assessment. 'automated' for scanner-driven, 'manual' for human-performed, 'hybrid' for both.",
+          "title": "Plan Type"
+        },
+        "Runner_Config": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the assessment runner. Example: 'cinc-auditor', 'inspec', 'openscap'."
+            },
+            "version": {
+              "type": "string",
+              "description": "Version of the runner."
+            }
+          },
+          "description": "Configuration for the assessment runner/scanner.",
+          "title": "Runner Config"
+        },
+        "Assessment": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "baselineRef"
+          ],
+          "properties": {
+            "baselineRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Reference to the baseline to evaluate. May be a baseline name (e.g. 'RHEL9-STIG'), a relative path to an HDF Baseline document (e.g. 'rhel9-stig.hdf-baseline.json'), or an absolute URI."
+            },
+            "componentRef": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of the system component this assessment targets. Use for direct component binding. Alternative to targetSelector."
+            },
+            "targetSelector": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.5.0#/$defs/Target_Selector",
+              "description": "Label selector to match targets for this assessment. Overrides the system component's targetSelector if provided."
+            },
+            "inputs": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Resolved input values for this assessment. Keys are input names, values are the final resolved values (after baseline defaults + system overrides)."
+            },
+            "runner": {
+              "$ref": "#/$defs/Runner_Config",
+              "description": "Runner/scanner configuration for this assessment."
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of this assessment's purpose."
+            }
+          },
+          "examples": [
+            {
+              "baselineRef": "RHEL9-STIG",
+              "targetSelector": {
+                "labels.component": "WebTier"
+              },
+              "inputs": {
+                "max_concurrent_sessions": 5,
+                "password_min_length": 15
+              },
+              "runner": {
+                "name": "cinc-auditor",
+                "version": "6.8.1"
+              }
+            }
+          ],
+          "description": "A single assessment within a plan — defines which baseline to run against which targets with what configuration.",
+          "title": "Assessment"
+        },
+        "Schedule": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "properties": {
+            "cron": {
+              "type": "string",
+              "description": "Cron expression for recurring assessments. Example: '0 2 1 * *' (2 AM on the 1st of each month)."
+            },
+            "startDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Earliest date to begin assessments. ISO 8601 format."
+            },
+            "endDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Date after which assessments should no longer run. ISO 8601 format."
+            },
+            "notifyOnRegression": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Email addresses or notification endpoints to alert when regressions are detected."
+            },
+            "notifyOnCompletion": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Email addresses or notification endpoints to alert when assessments complete."
+            }
+          },
+          "examples": [
+            {
+              "cron": "0 2 1 * *",
+              "notifyOnRegression": [
+                "security-team@agency.gov"
+              ]
+            }
+          ],
+          "description": "Scheduling configuration for recurring assessments.",
+          "title": "Schedule"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.5.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.5.0",
+      "title": "HDF System Primitives",
+      "description": "Types for describing system architecture, authorization boundaries, and components.",
+      "$defs": {
+        "Authorization_Status": {
+          "type": "string",
+          "enum": [
+            "authorized",
+            "denied",
+            "pendingAuthorization",
+            "conditionallyAuthorized",
+            "notYetRequested",
+            "revoked"
+          ],
+          "description": "Authorization to Operate (ATO) status for the system.",
+          "title": "Authorization Status"
+        },
+        "Categorization_Level": {
+          "type": "string",
+          "enum": [
+            "low",
+            "moderate",
+            "high"
+          ],
+          "description": "FIPS 199 security categorization level (impact level).",
+          "title": "Categorization Level"
+        },
+        "Input_Override": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "inputName",
+            "value"
+          ],
+          "properties": {
+            "baselineRef": {
+              "type": "string",
+              "description": "Name of the baseline this override applies to. If omitted, applies to all baselines that define this input."
+            },
+            "inputName": {
+              "type": "string",
+              "description": "Name of the input being overridden. Must match an Input.name in the referenced baseline."
+            },
+            "value": {
+              "description": "The overridden value. Should match the type of the original input."
+            },
+            "justification": {
+              "type": "string",
+              "description": "Rationale for why this override is needed."
+            },
+            "approvedBy": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
+              "description": "Identity of the person or system that approved this override."
+            }
+          },
+          "description": "An override of a baseline input value for a specific component. Enables system-specific tailoring of baseline parameters.",
+          "title": "Input Override"
+        },
+        "Target_Selector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A label selector that matches targets by label key-value pairs. All specified labels must match (AND logic). Example: { \"labels.component\": \"WebTier\" } matches targets with labels.component = \"WebTier\".",
+          "title": "Target Selector"
+        },
+        "Control_Designation": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "controlId",
+            "designation",
+            "description"
+          ],
+          "properties": {
+            "controlId": {
+              "type": "string",
+              "description": "The control identifier (e.g., 'SC-7', 'AC-2 (1)'). Must match a NIST tag in a baseline requirement's tags."
+            },
+            "designation": {
+              "type": "string",
+              "title": "Designation",
+              "enum": [
+                "common",
+                "system-specific",
+                "hybrid"
+              ],
+              "description": "NIST SP 800-53 control designation. 'common': fully provided by another component or system. 'system-specific': implemented by the inheriting component(s) only. 'hybrid': shared responsibility between provider and inheritor."
+            },
+            "providedBy": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of a local component that provides this control. Omit when the provider is an external system."
+            },
+            "systemRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Reference to another hdf-system document whose component provides this control. Use when the provider is in a different system. Omit when the provider is local."
+            },
+            "inheritedBy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "description": "componentIds that inherit this control. If omitted, all components in the system inherit it."
+            },
+            "description": {
+              "type": "string",
+              "description": "Justification for this designation — who provides the control, why it's inherited, and any relevant authorization references."
+            }
+          },
+          "examples": [
+            {
+              "controlId": "IA-2",
+              "designation": "common",
+              "providedBy": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              "inheritedBy": [
+                "11111111-2222-3333-4444-555555555555"
+              ],
+              "description": "User identification and authentication provided by Keycloak SSO via SAML 2.0."
+            },
+            {
+              "controlId": "PE-2",
+              "designation": "common",
+              "description": "Physical access authorizations provided by AWS GovCloud per FedRAMP High authorization."
+            }
+          ],
+          "description": "Declares a control's designation within a system — whether it is common (provided by another component or system), system-specific (implemented locally), or hybrid (shared responsibility). Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component provided/inherited semantics.",
+          "title": "Control Designation"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0",
       "title": "HDF Extension Primitives",
       "description": "Extension types for waivers, attestations, generators, and integrity.",
       "$defs": {
@@ -1319,16 +1468,23 @@
             }
           ],
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/External_Reference"
+              },
+              "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object or CTI feed motivating an E:A riskAdjustment). Inert context distinct from `evidence`; see External_Reference. Symmetric with Standalone_Override.externalReferences for the inline (results-embedded) override carrier."
+            },
             "type": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Override_Type",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.5.0#/$defs/Override_Type",
               "description": "The type of override applied to this requirement."
             },
             "status": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0#/$defs/Result_Status",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0#/$defs/Result_Status",
               "description": "The new status this override sets for the requirement. Optional when only impact is being overridden."
             },
             "impact": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Impact_Override",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.5.0#/$defs/Impact_Override",
               "description": "Override to the requirement's impact score. At least one of status or impact must be set."
             },
             "reason": {
@@ -1336,7 +1492,7 @@
               "description": "Explanation for why this override was applied."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
               "description": "Identity of who applied this override. For simple cases, use type 'simple' with just an identifier."
             },
             "appliedAt": {
@@ -1350,27 +1506,27 @@
               "description": "Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no permanent overrides allowed. ISO 8601 format."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing methods."
             },
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Evidence"
               },
               "description": "Supporting evidence for this override, such as screenshots demonstrating manual verification for attestations."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
             },
             "cvss": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.4.0#/$defs/Cvss",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0#/$defs/Cvss",
               "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
               "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
             },
             "justification": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Justification",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.5.0#/$defs/Justification",
               "description": "Structured controlled-vocabulary classification for why this override applies. Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive and attestation overrides where the structured category enables filtering and lossless round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the precedent vocabulary and rationale."
             }
           },
@@ -1398,6 +1554,34 @@
               },
               "appliedAt": "2026-04-14T10:00:00Z",
               "expiresAt": "2026-10-14T00:00:00Z"
+            },
+            {
+              "$comment": "Inline riskAdjustment carrying the STIX source that motivated it via externalReferences (the enrichment envelope, with the raw sighting embedded losslessly in document). This is the shape the enrich pass writes onto Evaluated_Requirement.overrides[] for the E:A recompute.",
+              "type": "riskAdjustment",
+              "impact": {
+                "value": 0.9
+              },
+              "reason": "CVE-2021-44228 actively exploited in the wild per STIX threat intelligence",
+              "appliedBy": {
+                "identifier": "secops@agency.gov",
+                "type": "email"
+              },
+              "appliedAt": "2026-07-27T00:00:00Z",
+              "expiresAt": "2026-10-25T00:00:00Z",
+              "externalReferences": [
+                {
+                  "sourceName": "stix",
+                  "externalId": "sighting--a1b2c3d4-0000-4a2b-9c3d-000000000002",
+                  "kind": "threat-intel",
+                  "rel": "evidence",
+                  "document": {
+                    "type": "sighting",
+                    "spec_version": "2.1",
+                    "id": "sighting--a1b2c3d4-0000-4a2b-9c3d-000000000002",
+                    "sighting_of_ref": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001"
+                  }
+                }
+              ]
             },
             {
               "type": "falsePositive",
@@ -1478,7 +1662,7 @@
               "description": "Detailed explanation of the plan, including what actions will be taken."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
               "description": "Identity of who created this POA&M. For simple cases, use type 'simple' with just an identifier."
             },
             "appliedAt": {
@@ -1494,23 +1678,23 @@
             "milestones": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Milestone"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Milestone"
               },
               "description": "Optional array of milestones tracking progress toward completion."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation."
             },
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Evidence"
               },
               "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
             }
           },
@@ -1663,7 +1847,7 @@
           },
           "properties": {
             "algorithm": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Hash_Algorithm",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Hash_Algorithm",
               "description": "The hash algorithm used for the checksum."
             },
             "checksum": {
@@ -1696,9 +1880,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.5.0",
       "title": "HDF Amendment Primitives",
       "description": "Types for waivers, attestations, and POA&Ms that modify requirement compliance status.",
       "$defs": {
@@ -1806,6 +1990,13 @@
             ]
           },
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/External_Reference"
+              },
+              "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object, advisory, or CTI feed that motivated it). Inert context distinct from `evidence`; see External_Reference."
+            },
             "type": {
               "$ref": "#/$defs/Override_Type",
               "description": "The type of amendment."
@@ -1819,7 +2010,7 @@
               "description": "Name of the baseline containing the requirement. Required when the system has multiple baselines with potentially overlapping requirement IDs."
             },
             "status": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0#/$defs/Result_Status",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0#/$defs/Result_Status",
               "description": "The new status this amendment sets. Optional when only impact is being overridden."
             },
             "impact": {
@@ -1831,7 +2022,7 @@
               "description": "Justification for this amendment."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
               "description": "Identity of who applied this amendment."
             },
             "appliedAt": {
@@ -1847,20 +2038,20 @@
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Evidence"
               },
               "description": "Supporting evidence (screenshots, logs, URLs, documents)."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Signature",
               "description": "Digital signature for non-repudiation."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
               "description": "Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null for the first amendment."
             },
             "cvss": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.4.0#/$defs/Cvss",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0#/$defs/Cvss",
               "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
               "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
             },
@@ -1871,7 +2062,7 @@
             "milestones": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Milestone"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Milestone"
               },
               "description": "Remediation milestones (primarily for POA&M type amendments)."
             },
@@ -1888,7 +2079,7 @@
             "affectedPackages": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.4.0#/$defs/Affected_Package"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.5.0#/$defs/Affected_Package"
               },
               "description": "Software packages this amendment is scoped to, distinct from componentRef (which scopes to an HDF-internal Component by UUID). Use when the source amendment format references packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware amendments. Symmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same package vocabulary. When omitted, the amendment applies system-wide (or only to componentRef when that is set)."
             }
@@ -2021,9 +2212,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0",
       "title": "HDF Result Primitives",
       "description": "Types for representing assessment results and statuses.",
       "$defs": {
@@ -2154,9 +2345,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0",
       "title": "HDF CVSS Primitives",
       "description": "Types for representing CVSS (Common Vulnerability Scoring System) data attached to assessment findings. Supports CVSS v2.0, v3.0, v3.1, and v4.0 metric groups (Base, Threat, Environmental, Supplemental).",
       "$defs": {
@@ -2358,9 +2549,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.5.0",
       "title": "HDF Affected Package Primitives",
       "description": "Types for representing the software package(s) affected by a vulnerability finding.",
       "$defs": {

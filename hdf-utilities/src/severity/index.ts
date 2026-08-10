@@ -40,6 +40,18 @@ export function severityToImpact(severity: string | null): number | null {
 }
 
 /**
+ * Round an HDF impact value to 2 decimal places — its canonical precision —
+ * eliminating the representation noise that binary float division leaves behind
+ * (e.g. 9.8 / 10 = 0.9800000000000001). Impact is defined on 0.0–1.0 with a
+ * natural 0.01 grid (a 1-decimal CVSS score / 10), so this is lossless in
+ * intent. Use it wherever impact is COMPUTED (divided or otherwise
+ * arithmetically derived), not when assigned from a literal band.
+ */
+export function roundImpact(x: number): number {
+  return Math.round(x * 100) / 100;
+}
+
+/**
  * Map an impact score to a severity string.
  *
  * @param impact - Impact score (0.0 to 1.0), or null for no impact assessment

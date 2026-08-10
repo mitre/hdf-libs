@@ -482,20 +482,110 @@ describe('convertOscalSarToHdf', () => {
     }
   });
 
-  it('falls back to conversion time when a result has no start', async () => {
+  it('maps risk statement and remediation into descriptions', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    const reqs = results.baselines[0]!.requirements;
+
+    const ac1 = reqs.find(r => r.id === 'AC-1')!;
+    const statement = ac1.descriptions?.find(d => d.label === 'statement');
+    expect(statement?.data).toBe(
+      'This is a statement about the identified risk.\n\nTCW: Risk Statement..\n\nScans: N/A.\n\nPen Risk Statement.\n\nRET: Risk Statement.',
+    );
+    const remediation = ac1.descriptions?.find(d => d.label === 'remediation');
+    expect(remediation?.data).toMatch(/^Remediation Title: A description of the recommended remediation\./);
+  });
+
+  it('joins multiple remediations from a single risk', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    const cm2 = results.baselines[0]!.requirements.find(r => r.id === 'CM-2 (1)')!;
+
+    const remediation = cm2.descriptions?.find(d => d.label === 'remediation');
+    expect(remediation?.data).toContain(
+      "Tool's Recommendation: A description of the recommended remediation as provided by the tool.",
+    );
+    expect(remediation?.data).toContain(
+      "Assessor's Recommendation: A description of the recommended remediation as provided by the assessor.",
+    );
+    expect(remediation?.data).toContain('\n\n');
+  });
+
+  it('maps relevant-evidence prose and resolvable URLs into evidence/refs', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    const reqs = results.baselines[0]!.requirements;
+
+    const cm2 = reqs.find(r => r.id === 'CM-2 (1)')!;
+    const evidence = cm2.descriptions?.find(d => d.label === 'evidence');
+    expect(evidence?.data).toContain('A screen shot showing the system impact when patch is applied.');
+    expect(evidence?.data).toContain('Vendor detail describing why this happens.');
+
+    // Duplicate evidence URLs collapse to a single ref.
+    expect(cm2.refs).toHaveLength(1);
+    expect(cm2.refs![0]!.url).toBe('https://vendor.site/article/describing/something.htm');
+
+    // AC-1's evidence hrefs are intra-document fragments only → prose captured, no refs.
+    const ac1 = reqs.find(r => r.id === 'AC-1')!;
+    expect(ac1.descriptions?.some(d => d.label === 'evidence')).toBe(true);
+    expect(ac1.refs).toBeUndefined();
+  });
+
+  it('omits statement/remediation/evidence/refs when the source carries none', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    // AU-1 relates to no risk and to an observation with no relevant-evidence.
+    const au1 = results.baselines[0]!.requirements.find(r => r.id === 'AU-1')!;
+
+    expect(au1.descriptions?.some(d => d.label === 'statement')).toBe(false);
+    expect(au1.descriptions?.some(d => d.label === 'remediation')).toBe(false);
+    expect(au1.descriptions?.some(d => d.label === 'evidence')).toBe(false);
+    expect(au1.refs).toBeUndefined();
+  });
+
+  it('maps result startTime from the correlated observation collected time', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    const reqs = results.baselines[0]!.requirements;
+
+    // Every finding correlates to observations whose `collected` is
+    // 2023-05-10T00:00:00Z; startTime must be that value, NOT the result's
+    // assessment-period start (2023-03-01T00:00:00Z).
+    for (const id of ['AC-1', 'AU-1', 'RA-5', 'CM-2 (1)', 'AT-2', 'CA-8 (1)']) {
+      const req = reqs.find(r => r.id === id)!;
+      const startTime = req.results[0]!.startTime;
+      expect(new Date(startTime as string | Date).toISOString()).toBe('2023-05-10T00:00:00.000Z');
+    }
+  });
+
+  it('falls back to result start, then conversion time, when no observation collected time exists', async () => {
     const doc = JSON.parse(loadFixture('sar-fedramp.json')) as {
-      'assessment-results': { results: Array<Record<string, unknown>> };
+      'assessment-results': {
+        results: Array<{
+          start?: unknown;
+          observations?: Array<Record<string, unknown>>;
+        } & Record<string, unknown>>;
+      };
     };
-    // Drop the start on the only finding-bearing result to exercise the fallback.
+    // Strip every observation `collected` so the primary source is absent; the
+    // result's `start` (2023-03-01T00:00:00Z) must then supply startTime.
+    for (const r of doc['assessment-results'].results) {
+      for (const o of r.observations ?? []) delete o['collected'];
+    }
+    let output = await convertOscalSarToHdf(JSON.stringify(doc));
+    let results = JSON.parse(output) as HDFResults;
+    expectValidResults(results);
+    let startTime = results.baselines[0]!.requirements[0]!.results[0]!.startTime;
+    expect(new Date(startTime as string | Date).toISOString()).toBe('2023-03-01T00:00:00.000Z');
+
+    // Also drop the result `start`: startTime must fall to a fresh conversion
+    // time, never the 1970 epoch placeholder.
     for (const r of doc['assessment-results'].results) delete r['start'];
     const before = Date.now();
-    const output = await convertOscalSarToHdf(JSON.stringify(doc));
-    const results = JSON.parse(output) as HDFResults;
+    output = await convertOscalSarToHdf(JSON.stringify(doc));
+    results = JSON.parse(output) as HDFResults;
     expectValidResults(results);
-
-    const startTime = results.baselines[0]!.requirements[0]!.results[0]!.startTime;
-    expect(startTime).toBeDefined();
-    // A fresh conversion-time value, not the 1970 epoch placeholder.
+    startTime = results.baselines[0]!.requirements[0]!.results[0]!.startTime;
     expect(new Date(startTime as string | Date).getTime()).toBeGreaterThanOrEqual(before);
   });
 
@@ -522,6 +612,22 @@ describe('convertOscalSarToHdf', () => {
 
     expect(results.baselines[0]!.integrity?.algorithm).toBe('sha256');
     expect(results.baselines[0]!.integrity?.checksum).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it('derives tags.cci from the NIST control, omitting it when unmapped', async () => {
+    const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
+    const results = JSON.parse(output) as HDFResults;
+    const reqs = results.baselines[0]!.requirements;
+
+    // RA-5 maps to a CCI via the standard NIST→CCI table.
+    const ra5 = reqs.find(r => r.id === 'RA-5')!;
+    expect(ra5.tags.nist).toEqual(['RA-5']);
+    expect(ra5.tags.cci as string[]).toContain('CCI-001643');
+
+    // AC-1 has no NIST→CCI mapping, so tags.cci must be absent.
+    const ac1 = reqs.find(r => r.id === 'AC-1')!;
+    expect(ac1.tags.nist).toEqual(['AC-1']);
+    expect(ac1.tags.cci).toBeUndefined();
   });
 });
 

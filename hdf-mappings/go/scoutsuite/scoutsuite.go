@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"strings"
 	"sync"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 //go:embed scoutsuite-nist-mappings.json
@@ -45,10 +47,15 @@ func NISTControl(rule string) string {
 	}
 	data := loadData()
 	if control, ok := data[rule]; ok {
-		return control
+		return strings.Join(nist.AtRevision(strings.Split(control, "|"), NativeRevision, nist.Revision()), "|")
 	}
 	return ""
 }
+
+// NativeRevision is the NIST 800-53 revision this table was authored against
+// (heimdall2's Rev 4-era mapping; every control it carries is identical at
+// both revisions today). Lookups translate to the process-global revision.
+const NativeRevision = 4
 
 // NISTControls returns the NIST 800-53 controls for a ScoutSuite rule name
 // as a string slice. Multi-control mappings (separated by "|") are split

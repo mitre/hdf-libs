@@ -601,3 +601,22 @@ func TestMergeAmendments_InvalidStatusValues(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeAmendments_StampsEffectiveChecksum(t *testing.T) {
+	merged, err := MergeAmendments([]byte(minimalResults), []byte(minimalAmendments))
+	require.NoError(t, err)
+
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(merged, &doc))
+	baselines := doc["baselines"].([]interface{})
+	reqs := baselines[0].(map[string]interface{})["requirements"].([]interface{})
+	req := reqs[0].(map[string]interface{})
+
+	csRaw, ok := req["effectiveChecksum"]
+	require.True(t, ok, "merged requirement must carry effectiveChecksum")
+	cs := csRaw.(map[string]interface{})
+	assert.Equal(t, "sha256", cs["algorithm"])
+	// waiver: status passed, impact 0.5, disposition waiver
+	// sha256 of {"status":"passed","impact":0.5,"disposition":"waiver"}
+	assert.Equal(t, "d11c074ab9131807816013a71d986f1ceb2e5871a8a01dee4043391b7a6bf37b", cs["value"])
+}

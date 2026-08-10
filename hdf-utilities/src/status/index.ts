@@ -77,6 +77,31 @@ export function governingStatusOverride(
 }
 
 /**
+ * Returns the index of the most recently applied (by appliedAt) non-expired
+ * override among those for which `eligible` returns true, or -1 when none
+ * qualifies. Generalizes governing-override selection to per-field
+ * eligibility: the schema defines effectiveStatus, effectiveImpact, and
+ * disposition each as "the most recent non-expired override" carrying the
+ * relevant field, so callers pass the field-presence check as the predicate.
+ */
+export function governingOverrideIndex(
+  overrides: readonly StatusOverrideInput[],
+  eligible: (index: number) => boolean,
+  referenceTimestamp?: string
+): number {
+  const ref = refTime(referenceTimestamp);
+  let governing = -1;
+  for (let i = 0; i < overrides.length; i++) {
+    const override = overrides[i];
+    if (!override || !eligible(i) || isExpired(override, ref)) continue;
+    if (governing === -1 || appliedTime(override) > appliedTime(overrides[governing]!)) {
+      governing = i;
+    }
+  }
+  return governing;
+}
+
+/**
  * Index variant of {@link governingStatusOverride}: returns -1 when no
  * override governs. Callers holding richer concrete override types use the
  * index to recover their own object.
@@ -85,16 +110,7 @@ export function governingStatusOverrideIndex(
   overrides: readonly StatusOverrideInput[],
   referenceTimestamp?: string
 ): number {
-  const ref = refTime(referenceTimestamp);
-  let governing = -1;
-  for (let i = 0; i < overrides.length; i++) {
-    const override = overrides[i];
-    if (!override?.status || isExpired(override, ref)) continue;
-    if (governing === -1 || appliedTime(override) > appliedTime(overrides[governing]!)) {
-      governing = i;
-    }
-  }
-  return governing;
+  return governingOverrideIndex(overrides, (i) => !!overrides[i]?.status, referenceTimestamp);
 }
 
 function appliedTime(override: StatusOverrideInput): number {

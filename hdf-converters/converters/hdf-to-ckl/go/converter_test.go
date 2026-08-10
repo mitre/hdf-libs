@@ -121,6 +121,47 @@ func TestConvertHDFToCKL_Synthesis(t *testing.T) {
 	assert.Equal(t, checklist.StatusOpen, v.Status, "failed status should map to Open")
 }
 
+// TestConvertHDFToCKL_OverrideAndEffectiveStatus pins the export-fidelity fixes
+// end-to-end: effectiveStatus drives STATUS, a risk-adjustment override surfaces
+// into SEVERITY_OVERRIDE/JUSTIFICATION + COMMENTS, and legacy IDs emit LEGACY_ID.
+func TestConvertHDFToCKL_OverrideAndEffectiveStatus(t *testing.T) {
+	input := `{
+		"baselines": [{
+			"name": "b", "version": "1.0.0", "title": "T", "maintainer": "M",
+			"supports": [], "inputs": [], "groups": [],
+			"checksum": { "algorithm": "sha256", "value": "abc" },
+			"requirements": [{
+				"id": "V-1", "title": "Rule",
+				"descriptions": [{ "label": "default", "data": "d" }],
+				"impact": 0.7,
+				"effectiveStatus": "notApplicable",
+				"disposition": "riskAdjustment",
+				"tags": { "nist": ["SI-2 c"], "legacy_ids": ["V-9999"] },
+				"statusOverrides": [{
+					"type": "riskAdjustment", "reason": "compensating control",
+					"appliedBy": { "type": "username", "identifier": "jdoe" },
+					"appliedAt": "2020-01-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+					"impact": { "value": 0.4 }
+				}],
+				"results": [{ "status": "failed", "codeDesc": "check failed", "message": "still open", "startTime": "2026-01-29T18:00:00Z" }]
+			}]
+		}],
+		"components": [], "statistics": { "duration": 0 }
+	}`
+
+	out, err := ConvertHDFToCKL([]byte(input))
+	require.NoError(t, err)
+	s := string(out)
+
+	assert.Contains(t, s, "<STATUS>Not_Applicable</STATUS>", "effectiveStatus drives STATUS")
+	assert.Contains(t, s, "<SEVERITY_OVERRIDE>medium</SEVERITY_OVERRIDE>", "impact 0.4 -> medium")
+	assert.Contains(t, s, "<SEVERITY_JUSTIFICATION>compensating control</SEVERITY_JUSTIFICATION>")
+	assert.Contains(t, s, "Override [riskAdjustment]: compensating control")
+	assert.Contains(t, s, "<VULN_ATTRIBUTE>LEGACY_ID</VULN_ATTRIBUTE>")
+	assert.Contains(t, s, "<ATTRIBUTE_DATA>V-9999</ATTRIBUTE_DATA>")
+	assert.Contains(t, s, "[failed] check failed")
+}
+
 func TestConvertHDFToCKL_InvalidJSON(t *testing.T) {
 	_, err := ConvertHDFToCKL([]byte("not valid json"))
 	assert.Error(t, err, "invalid JSON should error")

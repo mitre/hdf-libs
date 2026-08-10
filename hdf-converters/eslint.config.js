@@ -1,29 +1,12 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 
-// Timestamp guard: forbid `new Date(<value>)` on a tool-supplied value in
-// *-to-hdf converters (zone-less values are read as host-local; use
-// parseTimestamp). Match the first argument across the forms converters
-// actually use to feed it — bare identifier, member access, and the coercion
-// wrappers `as`/`!`/call/template-literal — so the guard can't be bypassed by
-// `new Date(raw as string)`, `new Date(raw!)`, `new Date(String(raw))`, etc.
-// Safe forms (no-arg now, numeric/string literals, arithmetic) are not matched.
-const DATE_GUARD_MSG =
-  'Do not parse a tool timestamp with `new Date(value)` (zone-less values are read as host-local). Use `parseTimestamp` from @mitre/hdf-utilities. See site/docs/contributing/developer-guide.md (Timestamp Handling).';
-// Exported so a regression test can assert the guard actually fires — a guard
-// that exists but silently never matches (broken selector or narrowed scope) is
-// worse than none. See test/timestamp-guard.test.ts.
-export const DATE_GUARD_RULES = [
-  'Identifier',
-  'MemberExpression',
-  'TSAsExpression',
-  'TSNonNullExpression',
-  'CallExpression',
-  'TemplateLiteral',
-].map((argType) => ({
-  selector: `NewExpression[callee.name='Date'] > ${argType}.arguments`,
-  message: DATE_GUARD_MSG,
-}));
+// The timestamp guard (forbid `new Date(value)` on tool timestamps) is shared
+// across the packages that parse timestamps — see
+// ../scripts/eslint-timestamp-guard.mjs. Re-exported so the local regression
+// test (test/timestamp-guard.test.ts) can assert the guard still fires.
+import { DATE_GUARD_RULES } from '../scripts/eslint-timestamp-guard.mjs';
+export { DATE_GUARD_RULES };
 
 export default [
   {

@@ -59,18 +59,21 @@ type ProfileResponse struct {
 
 // SecureScoreControlProfile represents a control profile with remediation details.
 type SecureScoreControlProfile struct {
-	ID                string      `json:"id"`
-	AzureTenantID     string      `json:"azureTenantId"`
-	ControlCategory   string      `json:"controlCategory"`
-	Title             string      `json:"title"`
-	MaxScore          float64     `json:"maxScore"`
-	Rank              interface{} `json:"rank"`
-	Remediation       string      `json:"remediation"`
-	RemediationImpact string      `json:"remediationImpact"`
-	Service           string      `json:"service"`
-	Threats           interface{} `json:"threats"`
-	Tier              string      `json:"tier"`
-	UserImpact        string      `json:"userImpact"`
+	ID                 string      `json:"id"`
+	AzureTenantID      string      `json:"azureTenantId"`
+	ActionType         string      `json:"actionType"`
+	ActionURL          string      `json:"actionUrl"`
+	ControlCategory    string      `json:"controlCategory"`
+	Title              string      `json:"title"`
+	ImplementationCost string      `json:"implementationCost"`
+	MaxScore           float64     `json:"maxScore"`
+	Rank               interface{} `json:"rank"`
+	Remediation        string      `json:"remediation"`
+	RemediationImpact  string      `json:"remediationImpact"`
+	Service            string      `json:"service"`
+	Threats            interface{} `json:"threats"`
+	Tier               string      `json:"tier"`
+	UserImpact         string      `json:"userImpact"`
 }
 
 // getProfiles returns all profiles matching a given control name.
@@ -169,7 +172,14 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 
 	// Add fix description from profile remediation
 	matched := getProfiles(profiles, cs.ControlName)
+	var refs []hdf.Reference
 	if len(matched) > 0 {
+		for _, p := range matched {
+			if p.ActionURL != "" {
+				url := p.ActionURL
+				refs = append(refs, hdf.Reference{URL: &url})
+			}
+		}
 		remediations := make([]string, 0)
 		for _, p := range matched {
 			if p.Remediation != "" {
@@ -196,6 +206,62 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 				Data:  impacts[0],
 			})
 		}
+
+		// Source categorization/metadata from the matched profile(s). Emit each
+		// tag only when a matched profile actually carries the value; preserve the
+		// source's natural JSON type (threats array, numeric rank, strings).
+		for _, p := range matched {
+			if arr, ok := p.Threats.([]interface{}); ok && len(arr) > 0 {
+				tags["threats"] = arr
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.Rank != nil {
+				tags["rank"] = p.Rank
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.Service != "" {
+				tags["service"] = p.Service
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.Tier != "" {
+				tags["tier"] = p.Tier
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.UserImpact != "" {
+				tags["user_impact"] = p.UserImpact
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.ActionType != "" {
+				tags["action_type"] = p.ActionType
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.ImplementationCost != "" {
+				tags["implementation_cost"] = p.ImplementationCost
+				break
+			}
+		}
+	}
+
+	// `on` is carried on the control score itself as a "true"/"false" string
+	// (null/absent when Microsoft reports no enablement state). Map to a boolean;
+	// omit when neither literal is present.
+	switch cs.On {
+	case "true":
+		tags["on"] = true
+	case "false":
+		tags["on"] = false
 	}
 
 	// CodeDesc from implementationStatus
@@ -204,8 +270,13 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 		codeDesc = "No implementation status provided"
 	}
 
-	// StartTime from createdDateTime
-	startTime := hdfutil.ParseTimestamp(createdDateTime)
+	// StartTime: the control's own lastSynced (when Microsoft last evaluated it).
+	// Fall back to the score snapshot's createdDateTime when a control carries no
+	// sync time (startTime is schema-required).
+	startTime := hdfutil.ParseTimestamp(cs.LastSynced)
+	if startTime.IsZero() {
+		startTime = hdfutil.ParseTimestamp(createdDateTime)
+	}
 
 	results := []hdf.RequirementResult{
 		{
@@ -221,6 +292,7 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 		Impact:             impact,
 		Tags:               tags,
 		Descriptions:       descriptions,
+		Refs:               refs,
 		Results:            results,
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
@@ -286,7 +358,13 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 		baselines = append(baselines, baseline)
 	}
 
-	now := time.Now().UTC()
+	// Top-level timestamp: the score snapshot's createdDateTime (when Microsoft
+	// generated this Secure Score), not wall-clock now — keeps conversion
+	// deterministic. Fall back to now only when the snapshot carries no time.
+	timestamp := hdfutil.ParseTimestamp(combined.SecureScore.Value[0].CreatedDateTime)
+	if timestamp.IsZero() {
+		timestamp = time.Now().UTC()
+	}
 
 	// Target: cloud account
 	provider := hdf.Azure
@@ -308,6 +386,6 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 				},
 			},
 		},
-		Timestamp: &now,
+		Timestamp: &timestamp,
 	}), nil
 }

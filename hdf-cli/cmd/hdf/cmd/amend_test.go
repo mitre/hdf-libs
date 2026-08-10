@@ -408,6 +408,21 @@ func TestDetermineRequirementStatus(t *testing.T) {
 			map[string]interface{}{"status": "failed"},
 			map[string]interface{}{"status": "error"},
 		}, "error"},
+		{"passed beats notReviewed (canonical ordering)", []interface{}{
+			map[string]interface{}{"status": "passed"},
+			map[string]interface{}{"status": "notReviewed"},
+		}, "passed"},
+		{"notApplicable beats notReviewed", []interface{}{
+			map[string]interface{}{"status": "notReviewed"},
+			map[string]interface{}{"status": "notApplicable"},
+		}, "notApplicable"},
+		{"unknown statuses ignored", []interface{}{
+			map[string]interface{}{"status": "bogus"},
+			map[string]interface{}{"status": "passed"},
+		}, "passed"},
+		{"only unknown statuses roll to notReviewed", []interface{}{
+			map[string]interface{}{"status": "bogus"},
+		}, "notReviewed"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

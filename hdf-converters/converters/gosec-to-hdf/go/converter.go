@@ -3,6 +3,7 @@ package gosec
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -90,6 +91,38 @@ func formatSkipMessage(suppressions []GosecSuppression) *string {
 	return &msg
 }
 
+// parseSourceLine parses a gosec line field to a number. gosec emits the line
+// as a string ("42") or a "start-end" range ("42-45"); the START line is used
+// for a range. Returns nil when the field is empty or non-numeric.
+func parseSourceLine(line string) *float64 {
+	if line == "" {
+		return nil
+	}
+	start := line
+	if idx := strings.IndexByte(line, '-'); idx >= 0 {
+		start = line[:idx]
+	}
+	n, err := strconv.ParseFloat(start, 64)
+	if err != nil {
+		return nil
+	}
+	return &n
+}
+
+// buildSourceLocation promotes an issue's file/line locus into the structured
+// HDF SourceLocation field. Returns nil when the issue carries no file path.
+func buildSourceLocation(issue GosecIssue) *hdf.SourceLocation {
+	if issue.File == "" {
+		return nil
+	}
+	ref := issue.File
+	loc := &hdf.SourceLocation{Ref: &ref}
+	if line := parseSourceLine(issue.Line); line != nil {
+		loc.Line = line
+	}
+	return loc
+}
+
 // formatCodeDesc builds the code_desc string for a result.
 func formatCodeDesc(issue GosecIssue) string {
 	return fmt.Sprintf(
@@ -101,6 +134,15 @@ func formatCodeDesc(issue GosecIssue) string {
 // formatMessage builds the message string for a result.
 func formatMessage(issue GosecIssue) string {
 	return fmt.Sprintf("%s confidence of rule violation at:\n%s", issue.Confidence, issue.Code)
+}
+
+// cweIDs returns the first-class CWE identifiers for an issue in "CWE-N" form,
+// or nil when the issue carries no CWE.
+func cweIDs(issue GosecIssue) []string {
+	if issue.CWE.ID == "" {
+		return nil
+	}
+	return []string{"CWE-" + issue.CWE.ID}
 }
 
 // nistTagsForIssue looks up NIST controls for the issue's CWE, falling back to
@@ -168,10 +210,9 @@ func buildRequirement(ruleID string, issues []GosecIssue, startTime time.Time) h
 
 	tags := map[string]interface{}{
 		"nist": nistIface,
-		"cwe": map[string]interface{}{
-			"id":  rep.CWE.ID,
-			"url": rep.CWE.URL,
-		},
+	}
+	if rep.Confidence != "" {
+		tags["confidence"] = rep.Confidence
 	}
 
 	descriptions := []hdf.Description{
@@ -189,9 +230,12 @@ func buildRequirement(ruleID string, issues []GosecIssue, startTime time.Time) h
 		ID:                 ruleID,
 		Title:              &title,
 		Impact:             getImpact(rep.Severity),
+		Cwe:                cweIDs(rep),
 		Tags:               tags,
 		Descriptions:       descriptions,
 		Results:            results,
+		Code:               hdfutil.Ptr(rep.Code),
+		SourceLocation:     buildSourceLocation(rep),
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}

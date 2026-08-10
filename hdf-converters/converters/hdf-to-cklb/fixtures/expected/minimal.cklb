@@ -38,8 +38,9 @@
           "discussion": "This is a test requirement",
           "ccis": [],
           "status": "not_a_finding",
+          "overrides": {},
           "comments": "",
-          "finding_details": ""
+          "finding_details": "[passed] Control check passed"
         }
       ]
     }

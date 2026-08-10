@@ -131,6 +131,38 @@ describe('dbprotect to HDF converter', () => {
     });
   });
 
+  describe('requirement.code (Heimdall CODE tab)', () => {
+    it('serializes the source row as indented, sorted-key JSON', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
+      expect(req?.code).toBeTruthy();
+      const code = req!.code!;
+
+      // Two-space indented, not a compact blob.
+      expect(code).toContain('\n  "Check": "Schema ownership"');
+
+      // Round-trips back to the source row.
+      const row = JSON.parse(code) as Record<string, string>;
+      expect(row['Check']).toBe('Schema ownership');
+      expect(row['Check Category']).toBe('Improper Access Controls');
+      expect(row['Risk DV']).toBe('Medium');
+      expect(row['Details']).toBe('Schema name=DatabaseMailUserRole;Database=msdb;Owner name=DatabaseMailUserRole');
+
+      // Keys are emitted in sorted order (the byte-parity contract with the Go twin).
+      const sorted = JSON.stringify(row, Object.keys(row).sort(), 2);
+      expect(code).toBe(sorted);
+    });
+
+    it('populates code for every requirement in the Findings Detail report', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.code).toBeTruthy();
+        const row = JSON.parse(req.code!) as Record<string, string>;
+        expect(row['Check']).toBeTruthy();
+      }
+    });
+  });
+
   describe('impact mapping', () => {
     it('should map High risk to 0.7', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
@@ -235,17 +267,94 @@ describe('dbprotect to HDF converter', () => {
     });
   });
 
-  describe('target', () => {
-    it('should set target name from Asset column', async () => {
+  describe('check_category tag', () => {
+    it('surfaces the Check Category column as the check_category tag', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
-      expect(hdf.components).toBeDefined();
-      expect(hdf.components!.length).toBeGreaterThan(0);
-      expect(hdf.components![0]!.name).toBe('CONDS181');
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2986');
+      expect(req!.tags!['check_category']).toBe('Improper Access Controls');
+      const req2903 = hdf.baselines[0]!.requirements.find(r => r.id === '2903');
+      expect(req2903!.tags!['check_category']).toBe('Misconfigurations');
     });
 
-    it('should set target type to Host', async () => {
+    it('surfaces check_category in the Findings Detail report', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2903');
+      expect(req!.tags!['check_category']).toBe('Misconfigurations');
+    });
+
+    it('omits the check_category tag when the Check Category value is empty', async () => {
+      const xml = `<?xml version="1.0"?><dataset><metadata><item><name>Check ID</name><type>xs:string</type></item><item><name>Check</name><type>xs:string</type></item><item><name>Risk DV</name><type>xs:string</type></item><item><name>Details</name><type>xs:string</type></item><item><name>Date</name><type>xs:string</type></item><item><name>Check Category</name><type>xs:string</type></item></metadata><data><row><value>CK1</value><value>Check</value><value>Low</value><value>Details</value><value>Feb 18 2021 15:57</value><value nil="true"/></row></data></dataset>`;
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0];
+      expect(req!.tags!['check_category']).toBeUndefined();
+    });
+  });
+
+  describe('scan target component (database identity)', () => {
+    it('builds a database component from the identity columns', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
-      expect(hdf.components![0]!.type).toBe('host');
+      expect(hdf.components).toHaveLength(1);
+      const comp = hdf.components![0]!;
+      expect(comp.type).toBe('database');
+      expect(comp.name).toBe('MSSQLSERVER');
+      expect(comp.ipAddress).toBe('10.0.10.204');
+      expect(comp.port).toBe(1433);
+      expect(comp.engine).toBe('Microsoft SQL Server');
+      expect(comp.hostname).toBe('CONDS181');
+    });
+
+    it('builds the database component for the findings-detail report too', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      expect(hdf.components).toHaveLength(1);
+      const comp = hdf.components![0]!;
+      expect(comp.type).toBe('database');
+      expect(comp.name).toBe('MSSQLSERVER');
+      expect(comp.ipAddress).toBe('192.168.1.200');
+      expect(comp.hostname).toBe('HOST1');
+    });
+
+    // Drive the name-fallback and absent branches through crafted single-row XML.
+    // cols/vals are positional (Cognos maps metadata items to row values by index).
+    const buildXml = (cols: string[], vals: string[]): string =>
+      `<?xml version="1.0" encoding="utf-8"?>
+<dataset xmlns="http://developer.cognos.com/schemas/xmldata/1/">
+  <metadata>${cols.map((c) => `<item name="${c}" type="xs:string"/>`).join('')}</metadata>
+  <data><row>${vals.map((v) => `<value>${v}</value>`).join('')}</row></data>
+</dataset>`;
+
+    it('names the component IP:Port when no instance is present', async () => {
+      const xml = buildXml(['IP Address, Port, Instance', 'Check ID', 'Check'], ['10.0.10.204, 1433', '1', 'x']);
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.components![0]!.name).toBe('10.0.10.204:1433');
+      expect(hdf.components![0]!.type).toBe('database');
+    });
+
+    it('names the component IP alone when neither instance nor port is present', async () => {
+      const xml = buildXml(['IP Address, Port, Instance', 'Check ID', 'Check'], ['10.0.10.204', '1', 'x']);
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.components![0]!.name).toBe('10.0.10.204');
+      expect(hdf.components![0]!.port).toBeUndefined();
+    });
+
+    it('names the component from the Asset label when the identity cell is empty', async () => {
+      const xml = buildXml(['Asset', 'Check ID', 'Check'], ['CONDS181', '1', 'x']);
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.components![0]!.name).toBe('CONDS181');
+      expect(hdf.components![0]!.hostname).toBe('CONDS181');
+      expect(hdf.components![0]!.ipAddress).toBeUndefined();
+    });
+
+    it('drops a non-numeric port', async () => {
+      const xml = buildXml(['IP Address, Port, Instance', 'Check ID', 'Check'], ['10.0.10.204, abc, INST', '1', 'x']);
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.components![0]!.name).toBe('INST');
+      expect(hdf.components![0]!.port).toBeUndefined();
+    });
+
+    it('omits components entirely when no identity columns are present (NOT-IN-SOURCE)', async () => {
+      const xml = buildXml(['Check ID', 'Check'], ['1', 'x']);
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.components).toBeUndefined();
     });
   });
 
@@ -328,6 +437,33 @@ describe('dbprotect to HDF converter', () => {
       const xml = `<?xml version="1.0"?><dataset><metadata><item><name>Check ID</name><type>xs:string</type></item><item><name>Check</name><type>xs:string</type></item><item><name>Risk DV</name><type>xs:string</type></item><item><name>Details</name><type>xs:string</type></item><item><name>Date</name><type>xs:string</type></item><item><name>Task</name><type>xs:string</type></item><item><name>Check Category</name><type>xs:string</type></item><item><name>Organization</name><type>xs:string</type></item><item><name>Asset</name><type>xs:string</type></item><item><name>Asset Type</name><type>xs:string</type></item><item><name>IP Address, Port, Instance</name><type>xs:string</type></item><item><name>Job Name</name><type>xs:string</type></item></metadata><data><row><value>CK1</value><value>Check</value><value>Low</value><value nil="true"/><value>invalid date xyz</value><value nil="true"/><value nil="true"/><value nil="true"/><value nil="true"/><value nil="true"/><value nil="true"/><value nil="true"/></row></data></dataset>`;
       const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    });
+  });
+
+  // The snapshot harness masks the top-level timestamp, so the golden never
+  // verifies its value. Pin the exact source-derived value here.
+  describe('top-level timestamp (source-derived)', () => {
+    it('derives the timestamp from the Start Date column (findings detail)', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      expect(hdf.timestamp).toBe('2021-02-18T15:55:00Z');
+    });
+
+    it('falls back to the per-finding Date column when Start Date is absent (check results)', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
+      expect(hdf.timestamp).toBe('2021-02-18T15:57:00Z');
+    });
+
+    it('is deterministic across repeated conversions of the same input', async () => {
+      const first = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      const second = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      expect(first.timestamp).toBe(second.timestamp);
+      expect(first.timestamp).toBe('2021-02-18T15:55:00Z');
+    });
+
+    it('omits the timestamp when the source carries no parseable scan time', async () => {
+      const xml = `<?xml version="1.0"?><dataset><metadata><item><name>Check ID</name><type>xs:string</type></item><item><name>Check</name><type>xs:string</type></item><item><name>Risk DV</name><type>xs:string</type></item><item><name>Details</name><type>xs:string</type></item><item><name>Date</name><type>xs:string</type></item><item><name>Task</name><type>xs:string</type></item><item><name>Check Category</name><type>xs:string</type></item><item><name>Organization</name><type>xs:string</type></item><item><name>Asset</name><type>xs:string</type></item><item><name>Asset Type</name><type>xs:string</type></item><item><name>IP Address, Port, Instance</name><type>xs:string</type></item><item><name>Job Name</name><type>xs:string</type></item></metadata><data><row><value>CK1</value><value>Check</value><value>Low</value><value>Details</value><value>invalid date xyz</value><value>Task</value><value>Cat</value><value>Org</value><value>Asset</value><value>DB</value><value>10.0.0.1</value><value>Job</value></row></data></dataset>`;
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      expect(hdf.timestamp).toBeUndefined();
     });
   });
 });

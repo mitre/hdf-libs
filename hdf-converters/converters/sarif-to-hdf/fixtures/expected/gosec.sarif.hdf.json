@@ -16,7 +16,7 @@
           "results": [
             {
               "codeDesc": "URL : internal/db/users.go LINE : 34 COLUMN : 2\n\tquery := fmt.Sprintf(\"SELECT * FROM users WHERE id = %s\", id)",
-              "startTime": "2026-08-01T19:52:53.427612-04:00",
+              "startTime": "2026-07-12T18:56:41.922525-04:00",
               "status": "failed"
             }
           ],
@@ -44,6 +44,7 @@
             ],
             "severity": "error"
           },
+          "code": "\tquery := fmt.Sprintf(\"SELECT * FROM users WHERE id = %s\", id)",
           "controlType": "technical",
           "title": "SQL query construction using format string",
           "verificationMethod": "automated"
@@ -59,18 +60,33 @@
               "label": "rationale"
             }
           ],
+          "disposition": "waiver",
+          "effectiveStatus": "passed",
           "results": [
             {
               "codeDesc": "URL : internal/handlers/files.go LINE : 56 COLUMN : 15\n\tdata, err := os.ReadFile(filePath)",
               "message": "Suppressed: #nosec G304 -- filePath is validated against allowlist",
-              "startTime": "2026-08-01T19:52:53.427612-04:00",
-              "status": "notReviewed"
+              "startTime": "2026-07-12T18:56:41.922525-04:00",
+              "status": "failed"
             }
           ],
           "sourceLocation": {
             "line": 56,
             "ref": "internal/handlers/files.go"
           },
+          "statusOverrides": [
+            {
+              "appliedAt": "2026-08-09T17:25:53.193386-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-08-09T17:25:53.193386-04:00",
+              "reason": "#nosec G304 -- filePath is validated against allowlist",
+              "status": "passed",
+              "type": "waiver"
+            }
+          ],
           "id": "G304",
           "impact": 0.5,
           "tags": {
@@ -93,6 +109,7 @@
               }
             ]
           },
+          "code": "\tdata, err := os.ReadFile(filePath)",
           "controlType": "technical",
           "title": "File path provided as taint input",
           "verificationMethod": "automated"
@@ -107,7 +124,7 @@
           "results": [
             {
               "codeDesc": "URL : internal/auth/checksum.go LINE : 12 COLUMN : 8\n\th := md5.New()",
-              "startTime": "2026-08-01T19:52:53.427612-04:00",
+              "startTime": "2026-07-12T18:56:41.922525-04:00",
               "status": "failed"
             }
           ],
@@ -130,6 +147,7 @@
             ],
             "severity": "warning"
           },
+          "code": "\th := md5.New()",
           "controlType": "technical",
           "title": "Detect the usage of MD5 or SHA1",
           "verificationMethod": "automated"
@@ -148,7 +166,7 @@
           "results": [
             {
               "codeDesc": "URL : internal/config/constants.go LINE : 7 COLUMN : 2\n\tdbPassword = \"supersecret123\"",
-              "startTime": "2026-08-01T19:52:53.427612-04:00",
+              "startTime": "2026-07-12T18:56:41.922525-04:00",
               "status": "failed"
             }
           ],
@@ -173,6 +191,7 @@
             ],
             "severity": "error"
           },
+          "code": "\tdbPassword = \"supersecret123\"",
           "title": "Look for hard coded credentials",
           "verificationMethod": "automated"
         }
@@ -190,7 +209,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T19:52:53.427612-04:00",
+  "timestamp": "2026-07-12T18:56:41.922525-04:00",
   "tool": {
     "format": "SARIF",
     "name": "gosec",

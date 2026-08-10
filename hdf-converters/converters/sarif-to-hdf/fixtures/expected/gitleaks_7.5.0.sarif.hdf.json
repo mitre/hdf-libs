@@ -12,32 +12,32 @@
           "results": [
             {
               "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_1_vuln.json LINE : 13 COLUMN : 0\n      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\",",
-              "startTime": "2026-08-01T19:52:53.427311-04:00",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_1_vuln.json LINE : 13 COLUMN : 0\n      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\",",
-              "startTime": "2026-08-01T19:52:53.427311-04:00",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json LINE : 44 COLUMN : 0\n      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\",",
-              "startTime": "2026-08-01T19:52:53.427311-04:00",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : dojo/unittests/tools/test_gitlab_secret_detection_report_parser.py LINE : 37 COLUMN : 0\n        self.assertEqual(\"AWS\\nAKIAIOSFODNN7EXAMPLE\", first_finding.description)",
-              "startTime": "2026-08-01T19:52:53.427311-04:00",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json LINE : 44 COLUMN : 0\n      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\",",
-              "startTime": "2026-08-01T19:52:53.427311-04:00",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : dojo/unittests/tools/test_gitlab_secret_detection_report_parser.py LINE : 37 COLUMN : 0\n        self.assertEqual(\"AWS\\nAKIAIOSFODNN7EXAMPLE\", first_finding.description)",
-              "startTime": "2026-08-01T19:52:53.427311-04:00",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
               "status": "failed"
             }
           ],
@@ -59,6 +59,7 @@
             ],
             "severity": "warning"
           },
+          "code": "      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\",",
           "title": "AWS Access Key secret detected",
           "verificationMethod": "automated"
         },
@@ -72,12 +73,12 @@
           "results": [
             {
               "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json LINE : 13 COLUMN : 0\n      \"raw_source_code_extract\": \"-----BEGIN OPENSSH PRIVATE KEY-----\",",
-              "startTime": "2026-08-01T19:52:53.427311-04:00",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json LINE : 13 COLUMN : 0\n      \"raw_source_code_extract\": \"-----BEGIN OPENSSH PRIVATE KEY-----\",",
-              "startTime": "2026-08-01T19:52:53.427311-04:00",
+              "startTime": "2026-07-12T18:56:41.922316-04:00",
               "status": "failed"
             }
           ],
@@ -99,6 +100,7 @@
             ],
             "severity": "warning"
           },
+          "code": "      \"raw_source_code_extract\": \"-----BEGIN OPENSSH PRIVATE KEY-----\",",
           "title": "Asymmetric Private Key secret detected",
           "verificationMethod": "automated"
         }
@@ -116,7 +118,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T19:52:53.427311-04:00",
+  "timestamp": "2026-07-12T18:56:41.922316-04:00",
   "tool": {
     "format": "SARIF",
     "name": "Gitleaks"

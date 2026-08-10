@@ -54,6 +54,7 @@ describe('hdf-to-ecs converter', () => {
       const hdf = obj(o.hdf);
       expect(hdf.nist).toBeDefined();
       expect(hdf.cci).toBeDefined();
+      expect(hdf.control_type).toBeTruthy(); // controlType surfaced into hdf.control_type
       expect(hdf.exporter_version).toBe(VERSION);
     }
   });
@@ -66,37 +67,70 @@ describe('hdf-to-ecs converter', () => {
       const vuln = obj(o.vulnerability);
       expect((vuln.id as string).startsWith('CVE-')).toBe(true);
       expect(vuln.enumeration).toBe('CVE');
-      expect(vuln.classification).toBe('CVSS');
+      // classification is derived from the real cvss[] version, not literal "CVSS".
+      expect(vuln.classification).toBe('CVSS v3.0');
       expect(obj(vuln.score).base).toBeDefined();
+      expect(obj(vuln.score).version).toBe('3.0');
       expect(obj(vuln.scanner).vendor).toBe('Nessus');
+      expect(obj(o.hdf).verification_method).toBe('automated');
     }
+    // First requirement's two refs must both reach rule.reference AND
+    // vulnerability.reference (multivalue), not just the first.
+    const wantRefs = [
+      'https://www.oracle.com/a/tech/docs/cpujan2022cvrf.xml',
+      'https://www.oracle.com/security-alerts/cpujan2022.html#AppendixJAVA',
+    ];
+    expect(obj(out[0].rule).reference).toEqual(wantRefs);
+    expect(obj(out[0].vulnerability).reference).toEqual(wantRefs);
   });
 
-  it('is raw-primary: waived failure keeps outcome=failure + hdf.suppressed, lossless history', () => {
+  it('is effective-primary: waived failure -> outcome=success, raw kept in hdf.status, provenance in labels', () => {
     const out = lines(convertHdfToEcs(input('override.json'), VERSION));
     expect(out).toHaveLength(1);
     const o = out[0];
-    expect(obj(o.event).outcome).toBe('failure'); // raw verdict, not the waiver
+    const event = obj(o.event);
+    expect(event.outcome).toBe('success'); // effective (waived) verdict
+    expect(event.start).toBe('2024-01-01T00:00:00Z');
+    expect(event.duration).toBe(100000000); // 0.1s -> 1e8 ns
     const hdf = obj(o.hdf);
-    expect(hdf.status).toBe('failed');
+    expect(hdf.status).toBe('failed'); // raw kept
     expect(hdf.suppressed).toBe(true); // acceptance axis
     expect(hdf.effective_status).toBe('passed');
     expect(hdf.disposition).toBe('waiver');
     expect(hdf.overridden).toBe(true);
+    expect(hdf.baseline_title).toBe('RHEL 9 STIG Baseline');
+    expect(hdf.baseline_checksum).toEqual({ algorithm: 'sha256', value: 'abc123' });
     expect(hdf.status_overrides).toHaveLength(1);
     expect(obj((hdf.status_overrides as unknown[])[0]).type).toBe('waiver');
+    // override provenance -> labels.*
+    const labels = obj(o.labels);
+    expect(labels.hdf_disposition).toBe('waiver');
+    expect(labels.hdf_override_type).toBe('waiver');
+    expect(labels.hdf_override_applied_by).toBe('issm@example.com');
+    expect(labels.hdf_override_applied_at).toBe('2024-01-15T00:00:00Z');
+    expect(labels.hdf_override_expires_at).toBe('2099-12-31T00:00:00Z');
+    expect(labels.hdf_override_reason).toBeTruthy();
+    // sourceLocation -> log.origin.file.{name,line}
+    const file = obj(obj(obj(o.log).origin).file);
+    expect(file.name).toBe('controls/stig.rb');
+    expect(file.line).toBe(1);
     // host projected (componentId -> host.id); observer omitted (no tool/generator)
     expect(obj(o.host).name).toBe('rhel9-server-01');
     expect(obj(o.host).id).toBe('8f3b2c1a-0000-4a00-8000-000000000001');
     expect(o.observer).toBeUndefined();
   });
 
-  it('risk-adjusted failure stays outcome=failure + not suppressed (still actionable)', () => {
+  it('risk-adjusted failure stays outcome=failure + not suppressed (still actionable), provenance in labels', () => {
     const o = lines(convertHdfToEcs(input('riskadjust.json'), VERSION))[0];
-    expect(obj(o.event).outcome).toBe('failure');
+    expect(obj(o.event).outcome).toBe('failure'); // effectiveStatus still failed
     const hdf = obj(o.hdf);
     expect(hdf.suppressed).toBe(false); // risk adjustment does NOT suppress
     expect(hdf.disposition).toBe('riskAdjustment');
+    const labels = obj(o.labels);
+    expect(labels.hdf_disposition).toBe('riskAdjustment');
+    expect(labels.hdf_override_type).toBe('riskAdjustment');
+    expect(labels.hdf_override_applied_by).toBe('isso@example.com');
+    expect(obj(obj(obj(o.log).origin).file).line).toBe(2);
   });
 
   // U+2028/U+2029 in string data must be escaped identically to Go's encoder.

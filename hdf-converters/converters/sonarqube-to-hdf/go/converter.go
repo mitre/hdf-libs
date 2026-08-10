@@ -395,6 +395,26 @@ func convertRuleToRequirement(
 	tags["owasp"] = owaspTags
 	tags["nist"] = nistControls
 	tags["cci"] = cciControls
+	// Per-issue metadata SonarQube carries on every mode. Omitted when empty so
+	// the golden stays clean rather than pinning "".
+	if firstIssue.Effort != "" {
+		tags["effort"] = firstIssue.Effort
+	}
+	if firstIssue.Debt != "" {
+		tags["debt"] = firstIssue.Debt
+	}
+	if firstIssue.Author != "" {
+		tags["author"] = firstIssue.Author
+	}
+	// Language is a property of the rule, not the issue.
+	if hasRule {
+		if rule.Lang != "" {
+			tags["lang"] = rule.Lang
+		}
+		if rule.LangName != "" {
+			tags["langName"] = rule.LangName
+		}
+	}
 	// Keep both axes available in MQR mode so consumers can select. In legacy
 	// mode tags.severity already is the legacy axis, so repeating it adds nothing.
 	if severitySource == severitySourceMQR {
@@ -402,6 +422,9 @@ func convertRuleToRequirement(
 		tags["impacts"] = firstIssue.Impacts
 		if firstIssue.CleanCodeAttribute != "" {
 			tags["cleanCodeAttribute"] = firstIssue.CleanCodeAttribute
+		}
+		if firstIssue.CleanCodeAttributeCategory != "" {
+			tags["cleanCodeAttributeCategory"] = firstIssue.CleanCodeAttributeCategory
 		}
 	}
 	for k, v := range allTags {

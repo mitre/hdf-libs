@@ -17,6 +17,7 @@ Converters are multi-file, multi-language projects that span fixtures, tests, im
    - Check whether the tool supports common output formats (SARIF, JUnit, CycloneDX, XCCDF) — if so, plan format detection and routing.
    - Check heimdall2 and SAF CLI repos for existing fixtures and converter logic.
    - Read the exports of `hdf-schema`, `hdf-utilities`, `hdf-mappings`, and `hdf-validators` to know what's available — converters that reinvent library functionality will be rejected. **This audit is mandatory and happens BEFORE implementation**, not reactively after review feedback.
+   - **Maximize field coverage (Step 1a).** Plan a mapping for every source field that has a defensible HDF home — carry as much of the format into HDF as you can, not just the minimum. If you are unsure whether or how a field maps, STOP and ask the developer; never silently drop real data into freetext.
    - **Audit source-format fields against the HDF schema** (Step 1b). If you find a field with no HDF home, STOP and surface to the user — never silently add schema fields.
 3. Write a detailed plan covering:
    - Source format structure and field mappings to HDF
@@ -101,6 +102,33 @@ Before writing any code:
 2. Identify: What maps to `Requirement.ID`? What maps to `Impact`? What maps to `Status`? What maps to NIST tags?
 3. Sketch the struct types needed to parse the source format.
 4. **Check whether the tool supports common output formats** (SARIF, JUnit XML, CycloneDX, XCCDF). If it does, the converter must detect and delegate to the shared format converter — see "Step 4c — Format Detection and Routing" below.
+
+---
+
+## Step 1a — Maximize Source-Field Coverage (translate everything defensible)
+
+**The converter must carry as much of the source format into HDF as can be _defensibly_ mapped — not just the minimum to pass a smoke test.** A field-coverage sweep of the existing converters (epic `hdf-libs-j5hz`) found the same failure mode across dozens of them: real structured data flattened into freetext (`codeDesc`/`message`) or parsed into a struct and never emitted, even though HDF has a structured home for it.
+
+For **every** field the source carries, decide one of three and record the decision in the plan:
+
+1. **Map it** — it has an HDF home (a structured field, or a defensible `tags` entry). Do the mapping. This is the default and should cover the large majority of fields.
+2. **No HDF home** — genuinely inexpressible → go to Step 1b (surface to the developer; never silently invent a schema field).
+3. **Unsure** — you cannot tell whether/how a field maps, or the source shape is ambiguous (deeply nested, polymorphic, version-dependent) → **STOP and ask the developer.** Do not guess, and do not silently drop the field into `codeDesc`/`message` freetext.
+
+Never let real structured data land only in freetext when HDF has a home for it. Check explicitly for these recurring misses:
+- **CVSS** → full `cvss[]` (baseScore AND vector AND version), not just score→impact with the vector discarded.
+- **CWE** → first-class `requirement.cwe[]`, not only a `tags.cweid` string.
+- **CVE / EPSS / KEV** → structured `epss`, `kev`, and CVE identity, not buried in a description blob.
+- **Locations** → `sourceLocation{ref,line}` and `components[]` (host/image/OS/digest identity), not a file path concatenated into `codeDesc`.
+- **References** → external links into `refs[]` (the `Reference` type), not parsed-then-dropped.
+- **Remediation / fix / tips** → labeled `descriptions[]` entries.
+- **Triage / waiver / suppression** → reconstruct `statusOverrides[]` (+ `disposition`, `effectiveStatus`) with owner/date/reason when the source carries them — not a lossy status flip plus a tag.
+- **Raw source** → put the finding's raw source (or a serialized source object) in `requirement.code` so Heimdall's CODE tab renders (see `nessus`/`ionchannel`/`splunk` for the pattern).
+- **Timestamps** → derive the top-level `timestamp` and per-result `startTime` from the source's real scan/finding time; never `time.Now()`/`new Date()` when the source supplies a time.
+- **Categorization / metadata** → source taxonomy with no first-class field goes to `tags` passthrough, not dropped.
+- **Tool identity** → set `tool.version` from the source when present.
+
+A field "parsed into the struct but never emitted" is a bug, not a nicety: if you added a struct field, either map it or justify in the plan why it has no home. **When in doubt about any field, ask the developer rather than drop it.** Step 1b (below) governs the opposite risk — do not _over_-extend the schema; the two steps are complementary, and the answer to an "unsure" field is always to ask, never to silently add a field or silently discard data.
 
 ---
 
@@ -1256,6 +1284,12 @@ cat output.json | head -40
 - [ ] Step 4f done-checklist completed (see Step 4f for the full list)
 - [ ] Empty-input error path tested (fixture + Go test + TS test)
 - [ ] Sections N/A for amendment-output explicitly skipped (4c routing if not applicable, 4d classification fields, 4e passed-placeholder, Baseline.Name/Components)
+
+**All converters — field coverage (review Step 1a):**
+- [ ] Every source field has a logged disposition: mapped, no-HDF-home (Step 1b), or asked-the-developer — none silently dropped
+- [ ] Structured data lands in its structured HDF field, not freetext: `cvss[]` (score+vector), `cwe[]`, `epss`/`kev`, `sourceLocation`, `components[]`, `refs[]`, `statusOverrides[]`, `requirement.code`
+- [ ] Top-level `timestamp` / result `startTime` / `tool.version` come from the source when it supplies them (never `time.Now()`/`new Date()` as a substitute for a real source time)
+- [ ] No "parsed into the struct but never emitted" fields — each is mapped or justified in the plan
 
 **Schema-extension converters (review Step 1b):**
 - [ ] Field-gap audit performed BEFORE implementation; categories (a)/(b)/(c) logged in plan

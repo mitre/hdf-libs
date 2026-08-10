@@ -4,6 +4,14 @@
 
 import type { NessusNistMappings } from './types.js';
 import rawMappings from '../data/nessus-nist-mappings.json';
+import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
+
+// The table was authored against NIST 800-53 Rev 4 (heimdall2's mapping; it
+// carries AU-8(1), withdrawn in Rev 5). Lookups translate to the current
+// module-global revision via the NIST crosswalk.
+const NATIVE_REVISION = 4;
+const atCurrentRevision = (nistId: string): string =>
+  nistControlsAtRevision(nistId.split('|'), NATIVE_REVISION, getCurrentNistRevision()).join('|');
 
 const mappings = rawMappings as NessusNistMappings;
 
@@ -24,14 +32,14 @@ export function getNessusNistControl(
     (m) => m.pluginFamily === pluginFamily && String(m.pluginID) === pluginId
   );
   if (exactMatch) {
-    return exactMatch['NIST-ID'];
+    return atCurrentRevision(exactMatch['NIST-ID']);
   }
 
   // Fall back to wildcard match
   const wildcardMatch = mappings.find(
     (m) => m.pluginFamily === pluginFamily && String(m.pluginID) === '*'
   );
-  return wildcardMatch?.['NIST-ID'];
+  return wildcardMatch ? atCurrentRevision(wildcardMatch['NIST-ID']) : undefined;
 }
 
 /**

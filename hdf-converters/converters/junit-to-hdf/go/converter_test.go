@@ -261,7 +261,68 @@ func TestDescription(t *testing.T) {
 	assert.Contains(t, defaultDesc.Data, "surefire.MyTest")
 }
 
-// --- Helper ---
+// --- system-out / system-err descriptions ---
+
+func findDescription(descs []hdf.Description, label string) *hdf.Description {
+	for i := range descs {
+		if descs[i].Label == label {
+			return &descs[i]
+		}
+	}
+	return nil
+}
+
+// testFlaky's captured stdout/stderr live inside Surefire flakyFailure/flakyError
+// retry elements in surefire-flaky.xml. They should surface as system-out /
+// system-err descriptions on the requirement.
+func TestSystemOutErrDescriptions_Flaky(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-flaky.xml"), converterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "org.acme.FlakyTest.testFlaky")
+
+	out := findDescription(req.Descriptions, "system-out")
+	require.NotNil(t, out, "testFlaky should carry a system-out description")
+	assert.Contains(t, out.Data, "code-with-quarkus 1.0.0-SNAPSHOT on JVM")
+	assert.Contains(t, out.Data, "Installed features: [cdi, resteasy-reactive")
+
+	errDesc := findDescription(req.Descriptions, "system-err")
+	require.NotNil(t, errDesc, "testFlaky should carry a system-err description")
+	assert.Equal(t, "Test system.err", errDesc.Data)
+}
+
+// testStable has no captured output — neither description should be emitted.
+func TestSystemOutErrDescriptions_Absent(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-flaky.xml"), converterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "org.acme.FlakyTest.testStable")
+	assert.Nil(t, findDescription(req.Descriptions, "system-out"))
+	assert.Nil(t, findDescription(req.Descriptions, "system-err"))
+}
+
+func TestCollectSystemStreams_DirectChildren(t *testing.T) {
+	tc := junitTestCase{SystemOut: "  hello out\n", SystemErr: "\nhello err "}
+	out, errs := collectSystemStreams(tc)
+	assert.Equal(t, "hello out", out)
+	assert.Equal(t, "hello err", errs)
+}
+
+func TestCollectSystemStreams_Empty(t *testing.T) {
+	out, errs := collectSystemStreams(junitTestCase{Name: "x"})
+	assert.Empty(t, out)
+	assert.Empty(t, errs)
+}
+
+func TestCollectSystemStreams_JoinsRetriesInOrder(t *testing.T) {
+	tc := junitTestCase{
+		FlakyFailures: []junitFlaky{{SystemOut: "a"}, {SystemOut: "  b  "}},
+		FlakyErrors:   []junitFlaky{{SystemOut: "c", SystemErr: "e"}},
+	}
+	out, errs := collectSystemStreams(tc)
+	assert.Equal(t, "a\nb\nc", out)
+	assert.Equal(t, "e", errs)
+}
 
 // --- Testsuites root with mixed statuses (schema-validated against Windyroad XSD) ---
 
@@ -327,6 +388,69 @@ func TestTestsuitesMixed_Timestamp(t *testing.T) {
 	// First suite has timestamp="2024-11-15T10:30:00" — should be parsed into startTime
 	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "com.example.math.MathTest.testAddition")
 	assert.False(t, req.Results[0].StartTime.IsZero(), "startTime should be set from suite timestamp")
+}
+
+// --- Scan-target components ---
+
+func findComponent(components []hdf.Component, t2 hdf.TargetType) *hdf.Component {
+	for i := range components {
+		if components[i].Type == t2 {
+			return &components[i]
+		}
+	}
+	return nil
+}
+
+// testsuites-mixed.xml carries hostname="ci-runner-01" on both suites; that
+// machine identity surfaces as a single deduped host component alongside the
+// application component.
+func TestComponents_HostFromHostname(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+
+	host := findComponent(result.Components, hdf.Host)
+	require.NotNil(t, host, "a host component should be emitted from testsuite @hostname")
+	assert.Equal(t, hdf.Host, host.Type)
+	assert.Equal(t, "ci-runner-01", host.Name)
+	require.NotNil(t, host.Hostname)
+	assert.Equal(t, "ci-runner-01", *host.Hostname)
+
+	// Two suites share one hostname -> exactly one host component (deduped).
+	var hostCount int
+	for _, c := range result.Components {
+		if c.Type == hdf.Host {
+			hostCount++
+		}
+	}
+	assert.Equal(t, 1, hostCount, "duplicate hostnames should be deduped")
+
+	// The application component is still present.
+	assert.NotNil(t, findComponent(result.Components, hdf.Application))
+}
+
+// Fixtures without any testsuite @hostname emit no host component.
+func TestComponents_NoHostnameAbsent(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-failing.xml"), converterVersion)
+	require.NoError(t, err)
+	assert.Nil(t, findComponent(result.Components, hdf.Host),
+		"no host component when no testsuite carries a hostname")
+}
+
+func TestHostComponents_DistinctAndDeduped(t *testing.T) {
+	suites := []junitTestSuite{
+		{Hostname: "alpha"},
+		{Hostname: ""},
+		{Hostname: "beta"},
+		{Hostname: "  alpha  "},
+		{Hostname: "beta"},
+	}
+	hosts := hostComponents(suites)
+	require.Len(t, hosts, 2)
+	assert.Equal(t, "alpha", hosts[0].Name)
+	assert.Equal(t, "beta", hosts[1].Name)
+	assert.Equal(t, hdf.Host, hosts[0].Type)
+	require.NotNil(t, hosts[0].Hostname)
+	assert.Equal(t, "alpha", *hosts[0].Hostname)
 }
 
 // --- JSON serialization round-trip ---

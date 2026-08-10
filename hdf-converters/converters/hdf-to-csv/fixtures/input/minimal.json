@@ -68,6 +68,19 @@
             }
           ],
           "impact": 0.5,
+          "effectiveStatus": "passed",
+          "effectiveImpact": 0.0,
+          "disposition": "falsePositive",
+          "statusOverrides": [
+            {
+              "type": "falsePositive",
+              "status": "passed",
+              "reason": "Authentication logging is handled by an external SIEM the scanner cannot observe",
+              "appliedBy": { "type": "username", "identifier": "jdoe" },
+              "appliedAt": "2026-01-30T12:00:00.000Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
+            }
+          ],
           "tags": {
             "cci": ["CCI-000172"],
             "nist": ["AU-12"],
@@ -83,6 +96,49 @@
               "codeDesc": "Authentication logging check",
               "message": "Audit logging is not configured",
               "startTime": "2026-01-29T18:00:02.000Z"
+            }
+          ]
+        },
+        {
+          "id": "CVE-2021-44228",
+          "title": "Apache Log4j2 remote code execution (Log4Shell)",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "JNDI features in Apache Log4j2 2.0-beta9 through 2.15.0 do not protect against attacker-controlled LDAP endpoints, permitting remote code execution."
+            }
+          ],
+          "impact": 1.0,
+          "cvss": [
+            {
+              "version": "3.1",
+              "baseScore": 10.0,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"
+            }
+          ],
+          "cwe": ["CWE-502", "CWE-917"],
+          "epss": {
+            "date": "2026-01-29",
+            "score": 0.9436,
+            "percentile": 0.9993
+          },
+          "kev": {
+            "inKev": true,
+            "dateAdded": "2021-12-10",
+            "dueDate": "2021-12-24"
+          },
+          "tags": {
+            "cci": ["CCI-002605"],
+            "nist": ["SI-2"],
+            "severity": "critical"
+          },
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "Log4j version check",
+              "message": "log4j-core 2.14.1 is vulnerable to CVE-2021-44228",
+              "startTime": "2026-01-29T18:00:03.000Z"
             }
           ]
         }

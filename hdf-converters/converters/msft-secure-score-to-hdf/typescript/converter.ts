@@ -7,6 +7,7 @@ import type {
   Component,
   EvaluatedBaseline,
   EvaluatedRequirement,
+  Reference,
   RequirementResult,
   Checksum,
 } from '@mitre/hdf-schema';
@@ -66,8 +67,11 @@ interface ProfileResponse {
 interface SecureScoreControlProfile {
   id: string;
   azureTenantId?: string;
+  actionType?: string;
+  actionUrl?: string;
   controlCategory?: string;
   title?: string;
+  implementationCost?: string;
   maxScore?: number;
   rank?: unknown;
   remediation?: string;
@@ -175,7 +179,14 @@ function buildRequirement(
 
   // Add fix description from profile remediation
   const matched = getMatchingProfiles(profiles, cs.controlName);
+  const refs: Reference[] = [];
   if (matched.length > 0) {
+    for (const url of matched
+      .map(p => p.actionUrl)
+      .filter((u): u is string => u !== undefined && u !== '')) {
+      refs.push({ url });
+    }
+
     const remediations = matched
       .map(p => p.remediation)
       .filter((r): r is string => r !== undefined && r !== '');
@@ -189,13 +200,63 @@ function buildRequirement(
     if (impacts.length > 0) {
       descriptions.push({ label: 'rationale', data: stripHTML(impacts[0]!) });
     }
+
+    // Source categorization/metadata from the matched profile(s). Emit each tag
+    // only when a matched profile actually carries the value; preserve the
+    // source's natural JSON type (threats array, numeric rank, strings).
+    const threats = matched
+      .map(p => p.threats)
+      .find(t => Array.isArray(t) && t.length > 0);
+    if (threats !== undefined) {
+      tags.threats = threats;
+    }
+    const rank = matched
+      .map(p => p.rank)
+      .find(r => r !== undefined && r !== null);
+    if (rank !== undefined) {
+      tags.rank = rank;
+    }
+    const service = matched.map(p => p.service).find((s): s is string => !!s);
+    if (service !== undefined) {
+      tags.service = service;
+    }
+    const tier = matched.map(p => p.tier).find((s): s is string => !!s);
+    if (tier !== undefined) {
+      tags.tier = tier;
+    }
+    const userImpact = matched.map(p => p.userImpact).find((s): s is string => !!s);
+    if (userImpact !== undefined) {
+      tags.user_impact = userImpact;
+    }
+    const actionType = matched.map(p => p.actionType).find((s): s is string => !!s);
+    if (actionType !== undefined) {
+      tags.action_type = actionType;
+    }
+    const implementationCost = matched.map(p => p.implementationCost).find((s): s is string => !!s);
+    if (implementationCost !== undefined) {
+      tags.implementation_cost = implementationCost;
+    }
+  }
+
+  // `on` is carried on the control score itself as a "true"/"false" string
+  // (null/absent when Microsoft reports no enablement state). Map to a boolean;
+  // omit when neither literal is present.
+  if (cs.on === 'true') {
+    tags.on = true;
+  } else if (cs.on === 'false') {
+    tags.on = false;
   }
 
   // CodeDesc from implementationStatus
   const codeDesc = cs.implementationStatus || 'No implementation status provided';
 
-  // StartTime from createdDateTime
-  const startTime = (createdDateTime ? parseTimestamp(createdDateTime) : null) ?? new Date('0001-01-01T00:00:00Z');
+  // StartTime: the control's own lastSynced (when Microsoft last evaluated it).
+  // Fall back to the score snapshot's createdDateTime when a control carries no
+  // sync time (startTime is schema-required). Mirrors Go's IsZero fallback chain.
+  const startTime =
+    parseTimestamp(cs.lastSynced ?? '') ??
+    parseTimestamp(createdDateTime ?? '') ??
+    new Date('0001-01-01T00:00:00Z');
 
   // Secure Score has no per-result explanation beyond codeDesc, so `message`
   // stays absent rather than an empty string (createResult would default it to '').
@@ -209,7 +270,7 @@ function buildRequirement(
     descriptions,
     impact,
     results,
-    { tags },
+    { tags, ...(refs.length > 0 ? { refs } : {}) },
   ) as EvaluatedRequirement;
   const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {
@@ -283,6 +344,12 @@ export async function convertMsftSecureScoreToHdf(input: string, converterVersio
     ) as EvaluatedBaseline;
   });
 
+  // Top-level timestamp: the score snapshot's createdDateTime (when Microsoft
+  // generated this Secure Score), not wall-clock now — keeps conversion
+  // deterministic. Fall back to now only when the snapshot carries no time.
+  const timestamp =
+    parseTimestamp(combined.secureScore.value[0]?.createdDateTime ?? '') ?? new Date();
+
   return buildHdfResults({
     generatorName: 'msft-secure-score-to-hdf',
     converterVersion,
@@ -294,6 +361,6 @@ export async function convertMsftSecureScoreToHdf(input: string, converterVersio
       provider: 'azure' as Component['provider'],
       labels: { account: tenantId, provider: 'azure' },
     }],
-    timestamp: new Date(),
+    timestamp,
   });
 }

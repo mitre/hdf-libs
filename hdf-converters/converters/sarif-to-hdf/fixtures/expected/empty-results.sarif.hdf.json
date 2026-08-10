@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "ExampleAnalyzer ran and reported zero findings.",
-              "startTime": "2026-08-01T19:52:53.426971-04:00",
+              "startTime": "2026-07-12T18:56:41.922051-04:00",
               "status": "passed"
             }
           ],
@@ -35,7 +35,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T19:52:53.426971-04:00",
+  "timestamp": "2026-07-12T18:56:41.922051-04:00",
   "tool": {
     "format": "SARIF",
     "name": "ExampleAnalyzer",

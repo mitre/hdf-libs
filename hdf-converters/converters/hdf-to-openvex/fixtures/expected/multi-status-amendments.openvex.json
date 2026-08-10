@@ -5,6 +5,7 @@
   "role": "Security Engineer",
   "timestamp": "2026-03-01T12:00:00Z",
   "version": 1,
+  "tooling": "openvex-to-hdf/dev",
   "statements": [
     {
       "vulnerability": {
@@ -19,6 +20,7 @@
       "status": "not_affected",
       "justification": "component_not_present",
       "impact_statement": "Internal audit confirmed the vulnerable module is not bundled.",
+      "status_notes": "HDF override type: falsePositive\nEvidence (url): OpenVEX document (https://example.com/vex/multi-status-fixture)",
       "timestamp": "2026-03-01T12:00:00Z"
     },
     {
@@ -33,6 +35,7 @@
       ],
       "status": "affected",
       "action_statement": "vendor reports fix; apply and re-scan to verify",
+      "status_notes": "HDF override type: poam\nReason: Upgrade to 1.2.4 or later\nEvidence (url): OpenVEX document (https://example.com/vex/multi-status-fixture)\nMilestone: vendor reports fix; apply and re-scan to verify (status: pending, estimated completion: 2027-03-01T12:00:00Z)",
       "timestamp": "2026-03-01T12:00:00Z"
     }
   ]

@@ -97,13 +97,41 @@ func TestConvertTrufflehogToHDF_BaselineName(t *testing.T) {
 	assert.Equal(t, "TruffleHog Scan", result.Baselines[0].Name)
 }
 
-func TestConvertTrufflehogToHDF_Impact(t *testing.T) {
+// A verified secret is a confirmed-live credential and must rate a higher impact
+// (0.7, high) than an unverified candidate (0.5, medium). minimal.json's single
+// finding is Verified=true.
+func TestConvertTrufflehogToHDF_ImpactVerified(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertTrufflehogToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	// All trufflehog findings are medium impact (0.5)
-	assert.InDelta(t, 0.5, result.Baselines[0].Requirements[0].Impact, 0.001)
+	assert.InDelta(t, 0.7, result.Baselines[0].Requirements[0].Impact, 0.001)
+}
+
+// ndjson-input.ndjson findings are all Verified=false → unverified impact (0.5).
+func TestConvertTrufflehogToHDF_ImpactUnverified(t *testing.T) {
+	input := loadFixture(t, "input/ndjson-input.ndjson")
+	result, err := ConvertTrufflehogToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		assert.InDelta(t, 0.5, req.Impact, 0.001,
+			"unverified findings should rate medium impact (req %s)", req.ID)
+	}
+}
+
+// A group with at least one verified finding elevates the whole requirement to
+// the verified impact, even when other findings in the group are unverified.
+func TestConvertTrufflehogToHDF_ImpactMixedGroupTakesVerified(t *testing.T) {
+	mixed := []byte(`[
+		{"DetectorName":"AWS","DecoderName":"PLAIN","Verified":false,"Raw":"a","Redacted":"a"},
+		{"DetectorName":"AWS","DecoderName":"PLAIN","Verified":true,"Raw":"b","Redacted":"b"}
+	]`)
+	result, err := ConvertTrufflehogToHDF(mixed, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	assert.InDelta(t, 0.7, result.Baselines[0].Requirements[0].Impact, 0.001)
 }
 
 func TestConvertTrufflehogToHDF_Tags(t *testing.T) {

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.4.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.5.0",
   "title": "HDF Affected Package Primitives",
   "description": "Types for representing the software package(s) affected by a vulnerability finding.",
   "$defs": {

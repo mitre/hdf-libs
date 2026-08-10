@@ -1,4 +1,4 @@
-import { computeEffectiveStatus as canonicalEffectiveStatus } from '@mitre/hdf-utilities';
+import { computeEffectiveStatus as canonicalEffectiveStatus, parseTimestamp } from '@mitre/hdf-utilities';
 import type { ChangeReason, RequirementState } from './types.js';
 
 /** Statuses that count as "passing" for fixed/regressed classification */
@@ -81,15 +81,19 @@ export function classifyChangeReasons(
     reasons.push('overrideRemoved');
   }
 
-  // Check for override expiration between scans
+  // Check for override expiration between scans. parseTimestamp keeps
+  // zone-less scan timestamps host-independent (repo timestamp convention);
+  // null means unparseable, so the check is skipped.
   if (oldTimestamp && newTimestamp && oldOverrides.length > 0) {
-    const oldTime = new Date(oldTimestamp).getTime();
-    const newTime = new Date(newTimestamp).getTime();
-    for (const override of oldOverrides) {
-      const expiresAt = new Date(override.expiresAt).getTime();
-      if (expiresAt > oldTime && expiresAt <= newTime) {
-        reasons.push('overrideExpired');
-        break; // Only report once
+    const oldTime = parseTimestamp(oldTimestamp)?.getTime();
+    const newTime = parseTimestamp(newTimestamp)?.getTime();
+    if (oldTime !== undefined && newTime !== undefined) {
+      for (const override of oldOverrides) {
+        const expiresAt = parseTimestamp(override.expiresAt)?.getTime();
+        if (expiresAt !== undefined && expiresAt > oldTime && expiresAt <= newTime) {
+          reasons.push('overrideExpired');
+          break; // Only report once
+        }
       }
     }
   }

@@ -28,7 +28,7 @@
             "ref": "new_key"
           },
           "id": "AWS PLAIN",
-          "impact": 0.5,
+          "impact": 0.7,
           "tags": {
             "cci": [
               "CCI-000202",
@@ -63,7 +63,7 @@
             "ref": "keys"
           },
           "id": "URI PLAIN",
-          "impact": 0.5,
+          "impact": 0.7,
           "tags": {
             "cci": [
               "CCI-000202",
@@ -97,7 +97,7 @@
     "name": "trufflehog-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T23:52:54.443533Z",
+  "timestamp": "2026-07-12T23:25:15.138453Z",
   "tool": {
     "name": "TruffleHog"
   }

@@ -224,6 +224,28 @@ func TestConvertV1ToV2_NoTimestampWhenSourceHasNoTimes(t *testing.T) {
 	assert.Nil(t, v2.Timestamp, "no result times and no explicit timestamp → nil (never wall clock)")
 }
 
+func TestConvertV1ToV2_IgnoresTimelessResults(t *testing.T) {
+	timed := "2024-06-01T00:00:00Z"
+	v1 := &HDFV1Results{
+		Version:  "5.22.3",
+		Platform: V1Platform{Name: "test-system"},
+		Profiles: []V1Profile{{
+			Name: "p",
+			Controls: []V1Control{
+				{ID: "c-1", Impact: 0.5, Results: []V1Result{{Status: "passed"}}},
+				{ID: "c-2", Impact: 0.5, Results: []V1Result{{Status: "passed", StartTime: &timed}}},
+			},
+		}},
+		Statistics: V1Statistics{},
+	}
+
+	v2 := ConvertV1ToV2(v1, "1.0.0")
+
+	require.NotNil(t, v2.Timestamp)
+	assert.Equal(t, "2024-06-01T00:00:00Z", v2.Timestamp.UTC().Format(time.RFC3339),
+		"a result without start_time is not an observation; the latest real time wins")
+}
+
 func TestConvertV1ToV2_SetsGenerator(t *testing.T) {
 	v1 := v1WithResultTimes("5.22.3", "2024-03-01T10:00:00Z")
 

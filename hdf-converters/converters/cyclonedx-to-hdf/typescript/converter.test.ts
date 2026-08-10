@@ -194,7 +194,7 @@ describe('cyclonedx to HDF converter', async () => {
   });
 
   describe('tags', async () => {
-    it('should populate nist, cci, cweid, and ratings tags', async () => {
+    it('should populate nist and cci tags and drop the old scoring tags', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('vex.json'))
       ) as HDFResults;
@@ -205,8 +205,176 @@ describe('cyclonedx to HDF converter', async () => {
       expect((tags?.['nist'] as string[]).length).toBeGreaterThan(0);
       expect(tags?.['cci']).toBeDefined();
       expect((tags?.['cci'] as string[]).length).toBeGreaterThan(0);
-      expect(tags?.['cweid']).toContain('CWE-611');
-      expect(tags?.['ratings']).toContain('NVD - high');
+      // Moved to structured requirement.cwe[] / requirement.cvss[].
+      expect(tags?.['cweid']).toBeUndefined();
+      expect(tags?.['ratings']).toBeUndefined();
+    });
+  });
+
+  describe('structured CVSS', async () => {
+    it('should map CVSS ratings to requirement.cvss[]', async () => {
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('vex.json'))
+      ) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      const cvss = req.cvss;
+      expect(cvss).toHaveLength(3);
+
+      expect(cvss![0]!.baseScore).toBeCloseTo(7.5, 2);
+      expect(cvss![0]!.baseSeverity).toBe('high');
+      expect(cvss![0]!.version).toBe('3.1');
+      expect(cvss![0]!.baseVector).toBe('AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N');
+      expect(cvss![0]!.source).toBe('NVD');
+
+      expect(cvss![1]!.baseScore).toBeCloseTo(8.2, 2);
+      expect(cvss![1]!.source).toBe('SNYK');
+
+      expect(cvss![2]!.baseScore).toBeCloseTo(0.0, 2);
+      expect(cvss![2]!.baseSeverity).toBe('none');
+    });
+
+    it('should omit cvss[] when ratings carry no CVSS metrics', async () => {
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
+      ) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.cvss).toBeUndefined();
+      }
+    });
+
+    it('should emit a vector-only entry with defaulted version and no source', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'TEST-VECTOR-ONLY',
+            ratings: [
+              { method: 'CVSSv3', vector: 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H' },
+            ],
+            affects: [{ ref: 'comp-1' }],
+          },
+        ],
+        components: [{ type: 'library', name: 'test-lib', 'bom-ref': 'comp-1' }],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      const cvss = hdf.baselines[0]!.requirements[0]!.cvss;
+      expect(cvss).toHaveLength(1);
+      expect(cvss![0]!.baseScore).toBeUndefined();
+      expect(cvss![0]!.source).toBeUndefined();
+      expect(cvss![0]!.version).toBe('3.1');
+      expect(cvss![0]!.baseVector).toBe('AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
+    });
+  });
+
+  describe('structured CWE', async () => {
+    it('should map cwes to requirement.cwe[] and keep the NIST mapping', async () => {
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('vex.json'))
+      ) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.cwe).toEqual(['CWE-611']);
+      expect((req.tags?.['nist'] as string[]).length).toBeGreaterThan(0);
+    });
+
+    it('should carry all CWE ids for multi-CWE findings', async () => {
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
+      ) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'GHSA-5mg8-w23w-74h3'
+      );
+      expect(req!.cwe).toEqual(['CWE-173', 'CWE-200', 'CWE-378', 'CWE-732']);
+    });
+
+    it('should omit cwe[] when the vulnerability has no cwes', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'TEST-NO-CWE',
+            ratings: [{ severity: 'high' }],
+            affects: [{ ref: 'comp-1' }],
+          },
+        ],
+        components: [{ type: 'library', name: 'test-lib', 'bom-ref': 'comp-1' }],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.cwe).toBeUndefined();
+    });
+  });
+
+  describe('external references (refs[])', async () => {
+    it('should collect source.url, references[].source.url, and advisories[].url de-duplicated in order', async () => {
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('vex.json'))
+      ) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.refs?.map((r) => r.url)).toEqual([
+        'https://nvd.nist.gov/vuln/detail/CVE-2020-25649',
+        'https://security.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-1048302',
+        'https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59',
+        'https://github.com/FasterXML/jackson-databind/issues/2589',
+        'https://bugzilla.redhat.com/show_bug.cgi?id=1887664',
+      ]);
+    });
+
+    it('should emit a single ref when only source.url is present', async () => {
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
+      ) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'GHSA-5mg8-w23w-74h3'
+      );
+      expect(req!.refs?.map((r) => r.url)).toEqual(['https://github.com/advisories']);
+    });
+
+    it('should omit refs[] when the vulnerability carries no links', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'TEST-NO-REFS',
+            ratings: [{ severity: 'high' }],
+            affects: [{ ref: 'comp-1' }],
+          },
+        ],
+        components: [{ type: 'library', name: 'test-lib', 'bom-ref': 'comp-1' }],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.refs).toBeUndefined();
+    });
+
+    it('should de-dup across sources, skip empty urls, and tolerate references without a source', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'TEST-DEDUP',
+            source: { name: 'NVD', url: 'https://example.com/a' },
+            references: [
+              { id: 'REF-NO-SOURCE' },
+              { id: 'REF-1', source: { name: 'SNYK', url: 'https://example.com/b' } },
+            ],
+            advisories: [
+              { title: 'dup', url: 'https://example.com/a' },
+              { title: 'empty', url: '' },
+              { title: 'new', url: 'https://example.com/c' },
+            ],
+            affects: [{ ref: 'comp-1' }],
+          },
+        ],
+        components: [{ type: 'library', name: 'test-lib', 'bom-ref': 'comp-1' }],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.refs?.map((r) => r.url)).toEqual([
+        'https://example.com/a',
+        'https://example.com/b',
+        'https://example.com/c',
+      ]);
     });
   });
 
@@ -461,6 +629,143 @@ describe('cyclonedx to HDF converter', async () => {
       // Every requirement should have at least one result
       for (const req of hdf.baselines[0]!.requirements) {
         expect(req.results.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('cvss version from rating method', () => {
+    it('derives the version from rating.method when the vector lacks a CVSS prefix', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'CVE-2021-0001',
+            ratings: [
+              {
+                method: 'CVSSv2',
+                vector: 'AV:N/AC:L/Au:N/C:P/I:P/A:P',
+                score: 6.8,
+              },
+            ],
+          },
+          {
+            id: 'CVE-2021-0002',
+            ratings: [
+              {
+                method: 'CVSSv4',
+                vector:
+                  'AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N',
+                score: 9.3,
+              },
+            ],
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      const versions = hdf.baselines
+        .flatMap((b) => b.requirements)
+        .flatMap((r) => r.cvss ?? [])
+        .map((c) => c.version);
+      expect(versions).toContain('2.0');
+      expect(versions).toContain('4.0');
+    });
+  });
+
+  describe('VEX analysis -> structured status override', () => {
+    it('reconstructs a falsePositive override for a not_affected vuln', async () => {
+      // vex.json: analysis.state not_affected, justification code_not_reachable,
+      // response [will_not_fix, update]. Raw stays failed; effectiveStatus flips
+      // to notApplicable (a vuln scan) with the attributed, expiring override.
+      const hdf = JSON.parse(
+        await convertCyclonedxToHdf(loadFixture('vex.json'))
+      ) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'CVE-2020-25649'
+      )!;
+      expect(req).toBeDefined();
+
+      // raw result unchanged
+      expect(req.results[0]!.status).toBe('failed');
+
+      // effective status + disposition flipped
+      expect(req.effectiveStatus).toBe('notApplicable');
+      expect(req.disposition).toBe('falsePositive');
+
+      // structured override
+      expect(req.statusOverrides).toHaveLength(1);
+      const ov = req.statusOverrides![0]!;
+      expect(ov.type).toBe('falsePositive');
+      expect(ov.status).toBe('notApplicable');
+      expect(ov.appliedBy.identifier).toBe('cyclonedx analysis');
+      expect(ov.appliedBy.type).toBe('other');
+      expect(ov.justification).toBe('vulnerable_code_not_in_execute_path');
+      expect(ov.reason).toContain('vulnerable code is not reachable');
+      expect(ov.reason).toContain('Response: will_not_fix, update');
+
+      // appliedAt derived from the vuln updated time; expiresAt = +1 year.
+      expect(ov.appliedAt).toBe('2021-10-26T00:00:00Z');
+      expect(ov.expiresAt).toBe('2022-10-26T00:00:00Z');
+    });
+
+    it('reconstructs an attestation override for a resolved vuln', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'CVE-RESOLVED',
+            ratings: [{severity: 'high'}],
+            published: '2023-01-15T00:00:00Z',
+            analysis: {state: 'resolved', detail: 'Patched in 2.1.0'},
+            affects: [{ref: 'comp-1'}],
+          },
+        ],
+        components: [{type: 'library', name: 'test-lib', 'bom-ref': 'comp-1'}],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.results[0]!.status).toBe('failed');
+      expect(req.effectiveStatus).toBe('passed');
+      expect(req.disposition).toBe('attestation');
+      expect(req.statusOverrides).toHaveLength(1);
+      expect(req.statusOverrides![0]!.type).toBe('attestation');
+      expect(req.statusOverrides![0]!.reason).toBe('Patched in 2.1.0');
+      expect(req.statusOverrides![0]!.justification).toBeUndefined();
+      expect(req.statusOverrides![0]!.appliedAt).toBe('2023-01-15T00:00:00Z');
+    });
+
+    it('leaves exploitable / in_triage / no-analysis findings actionable (no override)', async () => {
+      const input = JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        vulnerabilities: [
+          {
+            id: 'CVE-EXPLOIT',
+            ratings: [{severity: 'high'}],
+            analysis: {state: 'exploitable', detail: 'reachable'},
+            affects: [{ref: 'comp-1'}],
+          },
+          {
+            id: 'CVE-TRIAGE',
+            ratings: [{severity: 'high'}],
+            analysis: {state: 'in_triage'},
+            affects: [{ref: 'comp-1'}],
+          },
+          {
+            id: 'CVE-NONE',
+            ratings: [{severity: 'high'}],
+            affects: [{ref: 'comp-1'}],
+          },
+        ],
+        components: [{type: 'library', name: 'test-lib', 'bom-ref': 'comp-1'}],
+      });
+      const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.results[0]!.status).toBe('failed');
+        expect(req.statusOverrides).toBeUndefined();
+        expect(req.effectiveStatus).toBeUndefined();
+        expect(req.disposition).toBeUndefined();
       }
     });
   });

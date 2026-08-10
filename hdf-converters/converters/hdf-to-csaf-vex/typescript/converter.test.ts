@@ -410,6 +410,126 @@ describe('convertHdfToCsafVex — cvss scores', () => {
   });
 });
 
+describe('convertHdfToCsafVex — new field exports', () => {
+  it('surfaces reason as a description note on not_affected statements', () => {
+    const out = JSON.parse(convertHdfToCsafVex(loadInput('sec-vex-amendments.json'), TEST_VERSION));
+    expect(out.vulnerabilities).toHaveLength(3);
+    for (const v of out.vulnerabilities) {
+      expect(v.notes).toHaveLength(1);
+      expect(v.notes[0].category).toBe('description');
+      expect(v.notes[0].text.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('emits product_identification_helper.purl and round-trips the package identity', async () => {
+    const purl = 'pkg:npm/left-pad@1.3.0';
+    const amendments: HDFAmendments = {
+      name: 'purl round-trip',
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-7777',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          justification: 'component_not_present' as never,
+          reason: 'left-pad is not bundled',
+          affectedPackages: [
+            { name: 'left-pad', version: '1.3.0', ecosystem: 'npm' as never, purl },
+          ],
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCsafVex(JSON.stringify(amendments), TEST_VERSION);
+    const doc = JSON.parse(out);
+    expect(doc.product_tree.full_product_names).toHaveLength(1);
+    const fpn = doc.product_tree.full_product_names[0];
+    expect(fpn.product_id).toBe(purl);
+    expect(fpn.product_identification_helper.purl).toBe(purl);
+
+    const roundTripped = await convertCsafVexToHdf(out, TEST_VERSION);
+    expect(roundTripped.overrides).toHaveLength(1);
+    expect(roundTripped.overrides[0].affectedPackages?.[0].purl).toBe(purl);
+  });
+
+  it('emits product_identification_helper.cpe for a cpe-only package', () => {
+    const cpe = 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*';
+    const amendments: HDFAmendments = {
+      name: 'cpe helper',
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-8888',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          justification: 'component_not_present' as never,
+          reason: 'not affected',
+          affectedPackages: [{ cpe } as never],
+        } as never,
+      ],
+    } as never;
+    const doc = JSON.parse(convertHdfToCsafVex(JSON.stringify(amendments), TEST_VERSION));
+    expect(doc.product_tree.full_product_names[0].product_identification_helper.cpe).toBe(cpe);
+  });
+
+  it('surfaces externalReferences[].href as references, skipping href-less entries', () => {
+    const amendments: HDFAmendments = {
+      name: 'external refs',
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-6666',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          justification: 'component_not_present' as never,
+          reason: 'not affected',
+          externalReferences: [
+            { sourceName: 'stix', href: 'https://cti.example.com/indicator/42', description: 'STIX indicator' },
+            { sourceName: 'cve', externalId: 'CVE-2026-6666' },
+          ],
+        } as never,
+      ],
+    } as never;
+    const doc = JSON.parse(convertHdfToCsafVex(JSON.stringify(amendments), TEST_VERSION));
+    const refs = doc.vulnerabilities[0].references;
+    expect(refs).toHaveLength(1);
+    expect(refs[0].url).toBe('https://cti.example.com/indicator/42');
+    expect(refs[0].summary).toBe('STIX indicator');
+  });
+
+  it('renders milestone completedAt (preferred over estimate) as remediation date', () => {
+    const amendments: HDFAmendments = {
+      name: 'milestone dates',
+      overrides: [
+        {
+          type: OverrideType.Poam,
+          requirementId: 'CVE-2026-5555',
+          status: ResultStatus.Failed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2099-12-31T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'ops' },
+          reason: 'tracking',
+          milestones: [
+            {
+              description: 'apply patch',
+              status: 'completed' as never,
+              estimatedCompletion: new Date('2026-02-01T00:00:00Z'),
+              completedAt: new Date('2026-03-15T00:00:00Z'),
+            },
+          ],
+        } as never,
+      ],
+    } as never;
+    const doc = JSON.parse(convertHdfToCsafVex(JSON.stringify(amendments), TEST_VERSION));
+    expect(doc.vulnerabilities[0].remediations[0].date).toBe('2026-03-15T00:00:00Z');
+  });
+});
+
 // Byte-for-byte equality with the SAME golden files the Go TestGoldenParity
 // asserts against — this is what keeps the TS and Go exporters from drifting.
 describe('convertHdfToCsafVex — golden parity', () => {

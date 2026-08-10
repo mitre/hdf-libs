@@ -1,5 +1,6 @@
 import {
   type Checksum,
+  type Component,
   TargetType,
   createMinimalBaseline,
   type EvaluatedBaseline,
@@ -155,14 +156,28 @@ export async function convertNiktoToHdf(input: string, converterVersion = 'unkno
     summary: niktoData.banner || '',
   }) as EvaluatedBaseline;
 
+  // Surface the scan target's host identity. Nikto scans a single web host;
+  // host/ip name it. Omit the component entirely when neither is present.
+  const components: Component[] = [];
+  if (niktoData.host || niktoData.ip) {
+    const host: Component = {
+      type: TargetType.Host,
+      name: niktoData.host || niktoData.ip!,
+    };
+    if (niktoData.host) {
+      host.hostname = niktoData.host;
+    }
+    if (niktoData.ip) {
+      host.ipAddress = niktoData.ip;
+    }
+    components.push(host);
+  }
+
   return buildHdfResults({
     generatorName: 'nikto-to-hdf',
     converterVersion,
     toolName: 'Nikto',
     baselines: [baseline],
-    components: [{
-      type: TargetType.Application,
-      name: targetName,
-    }],
+    components,
   });
 }

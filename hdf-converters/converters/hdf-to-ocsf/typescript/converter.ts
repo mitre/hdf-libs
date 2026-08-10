@@ -8,7 +8,6 @@ import {
   stringSlice,
   firstResultStartTime,
   defaultDescription,
-  firstRefURL,
   runExport,
   firstCVE,
   epochMillis,
@@ -96,6 +95,24 @@ function buildFinding(
   setIf(finding, 'comment', overrideComment(req));
   const device = buildDevice(component);
   if (device) finding.device = device;
+
+  // Surface the check evidence and raw source data into their first-class OCSF
+  // (base_event) homes instead of leaving them only in unmapped: the raw tool
+  // blob -> raw_data, the assertion text -> message, per-result codeDesc/message/
+  // status -> evidences[], and the precise HDF status (which the collapsed
+  // compliance.status_id loses for notApplicable/notReviewed/error) ->
+  // status_detail. status_detail carries the effective/rollup status so it also
+  // reflects an override (e.g. a waived fail reads "passed").
+  setIf(finding, 'raw_data', getStr(req, 'code'));
+  setIf(finding, 'message', firstResultMessage(req));
+  const evidences = buildEvidences(req);
+  if (evidences.length > 0) finding.evidences = evidences;
+  setIf(finding, 'status_detail', st.rollup);
+  // The "fix"-labeled description is real remediation guidance; give it the
+  // first-class Finding remediation home (Vulnerability Findings also get a
+  // per-vuln remediation + fix_available below).
+  const remediation = remediationText(req);
+  if (remediation !== '') finding.remediation = { desc: remediation };
 
   if (hasCVSS) {
     finding.vulnerabilities = buildVulnerabilities(cvssList!, req);
@@ -279,6 +296,16 @@ function buildVulnerabilities(cvssList: unknown[], req: Obj): unknown[] {
     setIf(entry, 'version', getStr(m, 'version'));
     setIf(entry, 'vector_string', getStr(m, 'baseVector'));
     setIf(entry, 'severity', getStr(m, 'baseSeverity'));
+    // Temporal/computed scoring: the environmental-adjusted score -> cvss.
+    // overall_score (float_t); the remaining temporal components -> cvss.metrics[].
+    if (typeof m.computedScore === 'number') entry.overall_score = floatNumber(m.computedScore);
+    const metrics: Obj[] = [];
+    if (typeof m.threatScore === 'number') metrics.push({ name: 'Threat Score', value: floatMetric(m.threatScore) });
+    const threatVector = getStr(m, 'threatVector');
+    if (threatVector !== '') metrics.push({ name: 'Threat Vector', value: threatVector });
+    const computedSeverity = getStr(m, 'computedSeverity');
+    if (computedSeverity !== '') metrics.push({ name: 'Computed Severity', value: computedSeverity });
+    if (metrics.length > 0) entry.metrics = metrics;
     cvssArr.push(entry);
   }
   if (cvssArr.length > 0) cve.cvss = cvssArr;
@@ -288,8 +315,73 @@ function buildVulnerabilities(cvssList: unknown[], req: Obj): unknown[] {
   const vuln: Obj = { cve };
   setIf(vuln, 'title', getStr(req, 'title'));
   setIf(vuln, 'desc', defaultDescription(req));
-  const ref = firstRefURL(req);
-  if (ref !== '') vuln.references = [ref];
+  const refs = allRefURLs(req);
+  if (refs.length > 0) vuln.references = refs; // ALL refs, not just the first
+  const remediation = remediationText(req);
+  if (remediation !== '') {
+    vuln.remediation = { desc: remediation };
+    vuln.fix_available = true;
+  }
   return [vuln];
+}
+
+// The data of the first description carrying the given label, or ''.
+function labeledDescription(req: Obj, label: string): string {
+  const descs = asArr(req.descriptions) ?? [];
+  for (const dRaw of descs) {
+    const d = asMap(dRaw);
+    if (d && getStr(d, 'label') === label) return getStr(d, 'data');
+  }
+  return '';
+}
+
+// The "fix"-labeled description as remediation guidance, treating a bare "n/a"
+// placeholder as absent (no real remediation).
+function remediationText(req: Obj): string {
+  const fix = labeledDescription(req, 'fix');
+  return fix.trim().toLowerCase() === 'n/a' ? '' : fix;
+}
+
+// Every non-empty refs[].url (not just the first).
+function allRefURLs(req: Obj): string[] {
+  const refs = asArr(req.refs) ?? [];
+  const out: string[] = [];
+  for (const rRaw of refs) {
+    const url = getStr(asMap(rRaw), 'url');
+    if (url !== '') out.push(url);
+  }
+  return out;
+}
+
+// results[0].message, or ''.
+function firstResultMessage(req: Obj): string {
+  const results = asArr(req.results) ?? [];
+  if (results.length > 0) return getStr(asMap(results[0]), 'message');
+  return '';
+}
+
+// Each result's codeDesc/message/status as an OCSF evidences[] artifact (its
+// data object), preserving per-result check evidence the scalar finding.message
+// cannot hold.
+function buildEvidences(req: Obj): Obj[] {
+  const results = asArr(req.results) ?? [];
+  const out: Obj[] = [];
+  for (const rRaw of results) {
+    const r = asMap(rRaw);
+    if (!r) continue;
+    const data: Obj = {};
+    setIf(data, 'code_desc', getStr(r, 'codeDesc'));
+    setIf(data, 'message', getStr(r, 'message'));
+    setIf(data, 'status', getStr(r, 'status'));
+    if (Object.keys(data).length > 0) out.push({ data });
+  }
+  return out;
+}
+
+// A float as a plain decimal string for an OCSF Metric value (Metric.value is
+// String). JS's String() agrees with Go's shortest-decimal format over the
+// low-precision decimals used here, keeping Go/TS byte-identical.
+function floatMetric(f: number): string {
+  return String(f);
 }
 

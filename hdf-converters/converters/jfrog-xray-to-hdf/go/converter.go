@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -119,12 +120,97 @@ func getImpact(severity string) float64 {
 	return hdfutil.SeverityToImpact(severity, 0.5)
 }
 
-// extractCWEs extracts CWE identifiers from the first CVE entry's cwe array.
+// extractCWEs collects the distinct CWE identifiers across every CVE entry,
+// preserving first-seen order. These feed both requirement.cwe[] and the
+// CWE→NIST mapping.
 func extractCWEs(entry XrayEntry) []string {
-	if len(entry.ComponentVersions.MoreDetails.CVEs) == 0 {
-		return nil
+	var out []string
+	seen := map[string]bool{}
+	for _, cve := range entry.ComponentVersions.MoreDetails.CVEs {
+		for _, cwe := range cve.CWE {
+			if cwe != "" && !seen[cwe] {
+				seen[cwe] = true
+				out = append(out, cwe)
+			}
+		}
 	}
-	return entry.ComponentVersions.MoreDetails.CVEs[0].CWE
+	return out
+}
+
+// extractCVEs collects the distinct CVE identifiers across every CVE entry,
+// preserving first-seen order. The requirement id is a summary hash (never the
+// CVE), so tags.cve is where the CVE list lives.
+func extractCVEs(entry XrayEntry) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, cve := range entry.ComponentVersions.MoreDetails.CVEs {
+		if cve.CVE != "" && !seen[cve.CVE] {
+			seen[cve.CVE] = true
+			out = append(out, cve.CVE)
+		}
+	}
+	return out
+}
+
+// parseCvssField splits a JFrog cvss_v2/cvss_v3 field ("<score>/<vector>", e.g.
+// "9.8/CVSS:3.1/AV:N/...") on the FIRST "/" into the numeric base score and the
+// remaining vector. A field with no "/" is treated as a bare score with no
+// vector. An unparseable score yields a nil score (the vector may still stand
+// on its own).
+func parseCvssField(field string) (score *float64, vector string) {
+	if field == "" {
+		return nil, ""
+	}
+	scorePart, vec, _ := strings.Cut(field, "/")
+	vector = vec
+	if s, err := strconv.ParseFloat(strings.TrimSpace(scorePart), 64); err == nil {
+		score = &s
+	}
+	return score, vector
+}
+
+// buildCvssEntries assembles the structured requirement.cvss[] for a group's
+// representative entry. Each CVE contributes its v3 metric (version read from
+// the vector prefix) followed by its v2 metric (always CVSS 2.0 — the cvss_v2
+// vector's prefix is inconsistent in Xray output, so the field name is the
+// authority). A field carrying neither a score nor a vector is skipped.
+func buildCvssEntries(cves []CVEEntry) []hdf.Cvss {
+	var out []hdf.Cvss
+	for _, cve := range cves {
+		if entry, ok := buildV3Cvss(cve); ok {
+			out = append(out, entry)
+		}
+		if entry, ok := buildV2Cvss(cve); ok {
+			out = append(out, entry)
+		}
+	}
+	return out
+}
+
+func buildV3Cvss(cve CVEEntry) (hdf.Cvss, bool) {
+	score, vector := parseCvssField(cve.CvssV3)
+	if score == nil && vector == "" {
+		return hdf.Cvss{}, false
+	}
+	return shared.BuildCvss(shared.CvssInput{
+		Version:    shared.CvssVersionFromVector(vector),
+		BaseScore:  score,
+		BaseVector: vector,
+		Source:     cve.CVE,
+	}), true
+}
+
+func buildV2Cvss(cve CVEEntry) (hdf.Cvss, bool) {
+	score, vector := parseCvssField(cve.CvssV2)
+	if score == nil && vector == "" {
+		return hdf.Cvss{}, false
+	}
+	return shared.BuildCvss(shared.CvssInput{
+		Version:    shared.CvssVersionFromString("2.0"),
+		BaseScore:  score,
+		BaseVector: vector,
+		Source:     cve.CVE,
+	}), true
 }
 
 // formatDescription builds the description from more_details.description and
@@ -181,6 +267,22 @@ func formatCodeDesc(entry XrayEntry) string {
 	return strings.ReplaceAll(result, ",", ", ")
 }
 
+// marshalEntryCode renders an Xray entry as the indented JSON blob carried in
+// the requirement's code field (the ionchannel pattern), so Heimdall's CODE tab
+// shows the raw finding. HTML escaping is off so `<` in a version range survives
+// as itself; the struct's fixed field order matches the TS twin's reconstructed
+// object, keeping Go and TS byte-identical (verified by the shared snapshot test).
+func marshalEntryCode(entry XrayEntry) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(entry); err != nil {
+		return "{}"
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
+}
+
 // groupByID groups entries by their effective ID, preserving insertion order.
 func groupByID(entries []XrayEntry) ([]string, map[string][]XrayEntry) {
 	order := []string{}
@@ -201,12 +303,13 @@ func buildRequirement(entryID string, entries []XrayEntry, scanTime time.Time) h
 	rep := entries[0]
 
 	cweIDs := extractCWEs(rep)
+	cveIDs := extractCVEs(rep)
 	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultStaticAnalysisNIST)
 	cciTags := cci.NISTToCCI(nist)
 
 	extras := map[string]interface{}{}
-	if len(cweIDs) > 0 {
-		extras["cweid"] = cweIDs
+	if len(cveIDs) > 0 {
+		extras["cve"] = hdfutil.StringsToInterfaces(cveIDs)
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -231,9 +334,16 @@ func buildRequirement(entryID string, entries []XrayEntry, scanTime time.Time) h
 		Impact:             getImpact(rep.Severity),
 		Tags:               tags,
 		Descriptions:       descriptions,
+		Code:               hdfutil.Ptr(marshalEntryCode(rep)),
 		Results:            results,
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+	if len(cweIDs) > 0 {
+		req.Cwe = cweIDs
+	}
+	if cvss := buildCvssEntries(rep.ComponentVersions.MoreDetails.CVEs); len(cvss) > 0 {
+		req.Cvss = cvss
 	}
 	if pkg := buildAffectedPackageFromEntry(rep); pkg != nil {
 		req.AffectedPackages = []hdf.AffectedPackage{*pkg}

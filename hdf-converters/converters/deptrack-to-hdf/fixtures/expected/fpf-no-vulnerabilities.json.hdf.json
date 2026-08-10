@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "Dependency-Track analyzed laravel and reported zero vulnerable components.",
-              "startTime": "2026-08-01T23:52:43.21449Z",
+              "startTime": "2026-07-12T22:56:35.671098Z",
               "status": "passed"
             }
           ],
@@ -40,7 +40,7 @@
     "name": "deptrack-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T23:52:43.21449Z",
+  "timestamp": "2024-04-04T03:42:24Z",
   "tool": {
     "format": "FPF",
     "name": "Dependency-Track"

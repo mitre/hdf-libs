@@ -28,7 +28,7 @@
             {
               "codeDesc": "STIG rule FFOX-00-000001",
               "message": "Installed Firefox version is end-of-life and unsupported.",
-              "startTime": "2026-08-01T23:52:41.655221Z",
+              "startTime": "2026-07-14T17:50:32.976269Z",
               "status": "failed"
             }
           ],
@@ -74,7 +74,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000002",
-              "startTime": "2026-08-01T23:52:41.655221Z",
+              "startTime": "2026-07-14T17:50:32.976269Z",
               "status": "passed"
             }
           ],
@@ -120,7 +120,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000003",
-              "startTime": "2026-08-01T23:52:41.655221Z",
+              "startTime": "2026-07-14T17:50:32.976269Z",
               "status": "notApplicable"
             }
           ],
@@ -167,7 +167,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000004",
-              "startTime": "2026-08-01T23:52:41.655221Z",
+              "startTime": "2026-07-14T17:50:32.976269Z",
               "status": "passed"
             }
           ],
@@ -214,7 +214,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000015",
-              "startTime": "2026-08-01T23:52:41.655221Z",
+              "startTime": "2026-07-14T17:50:32.976269Z",
               "status": "notReviewed"
             }
           ],
@@ -261,7 +261,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000021",
-              "startTime": "2026-08-01T23:52:41.655221Z",
+              "startTime": "2026-07-14T17:50:32.976269Z",
               "status": "failed"
             }
           ],
@@ -324,7 +324,7 @@
     "name": "cklb-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T23:52:41.655221Z",
+  "timestamp": "2026-07-14T17:50:32.976269Z",
   "tool": {
     "format": "CKLB",
     "name": "DISA STIG Viewer"

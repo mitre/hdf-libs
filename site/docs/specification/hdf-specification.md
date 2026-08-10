@@ -1,12 +1,12 @@
-# Heimdall Data Format (HDF) v3.4.0 Specification
+# Heimdall Data Format (HDF) v3.5.0 Specification
 
-**Version**: 3.4.0
+**Version**: 3.5.0
 **Schema**: JSON Schema draft 2020-12
 **License**: Apache-2.0 | The MITRE Corporation
 
 ## Overview
 
-HDF is a JSON format for representing security assessment data. It normalizes outputs from vulnerability scanners, compliance checkers, and configuration auditors into a unified data model. Seven document types cover the full assessment lifecycle.
+HDF is a JSON format for representing security assessment data. It normalizes outputs from vulnerability scanners, compliance checkers, and configuration auditors into a unified data model. Seven document types cover the full assessment lifecycle, plus a continuous-monitoring change-event stream (section 8).
 
 | Document | Purpose | Key Fields |
 |----------|---------|------------|
@@ -75,7 +75,7 @@ Reference helper implementations: `shared.BuildNoFindingsRequirement` (Go) and `
 
 Assessment findings from running security checks against target systems.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.4.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.5.0`
 
 ### Top-Level Fields
 
@@ -96,6 +96,7 @@ A Results document is the primary output of HDF converters. It captures what was
 | extensions | object | no | Tool-specific metadata |
 | id | UUID | no | Unique assessment run identifier |
 | remediation | Remediation | no | Reference to automated fix resources |
+| externalReferences | External_Reference[] | no | Inert references to external artifacts (CTI/STIX, BOMs, advisories, runbooks) relevant to the assessment as a whole *(v3.5.0)* |
 
 ### Evaluated_Baseline
 
@@ -148,6 +149,7 @@ A single security requirement with test results. Each requirement maps to one te
 | evidence | Evidence[] | no | Screenshots, logs, code samples |
 | disposition | OverrideType | no | Override disposition applied to this requirement |
 | effectiveImpact | number | no | Effective impact after overrides (0.0–1.0) |
+| effectiveChecksum | Checksum | no | sha256 over the resolved effective posture (`{status, impact, disposition}`) for per-control change detection; flips only when the operative posture changes *(v3.5.0)* |
 | controlType | ControlType | no | NIST SP 800-53 / SP 800-53A categorization: `policy` \| `procedure` \| `technical` \| `management` \| `operational` *(v3.2.0)* |
 | verificationMethod | VerificationMethod | no | How this requirement is verified: `automated` \| `manual-by-design` \| `manual-pending-automation` \| `hybrid`. Disambiguates the two cases that null `code` previously overloaded *(v3.2.0)* |
 | applicability | Applicability | no | Within-baseline applicability: `required` \| `optional` \| `advisory`. Distinct from severity (risk weight) and status (lifecycle) *(v3.2.0)* |
@@ -213,7 +215,7 @@ The system element that was assessed. Components are polymorphic — each has a 
 
 Security requirements without results (before assessment).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.4.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.5.0`
 
 Shares most fields with Evaluated_Baseline but uses `Baseline_Requirement` (no results, no effectiveStatus) instead of `Evaluated_Requirement`.
 
@@ -270,7 +272,7 @@ A security requirement before assessment. Structurally identical to Evaluated_Re
 
 Describes a system under assessment. A system document defines the authorization boundary, including what components make up the system, its security categorization (FIPS 199), and its authorization status (ATO). This corresponds to a FedRAMP system or an OSCAL SSP's system characteristics. Results and amendments reference the system via `systemRef` to establish which system the assessment applies to.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.4.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.5.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -327,7 +329,7 @@ Declares a control's designation within the system — whether it is common (pro
 
 Assessment plan defining what to assess and how. A plan document describes the scope, methodology, and schedule for an upcoming security assessment. It references the system under test via `systemRef` and lists the individual assessments to be performed. This corresponds to an OSCAL SAP (Security Assessment Plan) or a FedRAMP test plan.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.4.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.5.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -361,7 +363,7 @@ A single assessment within a plan — defines which baseline to run against whic
 
 Status overrides applied after assessment (waivers, attestations, POAMs).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.4.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.5.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -401,6 +403,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 | cvss | CVSS | no | Structured CVSS scoring backing this override; on `riskAdjustment`, `impact.value` should be approximately `cvss.computedScore / 10.0` *(v3.3.0)* |
 | justification | Justification | no | Structured controlled-vocabulary classification (VEX-aligned: `component_not_present`, `vulnerable_code_not_present`, `vulnerable_code_not_in_execute_path`, `vulnerable_code_cannot_be_controlled_by_adversary`, `inline_mitigations_already_exist`). Complements (does not replace) `reason` *(v3.3.0)* |
 | milestones | Milestone[] | no | Remediation milestones (primarily for `poam` type) |
+| externalReferences | External_Reference[] | no | Inert references to the external artifacts behind this override (e.g. the STIX bundle/object motivating an E:H riskAdjustment); distinct from `evidence` *(v3.5.0)* |
 
 ---
 
@@ -408,7 +411,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 
 Diff between two or more assessment documents. A comparison captures how compliance posture changed between scans, across environments, or between baseline versions. The `comparisonMode` indicates the type of analysis (temporal drift, fleet comparison, baseline evolution, etc.). Each requirement diff records whether a control is new, absent, fixed, regressed, or unchanged. Comparisons are produced by `hdf diff` and consumed by dashboards to show trend data.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.4.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.5.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -435,7 +438,7 @@ Diff between two or more assessment documents. A comparison captures how complia
 
 Bundles references to assessment artifacts for audit and compliance submission. An evidence package collects results, baselines, amendments, system descriptions, and supporting materials (screenshots, logs, SBOMs) into a single auditable unit. This corresponds to a FedRAMP security package or an OSCAL POA&M submission bundle. The `completenessCheck` field validates that all expected artifacts are present.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.4.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.5.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -463,6 +466,37 @@ A reference to an HDF document or SBOM included in the evidence package.
 | checksum | Checksum | no | Document integrity hash |
 | description | string | no | Entry description |
 | componentRef | UUID | no | componentId this content relates to |
+
+---
+
+## 8. Requirement Change Event *(v3.5.0)*
+
+A single continuous-monitoring event describing how one requirement's posture changed between two same-target results scans. Producers (`hdf events derive`) emit an NDJSON stream of these events; a batch replays onto a seed results document to reassemble a reconciled state (`hdf events apply`) or folds into a `systemDrift` comparison (`hdf events fold`). The unit is the *requirement*, keyed by `(systemRef, componentId, requirementId)` with a per-key integer `sequence` as the sole ordering authority. Design: ADR-0005; the [SIEM export guide](../guides/siem-export.md) documents the change-event projections to OCSF and SARIF.
+
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.5.0`
+
+Envelope (CloudEvents-grounded dedup + ordering):
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| eventId | UUID | **yes** | UUIDv5 over the fixed namespace + entity key + sequence; dedup identity |
+| source | URI | **yes** | Producer URI recorded on every event |
+| sequence | integer (≥0) | **yes** | Per-key monotonic order — the sole ordering authority |
+| systemRef | string | **yes** | System reference component of the entity key |
+| componentId | UUID | **yes** | Component component of the entity key |
+| timestamp | date-time | **yes** | Event occurrence (the next document's scan time) |
+| priorChecksum | Checksum \| null | **yes** | effectiveChecksum of the prior state; chains events for a key |
+| schemaRef | URI | no | Optional schema reference stamped on the event |
+
+Event body:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| requirementId | string | **yes** | The requirement whose posture changed |
+| state | Event_Requirement_State | **yes** | `new` \| `absent` \| `updated` \| `fixed` \| `regressed` |
+| before | Effective_Projection \| null | **yes** | Thin prior posture (`effectiveStatus`, `effectiveImpact`); null for `new` |
+| after | Evaluated_Requirement | **yes** | Full after-state (absent except for a tombstone `absent` event) |
+| changeReasons | Change_Reason[] | no | Why the posture changed (same vocabulary as the comparison diff) |
 
 ---
 
@@ -579,6 +613,24 @@ Comparison operators: `eq` | `ne` | `lt` | `le` | `gt` | `ge` | `contains` | `ma
 ```json
 { "platformName": "ubuntu", "platformFamily": "debian", "release": "22.04" }
 ```
+
+### External_Reference *(v3.5.0)*
+
+A generalized, purpose-agnostic reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property. Cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`), so the by-identity and by-location forms stay interconvertible. A reference is **inert context** — it overrides nothing and carries only lightweight optional attribution. An embedded `document` turns a bare reference into a lossless enrichment envelope (the shape `hdf enrich` writes). Wired onto the results root, `Status_Override`, and other document types.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| sourceName | string | **yes** | The system that names/hosts the artifact (e.g. `cve`, `mitre-attack`, `stix`) |
+| externalId | string | no | Identifier within `sourceName` (e.g. `CVE-2021-44228`) |
+| href | string | no | URI locating the artifact |
+| description | string | no | Human-readable description |
+| rel | string | no | Open relationship token (e.g. `investigate`, `reference`) |
+| kind | string | no | Open category token (e.g. `threat-intel`) |
+| mediaType | string | no | IANA media type of the referenced artifact |
+| checksum | Checksum | no | Integrity hash of the referenced artifact |
+| addedBy | Identity | no | Who attached the reference |
+| addedAt | date-time | no | When the reference was attached |
+| document | object | no | Lossless embedded copy of the referenced artifact (enrichment envelope) |
 
 ---
 

@@ -15,12 +15,15 @@ import {
   buildHdfResults,
   buildNoFindingsRequirement,
 } from '../../../shared/typescript/converterutil.js';
+import { buildCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
+  Cvss,
   Description,
+  Reference,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -80,7 +83,21 @@ interface NetsparkerClassification {
   wasc?: string;
   cwe?: string;
   capec?: string;
+  pci32?: string;
   iso27001?: string;
+  cvss?: NetsparkerCvssBlock;
+  cvss31?: NetsparkerCvssBlock;
+}
+
+interface NetsparkerCvssBlock {
+  vector?: string;
+  score?: NetsparkerCvssScore[];
+}
+
+interface NetsparkerCvssScore {
+  type?: string;
+  value?: string;
+  severity?: string;
 }
 
 interface NetsparkerHttpRequest {
@@ -180,6 +197,43 @@ function formatControlDesc(vuln: NetsparkerVuln): string {
 }
 
 /**
+ * Returns the parsed Base-metric score from a CVSS block, or undefined when
+ * there is no Base score or its value does not parse as a finite number.
+ */
+function baseScoreFromBlock(block: NetsparkerCvssBlock | undefined): number | undefined {
+  const scores = block?.score ?? [];
+  for (const s of scores) {
+    if ((s.type ?? '').toLowerCase() === 'base') {
+      const v = parseFloat((s.value ?? '').trim());
+      return Number.isFinite(v) ? v : undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Assembles the structured cvss[] from the <cvss> (3.0) and <cvss31> (3.1)
+ * classification blocks. Each block carrying a vector or a Base score becomes
+ * one entry; the schema version derives from the vector prefix.
+ */
+export function buildNetsparkerCvss(classification: NetsparkerClassification | undefined): Cvss[] {
+  const out: Cvss[] = [];
+  for (const block of [classification?.cvss, classification?.cvss31]) {
+    const baseScore = baseScoreFromBlock(block);
+    const vector = block?.vector ?? '';
+    if (!vector && baseScore === undefined) {
+      continue;
+    }
+    out.push(buildCvss({
+      version: cvssVersionFromVector(vector),
+      baseScore,
+      baseVector: vector,
+    }));
+  }
+  return out;
+}
+
+/**
  * Performs dual NIST mapping from both CWE and OWASP IDs.
  * Returns a deduplicated sorted list of NIST controls, falling back to
  * DEFAULT_STATIC_ANALYSIS_NIST_TAGS if no mappings are found.
@@ -211,6 +265,32 @@ function mapNISTFromCWEAndOWASP(cweID: string, owaspID: string): string[] {
     : [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS];
 }
 
+// Extracts the URL from each anchor tag in Netsparker's <external-references>
+// HTML blob (single- or double-quoted href).
+const HREF_PATTERN = /href=['"]([^'"]+)['"]/g;
+
+/**
+ * Turns Netsparker's <external-references> HTML anchor blob into one Reference
+ * per external URL. Returns undefined when the field is empty or carries no
+ * links, so refs[] is omitted entirely.
+ */
+function buildRefs(externalReferences: string | undefined): Reference[] | undefined {
+  if (!externalReferences) {
+    return undefined;
+  }
+  const refs: Reference[] = [];
+  for (const match of externalReferences.matchAll(HREF_PATTERN)) {
+    // Reference.url is schema-constrained to format "uri"; only emit absolute
+    // hrefs (a scheme is present), skipping empty/relative/fragment.
+    const url = match[1]?.trim() ?? '';
+    if (!url.includes('://')) {
+      continue;
+    }
+    refs.push({ url });
+  }
+  return refs.length > 0 ? refs : undefined;
+}
+
 /**
  * Builds a single EvaluatedRequirement from a vulnerability.
  */
@@ -230,6 +310,24 @@ function buildRequirement(
   }
   if (owaspID) {
     extras.owasp = owaspID;
+  }
+  // Source-native categorization strings Netsparker/Invicti carries in
+  // <classification>. Each is single-valued; omit the tag when empty.
+  const capec = vuln.classification?.capec;
+  if (capec) {
+    extras.capec = capec;
+  }
+  const wasc = vuln.classification?.wasc;
+  if (wasc) {
+    extras.wasc = wasc;
+  }
+  const iso27001 = vuln.classification?.iso27001;
+  if (iso27001) {
+    extras.iso27001 = iso27001;
+  }
+  const pci32 = vuln.classification?.pci32;
+  if (pci32) {
+    extras.pci32 = pci32;
   }
 
   const tags = buildNistCciTags(nist, cciTags, Object.keys(extras).length > 0 ? extras : undefined);
@@ -295,6 +393,26 @@ function buildRequirement(
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  // requirement.code = the raw HTTP request that triggered the finding — the
+  // natural CODE-tab fill for a DAST tool. Leave unset when absent.
+  const rawRequest = vuln['http-request']?.content;
+  if (rawRequest) {
+    req.code = rawRequest;
+  }
+
+  const cvss = buildNetsparkerCvss(vuln.classification);
+  if (cvss.length > 0) {
+    req.cvss = cvss;
+  }
+
+  // requirement.refs = external reference links Netsparker carries in the
+  // <external-references> HTML blob. Left unset when the vuln carries none.
+  const refs = buildRefs(vuln['external-references']);
+  if (refs !== undefined) {
+    req.refs = refs;
+  }
+
   return req;
 }
 
@@ -314,7 +432,7 @@ export async function convertNetsparkerToHdf(input: string, converterVersion = '
   const resultsChecksum: Checksum = await inputChecksum(input);
 
   // Parse XML — ensure vulnerability is always treated as array
-  const parsed = parseXmlWithArrays(input, ['vulnerability']) as unknown as NetsparkerXml;
+  const parsed = parseXmlWithArrays(input, ['vulnerability', 'score']) as unknown as NetsparkerXml;
 
   // Detect root element
   const isInvicti = !!parsed['invicti-enterprise'];
@@ -328,6 +446,12 @@ export async function convertNetsparkerToHdf(input: string, converterVersion = '
   const vulns = data.vulnerabilities?.vulnerability ?? [];
   const target = data.target ?? {};
   const initiated = target.initiated ?? '';
+  const generated = data.generated ?? '';
+
+  // Top-level timestamp is the report's `generated` attribute (parsed as UTC,
+  // mirroring the Go converter). Fall back to now() only when the source omits
+  // or malforms it, so a source with `generated` converts deterministically.
+  const timestamp = (generated ? parseNetsparkerTimestamp(generated) : null) ?? new Date();
 
   const { items: limitedVulns, truncated } = limitArray(vulns);
   /* v8 ignore next -- truncation only triggers with >100K items */
@@ -367,6 +491,7 @@ export async function convertNetsparkerToHdf(input: string, converterVersion = '
     generatorName: 'netsparker-to-hdf',
     converterVersion,
     toolName,
+    timestamp,
     baselines: [baseline],
     components: [
       {

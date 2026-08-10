@@ -4,14 +4,13 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import {
   convertTwistlockToHdf,
-  cvssVersionFromVector,
-  cvssSeverityFromScore,
   buildCvss,
   parseCwes,
   resolveEcosystem,
   extractFixedInVersion,
   buildAffectedPackage,
 } from './converter.js';
+import { cvssVersionFromVector, cvssSeverityFromScore } from '../../../shared/typescript/cvss.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import {

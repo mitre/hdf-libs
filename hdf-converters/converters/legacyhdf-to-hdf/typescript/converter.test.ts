@@ -195,6 +195,47 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(v2.timestamp).toBe('2024-03-01T15:05:30Z');
     });
 
+    it('ignores results without start_time when deriving the timestamp', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        profiles: [
+          {
+            name: 'p',
+            controls: [
+              { id: 'c-1', impact: 0.5, results: [{ status: 'passed' }] },
+              { id: 'c-2', impact: 0.5, results: [{ status: 'passed', start_time: '2024-06-01T00:00:00Z' }] },
+            ],
+          },
+        ],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      // A result without start_time is not an observation; the latest real
+      // time wins and no sentinel value can leak into the document.
+      expect(v2.timestamp).toBe('2024-06-01T00:00:00Z');
+    });
+
+    it('normalizes an offset-bearing explicit timestamp to canonical UTC', () => {
+      const v1: HDFV1Results = {
+        version: '5.22.3',
+        platform: { name: 'redhat' },
+        timestamp: '2023-11-05T00:00:00-05:00',
+        profiles: [
+          { name: 'p', controls: [{ id: 'c-1', impact: 0.5, results: [{ status: 'passed', start_time: '2024-03-01T10:00:00Z' }] }] },
+        ],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+
+      // Explicit-timestamp precedence must still produce the repo's
+      // canonical trimmed-UTC form, never the source's offset rendering.
+      expect(v2.timestamp).toBe('2023-11-05T05:00:00Z');
+    });
+
     it('sets InSpec tool identity from a real InSpec version', () => {
       const v1: HDFV1Results = {
         version: '5.22.3',

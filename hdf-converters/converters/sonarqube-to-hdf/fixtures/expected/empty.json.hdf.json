@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "SonarQube scanned com.example:myproject and reported zero findings.",
-              "startTime": "2026-08-01T23:52:54.023076Z",
+              "startTime": "2026-07-13T00:39:15.765659Z",
               "status": "passed"
             }
           ],
@@ -40,7 +40,7 @@
     "name": "sonarqube-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T23:52:54.023076Z",
+  "timestamp": "2026-07-13T00:39:15.765661Z",
   "tool": {
     "name": "SonarQube"
   }

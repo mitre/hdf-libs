@@ -129,8 +129,10 @@
   ],
   "components": [
     {
-      "name": "Host: example.com Port: 80",
-      "type": "application"
+      "name": "example.com",
+      "type": "host",
+      "hostname": "example.com",
+      "ipAddress": "93.184.216.34"
     }
   ],
   "generator": {

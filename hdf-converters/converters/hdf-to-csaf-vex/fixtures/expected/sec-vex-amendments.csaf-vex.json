@@ -48,6 +48,12 @@
   "vulnerabilities": [
     {
       "cve": "CVE-2021-44228",
+      "notes": [
+        {
+          "category": "description",
+          "text": "Apache Log4j2 2.0-beta9 through 2.15.0 (excluding security releases 2.12.2, 2.12.3, and 2.3.1) JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints. An attacker who can control log messages or log message parameters can execute arbitrary code loaded from LDAP servers when message lookup substitution is enabled. From log4j 2.15.0, this behavior has been disabled by default. From version 2.16.0 (along with 2.12.2, 2.12.3, and 2.3.1), this functionality has been completely removed. Note that this vulnerability is specific to log4j-core and does not affect log4net, log4cxx, or other Apache Logging Services projects.\nSecvisogram is written in JavaScript. No Java is included."
+        }
+      ],
       "product_status": {
         "known_not_affected": [
           "HDFPID-0001"
@@ -77,6 +83,12 @@
     },
     {
       "cve": "CVE-2021-45046",
+      "notes": [
+        {
+          "category": "description",
+          "text": "It was found that the fix to address CVE-2021-44228 in Apache Log4j 2.15.0 was incomplete in certain non-default configurations. This could allows attackers with control over Thread Context Map (MDC) input data when the logging configuration uses a non-default Pattern Layout with either a Context Lookup (for example, $${ctx:loginId}) or a Thread Context Map pattern (%X, %mdc, or %MDC) to craft malicious input data using a JNDI Lookup pattern resulting in an information leak and remote code execution in some environments and local code execution in all environments. Log4j 2.16.0 (Java 8) and 2.12.2 (Java 7) fix this issue by removing support for message lookup patterns and disabling JNDI functionality by default.\nSecvisogram is written in JavaScript. No Java is included."
+        }
+      ],
       "product_status": {
         "known_not_affected": [
           "HDFPID-0001"
@@ -106,6 +118,12 @@
     },
     {
       "cve": "CVE-2021-45105",
+      "notes": [
+        {
+          "category": "description",
+          "text": "Apache Log4j2 versions 2.0-alpha1 through 2.16.0 (excluding 2.12.3 and 2.3.1) did not protect from uncontrolled recursion from self-referential lookups. This allows an attacker with control over Thread Context Map data to cause a denial of service when a crafted string is interpreted. This issue was fixed in Log4j 2.17.0, 2.12.3, and 2.3.1.\nSecvisogram is written in JavaScript. No Java is included."
+        }
+      ],
       "product_status": {
         "known_not_affected": [
           "HDFPID-0001"

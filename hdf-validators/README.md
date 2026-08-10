@@ -1,11 +1,11 @@
 # @mitre/hdf-validators
 
-JSON Schema validation for Heimdall Data Format (HDF) documents. Validates all 7 HDF document types against their official schemas to ensure structural correctness and data integrity.
+JSON Schema validation for Heimdall Data Format (HDF) documents. Validates all 8 HDF document types against their official schemas to ensure structural correctness and data integrity.
 
 ## Scope and Responsibilities
 
 **hdf-validators** provides schema-based validation:
-- Validate all HDF document types: Results, Baseline, System, Plan, Amendments, Evidence Package, Comparison
+- Validate all HDF document types: Results, Baseline, System, Plan, Amendments, Evidence Package, Comparison, Requirement Change Event
 - Auto-detect document type via the generic `validate()` function
 - Detailed error reporting with field-level validation messages
 - Support for both TypeScript and Go implementations
@@ -214,6 +214,14 @@ Validate data against the HDF Evidence Package schema.
   - `data` - JavaScript object to validate
 - **Returns:** `ValidationResult` with validation status and errors
 
+#### `validateRequirementChangeEvent(data: unknown): ValidationResult`
+
+Validate data against the HDF Requirement Change Event schema.
+
+- **Parameters:**
+  - `data` - JavaScript object to validate
+- **Returns:** `ValidationResult` with validation status and errors
+
 #### `validate(data: unknown): ValidationResult`
 
 Auto-detect document type and validate.
@@ -266,7 +274,7 @@ Validate JSON bytes against specified schema type.
 
 - **Parameters:**
   - `data` - JSON bytes to validate
-  - `schemaType` - one of `TypeResults`, `TypeBaseline`, `TypeComparison`, `TypeSystem`, `TypePlan`, `TypeAmendments`, `TypeEvidencePackage`
+  - `schemaType` - one of `TypeResults`, `TypeBaseline`, `TypeComparison`, `TypeSystem`, `TypePlan`, `TypeAmendments`, `TypeEvidencePackage`, `TypeRequirementChangeEvent`
 - **Returns:** `ValidationResult` with validation status and errors
 
 #### `SetSchemaDir(dir string)`

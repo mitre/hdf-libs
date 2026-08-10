@@ -141,6 +141,9 @@ function buildRequirement(assessmentID: string, assessments: Assessment[], scanT
   if (meta.assessmentType) {
     tags['assessmentType'] = meta.assessmentType;
   }
+  if (meta.policyDefinitionId) {
+    tags['policy_definition_id'] = meta.policyDefinitionId;
+  }
 
   const descriptions: Description[] = [
     { label: 'default', data: meta.description },

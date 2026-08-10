@@ -148,6 +148,20 @@ describe('gosec to HDF converter', async () => {
       expect(codeDesc).toContain('go-ethereum-master');
     });
 
+    it('should set requirement.code to the first issue\'s literal source (CODE tab)', async () => {
+      const input = loadFixture('ethereum.json');
+      const doc = JSON.parse(input) as { Issues: Array<{ rule_id: string; code: string }> };
+      const firstCode = new Map<string, string>();
+      for (const iss of doc.Issues) {
+        if (!firstCode.has(iss.rule_id)) firstCode.set(iss.rule_id, iss.code);
+      }
+
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.code, `requirement ${req.id} missing code`).toBe(firstCode.get(req.id));
+      }
+    });
+
     it('should include a default description with rule details text', async () => {
       const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
       const g304 = hdf.baselines[0]!.requirements.find(r => r.id === 'G304');
@@ -161,6 +175,74 @@ describe('gosec to HDF converter', async () => {
       const checkDesc = g304?.descriptions?.find(d => d.label === 'check');
       expect(checkDesc?.data).toContain('CWE-22');
       expect(checkDesc?.data).toContain('cwe.mitre.org');
+    });
+
+    it('should tag the gosec confidence rating (G304 → HIGH)', async () => {
+      const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
+      const g304 = hdf.baselines[0]!.requirements.find(r => r.id === 'G304');
+      expect(g304?.tags?.['confidence']).toBe('HIGH');
+    });
+
+    it('should omit the confidence tag when source confidence is empty', async () => {
+      const input = JSON.stringify({
+        'Golang errors': {},
+        Issues: [{
+          severity: 'MEDIUM', confidence: '',
+          cwe: { id: '22', url: 'https://cwe.mitre.org/data/definitions/22.html' },
+          rule_id: 'G304', details: 'File inclusion',
+          file: '/app/main.go', code: 'f, _ := os.Open(x)\n',
+          line: '5', column: '2', nosec: false, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 10, nosec: 0, found: 1 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.tags?.['confidence']).toBeUndefined();
+    });
+
+    it('should promote the finding locus into structured sourceLocation (G304 → bloom.go:86)', async () => {
+      const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
+      const g304 = hdf.baselines[0]!.requirements.find(r => r.id === 'G304');
+      expect(g304?.sourceLocation?.ref).toBe(
+        'C:\\Users\\chu\\Downloads\\go-ethereum-master\\core\\state\\pruner\\bloom.go',
+      );
+      expect(g304?.sourceLocation?.line).toBe(86);
+    });
+
+    it('should use the start line of a range for sourceLocation.line', async () => {
+      const input = JSON.stringify({
+        'Golang errors': {},
+        Issues: [{
+          severity: 'MEDIUM', confidence: 'HIGH',
+          cwe: { id: '22', url: 'https://cwe.mitre.org/data/definitions/22.html' },
+          rule_id: 'G304', details: 'File inclusion',
+          file: '/app/main.go', code: 'os.Open(x)\n',
+          line: '108-110', column: '2', nosec: false, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 10, nosec: 0, found: 1 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.sourceLocation?.ref).toBe('/app/main.go');
+      expect(req.sourceLocation?.line).toBe(108);
+    });
+
+    it('should omit sourceLocation when the issue carries no file', async () => {
+      const input = JSON.stringify({
+        'Golang errors': {},
+        Issues: [{
+          severity: 'MEDIUM', confidence: 'HIGH',
+          cwe: { id: '22', url: 'https://cwe.mitre.org/data/definitions/22.html' },
+          rule_id: 'G304', details: 'File inclusion',
+          file: '', code: 'f, _ := os.Open(x)\n',
+          line: '5', column: '2', nosec: false, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 10, nosec: 0, found: 1 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.sourceLocation).toBeUndefined();
     });
 
     it('should look up NIST tags from CWE (CWE-338 → SC-13)', async () => {
@@ -186,12 +268,30 @@ describe('gosec to HDF converter', async () => {
       expect(hdf.baselines[0]!.requirements[0]!.tags?.['nist']).toEqual(['SI-2', 'RA-5']);
     });
 
-    it('should include CWE object in tags', async () => {
+    it('should populate first-class cwe[] and drop the cwe tag', async () => {
       const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
       const g304 = hdf.baselines[0]!.requirements.find(r => r.id === 'G304');
-      const cweTag = g304?.tags?.['cwe'] as { id: string; url: string };
-      expect(cweTag?.id).toBe('22');
-      expect(cweTag?.url).toContain('cwe.mitre.org');
+      expect(g304?.cwe).toEqual(['CWE-22']);
+      // Legacy tags.cwe object is removed; tags.nist stays.
+      expect(g304?.tags?.['cwe']).toBeUndefined();
+      expect(g304?.tags?.['nist']).toBeDefined();
+    });
+
+    it('should omit cwe[] when the issue carries no CWE id', async () => {
+      const input = JSON.stringify({
+        'Golang errors': {},
+        Issues: [{
+          severity: 'LOW', confidence: 'HIGH',
+          cwe: { id: '', url: '' },
+          rule_id: 'G000', details: 'No CWE',
+          file: '/app/main.go', code: 'x()\n',
+          line: '1', column: '1', nosec: false, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 5, nosec: 0, found: 1 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.cwe).toBeUndefined();
     });
 
     it('should synthesize a passed placeholder for empty Issues array', async () => {

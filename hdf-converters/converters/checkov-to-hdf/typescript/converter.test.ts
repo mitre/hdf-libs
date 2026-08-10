@@ -110,6 +110,46 @@ describe('checkov to HDF converter', async () => {
       expect(ckvTF1?.results).toHaveLength(3);
     });
 
+    it('should set requirement.code to the rendered code_block source snippet', async () => {
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');
+      expect(ckvTF1?.code).toBe(
+        [
+          '26 module "vpc" {',
+          '27   source  = "terraform-aws-modules/vpc/aws"',
+          '28   version = "5.8.1"',
+          '29 ',
+          '30   name = "education-vpc"',
+        ].join('\n'),
+      );
+    });
+
+    it('should omit requirement.code when code_block is null', async () => {
+      const input = JSON.stringify({
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [{
+            check_id: 'CKV_TEST_1',
+            check_name: 'Test check',
+            check_result: { result: 'FAILED' },
+            severity: null,
+            file_path: '/main.tf',
+            file_line_range: [1, 5],
+            resource: 'aws_s3_bucket.test',
+            guideline: null,
+            code_block: null,
+            check_class: 'checkov.terraform.checks.resource.Test',
+          }],
+          skipped_checks: [],
+          parsing_errors: [],
+        },
+        summary: { passed: 0, failed: 1, skipped: 0, parsing_errors: 0, resource_count: 1, checkov_version: '3.2.524' },
+      });
+      const hdf = JSON.parse(await convertCheckovToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.code).toBeUndefined();
+    });
+
     it('should map PASSED to passed status', async () => {
       const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF2 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_2');
@@ -192,6 +232,48 @@ describe('checkov to HDF converter', async () => {
       expect(low?.impact).toBe(0.3);
     });
 
+    it('renders code_block defensively — skips malformed entries; empty array yields no code', async () => {
+      const input = JSON.stringify({
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [{
+            check_id: 'CKV_EDGE_1',
+            check_name: 'Mixed code_block',
+            check_result: { result: 'FAILED' },
+            severity: 'LOW',
+            file_path: '/main.tf',
+            file_line_range: [26, 30],
+            resource: 'edge',
+            guideline: null,
+            code_block: [[26, 'valid line\n'], 'not-an-array', [27], [28, 123], [29, 'no-eol']],
+            check_class: 'test',
+          }, {
+            check_id: 'CKV_EDGE_2',
+            check_name: 'Empty code_block',
+            check_result: { result: 'FAILED' },
+            severity: 'LOW',
+            file_path: '/main.tf',
+            file_line_range: [1, 1],
+            resource: 'edge2',
+            guideline: null,
+            code_block: [],
+            check_class: 'test',
+          }],
+          skipped_checks: [],
+          parsing_errors: [],
+        },
+        summary: { passed: 0, failed: 2, skipped: 0, parsing_errors: 0, resource_count: 2, checkov_version: '3.2.524' },
+      });
+      const hdf = JSON.parse(await convertCheckovToHdf(input)) as HDFResults;
+      const mixed = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_EDGE_1');
+      const empty = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_EDGE_2');
+      // valid entry kept; non-array/short entries skipped; non-string source -> "28 "; no-newline kept verbatim
+      expect(mixed?.code).toBe('26 valid line\n28 \n29 no-eol');
+      // Array.isArray true but no valid entries -> code omitted
+      expect(empty?.code).toBeUndefined();
+    });
+
     it('should include default description with check name', async () => {
       const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');
@@ -210,6 +292,95 @@ describe('checkov to HDF converter', async () => {
       const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');
       expect(ckvTF1?.tags?.['nist']).toEqual(['SA-11', 'RA-5']);
+    });
+
+    it('tags each requirement with its Bridgecrew bc_check_id', async () => {
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const byId = new Map(hdf.baselines[0]!.requirements.map((r) => [r.id, r] as const));
+      expect(byId.get('CKV_TF_1')?.tags?.['bc_check_id']).toBe('BC_CROSS_1');
+      expect(byId.get('CKV_AWS_18')?.tags?.['bc_check_id']).toBe('BC_AWS_S3_13');
+    });
+
+    it('omits the bc_check_id tag when the source field is absent', async () => {
+      const doc = {
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [
+            { check_id: 'CKV_NOBC_1', check_name: 'no bc', check_result: { result: 'FAILED' }, resource: 'r', file_path: 'f', file_line_range: [1, 2], severity: null },
+          ],
+          skipped_checks: [],
+        },
+        summary: { passed: 0, failed: 1, skipped: 0, parsing_errors: 0, resource_count: 1, checkov_version: '3.2.0' },
+      };
+      const hdf = JSON.parse(await convertCheckovToHdf(JSON.stringify(doc))) as HDFResults;
+      const req = hdf.baselines?.[0]?.requirements?.[0];
+      expect(req?.id).toBe('CKV_NOBC_1');
+      expect(req?.tags?.['bc_check_id']).toBeUndefined();
+    });
+
+    it('omits the bc_check_id tag when the source field is null', async () => {
+      const doc = {
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [
+            { check_id: 'CKV_NULLBC_1', bc_check_id: null, check_name: 'null bc', check_result: { result: 'FAILED' }, resource: 'r', file_path: 'f', file_line_range: [1, 2], severity: null },
+          ],
+          skipped_checks: [],
+        },
+        summary: { passed: 0, failed: 1, skipped: 0, parsing_errors: 0, resource_count: 1, checkov_version: '3.2.0' },
+      };
+      const hdf = JSON.parse(await convertCheckovToHdf(JSON.stringify(doc))) as HDFResults;
+      const req = hdf.baselines?.[0]?.requirements?.[0];
+      expect(req?.id).toBe('CKV_NULLBC_1');
+      expect(req?.tags?.['bc_check_id']).toBeUndefined();
+    });
+
+    it('promotes file_path/line into structured sourceLocation', async () => {
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const byId = new Map(hdf.baselines[0]!.requirements.map((r) => [r.id, r] as const));
+      // ref = file_path; line = START of file_line_range [26,49].
+      expect(byId.get('CKV_TF_1')?.sourceLocation?.ref).toBe('/main.tf');
+      expect(byId.get('CKV_TF_1')?.sourceLocation?.line).toBe(26);
+      // A skipped check anchored elsewhere: file_line_range [115,119].
+      expect(byId.get('CKV_AWS_18')?.sourceLocation?.line).toBe(115);
+    });
+
+    it('omits sourceLocation when file_path is absent', async () => {
+      const doc = {
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [
+            { check_id: 'CKV_NOLOC_1', check_name: 'no loc', check_result: { result: 'FAILED' }, resource: 'r', file_path: '', file_line_range: [1, 5], severity: null },
+          ],
+          skipped_checks: [],
+        },
+        summary: { passed: 0, failed: 1, skipped: 0, parsing_errors: 0, resource_count: 1, checkov_version: '3.2.0' },
+      };
+      const hdf = JSON.parse(await convertCheckovToHdf(JSON.stringify(doc))) as HDFResults;
+      const req = hdf.baselines?.[0]?.requirements?.[0];
+      expect(req?.id).toBe('CKV_NOLOC_1');
+      expect(req?.sourceLocation).toBeUndefined();
+    });
+
+    it('emits sourceLocation.ref only when file_line_range is empty', async () => {
+      const doc = {
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [
+            { check_id: 'CKV_NORANGE_1', check_name: 'no range', check_result: { result: 'FAILED' }, resource: 'r', file_path: '/main.tf', file_line_range: [], severity: null },
+          ],
+          skipped_checks: [],
+        },
+        summary: { passed: 0, failed: 1, skipped: 0, parsing_errors: 0, resource_count: 1, checkov_version: '3.2.0' },
+      };
+      const hdf = JSON.parse(await convertCheckovToHdf(JSON.stringify(doc))) as HDFResults;
+      const req = hdf.baselines?.[0]?.requirements?.[0];
+      expect(req?.sourceLocation?.ref).toBe('/main.tf');
+      expect(req?.sourceLocation?.line).toBeUndefined();
     });
 
     it('should synthesize a passed placeholder for empty checks', async () => {

@@ -37,6 +37,24 @@ describe('grype-to-hdf ground-truth anchor', () => {
   });
 });
 
+// Grype carries no literal source snippet, so requirement.code holds the raw
+// match object serialized as indented JSON. Pin that it is set and round-trips
+// back to the source match (Heimdall CODE-tab fidelity; must byte-match the Go
+// twin, enforced by the shared snapshot test).
+describe('grype-to-hdf requirement.code (CODE tab)', () => {
+  it('sets code to the serialized match that round-trips to source', async () => {
+    const input = loadFixture('amazon.json');
+    const result = parseJSON<HDFResults>(await convertGrypeToHdf(input));
+    const source = parseJSON<{matches: unknown[]}>(input);
+    const reqs = result.baselines[0]!.requirements;
+    expect(reqs.length).toBe(source.matches.length);
+    reqs.forEach((req, i) => {
+      expect(req.code, `requirement ${i}: code should be set`).toBeDefined();
+      expect(JSON.parse(req.code!)).toEqual(source.matches[i]);
+    });
+  });
+});
+
 describe('timestamp parse fallback', () => {
   it('falls back to conversion time when the descriptor timestamp is unparseable', async () => {
     const doc = JSON.parse(loadFixture('amazon.json'));
@@ -404,5 +422,52 @@ describe('Grype Converter', async () => {
       const req = hdf.baselines[0].requirements[0];
       expect(req.title).toMatch(/^Grype found a vulnerability to .+ in cloudwatch_to_s3:latest$/);
     });
+  });
+});
+
+// Pins the containerImage component surfaced from source.target + distro for an
+// image scan, and the artifact fallback when the scan carries no image identity.
+describe('grype-to-hdf scan-target component', () => {
+  it('emits a containerImage component from source.target + distro', async () => {
+    const input = loadFixture('anchore_grype.json');
+    const result = parseJSON<HDFResults>(await convertGrypeToHdf(input));
+    expect(result.components).toHaveLength(1);
+    const c = result.components![0]!;
+    const wantRepoDigest =
+      'golang@sha256:3f8e3ad3e7c128d29ac3004ac8314967c5ddbfa5bfa7caa59b0de493fc01686a';
+    expect(c.type).toBe('containerImage');
+    expect(c.name).toBe(wantRepoDigest);
+    expect(c.imageId).toBe(
+      'sha256:9d993b748f324b8291a4f202c2bc07b3485f7b9c7c799ee8925f657a760749cd',
+    );
+    expect(c.image).toBe(wantRepoDigest);
+    expect(c.osName).toBe('alpine');
+    expect(c.osVersion).toBe('3.11.3');
+    expect(c.integrity).toEqual([
+      {
+        algorithm: 'sha256',
+        // manifestDigest with the "sha256:" prefix stripped.
+        value: '5b6d42c254b9928b3cbc541bbcd52c6e91b239d2246e8e6f9825246980ed1664',
+      },
+    ]);
+    expect(c.labels).toEqual({architecture: 'arm64'});
+  });
+
+  it('falls back to a bare artifact component with no image identity', async () => {
+    const input = JSON.stringify({
+      descriptor: {name: 'grype', version: '0.74.0'},
+      source: {type: 'directory', target: {userInput: 'dir:/app'}},
+      matches: [],
+    });
+    const result = parseJSON<HDFResults>(await convertGrypeToHdf(input));
+    expect(result.components).toHaveLength(1);
+    const c = result.components![0]!;
+    expect(c.type).toBe('artifact');
+    expect(c.name).toBe('dir:/app');
+    expect(c.imageId).toBeUndefined();
+    expect(c.image).toBeUndefined();
+    expect(c.osName).toBeUndefined();
+    expect(c.integrity).toBeUndefined();
+    expect(c.labels).toBeUndefined();
   });
 });

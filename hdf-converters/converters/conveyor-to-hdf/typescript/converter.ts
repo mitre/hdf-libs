@@ -34,7 +34,13 @@ interface ConveyorAPIResp {
   file_tree?: Record<string, FileTreeNode>;
   results?: Record<string, ConveyorResult>;
   params?: Record<string, unknown>;
+  times?: ConveyorTimes;
   max_score?: number;
+}
+
+interface ConveyorTimes {
+  completed?: string;
+  submitted?: string;
 }
 
 interface FileTreeNode {
@@ -186,6 +192,21 @@ function groupResultsByScanner(
 }
 
 /**
+ * Returns the scanner version to record as tool.version. Conveyor's
+ * service_tool_version is null in observed output, so the value comes from
+ * response.service_version. That version is per-scanner (it varies across
+ * results), so the first entry in sorted result-key order is taken, matching the
+ * Go side for deterministic Go/TS parity. Returns undefined when none is present.
+ */
+function firstServiceVersion(results: Record<string, ConveyorResult>): string | undefined {
+  for (const key of Object.keys(results).sort()) {
+    const version = results[key]!.response.service_version;
+    if (version) return version;
+  }
+  return undefined;
+}
+
+/**
  * Builds an HDF requirement from a single Conveyor result.
  */
 function buildRequirementFromResult(
@@ -213,7 +234,9 @@ function buildRequirementFromResult(
   ];
 
   const scannerName = result.response.service_name;
-  const startTimeStr = result.response.milestones?.service_started ?? '';
+  // service_completed is the per-scan completion time; fall back to the zero
+  // sentinel when the source omits it (mirrors Go's zero time.Time).
+  const startTimeStr = result.response.milestones?.service_completed ?? '';
   const startTime = (startTimeStr ? parseTimestamp(startTimeStr) : null) ?? new Date('0001-01-01T00:00:00Z');
   const score = result.result.score;
   const status = determineStatus(score);
@@ -341,12 +364,18 @@ export async function convertConveyorToHdf(input: string, converterVersion = '1.
     ) as EvaluatedBaseline);
   }
 
+  // Prefer the submission's overall completion time; fall back to now() only
+  // when the source omits it, so the document timestamp is source-anchored.
+  const completedStr = data.api_response.times?.completed ?? '';
+  const timestamp = (completedStr ? parseTimestamp(completedStr) : null) ?? new Date();
+
   return buildHdfResults({
     generatorName: 'conveyor-to-hdf',
     converterVersion,
     toolName: 'Conveyor',
+    toolVersion: firstServiceVersion(data.api_response.results),
     baselines,
     components: [{ name: targetName, type: TargetType.Application }],
-    timestamp: new Date(),
+    timestamp,
   });
 }

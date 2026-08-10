@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/huh"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -101,7 +102,6 @@ func (r requirementInfo) String() string {
 
 // Status and identity type constants.
 const (
-	statusNotReviewed   = "notReviewed"
 	statusNotApplicable = "notApplicable"
 	identityEmail       = "email"
 	identitySimple      = "simple"
@@ -537,44 +537,19 @@ func extractAllRequirements(doc map[string]interface{}) []requirementInfo {
 	return results
 }
 
-// determineRequirementStatus computes the worst-case status from a requirement's results.
+// determineRequirementStatus rolls a requirement's result statuses up
+// worst-wins via the canonical shared ordering in hdf-utilities.
 func determineRequirementStatus(req map[string]interface{}) string {
 	reqResults, _ := req["results"].([]interface{})
-	if len(reqResults) == 0 {
-		return statusNotReviewed
-	}
-
-	// Severity ranking: error > failed > notReviewed > passed > notApplicable
-	worst := statusNotApplicable
+	statuses := make([]string, 0, len(reqResults))
 	for _, resRaw := range reqResults {
-		res, ok := resRaw.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		status, _ := res["status"].(string)
-		if statusSeverity(status) > statusSeverity(worst) {
-			worst = status
+		if res, ok := resRaw.(map[string]interface{}); ok {
+			if status, ok := res["status"].(string); ok {
+				statuses = append(statuses, status)
+			}
 		}
 	}
-	return worst
-}
-
-// statusSeverity returns a numeric severity for status ranking (higher = worse).
-func statusSeverity(status string) int {
-	switch status {
-	case statusNotApplicable:
-		return 0
-	case "passed":
-		return 1
-	case statusNotReviewed:
-		return 2
-	case "failed":
-		return 3
-	case "error":
-		return 4
-	default:
-		return 2 // unknown → treat as notReviewed
-	}
+	return hdfutil.WorstStatus(statuses)
 }
 
 // --- Document building ---

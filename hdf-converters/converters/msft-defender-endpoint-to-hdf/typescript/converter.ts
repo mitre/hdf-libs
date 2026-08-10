@@ -6,8 +6,13 @@ import type {
   RequirementResult,
   Checksum,
   Component,
+  Identity,
+  Reference,
+  StatusOverride,
 } from '@mitre/hdf-schema';
 import {
+  IdentityType,
+  OverrideType,
   ResultStatus,
   TargetType,
   VerificationMethodEnum,
@@ -103,17 +108,94 @@ function severityToImpact(severity: string): number {
 }
 
 /**
- * Maps MDE alert status + classification to HDF result status.
- * new/inProgress → Failed, resolved with falsePositive → Passed, otherwise → Failed.
+ * An MDE alert is a detection that fired, so every alert is a raw Failed result.
+ * Consumer triage (falsePositive, expected-activity) never flips the raw status —
+ * it rides in a structured Status_Override that carries effectiveStatus + full
+ * provenance (see buildTriageOverride). The raw failure and the attributed,
+ * expiring override are both present.
  */
-function statusToResultStatus(status: string, classification?: string | null): ResultStatus {
-  if (status.toLowerCase() === 'resolved') {
-    if (classification && classification.toLowerCase() === 'falsepositive') {
-      return ResultStatus.Passed;
+const RAW_ALERT_STATUS = ResultStatus.Failed;
+
+/**
+ * Resolves the alert's human triager (assignedTo) to an HDF Identity, typed as
+ * email when the value looks like an address. When no owner is recorded, falls
+ * back to an honest system identity rather than inventing a person.
+ */
+function triageIdentity(assignedTo?: string | null): Identity {
+  if (assignedTo) {
+    if (assignedTo.includes('@')) {
+      return { type: IdentityType.Email, identifier: assignedTo };
     }
-    return ResultStatus.Failed;
+    return { type: IdentityType.Username, identifier: assignedTo };
   }
-  return ResultStatus.Failed;
+  return { type: IdentityType.System, identifier: 'Microsoft Defender for Endpoint (automated triage)' };
+}
+
+/**
+ * Renders the override justification from the alert's determination and
+ * classification (e.g. "notMalicious (falsePositive)").
+ */
+function triageReason(alert: MdeAlert): string {
+  const det = alert.determination ?? '';
+  const cls = alert.classification ?? '';
+  if (det && cls) {
+    return `${det} (${cls})`;
+  }
+  return det || cls || 'Triaged in Microsoft Defender for Endpoint';
+}
+
+interface TriageOverride {
+  override: StatusOverride;
+  effectiveStatus: ResultStatus;
+  disposition: OverrideType;
+}
+
+/**
+ * Turns an MDE alert's classification triage into a structured HDF
+ * Status_Override with full provenance (assignedTo owner, resolvedDateTime applied
+ * time). Returns null when the classification carries no override-worthy decision
+ * (truePositive or untriaged → raw stays failed).
+ * - falsePositive → falsePositive override, effectiveStatus notApplicable (the
+ *   detection was wrong; disposition distinguishes it from a genuine N/A).
+ * - informationalExpectedActivity → waiver override, effectiveStatus passed (the
+ *   activity is real but expected/authorized, i.e. an accepted risk).
+ */
+function buildTriageOverride(alert: MdeAlert, startTime: Date): TriageOverride | null {
+  if (!alert.classification) {
+    return null;
+  }
+  let disposition: OverrideType;
+  let effectiveStatus: ResultStatus;
+  switch (alert.classification.toLowerCase()) {
+    case 'falsepositive':
+      disposition = OverrideType.FalsePositive;
+      effectiveStatus = ResultStatus.NotApplicable;
+      break;
+    case 'informationalexpectedactivity':
+      disposition = OverrideType.Waiver;
+      effectiveStatus = ResultStatus.Passed;
+      break;
+    default: // truePositive, unknownFutureValue, … → no override
+      return null;
+  }
+
+  const appliedAt =
+    (alert.resolvedDateTime ? parseTimestamp(alert.resolvedDateTime) : null) ??
+    (alert.lastUpdateDateTime ? parseTimestamp(alert.lastUpdateDateTime) : null) ??
+    startTime;
+  const expiresAt = new Date();
+  expiresAt.setTime(appliedAt.getTime());
+  expiresAt.setUTCFullYear(expiresAt.getUTCFullYear() + 1);
+
+  const override: StatusOverride = {
+    type: disposition,
+    status: effectiveStatus,
+    reason: triageReason(alert),
+    appliedBy: triageIdentity(alert.assignedTo),
+    appliedAt,
+    expiresAt,
+  };
+  return { override, effectiveStatus, disposition };
 }
 
 /**
@@ -163,26 +245,48 @@ function formatMessage(alert: MdeAlert): string {
 }
 
 /**
- * Extracts a Host target from device evidence, or falls back to tenant as cloud account.
+ * Extracts a Host target from device evidence, carrying the MDE device id
+ * (externalIds.mde) plus rbac/health/onboarding labels. Falls back to tenant as
+ * a cloud account when no device evidence exists.
  */
 function extractDeviceTarget(alert: MdeAlert): Component {
   if (alert.evidence) {
     for (const ev of alert.evidence) {
       const odataType = ev['@odata.type'] ?? '';
-      if (odataType.includes('deviceEvidence') && ev.deviceDnsName) {
-        const target: Component = {
-          name: ev.deviceDnsName,
-          type: TargetType.Host,
-          labels: { provider: 'azure' },
-        };
-        if (ev.deviceDnsName) {
-          target.fqdn = ev.deviceDnsName;
-        }
-        if (ev.osPlatform) {
-          target.osName = ev.osPlatform;
-        }
-        return target;
+      if (!odataType.includes('deviceEvidence')) {
+        continue;
       }
+      const deviceName = ev.deviceDnsName ?? '';
+      const mdeDeviceId = ev.mdeDeviceId ?? '';
+      // A device with neither a name nor an id carries no usable identity.
+      if (!deviceName && !mdeDeviceId) {
+        continue;
+      }
+      const labels: Record<string, string> = { provider: 'azure' };
+      if (ev.rbacGroupName) {
+        labels['rbacGroupName'] = ev.rbacGroupName;
+      }
+      if (ev.healthStatus) {
+        labels['healthStatus'] = ev.healthStatus;
+      }
+      if (ev.onboardingStatus) {
+        labels['onboardingStatus'] = ev.onboardingStatus;
+      }
+      const target: Component = {
+        name: deviceName || mdeDeviceId,
+        type: TargetType.Host,
+        labels,
+      };
+      if (deviceName) {
+        target.fqdn = deviceName;
+      }
+      if (ev.osPlatform) {
+        target.osName = ev.osPlatform;
+      }
+      if (mdeDeviceId) {
+        target.externalIds = { mde: mdeDeviceId };
+      }
+      return target;
     }
   }
   // No device evidence — use tenant as cloud account
@@ -192,6 +296,15 @@ function extractDeviceTarget(alert: MdeAlert): Component {
     accountId: alert.tenantId,
     labels: { account: alert.tenantId ?? '', provider: 'azure' },
   };
+}
+
+/**
+ * Returns the identity used to deduplicate scan-target components: the MDE device
+ * id when present, else the component name.
+ */
+function targetDedupKey(target: Component): string {
+  const mde = target.externalIds?.['mde'];
+  return mde ? `mde:${mde}` : target.name;
 }
 
 /**
@@ -210,11 +323,21 @@ function buildTags(alert: MdeAlert): Record<string, unknown> {
     tags['mitre'] = alert.mitreTechniques;
   }
 
-  if (alert.classification) {
-    tags['classification'] = alert.classification;
+  if (alert.incidentId) {
+    // Emit as a number when the id is a canonical base-10 integer (round-trips
+    // cleanly); otherwise preserve the source string verbatim. The round-trip
+    // guard keeps Go/TS byte-parity for edge cases like leading zeros.
+    const n = Number(alert.incidentId);
+    tags['incident_id'] = Number.isInteger(n) && String(n) === alert.incidentId ? n : alert.incidentId;
   }
-  if (alert.determination) {
-    tags['determination'] = alert.determination;
+  if (alert.detectionSource) {
+    tags['detection_source'] = alert.detectionSource;
+  }
+  if (alert.serviceSource) {
+    tags['service_source'] = alert.serviceSource;
+  }
+  if (alert.threatFamilyName) {
+    tags['threat_family_name'] = alert.threatFamilyName;
   }
 
   return tags;
@@ -239,18 +362,42 @@ function resolveStartTime(alert: MdeAlert, scanTime: Date): Date {
 }
 
 /**
+ * Derives the top-level report timestamp from the latest source alert time: the
+ * freshest lastUpdateDateTime across alerts, falling back per alert to
+ * lastActivityDateTime then createdDateTime. Source-derived so the conversion is
+ * deterministic. Returns null when no alert carries a parseable time (caller
+ * falls back to the conversion time). The skip-null logic mirrors the Go
+ * converter's time.IsZero() fallthrough for byte-parity.
+ */
+function deriveScanTimestamp(alerts: MdeAlert[]): Date | null {
+  let latest: Date | null = null;
+  for (const alert of alerts) {
+    const t =
+      (alert.lastUpdateDateTime ? parseTimestamp(alert.lastUpdateDateTime) : null) ??
+      (alert.lastActivityDateTime ? parseTimestamp(alert.lastActivityDateTime) : null) ??
+      (alert.createdDateTime ? parseTimestamp(alert.createdDateTime) : null);
+    if (!t) {
+      continue;
+    }
+    if (!latest || t.getTime() > latest.getTime()) {
+      latest = t;
+    }
+  }
+  return latest;
+}
+
+/**
  * Converts a single MDE alert to an HDF EvaluatedRequirement.
  */
 function alertToRequirement(alert: MdeAlert, scanTime: Date): EvaluatedRequirement {
   const impact = severityToImpact(alert.severity);
-  const status = statusToResultStatus(alert.status, alert.classification);
 
   const codeDesc = formatEvidence(alert.evidence ?? []);
   const message = formatMessage(alert);
   const startTime = resolveStartTime(alert, scanTime);
 
   const results: RequirementResult[] = [
-    createResult(status, message, { codeDesc, startTime }),
+    createResult(RAW_ALERT_STATUS, message, { codeDesc, startTime }),
   ];
 
   const descriptions: Description[] = [
@@ -269,6 +416,28 @@ function alertToRequirement(alert: MdeAlert, scanTime: Date): EvaluatedRequireme
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+  if (alert.alertWebUrl) {
+    const refs: Reference[] = [{ url: alert.alertWebUrl }];
+    req.refs = refs;
+  }
+
+  // Consumer triage becomes a structured override (raw failure + attributed,
+  // expiring override both present). When the classification carries no
+  // override-worthy decision (truePositive / untriaged), preserve the raw
+  // classification + determination as loose tags instead.
+  const triage = buildTriageOverride(alert, startTime);
+  if (triage) {
+    req.statusOverrides = [triage.override];
+    req.effectiveStatus = triage.effectiveStatus;
+    req.disposition = triage.disposition;
+  } else {
+    if (alert.classification) {
+      tags['classification'] = alert.classification;
+    }
+    if (alert.determination) {
+      tags['determination'] = alert.determination;
+    }
+  }
   return req;
 }
 
@@ -297,6 +466,11 @@ export async function convertMsftDefenderEndpointToHdf(input: string, converterV
   const scanTime = new Date();
 
   const { items: limitedAlerts, truncated } = limitArray(response.value);
+
+  // Top-level timestamp is source-derived (latest alert time), not now(), so the
+  // conversion is deterministic. Fall back to the conversion time only when the
+  // input carries no parseable alert time (e.g. an empty tenant window).
+  const derivedTimestamp = deriveScanTimestamp(limitedAlerts) ?? scanTime;
   /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncated) {
     // eslint-disable-next-line no-console
@@ -309,8 +483,9 @@ export async function convertMsftDefenderEndpointToHdf(input: string, converterV
   const components: Component[] = [];
   for (const alert of limitedAlerts) {
     const target = extractDeviceTarget(alert);
-    if (!seenTargets.has(target.name)) {
-      seenTargets.add(target.name);
+    const key = targetDedupKey(target);
+    if (!seenTargets.has(key)) {
+      seenTargets.add(key);
       components.push(target);
     }
   }
@@ -335,6 +510,6 @@ export async function convertMsftDefenderEndpointToHdf(input: string, converterV
     toolName: 'Microsoft Defender for Endpoint',
     baselines: [baseline],
     components,
-    timestamp: scanTime,
+    timestamp: derivedTimestamp,
   });
 }

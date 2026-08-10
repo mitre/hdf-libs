@@ -398,6 +398,14 @@ function convertRuleToRequirement(
       owasp: owaspTags,
       nist: nistControls,
       cci: cciControls,
+      // Per-issue metadata SonarQube carries on every mode. Omitted when empty so
+      // the golden stays clean rather than pinning "".
+      ...(firstIssue.effort ? { effort: firstIssue.effort } : {}),
+      ...(firstIssue.debt ? { debt: firstIssue.debt } : {}),
+      ...(firstIssue.author ? { author: firstIssue.author } : {}),
+      // Language is a property of the rule, not the issue.
+      ...(rule?.lang ? { lang: rule.lang } : {}),
+      ...(rule?.langName ? { langName: rule.langName } : {}),
       // Keep both axes available in MQR mode so consumers can select. In legacy
       // mode tags.severity already is the legacy axis, so repeating it adds nothing.
       ...(severitySource === SEVERITY_SOURCE_MQR
@@ -406,6 +414,9 @@ function convertRuleToRequirement(
             impacts: firstIssue.impacts,
             ...(firstIssue.cleanCodeAttribute
               ? { cleanCodeAttribute: firstIssue.cleanCodeAttribute }
+              : {}),
+            ...(firstIssue.cleanCodeAttributeCategory
+              ? { cleanCodeAttributeCategory: firstIssue.cleanCodeAttributeCategory }
               : {}),
           }
         : {}),

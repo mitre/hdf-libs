@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 func TestNISTControls_MultiControl(t *testing.T) {
@@ -43,4 +45,15 @@ func TestAllAnalyses(t *testing.T) {
 		"fuzz", "identity", "review", "typo",
 	}
 	assert.Equal(t, want, got)
+}
+
+func TestNISTControlsAtRev4(t *testing.T) {
+	// The table is authored at Rev 5; at Rev 4 the crosswalk applies. SI-7 is
+	// identical at both revisions; SR-4 (Provenance) has no Rev 4 equivalent
+	// and is dropped rather than mistranslated.
+	assert.Equal(t, []string{"SI-7", "SR-4"}, NISTControls("mitre/binary"))
+
+	assert.NoError(t, nist.SetRevision(4))
+	defer nist.ResetRevision()
+	assert.Equal(t, []string{"SI-7"}, NISTControls("mitre/binary"))
 }

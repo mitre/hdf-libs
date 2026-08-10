@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 //go:embed nessus-nist-mappings.json
@@ -67,6 +69,11 @@ func normalizePluginID(raw json.RawMessage) string {
 	return ""
 }
 
+// NativeRevision is the NIST 800-53 revision this table was authored against
+// (heimdall2's Rev 4-era mapping; it carries AU-8(1), withdrawn in Rev 5).
+// Lookups translate to the process-global revision via the NIST crosswalk.
+const NativeRevision = 4
+
 // NISTControls returns the NIST 800-53 controls for a Nessus plugin family and plugin ID.
 // It first tries an exact match on family+pluginID, then falls back to a wildcard match on family alone.
 // The NIST-ID field may contain multiple controls separated by "|" — these are split into a slice.
@@ -81,13 +88,13 @@ func NISTControls(pluginFamily, pluginID string) []string {
 	// Exact match: family + specific pluginID
 	if pluginID != "" && pluginID != "*" {
 		if nistID, ok := exactMap[lookupKey{family: pluginFamily, pluginID: pluginID}]; ok {
-			return splitNIST(nistID)
+			return nist.AtRevision(splitNIST(nistID), NativeRevision, nist.Revision())
 		}
 	}
 
 	// Wildcard match: family with pluginID="*"
 	if nistID, ok := wildcardMap[pluginFamily]; ok {
-		return splitNIST(nistID)
+		return nist.AtRevision(splitNIST(nistID), NativeRevision, nist.Revision())
 	}
 
 	return nil

@@ -12,12 +12,12 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 36 COLUMN : 2\n gets(f);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 32 COLUMN : 2\n gets(f);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -46,6 +46,7 @@
             ],
             "severity": "error"
           },
+          "code": " gets(f);",
           "controlType": "technical",
           "title": "buffer/gets",
           "verificationMethod": "automated"
@@ -60,22 +61,22 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 60 COLUMN : 3\n  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 60 COLUMN : 3\n  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 59 COLUMN : 3\n  strncat(d,s,10);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 59 COLUMN : 3\n  strncat(d,s,10);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -103,6 +104,7 @@
             ],
             "severity": "note"
           },
+          "code": "  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
           "controlType": "technical",
           "title": "buffer/strncat",
           "verificationMethod": "automated"
@@ -117,12 +119,12 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 61 COLUMN : 3\n  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 61 COLUMN : 3\n  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -150,6 +152,7 @@
             ],
             "severity": "note"
           },
+          "code": "  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */",
           "controlType": "technical",
           "title": "buffer/_tcsncat",
           "verificationMethod": "automated"
@@ -164,42 +167,42 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 64 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 66 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 64 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 66 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 68 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName)/sizeof(wszUserName[0]));",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 70 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName /sizeof(wszUserName[0]));",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 68 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName)/sizeof(wszUserName[0]));",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 70 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName /sizeof(wszUserName[0]));",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -227,6 +230,7 @@
             ],
             "severity": "note"
           },
+          "code": "  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));",
           "controlType": "technical",
           "title": "buffer/MultiByteToWideChar",
           "verificationMethod": "automated"
@@ -241,22 +245,22 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -284,6 +288,7 @@
             ],
             "severity": "error"
           },
+          "code": "  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
           "controlType": "technical",
           "title": "misc/SetSecurityDescriptorDacl",
           "verificationMethod": "automated"
@@ -298,37 +303,37 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 13 COLUMN : 2\n strcpy(b, a);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 21 COLUMN : 2\n strcpy(b, a);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 17 COLUMN : 2\n strcpy(b, a);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 20 COLUMN : 2\n strcpy(a, gettext(\"Hello there\")); // Did this work?",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 16 COLUMN : 2\n strcpy(a, gettext(\"Hello there\")); // Did this work?",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 19 COLUMN : 2\n strcpy(a, \"\\n\"); // Did this work?",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 15 COLUMN : 2\n strcpy(a, \"\\n\"); // Did this work?",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -356,6 +361,7 @@
             ],
             "severity": "error"
           },
+          "code": " strcpy(b, a);",
           "controlType": "technical",
           "title": "buffer/strcpy",
           "verificationMethod": "automated"
@@ -370,52 +376,52 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 24 COLUMN : 2\n sprintf(s, \"hello %s\", bug);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 25 COLUMN : 2\n sprintf(s, gettext(\"hello %s\"), bug);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 26 COLUMN : 2\n sprintf(s, unknown, bug);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 20 COLUMN : 2\n sprintf(s, \"hello %s\", bug);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 21 COLUMN : 2\n sprintf(s, gettext(\"hello %s\"), bug);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 22 COLUMN : 2\n sprintf(s, unknown, bug);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 23 COLUMN : 2\n sprintf(s, \"hello\");",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 19 COLUMN : 2\n sprintf(s, \"hello\");",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 22 COLUMN : 2\n sprintf(s, \"\\n\");",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 18 COLUMN : 2\n sprintf(s, \"\\n\");",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -443,6 +449,7 @@
             ],
             "severity": "error"
           },
+          "code": " sprintf(s, \"hello %s\", bug);",
           "controlType": "technical",
           "title": "buffer/sprintf",
           "verificationMethod": "automated"
@@ -457,12 +464,12 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 27 COLUMN : 2\n printf(bf, x);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 23 COLUMN : 2\n printf(bf, x);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -490,6 +497,7 @@
             ],
             "severity": "error"
           },
+          "code": " printf(bf, x);",
           "controlType": "technical",
           "title": "format/printf",
           "verificationMethod": "automated"
@@ -504,32 +512,32 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 29 COLUMN : 2\n scanf(\"%s\", s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 31 COLUMN : 2\n scanf(\"%s\", s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 25 COLUMN : 2\n scanf(\"%s\", s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 27 COLUMN : 2\n scanf(\"%s\", s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 30 COLUMN : 2\n scanf(\"%10s\", s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 26 COLUMN : 2\n scanf(\"%10s\", s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -558,6 +566,7 @@
             ],
             "severity": "error"
           },
+          "code": " scanf(\"%s\", s);",
           "controlType": "technical",
           "title": "buffer/scanf",
           "verificationMethod": "automated"
@@ -572,12 +581,12 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 42 COLUMN : 2\n syslog(LOG_ERR, attacker_string);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 38 COLUMN : 2\n syslog(LOG_ERR, attacker_string);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -605,6 +614,7 @@
             ],
             "severity": "error"
           },
+          "code": " syslog(LOG_ERR, attacker_string);",
           "controlType": "technical",
           "title": "format/syslog",
           "verificationMethod": "automated"
@@ -619,12 +629,12 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 53 COLUMN : 3\n  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 49 COLUMN : 3\n  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -652,6 +662,7 @@
             ],
             "severity": "error"
           },
+          "code": "  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */",
           "controlType": "technical",
           "title": "buffer/_mbscpy",
           "verificationMethod": "automated"
@@ -666,12 +677,12 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 56 COLUMN : 3\n  lstrcat(d,s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 56 COLUMN : 3\n  lstrcat(d,s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -699,6 +710,7 @@
             ],
             "severity": "error"
           },
+          "code": "  lstrcat(d,s);",
           "controlType": "technical",
           "title": "buffer/lstrcat",
           "verificationMethod": "automated"
@@ -713,22 +725,22 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -756,6 +768,7 @@
             ],
             "severity": "warning"
           },
+          "code": "  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
           "controlType": "technical",
           "title": "shell/CreateProcess",
           "verificationMethod": "automated"
@@ -770,12 +783,12 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 95 COLUMN : 20\n    while ((optc = getopt_long (argc, argv, \"a\",longopts, NULL )) != EOF) {",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 99 COLUMN : 20\n    while ((optc = getopt_long (argc, argv, \"a\",longopts, NULL )) != EOF) {",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -804,6 +817,7 @@
             ],
             "severity": "warning"
           },
+          "code": "    while ((optc = getopt_long (argc, argv, \"a\",longopts, NULL )) != EOF) {",
           "controlType": "technical",
           "title": "buffer/getopt_long",
           "verificationMethod": "automated"
@@ -818,7 +832,7 @@
           "results": [
             {
               "codeDesc": "URL : test/test.c LINE : 81 COLUMN : 10\n  (void) LoadLibraryEx(L\"user32.dll\", nullptr, LOAD_LIBRARY_AS_DATAFILE);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -847,6 +861,7 @@
             ],
             "severity": "warning"
           },
+          "code": "  (void) LoadLibraryEx(L\"user32.dll\", nullptr, LOAD_LIBRARY_AS_DATAFILE);",
           "controlType": "technical",
           "title": "misc/LoadLibraryEx",
           "verificationMethod": "automated"
@@ -861,27 +876,27 @@
           "results": [
             {
               "codeDesc": "URL : test/no-ending-newline.c LINE : 10 COLUMN : 2\n  char    buf[1024], *s;",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 49 COLUMN : 3\n  char d[20];",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 50 COLUMN : 3\n  char s[20];",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 45 COLUMN : 3\n  char d[20];",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 46 COLUMN : 3\n  char s[20];",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -910,6 +925,7 @@
             ],
             "severity": "note"
           },
+          "code": "  char    buf[1024], *s;",
           "controlType": "technical",
           "title": "buffer/char",
           "verificationMethod": "automated"
@@ -924,32 +940,32 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 54 COLUMN : 3\n  memcpy(d,s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 55 COLUMN : 3\n  CopyMemory(d,s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 50 COLUMN : 3\n  memcpy(d,s); // fail - no size",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 53 COLUMN : 3\n  memcpy(\u0026n,s,sizeof(s)); // fail - sizeof not of destination",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 54 COLUMN : 3\n  memcpy(d,s,n); // fail - size unguessable",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 55 COLUMN : 3\n  CopyMemory(d,s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -977,6 +993,7 @@
             ],
             "severity": "note"
           },
+          "code": "  memcpy(d,s);",
           "controlType": "technical",
           "title": "buffer/memcpy",
           "verificationMethod": "automated"
@@ -991,12 +1008,12 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 101 COLUMN : 7\n  f = fopen(\"/etc/passwd\", \"r\"); ",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 105 COLUMN : 7\n  f = fopen(\"/etc/passwd\", \"r\"); ",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -1024,6 +1041,7 @@
             ],
             "severity": "note"
           },
+          "code": "  f = fopen(\"/etc/passwd\", \"r\"); ",
           "controlType": "technical",
           "title": "misc/fopen",
           "verificationMethod": "automated"
@@ -1038,12 +1056,12 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 57 COLUMN : 3\n  strncpy(d,s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 57 COLUMN : 3\n  strncpy(d,s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -1071,6 +1089,7 @@
             ],
             "severity": "note"
           },
+          "code": "  strncpy(d,s);",
           "controlType": "technical",
           "title": "buffer/strncpy",
           "verificationMethod": "automated"
@@ -1085,12 +1104,12 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 58 COLUMN : 3\n  _tcsncpy(d,s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 58 COLUMN : 3\n  _tcsncpy(d,s);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -1118,6 +1137,7 @@
             ],
             "severity": "note"
           },
+          "code": "  _tcsncpy(d,s);",
           "controlType": "technical",
           "title": "buffer/_tcsncpy",
           "verificationMethod": "automated"
@@ -1132,12 +1152,12 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 62 COLUMN : 7\n  n = strlen(d);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 62 COLUMN : 7\n  n = strlen(d);",
-              "startTime": "2026-08-01T19:52:53.429734-04:00",
+              "startTime": "2026-07-12T18:56:41.924649-04:00",
               "status": "failed"
             }
           ],
@@ -1165,6 +1185,7 @@
             ],
             "severity": "note"
           },
+          "code": "  n = strlen(d);",
           "controlType": "technical",
           "title": "buffer/strlen",
           "verificationMethod": "automated"
@@ -1183,7 +1204,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T19:52:53.429734-04:00",
+  "timestamp": "2026-07-12T18:56:41.924649-04:00",
   "tool": {
     "format": "SARIF",
     "name": "Flawfinder",

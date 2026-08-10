@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.4.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.5.0",
   "title": "HDF Component Primitives",
   "description": "First-class system component with identity, polymorphic type, generalized BOM attachment (boms[]), and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and manifest inventory (SBOM, AI model/dataset, and reserved future BOM kinds).",
   "$defs": {
@@ -46,7 +46,7 @@
           "description": "Description of this component's role or purpose."
         },
         "owner": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
           "description": "Team or individual responsible for this component. Enables per-component ownership when different teams manage different parts of a system."
         },
         "externalIds": {
@@ -66,14 +66,14 @@
         "boms": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.4.0#/$defs/Bom"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.5.0#/$defs/Bom"
           },
           "description": "Component-scoped Bills of Materials (SBOM, ai-model, dataset, or any reserved bomType), each carried by passthrough (ref/document) or normalized. Replaces the former sbom/sbomRef/sbomFormat trio; a component may carry several BOMs (e.g. an SBOM plus an ai-model BOM). See primitives/bom.schema.json."
         },
         "integrity": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum"
           },
           "description": "Cryptographic integrity of this component's underlying artifact — model weights or shards, dataset archive, container image, or package bytes. An array supports multi-file/sharded artifacts. This is the single, generic home for artifact/subject integrity across all component types (it replaced the former per-type Container_Image digest and Artifact checksum fields). Distinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence Integrity type."
         },
@@ -87,12 +87,12 @@
         "inputOverrides": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Input_Override"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.5.0#/$defs/Input_Override"
           },
           "description": "System-specific overrides for baseline input values."
         },
         "targetSelector": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Target_Selector",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.5.0#/$defs/Target_Selector",
           "description": "Label selector to match targets belonging to this component during migration. Targets with matching labels are automatically included."
         }
       },
@@ -309,7 +309,7 @@
           "properties": {
             "type": { "const": "cloudAccount" },
             "provider": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Cloud_Provider",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Cloud_Provider",
               "description": "Cloud provider."
             },
             "accountId": {
@@ -344,7 +344,7 @@
           "properties": {
             "type": { "const": "cloudResource" },
             "provider": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Cloud_Provider",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Cloud_Provider",
               "description": "Cloud provider."
             },
             "resourceType": {

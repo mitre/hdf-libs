@@ -1,10 +1,11 @@
 import {
   type AffectedPackage,
   type Checksum,
+  type Component,
+  HashAlgorithm,
   TargetType,
   createMinimalBaseline,
   type Cvss,
-  CVSSSeverity,
   Ecosystem,
   type Epss,
   type EvaluatedBaseline,
@@ -13,11 +14,11 @@ import {
   type RequirementResult,
   ResultStatus,
   VerificationMethodEnum,
-  Version as CvssVersion,
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
-import {cvssScoreToSeverity, parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
+import {parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
 import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
+import {buildCvss as buildSharedCvss, cvssVersionFromString} from '../../../shared/typescript/cvss.js';
 
 // Input types for Grype JSON
 
@@ -37,9 +38,26 @@ interface GrypeDescriptor {
 }
 
 interface GrypeSource {
-  target: {
-    userInput: string;
-  };
+  type?: string;
+  target: GrypeTarget;
+}
+
+// GrypeTarget mirrors source.target for an image scan. Only userInput is
+// guaranteed across scan types (a directory scan emits target as a bare string).
+interface GrypeTarget {
+  userInput?: string;
+  imageID?: string;
+  manifestDigest?: string;
+  repoDigests?: string[];
+  tags?: string[];
+  architecture?: string;
+  os?: string;
+  layers?: GrypeLayer[];
+}
+
+interface GrypeLayer {
+  digest?: string;
+  size?: number;
 }
 
 interface GrypeDistro {
@@ -271,29 +289,6 @@ function buildCodeDesc(match: GrypeMatch): string {
   return parts.join(' | ');
 }
 
-// cvssVersionToSchema maps Grype's CVSS version string ("2.0"/"3.0"/"3.1"/"4.0")
-// to the schema Version enum. Unrecognized values default to "3.1".
-function cvssVersionToSchema(v?: string): CvssVersion {
-  switch (v) {
-    case '2.0': return CvssVersion.The20;
-    case '3.0': return CvssVersion.The30;
-    case '4.0': return CvssVersion.The40;
-    default: return CvssVersion.The31;
-  }
-}
-
-// cvssBandSeverity converts a CVSS base score to the schema CVSSSeverity enum
-// via hdf-utilities' band thresholds.
-function cvssBandSeverity(score: number): CVSSSeverity {
-  switch (cvssScoreToSeverity(score)) {
-    case 'critical': return CVSSSeverity.Critical;
-    case 'high': return CVSSSeverity.High;
-    case 'medium': return CVSSSeverity.Medium;
-    case 'low': return CVSSSeverity.Low;
-    default: return CVSSSeverity.None;
-  }
-}
-
 // buildCvssEntries emits one schema Cvss entry per element of
 // vulnerability.cvss[]. Related-vulnerability CVSS arrays are NOT merged in;
 // the schema contract is "one entry per source-CVE metric set".
@@ -303,20 +298,12 @@ function buildCvssEntries(vuln: GrypeVulnerability): Cvss[] | undefined {
   }
   const entries: Cvss[] = [];
   for (const c of vuln.cvss) {
-    const entry: Cvss = {version: cvssVersionToSchema(c.version)};
-    // Only emit base fields that are present: an empty baseVector fails the
-    // schema pattern, and a missing baseScore must not be coerced to 0.
-    if (c.vector) {
-      entry.baseVector = c.vector;
-    }
-    const score = c.metrics?.baseScore;
-    if (typeof score === 'number' && Number.isFinite(score)) {
-      entry.baseScore = score;
-      entry.baseSeverity = cvssBandSeverity(score);
-    }
-    if (vuln.id) {
-      entry.source = vuln.id;
-    }
+    const entry = buildSharedCvss({
+      version: cvssVersionFromString(c.version),
+      baseScore: c.metrics?.baseScore,
+      baseVector: c.vector,
+      source: vuln.id,
+    });
     // An entry with neither vector nor score cannot satisfy the schema anyOf.
     if (entry.baseVector === undefined && entry.baseScore === undefined) {
       continue;
@@ -453,11 +440,14 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
   // Build tags object - only include cci if not empty
   const tags = buildNistCciTags(DEFAULT_STATIC_ANALYSIS_NIST_TAGS, cciTags);
 
-  // Build requirement
+  // Build requirement. Grype carries no literal source snippet, so code holds
+  // the whole match serialized as indented JSON (byte-identical to the Go twin's
+  // json.Indent output — same source key order, same fields).
   const requirement: EvaluatedRequirement = {
     id: isIgnored ? `Grype-Ignored-Match/${cveId}` : `Grype/${cveId}`,
     title: `Grype found a vulnerability to ${cveId} in ${targetName}`,
     impact,
+    code: JSON.stringify(match, null, 2),
     results: [result],
     tags,
     descriptions: [
@@ -487,6 +477,38 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
   if (kev) requirement.kev = kev;
 
   return requirement;
+}
+
+// buildComponent surfaces the scan target's identity into a top-level HDF
+// component. An image scan yields a containerImage component carrying the image
+// digest, id, and distro OS; anything without image identity (e.g. a directory
+// scan) falls back to a bare artifact component named for the scan target.
+function buildComponent(report: GrypeReport, targetName: string): Component {
+  const t = report.source?.target;
+  const firstRepoDigest = t?.repoDigests?.find(d => d);
+  const firstTag = t?.tags?.find(tag => tag);
+  const isImage = Boolean(t && (t.imageID || t.manifestDigest || firstRepoDigest || firstTag));
+  if (!t || !isImage) {
+    return {name: targetName, type: TargetType.Artifact};
+  }
+
+  const name = firstRepoDigest || firstTag || t.imageID || targetName;
+  const component: Component = {name, type: TargetType.ContainerImage};
+  if (t.imageID) component.imageId = t.imageID;
+  // Image the container was started from: a repoDigest pins it exactly; a tag
+  // is the fallback when the scan carries no repoDigest.
+  const image = firstRepoDigest || firstTag;
+  if (image) component.image = image;
+  if (report.distro?.name) component.osName = report.distro.name;
+  if (report.distro?.version) component.osVersion = report.distro.version;
+  if (t.manifestDigest) {
+    component.integrity = [{
+      algorithm: HashAlgorithm.Sha256,
+      value: t.manifestDigest.replace(/^sha256:/, ''),
+    }];
+  }
+  if (t.architecture) component.labels = {architecture: t.architecture};
+  return component;
 }
 
 export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
@@ -554,10 +576,7 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
     toolName: 'Grype',
     toolVersion: grypeData.descriptor?.version,
     baselines: [baseline],
-    components: [{
-      type: TargetType.Artifact,
-      name: targetName,
-    }],
+    components: [buildComponent(grypeData, targetName)],
     // Match the Go peer: omit the top-level timestamp when Grype provides none,
     // rather than fabricating a non-deterministic wall-clock value.
     timestamp: scanTime ?? undefined,

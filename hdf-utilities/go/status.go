@@ -49,6 +49,32 @@ func (o StatusOverrideInput) expired(ref time.Time) bool {
 	return !o.ExpiresAt.IsZero() && !o.ExpiresAt.After(ref)
 }
 
+// GoverningOverrideIndex returns the index of the most recently applied (by
+// AppliedAt) non-expired override among those for which eligible returns true,
+// or -1 when none qualifies. It generalizes governing-override selection to
+// per-field eligibility: the schema defines effectiveStatus, effectiveImpact,
+// and disposition each as "the most recent non-expired override" carrying the
+// relevant field, so callers pass the field-presence check as the predicate.
+// A zero ref time means "now".
+func GoverningOverrideIndex(overrides []StatusOverrideInput, eligible func(int) bool, ref time.Time) int {
+	if ref.IsZero() {
+		ref = time.Now()
+	}
+	governing := -1
+	var best *StatusOverrideInput
+	for i := range overrides {
+		o := &overrides[i]
+		if !eligible(i) || o.expired(ref) {
+			continue
+		}
+		if best == nil || o.AppliedAt.After(best.AppliedAt) {
+			governing = i
+			best = o
+		}
+	}
+	return governing
+}
+
 // GoverningStatusOverrideIndex returns the index of the override that governs
 // a requirement: the most recently applied (by AppliedAt) non-expired override
 // that carries a status — matching the schema's definition of disposition
@@ -56,20 +82,7 @@ func (o StatusOverrideInput) expired(ref time.Time) bool {
 // governs. Callers holding richer concrete override types use the index to
 // recover their own object.
 func GoverningStatusOverrideIndex(overrides []StatusOverrideInput, ref time.Time) int {
-	if ref.IsZero() {
-		ref = time.Now()
-	}
-	governing := -1
-	for i := range overrides {
-		o := &overrides[i]
-		if o.Status == "" || o.expired(ref) {
-			continue
-		}
-		if governing == -1 || o.AppliedAt.After(overrides[governing].AppliedAt) {
-			governing = i
-		}
-	}
-	return governing
+	return GoverningOverrideIndex(overrides, func(i int) bool { return overrides[i].Status != "" }, ref)
 }
 
 // GoverningStatusOverride is GoverningStatusOverrideIndex returning the

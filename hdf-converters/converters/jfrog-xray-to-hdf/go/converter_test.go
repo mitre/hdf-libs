@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -251,23 +252,181 @@ func TestConvertJfrogXray_CweToNist(t *testing.T) {
 	}
 }
 
-// ---- CWE tag populated when present ----
+// ---- CWE is first-class (requirement.cwe[]), cweid tag removed ----
 
-func TestConvertJfrogXray_CweTag(t *testing.T) {
+func TestConvertJfrogXray_CweFirstClass(t *testing.T) {
 	input := loadFixture(t, "input/jfrog_xray_sample.json")
 	result, err := ConvertJfrogXrayToHDF(input, testVersion)
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	// At least one requirement should have a cweid tag (fixture has CWE-74, CWE-835, CWE-668, etc.)
+
+	// The interim cweid tag must be gone everywhere — CWE now lives in cwe[].
+	for _, req := range reqs {
+		_, has := req.Tags["cweid"]
+		assert.False(t, has, "cweid tag must be removed (now in requirement.cwe[]) for %s", req.ID)
+	}
+
+	// At least one requirement carries a first-class cwe[] (fixture has CWE-74,
+	// CWE-835, CWE-668, etc.).
 	hasCWE := false
 	for _, req := range reqs {
-		if cweSlice, ok := req.Tags["cweid"]; ok && cweSlice != nil {
+		if len(req.Cwe) > 0 {
 			hasCWE = true
 			break
 		}
 	}
-	assert.True(t, hasCWE, "expected at least one requirement with cweid tag")
+	assert.True(t, hasCWE, "expected at least one requirement with a cwe[]")
+}
+
+// ---- Structured CVSS / CWE / CVE scoring ----
+
+func TestConvertJfrogXray_CvssV2AndV3Structured(t *testing.T) {
+	input := loadFixture(t, "input/jfrog_xray_sample.json")
+	result, err := ConvertJfrogXrayToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// handlebars CVE-2019-19919 carries both a v3 and a v2 score.
+	req := findRequirementByTitle(result.Baselines[0].Requirements,
+		"prior to 4.3.0 are vulnerable to Prototype Pollution")
+	require.NotNil(t, req)
+	require.Len(t, req.Cvss, 2, "expected one v3 then one v2 cvss entry")
+
+	v3 := req.Cvss[0]
+	assert.Equal(t, hdf.The31, v3.Version)
+	require.NotNil(t, v3.BaseScore)
+	assert.InDelta(t, 9.8, *v3.BaseScore, 0.001)
+	require.NotNil(t, v3.BaseVector)
+	assert.Equal(t, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", *v3.BaseVector)
+	require.NotNil(t, v3.BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityCritical, *v3.BaseSeverity)
+	require.NotNil(t, v3.Source)
+	assert.Equal(t, "CVE-2019-19919", *v3.Source)
+
+	v2 := req.Cvss[1]
+	assert.Equal(t, hdf.The20, v2.Version)
+	require.NotNil(t, v2.BaseScore)
+	assert.InDelta(t, 7.5, *v2.BaseScore, 0.001)
+	require.NotNil(t, v2.BaseVector)
+	assert.Equal(t, "CVSS:2.0/AV:N/AC:L/Au:N/C:P/I:P/A:P", *v2.BaseVector)
+	require.NotNil(t, v2.BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityHigh, *v2.BaseSeverity)
+
+	// CWE first-class + CVE in tags.cve (id is a summary hash, not the CVE).
+	assert.Equal(t, []string{"CWE-74"}, req.Cwe)
+	assert.Equal(t, []string{"CVE-2019-19919"}, hdfutil.SafeStringSlice(req.Tags["cve"]))
+	assert.NotEmpty(t, hdfutil.SafeStringSlice(req.Tags["nist"]))
+}
+
+func TestConvertJfrogXray_CvssVersionFromFieldNotVector(t *testing.T) {
+	input := loadFixture(t, "input/jfrog_xray_sample.json")
+	result, err := ConvertJfrogXrayToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// acorn: v3 vector carries a CVSS:3.0/ prefix; v2 vector carries NO prefix,
+	// so the version must come from the field name (2.0), not the vector. No CVE
+	// and no CWE on this finding.
+	acorn := findRequirementByTitle(result.Baselines[0].Requirements, "Acorn regexp.js")
+	require.NotNil(t, acorn)
+	require.Len(t, acorn.Cvss, 2)
+
+	assert.Equal(t, hdf.The30, acorn.Cvss[0].Version)
+	require.NotNil(t, acorn.Cvss[0].BaseVector)
+	assert.Equal(t, "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", *acorn.Cvss[0].BaseVector)
+
+	assert.Equal(t, hdf.The20, acorn.Cvss[1].Version)
+	require.NotNil(t, acorn.Cvss[1].BaseVector)
+	assert.Equal(t, "AV:N/AC:M/Au:N/C:N/I:N/A:C", *acorn.Cvss[1].BaseVector)
+
+	// No CVE → no source and no tags.cve; no CWE → no cwe[].
+	assert.Nil(t, acorn.Cvss[0].Source)
+	assert.Empty(t, acorn.Cwe)
+	_, hasCVE := acorn.Tags["cve"]
+	assert.False(t, hasCVE)
+}
+
+func TestConvertJfrogXray_CvssV2Only(t *testing.T) {
+	input := loadFixture(t, "input/jfrog_xray_sample.json")
+	result, err := ConvertJfrogXrayToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// node-handlebars RCE carries only a v2 score (cvss_v3 absent → skipped).
+	req := findRequirementByTitle(result.Baselines[0].Requirements, "node-handlebars Template Handling")
+	require.NotNil(t, req)
+	require.Len(t, req.Cvss, 1)
+	assert.Equal(t, hdf.The20, req.Cvss[0].Version)
+	require.NotNil(t, req.Cvss[0].BaseScore)
+	assert.InDelta(t, 10.0, *req.Cvss[0].BaseScore, 0.001)
+	require.NotNil(t, req.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityCritical, *req.Cvss[0].BaseSeverity)
+}
+
+func TestConvertJfrogXray_NoCvssWhenNoCves(t *testing.T) {
+	input := loadFixture(t, "input/jfrog_xray_sample.json")
+	result, err := ConvertJfrogXrayToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// The lodash baseZipObject finding has more_details with no cves at all.
+	req := findRequirementByTitle(result.Baselines[0].Requirements, "baseZipObject")
+	require.NotNil(t, req)
+	assert.Empty(t, req.Cvss)
+	assert.Empty(t, req.Cwe)
+	_, hasCVE := req.Tags["cve"]
+	assert.False(t, hasCVE)
+}
+
+func TestParseCvssField(t *testing.T) {
+	// score + prefixed vector
+	s, v := parseCvssField("7.5/CVSS:3.0/AV:N/AC:L")
+	require.NotNil(t, s)
+	assert.InDelta(t, 7.5, *s, 0.001)
+	assert.Equal(t, "CVSS:3.0/AV:N/AC:L", v)
+
+	// score + bare (prefix-less) vector
+	s, v = parseCvssField("7.1/AV:N/AC:M")
+	require.NotNil(t, s)
+	assert.InDelta(t, 7.1, *s, 0.001)
+	assert.Equal(t, "AV:N/AC:M", v)
+
+	// score only, no "/" → no vector
+	s, v = parseCvssField("9.0")
+	require.NotNil(t, s)
+	assert.InDelta(t, 9.0, *s, 0.001)
+	assert.Equal(t, "", v)
+
+	// unparseable score, no "/" → nothing usable
+	s, v = parseCvssField("garbage")
+	assert.Nil(t, s)
+	assert.Equal(t, "", v)
+
+	// unparseable score with a trailing vector → score dropped, vector kept
+	s, v = parseCvssField("bad/AV:N/AC:L")
+	assert.Nil(t, s)
+	assert.Equal(t, "AV:N/AC:L", v)
+
+	// truly empty
+	s, v = parseCvssField("")
+	assert.Nil(t, s)
+	assert.Equal(t, "", v)
+}
+
+// Synthetic input (test-only, not a committed fixture): a CVE with only a
+// vector-bearing cvss_v3 whose score is unparseable, and no cvss_v2. Exercises
+// the "emit vector, no score" v3 branch and the "cvss_v2 absent → skip" branch.
+func TestConvertJfrogXray_CvssVectorOnlyAndV2Absent(t *testing.T) {
+	synthetic := `{"data":[{"id":"x","severity":"High","summary":"synthetic vector-only",` +
+		`"component_versions":{"more_details":{"cves":[{"cve":"CVE-9999-0001",` +
+		`"cvss_v3":"bad/CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}]}}}]}`
+	result, err := ConvertJfrogXrayToHDF([]byte(synthetic), testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Cvss, 1, "only the v3 metric should be emitted")
+	assert.Equal(t, hdf.The31, req.Cvss[0].Version)
+	assert.Nil(t, req.Cvss[0].BaseScore, "unparseable score must be omitted")
+	require.NotNil(t, req.Cvss[0].BaseVector)
+	assert.Equal(t, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", *req.Cvss[0].BaseVector)
+	assert.Equal(t, []string{"CVE-9999-0001"}, hdfutil.SafeStringSlice(req.Tags["cve"]))
 }
 
 // ---- Title from summary ----
@@ -326,6 +485,41 @@ func TestGetImpact(t *testing.T) {
 			assert.InDelta(t, tc.expected, getImpact(tc.severity), 0.001)
 		})
 	}
+}
+
+// ---- CODE tab: requirement.code carries the serialized entry ----
+
+func findRequirementByTitle(reqs []hdf.EvaluatedRequirement, substr string) *hdf.EvaluatedRequirement {
+	for i := range reqs {
+		if reqs[i].Title != nil && strings.Contains(*reqs[i].Title, substr) {
+			return &reqs[i]
+		}
+	}
+	return nil
+}
+
+func TestConvertJfrogXray_CodeContainsEntryJSON(t *testing.T) {
+	input := loadFixture(t, "input/jfrog_xray_sample.json")
+	result, err := ConvertJfrogXrayToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	acorn := findRequirementByTitle(result.Baselines[0].Requirements, "Acorn regexp.js")
+	require.NotNil(t, acorn, "expected the acorn requirement")
+	require.NotNil(t, acorn.Code, "requirement.code must be populated for the Heimdall CODE tab")
+
+	// Indented (2-space) serialization of the source entry object.
+	assert.True(t, strings.HasPrefix(*acorn.Code, "{\n  \""), "code must be indented JSON")
+
+	// The serialized code must round-trip to the source entry.
+	var decoded XrayEntry
+	require.NoError(t, json.Unmarshal([]byte(*acorn.Code), &decoded))
+	assert.Equal(t, "npm://acorn:5.7.3", decoded.SourceCompID)
+	assert.Equal(t, "High", decoded.Severity)
+	assert.Equal(t, []string{"5.7.4", "6.4.1", "7.1.1"}, decoded.ComponentVersions.FixedVersions)
+	require.Len(t, decoded.ComponentVersions.MoreDetails.CVEs, 1)
+	assert.Equal(t,
+		"7.5/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+		decoded.ComponentVersions.MoreDetails.CVEs[0].CvssV3)
 }
 
 func TestSnapshots(t *testing.T) {

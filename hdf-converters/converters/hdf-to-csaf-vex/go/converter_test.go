@@ -294,6 +294,153 @@ func TestConvertHDFToCSAFVEX_ProductTreeGloballySorted(t *testing.T) {
 	assert.Equal(t, []string{"pkg:npm/aaa@1.0", "pkg:npm/zzz@1.0"}, ids)
 }
 
+func TestConvertHDFToCSAFVEX_ReasonNoteOnNotAffected(t *testing.T) {
+	t.Parallel()
+	// A not_affected (falsePositive) override's reason prose must be surfaced
+	// as a CSAF description note — previously it was dropped (only the affected
+	// path kept reason, as threats[impact]).
+	out, err := ConvertHDFToCSAFVEX(loadInput(t, "sec-vex-amendments.json"), testVersion)
+	require.NoError(t, err)
+	var doc CSAFVexDocument
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.Vulnerabilities, 3)
+	for _, v := range doc.Vulnerabilities {
+		require.Len(t, v.Notes, 1, "reason must surface as a description note")
+		assert.Equal(t, "description", v.Notes[0].Category)
+		assert.NotEmpty(t, v.Notes[0].Text)
+	}
+}
+
+func TestConvertHDFToCSAFVEX_ProductIdentificationHelperRoundTrip(t *testing.T) {
+	t.Parallel()
+	// A purl affectedPackage must emit product_identification_helper.purl so
+	// csaf-vex-to-hdf can resolve the product back to a structured
+	// AffectedPackage — restoring the previously severed package identity.
+	const purl = "pkg:npm/left-pad@1.3.0"
+	input := []byte(`{
+		"name": "purl round-trip",
+		"overrides": [{
+			"type": "falsePositive",
+			"requirementId": "CVE-2026-7777",
+			"status": "passed",
+			"appliedAt": "2026-01-01T00:00:00Z",
+			"expiresAt": "2099-12-31T00:00:00Z",
+			"appliedBy": {"type": "simple", "identifier": "team"},
+			"justification": "component_not_present",
+			"reason": "left-pad is not bundled",
+			"affectedPackages": [{"name": "left-pad", "version": "1.3.0", "ecosystem": "npm", "purl": "` + purl + `"}]
+		}]
+	}`)
+	out, err := ConvertHDFToCSAFVEX(input, testVersion)
+	require.NoError(t, err)
+
+	var doc CSAFVexDocument
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.ProductTree.FullProductNames, 1)
+	fpn := doc.ProductTree.FullProductNames[0]
+	assert.Equal(t, purl, fpn.ProductID)
+	require.NotNil(t, fpn.ProductIdentificationHelper, "purl package must emit a helper")
+	assert.Equal(t, purl, fpn.ProductIdentificationHelper.Purl)
+
+	// Round-trip: re-import restores the AffectedPackage purl.
+	amendments, err := csafvex.ConvertCSAFVEXToHDF(out, testVersion)
+	require.NoError(t, err)
+	require.Len(t, amendments.Overrides, 1)
+	require.Len(t, amendments.Overrides[0].AffectedPackages, 1)
+	require.NotNil(t, amendments.Overrides[0].AffectedPackages[0].Purl)
+	assert.Equal(t, purl, *amendments.Overrides[0].AffectedPackages[0].Purl)
+}
+
+func TestConvertHDFToCSAFVEX_CpeIdentificationHelper(t *testing.T) {
+	t.Parallel()
+	const cpe = "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"
+	input := []byte(`{
+		"name": "cpe helper",
+		"overrides": [{
+			"type": "falsePositive",
+			"requirementId": "CVE-2026-8888",
+			"status": "passed",
+			"appliedAt": "2026-01-01T00:00:00Z",
+			"expiresAt": "2099-12-31T00:00:00Z",
+			"appliedBy": {"type": "simple", "identifier": "team"},
+			"justification": "component_not_present",
+			"reason": "not affected",
+			"affectedPackages": [{"cpe": "` + cpe + `"}]
+		}]
+	}`)
+	out, err := ConvertHDFToCSAFVEX(input, testVersion)
+	require.NoError(t, err)
+	var doc CSAFVexDocument
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.ProductTree.FullProductNames, 1)
+	require.NotNil(t, doc.ProductTree.FullProductNames[0].ProductIdentificationHelper)
+	assert.Equal(t, cpe, doc.ProductTree.FullProductNames[0].ProductIdentificationHelper.CPE)
+}
+
+func TestConvertHDFToCSAFVEX_ExternalReferencesExport(t *testing.T) {
+	t.Parallel()
+	// externalReferences[].href must surface as references[category=external],
+	// alongside url evidence.
+	input := []byte(`{
+		"name": "external refs",
+		"overrides": [{
+			"type": "falsePositive",
+			"requirementId": "CVE-2026-6666",
+			"status": "passed",
+			"appliedAt": "2026-01-01T00:00:00Z",
+			"expiresAt": "2099-12-31T00:00:00Z",
+			"appliedBy": {"type": "simple", "identifier": "team"},
+			"justification": "component_not_present",
+			"reason": "not affected",
+			"externalReferences": [
+				{"sourceName": "stix", "href": "https://cti.example.com/indicator/42", "description": "STIX indicator"},
+				{"sourceName": "cve", "externalId": "CVE-2026-6666"}
+			]
+		}]
+	}`)
+	out, err := ConvertHDFToCSAFVEX(input, testVersion)
+	require.NoError(t, err)
+	var doc CSAFVexDocument
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.Vulnerabilities, 1)
+	var found bool
+	for _, r := range doc.Vulnerabilities[0].References {
+		if r.URL == "https://cti.example.com/indicator/42" {
+			assert.Equal(t, "external", r.Category)
+			assert.Equal(t, "STIX indicator", r.Summary)
+			found = true
+		}
+	}
+	assert.True(t, found, "externalReferences href must surface as a reference")
+	assert.Len(t, doc.Vulnerabilities[0].References, 1, "the href-less external reference is skipped")
+}
+
+func TestConvertHDFToCSAFVEX_MilestoneDateExport(t *testing.T) {
+	t.Parallel()
+	// completedAt takes precedence over estimatedCompletion for the CSAF
+	// remediation date.
+	input := []byte(`{
+		"name": "milestone dates",
+		"overrides": [{
+			"type": "poam",
+			"requirementId": "CVE-2026-5555",
+			"status": "failed",
+			"appliedAt": "2026-01-01T00:00:00Z",
+			"expiresAt": "2099-12-31T00:00:00Z",
+			"appliedBy": {"type": "simple", "identifier": "ops"},
+			"reason": "tracking",
+			"milestones": [{"description": "apply patch", "status": "completed", "estimatedCompletion": "2026-02-01T00:00:00Z", "completedAt": "2026-03-15T00:00:00Z"}]
+		}]
+	}`)
+	out, err := ConvertHDFToCSAFVEX(input, testVersion)
+	require.NoError(t, err)
+	var doc CSAFVexDocument
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.Vulnerabilities, 1)
+	require.NotEmpty(t, doc.Vulnerabilities[0].Remediations)
+	assert.Equal(t, "2026-03-15T00:00:00Z", doc.Vulnerabilities[0].Remediations[0].Date)
+}
+
 // TestGoldenParity asserts byte-for-byte output against frozen golden files.
 // The TypeScript test asserts against the SAME files, guaranteeing TS↔Go parity.
 func TestGoldenParity(t *testing.T) {

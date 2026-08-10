@@ -42,6 +42,7 @@ type CheckovSummary struct {
 // CheckovCheck represents a single check result from checkov.
 type CheckovCheck struct {
 	CheckID       string             `json:"check_id"`
+	BcCheckID     *string            `json:"bc_check_id"`
 	CheckName     string             `json:"check_name"`
 	CheckResult   CheckovCheckResult `json:"check_result"`
 	Severity      *string            `json:"severity"`
@@ -85,6 +86,32 @@ func getImpact(severity *string) float64 {
 func formatCodeDesc(check CheckovCheck) string {
 	return fmt.Sprintf("Resource: %s\nFile: %s (lines %s)",
 		check.Resource, check.FilePath, formatLineRange(check.FileLineRange))
+}
+
+// renderCodeBlock renders checkov's code_block ([[lineno, "source"], ...]) into a
+// readable, line-numbered source snippet for the Heimdall CODE tab. Returns "" when
+// the code_block is absent or unparseable so the caller can omit requirement.code.
+func renderCodeBlock(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var entries []json.RawMessage
+	if err := json.Unmarshal(raw, &entries); err != nil {
+		return ""
+	}
+	lines := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		var pair []json.RawMessage
+		if err := json.Unmarshal(entry, &pair); err != nil || len(pair) < 2 {
+			continue // skip a non-array or short entry, matching the TS renderer
+		}
+		var lineno int
+		var src string
+		_ = json.Unmarshal(pair[0], &lineno)
+		_ = json.Unmarshal(pair[1], &src)
+		lines = append(lines, fmt.Sprintf("%d %s", lineno, strings.TrimSuffix(src, "\n")))
+	}
+	return strings.Join(lines, "\n")
 }
 
 // formatLineRange renders the line range as a JSON array literal ("[26,49]").
@@ -169,6 +196,10 @@ func buildRequirement(checkID string, group []checkWithType, now time.Time) hdf.
 	if types := checkTypesOf(group); len(types) > 0 {
 		tags["check_type"] = types
 	}
+	// Bridgecrew check identifier (e.g. "BC_AWS_S3_16"); omit when null/absent.
+	if rep.BcCheckID != nil && *rep.BcCheckID != "" {
+		tags["bc_check_id"] = *rep.BcCheckID
+	}
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: rep.CheckName},
@@ -186,7 +217,7 @@ func buildRequirement(checkID string, group []checkWithType, now time.Time) hdf.
 	}
 
 	title := rep.CheckName
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 checkID,
 		Title:              &title,
 		Impact:             getImpact(rep.Severity),
@@ -196,6 +227,20 @@ func buildRequirement(checkID string, group []checkWithType, now time.Time) hdf.
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+	if code := renderCodeBlock(rep.CodeBlock); code != "" {
+		req.Code = &code
+	}
+	// Promote the finding's file/line locus into the structured, queryable
+	// sourceLocation. file_line_range is [start, end]; Line is the START line.
+	if rep.FilePath != "" {
+		loc := &hdf.SourceLocation{Ref: hdfutil.Ptr(rep.FilePath)}
+		if len(rep.FileLineRange) > 0 {
+			line := float64(rep.FileLineRange[0])
+			loc.Line = &line
+		}
+		req.SourceLocation = loc
+	}
+	return req
 }
 
 // parseInput parses checkov JSON which can be either a single object or an array of objects.

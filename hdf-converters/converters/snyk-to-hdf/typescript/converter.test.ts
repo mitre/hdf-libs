@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
-import { convertSnykToHdf } from './converter.js';
+import { convertSnykToHdf, buildSnykCvss } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { DEFAULT_MAX_INPUT_SIZE } from '../../../shared/typescript/converterutil.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
@@ -170,18 +170,68 @@ describe('snyk to HDF converter', async () => {
   });
 
   describe('tags', async () => {
-    it('should populate tags (cweid, cveid, ghsaid, nist, cci)', async () => {
+    it('should populate tags (cve, ghsaid, nist, cci) and drop cweid/cveid', async () => {
       const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
       // npm:adm-zip:20180415 has CVE, CWE, and GHSA identifiers
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'npm:adm-zip:20180415');
       expect(req).toBeDefined();
 
       const tags = req!.tags;
-      expect(tags?.['cweid']).toContain('CWE-29');
-      expect(tags?.['cveid']).toContain('CVE-2018-1002204');
+      // CWE moved to first-class cwe[]; cveid renamed to cve
+      expect(tags?.['cweid']).toBeUndefined();
+      expect(tags?.['cveid']).toBeUndefined();
+      expect(tags?.['cve']).toContain('CVE-2018-1002204');
       expect(tags?.['ghsaid']).toContain('GHSA-3v6h-hqm4-2rg6');
       expect((tags?.['nist'] as string[]).length).toBeGreaterThan(0);
       expect((tags?.['cci'] as string[]).length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('structured cvss', async () => {
+    it('should map cvssScore + CVSSv3 vector into requirement.cvss[]', async () => {
+      const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'SNYK-JS-ADMZIP-1065796');
+      expect(req).toBeDefined();
+
+      expect(req!.cvss).toHaveLength(1);
+      const cv = req!.cvss![0]!;
+      expect(cv.version).toBe('3.1');
+      expect(cv.baseScore).toBeCloseTo(7.4, 3);
+      expect(cv.baseVector).toBe('CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N');
+      expect(cv.baseSeverity).toBe('high');
+      // old CVSS tags gone
+      expect(req!.tags?.['cvss_base_score']).toBeUndefined();
+      expect(req!.tags?.['cvss31']).toBeUndefined();
+    });
+
+    it('omits cvss[] when the vulnerability carries no score or vector', () => {
+      expect(buildSnykCvss({id: 'x', title: 't', description: 'd', severity: 'low', identifiers: {}, from: []})).toEqual([]);
+    });
+
+    it('sets baseScore without vector when only cvssScore is present', () => {
+      const out = buildSnykCvss({id: 'x', title: 't', description: 'd', severity: 'low', cvssScore: 5.5, identifiers: {}, from: []});
+      expect(out).toHaveLength(1);
+      expect(out[0]!.version).toBe('3.1');
+      expect(out[0]!.baseScore).toBeCloseTo(5.5, 3);
+      expect(out[0]!.baseVector).toBeUndefined();
+    });
+
+    it('sets vector and version without baseScore when only CVSSv3 is present', () => {
+      const out = buildSnykCvss({id: 'x', title: 't', description: 'd', severity: 'low', CVSSv3: 'CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H', identifiers: {}, from: []});
+      expect(out).toHaveLength(1);
+      expect(out[0]!.version).toBe('3.0');
+      expect(out[0]!.baseScore).toBeUndefined();
+      expect(out[0]!.baseVector).toBe('CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
+    });
+  });
+
+  describe('structured cwe', async () => {
+    it('maps identifiers.CWE into requirement.cwe[] while keeping nist tag', async () => {
+      const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'SNYK-JS-ADMZIP-1065796');
+      expect(req).toBeDefined();
+      expect(req!.cwe).toEqual(['CWE-22']);
+      expect((req!.tags?.['nist'] as string[]).length).toBeGreaterThan(0);
     });
   });
 
@@ -203,6 +253,78 @@ describe('snyk to HDF converter', async () => {
       const defaultDesc = req?.descriptions?.find(d => d.label === 'default');
       expect(defaultDesc).toBeDefined();
       expect(defaultDesc!.data).toContain('adm-zip');
+    });
+  });
+
+  describe('external references (refs[])', async () => {
+    it('emits one Reference{url} per source reference url', async () => {
+      const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'SNYK-JS-ADMZIP-1065796');
+      expect(req).toBeDefined();
+      expect(req!.refs).toHaveLength(1);
+      expect(req!.refs![0]!.url).toBe('https://github.com/cthackers/adm-zip/commit/119dcad6599adccc77982feb14a0c7440fa63013');
+    });
+
+    it('omits refs[] when the vulnerability carries no references', async () => {
+      const input = JSON.stringify({
+        ok: false,
+        packageManager: 'npm',
+        projectName: 'test',
+        vulnerabilities: [
+          {
+            id: 'SNYK-NOREF',
+            title: 't',
+            description: 'd',
+            severity: 'low',
+            identifiers: {},
+            from: [],
+            // references field absent
+          },
+        ],
+      });
+      const out = JSON.parse(await convertSnykToHdf(input)) as HDFResults;
+      expect(out.baselines[0]!.requirements[0]!.refs).toBeUndefined();
+    });
+
+    it('skips title-only references that carry no url', async () => {
+      const input = JSON.stringify({
+        ok: false,
+        packageManager: 'npm',
+        projectName: 'test',
+        vulnerabilities: [
+          {
+            id: 'SNYK-TITLEONLY',
+            title: 't',
+            description: 'd',
+            severity: 'low',
+            identifiers: {},
+            from: [],
+            references: [{ title: 'no link' }, { title: 'link', url: 'https://example.com/x' }],
+          },
+        ],
+      });
+      const out = JSON.parse(await convertSnykToHdf(input)) as HDFResults;
+      const refs = out.baselines[0]!.requirements[0]!.refs;
+      expect(refs).toHaveLength(1);
+      expect(refs![0]!.url).toBe('https://example.com/x');
+    });
+  });
+
+  describe('upgradePath remediation description', async () => {
+    it('joins the upgradePath package chain into an upgradePath description', async () => {
+      const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
+      // SNYK-JS-ADMZIP-1065796 upgradePath is [false, "adm-zip@0.5.2"]
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'SNYK-JS-ADMZIP-1065796');
+      const desc = req?.descriptions?.find(d => d.label === 'upgradePath');
+      expect(desc).toBeDefined();
+      expect(desc!.data).toBe('adm-zip@0.5.2');
+    });
+
+    it('omits the upgradePath description when upgradePath is empty', async () => {
+      const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
+      // SNYK-JS-HBS-1566555 has an empty upgradePath
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'SNYK-JS-HBS-1566555');
+      expect(req?.descriptions?.find(d => d.label === 'upgradePath')).toBeUndefined();
     });
   });
 

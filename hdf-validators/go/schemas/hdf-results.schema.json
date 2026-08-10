@@ -1,12 +1,19 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.4.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.5.0",
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
     "baselines"
   ],
   "properties": {
+    "externalReferences": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/External_Reference"
+      },
+      "description": "Optional references to external artifacts (CTI/STIX, BOMs, advisories, runbooks, or any URI-addressable artifact) relevant to this assessment as a whole. Inert context; see External_Reference."
+    },
     "id": {
       "type": "string",
       "format": "uuid",
@@ -20,7 +27,7 @@
     "components": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.4.0#/$defs/Component"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.5.0#/$defs/Component"
       },
       "description": "The components that were assessed. Each component describes a system element (host, container, cloud resource, application, etc.) with optional identity, SBOM, and external references."
     },
@@ -32,27 +39,27 @@
       "description": "Information on the baselines that were evaluated, including findings."
     },
     "statistics": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.4.0#/$defs/Statistics",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.5.0#/$defs/Statistics",
       "description": "Statistics for the assessment run, including duration and result counts."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/Generator",
       "description": "Information about the tool that generated this file."
     },
     "tool": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Tool",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/Tool",
       "description": "The security tool that produced the assessment data in this file."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this file."
     },
     "runner": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.4.0#/$defs/Runner",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.5.0#/$defs/Runner",
       "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
     },
     "remediation": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Remediation",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Remediation",
       "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for fixing failing requirements found in this assessment."
     },
     "systemRef": {
@@ -64,6 +71,10 @@
       "type": "string",
       "format": "uri-reference",
       "description": "Reference to an hdf-plan document describing the assessment plan that produced these results. May be a relative path, absolute URI, or fragment identifier."
+    },
+    "derivation": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.5.0#/$defs/Derivation",
+      "description": "Present ONLY on reconciled result sets: lineage recording the seed snapshot and event watermark this document was reassembled from (ADR-0005). Documents produced directly by a scan omit this field. When present, generator names the reconciling tool."
     },
     "extensions": {
       "type": "object",
@@ -160,14 +171,14 @@
       ],
       "allOf": [
         {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Baseline_Metadata"
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Baseline_Metadata"
         }
       ],
       "properties": {
         "depends": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Dependency"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Dependency"
           },
           "description": "The set of dependencies this baseline depends on."
         },
@@ -180,15 +191,15 @@
           "description": "The description - should be more detailed than the summary."
         },
         "integrity": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Integrity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/Integrity",
           "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."
         },
         "originalChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the original baseline definition file (before execution). This is an immutable reference to the baseline as defined, used to detect tampering with baseline requirements or metadata."
         },
         "resultsChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs). Used to detect tampering with test results. Compare with currentChecksum to verify amendment integrity."
         },
         "statusMessage": {
@@ -206,14 +217,14 @@
         "groups": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Requirement_Group"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Requirement_Group"
           },
           "description": "A set of descriptions for the requirement groups."
         },
         "inputs": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.4.0#/$defs/Input"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.5.0#/$defs/Input"
           },
           "description": "Typed inputs used to parameterize this baseline at execution time. See the Input primitive for the full schema."
         },
@@ -238,7 +249,7 @@
       ],
       "allOf": [
         {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Requirement_Core"
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Requirement_Core"
         }
       ],
       "properties": {
@@ -246,7 +257,7 @@
           "type": "array",
           "minItems": 1,
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0#/$defs/Requirement_Description"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0#/$defs/Requirement_Description"
           },
           "contains": {
             "type": "object",
@@ -262,37 +273,37 @@
           "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
         },
         "severity": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Severity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Severity",
           "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
         },
         "sourceLocation": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Source_Location",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Source_Location",
           "description": "The explicit location of the requirement within the source code."
         },
         "results": {
           "type": "array",
           "minItems": 1,
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0#/$defs/Requirement_Result"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0#/$defs/Requirement_Result"
           },
           "description": "The set of all tests within the requirement and their results."
         },
         "statusOverrides": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/Status_Override"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/Status_Override"
           },
           "description": "Chronological history of all overrides applied to this requirement. Overrides are intentional changes to the compliance status and/or impact score (waivers, attestations, false positives, risk adjustments). Most recent override should be first in array. Preserves full audit trail."
         },
         "poams": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0#/$defs/POAM"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/POAM"
           },
           "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change effectiveStatus - they track the work being done to address a failure. Separate from statusOverrides which DO change status."
         },
         "effectiveStatus": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0#/$defs/Result_Status",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0#/$defs/Result_Status",
           "description": "The current effective compliance status of this requirement after applying the most recent non-expired override with a status field, or computed from results (worst-wins) if no status-bearing overrides exist."
         },
         "effectiveImpact": {
@@ -302,29 +313,33 @@
           "description": "The current effective impact score (0.0–1.0) after applying the most recent non-expired override with an impact field. Absent when no impact overrides apply; consumers should use the requirement's impact field in that case."
         },
         "disposition": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Override_Type",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.5.0#/$defs/Override_Type",
           "description": "The type of the most recent non-expired override or POAM governing this requirement. Indicates why the requirement is in its current state (e.g., waiver, falsePositive, riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or POAMs apply."
+        },
+        "effectiveChecksum": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
+          "description": "Checksum of this requirement's resolved effective posture, for per-control change detection in continuous monitoring. sha256 over the canonical JSON object with keys status, impact, disposition (in that order), holding the resolved effective status, resolved effective impact, and governing override type (null when nothing governs), with override expiry anchored to the document timestamp. Flips exactly when the operative status, impact, or disposition changes; stable under all other churn (result details, timestamps, tags). Optional; stamped by tooling (hdf convert, hdf amend apply)."
         },
         "evidence": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Evidence"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Evidence"
           },
           "description": "Supporting evidence for this requirement's findings, such as screenshots, code samples, or log excerpts."
         },
         "cvss": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.4.0#/$defs/Cvss"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0#/$defs/Cvss"
           },
           "description": "Structured CVSS scoring data for vulnerability findings. One entry per CVE — a finding may match multiple CVEs (common in vulnerability scanners). Captures vendor-supplied Base metrics plus optional consumer-owned Threat / Environmental / Supplemental groups for risk adjustment. See cvss.schema.json."
         },
         "epss": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.4.0#/$defs/Epss",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.5.0#/$defs/Epss",
           "description": "FIRST.org EPSS (Exploit Prediction Scoring System) score for this CVE finding. Used alongside CVSS for prioritization — captures the probability the vulnerability will be exploited."
         },
         "kev": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.4.0#/$defs/Kev",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.5.0#/$defs/Kev",
           "description": "CISA Known Exploited Vulnerabilities (KEV) catalog status. When inKev=true, dateAdded and dueDate carry the federal patching deadline."
         },
         "cwe": {
@@ -338,7 +353,7 @@
         "affectedPackages": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.4.0#/$defs/Affected_Package"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.5.0#/$defs/Affected_Package"
           },
           "description": "Packages affected by this vulnerability finding. Vulnerability-finding-scoped — see components[] on hdf-system for component-level package inventories. One entry per matched package signature (scanners often report multiple CPE variations per CVE)."
         }
@@ -403,11 +418,15 @@
                 "identifier": "ao@agency.gov"
               },
               "appliedAt": "2026-01-20T10:00:00Z",
-              "expiresAt": "2026-07-20T00:00:00Z"
+              "expiresAt": "2099-12-31T00:00:00Z"
             }
           ],
           "effectiveStatus": "passed",
-          "disposition": "waiver"
+          "disposition": "waiver",
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "d11c074ab9131807816013a71d986f1ceb2e5871a8a01dee4043391b7a6bf37b"
+          }
         },
         {
           "$comment": "False positive (compliance scan) — STIG check was wrong, requirement actually passes",
@@ -627,728 +646,140 @@
       "description": "A requirement that has been evaluated, including any findings.",
       "title": "Evaluated Requirement"
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.4.0",
-      "title": "HDF Component Primitives",
-      "description": "First-class system component with identity, polymorphic type, generalized BOM attachment (boms[]), and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and manifest inventory (SBOM, AI model/dataset, and reserved future BOM kinds).",
-      "$defs": {
-        "Base_Component": {
-          "type": "object",
-          "additionalProperties": true,
-          "required": [
-            "type",
-            "name"
-          ],
-          "properties": {
-            "type": {
-              "type": "string",
-              "title": "Target Type",
-              "enum": [
-                "host",
-                "containerImage",
-                "containerInstance",
-                "containerPlatform",
-                "cloudAccount",
-                "cloudResource",
-                "repository",
-                "application",
-                "artifact",
-                "network",
-                "database",
-                "aiModel",
-                "dataset"
-              ],
-              "description": "Component type discriminator. Same values as Target types, plus aiModel and dataset (thin AI subject components whose detail lives in an attached ai-model / dataset BOM)."
-            },
-            "name": {
-              "type": "string",
-              "description": "Human-readable name for this component."
-            },
-            "componentId": {
-              "type": "string",
-              "format": "uuid",
-              "description": "Stable UUID (RFC 4122) for this component. Required in hdf-system documents, optional in hdf-results. Enables cross-document correlation, diffing, and data flow references."
-            },
-            "description": {
-              "type": "string",
-              "description": "Description of this component's role or purpose."
-            },
-            "owner": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
-              "description": "Team or individual responsible for this component. Enables per-component ownership when different teams manage different parts of a system."
-            },
-            "externalIds": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "string"
-              },
-              "description": "Map of external identifier scheme to value. Well-known schemes: aws (instance ID), azure (resource ID), cmdb (asset ID), emass (system ID), cve (CVE ID). Custom schemes are allowed."
-            },
-            "labels": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "string"
-              },
-              "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
-            },
-            "boms": {
-              "type": "array",
-              "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.4.0#/$defs/Bom"
-              },
-              "description": "Component-scoped Bills of Materials (SBOM, ai-model, dataset, or any reserved bomType), each carried by passthrough (ref/document) or normalized. Replaces the former sbom/sbomRef/sbomFormat trio; a component may carry several BOMs (e.g. an SBOM plus an ai-model BOM). See primitives/bom.schema.json."
-            },
-            "integrity": {
-              "type": "array",
-              "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum"
-              },
-              "description": "Cryptographic integrity of this component's underlying artifact — model weights or shards, dataset archive, container image, or package bytes. An array supports multi-file/sharded artifacts. This is the single, generic home for artifact/subject integrity across all component types (it replaced the former per-type Container_Image digest and Artifact checksum fields). Distinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence Integrity type."
-            },
-            "baselineRefs": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "description": "Names of baselines that apply to this component."
-            },
-            "inputOverrides": {
-              "type": "array",
-              "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Input_Override"
-              },
-              "description": "System-specific overrides for baseline input values."
-            },
-            "targetSelector": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0#/$defs/Target_Selector",
-              "description": "Label selector to match targets belonging to this component during migration. Targets with matching labels are automatically included."
-            }
-          },
-          "examples": [
-            {
-              "type": "aiModel",
-              "name": "Llama-2-7b-chat (finetuned)",
-              "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
-              "owner": {
-                "type": "email",
-                "identifier": "ml-platform@agency.gov"
-              },
-              "integrity": [
-                {
-                  "algorithm": "sha256",
-                  "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
-                }
-              ],
-              "boms": [
-                {
-                  "bomType": "ai-model",
-                  "format": "cyclonedx-ml",
-                  "model": {
-                    "adaptationType": "finetune"
-                  }
-                }
-              ]
-            }
-          ],
-          "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, generalized BOM attachment (boms[]), and unified artifact integrity (integrity[]).",
-          "title": "Base Component"
-        },
-        "Component": {
-          "description": "A system component. Uses discriminated union pattern with 'type' field as discriminator. Superset of Target with identity, external IDs, and SBOM support.",
-          "title": "Component",
-          "oneOf": [
-            {
-              "$ref": "#/$defs/Host_Component"
-            },
-            {
-              "$ref": "#/$defs/Container_Image_Component"
-            },
-            {
-              "$ref": "#/$defs/Container_Instance_Component"
-            },
-            {
-              "$ref": "#/$defs/Container_Platform_Component"
-            },
-            {
-              "$ref": "#/$defs/Cloud_Account_Component"
-            },
-            {
-              "$ref": "#/$defs/Cloud_Resource_Component"
-            },
-            {
-              "$ref": "#/$defs/Repository_Component"
-            },
-            {
-              "$ref": "#/$defs/Application_Component"
-            },
-            {
-              "$ref": "#/$defs/Artifact_Component"
-            },
-            {
-              "$ref": "#/$defs/Network_Component"
-            },
-            {
-              "$ref": "#/$defs/Database_Component"
-            },
-            {
-              "$ref": "#/$defs/AI_Model_Component"
-            },
-            {
-              "$ref": "#/$defs/Dataset_Component"
-            }
-          ]
-        },
-        "Host_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "host"
-                },
-                "hostname": {
-                  "type": "string",
-                  "description": "Short, OS-reported host name (the unqualified machine name, e.g. 'web01'). Kept distinct from 'fqdn' because an FQDN is not reliably decomposable into hostname + domain (standalone/workgroup hosts have no domain; a directory domain is not the FQDN's DNS suffix). Aligns with ECS host.hostname and DISA STIG CKL HOST_NAME. Store the short name the source reports; do not derive it from the FQDN."
-                },
-                "fqdn": {
-                  "type": "string",
-                  "format": "hostname",
-                  "description": "Fully qualified domain name (e.g. 'web01.prod.example.com'). Distinct from 'hostname' (short) and 'domain' (directory domain). ECS recommends storing this lowercase; the schema does not enforce case so source fidelity is preserved on round-trip."
-                },
-                "domain": {
-                  "type": "string",
-                  "description": "Directory domain the host is a member of — Active Directory / NetBIOS / LDAP domain (ECS host.domain semantics), NOT necessarily the DNS suffix of the FQDN. A standalone or workgroup host has a hostname but no domain. Not derivable from the FQDN; populate only from a source that carries directory membership."
-                },
-                "ipAddress": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "format": "ipv4"
-                    },
-                    {
-                      "type": "string",
-                      "format": "ipv6"
-                    }
-                  ],
-                  "description": "IP address of the host."
-                },
-                "macAddress": {
-                  "type": "string",
-                  "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
-                  "description": "MAC address in colon-separated hexadecimal format."
-                },
-                "osName": {
-                  "type": "string",
-                  "description": "Operating system name."
-                },
-                "osVersion": {
-                  "type": "string",
-                  "description": "Operating system version."
-                }
-              }
-            }
-          ],
-          "examples": [
-            {
-              "$comment": "Domain-joined host carrying all three identity fields separately: short hostname, FQDN, and the (distinct) directory domain. HOST_NAME and HOST_FQDN from a STIG checklist map here; note the AD domain differs from the FQDN's DNS suffix.",
-              "type": "host",
-              "name": "web-server-prod-01",
-              "componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
-              "hostname": "web01",
-              "fqdn": "web01.prod.example.com",
-              "domain": "CORP",
-              "ipAddress": "10.0.1.50",
-              "osName": "Ubuntu",
-              "osVersion": "22.04 LTS",
-              "externalIds": {
-                "cmdb": "ASSET-12345",
-                "aws": "i-0abc123def456789"
-              }
-            },
-            {
-              "$comment": "Standalone/workgroup host: has a short hostname but no directory domain — 'domain' is omitted rather than fabricated from the FQDN suffix.",
-              "type": "host",
-              "name": "kiosk-lab-07",
-              "hostname": "kiosk-lab-07",
-              "fqdn": "kiosk-lab-07.lab.example.com",
-              "ipAddress": "192.168.4.7",
-              "osName": "Windows",
-              "osVersion": "11 23H2"
-            }
-          ],
-          "description": "A physical or virtual server, workstation, or network device.",
-          "title": "Host Component"
-        },
-        "Container_Image_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "containerImage"
-                },
-                "imageId": {
-                  "type": "string",
-                  "description": "Container image ID."
-                },
-                "registry": {
-                  "type": "string",
-                  "description": "Container registry. Example: 'docker.io'."
-                },
-                "repository": {
-                  "type": "string",
-                  "description": "Repository name. Example: 'library/nginx'."
-                },
-                "tag": {
-                  "type": "string",
-                  "description": "Image tag. Example: '1.25'."
-                }
-              }
-            }
-          ],
-          "examples": [
-            {
-              "type": "containerImage",
-              "name": "nginx",
-              "registry": "docker.io",
-              "repository": "library/nginx",
-              "tag": "1.25-alpine",
-              "integrity": [
-                {
-                  "algorithm": "sha256",
-                  "value": "a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d"
-                }
-              ]
-            }
-          ],
-          "description": "A static container image (not running). Image integrity — formerly the 'digest' field — is expressed via the shared Base_Component.integrity array.",
-          "title": "Container Image Component"
-        },
-        "Container_Instance_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "containerInstance"
-                },
-                "containerId": {
-                  "type": "string",
-                  "description": "Running container ID."
-                },
-                "image": {
-                  "type": "string",
-                  "description": "Image the container was started from."
-                },
-                "runtime": {
-                  "type": "string",
-                  "description": "Container runtime. Example: 'docker', 'containerd', 'cri-o'."
-                }
-              }
-            }
-          ],
-          "description": "A running container instance.",
-          "title": "Container Instance Component"
-        },
-        "Container_Platform_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "containerPlatform"
-                },
-                "platformType": {
-                  "type": "string",
-                  "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
-                },
-                "clusterName": {
-                  "type": "string",
-                  "description": "Cluster name."
-                },
-                "namespace": {
-                  "type": "string",
-                  "description": "Namespace within the cluster, if applicable."
-                },
-                "version": {
-                  "type": "string",
-                  "description": "Platform version."
-                }
-              }
-            }
-          ],
-          "description": "A container orchestration platform (Kubernetes, OpenShift, ECS, etc.).",
-          "title": "Container Platform Component"
-        },
-        "Cloud_Account_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "cloudAccount"
-                },
-                "provider": {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Cloud_Provider",
-                  "description": "Cloud provider."
-                },
-                "accountId": {
-                  "type": "string",
-                  "description": "Cloud account identifier."
-                },
-                "region": {
-                  "type": "string",
-                  "description": "Cloud region, if applicable."
-                }
-              }
-            }
-          ],
-          "examples": [
-            {
-              "type": "cloudAccount",
-              "name": "Production AWS Account",
-              "componentId": "f1e2d3c4-b5a6-4978-8069-1a2b3c4d5e6f",
-              "provider": "aws",
-              "accountId": "123456789012",
-              "region": "us-east-1"
-            }
-          ],
-          "description": "A cloud provider account (AWS account, Azure subscription, GCP project).",
-          "title": "Cloud Account Component"
-        },
-        "Cloud_Resource_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "cloudResource"
-                },
-                "provider": {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Cloud_Provider",
-                  "description": "Cloud provider."
-                },
-                "resourceType": {
-                  "type": "string",
-                  "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
-                },
-                "resourceId": {
-                  "type": "string",
-                  "description": "Provider-specific resource identifier."
-                },
-                "arn": {
-                  "type": "string",
-                  "description": "Amazon Resource Name (AWS only)."
-                },
-                "region": {
-                  "type": "string",
-                  "description": "Cloud region where the resource resides."
-                }
-              }
-            }
-          ],
-          "description": "A specific cloud resource (EC2 instance, S3 bucket, Azure VM, etc.).",
-          "title": "Cloud Resource Component"
-        },
-        "Repository_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "repository"
-                },
-                "url": {
-                  "type": "string",
-                  "format": "uri",
-                  "description": "Repository URL."
-                },
-                "branch": {
-                  "type": "string",
-                  "description": "Branch that was scanned."
-                },
-                "commit": {
-                  "type": "string",
-                  "description": "Commit SHA that was scanned."
-                }
-              }
-            }
-          ],
-          "description": "A code repository (for SAST tools).",
-          "title": "Repository Component"
-        },
-        "Application_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "application"
-                },
-                "url": {
-                  "type": "string",
-                  "format": "uri",
-                  "description": "Application URL (for DAST tools)."
-                },
-                "version": {
-                  "type": "string",
-                  "description": "Application version."
-                },
-                "environment": {
-                  "type": "string",
-                  "description": "Environment. Example: 'production', 'staging', 'development'."
-                }
-              }
-            }
-          ],
-          "description": "A running application or API (for DAST tools).",
-          "title": "Application Component"
-        },
-        "Artifact_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "artifact"
-                },
-                "packageManager": {
-                  "type": "string",
-                  "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
-                },
-                "packageName": {
-                  "type": "string",
-                  "description": "Package name."
-                },
-                "version": {
-                  "type": "string",
-                  "description": "Package version."
-                }
-              }
-            }
-          ],
-          "examples": [
-            {
-              "type": "artifact",
-              "name": "express",
-              "packageManager": "npm",
-              "packageName": "express",
-              "version": "4.18.2",
-              "integrity": [
-                {
-                  "algorithm": "sha512",
-                  "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
-                }
-              ]
-            }
-          ],
-          "description": "A software artifact or dependency (for SCA tools). Package integrity — formerly the 'checksum' field — is expressed via the shared Base_Component.integrity array.",
-          "title": "Artifact Component"
-        },
-        "Network_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "network"
-                },
-                "cidr": {
-                  "type": "string",
-                  "description": "Network CIDR block."
-                },
-                "gateway": {
-                  "type": "string",
-                  "description": "Network gateway address."
-                }
-              }
-            }
-          ],
-          "description": "A network segment or network device.",
-          "title": "Network Component"
-        },
-        "Database_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "database"
-                },
-                "engine": {
-                  "type": "string",
-                  "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
-                },
-                "version": {
-                  "type": "string",
-                  "description": "Database version."
-                },
-                "host": {
-                  "type": "string",
-                  "description": "Database host."
-                },
-                "port": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 65535,
-                  "description": "Database port."
-                }
-              }
-            }
-          ],
-          "description": "A database instance.",
-          "title": "Database Component"
-        },
-        "AI_Model_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "aiModel"
-                },
-                "modelId": {
-                  "type": "string",
-                  "description": "Provider/registry identifier for the model. Examples: a Hugging Face repo id ('meta-llama/Llama-2-7b-hf') or a model purl. Correlates the component to its ai-model BOM(s) and to lineage references from other models."
-                },
-                "version": {
-                  "type": "string",
-                  "description": "Model version, revision, or checkpoint tag."
-                }
-              }
-            }
-          ],
-          "examples": [
-            {
-              "type": "aiModel",
-              "name": "Llama-2-7b-chat (finetuned)",
-              "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
-              "modelId": "acme/llama-2-7b-chat-support",
-              "version": "1.2.0",
-              "integrity": [
-                {
-                  "algorithm": "sha256",
-                  "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
-                }
-              ],
-              "boms": [
-                {
-                  "bomType": "ai-model",
-                  "format": "cyclonedx-ml",
-                  "model": {
-                    "modelArchitecture": "transformer",
-                    "parameterCount": 6738415616,
-                    "serializationFormat": "safetensors",
-                    "adaptationType": "finetune",
-                    "baseModelRef": "meta-llama/Llama-2-7b-hf"
-                  }
-                }
-              ]
-            }
-          ],
-          "description": "A thin AI-model component: identity and correlation only (parallel to Host_Component's fqdn/ip). All model detail — architecture, parameter count, serialization format, lineage — lives in an attached ai-model BOM (boms[]), never on the component itself.",
-          "title": "AI Model Component"
-        },
-        "Dataset_Component": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Base_Component"
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "const": "dataset"
-                },
-                "datasetId": {
-                  "type": "string",
-                  "description": "Provider/registry identifier for the dataset. Examples: a Hugging Face dataset repo id ('HuggingFaceH4/ultrachat_200k'), a DOI, or a dataset purl. Correlates the component to its dataset BOM(s) and to datasetRefs from ai-model components."
-                },
-                "version": {
-                  "type": "string",
-                  "description": "Dataset version, release identifier, or — for highly dynamic datasets — a timestamped release marker."
-                }
-              }
-            }
-          ],
-          "examples": [
-            {
-              "type": "dataset",
-              "name": "UltraChat-200k (filtered)",
-              "componentId": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
-              "datasetId": "acme/ultrachat-200k-filtered",
-              "version": "2026-06-01",
-              "integrity": [
-                {
-                  "algorithm": "sha256",
-                  "value": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-                }
-              ],
-              "boms": [
-                {
-                  "bomType": "dataset",
-                  "format": "croissant",
-                  "dataset": {
-                    "recordCount": 180000,
-                    "datasetFormat": "parquet",
-                    "dataClassification": "public",
-                    "baseDatasetRefs": [
-                      "HuggingFaceH4/ultrachat_200k"
-                    ],
-                    "derivation": "filtered"
-                  }
-                }
-              ]
-            }
-          ],
-          "description": "A thin dataset component: identity and correlation only, symmetric with AI_Model_Component. All dataset detail — record count, format, classification, lineage — lives in an attached dataset BOM (boms[]), never on the component itself.",
-          "title": "Dataset Component"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0",
       "title": "HDF Common Primitives",
       "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
       "$defs": {
+        "External_Reference": {
+          "type": "object",
+          "title": "External Reference",
+          "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property. Purpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category. `sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible. A reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
+          "required": [
+            "sourceName"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "externalId"
+              ]
+            },
+            {
+              "required": [
+                "href"
+              ]
+            },
+            {
+              "required": [
+                "description"
+              ]
+            }
+          ],
+          "properties": {
+            "sourceName": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Name of the external system/source being referenced (e.g., 'cve', 'mitre-att&ck', 'stix', 'taxii', or any vendor label). Open string — not a closed enum. Use the `x-` prefix convention for custom/experimental sources, mirroring `bomType`."
+            },
+            "externalId": {
+              "type": "string",
+              "description": "Identifier of the artifact within `sourceName` (e.g., 'CVE-2021-44228' for source 'cve', 'T1059' for 'mitre-att&ck'). Cite by id without needing a URL. Together with `sourceName` this is a URN."
+            },
+            "href": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Location of the artifact. `uri-reference` (not `uri`) so a bare internal `#fragment`/`#uuid` reference is expressible alongside absolute URLs. `checksum`/`mediaType` apply only to a retrievable `href`."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of what is referenced. Satisfies the at-least-one rule on its own when neither id nor href is available."
+            },
+            "rel": {
+              "type": "string",
+              "description": "Open relationship token describing how this reference relates to the referencing object. Deliberately open (cf. OSCAL `rel` allow-other, RFC 8288 extension relations). Documented starter vocabulary: 'reference' (generic), 'definition' (defines the concept), 'evidence' (supporting evidence), 'investigate' (a live pivot to investigate), 'canonical' (the authoritative source)."
+            },
+            "mediaType": {
+              "type": "string",
+              "description": "IANA media type of the referenced artifact when retrievable (RFC 6838), e.g., 'application/json'. Meaningful only with `href`."
+            },
+            "checksum": {
+              "$ref": "#/$defs/Checksum",
+              "description": "Integrity hash of the referenced artifact. Reuses the HDF `Checksum` primitive (not STIX `hashes`). Meaningful only with a retrievable `href`."
+            },
+            "addedBy": {
+              "$ref": "#/$defs/Identity",
+              "description": "Who attached this reference. Lightweight, flat attribution — a reference overrides nothing, so it has no chaining/superseding/disposition."
+            },
+            "addedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When this reference was attached (RFC 3339 / trimmed-UTC per HDF timestamp convention)."
+            },
+            "kind": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Open token classifying the referenced/embedded payload, turning a bare reference into an enrichment envelope. Deliberately open (like `sourceName`/`rel`), not a closed enum. Documented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory' (vendor/security advisory). Use the `x-` prefix for custom kinds."
+            },
+            "document": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim. Composes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed. HDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
+            }
+          },
+          "unevaluatedProperties": false,
+          "examples": [
+            {
+              "$comment": "By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228.",
+              "sourceName": "cve",
+              "externalId": "CVE-2021-44228",
+              "rel": "definition"
+            },
+            {
+              "$comment": "By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL.",
+              "sourceName": "mitre-att&ck",
+              "externalId": "T1059",
+              "href": "https://attack.mitre.org/techniques/T1059/",
+              "rel": "canonical"
+            },
+            {
+              "$comment": "By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution.",
+              "sourceName": "stix",
+              "href": "https://cti.example.org/bundles/log4shell.json",
+              "rel": "investigate",
+              "mediaType": "application/json",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "addedBy": {
+                "type": "email",
+                "identifier": "analyst@agency.gov"
+              },
+              "addedAt": "2026-07-26T00:00:00Z"
+            },
+            {
+              "$comment": "Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields.",
+              "sourceName": "stix",
+              "externalId": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+              "href": "https://cti.example.org/bundles/log4shell.json#vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+              "rel": "investigate",
+              "kind": "threat-intel",
+              "document": {
+                "type": "vulnerability",
+                "spec_version": "2.1",
+                "id": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+                "name": "CVE-2021-44228",
+                "external_references": [
+                  {
+                    "source_name": "cve",
+                    "external_id": "CVE-2021-44228"
+                  }
+                ]
+              }
+            }
+          ]
+        },
         "Hash_Algorithm": {
           "type": "string",
           "enum": [
@@ -1972,6 +1403,13 @@
         "Baseline_Metadata": {
           "type": "object",
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/External_Reference"
+              },
+              "description": "Optional references to external artifacts relevant to this baseline (CTI/STIX, advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline definition. Inert context; see External_Reference."
+            },
             "name": {
               "type": "string",
               "description": "The name - must be unique."
@@ -2049,6 +1487,13 @@
         "Requirement_Core": {
           "type": "object",
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/External_Reference"
+              },
+              "description": "Optional references to external artifacts relevant to this requirement (CTI/STIX correlation, advisories, control/definition sources, or any URI-addressable artifact). Applies to both baseline requirement definitions and evaluated requirements. Inert context; see External_Reference."
+            },
             "id": {
               "type": "string",
               "description": "The requirement identifier. Example: 'SV-238196'."
@@ -2135,7 +1580,7 @@
           },
           "examples": [
             {
-              "$comment": "v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape under v3.4.0 (backward compatibility).",
+              "$comment": "v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape under v3.5.0 (backward compatibility).",
               "id": "SV-238196",
               "title": "The Ubuntu operating system must enforce password complexity",
               "impact": 0.5,
@@ -2272,9 +1717,725 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.5.0",
+      "title": "HDF Component Primitives",
+      "description": "First-class system component with identity, polymorphic type, generalized BOM attachment (boms[]), and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and manifest inventory (SBOM, AI model/dataset, and reserved future BOM kinds).",
+      "$defs": {
+        "Base_Component": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "type",
+            "name"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "title": "Target Type",
+              "enum": [
+                "host",
+                "containerImage",
+                "containerInstance",
+                "containerPlatform",
+                "cloudAccount",
+                "cloudResource",
+                "repository",
+                "application",
+                "artifact",
+                "network",
+                "database",
+                "aiModel",
+                "dataset"
+              ],
+              "description": "Component type discriminator. Same values as Target types, plus aiModel and dataset (thin AI subject components whose detail lives in an attached ai-model / dataset BOM)."
+            },
+            "name": {
+              "type": "string",
+              "description": "Human-readable name for this component."
+            },
+            "componentId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Stable UUID (RFC 4122) for this component. Required in hdf-system documents, optional in hdf-results. Enables cross-document correlation, diffing, and data flow references."
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of this component's role or purpose."
+            },
+            "owner": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
+              "description": "Team or individual responsible for this component. Enables per-component ownership when different teams manage different parts of a system."
+            },
+            "externalIds": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Map of external identifier scheme to value. Well-known schemes: aws (instance ID), azure (resource ID), cmdb (asset ID), emass (system ID), cve (CVE ID). Custom schemes are allowed."
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
+            },
+            "boms": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.5.0#/$defs/Bom"
+              },
+              "description": "Component-scoped Bills of Materials (SBOM, ai-model, dataset, or any reserved bomType), each carried by passthrough (ref/document) or normalized. Replaces the former sbom/sbomRef/sbomFormat trio; a component may carry several BOMs (e.g. an SBOM plus an ai-model BOM). See primitives/bom.schema.json."
+            },
+            "integrity": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum"
+              },
+              "description": "Cryptographic integrity of this component's underlying artifact — model weights or shards, dataset archive, container image, or package bytes. An array supports multi-file/sharded artifacts. This is the single, generic home for artifact/subject integrity across all component types (it replaced the former per-type Container_Image digest and Artifact checksum fields). Distinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence Integrity type."
+            },
+            "baselineRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Names of baselines that apply to this component."
+            },
+            "inputOverrides": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.5.0#/$defs/Input_Override"
+              },
+              "description": "System-specific overrides for baseline input values."
+            },
+            "targetSelector": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.5.0#/$defs/Target_Selector",
+              "description": "Label selector to match targets belonging to this component during migration. Targets with matching labels are automatically included."
+            }
+          },
+          "examples": [
+            {
+              "type": "aiModel",
+              "name": "Llama-2-7b-chat (finetuned)",
+              "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+              "owner": {
+                "type": "email",
+                "identifier": "ml-platform@agency.gov"
+              },
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
+                }
+              ],
+              "boms": [
+                {
+                  "bomType": "ai-model",
+                  "format": "cyclonedx-ml",
+                  "model": {
+                    "adaptationType": "finetune"
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, generalized BOM attachment (boms[]), and unified artifact integrity (integrity[]).",
+          "title": "Base Component"
+        },
+        "Component": {
+          "description": "A system component. Uses discriminated union pattern with 'type' field as discriminator. Superset of Target with identity, external IDs, and SBOM support.",
+          "title": "Component",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Host_Component"
+            },
+            {
+              "$ref": "#/$defs/Container_Image_Component"
+            },
+            {
+              "$ref": "#/$defs/Container_Instance_Component"
+            },
+            {
+              "$ref": "#/$defs/Container_Platform_Component"
+            },
+            {
+              "$ref": "#/$defs/Cloud_Account_Component"
+            },
+            {
+              "$ref": "#/$defs/Cloud_Resource_Component"
+            },
+            {
+              "$ref": "#/$defs/Repository_Component"
+            },
+            {
+              "$ref": "#/$defs/Application_Component"
+            },
+            {
+              "$ref": "#/$defs/Artifact_Component"
+            },
+            {
+              "$ref": "#/$defs/Network_Component"
+            },
+            {
+              "$ref": "#/$defs/Database_Component"
+            },
+            {
+              "$ref": "#/$defs/AI_Model_Component"
+            },
+            {
+              "$ref": "#/$defs/Dataset_Component"
+            }
+          ]
+        },
+        "Host_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "host"
+                },
+                "hostname": {
+                  "type": "string",
+                  "description": "Short, OS-reported host name (the unqualified machine name, e.g. 'web01'). Kept distinct from 'fqdn' because an FQDN is not reliably decomposable into hostname + domain (standalone/workgroup hosts have no domain; a directory domain is not the FQDN's DNS suffix). Aligns with ECS host.hostname and DISA STIG CKL HOST_NAME. Store the short name the source reports; do not derive it from the FQDN."
+                },
+                "fqdn": {
+                  "type": "string",
+                  "format": "hostname",
+                  "description": "Fully qualified domain name (e.g. 'web01.prod.example.com'). Distinct from 'hostname' (short) and 'domain' (directory domain). ECS recommends storing this lowercase; the schema does not enforce case so source fidelity is preserved on round-trip."
+                },
+                "domain": {
+                  "type": "string",
+                  "description": "Directory domain the host is a member of — Active Directory / NetBIOS / LDAP domain (ECS host.domain semantics), NOT necessarily the DNS suffix of the FQDN. A standalone or workgroup host has a hostname but no domain. Not derivable from the FQDN; populate only from a source that carries directory membership."
+                },
+                "ipAddress": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "ipv4"
+                    },
+                    {
+                      "type": "string",
+                      "format": "ipv6"
+                    }
+                  ],
+                  "description": "IP address of the host."
+                },
+                "macAddress": {
+                  "type": "string",
+                  "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
+                  "description": "MAC address in colon-separated hexadecimal format."
+                },
+                "osName": {
+                  "type": "string",
+                  "description": "Operating system name."
+                },
+                "osVersion": {
+                  "type": "string",
+                  "description": "Operating system version."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "$comment": "Domain-joined host carrying all three identity fields separately: short hostname, FQDN, and the (distinct) directory domain. HOST_NAME and HOST_FQDN from a STIG checklist map here; note the AD domain differs from the FQDN's DNS suffix.",
+              "type": "host",
+              "name": "web-server-prod-01",
+              "componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+              "hostname": "web01",
+              "fqdn": "web01.prod.example.com",
+              "domain": "CORP",
+              "ipAddress": "10.0.1.50",
+              "osName": "Ubuntu",
+              "osVersion": "22.04 LTS",
+              "externalIds": {
+                "cmdb": "ASSET-12345",
+                "aws": "i-0abc123def456789"
+              }
+            },
+            {
+              "$comment": "Standalone/workgroup host: has a short hostname but no directory domain — 'domain' is omitted rather than fabricated from the FQDN suffix.",
+              "type": "host",
+              "name": "kiosk-lab-07",
+              "hostname": "kiosk-lab-07",
+              "fqdn": "kiosk-lab-07.lab.example.com",
+              "ipAddress": "192.168.4.7",
+              "osName": "Windows",
+              "osVersion": "11 23H2"
+            }
+          ],
+          "description": "A physical or virtual server, workstation, or network device.",
+          "title": "Host Component"
+        },
+        "Container_Image_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "containerImage"
+                },
+                "imageId": {
+                  "type": "string",
+                  "description": "Container image ID."
+                },
+                "registry": {
+                  "type": "string",
+                  "description": "Container registry. Example: 'docker.io'."
+                },
+                "repository": {
+                  "type": "string",
+                  "description": "Repository name. Example: 'library/nginx'."
+                },
+                "tag": {
+                  "type": "string",
+                  "description": "Image tag. Example: '1.25'."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "containerImage",
+              "name": "nginx",
+              "registry": "docker.io",
+              "repository": "library/nginx",
+              "tag": "1.25-alpine",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d"
+                }
+              ]
+            }
+          ],
+          "description": "A static container image (not running). Image integrity — formerly the 'digest' field — is expressed via the shared Base_Component.integrity array.",
+          "title": "Container Image Component"
+        },
+        "Container_Instance_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "containerInstance"
+                },
+                "containerId": {
+                  "type": "string",
+                  "description": "Running container ID."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Image the container was started from."
+                },
+                "runtime": {
+                  "type": "string",
+                  "description": "Container runtime. Example: 'docker', 'containerd', 'cri-o'."
+                }
+              }
+            }
+          ],
+          "description": "A running container instance.",
+          "title": "Container Instance Component"
+        },
+        "Container_Platform_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "containerPlatform"
+                },
+                "platformType": {
+                  "type": "string",
+                  "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
+                },
+                "clusterName": {
+                  "type": "string",
+                  "description": "Cluster name."
+                },
+                "namespace": {
+                  "type": "string",
+                  "description": "Namespace within the cluster, if applicable."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Platform version."
+                }
+              }
+            }
+          ],
+          "description": "A container orchestration platform (Kubernetes, OpenShift, ECS, etc.).",
+          "title": "Container Platform Component"
+        },
+        "Cloud_Account_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "cloudAccount"
+                },
+                "provider": {
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Cloud_Provider",
+                  "description": "Cloud provider."
+                },
+                "accountId": {
+                  "type": "string",
+                  "description": "Cloud account identifier."
+                },
+                "region": {
+                  "type": "string",
+                  "description": "Cloud region, if applicable."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "cloudAccount",
+              "name": "Production AWS Account",
+              "componentId": "f1e2d3c4-b5a6-4978-8069-1a2b3c4d5e6f",
+              "provider": "aws",
+              "accountId": "123456789012",
+              "region": "us-east-1"
+            }
+          ],
+          "description": "A cloud provider account (AWS account, Azure subscription, GCP project).",
+          "title": "Cloud Account Component"
+        },
+        "Cloud_Resource_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "cloudResource"
+                },
+                "provider": {
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Cloud_Provider",
+                  "description": "Cloud provider."
+                },
+                "resourceType": {
+                  "type": "string",
+                  "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
+                },
+                "resourceId": {
+                  "type": "string",
+                  "description": "Provider-specific resource identifier."
+                },
+                "arn": {
+                  "type": "string",
+                  "description": "Amazon Resource Name (AWS only)."
+                },
+                "region": {
+                  "type": "string",
+                  "description": "Cloud region where the resource resides."
+                }
+              }
+            }
+          ],
+          "description": "A specific cloud resource (EC2 instance, S3 bucket, Azure VM, etc.).",
+          "title": "Cloud Resource Component"
+        },
+        "Repository_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "repository"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Repository URL."
+                },
+                "branch": {
+                  "type": "string",
+                  "description": "Branch that was scanned."
+                },
+                "commit": {
+                  "type": "string",
+                  "description": "Commit SHA that was scanned."
+                }
+              }
+            }
+          ],
+          "description": "A code repository (for SAST tools).",
+          "title": "Repository Component"
+        },
+        "Application_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "application"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Application URL (for DAST tools)."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Application version."
+                },
+                "environment": {
+                  "type": "string",
+                  "description": "Environment. Example: 'production', 'staging', 'development'."
+                }
+              }
+            }
+          ],
+          "description": "A running application or API (for DAST tools).",
+          "title": "Application Component"
+        },
+        "Artifact_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "artifact"
+                },
+                "packageManager": {
+                  "type": "string",
+                  "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
+                },
+                "packageName": {
+                  "type": "string",
+                  "description": "Package name."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Package version."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "artifact",
+              "name": "express",
+              "packageManager": "npm",
+              "packageName": "express",
+              "version": "4.18.2",
+              "integrity": [
+                {
+                  "algorithm": "sha512",
+                  "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+                }
+              ]
+            }
+          ],
+          "description": "A software artifact or dependency (for SCA tools). Package integrity — formerly the 'checksum' field — is expressed via the shared Base_Component.integrity array.",
+          "title": "Artifact Component"
+        },
+        "Network_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "network"
+                },
+                "cidr": {
+                  "type": "string",
+                  "description": "Network CIDR block."
+                },
+                "gateway": {
+                  "type": "string",
+                  "description": "Network gateway address."
+                }
+              }
+            }
+          ],
+          "description": "A network segment or network device.",
+          "title": "Network Component"
+        },
+        "Database_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "database"
+                },
+                "engine": {
+                  "type": "string",
+                  "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Database version."
+                },
+                "host": {
+                  "type": "string",
+                  "description": "Database host."
+                },
+                "port": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535,
+                  "description": "Database port."
+                }
+              }
+            }
+          ],
+          "description": "A database instance.",
+          "title": "Database Component"
+        },
+        "AI_Model_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "aiModel"
+                },
+                "modelId": {
+                  "type": "string",
+                  "description": "Provider/registry identifier for the model. Examples: a Hugging Face repo id ('meta-llama/Llama-2-7b-hf') or a model purl. Correlates the component to its ai-model BOM(s) and to lineage references from other models."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Model version, revision, or checkpoint tag."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "aiModel",
+              "name": "Llama-2-7b-chat (finetuned)",
+              "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+              "modelId": "acme/llama-2-7b-chat-support",
+              "version": "1.2.0",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
+                }
+              ],
+              "boms": [
+                {
+                  "bomType": "ai-model",
+                  "format": "cyclonedx-ml",
+                  "model": {
+                    "modelArchitecture": "transformer",
+                    "parameterCount": 6738415616,
+                    "serializationFormat": "safetensors",
+                    "adaptationType": "finetune",
+                    "baseModelRef": "meta-llama/Llama-2-7b-hf"
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "A thin AI-model component: identity and correlation only (parallel to Host_Component's fqdn/ip). All model detail — architecture, parameter count, serialization format, lineage — lives in an attached ai-model BOM (boms[]), never on the component itself.",
+          "title": "AI Model Component"
+        },
+        "Dataset_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "dataset"
+                },
+                "datasetId": {
+                  "type": "string",
+                  "description": "Provider/registry identifier for the dataset. Examples: a Hugging Face dataset repo id ('HuggingFaceH4/ultrachat_200k'), a DOI, or a dataset purl. Correlates the component to its dataset BOM(s) and to datasetRefs from ai-model components."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Dataset version, release identifier, or — for highly dynamic datasets — a timestamped release marker."
+                }
+              }
+            }
+          ],
+          "examples": [
+            {
+              "type": "dataset",
+              "name": "UltraChat-200k (filtered)",
+              "componentId": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+              "datasetId": "acme/ultrachat-200k-filtered",
+              "version": "2026-06-01",
+              "integrity": [
+                {
+                  "algorithm": "sha256",
+                  "value": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+                }
+              ],
+              "boms": [
+                {
+                  "bomType": "dataset",
+                  "format": "croissant",
+                  "dataset": {
+                    "recordCount": 180000,
+                    "datasetFormat": "parquet",
+                    "dataClassification": "public",
+                    "baseDatasetRefs": [
+                      "HuggingFaceH4/ultrachat_200k"
+                    ],
+                    "derivation": "filtered"
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "A thin dataset component: identity and correlation only, symmetric with AI_Model_Component. All dataset detail — record count, format, classification, lineage — lives in an attached dataset BOM (boms[]), never on the component itself.",
+          "title": "Dataset Component"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.5.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.5.0",
       "title": "HDF BOM Primitives",
       "description": "Generalized Bill-of-Materials / manifest representation. One extensible Bom shape, discriminated by bomType, carries any manifest kind (SBOM, AI model/dataset, and reserved future kinds) either by passthrough (opaque ref/embed of the native document) or normalized (converted into HDF's queryable shape). Subject identity (name, version, componentId) is inherited from the host component or system — the BOM never re-owns it. See ADR-0001.",
       "$defs": {
@@ -2330,7 +2491,7 @@
             "hashes": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum"
               },
               "description": "Integrity of the carried BOM *document* itself (the referenced/embedded manifest file), NOT the integrity of the BOM's subject artifact. Subject/artifact integrity (model weights, dataset archive) is a component-level concern, not carried here. Subject identity is inherited from the host component/system; per-node identity lives in the type-extension."
             },
@@ -2745,9 +2906,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.5.0",
       "title": "HDF System Primitives",
       "description": "Types for describing system architecture, authorization boundaries, and components.",
       "$defs": {
@@ -2798,7 +2959,7 @@
               "description": "Rationale for why this override is needed."
             },
             "approvedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
               "description": "Identity of the person or system that approved this override."
             }
           },
@@ -2880,9 +3041,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.5.0",
       "title": "HDF Statistics Primitives",
       "description": "Statistics types for tracking assessment run metrics.",
       "$defs": {
@@ -2951,9 +3112,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0",
       "title": "HDF Extension Primitives",
       "description": "Extension types for waivers, attestations, generators, and integrity.",
       "$defs": {
@@ -2980,16 +3141,23 @@
             }
           ],
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/External_Reference"
+              },
+              "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object or CTI feed motivating an E:A riskAdjustment). Inert context distinct from `evidence`; see External_Reference. Symmetric with Standalone_Override.externalReferences for the inline (results-embedded) override carrier."
+            },
             "type": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Override_Type",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.5.0#/$defs/Override_Type",
               "description": "The type of override applied to this requirement."
             },
             "status": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0#/$defs/Result_Status",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0#/$defs/Result_Status",
               "description": "The new status this override sets for the requirement. Optional when only impact is being overridden."
             },
             "impact": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Impact_Override",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.5.0#/$defs/Impact_Override",
               "description": "Override to the requirement's impact score. At least one of status or impact must be set."
             },
             "reason": {
@@ -2997,7 +3165,7 @@
               "description": "Explanation for why this override was applied."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
               "description": "Identity of who applied this override. For simple cases, use type 'simple' with just an identifier."
             },
             "appliedAt": {
@@ -3011,27 +3179,27 @@
               "description": "Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no permanent overrides allowed. ISO 8601 format."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing methods."
             },
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Evidence"
               },
               "description": "Supporting evidence for this override, such as screenshots demonstrating manual verification for attestations."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
             },
             "cvss": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.4.0#/$defs/Cvss",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0#/$defs/Cvss",
               "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
               "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
             },
             "justification": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0#/$defs/Justification",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.5.0#/$defs/Justification",
               "description": "Structured controlled-vocabulary classification for why this override applies. Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive and attestation overrides where the structured category enables filtering and lossless round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the precedent vocabulary and rationale."
             }
           },
@@ -3059,6 +3227,34 @@
               },
               "appliedAt": "2026-04-14T10:00:00Z",
               "expiresAt": "2026-10-14T00:00:00Z"
+            },
+            {
+              "$comment": "Inline riskAdjustment carrying the STIX source that motivated it via externalReferences (the enrichment envelope, with the raw sighting embedded losslessly in document). This is the shape the enrich pass writes onto Evaluated_Requirement.overrides[] for the E:A recompute.",
+              "type": "riskAdjustment",
+              "impact": {
+                "value": 0.9
+              },
+              "reason": "CVE-2021-44228 actively exploited in the wild per STIX threat intelligence",
+              "appliedBy": {
+                "identifier": "secops@agency.gov",
+                "type": "email"
+              },
+              "appliedAt": "2026-07-27T00:00:00Z",
+              "expiresAt": "2026-10-25T00:00:00Z",
+              "externalReferences": [
+                {
+                  "sourceName": "stix",
+                  "externalId": "sighting--a1b2c3d4-0000-4a2b-9c3d-000000000002",
+                  "kind": "threat-intel",
+                  "rel": "evidence",
+                  "document": {
+                    "type": "sighting",
+                    "spec_version": "2.1",
+                    "id": "sighting--a1b2c3d4-0000-4a2b-9c3d-000000000002",
+                    "sighting_of_ref": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001"
+                  }
+                }
+              ]
             },
             {
               "type": "falsePositive",
@@ -3139,7 +3335,7 @@
               "description": "Detailed explanation of the plan, including what actions will be taken."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
               "description": "Identity of who created this POA&M. For simple cases, use type 'simple' with just an identifier."
             },
             "appliedAt": {
@@ -3155,23 +3351,23 @@
             "milestones": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Milestone"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Milestone"
               },
               "description": "Optional array of milestones tracking progress toward completion."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation."
             },
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Evidence"
               },
               "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
             }
           },
@@ -3324,7 +3520,7 @@
           },
           "properties": {
             "algorithm": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Hash_Algorithm",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Hash_Algorithm",
               "description": "The hash algorithm used for the checksum."
             },
             "checksum": {
@@ -3357,9 +3553,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.5.0",
       "title": "HDF Amendment Primitives",
       "description": "Types for waivers, attestations, and POA&Ms that modify requirement compliance status.",
       "$defs": {
@@ -3467,6 +3663,13 @@
             ]
           },
           "properties": {
+            "externalReferences": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/External_Reference"
+              },
+              "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object, advisory, or CTI feed that motivated it). Inert context distinct from `evidence`; see External_Reference."
+            },
             "type": {
               "$ref": "#/$defs/Override_Type",
               "description": "The type of amendment."
@@ -3480,7 +3683,7 @@
               "description": "Name of the baseline containing the requirement. Required when the system has multiple baselines with potentially overlapping requirement IDs."
             },
             "status": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0#/$defs/Result_Status",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0#/$defs/Result_Status",
               "description": "The new status this amendment sets. Optional when only impact is being overridden."
             },
             "impact": {
@@ -3492,7 +3695,7 @@
               "description": "Justification for this amendment."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
               "description": "Identity of who applied this amendment."
             },
             "appliedAt": {
@@ -3508,20 +3711,20 @@
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Evidence"
               },
               "description": "Supporting evidence (screenshots, logs, URLs, documents)."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Signature",
               "description": "Digital signature for non-repudiation."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
               "description": "Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null for the first amendment."
             },
             "cvss": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.4.0#/$defs/Cvss",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0#/$defs/Cvss",
               "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
               "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
             },
@@ -3532,7 +3735,7 @@
             "milestones": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Milestone"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Milestone"
               },
               "description": "Remediation milestones (primarily for POA&M type amendments)."
             },
@@ -3549,7 +3752,7 @@
             "affectedPackages": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.4.0#/$defs/Affected_Package"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.5.0#/$defs/Affected_Package"
               },
               "description": "Software packages this amendment is scoped to, distinct from componentRef (which scopes to an HDF-internal Component by UUID). Use when the source amendment format references packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware amendments. Symmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same package vocabulary. When omitted, the amendment applies system-wide (or only to componentRef when that is set)."
             }
@@ -3682,9 +3885,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0",
       "title": "HDF Result Primitives",
       "description": "Types for representing assessment results and statuses.",
       "$defs": {
@@ -3815,9 +4018,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0",
       "title": "HDF CVSS Primitives",
       "description": "Types for representing CVSS (Common Vulnerability Scoring System) data attached to assessment findings. Supports CVSS v2.0, v3.0, v3.1, and v4.0 metric groups (Base, Threat, Environmental, Supplemental).",
       "$defs": {
@@ -4019,9 +4222,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.5.0",
       "title": "HDF Affected Package Primitives",
       "description": "Types for representing the software package(s) affected by a vulnerability finding.",
       "$defs": {
@@ -4134,9 +4337,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.5.0",
       "title": "HDF Runner Primitive",
       "description": "Information about the test execution environment where the security tool/scanner was executed.",
       "$defs": {
@@ -4180,7 +4383,7 @@
               "description": "The container instance identifier. Example: 'a1b2c3d4e5f6', 'security-scan-job-xyz123'. Can be a Docker container ID, Kubernetes pod name, or other container runtime identifier."
             },
             "operator": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.4.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Identity",
               "description": "The identity of the person or system responsible for executing the test. This could be a human auditor manually completing a checklist, an automated CI/CD system, or a security tool. Optional field to support both automated and manual HDF generation."
             }
           },
@@ -4229,9 +4432,237 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.5.0",
+      "title": "HDF Change Event Primitives",
+      "description": "Shared building blocks for HDF change-event wire documents. The envelope is entity-agnostic: hdf-requirement-change-event composes it today, and any future sibling event type (e.g. component change events — hdf-comparison already models componentDiffs alongside requirementDiffs) reuses it verbatim.",
+      "$defs": {
+        "Change_Event_Envelope": {
+          "type": "object",
+          "required": [
+            "eventId",
+            "source",
+            "sequence",
+            "systemRef",
+            "componentId",
+            "timestamp",
+            "priorChecksum"
+          ],
+          "properties": {
+            "eventId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identity of this event occurrence, unique per source. (source, eventId) is the deduplication key: consumers may treat events with identical source and eventId as duplicates. UUIDv7 (time-ordered) is recommended but not required."
+            },
+            "source": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI identifying the producer context that emitted this event (for example, a scanner instance and profile). eventId uniqueness and sequence numbering are scoped per source."
+            },
+            "sequence": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Monotonically increasing sequence number per entity key. The ONLY ordering authority for folding: consumers keep the greatest sequence per key regardless of arrival order or timestamp. Deliberately per-entity-key (event-sourcing aggregate-version practice) rather than per-source."
+            },
+            "systemRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI to the hdf-system document (authorization boundary) this event applies to. Resolves to the latest version of the evolving system document."
+            },
+            "componentId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of the system component this event concerns."
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Occurrence time of the observed change (RFC 3339, trimmed UTC). Display and audit metadata only — NEVER an ordering key; ordering is sequence's job."
+            },
+            "schemaRef": {
+              "type": "string",
+              "format": "uri",
+              "description": "The versioned schema $id this event validates against, so events self-describe on heterogeneous streams. Recommended on every wire event."
+            },
+            "priorChecksum": {
+              "oneOf": [
+                {
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The effectiveChecksum of the entity state this event supersedes, forming a per-key hash chain: a mismatch or gap against stored state is detectable, letting a consumer mark the key unverified instead of serving stale posture. Null at chain start (no prior state, e.g. a new entity or the first event after a seed). The chain provides tamper/gap evidence given a trusted head; completeness is anchored out-of-band by periodic re-centering rescans."
+            }
+          },
+          "examples": [
+            {
+              "$comment": "Steady-state envelope: mid-chain event from an InSpec producer. priorChecksum links to the previous effectiveChecksum for this key.",
+              "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
+              "source": "inspec://web01/rhel9-stig",
+              "sequence": 412,
+              "systemRef": "apptier.hdf-system.json",
+              "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+              "timestamp": "2026-07-22T14:03:11Z",
+              "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.5.0",
+              "priorChecksum": {
+                "algorithm": "sha256",
+                "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+              }
+            },
+            {
+              "$comment": "Chain-start envelope: first event for a key after seeding — priorChecksum is null (the CloudTrail null-previous-digest convention), sequence starts low.",
+              "eventId": "0190f6f2-2a5b-7e4d-b1c8-4f2e6a8b0d12",
+              "source": "inspec://web01/rhel9-stig",
+              "sequence": 1,
+              "systemRef": "apptier.hdf-system.json",
+              "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+              "timestamp": "2026-07-22T09:00:00Z",
+              "priorChecksum": null
+            }
+          ],
+          "description": "Entity-agnostic transport identity for a change event: dedup ((source, eventId)), ordering (per-key sequence), system anchor (systemRef + componentId), occurrence time, schema self-description, and the prior-state hash-chain link. Composed into each concrete event type via allOf; entity-specific keys and payload live on the event type.",
+          "title": "Change Event Envelope"
+        },
+        "Event_Requirement_State": {
+          "type": "string",
+          "enum": [
+            "new",
+            "absent",
+            "updated",
+            "fixed",
+            "regressed"
+          ],
+          "description": "The producer-computable subset of the comparison vocabulary's Requirement_State. Kept value-identical with the parent enum (test-enforced): the batch-only states (moved, split, merged) are outputs of cross-document identity resolution a per-key producer cannot compute. Declared as a distinct named type (rather than a $ref intersection) so generated Go/TS types keep stable, distinct enum names.",
+          "title": "Event Requirement State"
+        },
+        "Event_Change_Reason": {
+          "type": "string",
+          "enum": [
+            "resultChanged",
+            "overrideAdded",
+            "overrideExpired",
+            "overrideRemoved",
+            "overrideModified",
+            "impactChanged",
+            "configChanged"
+          ],
+          "description": "The producer-computable subset of the comparison vocabulary's Change_Reason, value-identical with the parent enum (test-enforced). Batch-only reasons (baselineUpgraded, controlMapped, scannerChanged, targetChanged, metadataChanged) require cross-corpus context and are excluded.",
+          "title": "Event Change Reason"
+        },
+        "Effective_Projection": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "effectiveStatus",
+            "effectiveImpact"
+          ],
+          "properties": {
+            "effectiveStatus": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.5.0#/$defs/Result_Status",
+              "description": "The resolved effective compliance status at this point in the chain."
+            },
+            "effectiveImpact": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "The resolved effective impact score (0.0–1.0) at this point in the chain."
+            }
+          },
+          "examples": [
+            {
+              "$comment": "Prior posture of a failing SSH-cipher control before remediation.",
+              "effectiveStatus": "failed",
+              "effectiveImpact": 0.5
+            },
+            {
+              "$comment": "Prior posture of a control passing under a waiver (the projection carries the resolved status; the governing override type travels in the requirement payload, not here).",
+              "effectiveStatus": "passed",
+              "effectiveImpact": 0.5
+            }
+          ],
+          "description": "The minimal resolved-posture projection — the same field set the per-requirement effectiveChecksum hashes (status and impact; the governing disposition is carried by the full requirement payload).",
+          "title": "Effective Projection"
+        },
+        "Derivation": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "seed",
+            "source",
+            "throughSequence",
+            "eventsApplied",
+            "asOf"
+          ],
+          "properties": {
+            "seed": {
+              "type": "object",
+              "unevaluatedProperties": false,
+              "required": [
+                "uri",
+                "checksum"
+              ],
+              "properties": {
+                "uri": {
+                  "type": "string",
+                  "format": "uri-reference",
+                  "description": "URI to the seed snapshot document (relative path or absolute URL)."
+                },
+                "checksum": {
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
+                  "description": "Checksum of the seed snapshot, REQUIRED: the derivation pins an immutable snapshot by content, not just location."
+                }
+              },
+              "$comment": "Location + expected-hash reference (the SRI/OCI/SPDX pattern). Shares its core shape with hdf-evidence-package's Content_Reference and ADR-0006's proposed External_Reference; consolidation onto one reference primitive is tracked by bead hdf-libs-avp2.",
+              "description": "The authoritative snapshot this document was reassembled from, pinned by content."
+            },
+            "source": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI of the event-stream producer context whose events were applied (matches the events' envelope source)."
+            },
+            "throughSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "The event watermark: the highest per-key sequence number applied. Downstream precedence rule: a full-scan document supersedes the reconciled view as of its scan time; between scans, the reconciled document with the highest throughSequence is the current posture."
+            },
+            "eventsApplied": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of change events applied to the seed to produce this document."
+            },
+            "asOf": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The posture-as-of time of this reconciled view (RFC 3339, trimmed UTC) — the analog of PROV's generatedAtTime."
+            }
+          },
+          "examples": [
+            {
+              "$comment": "A reconciled result set: reassembled from the pinned seed scan plus 3 change events through watermark 414. The document's generator names the reconciler, never the scanner.",
+              "seed": {
+                "uri": "apptier-seed-scan.hdf.json",
+                "checksum": {
+                  "algorithm": "sha256",
+                  "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                }
+              },
+              "source": "inspec://web01/rhel9-stig",
+              "throughSequence": 414,
+              "eventsApplied": 3,
+              "asOf": "2026-07-24T10:15:00Z"
+            }
+          ],
+          "description": "Derived-document lineage for a reconciled result set (an hdf-results produced by applyChangeEvents rather than a scanner). Records exactly which seed and event horizon the document represents so it can never masquerade as primary scan evidence. Conceptually PROV qualified derivation: derived entity, used entity (seed), activity (event application), generation time (asOf).",
+          "title": "Derivation"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.5.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.5.0",
       "title": "HDF Parameter Primitives",
       "description": "Input/parameter type definitions for typed, traceable configuration values that bridge governance prose and scanner automation.",
       "$defs": {
@@ -4362,9 +4793,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.5.0",
       "title": "HDF EPSS Primitive",
       "description": "Type for representing FIRST.org's Exploit Prediction Scoring System (EPSS) data for a vulnerability. EPSS estimates the probability that a CVE will be exploited in the wild in the next 30 days. See https://www.first.org/epss/ for the underlying model and methodology.",
       "$defs": {
@@ -4421,9 +4852,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.4.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.5.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.4.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.5.0",
       "title": "HDF Kev Primitives",
       "description": "Types for representing CISA Known Exploited Vulnerabilities (KEV) catalog membership. The KEV catalog (https://www.cisa.gov/known-exploited-vulnerabilities-catalog) flags CVEs that are confirmed actively exploited in the wild and drives federal patching urgency under CISA Binding Operational Directive 22-01.",
       "$defs": {

@@ -1,6 +1,4 @@
 {
-  "timestamp": "2026-01-15T10:00:00Z",
-  "generator": { "name": "hdf-xml-coverage", "version": "1.0.0" },
   "baselines": [
     {
       "name": "Coverage Baseline",
@@ -11,9 +9,7 @@
       "resultsChecksum": { "algorithm": "sha256", "value": "1111111111111111111111111111111111111111111111111111111111111111" },
       "originalChecksum": { "algorithm": "sha256", "value": "2222222222222222222222222222222222222222222222222222222222222222" },
       "maintainer": "MITRE",
-      "supports": [],
-      "inputs": [],
-      "groups": [],
+      "description": "STIG-derived baseline for RHEL 8 web servers.",
       "integrity": { "algorithm": "sha256", "checksum": "abc123" },
       "requirements": [
         {
@@ -25,25 +21,87 @@
             { "label": "fix", "data": "Fix text." },
             { "label": "rationale", "data": "Rationale text." }
           ],
-          "impact": 0.7,
-          "refs": [
-            { "url": "https://example.gov/a" },
-            { "uri": "https://example.gov/b" },
-            { "ref": "Handbook Section 3" }
-          ],
-          "tags": {
-            "nist": ["AC-2", "AC-3"],
-            "cci": ["CCI-000012"],
-            "severity": "high",
-            "gtitle": "SRG-OS-000480-GPOS-00227"
-          },
           "code": "control 'SV-100001' do\n  impact 0.7\nend",
           "sourceLocation": { "ref": "controls/SV-100001.rb", "line": 12 },
           "controlType": "technical",
           "verificationMethod": "automated",
           "applicability": "required",
+          "refs": [
+            { "url": "https://example.gov/a" },
+            { "uri": "https://example.gov/b" },
+            { "ref": "Handbook Section 3" }
+          ],
+          "impact": 0.7,
+          "tags": {
+            "cci": ["CCI-000012"],
+            "gtitle": "SRG-OS-000480-GPOS-00227",
+            "nist": ["AC-2", "AC-3"],
+            "severity": "high"
+          },
           "results": [
-            { "status": "failed", "codeDesc": "check failed", "startTime": "2026-01-15T10:00:00Z", "message": "expected X to eq Y" }
+            {
+              "status": "failed",
+              "codeDesc": "check failed",
+              "startTime": "2026-01-15T10:00:00Z",
+              "message": "expected X to eq Y",
+              "exception": "RuntimeError",
+              "backtrace": [
+                "controls/SV-100001.rb:12:in `block'",
+                "inspec/runner.rb:88:in `run'"
+              ],
+              "resource": "sshd_config",
+              "resourceId": "/etc/ssh/sshd_config"
+            }
+          ],
+          "severity": "high",
+          "statusOverrides": [
+            {
+              "type": "riskAdjustment",
+              "status": "passed",
+              "impact": { "value": 0.3 },
+              "reason": "Compensating control: host isolated on a management VLAN with no inbound internet exposure.",
+              "appliedBy": { "identifier": "jane.doe@example.gov", "type": "email", "description": "ISSO" },
+              "appliedAt": "2026-01-10T12:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "evidence": [
+                { "type": "url", "data": "https://grc.example.gov/waivers/SV-100001", "description": "Approved waiver record" }
+              ],
+              "previousChecksum": { "algorithm": "sha256", "value": "3333333333333333333333333333333333333333333333333333333333333333" },
+              "justification": "inline_mitigations_already_exist"
+            }
+          ],
+          "disposition": "riskAdjustment",
+          "effectiveStatus": "passed",
+          "effectiveImpact": 0.3,
+          "cvss": [
+            {
+              "version": "3.1",
+              "source": "nvd@nist.gov",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "baseScore": 9.8,
+              "baseSeverity": "critical"
+            }
+          ],
+          "cwe": ["CWE-79", "CWE-89"],
+          "epss": { "score": 0.00432, "percentile": 0.7421, "date": "2026-01-14" },
+          "kev": { "inKev": true, "dateAdded": "2025-11-01", "dueDate": "2025-11-22", "notes": "Actively exploited per CISA." },
+          "poams": [
+            {
+              "type": "remediation",
+              "explanation": "Patch scheduled in the Q1 maintenance window.",
+              "appliedBy": { "identifier": "team-secops", "type": "other" },
+              "appliedAt": "2026-01-05T09:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "milestones": [
+                { "description": "Vendor patch validated in staging", "estimatedCompletion": "2026-02-15T00:00:00Z", "status": "inProgress" }
+              ]
+            }
+          ],
+          "evidence": [
+            { "type": "log", "data": "auth.log excerpt showing MFA enforcement", "description": "Runtime evidence", "mimeType": "text/plain" }
+          ],
+          "affectedPackages": [
+            { "name": "openssl", "version": "1.1.1k", "ecosystem": "rpm", "fixedInVersion": "1.1.1n" }
           ]
         },
         {
@@ -60,11 +118,20 @@
   "components": [
     {
       "componentId": "11111111-1111-1111-1111-111111111111",
-      "type": "host",
       "name": "web01.example.gov",
+      "type": "host",
       "fqdn": "web01.example.gov",
-      "ipAddress": "10.0.0.1"
+      "ipAddress": "10.0.0.1",
+      "macAddress": "02:42:ac:11:00:02",
+      "osName": "Red Hat Enterprise Linux",
+      "osVersion": "8.9"
     }
   ],
-  "statistics": { "duration": 1.5 }
+  "statistics": { "duration": 1.5 },
+  "timestamp": "2026-01-15T10:00:00Z",
+  "generator": { "name": "hdf-xml-coverage", "version": "1.0.0" },
+  "tool": { "name": "InSpec", "version": "5.22.3", "format": "inspec-json" },
+  "integrity": { "algorithm": "sha256", "checksum": "4444444444444444444444444444444444444444444444444444444444444444", "signature": "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz", "signedBy": "ci-signer@example.gov" },
+  "id": "b1e7c0de-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+  "runner": { "name": "inspec", "release": "5.22.3", "architecture": "x86_64", "hostname": "scanner01" }
 }

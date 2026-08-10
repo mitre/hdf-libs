@@ -146,13 +146,17 @@ func cklVulnToModel(v *cklVuln) Vuln {
 		}
 		return ""
 	}
-	var ccis []string
+	var ccis, legacyIDs []string
 	extra := map[string]string{}
 	for _, sd := range v.StigData {
 		switch sd.Attribute {
 		case "CCI_REF":
 			if sd.Data != "" {
 				ccis = append(ccis, sd.Data)
+			}
+		case "LEGACY_ID":
+			if sd.Data != "" {
+				legacyIDs = append(legacyIDs, sd.Data)
 			}
 		case "Vuln_Num", "Severity", "Group_Title", "Rule_ID", "Rule_Ver",
 			"Rule_Title", "Vuln_Discuss", "Check_Content", "Fix_Text", "Weight", "Class":
@@ -164,22 +168,25 @@ func cklVulnToModel(v *cklVuln) Vuln {
 		}
 	}
 	return Vuln{
-		VulnNum:        attr("Vuln_Num"),
-		RuleID:         attr("Rule_ID"),
-		RuleVer:        attr("Rule_Ver"),
-		GroupTitle:     attr("Group_Title"),
-		Severity:       attr("Severity"),
-		RuleTitle:      attr("Rule_Title"),
-		VulnDiscuss:    attr("Vuln_Discuss"),
-		CheckContent:   attr("Check_Content"),
-		FixText:        attr("Fix_Text"),
-		Weight:         attr("Weight"),
-		Classification: attr("Class"),
-		CCIs:           ccis,
-		Status:         ParseStatus(v.Status),
-		FindingDetails: v.FindingDetails,
-		Comments:       v.Comments,
-		Extra:          extra,
+		VulnNum:               attr("Vuln_Num"),
+		RuleID:                attr("Rule_ID"),
+		RuleVer:               attr("Rule_Ver"),
+		GroupTitle:            attr("Group_Title"),
+		Severity:              attr("Severity"),
+		RuleTitle:             attr("Rule_Title"),
+		VulnDiscuss:           attr("Vuln_Discuss"),
+		CheckContent:          attr("Check_Content"),
+		FixText:               attr("Fix_Text"),
+		Weight:                attr("Weight"),
+		Classification:        attr("Class"),
+		CCIs:                  ccis,
+		LegacyIDs:             legacyIDs,
+		Status:                ParseStatus(v.Status),
+		FindingDetails:        v.FindingDetails,
+		Comments:              v.Comments,
+		SeverityOverride:      v.SeverityOverride,
+		SeverityJustification: v.SeverityJustification,
+		Extra:                 extra,
 	}
 }
 
@@ -261,14 +268,22 @@ func modelVulnToCKL(v *Vuln) cklVuln {
 		}
 		stigData = append(stigData, cklStigData{Attribute: name, Data: val})
 	}
+	// LEGACY_ID entries (one per id) precede CCI_REF, matching STIG Viewer.
+	for _, lid := range v.LegacyIDs {
+		if lid != "" {
+			stigData = append(stigData, cklStigData{Attribute: "LEGACY_ID", Data: lid})
+		}
+	}
 	for _, cci := range v.CCIs {
 		stigData = append(stigData, cklStigData{Attribute: "CCI_REF", Data: cci})
 	}
 	return cklVuln{
-		StigData:       stigData,
-		Status:         v.Status.CKLString(),
-		FindingDetails: v.FindingDetails,
-		Comments:       v.Comments,
+		StigData:              stigData,
+		Status:                v.Status.CKLString(),
+		FindingDetails:        v.FindingDetails,
+		Comments:              v.Comments,
+		SeverityOverride:      v.SeverityOverride,
+		SeverityJustification: v.SeverityJustification,
 	}
 }
 

@@ -17,6 +17,7 @@ Reference docs for the Heimdall Data Format. Start with the readers' guide; pull
 - [CLI user-story examples](guides/cli-user-story-examples.md) — runnable end-to-end workflows for every `hdf` subcommand.
 - [Converter fingerprint registry](guides/converter-fingerprint-registry.md) — how auto-detection picks the right converter for an input file.
 - [Label keys reference](guides/label-keys-reference.md) — well-known label keys (`system`, `environment`, `region`, …) used for grouping components and baselines.
+- [NIST 800-53 revision handling](guides/nist-revisions.md) — selecting Rev 4 vs Rev 5, the per-revision completeness contract, and the r4↔r5 crosswalk.
 - [OSCAL alignment](guides/oscal-alignment.md) — mapping between HDF and OSCAL document types.
 - [OSCAL CLI examples](guides/oscal-cli-examples.md) — converting FedRAMP SAR/SAP/SSP/POA&M between OSCAL and HDF.
 - [Legacy HDF migration](guides/migration-legacy-hdf.md) — for tool authors moving from InSpec exec-json (Legacy HDF / v2) to the current schema.

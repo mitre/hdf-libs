@@ -111,6 +111,55 @@ func TestConvertHDFToCKLB_Synthesis(t *testing.T) {
 	assert.Equal(t, checklist.StatusOpen, v.Status, "failed status maps to Open")
 }
 
+// TestConvertHDFToCKLB_OverrideAndEffectiveStatus pins the export-fidelity fixes
+// end-to-end: effectiveStatus drives status, a risk-adjustment override surfaces
+// into overrides.severity + comments, and finding_details composes all results.
+func TestConvertHDFToCKLB_OverrideAndEffectiveStatus(t *testing.T) {
+	input := `{
+		"baselines": [{
+			"name": "b", "version": "1.0.0", "title": "T", "maintainer": "M",
+			"supports": [], "inputs": [], "groups": [],
+			"checksum": { "algorithm": "sha256", "value": "abc" },
+			"requirements": [{
+				"id": "V-1", "title": "Rule",
+				"descriptions": [{ "label": "default", "data": "d" }],
+				"impact": 0.7,
+				"effectiveStatus": "notApplicable",
+				"tags": { "nist": ["SI-2 c"] },
+				"statusOverrides": [{
+					"type": "riskAdjustment", "reason": "compensating control",
+					"appliedBy": { "type": "username", "identifier": "jdoe" },
+					"appliedAt": "2020-01-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+					"impact": { "value": 0.4 }
+				}],
+				"results": [
+					{ "status": "passed", "codeDesc": "port 22 closed", "startTime": "2026-01-29T18:00:00Z" },
+					{ "status": "failed", "codeDesc": "port 23 closed", "message": "telnet open", "startTime": "2026-01-29T18:00:00Z" }
+				]
+			}]
+		}],
+		"components": [], "statistics": { "duration": 0 }
+	}`
+
+	out, err := ConvertHDFToCKLB([]byte(input))
+	require.NoError(t, err)
+	s := string(out)
+
+	assert.Contains(t, s, `"status": "not_applicable"`, "effectiveStatus drives status")
+	assert.Contains(t, s, `"severity": "medium"`, "impact 0.4 -> medium override")
+	assert.Contains(t, s, `"justification": "compensating control"`)
+	assert.Contains(t, s, "Override [riskAdjustment]: compensating control")
+	assert.Contains(t, s, `[passed] port 22 closed`)
+	assert.Contains(t, s, `[failed] port 23 closed`)
+	assert.Contains(t, s, `telnet open`)
+
+	// Re-parse to confirm the override object round-trips through the model.
+	cl, err := checklist.ParseCKLB(out)
+	require.NoError(t, err)
+	v := findVuln(t, cl, "V-1")
+	assert.Equal(t, "medium", v.SeverityOverride)
+}
+
 func TestConvertHDFToCKLB_InvalidJSON(t *testing.T) {
 	_, err := ConvertHDFToCKLB([]byte("not valid json"))
 	assert.Error(t, err)

@@ -1,7 +1,10 @@
 package owasp
 
 import (
+	"strings"
 	"testing"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 func TestNISTControl_KnownIDs(t *testing.T) {
@@ -41,5 +44,18 @@ func TestNISTControl_Empty(t *testing.T) {
 	got := NISTControl("")
 	if got != "" {
 		t.Errorf("NISTControl(%q) = %q, want empty", "", got)
+	}
+}
+
+// See the nikto equivalent: this guard fails when a control in the table stops
+// being identical across revisions, signalling the mapping needs real handling.
+func TestTableIsRevisionNeutral(t *testing.T) {
+	for id, control := range loadOwaspData() {
+		for _, c := range strings.Split(control, "|") {
+			tr := nist.Translate(strings.TrimSpace(c), 4, 5)
+			if tr.Relation != nist.RelationIdentity {
+				t.Errorf("owasp %s: control %q is not revision-neutral (relation %s)", id, c, tr.Relation)
+			}
+		}
 	}
 }

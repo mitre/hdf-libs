@@ -95,8 +95,18 @@ type ProductTree struct {
 }
 
 type FullProductName struct {
-	Name      string `json:"name"`
-	ProductID string `json:"product_id"`
+	Name                        string                       `json:"name"`
+	ProductID                   string                       `json:"product_id"`
+	ProductIdentificationHelper *ProductIdentificationHelper `json:"product_identification_helper,omitempty"`
+}
+
+// ProductIdentificationHelper carries the portable package identifier
+// (purl preferred, cpe fallback) so the reverse importer can resolve the
+// product back to a structured AffectedPackage. Without it a re-import
+// cannot recover package identity and drops the entry.
+type ProductIdentificationHelper struct {
+	Purl string `json:"purl,omitempty"`
+	CPE  string `json:"cpe,omitempty"`
 }
 
 // Score is a CSAF vulnerability score entry (one CVSS block + affected products).
@@ -179,6 +189,7 @@ type Threat struct {
 type Remediation struct {
 	Category   string   `json:"category"`
 	Details    string   `json:"details"`
+	Date       string   `json:"date,omitempty"`
 	ProductIDs []string `json:"product_ids,omitempty"`
 }
 
@@ -199,28 +210,35 @@ func ConvertHDFToCSAFVEX(input []byte, converterVersion string) ([]byte, error) 
 	}
 
 	doc := buildDocument(&amendments, earliestAppliedAt(&amendments), converterVersion)
+	registry := map[string]FullProductName{}
 	for _, group := range groupOverridesByCVE(amendments.Overrides) {
 		v, ok := buildVulnerability(group)
 		if !ok {
 			continue
 		}
 		doc.Vulnerabilities = append(doc.Vulnerabilities, v)
-		for _, pid := range group.productIDs() {
-			doc.ProductTree.FullProductNames = appendUnique(doc.ProductTree.FullProductNames, pid)
-		}
-		for _, pid := range group.fixedProductIDs() {
-			doc.ProductTree.FullProductNames = appendUnique(doc.ProductTree.FullProductNames, pid)
+		for i := range group.overrides {
+			for _, fpn := range productEntriesFor(&group.overrides[i]) {
+				registerProductEntry(registry, fpn)
+			}
+			for _, fpn := range fixedProductEntriesFor(&group.overrides[i]) {
+				registerProductEntry(registry, fpn)
+			}
 		}
 	}
-	// Global product-id sort so the product_tree order matches the TS exporter
-	// (which sorts its product set) — otherwise multi-product docs diverge.
-	sort.Slice(doc.ProductTree.FullProductNames, func(i, j int) bool {
-		return doc.ProductTree.FullProductNames[i].ProductID < doc.ProductTree.FullProductNames[j].ProductID
-	})
 
 	if len(doc.Vulnerabilities) == 0 {
 		return nil, fmt.Errorf("hdf-to-csaf-vex: no overrides with CVE-shaped requirementIds; nothing to emit")
 	}
+
+	// Global product-id sort so the product_tree order matches the TS exporter
+	// (which sorts its product set) — otherwise multi-product docs diverge.
+	names := make([]FullProductName, 0, len(registry))
+	for _, fpn := range registry {
+		names = append(names, fpn)
+	}
+	sort.Slice(names, func(i, j int) bool { return names[i].ProductID < names[j].ProductID })
+	doc.ProductTree.FullProductNames = names
 	if len(doc.ProductTree.FullProductNames) == 0 {
 		doc.ProductTree.FullProductNames = []FullProductName{{Name: defaultProductID, ProductID: defaultProductID}}
 	}
@@ -322,33 +340,86 @@ type cveGroup struct {
 	overrides []hdf.StandaloneOverride
 }
 
-func (g cveGroup) productIDs() []string {
-	seen := map[string]bool{}
-	var out []string
-	for i := range g.overrides {
-		for _, p := range productIDsFor(&g.overrides[i]) {
-			if !seen[p] {
-				seen[p] = true
-				out = append(out, p)
+// productEntriesFor mirrors productIDsFor but returns full product_tree
+// entries carrying a product_identification_helper (purl/cpe) when the
+// override's affectedPackages supply a portable identifier. The reverse
+// importer reads that helper to recover the structured AffectedPackage; the
+// product_id itself is unchanged so product_status buckets still resolve.
+func productEntriesFor(o *hdf.StandaloneOverride) []FullProductName {
+	if len(o.AffectedPackages) > 0 {
+		out := make([]FullProductName, 0, len(o.AffectedPackages))
+		for _, p := range o.AffectedPackages {
+			id, ok := vex.AffectedPackageToIdentifier(p)
+			if !ok {
+				continue
 			}
+			out = append(out, fullProductNameFor(id, p))
+		}
+		if len(out) > 0 {
+			return out
 		}
 	}
-	sort.Strings(out)
+	if o.ComponentRef != nil && *o.ComponentRef != "" {
+		return []FullProductName{{Name: *o.ComponentRef, ProductID: *o.ComponentRef}}
+	}
+	if m := productsRegexp.FindStringSubmatch(o.Reason); len(m) > 1 {
+		parts := strings.Split(m[1], ",")
+		out := make([]FullProductName, 0, len(parts))
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				out = append(out, FullProductName{Name: p, ProductID: p})
+			}
+		}
+		if len(out) > 0 {
+			return out
+		}
+	}
+	return []FullProductName{{Name: defaultProductID, ProductID: defaultProductID}}
+}
+
+// fixedProductEntriesFor returns product_tree entries for the synthesized
+// fixed-version products across a group's affectedPackages, carrying a
+// purl helper (the version-swapped purl) when the source package had one.
+func fixedProductEntriesFor(o *hdf.StandaloneOverride) []FullProductName {
+	var out []FullProductName
+	for _, p := range o.AffectedPackages {
+		id, ok := vex.FixedPackageIdentifier(p)
+		if !ok {
+			continue
+		}
+		fpn := FullProductName{Name: id, ProductID: id}
+		if p.Purl != nil && *p.Purl != "" {
+			fpn.ProductIdentificationHelper = &ProductIdentificationHelper{Purl: id}
+		}
+		out = append(out, fpn)
+	}
 	return out
 }
 
-// fixedProductIDs returns the synthesized fixed-version product ids across a
-// group's affectedPackages, so they can be registered in the product_tree.
-func (g cveGroup) fixedProductIDs() []string {
-	var out []string
-	for i := range g.overrides {
-		for _, p := range g.overrides[i].AffectedPackages {
-			if id, ok := vex.FixedPackageIdentifier(p); ok {
-				out = append(out, id)
-			}
-		}
+// fullProductNameFor builds a product_tree leaf for an affectedPackage,
+// attaching the purl (preferred) or cpe as a product_identification_helper.
+func fullProductNameFor(id string, pkg hdf.AffectedPackage) FullProductName {
+	fpn := FullProductName{Name: id, ProductID: id}
+	switch {
+	case pkg.Purl != nil && *pkg.Purl != "":
+		fpn.ProductIdentificationHelper = &ProductIdentificationHelper{Purl: *pkg.Purl}
+	case pkg.Cpe != nil && *pkg.Cpe != "":
+		fpn.ProductIdentificationHelper = &ProductIdentificationHelper{CPE: *pkg.Cpe}
 	}
-	return out
+	return fpn
+}
+
+// registerProductEntry inserts a product_tree entry, first-writer-wins so the
+// helper attached by the earliest override for a given product_id is stable.
+func registerProductEntry(registry map[string]FullProductName, fpn FullProductName) {
+	if fpn.ProductID == "" {
+		return
+	}
+	if _, ok := registry[fpn.ProductID]; ok {
+		return
+	}
+	registry[fpn.ProductID] = fpn
 }
 
 // groupOverridesByCVE returns one group per CVE-shaped requirementId, in
@@ -442,9 +513,15 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 					Date:       o.AppliedAt.UTC().Format(time.RFC3339),
 				})
 			}
+			// The not_affected path historically dropped the override reason
+			// (only the affected path surfaced it as threats[impact]). Emit it
+			// as a description note — the reverse importer reads that back into
+			// override.reason, restoring the prose on round-trip.
+			appendReasonNote(&v, o.Reason)
 			emittedAny = true
 		case vex.StatusFixed:
 			status.Fixed = append(status.Fixed, pids...)
+			appendReasonNote(&v, o.Reason)
 			for _, m := range o.Milestones {
 				if m.Description == "" {
 					continue
@@ -452,6 +529,7 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 				v.Remediations = append(v.Remediations, Remediation{
 					Category:   "vendor_fix",
 					Details:    m.Description,
+					Date:       milestoneDate(m),
 					ProductIDs: pids,
 				})
 			}
@@ -475,6 +553,7 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 					v.Remediations = append(v.Remediations, Remediation{
 						Category:   "workaround",
 						Details:    m.Description,
+						Date:       milestoneDate(m),
 						ProductIDs: pids,
 					})
 				}
@@ -496,6 +575,24 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 				URL:      e.Data,
 			})
 		}
+
+		// externalReferences carry advisory/CTI context (STIX, vendor
+		// advisories) distinct from url evidence; both share the CSAF
+		// references[] home. Emit those with an href.
+		for _, r := range o.ExternalReferences {
+			if r.Href == nil || *r.Href == "" {
+				continue
+			}
+			summary := ""
+			if r.Description != nil {
+				summary = *r.Description
+			}
+			v.References = append(v.References, Reference{
+				Category: "external",
+				Summary:  summary,
+				URL:      *r.Href,
+			})
+		}
 	}
 
 	if !emittedAny {
@@ -509,6 +606,29 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 	v.ProductStatus = status
 	dedupeReferences(&v.References)
 	return v, true
+}
+
+// appendReasonNote surfaces the override reason prose as a CSAF description
+// note on the vulnerability. Used on the not_affected/fixed paths, which
+// otherwise drop reason (the affected path keeps it as threats[impact]).
+func appendReasonNote(v *Vulnerability, reason string) {
+	text := stripProductsLine(reason)
+	if text == "" {
+		return
+	}
+	v.Notes = append(v.Notes, Note{Category: "description", Text: text})
+}
+
+// milestoneDate renders a CSAF remediation date from a milestone: the actual
+// completion when present, else the estimate. Empty when neither is set.
+func milestoneDate(m hdf.Milestone) string {
+	if m.CompletedAt != nil && !m.CompletedAt.IsZero() {
+		return m.CompletedAt.UTC().Format(time.RFC3339)
+	}
+	if !m.EstimatedCompletion.IsZero() {
+		return m.EstimatedCompletion.UTC().Format(time.RFC3339)
+	}
+	return ""
 }
 
 // allMilestonesCompleted returns true when every milestone on the override
@@ -568,15 +688,6 @@ func productIDsFor(o *hdf.StandaloneOverride) []string {
 func stripProductsLine(reason string) string {
 	out := productsRegexp.ReplaceAllString(reason, "")
 	return strings.TrimRight(out, "\n")
-}
-
-func appendUnique(in []FullProductName, productID string) []FullProductName {
-	for _, e := range in {
-		if e.ProductID == productID {
-			return in
-		}
-	}
-	return append(in, FullProductName{Name: productID, ProductID: productID})
 }
 
 func dedupeStrings(s *[]string) {

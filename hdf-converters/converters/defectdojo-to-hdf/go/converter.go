@@ -12,8 +12,10 @@
 package defectdojo_to_hdf
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -49,6 +51,8 @@ type ddFinding struct {
 	VulnIDFromTool   *string          `json:"vuln_id_from_tool"`
 	FilePath         *string          `json:"file_path"`
 	Line             *int             `json:"line"`
+	SastSourceFile   *string          `json:"sast_source_file_path"`
+	SastSourceLine   *int             `json:"sast_source_line"`
 	ComponentName    *string          `json:"component_name"`
 	ComponentVersion *string          `json:"component_version"`
 	Service          *string          `json:"service"`
@@ -63,6 +67,35 @@ type ddFinding struct {
 	UnderReview      bool             `json:"under_review"`
 	AcceptedRisks    []ddAcceptedRisk `json:"accepted_risks"`
 	RelatedFields    *ddRelatedFields `json:"related_fields"`
+
+	// False-positive triage provenance. DefectDojo stamps `mitigated` (decision
+	// date) and `mitigated_by` (the reviewer's user id) when a finding is
+	// dismissed as a false positive. The *_username/_email variants are optional
+	// fetcher enrichment, mirroring accepted_risks' owner fields.
+	Mitigated           *string     `json:"mitigated"`
+	MitigatedBy         json.Number `json:"mitigated_by"`
+	MitigatedByUsername *string     `json:"mitigated_by_username"`
+	MitigatedByEmail    *string     `json:"mitigated_by_email"`
+
+	// raw is the finding exactly as DefectDojo emitted it. DefectDojo carries no
+	// literal source snippet, so requirement.code is the whole finding re-indented
+	// in place — preserving source key order and every field the typed struct
+	// does not model, byte-identical to the TypeScript twin's
+	// JSON.stringify(finding, null, 2).
+	raw json.RawMessage
+}
+
+// UnmarshalJSON captures the source bytes for requirement.code before decoding
+// the typed fields. The plain alias avoids unmarshal recursion.
+func (f *ddFinding) UnmarshalJSON(data []byte) error {
+	type plain ddFinding
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*f = ddFinding(p)
+	f.raw = append(json.RawMessage(nil), data...)
+	return nil
 }
 
 type ddVulnID struct {
@@ -178,6 +211,91 @@ func buildWaiverOverride(ar ddAcceptedRisk) hdf.StatusOverride {
 	}
 }
 
+// falsePositiveReviewer resolves the false-positive reviewer to an HDF Identity,
+// preferring fetcher-enriched username/email over the raw mitigated_by user id.
+// When DefectDojo recorded no reviewer, fall back to an honest system identity
+// (never a fabricated person).
+func falsePositiveReviewer(f ddFinding) hdf.Identity {
+	switch {
+	case f.MitigatedByEmail != nil && *f.MitigatedByEmail != "":
+		return hdf.Identity{Type: hdf.Email, Identifier: *f.MitigatedByEmail}
+	case f.MitigatedByUsername != nil && *f.MitigatedByUsername != "":
+		return hdf.Identity{Type: hdf.Username, Identifier: *f.MitigatedByUsername}
+	case f.MitigatedBy.String() != "":
+		return hdf.Identity{Type: hdf.Simple, Identifier: fmt.Sprintf("defectdojo-user-%s", f.MitigatedBy.String())}
+	default:
+		return hdf.Identity{Type: hdf.IdentityTypeOther, Identifier: "defectdojo (false positive triage)"}
+	}
+}
+
+// buildFalsePositiveOverride turns a DefectDojo false-positive dismissal into an
+// HDF falsePositive Status_Override. DefectDojo is a vulnerability aggregator, so
+// a false positive means the vuln does not apply → effectiveStatus notApplicable
+// (disposition distinguishes it from a genuine N/A). Raw status stays failed with
+// the full attributed, expiring override present — not laundering.
+func buildFalsePositiveOverride(f ddFinding) hdf.StatusOverride {
+	notApplicable := hdf.NotApplicable
+	reason := f.Mitigation
+	if reason == "" {
+		reason = "Marked as false positive in DefectDojo"
+	}
+	// appliedAt: the mitigation decision date when present; else the finding's
+	// own date. Deterministic — parsed canonically, never now() when a real
+	// source time exists.
+	var appliedAt time.Time
+	if f.Mitigated != nil && *f.Mitigated != "" {
+		appliedAt = hdfutil.ParseTimestamp(*f.Mitigated)
+	}
+	if appliedAt.IsZero() {
+		appliedAt = parseFindingDate(f.Date)
+	}
+	if appliedAt.IsZero() {
+		appliedAt = time.Now().UTC()
+	}
+	// expiresAt is REQUIRED; DefectDojo carries no expiry for a false positive, so
+	// default to one year out (the same "reviewed rather than permanent" convention
+	// as the waiver path).
+	expiresAt := appliedAt.AddDate(1, 0, 0)
+	return hdf.StatusOverride{
+		Type:      hdf.FalsePositive,
+		Status:    &notApplicable,
+		Reason:    reason,
+		AppliedBy: falsePositiveReviewer(f),
+		AppliedAt: appliedAt,
+		ExpiresAt: expiresAt,
+	}
+}
+
+var dateOnlyPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+
+// parseFindingDate parses a DefectDojo finding `date`. That field is date-only
+// (YYYY-MM-DD) and hdfutil.ParseTimestamp has no date-only layout, so a bare date
+// is promoted to UTC midnight before canonical parsing. This keeps Go and TS
+// byte-identical (the TS twin's parseTimestamp reads a bare date as UTC midnight
+// too) and avoids Go silently dropping the source date and falling back to now().
+func parseFindingDate(s string) time.Time {
+	if dateOnlyPattern.MatchString(s) {
+		s += "T00:00:00Z"
+	}
+	return hdfutil.ParseTimestamp(s)
+}
+
+// latestFindingDate returns the most recent finding `date`. DefectDojo's findings
+// response carries no single top-level scan time, so the newest finding date is
+// the defensible report time for the top-level HDF timestamp. Returns the zero
+// time when no finding carries a parseable date — the caller then omits the
+// optional top-level timestamp rather than fabricating a wall-clock value
+// (keeping the mapping source-derived and deterministic).
+func latestFindingDate(findings []ddFinding) time.Time {
+	var latest time.Time
+	for _, f := range findings {
+		if d := parseFindingDate(f.Date); !d.IsZero() && d.After(latest) {
+			latest = d
+		}
+	}
+	return latest
+}
+
 func findingID(f ddFinding) string {
 	switch {
 	case f.UniqueIDFromTool != nil && *f.UniqueIDFromTool != "":
@@ -205,37 +323,19 @@ func buildCvss(f ddFinding) []hdf.Cvss {
 		if score == nil && (vector == nil || *vector == "") {
 			return
 		}
-		entry := hdf.Cvss{Version: version}
-		if score != nil {
-			s := *score
-			entry.BaseScore = &s
-			sev := cvssBand(s)
-			entry.BaseSeverity = &sev
+		var baseVector string
+		if vector != nil {
+			baseVector = *vector
 		}
-		if vector != nil && *vector != "" {
-			v := *vector
-			entry.BaseVector = &v
-		}
-		out = append(out, entry)
+		out = append(out, shared.BuildCvss(shared.CvssInput{
+			Version:    version,
+			BaseScore:  score,
+			BaseVector: baseVector,
+		}))
 	}
 	add(hdf.The31, f.Cvssv3, f.Cvssv3Score)
 	add(hdf.The40, f.Cvssv4, f.Cvssv4Score)
 	return out
-}
-
-func cvssBand(score float64) hdf.CVSSSeverity {
-	switch hdfutil.CvssScoreToSeverity(score) {
-	case "critical":
-		return hdf.CVSSSeverityCritical
-	case "high":
-		return hdf.CVSSSeverityHigh
-	case "medium":
-		return hdf.CVSSSeverityMedium
-	case "low":
-		return hdf.CVSSSeverityLow
-	default:
-		return hdf.None
-	}
 }
 
 func buildEpss(f ddFinding) *hdf.Epss {
@@ -300,6 +400,51 @@ func codeDesc(f ddFinding) string {
 	return strings.Join(parts, " | ")
 }
 
+// buildFindingCode renders the raw DefectDojo finding as indented JSON for
+// requirement.code (Heimdall's CODE tab). json.Indent reformats the original
+// bytes in place, preserving source key order so the output matches the TS
+// twin's JSON.stringify(finding, null, 2). Returns "" when no raw bytes are
+// available (a synthesized finding) or the bytes are malformed, so the caller
+// leaves code unset rather than emitting a placeholder.
+func buildFindingCode(f ddFinding) string {
+	if len(f.raw) == 0 {
+		return ""
+	}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, f.raw, "", "  "); err != nil {
+		return ""
+	}
+	return buf.String()
+}
+
+// sourceLocus resolves the finding's file locus, preferring the primary
+// file_path/line over the SAST sast_source_file_path/sast_source_line fallback.
+// The line is taken from whichever ref source is chosen (paired, not mixed).
+func sourceLocus(f ddFinding) (string, *int) {
+	if f.FilePath != nil && *f.FilePath != "" {
+		return *f.FilePath, f.Line
+	}
+	if f.SastSourceFile != nil && *f.SastSourceFile != "" {
+		return *f.SastSourceFile, f.SastSourceLine
+	}
+	return "", nil
+}
+
+// buildSourceLocation promotes the finding's file locus into the structured HDF
+// requirement.sourceLocation. Returns nil when the finding carries no path.
+func buildSourceLocation(f ddFinding) *hdf.SourceLocation {
+	ref, line := sourceLocus(f)
+	if ref == "" {
+		return nil
+	}
+	loc := &hdf.SourceLocation{Ref: &ref}
+	if line != nil {
+		l := float64(*line)
+		loc.Line = &l
+	}
+	return loc
+}
+
 func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 	nist := nistTags(f)
 	tags := shared.BuildNISTCCITags(nist, cci.NISTToCCI(nist))
@@ -307,8 +452,15 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 		tags[k] = v
 	}
 
+	// CVE → tags.cve (interim, pending a first-class identifiers[] field). The
+	// requirement.id is a native DefectDojo finding id (DefectDojo-Finding-<n> or
+	// a tool id), never the CVE, so the CVE list is not a duplicate of the id.
+	if cves := cveList(f); len(cves) > 0 {
+		tags["cve"] = cves
+	}
+
 	status := deriveStatus(f)
-	startTime := hdfutil.ParseTimestamp(f.Date)
+	startTime := parseFindingDate(f.Date)
 	if startTime.IsZero() {
 		startTime = time.Now().UTC()
 	}
@@ -333,10 +485,30 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 		req.Cwe = []string{fmt.Sprintf("CWE-%d", *f.CWE)}
 	}
 
-	// The novel part: a risk-accepted finding carries a real waiver override
-	// (built from accepted_risks provenance), so raw failed + effectiveStatus
-	// passed + disposition waiver are all present.
-	if f.RiskAccepted && len(f.AcceptedRisks) > 0 {
+	// KEV is NOT-IN-SOURCE: DefectDojo findings carry known_exploited/kev_date/
+	// ransomware_used but no CISA remediation due date. hdf.Kev requires both
+	// dateAdded AND dueDate when inKev is true, so a schema-valid requirement.kev
+	// cannot be produced from source alone — synthesizing a dueDate DefectDojo
+	// never sent would be fabrication. The KEV signal is preserved verbatim in
+	// requirement.code (the raw finding JSON).
+
+	if code := buildFindingCode(f); code != "" {
+		req.Code = &code
+	}
+
+	// Promote the finding's file locus into the structured, machine-addressable
+	// requirement.sourceLocation (additive; it also stays in codeDesc freetext).
+	if loc := buildSourceLocation(f); loc != nil {
+		req.SourceLocation = loc
+	}
+
+	// The novel part: a triaged finding carries a real, attributed override so raw
+	// status + effectiveStatus + disposition are all present (not laundering).
+	// Precedence: a risk acceptance (waiver, from accepted_risks provenance) wins
+	// over a false-positive dismissal — a finding accepted as real risk is not
+	// simultaneously a false positive.
+	switch {
+	case f.RiskAccepted && len(f.AcceptedRisks) > 0:
 		override := buildWaiverOverride(f.AcceptedRisks[0])
 		waiver := hdf.OverrideTypeWaiver
 		effective := hdf.Passed
@@ -344,6 +516,13 @@ func convertFinding(f ddFinding) hdf.EvaluatedRequirement {
 		req.EffectiveStatus = &effective
 		req.Disposition = &waiver
 		req.Tags["defectdojo/decision"] = f.AcceptedRisks[0].Decision
+	case f.FalseP:
+		override := buildFalsePositiveOverride(f)
+		fp := hdf.FalsePositive
+		effective := hdf.NotApplicable
+		req.StatusOverrides = []hdf.StatusOverride{override}
+		req.EffectiveStatus = &effective
+		req.Disposition = &fp
 	}
 
 	return req
@@ -411,12 +590,18 @@ func ConvertDefectDojo(input []byte, converterVersion string) (*hdf.HDFResults, 
 		}}
 	}
 
-	return shared.BuildHDFResults(shared.HDFResultsOptions{
+	opts := shared.HDFResultsOptions{
 		GeneratorName:    "defectdojo-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "DefectDojo",
 		Baselines:        baselines,
-	}), nil
+	}
+	// Top-level timestamp: the newest finding date, source-derived and
+	// deterministic. Omitted (nil) when no finding carries a parseable date.
+	if ts := latestFindingDate(findings); !ts.IsZero() {
+		opts.Timestamp = &ts
+	}
+	return shared.BuildHDFResults(opts), nil
 }
 
 // parseFindings accepts the DRF envelope {results:[…]} or a bare findings array.

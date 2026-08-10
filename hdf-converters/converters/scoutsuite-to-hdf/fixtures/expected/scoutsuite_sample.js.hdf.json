@@ -17,6 +17,9 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-duplicated-global-services-logging",
           "impact": 0.5,
           "tags": {
@@ -25,6 +28,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-concepts.html#cloudtrail-concepts-global-service-events"
+            }
+          ],
           "title": "Global Service Logging Duplicated",
           "verificationMethod": "automated"
         },
@@ -47,11 +55,19 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-cloudwatch-integration",
           "impact": 0.5,
           "tags": {
             "cci": [
               "CCI-000172"
+            ],
+            "compliance": [
+              "CIS Amazon Web Services Foundations 2.4 (v1.0.0)",
+              "CIS Amazon Web Services Foundations 2.4 (v1.1.0)",
+              "CIS Amazon Web Services Foundations 2.4 (v1.2.0)"
             ],
             "nist": [
               "AU-12",
@@ -77,6 +93,9 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-data-logging",
           "impact": 0.5,
           "tags": {
@@ -88,6 +107,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-data-events-with-cloudtrail.html"
+            }
+          ],
           "title": "Data Events Logging Not Configured",
           "verificationMethod": "automated"
         },
@@ -110,14 +134,27 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-encryption-with-kms",
           "impact": 0.7,
           "tags": {
+            "compliance": [
+              "CIS Amazon Web Services Foundations 2.7 (v1.0.0)",
+              "CIS Amazon Web Services Foundations 2.7 (v1.1.0)",
+              "CIS Amazon Web Services Foundations 2.7 (v1.2.0)"
+            ],
             "nist": [
               "AU-6"
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/encrypting-cloudtrail-log-files-with-aws-kms.html"
+            }
+          ],
           "title": "CloudTrail Logs Not Encrypted with KMS Customer Master Keys (CMKs)",
           "verificationMethod": "automated"
         },
@@ -136,6 +173,9 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-global-services-logging",
           "impact": 0.7,
           "tags": {
@@ -147,6 +187,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-concepts.html#cloudtrail-concepts-global-service-events"
+            }
+          ],
           "title": "Global Service Logging Disabled",
           "verificationMethod": "automated"
         },
@@ -169,14 +214,27 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-log-file-validation",
           "impact": 0.7,
           "tags": {
+            "compliance": [
+              "CIS Amazon Web Services Foundations 2.2 (v1.0.0)",
+              "CIS Amazon Web Services Foundations 2.2 (v1.1.0)",
+              "CIS Amazon Web Services Foundations 2.2 (v1.2.0)"
+            ],
             "nist": [
               "AU-6"
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-intro.html"
+            }
+          ],
           "title": "Log File Validation Is Disabled",
           "verificationMethod": "automated"
         },
@@ -199,17 +257,30 @@
               "status": "notReviewed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id.trails.id"
+          },
           "id": "cloudtrail-no-logging",
           "impact": 0.7,
           "tags": {
             "cci": [
               "CCI-000172"
             ],
+            "compliance": [
+              "CIS Amazon Web Services Foundations 2.1 (v1.0.0)",
+              "CIS Amazon Web Services Foundations 2.1 (v1.1.0)",
+              "CIS Amazon Web Services Foundations 2.1 (v1.2.0)"
+            ],
             "nist": [
               "AU-12"
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/best-practices-security.html"
+            }
+          ],
           "title": "Disabled Trails",
           "verificationMethod": "automated"
         },
@@ -228,6 +299,9 @@
               "status": "failed"
             }
           ],
+          "sourceLocation": {
+            "ref": "cloudtrail.regions.id"
+          },
           "id": "cloudtrail-not-configured",
           "impact": 0.7,
           "tags": {
@@ -239,6 +313,11 @@
             ]
           },
           "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/best-practices-security.html"
+            }
+          ],
           "title": "CloudTrail Service Not Configured",
           "verificationMethod": "automated"
         }

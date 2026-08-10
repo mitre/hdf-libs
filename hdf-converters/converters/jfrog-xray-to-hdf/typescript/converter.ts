@@ -4,11 +4,13 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import { buildAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
+import { buildCvss as buildSharedCvss, cvssVersionFromVector, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Cvss,
   RequirementResult,
 } from '@mitre/hdf-schema';
 import {
@@ -72,14 +74,89 @@ async function hashID(summary: string): Promise<string> {
 }
 
 /**
- * Extract CWE identifiers from the first CVE entry.
+ * Collect the distinct CWE identifiers across every CVE entry, preserving
+ * first-seen order. These feed both requirement.cwe[] and the CWE→NIST mapping.
  */
 function extractCWEs(entry: XrayEntry): string[] {
-  const cves = entry.component_versions?.more_details?.cves;
-  if (!cves || cves.length === 0) {
-    return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const cve of entry.component_versions?.more_details?.cves ?? []) {
+    for (const cwe of cve.cwe ?? []) {
+      if (cwe && !seen.has(cwe)) {
+        seen.add(cwe);
+        out.push(cwe);
+      }
+    }
   }
-  return cves[0]?.cwe ?? [];
+  return out;
+}
+
+/**
+ * Collect the distinct CVE identifiers across every CVE entry, preserving
+ * first-seen order. The requirement id is a summary hash (never the CVE), so
+ * tags.cve is where the CVE list lives.
+ */
+function extractCVEs(entry: XrayEntry): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const cve of entry.component_versions?.more_details?.cves ?? []) {
+    if (cve.cve && !seen.has(cve.cve)) {
+      seen.add(cve.cve);
+      out.push(cve.cve);
+    }
+  }
+  return out;
+}
+
+/**
+ * Split a JFrog cvss_v2/cvss_v3 field ("<score>/<vector>", e.g.
+ * "9.8/CVSS:3.1/AV:N/...") on the FIRST "/" into the numeric base score and the
+ * remaining vector. A field with no "/" is a bare score with no vector; an
+ * unparseable score yields undefined (the vector may still stand alone).
+ */
+function parseCvssField(field: string | undefined): { score?: number; vector: string } {
+  if (!field) return { vector: '' };
+  const idx = field.indexOf('/');
+  let scorePart = field;
+  let vector = '';
+  if (idx >= 0) {
+    scorePart = field.slice(0, idx);
+    vector = field.slice(idx + 1);
+  }
+  const parsed = Number.parseFloat(scorePart.trim());
+  return { score: Number.isFinite(parsed) ? parsed : undefined, vector };
+}
+
+/**
+ * Assemble the structured requirement.cvss[] for a group's representative
+ * entry. Each CVE contributes its v3 metric (version from the vector prefix)
+ * then its v2 metric (always CVSS 2.0 — the cvss_v2 vector prefix is
+ * inconsistent, so the field name is the authority). A field with neither a
+ * score nor a vector is skipped.
+ */
+function buildCvssEntries(cves: CVEEntry[] | undefined): Cvss[] {
+  const out: Cvss[] = [];
+  for (const cve of cves ?? []) {
+    const v3 = parseCvssField(cve.cvss_v3);
+    if (v3.score !== undefined || v3.vector !== '') {
+      out.push(buildSharedCvss({
+        version: cvssVersionFromVector(v3.vector),
+        baseScore: v3.score,
+        baseVector: v3.vector,
+        source: cve.cve,
+      }));
+    }
+    const v2 = parseCvssField(cve.cvss_v2);
+    if (v2.score !== undefined || v2.vector !== '') {
+      out.push(buildSharedCvss({
+        version: cvssVersionFromString('2.0'),
+        baseScore: v2.score,
+        baseVector: v2.vector,
+        source: cve.cve,
+      }));
+    }
+  }
+  return out;
 }
 
 /**
@@ -135,11 +212,54 @@ function formatCodeDesc(entry: XrayEntry): string {
 }
 
 /**
+ * Render an Xray entry as the indented JSON blob carried in the requirement's
+ * code field (the ionchannel pattern), so Heimdall's CODE tab shows the raw
+ * finding. The object is reconstructed with a fixed key order and full field set
+ * matching the Go twin's struct marshal, keeping Go and TS byte-identical
+ * (verified by the shared snapshot test).
+ */
+function marshalEntryCode(entry: XrayEntry): string {
+  const cv = entry.component_versions;
+  const md = cv?.more_details;
+  const cves = md?.cves;
+  const codeObject = {
+    id: entry.id ?? '',
+    severity: entry.severity ?? '',
+    summary: entry.summary ?? '',
+    issue_type: entry.issue_type ?? '',
+    provider: entry.provider ?? '',
+    component: entry.component ?? '',
+    source_id: entry.source_id ?? '',
+    source_comp_id: entry.source_comp_id ?? '',
+    component_versions: {
+      id: cv?.id ?? '',
+      vulnerable_versions: cv?.vulnerable_versions ?? null,
+      fixed_versions: cv?.fixed_versions ?? null,
+      more_details: {
+        cves: cves
+          ? cves.map((c) => ({
+              cve: c.cve ?? '',
+              cwe: c.cwe ?? null,
+              cvss_v2: c.cvss_v2 ?? '',
+              cvss_v3: c.cvss_v3 ?? '',
+            }))
+          : null,
+        description: md?.description ?? '',
+        provider: md?.provider ?? '',
+      },
+    },
+    edited: entry.edited ?? '',
+  };
+  return JSON.stringify(codeObject, null, 2);
+}
+
+/**
  * Builds a single EvaluatedRequirement from a group of entries sharing an ID.
  */
 function buildRequirement(entryID: string, entries: XrayEntry[], scanTime: Date): EvaluatedRequirement {
   const rep = entries[0]!;
   const cweIDs = extractCWEs(rep);
+  const cveIDs = extractCVEs(rep);
   const nist = mapCWEToNIST(cweIDs, DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
   const cciTags = nistToCci(nist);
 
@@ -148,8 +268,8 @@ function buildRequirement(entryID: string, entries: XrayEntry[], scanTime: Date)
     cci: cciTags,
   };
 
-  if (cweIDs.length > 0) {
-    tags['cweid'] = cweIDs;
+  if (cveIDs.length > 0) {
+    tags['cve'] = cveIDs;
   }
 
   const descriptions: Description[] = [
@@ -172,11 +292,20 @@ function buildRequirement(entryID: string, entries: XrayEntry[], scanTime: Date)
     results,
     { tags }
   ) as EvaluatedRequirement;
+  req.code = marshalEntryCode(rep);
   const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  if (cweIDs.length > 0) {
+    req.cwe = cweIDs;
+  }
+  const cvss = buildCvssEntries(rep.component_versions?.more_details?.cves);
+  if (cvss.length > 0) {
+    req.cvss = cvss;
+  }
 
   const pkg = buildAffectedPackageFromEntry(rep);
   if (pkg) {

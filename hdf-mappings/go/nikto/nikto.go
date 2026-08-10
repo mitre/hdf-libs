@@ -5,7 +5,10 @@ import (
 	_ "embed"
 	"encoding/json"
 	"strconv"
+	"strings"
 	"sync"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 //go:embed nikto-nist-mappings.json
@@ -25,6 +28,11 @@ func loadData() map[string]string {
 	return niktoData
 }
 
+// NativeRevision is the NIST 800-53 revision this table was authored against
+// (heimdall2's Rev 4-era mapping; every control it carries is identical at
+// both revisions today). Lookups translate to the process-global revision.
+const NativeRevision = 4
+
 // NISTControl returns the NIST 800-53 control for a Nikto test ID.
 // Accepts string ("600050") or numeric string forms.
 // Returns "" if the Nikto test ID is not in the mapping.
@@ -35,7 +43,7 @@ func NISTControl(niktoID string) string {
 
 	data := loadData()
 	if control, ok := data[niktoID]; ok {
-		return control
+		return strings.Join(nist.AtRevision(strings.Split(control, "|"), NativeRevision, nist.Revision()), "|")
 	}
 	return ""
 }

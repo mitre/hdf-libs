@@ -11,6 +11,11 @@
         "name": "hdf-to-cyclonedx-vex",
         "version": "test"
       }
+    ],
+    "authors": [
+      {
+        "name": "cyclonedx-vex-import"
+      }
     ]
   },
   "components": [

@@ -61,11 +61,14 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 	category := firstCWE(req)
 	vendorProduct := exportmap.GetStr(tool, "name")
 
+	hdfBlock := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion)
+	augmentHDFBlock(hdfBlock, req, baseline, component)
+
 	event := map[string]interface{}{
 		"signature":  signature,
 		"hdf_status": st.Raw,
 		"suppressed": st.Suppressed,
-		"hdf":        exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion),
+		"hdf":        hdfBlock,
 	}
 	exportmap.SetIf(event, "signature_id", controlID)
 	exportmap.SetIf(event, "dest", dest)
@@ -73,6 +76,10 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 	exportmap.SetIf(event, "cve", cve)
 	exportmap.SetIf(event, "category", category)
 	exportmap.SetIf(event, "vendor_product", vendorProduct)
+	if component != nil {
+		exportmap.SetIf(event, "os", exportmap.GetStr(component, "osName"))
+		exportmap.SetIf(event, "dest_ip", exportmap.GetStr(component, "ipAddress"))
+	}
 	if hasCVSS {
 		event["cvss"] = cvss
 	}
@@ -87,6 +94,9 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 	exportmap.SetIf(fields, "dest", dest)
 	exportmap.SetIf(fields, "severity", severity)
 	exportmap.SetIf(fields, "cve", cve)
+	if component != nil {
+		exportmap.SetIf(fields, "dest_ip", exportmap.GetStr(component, "ipAddress"))
+	}
 	if hasCVSS {
 		fields["cvss"] = cvss
 	}
@@ -102,6 +112,35 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 	}
 	exportmap.SetIf(hec, "host", dest)
 	return hec
+}
+
+// augmentHDFBlock adds the Splunk-specific lossless keys the shared exportmap
+// block omits but the splunk-to-hdf importer round-trips: the requirement's
+// source_location and verification_method, the baseline metadata beyond its
+// name (version/title/checksum/groups), and the full target component. Each is
+// emitted only when the source carries it, so absent fields stay absent.
+func augmentHDFBlock(hdf, req, baseline, component map[string]interface{}) {
+	if v, ok := req["sourceLocation"]; ok {
+		hdf["source_location"] = v
+	}
+	if v, ok := req["verificationMethod"]; ok {
+		hdf["verification_method"] = v
+	}
+	if v, ok := baseline["version"]; ok {
+		hdf["baseline_version"] = v
+	}
+	if v, ok := baseline["title"]; ok {
+		hdf["baseline_title"] = v
+	}
+	if v, ok := baseline["checksum"]; ok {
+		hdf["baseline_checksum"] = v
+	}
+	if v, ok := baseline["groups"]; ok {
+		hdf["groups"] = v
+	}
+	if component != nil {
+		hdf["component"] = component
+	}
 }
 
 // destHost returns the target host: fqdn, else name, else ipAddress.

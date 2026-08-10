@@ -27,7 +27,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000001",
-              "startTime": "2026-08-01T23:52:41.654593Z",
+              "startTime": "2026-07-14T17:50:32.961285Z",
               "status": "passed"
             }
           ],
@@ -73,7 +73,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000002",
-              "startTime": "2026-08-01T23:52:41.654593Z",
+              "startTime": "2026-07-14T17:50:32.961285Z",
               "status": "passed"
             }
           ],
@@ -120,7 +120,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000003",
-              "startTime": "2026-08-01T23:52:41.654593Z",
+              "startTime": "2026-07-14T17:50:32.961285Z",
               "status": "passed"
             }
           ],
@@ -168,7 +168,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000004",
-              "startTime": "2026-08-01T23:52:41.654593Z",
+              "startTime": "2026-07-14T17:50:32.961285Z",
               "status": "passed"
             }
           ],
@@ -216,7 +216,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000015",
-              "startTime": "2026-08-01T23:52:41.654593Z",
+              "startTime": "2026-07-14T17:50:32.961285Z",
               "status": "passed"
             }
           ],
@@ -264,7 +264,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000021",
-              "startTime": "2026-08-01T23:52:41.654593Z",
+              "startTime": "2026-07-14T17:50:32.961285Z",
               "status": "passed"
             }
           ],
@@ -328,7 +328,7 @@
     "name": "cklb-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T23:52:41.654593Z",
+  "timestamp": "2026-07-14T17:50:32.961285Z",
   "tool": {
     "format": "CKLB",
     "name": "DISA STIG Viewer"

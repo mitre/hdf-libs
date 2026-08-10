@@ -60,7 +60,7 @@ func stMakeOverride(opts struct {
 		Type:      overrideType,
 		Status:    &status,
 		Reason:    reason,
-		AppliedBy: hdf.Identity{Identifier: "admin"},
+		AppliedBy: hdf.Identity{Type: hdf.Simple, Identifier: "admin"},
 		AppliedAt: appliedAt,
 		ExpiresAt: expiresAt,
 	}
@@ -386,6 +386,42 @@ func TestClassifyChangeReasons(t *testing.T) {
 			}),
 			oldTimestamp: "2025-05-01T00:00:00Z",
 			newTimestamp: "2025-07-01T00:00:00Z",
+			mustContain:  []ChangeReason{ReasonOverrideExpired},
+		},
+		{
+			name: "detects overrideExpired with zone-less scan timestamps (read as UTC)",
+			oldReq: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{stMakeResult(hdf.Failed)}
+				r.StatusOverrides = []hdf.StatusOverride{
+					stMakeOverride(struct {
+						Type      string
+						Status    hdf.ResultStatus
+						Reason    string
+						AppliedAt time.Time
+						ExpiresAt time.Time
+					}{
+						Status:    hdf.Passed,
+						ExpiresAt: time.Date(2025, 6, 1, 3, 0, 0, 0, time.UTC),
+					}),
+				}
+			}),
+			newReq: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{stMakeResult(hdf.Failed)}
+				r.StatusOverrides = []hdf.StatusOverride{
+					stMakeOverride(struct {
+						Type      string
+						Status    hdf.ResultStatus
+						Reason    string
+						AppliedAt time.Time
+						ExpiresAt time.Time
+					}{
+						Status:    hdf.Passed,
+						ExpiresAt: time.Date(2025, 6, 1, 3, 0, 0, 0, time.UTC),
+					}),
+				}
+			}),
+			oldTimestamp: "2025-06-01T00:00:00",
+			newTimestamp: "2025-07-01T00:00:00",
 			mustContain:  []ChangeReason{ReasonOverrideExpired},
 		},
 		{

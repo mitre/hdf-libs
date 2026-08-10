@@ -396,7 +396,11 @@ func buildWaiverData(r hdf.EvaluatedRequirement) map[string]interface{} {
 		wd["skipped_due_to_waiver"] = true
 		wd["override_type"] = string(gov.Type)
 		wd["message"] = gov.Reason
-		wd["expiration_date"] = gov.ExpiresAt.Format(time.RFC3339)
+		// A zero ExpiresAt means the override never expires (per the shared
+		// selection helper); "0001-01-01" would read as long-expired.
+		if !gov.ExpiresAt.IsZero() {
+			wd["expiration_date"] = gov.ExpiresAt.Format(time.RFC3339)
+		}
 		wd["applied_by"] = gov.AppliedBy.Identifier
 	}
 	// Best-effort breadcrumb for amendments that have no v2 status equivalent.

@@ -28,11 +28,13 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Improper Access Controls",
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "{\n  \"Asset\": \"CONDS181\",\n  \"Asset Type\": \"Microsoft SQL Server\",\n  \"Check\": \"Schema ownership\",\n  \"Check Category\": \"Improper Access Controls\",\n  \"Check ID\": \"2986\",\n  \"Date\": \"Feb 18 2021 15:57\",\n  \"Details\": \"Schema name=DatabaseMailUserRole;Database=msdb;Owner name=DatabaseMailUserRole\",\n  \"IP Address, Port, Instance\": \"10.0.10.204, 1433, MSSQLSERVER\",\n  \"Job Name\": \"Heimdal Test scan report generation\",\n  \"Organization\": \"TEST ORGANIZATION (Local DBP server)\",\n  \"Policy\": \"DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)\",\n  \"Result Status\": \"Fact\",\n  \"Risk DV\": \"Medium\",\n  \"Task\": \"Audit\"\n}",
           "title": "Schema ownership",
           "verificationMethod": "automated"
         },
@@ -57,11 +59,13 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Misconfigurations",
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "{\n  \"Asset\": \"CONDS181\",\n  \"Asset Type\": \"Microsoft SQL Server\",\n  \"Check\": \"Symmetric encryption keys\",\n  \"Check Category\": \"Misconfigurations\",\n  \"Check ID\": \"2903\",\n  \"Date\": \"Feb 18 2021 15:57\",\n  \"Details\": \"Key=##MS_ServiceMasterKey##;Database=master;Algorithm=AES_256\",\n  \"IP Address, Port, Instance\": \"10.0.10.204, 1433, MSSQLSERVER\",\n  \"Job Name\": \"Heimdal Test scan report generation\",\n  \"Organization\": \"TEST ORGANIZATION (Local DBP server)\",\n  \"Policy\": \"DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)\",\n  \"Result Status\": \"Fact\",\n  \"Risk DV\": \"High\",\n  \"Task\": \"Audit\"\n}",
           "title": "Symmetric encryption keys",
           "verificationMethod": "automated"
         },
@@ -86,11 +90,13 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Misconfigurations",
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "{\n  \"Asset\": \"CONDS181\",\n  \"Asset Type\": \"Microsoft SQL Server\",\n  \"Check\": \"Browser Service enabled\",\n  \"Check Category\": \"Misconfigurations\",\n  \"Check ID\": \"2841\",\n  \"Date\": \"Feb 18 2021 15:57\",\n  \"Details\": \"Check \\\"Browser Service enabled\\\" execution failed since we are unable to get the required data:\\nUser credentials cannot be used for local connections\",\n  \"IP Address, Port, Instance\": \"10.0.10.204, 1433, MSSQLSERVER\",\n  \"Job Name\": \"Heimdal Test scan report generation\",\n  \"Organization\": \"TEST ORGANIZATION (Local DBP server)\",\n  \"Policy\": \"DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)\",\n  \"Result Status\": \"Failed\",\n  \"Risk DV\": \"Low\",\n  \"Task\": \"Audit\"\n}",
           "title": "Browser Service enabled",
           "verificationMethod": "automated"
         },
@@ -120,11 +126,13 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Improper Access Controls",
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "{\n  \"Asset\": \"CONDS181\",\n  \"Asset Type\": \"Microsoft SQL Server\",\n  \"Check\": \"Protection of DBMS asymmetric encryption keys\",\n  \"Check Category\": \"Improper Access Controls\",\n  \"Check ID\": \"2801\",\n  \"Date\": \"Feb 18 2021 15:57\",\n  \"Details\": \"Key=MS_SQLEnableSystemAssemblyLoadingKey;Private key encryption type=NO_PRIVATE_KEY;Database containing key=master\",\n  \"IP Address, Port, Instance\": \"10.0.10.204, 1433, MSSQLSERVER\",\n  \"Job Name\": \"Heimdal Test scan report generation\",\n  \"Organization\": \"TEST ORGANIZATION (Local DBP server)\",\n  \"Policy\": \"DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)\",\n  \"Result Status\": \"Finding\",\n  \"Risk DV\": \"Informational\",\n  \"Task\": \"Audit\"\n}",
           "title": "Protection of DBMS asymmetric encryption keys",
           "verificationMethod": "automated"
         },
@@ -149,11 +157,13 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Improper Access Controls",
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "{\n  \"Asset\": \"CONDS181\",\n  \"Asset Type\": \"Microsoft SQL Server\",\n  \"Check\": \"Permission to configure Server Audit to audit at the server level\",\n  \"Check Category\": \"Improper Access Controls\",\n  \"Check ID\": \"2942\",\n  \"Date\": \"Feb 18 2021 15:57\",\n  \"Details\": \"None\",\n  \"IP Address, Port, Instance\": \"10.0.10.204, 1433, MSSQLSERVER\",\n  \"Job Name\": \"Heimdal Test scan report generation\",\n  \"Organization\": \"TEST ORGANIZATION (Local DBP server)\",\n  \"Policy\": \"DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)\",\n  \"Result Status\": \"Not A Finding\",\n  \"Risk DV\": \"Informational\",\n  \"Task\": \"Audit\"\n}",
           "title": "Permission to configure Server Audit to audit at the server level",
           "verificationMethod": "automated"
         },
@@ -178,11 +188,13 @@
               "CCI-001643",
               "CCI-003173"
             ],
+            "check_category": "Misconfigurations",
             "nist": [
               "SA-11",
               "RA-5"
             ]
           },
+          "code": "{\n  \"Asset\": \"CONDS181\",\n  \"Asset Type\": \"Microsoft SQL Server\",\n  \"Check\": \"SQL Server Usage and Error Reporting Auditing\",\n  \"Check Category\": \"Misconfigurations\",\n  \"Check ID\": \"2976\",\n  \"Date\": \"Feb 18 2021 15:57\",\n  \"Details\": \"Microsoft Analysis Services (OLAP) has not been found.\",\n  \"IP Address, Port, Instance\": \"10.0.10.204, 1433, MSSQLSERVER\",\n  \"Job Name\": \"Heimdal Test scan report generation\",\n  \"Organization\": \"TEST ORGANIZATION (Local DBP server)\",\n  \"Policy\": \"DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)\",\n  \"Result Status\": \"Skipped\",\n  \"Risk DV\": \"Medium\",\n  \"Task\": \"Audit\"\n}",
           "title": "SQL Server Usage and Error Reporting Auditing",
           "verificationMethod": "automated"
         }
@@ -199,15 +211,19 @@
   ],
   "components": [
     {
-      "name": "CONDS181",
-      "type": "host"
+      "name": "MSSQLSERVER",
+      "type": "database",
+      "hostname": "CONDS181",
+      "ipAddress": "10.0.10.204",
+      "engine": "Microsoft SQL Server",
+      "port": 1433
     }
   ],
   "generator": {
     "name": "dbprotect-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T23:52:42.759657Z",
+  "timestamp": "2021-02-18T15:57:00Z",
   "tool": {
     "name": "DBProtect"
   }

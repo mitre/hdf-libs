@@ -28,6 +28,10 @@
               "CCI-003173"
             ],
             "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
+            "lang": "java",
+            "langName": "Java",
             "nist": [
               "SA-11"
             ],
@@ -68,6 +72,10 @@
             "cwe": [
               "CWE-476"
             ],
+            "debt": "10min",
+            "effort": "10min",
+            "lang": "java",
+            "langName": "Java",
             "nist": [
               "SI-10"
             ],
@@ -99,7 +107,7 @@
     "name": "sonarqube-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T23:52:54.023371Z",
+  "timestamp": "2026-07-13T00:39:15.76743Z",
   "tool": {
     "name": "SonarQube"
   }

@@ -2,6 +2,8 @@ package cci
 
 import (
 	"testing"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 func TestGetCCIDescription(t *testing.T) {
@@ -64,10 +66,12 @@ func TestGetCCINistMappings(t *testing.T) {
 		expectContains string
 	}{
 		{
+			// The raw DISA entry lists "CM-6 b" twice; the revision-translation
+			// layer dedups, so 2 distinct references come back.
 			name:           "CCI-000366 maps to CM-6 controls",
 			cciID:          "CCI-000366",
 			expectNil:      false,
-			expectLen:      3,
+			expectLen:      2,
 			expectContains: "CM-6 b",
 		},
 		{
@@ -407,5 +411,28 @@ func TestLazyLoading(t *testing.T) {
 	desc2 := GetCCIDescription("CCI-000001")
 	if desc1 != desc2 {
 		t.Error("Expected same description on second call (cached)")
+	}
+}
+
+func TestCCIToNISTRevisionAware(t *testing.T) {
+	// The CCI list's NIST references are Rev 4-era. At the default Rev 5,
+	// CCIToNIST translates: identity refs keep their statement suffixes,
+	// Appendix J privacy refs follow NIST's pointers, and refs to controls
+	// with no Rev 5 equivalent drop.
+	got := CCIToNIST([]string{"CCI-003556"}) // "TR-1 a" -> PT-5, PT-5(1)
+	if len(got) != 2 || got[0] != "PT-5" || got[1] != "PT-5(1)" {
+		t.Errorf("CCI-003556 at Rev 5 = %v, want [PT-5 PT-5(1)]", got)
+	}
+	if got := CCIToNIST([]string{"CCI-000722"}); len(got) != 0 { // "SA-12" (family, no expansion)
+		t.Errorf("CCI-000722 at Rev 5 = %v, want empty", got)
+	}
+
+	if err := nist.SetRevision(4); err != nil {
+		t.Fatalf("SetRevision(4): %v", err)
+	}
+	defer nist.ResetRevision()
+	// At the table's native revision the raw references come back untouched.
+	if got := CCIToNIST([]string{"CCI-003556"}); len(got) != 1 || got[0] != "TR-1 a" {
+		t.Errorf("CCI-003556 at Rev 4 = %v, want [TR-1 a]", got)
 	}
 }

@@ -1,10 +1,12 @@
 package hdfvalidators
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateResults_ValidDocuments(t *testing.T) {
@@ -336,6 +338,13 @@ func TestCveEcosystem_Epss(t *testing.T) {
 		assert.Contains(t, result.Error(), "score")
 	})
 
+	t.Run("rejects EPSS score below 0.0", func(t *testing.T) {
+		data := resultsWith(`"epss": {"score": -0.1, "percentile": 0.5, "date": "2026-05-26"}`)
+		result := ValidateResults(data)
+		assert.False(t, result.Valid)
+		assert.Contains(t, result.Error(), "score")
+	})
+
 	t.Run("rejects EPSS missing date", func(t *testing.T) {
 		data := resultsWith(`"epss": {"score": 0.5, "percentile": 0.5}`)
 		result := ValidateResults(data)
@@ -393,6 +402,15 @@ func TestCveEcosystem_Kev(t *testing.T) {
 func TestCveEcosystem_Cwe(t *testing.T) {
 	t.Run("accepts three valid CWE IDs", func(t *testing.T) {
 		data := resultsWith(`"cwe": ["CWE-79", "CWE-89", "CWE-352"]`)
+		result := ValidateResults(data)
+		if !result.Valid {
+			t.Logf("Unexpected errors: %s", result.Error())
+		}
+		assert.True(t, result.Valid)
+	})
+
+	t.Run("accepts an empty cwe array", func(t *testing.T) {
+		data := resultsWith(`"cwe": []`)
 		result := ValidateResults(data)
 		if !result.Valid {
 			t.Logf("Unexpected errors: %s", result.Error())
@@ -578,6 +596,40 @@ func TestPoamRequiresExpiresAt(t *testing.T) {
 	})
 }
 
+// amendmentAndVulnRequirementFields is the shared shape asserted identically by
+// the Go and TS validator suites: a requirement carrying amendment fields
+// (effectiveStatus, disposition, statusOverrides, poams) and vulnerability
+// fields (cwe, cvss, refs) together. Keep its fields and values in sync with the
+// TS peer in validators.test.ts so both languages validate the same document.
+const amendmentAndVulnRequirementFields = `"effectiveStatus": "failed",
+	"disposition": "poam",
+	"statusOverrides": [{
+		"type": "riskAdjustment",
+		"impact": { "value": 0.4 },
+		"reason": "Environmental exposure reduced — internal VPN only.",
+		"appliedBy": { "type": "simple", "identifier": "sec" },
+		"appliedAt": "2025-01-01T00:00:00Z",
+		"expiresAt": "2099-12-31T00:00:00Z"
+	}],
+	"poams": [{
+		"type": "remediation",
+		"explanation": "Patch deployment scheduled pending vendor fix.",
+		"appliedBy": { "type": "simple", "identifier": "ops" },
+		"appliedAt": "2025-01-01T00:00:00Z",
+		"expiresAt": "2099-12-31T00:00:00Z"
+	}],
+	"cwe": ["CWE-327"],
+	"cvss": [{ "version": "3.1", "baseScore": 7.5, "baseSeverity": "high" }],
+	"refs": [{ "url": "https://example.gov/advisory" }]`
+
+func TestValidateResults_AmendmentAndVulnFields(t *testing.T) {
+	result := ValidateResults(resultsWith(amendmentAndVulnRequirementFields))
+	if !result.Valid {
+		t.Logf("Unexpected errors: %s", result.Error())
+	}
+	assert.True(t, result.Valid)
+}
+
 func TestSetSchemaDir(t *testing.T) {
 	t.Run("should allow loading schemas from custom directory", func(t *testing.T) {
 		// Store original
@@ -603,5 +655,54 @@ func TestSetSchemaDir(t *testing.T) {
 
 		result := ValidateResults(validResults)
 		assert.True(t, result.Valid)
+	})
+}
+
+func TestValidateRequirementChangeEvent(t *testing.T) {
+	validEvent := []byte(`{
+		"eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
+		"source": "inspec://web01/rhel9-stig",
+		"sequence": 412,
+		"systemRef": "apptier.hdf-system.json",
+		"componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+		"timestamp": "2026-07-22T14:03:11Z",
+		"priorChecksum": { "algorithm": "sha256", "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021" },
+		"requirementId": "RHEL-09-255065",
+		"state": "fixed",
+		"changeReasons": ["resultChanged"],
+		"before": { "effectiveStatus": "failed", "effectiveImpact": 0.5 },
+		"after": {
+			"id": "RHEL-09-255065",
+			"impact": 0.5,
+			"tags": {},
+			"descriptions": [{ "label": "default", "data": "SSH FIPS ciphers" }],
+			"results": [{ "status": "passed", "codeDesc": "ciphers ok", "startTime": "2026-07-22T14:03:11Z" }]
+		}
+	}`)
+
+	t.Run("should validate a well-formed change event", func(t *testing.T) {
+		result := ValidateRequirementChangeEvent(validEvent)
+		assert.True(t, result.Valid, "Should be valid: %v", result.Errors)
+		assert.Empty(t, result.Errors)
+	})
+
+	t.Run("should reject an event with null after on a non-absent state", func(t *testing.T) {
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(validEvent, &doc))
+		doc["after"] = nil
+		data, err := json.Marshal(doc)
+		require.NoError(t, err)
+		result := ValidateRequirementChangeEvent(data)
+		assert.False(t, result.Valid, "updated/fixed events must carry a full after requirement")
+	})
+
+	t.Run("should reject a batch-only state", func(t *testing.T) {
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(validEvent, &doc))
+		doc["state"] = "split"
+		data, err := json.Marshal(doc)
+		require.NoError(t, err)
+		result := ValidateRequirementChangeEvent(data)
+		assert.False(t, result.Valid, "split is batch-only and not producer-computable")
 	})
 }

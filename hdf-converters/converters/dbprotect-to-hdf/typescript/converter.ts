@@ -8,6 +8,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Component,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -143,10 +144,74 @@ function formatSummary(f: Finding): string {
   ].join('\n');
 }
 
+/**
+ * Splits DBProtect's combined "IP Address, Port, Instance" cell
+ * (e.g. "10.0.10.204, 1433, MSSQLSERVER") into its three parts. Any part the
+ * source omits comes back empty. Extra commas beyond the third field fold back
+ * into the instance so an instance name containing a comma survives.
+ */
+function parseTarget(s: string): { ip: string; port: string; instance: string } {
+  const parts = s.split(',');
+  return {
+    ip: (parts[0] ?? '').trim(),
+    port: (parts[1] ?? '').trim(),
+    instance: parts.length > 2 ? parts.slice(2).join(',').trim() : '',
+  };
+}
+
+/**
+ * Derives the scan-wide asset under test — the database — from the first
+ * finding's identity columns. Name prefers the instance, then IP:Port, then the
+ * raw asset label. Returns undefined when the source carries no identity at all,
+ * so the caller omits components[] rather than emitting a nameless target.
+ */
+function buildScanTarget(f: Finding): Component | undefined {
+  const { ip, port, instance } = parseTarget(f['IP Address, Port, Instance'] ?? '');
+  const assetType = (f['Asset Type'] ?? '').trim();
+  const asset = (f['Asset'] ?? '').trim();
+
+  let name = instance;
+  if (!name) {
+    if (ip && port) {
+      name = `${ip}:${port}`;
+    } else if (ip) {
+      name = ip;
+    } else {
+      name = asset;
+    }
+  }
+  if (!name) {
+    return undefined;
+  }
+
+  const comp: Component = { name, type: TargetType.Database };
+  if (ip) {
+    comp.ipAddress = ip;
+  }
+  if (port) {
+    const parsed = Number.parseInt(port, 10);
+    if (!Number.isNaN(parsed)) {
+      comp.port = parsed;
+    }
+  }
+  if (assetType) {
+    comp.engine = assetType;
+  }
+  if (asset) {
+    comp.hostname = asset;
+  }
+  return comp;
+}
+
 const MONTH_ABBR: Record<string, string> = {
   Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
   Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
 };
+
+// Go's parseDate returns the zero time.Time (serializes as 0001-01-01T00:00:00Z)
+// for an empty or unparseable date; mirror that sentinel for byte-parity instead
+// of a non-deterministic conversion-time fallback.
+const ZERO_DATE = new Date('0001-01-01T00:00:00Z');
 
 /**
  * Parses DBProtect date formats ("Feb 18 2021 15:57" or "2021-02-18 15:55").
@@ -155,18 +220,47 @@ const MONTH_ABBR: Record<string, string> = {
  */
 function parseDate(dateStr: string): Date {
   const trimmed = dateStr.trim();
-  // Go's parseDate returns the zero time.Time (serializes as 0001-01-01T00:00:00Z)
-  // for an empty or unparseable Date column; mirror that for byte-parity instead
-  // of a non-deterministic conversion-time fallback.
-  const ZERO = new Date('0001-01-01T00:00:00Z');
   if (!trimmed) {
-    return ZERO;
+    return ZERO_DATE;
   }
   const month = /^([A-Z][a-z]{2}) (\d{1,2}) (\d{4}) (\d{2}:\d{2})$/.exec(trimmed);
   const normalized = month
     ? `${month[3]}-${MONTH_ABBR[month[1]!] ?? '00'}-${month[2]!.padStart(2, '0')} ${month[4]}`
     : trimmed;
-  return parseTimestamp(normalized) ?? ZERO;
+  return parseTimestamp(normalized) ?? ZERO_DATE;
+}
+
+/**
+ * Derives the top-level HDF timestamp from the source, preferring the "Start
+ * Date" column (the Findings Detail report's scan start) and falling back to the
+ * per-finding "Date" column present in both report formats. Returns undefined
+ * (mirroring Go's zero-time skip) when neither parses, so the caller omits the
+ * timestamp rather than emitting a wall-clock value (determinism).
+ */
+function scanTimestamp(f: Finding): Date | undefined {
+  const start = parseDate(f['Start Date'] ?? '');
+  if (start.getTime() !== ZERO_DATE.getTime()) {
+    return start;
+  }
+  const date = parseDate(f['Date'] ?? '');
+  if (date.getTime() !== ZERO_DATE.getTime()) {
+    return date;
+  }
+  return undefined;
+}
+
+/**
+ * Renders a finding's parsed row (column→value map) as the indented JSON blob
+ * carried in requirement.code. DBProtect ships no literal check source, so the
+ * row itself is the richest available representation. Keys are sorted so the
+ * bytes match the Go twin, whose encoding/json emits map keys in sorted order.
+ */
+function marshalFindingCode(f: Finding): string {
+  const sorted: Record<string, string> = {};
+  for (const key of Object.keys(f).sort()) {
+    sorted[key] = f[key]!;
+  }
+  return JSON.stringify(sorted, null, 2);
 }
 
 /**
@@ -182,6 +276,11 @@ function buildRequirement(
   const nist = DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
   const cciTags = nistToCci(nist);
   const tags = buildNistCciTags(nist, cciTags);
+
+  const checkCategory = rep['Check Category'] ?? '';
+  if (checkCategory) {
+    tags.check_category = checkCategory;
+  }
 
   const descriptions: Description[] = [
     { label: 'default', data: formatDesc(rep) },
@@ -208,6 +307,7 @@ function buildRequirement(
     { tags },
   ) as EvaluatedRequirement;
   req.verificationMethod = VerificationMethodEnum.Automated;
+  req.code = marshalFindingCode(rep);
 
   const controlType = deriveControlTypeFromTags([...nist]);
   if (controlType !== undefined) {
@@ -272,7 +372,6 @@ export async function convertDbprotectToHdf(input: string, converterVersion = '1
   const firstFinding = limitedFindings[0]!;
   const title = firstFinding['Job Name'] ?? '';
   const summary = formatSummary(firstFinding);
-  const targetName = firstFinding['Asset'] ?? '';
 
   const baseline = createMinimalBaseline('DBProtect Scan', requirements, {
     resultsChecksum,
@@ -285,12 +384,14 @@ export async function convertDbprotectToHdf(input: string, converterVersion = '1
     baseline.version = policy;
   }
 
+  const target = buildScanTarget(firstFinding);
+
   return buildHdfResults({
     generatorName: 'dbprotect-to-hdf',
     converterVersion,
     toolName: 'DBProtect',
     baselines: [baseline],
-    components: [{ name: targetName, type: TargetType.Host }],
-    timestamp: new Date(),
+    components: target ? [target] : undefined,
+    timestamp: scanTimestamp(firstFinding),
   });
 }

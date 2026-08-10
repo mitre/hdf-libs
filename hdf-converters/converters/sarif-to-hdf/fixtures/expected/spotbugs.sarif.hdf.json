@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "URL : Boot.java LINE : 23 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             }
           ],
@@ -48,22 +48,22 @@
           "results": [
             {
               "codeDesc": "URL : Boot.java LINE : 104 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Boot.java LINE : 125 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Boot.java LINE : 84 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Boot.java LINE : 64 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             }
           ],
@@ -99,17 +99,17 @@
           "results": [
             {
               "codeDesc": "URL : Boot.java LINE : 210 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Boot.java LINE : 166 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Boot.java LINE : 246 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             }
           ],
@@ -145,12 +145,12 @@
           "results": [
             {
               "codeDesc": "URL : Log.java LINE : 9 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Match.java LINE : 9 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             }
           ],
@@ -186,12 +186,12 @@
           "results": [
             {
               "codeDesc": "URL : Log.java LINE : 13 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Match.java LINE : 13 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             }
           ],
@@ -227,7 +227,7 @@
           "results": [
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 40 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             }
           ],
@@ -263,32 +263,32 @@
           "results": [
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 536 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 68 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 44 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 2088 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 74 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 40 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             }
           ],
@@ -324,22 +324,22 @@
           "results": [
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 114 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 109 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 928 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 333 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             }
           ],
@@ -375,167 +375,167 @@
           "results": [
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1331 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1333 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1386 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1107 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 834 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 836 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 898 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 900 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 722 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 724 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1286 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1191 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1147 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 157 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 159 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1569 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1571 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1617 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1655 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1694 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1696 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1737 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 781 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 783 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 595 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 640 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 642 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 541 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 543 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 488 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 490 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1068 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1925 COLUMN : 0",
-              "startTime": "2026-08-01T19:52:53.430982-04:00",
+              "startTime": "2026-07-12T18:56:41.925794-04:00",
               "status": "failed"
             }
           ],
@@ -575,7 +575,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-08-01T19:52:53.430982-04:00",
+  "timestamp": "2026-07-12T18:56:41.925794-04:00",
   "tool": {
     "format": "SARIF",
     "name": "SpotBugs",
