@@ -338,11 +338,11 @@ func TestExtractCVEs_Dedup(t *testing.T) {
 	assert.Nil(t, extractCVEs(NeuVectorVuln{Cves: nil}), "no cves -> no tag")
 }
 
-// ---- severity / status / source / timestamp / cmds tags (h2 parity) ----
+// ---- severity / status / source / timestamp tags (h2 parity) ----
 
 // Value-pins vulnerability.severity -> tags["severity"] and the epoch
 // published/last_modified timestamps -> their tags, read from minimal.json which
-// carries no modules or cmds (so status/source/cmds are absent there).
+// carries no modules or cmds (so status/source are absent there).
 func TestConvertNeuVector_SeverityAndTimestampTags(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertNeuVectorToHDF(input, testVersion)
@@ -354,19 +354,16 @@ func TestConvertNeuVector_SeverityAndTimestampTags(t *testing.T) {
 	assert.Equal(t, int64(1699328203), req.Tags["published_timestamp"])
 	assert.Equal(t, int64(1699328203), req.Tags["last_modified_timestamp"])
 
-	// minimal.json has no report.modules or report.cmds → those tags are absent.
+	// minimal.json has no report.modules → those tags are absent.
 	_, hasStatus := req.Tags["status"]
 	assert.False(t, hasStatus, "no modules → no status tag")
 	_, hasSource := req.Tags["source"]
 	assert.False(t, hasSource, "no modules → no source tag")
-	_, hasCmds := req.Tags["cmds"]
-	assert.False(t, hasCmds, "no report.cmds → no cmds tag")
 }
 
 // Value-pins the module cross-reference: status from report.modules[].cves[].status
-// and source from report.modules[].source, matched by package_name, plus the
-// scan-wide report.cmds repeated on the control.
-func TestConvertNeuVector_StatusSourceCmdsTags(t *testing.T) {
+// and source from report.modules[].source, matched by package_name.
+func TestConvertNeuVector_StatusSourceTags(t *testing.T) {
 	input := loadFixture(t, "input/neuvector-mitre-heimdall2.json")
 	result, err := ConvertNeuVectorToHDF(input, testVersion)
 	require.NoError(t, err)
@@ -376,11 +373,42 @@ func TestConvertNeuVector_StatusSourceCmdsTags(t *testing.T) {
 	assert.Equal(t, "unpatched", req.Tags["status"])
 	assert.Equal(t, "rhel:8.10", req.Tags["source"])
 	assert.Equal(t, "Medium", req.Tags["severity"])
+}
 
-	cmds := hdfutil.SafeStringSlice(req.Tags["cmds"])
-	require.NotNil(t, cmds, "cmds tag should be present")
+// report.cmds is scan-scope image build history → it lives once on
+// baseline.extensions["neuvector"], never duplicated onto requirement tags.
+func TestConvertNeuVector_CmdsOnBaselineExtensions(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall2.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+	ns, ok := baseline.Extensions["neuvector"].(map[string]interface{})
+	require.True(t, ok, "baseline.extensions[neuvector] should be present")
+	cmds := hdfutil.SafeStringSlice(ns["cmds"])
+	require.NotNil(t, cmds, "cmds should be present")
 	assert.Len(t, cmds, 66)
 	assert.Equal(t, `CMD ["/usr/local/bin/cmd.sh"]`, cmds[0])
+
+	// cmds must NOT be duplicated onto any requirement's tags.
+	for _, req := range baseline.Requirements {
+		_, has := req.Tags["cmds"]
+		assert.False(t, has, "cmds must not appear on requirement tags")
+	}
+}
+
+// Absent branch: a report with no report.cmds emits no baseline.extensions.
+func TestConvertNeuVector_CmdsAbsent(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+	assert.Nil(t, baseline.Extensions, "no report.cmds → no baseline.extensions")
+	for _, req := range baseline.Requirements {
+		_, has := req.Tags["cmds"]
+		assert.False(t, has, "cmds must not appear on requirement tags")
+	}
 }
 
 // Absent branch: a vuln with no severity/timestamps and a report with no modules

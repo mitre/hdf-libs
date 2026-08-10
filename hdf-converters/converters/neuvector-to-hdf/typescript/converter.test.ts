@@ -405,7 +405,7 @@ describe('neuvector to HDF converter', async () => {
     });
   });
 
-  describe('severity / status / source / timestamp / cmds tags (h2 parity)', async () => {
+  describe('severity / status / source / timestamp tags (h2 parity)', async () => {
     it('maps severity and the epoch published/last_modified timestamps to tags', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
@@ -417,10 +417,9 @@ describe('neuvector to HDF converter', async () => {
       // minimal.json has no report.modules or report.cmds.
       expect(req!.tags?.['status']).toBeUndefined();
       expect(req!.tags?.['source']).toBeUndefined();
-      expect(req!.tags?.['cmds']).toBeUndefined();
     });
 
-    it('recovers status and source by cross-referencing report.modules, and repeats report.cmds', async () => {
+    it('recovers status and source by cross-referencing report.modules', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall2.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2019-12904/libgcrypt/1.8.5-7.el8_6'
@@ -429,9 +428,6 @@ describe('neuvector to HDF converter', async () => {
       expect(req!.tags?.['status']).toBe('unpatched');
       expect(req!.tags?.['source']).toBe('rhel:8.10');
       expect(req!.tags?.['severity']).toBe('Medium');
-      const cmds = req!.tags?.['cmds'] as string[];
-      expect(cmds).toHaveLength(66);
-      expect(cmds[0]).toBe('CMD ["/usr/local/bin/cmd.sh"]');
     });
 
     it('omits the new tags when the source carries none of them', async () => {
@@ -445,8 +441,32 @@ describe('neuvector to HDF converter', async () => {
       });
       const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
       const tags = hdf.baselines[0]!.requirements[0]!.tags ?? {};
-      for (const k of ['severity', 'status', 'source', 'published_timestamp', 'last_modified_timestamp', 'cmds']) {
+      for (const k of ['severity', 'status', 'source', 'published_timestamp', 'last_modified_timestamp']) {
         expect(tags[k]).toBeUndefined();
+      }
+    });
+  });
+
+  describe('report.cmds → baseline.extensions.neuvector (scan-scope metadata)', async () => {
+    it('emits report.cmds once on baseline.extensions and never on requirement tags', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall2.json'))) as HDFResults;
+      const baseline = hdf.baselines[0]!;
+      const ext = baseline.extensions?.['neuvector'] as { cmds?: string[] } | undefined;
+      expect(ext).toBeDefined();
+      expect(ext!.cmds).toHaveLength(66);
+      expect(ext!.cmds![0]).toBe('CMD ["/usr/local/bin/cmd.sh"]');
+      // cmds must NOT be duplicated onto any requirement's tags.
+      for (const req of baseline.requirements) {
+        expect(req.tags?.['cmds']).toBeUndefined();
+      }
+    });
+
+    it('omits baseline.extensions entirely when report.cmds is absent', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const baseline = hdf.baselines[0]!;
+      expect(baseline.extensions).toBeUndefined();
+      for (const req of baseline.requirements) {
+        expect(req.tags?.['cmds']).toBeUndefined();
       }
     });
   });

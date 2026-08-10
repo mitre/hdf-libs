@@ -306,10 +306,9 @@ func buildRefs(vuln NeuVectorVuln) []hdf.Reference {
 }
 
 // buildRequirement converts a NeuVector vulnerability to an EvaluatedRequirement.
-// ml recovers status/source from report.modules; cmds is the scan-wide
-// report.cmds (already converted to []interface{}), repeated on every control
-// exactly as heimdall2's neuvector mapper does.
-func buildRequirement(vuln NeuVectorVuln, scanTime time.Time, ml moduleLookup, cmds []interface{}) hdf.EvaluatedRequirement {
+// ml recovers status/source from report.modules. The scan-wide report.cmds is
+// baseline-scope metadata and lives on baseline.extensions, not per requirement.
+func buildRequirement(vuln NeuVectorVuln, scanTime time.Time, ml moduleLookup) hdf.EvaluatedRequirement {
 	cweIDs := extractCWEs(vuln.Description)
 	cveIDs := extractCVEs(vuln)
 	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultRemediationNIST)
@@ -336,9 +335,6 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time, ml moduleLookup, c
 	}
 	if vuln.LastModifiedTimestamp != 0 {
 		extras["last_modified_timestamp"] = vuln.LastModifiedTimestamp
-	}
-	if len(cmds) > 0 {
-		extras["cmds"] = cmds
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -520,7 +516,6 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	now := time.Now().UTC()
 
 	ml := buildModuleLookup(scan.Report.Modules)
-	cmds := hdfutil.StringsToInterfaces(scan.Report.Cmds)
 
 	// Each vulnerability is unique by name/package_name/package_version,
 	// so no grouping is needed (unlike Snyk which groups by vuln ID).
@@ -535,7 +530,7 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			continue
 		}
 		seen[id] = true
-		requirements = append(requirements, buildRequirement(vuln, now, ml, cmds))
+		requirements = append(requirements, buildRequirement(vuln, now, ml))
 	}
 
 	target := targetName(scan.Report)
@@ -555,6 +550,14 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Requirements:    requirements,
 		ResultsChecksum: checksum,
 		Title:           &title,
+	}
+
+	// report.cmds is scan-wide image build history — baseline-scope metadata with
+	// no typed HDF home. Emit it once under the tool namespace, only when present.
+	if cmds := hdfutil.StringsToInterfaces(scan.Report.Cmds); len(cmds) > 0 {
+		baseline.Extensions = map[string]interface{}{
+			"neuvector": map[string]interface{}{"cmds": cmds},
+		}
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
