@@ -66,6 +66,7 @@ interface SonarQubeIssue {
     endOffset: number;
   };
   flows?: SonarQubeFlow[];
+  quickFixAvailable?: boolean;
   status: 'OPEN' | 'CONFIRMED' | 'REOPENED' | 'RESOLVED' | 'CLOSED';
   message: string;
   effort?: string;
@@ -403,6 +404,20 @@ function convertRuleToRequirement(
       ...(firstIssue.effort ? { effort: firstIssue.effort } : {}),
       ...(firstIssue.debt ? { debt: firstIssue.debt } : {}),
       ...(firstIssue.author ? { author: firstIssue.author } : {}),
+      // Auxiliary per-issue metadata that has no typed HDF home, namespaced under
+      // the tool name per the convention (developer-guide.md, Auxiliary Tool
+      // Metadata). Each is emitted only when the source issue carries it. flows
+      // passes through as the raw parsed value so it round-trips byte-for-byte
+      // with the Go twin (which keeps it as raw JSON).
+      ...(firstIssue.hash ? { 'sonarqube/hash': firstIssue.hash } : {}),
+      ...(firstIssue.key ? { 'sonarqube/key': firstIssue.key } : {}),
+      ...(firstIssue.updateDate ? { 'sonarqube/update_date': firstIssue.updateDate } : {}),
+      ...(firstIssue.flows && firstIssue.flows.length > 0
+        ? { 'sonarqube/flows': firstIssue.flows }
+        : {}),
+      ...(firstIssue.quickFixAvailable !== undefined
+        ? { 'sonarqube/quick_fix_available': firstIssue.quickFixAvailable }
+        : {}),
       // Language is a property of the rule, not the issue.
       ...(rule?.lang ? { lang: rule.lang } : {}),
       ...(rule?.langName ? { langName: rule.langName } : {}),

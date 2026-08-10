@@ -48,6 +48,10 @@
             "owasp": [],
             "severity": "medium",
             "severitySource": "mqr",
+            "sonarqube/hash": "ad23d172eb328d262df04adb05c155ab",
+            "sonarqube/key": "e175c416-e49f-4f16-a57e-ab63f7856304",
+            "sonarqube/quick_fix_available": true,
+            "sonarqube/update_date": "2026-03-24T03:20:30+0000",
             "type": "code_smell"
           },
           "controlType": "management",
@@ -100,6 +104,10 @@
             "owasp": [],
             "severity": "low",
             "severitySource": "mqr",
+            "sonarqube/hash": "e580c21cdd981d70d43f38f6abc1bbd5",
+            "sonarqube/key": "9bac4aae-5084-4378-b80e-91cfc226a07b",
+            "sonarqube/quick_fix_available": true,
+            "sonarqube/update_date": "2026-03-24T03:20:30+0000",
             "type": "code_smell"
           },
           "controlType": "management",
@@ -152,6 +160,10 @@
             "owasp": [],
             "severity": "info",
             "severitySource": "mqr",
+            "sonarqube/hash": "f4e856a5606241410674ba53032d190d",
+            "sonarqube/key": "75ba1f2f-3e1b-463f-b33e-b84cb3b1523b",
+            "sonarqube/quick_fix_available": false,
+            "sonarqube/update_date": "2026-03-24T03:20:30+0000",
             "type": "code_smell"
           },
           "controlType": "management",
@@ -204,6 +216,10 @@
             "owasp": [],
             "severity": "medium",
             "severitySource": "mqr",
+            "sonarqube/hash": "d54cc4f05dbbd9f11a485b48bb3f772c",
+            "sonarqube/key": "3ee5cd76-fbde-401f-9d6b-f0d1344f545f",
+            "sonarqube/quick_fix_available": true,
+            "sonarqube/update_date": "2026-03-24T03:20:30+0000",
             "type": "code_smell"
           },
           "controlType": "management",
@@ -256,6 +272,10 @@
             "owasp": [],
             "severity": "high",
             "severitySource": "mqr",
+            "sonarqube/hash": "4fa436e830f0433a248778dafd40f373",
+            "sonarqube/key": "02e8e9bf-5d42-4729-a087-8b7e56e0e908",
+            "sonarqube/quick_fix_available": true,
+            "sonarqube/update_date": "2026-03-24T03:20:30+0000",
             "type": "code_smell"
           },
           "controlType": "management",
@@ -308,6 +328,57 @@
             "owasp": [],
             "severity": "high",
             "severitySource": "mqr",
+            "sonarqube/flows": [
+              {
+                "locations": [
+                  {
+                    "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+                    "textRange": {
+                      "startLine": 48,
+                      "endLine": 48,
+                      "startOffset": 22,
+                      "endOffset": 47
+                    },
+                    "msg": "Duplication",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+                    "textRange": {
+                      "startLine": 49,
+                      "endLine": 49,
+                      "startOffset": 22,
+                      "endOffset": 47
+                    },
+                    "msg": "Duplication",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "test-10k:src/main/java/com/example/generated/Module0001.java",
+                    "textRange": {
+                      "startLine": 50,
+                      "endLine": 50,
+                      "startOffset": 22,
+                      "endOffset": 47
+                    },
+                    "msg": "Duplication",
+                    "msgFormattings": []
+                  }
+                ]
+              }
+            ],
+            "sonarqube/hash": "0dca4630d3be43338e40c70956675adf",
+            "sonarqube/key": "5b8a4766-c499-4ebd-8986-d87b88a99c52",
+            "sonarqube/quick_fix_available": false,
+            "sonarqube/update_date": "2026-03-24T03:20:30+0000",
             "type": "code_smell"
           },
           "controlType": "management",
@@ -360,6 +431,10 @@
             "owasp": [],
             "severity": "low",
             "severitySource": "mqr",
+            "sonarqube/hash": "d054db804e7c778a5b8de6bd4f569e80",
+            "sonarqube/key": "1373b5d1-f21e-49f1-9806-58a643aa00de",
+            "sonarqube/quick_fix_available": true,
+            "sonarqube/update_date": "2026-03-24T03:20:30+0000",
             "type": "code_smell"
           },
           "controlType": "management",
