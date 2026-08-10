@@ -150,7 +150,8 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 				return toolError(therr), errorComplianceOutput(), nil
 			}
 			if cfg != nil {
-				failures := hdfengine.ValidateThresholds(cfg, counts, out.Compliance, hdfengine.MapControlIDs(results))
+				controlMap := hdfengine.MapControlIDsByStatus(results, effectiveStatus)
+				failures := hdfengine.ValidateThresholds(cfg, counts, out.Compliance, controlMap)
 				out.ThresholdVerdict = &thresholdVerdict{Pass: len(failures) == 0, Failures: failures}
 			}
 		}

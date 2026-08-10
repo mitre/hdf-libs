@@ -427,6 +427,28 @@ func TestHdfCompliance_ThresholdAmbiguous(t *testing.T) {
 	}
 }
 
+// TestHdfCompliance_PerControlThresholdUsesEffectiveStatus is the lj0g.11
+// regression guard: a per-control controls: list is validated against EFFECTIVE
+// status, matching the aggregate counts and the CLI threshold path. An impact-0
+// notReviewed control listed under no_impact must satisfy the check (effective
+// notApplicable → no_impact), not fail as skipped. Fails on pre-fix code, which
+// passed the raw MapControlIDs to ValidateThresholds while counting effectively.
+func TestHdfCompliance_PerControlThresholdUsesEffectiveStatus(t *testing.T) {
+	path := writeRoot(t, "iz.json", readToolsFixture(t, "impact-zero.json"))
+	_, out := callCompliance(t, complianceInput{
+		Source: handle.Source{Path: path},
+		Threshold: &thresholdInput{Inline: map[string]any{
+			"no_impact": map[string]any{"medium": map[string]any{"controls": []any{"V-NA-1"}}},
+		}},
+	})
+	if out.ThresholdVerdict == nil {
+		t.Fatal("expected a threshold verdict")
+	}
+	if !out.ThresholdVerdict.Pass {
+		t.Errorf("V-NA-1 (impact 0, medium, notReviewed) must satisfy no_impact.medium.controls under effective status; got failures %v", out.ThresholdVerdict.Failures)
+	}
+}
+
 func TestHdfCompliance_WrongDocType(t *testing.T) {
 	path := writeRoot(t, "system.json", readCLIFixture(t, "system.json"))
 	res, _ := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
