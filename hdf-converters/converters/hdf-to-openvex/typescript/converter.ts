@@ -10,7 +10,10 @@ import { sha256, formatTimestampSeconds } from '@mitre/hdf-utilities';
 import {
   MilestoneStatus,
   OverrideType,
+  type Evidence,
+  type Generator,
   type HDFAmendments,
+  type Milestone,
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
 import { validateInputSize, parseHdf, hdfTime } from '../../../shared/typescript/converterutil.js';
@@ -37,6 +40,7 @@ interface Document {
   role?: string;
   timestamp: string;
   version: number;
+  tooling?: string;
   statements: Statement[];
 }
 
@@ -47,6 +51,7 @@ interface Statement {
   justification?: string;
   impact_statement?: string;
   action_statement?: string;
+  status_notes?: string;
   timestamp?: string;
 }
 
@@ -57,10 +62,13 @@ export async function convertHdfToOpenVex(
   validateInputSize(input, 'hdf-to-openvex');
   const amendments = parseHdf<HDFAmendments>(input);
 
+  const author = amendments.appliedBy?.identifier || 'HDF Amendments Export';
+  const role = amendments.appliedBy?.description;
+
   const statements: Statement[] = [];
   let earliest: Date | undefined;
   for (const o of amendments.overrides ?? []) {
-    const s = overrideToStatement(o);
+    const s = overrideToStatement(o, author);
     if (!s) continue;
     statements.push(s);
     const t = hdfTime(o.appliedAt);
@@ -76,8 +84,7 @@ export async function convertHdfToOpenVex(
 
   statements.sort((a, b) => a.vulnerability.name.localeCompare(b.vulnerability.name));
 
-  const author = amendments.appliedBy?.identifier || 'HDF Amendments Export';
-  const role = amendments.appliedBy?.description;
+  const tooling = toolingFor(amendments.generator);
 
   const doc: Document = {
     '@context': OPENVEX_CONTEXT,
@@ -86,14 +93,22 @@ export async function convertHdfToOpenVex(
     role,
     timestamp: formatTimestampSeconds(earliest ?? new Date()),
     version: 1,
+    ...(tooling && { tooling }),
     statements,
   };
 
-  void converterVersion; // OpenVEX has no generator field; version is unused here
+  void converterVersion; // this converter's own version is unrelated to the source's generator
   return JSON.stringify(doc, null, 2);
 }
 
-function overrideToStatement(o: StandaloneOverride): Statement | undefined {
+// toolingFor renders the source amendments' generator (name + version) as the
+// OpenVEX document-level `tooling` string. Empty when no generator is present.
+function toolingFor(g: Generator | undefined): string {
+  if (!g?.name) return '';
+  return g.version ? `${g.name}/${g.version}` : g.name;
+}
+
+function overrideToStatement(o: StandaloneOverride, docAuthor: string): Statement | undefined {
   if (!CVE_ID_PATTERN.test(o.requirementId)) return undefined;
   let canonical = exportStatusFor(o, allMilestonesCompleted(o), false);
   if (!canonical) return undefined;
@@ -107,13 +122,21 @@ function overrideToStatement(o: StandaloneOverride): Statement | undefined {
 
   const notAffected = canonical === VexStatus.NotAffected;
   const justification = notAffected && o.justification ? String(o.justification) : '';
-  const impact = notAffected ? stripProductsLine(o.reason ?? '') : '';
+  const reason = stripProductsLine(o.reason ?? '');
+  const impact = notAffected ? reason : '';
   let action = '';
+  let reasonEmitted = notAffected && impact !== '';
   if (canonical === VexStatus.Fixed) {
     action = firstMilestoneAction(o) || 'Fix applied; consumer re-scan confirmed clean.';
   } else if (canonical === VexStatus.Affected) {
-    action = firstMilestoneAction(o) || stripProductsLine(o.reason ?? '');
+    action = firstMilestoneAction(o);
+    if (!action) {
+      action = reason;
+      reasonEmitted = reason !== '';
+    }
   }
+
+  const statusNotes = buildStatusNotes(o, reason, reasonEmitted, docAuthor);
 
   // Key order mirrors the Go Statement struct so both languages emit identical bytes.
   return {
@@ -126,8 +149,45 @@ function overrideToStatement(o: StandaloneOverride): Statement | undefined {
     ...(justification && { justification }),
     ...(impact && { impact_statement: impact }),
     ...(action && { action_statement: action }),
+    ...(statusNotes && { status_notes: statusNotes }),
     timestamp: formatTimestampSeconds(hdfTime(o.appliedAt) ?? GO_ZERO_TIME),
   };
+}
+
+// buildStatusNotes packs HDF override provenance OpenVEX has no dedicated field
+// for into the statement's free-text `status_notes`: the governing override
+// type, the reason when not already surfaced in impact_statement/action_statement,
+// a per-override author diverging from the document author, evidence references,
+// and milestone metadata (status + estimated completion).
+function buildStatusNotes(
+  o: StandaloneOverride,
+  reason: string,
+  reasonEmitted: boolean,
+  docAuthor: string,
+): string {
+  const notes: string[] = [`HDF override type: ${o.type}`];
+  if (!reasonEmitted && reason) notes.push(`Reason: ${reason}`);
+  const stmtAuthor = o.appliedBy?.identifier;
+  if (stmtAuthor && stmtAuthor !== docAuthor) notes.push(`Applied by: ${stmtAuthor}`);
+  for (const e of o.evidence ?? []) notes.push(formatEvidence(e));
+  for (const m of o.milestones ?? []) notes.push(formatMilestone(m));
+  return notes.join('\n');
+}
+
+function formatEvidence(e: Evidence): string {
+  const desc = e.description ?? '';
+  return desc
+    ? `Evidence (${e.type}): ${desc} (${e.data})`
+    : `Evidence (${e.type}): ${e.data}`;
+}
+
+function formatMilestone(m: Milestone): string {
+  const meta: string[] = [];
+  if (m.status) meta.push(`status: ${m.status}`);
+  const est = hdfTime(m.estimatedCompletion);
+  if (est) meta.push(`estimated completion: ${formatTimestampSeconds(est)}`);
+  const label = m.description ? `Milestone: ${m.description}` : 'Milestone';
+  return meta.length === 0 ? label : `${label} (${meta.join(', ')})`;
 }
 
 export function productsFor(o: StandaloneOverride): { '@id': string }[] {

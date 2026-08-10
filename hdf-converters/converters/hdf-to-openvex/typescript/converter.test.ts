@@ -60,6 +60,61 @@ describe('convertHdfToOpenVex — multi-status export', () => {
   });
 });
 
+describe('convertHdfToOpenVex — tooling from generator', () => {
+  it.each(['multi-status-amendments.json', 'spring-boot-log4j-amendments.json'])(
+    'surfaces the source generator into doc tooling for %s',
+    async (name) => {
+      const doc = JSON.parse(await convertHdfToOpenVex(loadInput(name), TEST_VERSION));
+      expect(doc.tooling).toBe('openvex-to-hdf/dev');
+    },
+  );
+});
+
+describe('convertHdfToOpenVex — status_notes provenance', () => {
+  it('packs override type, recovered reason, evidence, and milestone metadata', async () => {
+    const doc = JSON.parse(
+      await convertHdfToOpenVex(loadInput('multi-status-amendments.json'), TEST_VERSION),
+    );
+    const byCVE = new Map<string, { status_notes?: string }>(
+      doc.statements.map((s: { vulnerability: { name: string }; status_notes?: string }) => [
+        s.vulnerability.name,
+        { status_notes: s.status_notes },
+      ]),
+    );
+
+    expect(byCVE.get('CVE-2024-1000')?.status_notes).toBe(
+      'HDF override type: falsePositive\n' +
+        'Evidence (url): OpenVEX document (https://example.com/vex/multi-status-fixture)',
+    );
+    expect(byCVE.get('CVE-2024-2000')?.status_notes).toBe(
+      'HDF override type: poam\n' +
+        'Reason: Upgrade to 1.2.4 or later\n' +
+        'Evidence (url): OpenVEX document (https://example.com/vex/multi-status-fixture)\n' +
+        'Milestone: vendor reports fix; apply and re-scan to verify (status: pending, estimated completion: 2027-03-01T12:00:00Z)',
+    );
+  });
+
+  it('emits a per-statement author note only when it diverges from the doc author', async () => {
+    const diverging: HDFAmendments = {
+      appliedBy: { type: IdentityType.Simple, identifier: 'doc-owner' },
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2024-5555',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'override-owner' },
+          reason: 'not affected',
+          justification: Justification.ComponentNotPresent,
+        } as never,
+      ],
+    } as never;
+    const doc = JSON.parse(await convertHdfToOpenVex(JSON.stringify(diverging), TEST_VERSION));
+    expect(doc.statements[0].status_notes).toContain('Applied by: override-owner');
+  });
+});
+
 describe('convertHdfToOpenVex — round trip', () => {
   it('preserves CVE id, status, justification, and product PURL through OpenVEX -> HDF -> OpenVEX', async () => {
     const orig = readFileSync(

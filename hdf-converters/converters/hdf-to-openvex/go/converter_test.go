@@ -71,6 +71,62 @@ func TestConvertHDFToOpenVEX_MultiStatusExport(t *testing.T) {
 	assert.Contains(t, fixed.ActionStatement, "vendor reports fix")
 }
 
+func TestConvertHDFToOpenVEX_ToolingFromGenerator(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"multi-status-amendments.json", "spring-boot-log4j-amendments.json"} {
+		out, err := ConvertHDFToOpenVEX(loadInput(t, name), testVersion)
+		require.NoError(t, err)
+		doc := parseDoc(t, out)
+		assert.Equal(t, "openvex-to-hdf/dev", doc.Tooling, "generator name/version populates doc tooling for %s", name)
+	}
+}
+
+func TestConvertHDFToOpenVEX_StatusNotesSurfaceOverrideProvenance(t *testing.T) {
+	t.Parallel()
+	out, err := ConvertHDFToOpenVEX(loadInput(t, "multi-status-amendments.json"), testVersion)
+	require.NoError(t, err)
+	doc := parseDoc(t, out)
+	byCVE := map[string]Statement{}
+	for _, s := range doc.Statements {
+		byCVE[s.Vulnerability.Name] = s
+	}
+
+	na := byCVE["CVE-2024-1000"]
+	assert.Equal(t,
+		"HDF override type: falsePositive\n"+
+			"Evidence (url): OpenVEX document (https://example.com/vex/multi-status-fixture)",
+		na.StatusNotes, "not_affected status_notes pins override type + evidence")
+
+	poam := byCVE["CVE-2024-2000"]
+	assert.Equal(t,
+		"HDF override type: poam\n"+
+			"Reason: Upgrade to 1.2.4 or later\n"+
+			"Evidence (url): OpenVEX document (https://example.com/vex/multi-status-fixture)\n"+
+			"Milestone: vendor reports fix; apply and re-scan to verify (status: pending, estimated completion: 2027-03-01T12:00:00Z)",
+		poam.StatusNotes, "affected POA&M status_notes pins type, recovered reason, evidence, milestone metadata")
+}
+
+func TestBuildStatusNotes_EmitsDivergentAuthor(t *testing.T) {
+	t.Parallel()
+	o := &hdf.StandaloneOverride{
+		Type:      hdf.FalsePositive,
+		Reason:    "n/a",
+		AppliedBy: hdf.Identity{Type: hdf.Simple, Identifier: "override-owner"},
+	}
+	notes := buildStatusNotes(o, "n/a", true, "doc-owner")
+	assert.Contains(t, notes, "Applied by: override-owner")
+	// When author matches the document author, no per-statement author note.
+	notes = buildStatusNotes(o, "n/a", true, "override-owner")
+	assert.NotContains(t, notes, "Applied by:")
+}
+
+func TestToolingFor_OmitsWhenNoGenerator(t *testing.T) {
+	t.Parallel()
+	assert.Empty(t, toolingFor(nil))
+	assert.Equal(t, "gen", toolingFor(&hdf.Generator{Name: "gen"}))
+	assert.Equal(t, "gen/1.2.3", toolingFor(&hdf.Generator{Name: "gen", Version: "1.2.3"}))
+}
+
 func TestConvertHDFToOpenVEX_RoundTripPreservesCanonicalFields(t *testing.T) {
 	t.Parallel()
 	originalCSAF, err := os.ReadFile(filepath.Join("..", "..", "openvex-to-hdf",

@@ -39,6 +39,7 @@ type Document struct {
 	Role       string      `json:"role,omitempty"`
 	Timestamp  string      `json:"timestamp"`
 	Version    int         `json:"version"`
+	Tooling    string      `json:"tooling,omitempty"`
 	Statements []Statement `json:"statements"`
 }
 
@@ -50,6 +51,7 @@ type Statement struct {
 	Justification   string        `json:"justification,omitempty"`
 	ImpactStatement string        `json:"impact_statement,omitempty"`
 	ActionStatement string        `json:"action_statement,omitempty"`
+	StatusNotes     string        `json:"status_notes,omitempty"`
 	Timestamp       string        `json:"timestamp,omitempty"`
 }
 
@@ -86,9 +88,18 @@ func ConvertHDFToOpenVEX(input []byte, converterVersion string) ([]byte, error) 
 		}
 	}
 
+	author := "HDF Amendments Export"
+	role := ""
+	if amendments.AppliedBy != nil && amendments.AppliedBy.Identifier != "" {
+		author = amendments.AppliedBy.Identifier
+		if amendments.AppliedBy.Description != nil {
+			role = *amendments.AppliedBy.Description
+		}
+	}
+
 	var statements []Statement
 	for i := range amendments.Overrides {
-		stmts := overrideToStatements(&amendments.Overrides[i])
+		stmts := overrideToStatements(&amendments.Overrides[i], author)
 		statements = append(statements, stmts...)
 	}
 	if len(statements) == 0 {
@@ -99,15 +110,6 @@ func ConvertHDFToOpenVEX(input []byte, converterVersion string) ([]byte, error) 
 		return statements[i].Vulnerability.Name < statements[j].Vulnerability.Name
 	})
 
-	author := "HDF Amendments Export"
-	role := ""
-	if amendments.AppliedBy != nil && amendments.AppliedBy.Identifier != "" {
-		author = amendments.AppliedBy.Identifier
-		if amendments.AppliedBy.Description != nil {
-			role = *amendments.AppliedBy.Description
-		}
-	}
-
 	doc := Document{
 		Context:    openvexContext,
 		ID:         buildDocumentID(input, &amendments),
@@ -115,6 +117,7 @@ func ConvertHDFToOpenVEX(input []byte, converterVersion string) ([]byte, error) 
 		Role:       role,
 		Timestamp:  docTime.UTC().Format(time.RFC3339),
 		Version:    1,
+		Tooling:    toolingFor(amendments.Generator),
 		Statements: statements,
 	}
 
@@ -138,7 +141,7 @@ func marshalIndentPlain(v interface{}) ([]byte, error) {
 // overrideToStatements returns 0..1 OpenVEX statements for an override.
 // Non-CVE requirementIds drop. operationalRequirement (no status/impact)
 // drops. Other types map per the shared VEX helper.
-func overrideToStatements(o *hdf.StandaloneOverride) []Statement {
+func overrideToStatements(o *hdf.StandaloneOverride, docAuthor string) []Statement {
 	if !cveIDPattern.MatchString(o.RequirementID) {
 		return nil
 	}
@@ -163,12 +166,15 @@ func overrideToStatements(o *hdf.StandaloneOverride) []Statement {
 		Products:  productsFor(o),
 	}
 
+	reason := stripProductsLine(o.Reason)
+	reasonEmitted := false
 	switch canonical {
 	case vex.StatusNotAffected:
 		if o.Justification != nil {
 			stmt.Justification = string(*o.Justification)
 		}
-		stmt.ImpactStatement = stripProductsLine(o.Reason)
+		stmt.ImpactStatement = reason
+		reasonEmitted = reason != ""
 	case vex.StatusFixed:
 		stmt.ActionStatement = firstMilestoneAction(o)
 		if stmt.ActionStatement == "" {
@@ -181,11 +187,80 @@ func overrideToStatements(o *hdf.StandaloneOverride) []Statement {
 		// fold it into action_statement so it's not lost.
 		stmt.ActionStatement = firstMilestoneAction(o)
 		if stmt.ActionStatement == "" {
-			stmt.ActionStatement = stripProductsLine(o.Reason)
+			stmt.ActionStatement = reason
+			reasonEmitted = reason != ""
 		}
 	}
 
+	stmt.StatusNotes = buildStatusNotes(o, reason, reasonEmitted, docAuthor)
+
 	return []Statement{stmt}
+}
+
+// toolingFor renders the source amendments' generator (name + version) as the
+// OpenVEX document-level `tooling` string ("expresses how the VEX document ...
+// was generated"). Empty when the source carries no generator.
+func toolingFor(g *hdf.Generator) string {
+	if g == nil || g.Name == "" {
+		return ""
+	}
+	if g.Version != "" {
+		return g.Name + "/" + g.Version
+	}
+	return g.Name
+}
+
+// buildStatusNotes packs HDF override provenance that OpenVEX has no dedicated
+// field for into the statement's free-text `status_notes`: the governing
+// override type (7 HDF types collapse to 4 VEX statuses), the override reason
+// when it was not already surfaced in impact_statement/action_statement, a
+// per-override author that diverges from the document author, evidence
+// references, and milestone metadata (status + estimated completion) that
+// action_statement alone cannot carry.
+func buildStatusNotes(o *hdf.StandaloneOverride, reason string, reasonEmitted bool, docAuthor string) string {
+	notes := []string{"HDF override type: " + string(o.Type)}
+	if !reasonEmitted && reason != "" {
+		notes = append(notes, "Reason: "+reason)
+	}
+	if o.AppliedBy.Identifier != "" && o.AppliedBy.Identifier != docAuthor {
+		notes = append(notes, "Applied by: "+o.AppliedBy.Identifier)
+	}
+	for _, e := range o.Evidence {
+		notes = append(notes, formatEvidence(e))
+	}
+	for _, m := range o.Milestones {
+		notes = append(notes, formatMilestone(m))
+	}
+	return strings.Join(notes, "\n")
+}
+
+func formatEvidence(e hdf.Evidence) string {
+	desc := ""
+	if e.Description != nil {
+		desc = *e.Description
+	}
+	if desc != "" {
+		return fmt.Sprintf("Evidence (%s): %s (%s)", e.Type, desc, e.Data)
+	}
+	return fmt.Sprintf("Evidence (%s): %s", e.Type, e.Data)
+}
+
+func formatMilestone(m hdf.Milestone) string {
+	var meta []string
+	if m.Status != "" {
+		meta = append(meta, "status: "+string(m.Status))
+	}
+	if !m.EstimatedCompletion.IsZero() {
+		meta = append(meta, "estimated completion: "+m.EstimatedCompletion.UTC().Format(time.RFC3339))
+	}
+	label := "Milestone"
+	if m.Description != "" {
+		label = "Milestone: " + m.Description
+	}
+	if len(meta) == 0 {
+		return label
+	}
+	return label + " (" + strings.Join(meta, ", ") + ")"
 }
 
 func productsFor(o *hdf.StandaloneOverride) []Product {
