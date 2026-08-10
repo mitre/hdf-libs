@@ -426,6 +426,69 @@ func TestConvertZapToHDF_ConfidenceTag(t *testing.T) {
 	assert.Equal(t, "2", req.Tags["confidence"])
 }
 
+// sourceid is ZAP's alert source identifier; it is emitted as a tag (value-pinned).
+func TestConvertZapToHDF_SourceIDTag(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
+	assert.Equal(t, "3", req.Tags["sourceid"])
+
+	req2 := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
+	assert.Equal(t, "5", req2.Tags["sourceid"])
+}
+
+// An alert with no sourceid emits no sourceid tag (absent branch).
+func TestConvertZapToHDF_SourceIDTagAbsent(t *testing.T) {
+	input := []byte(`{"@version":"2.7.0","site":[{"@host":"h","alerts":[{"pluginid":"1","name":"n"}]}]}`)
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	_, ok := req.Tags["sourceid"]
+	assert.False(t, ok, "no sourceid on the alert -> no sourceid tag")
+}
+
+// --- Result start_time ---
+// ZAP carries no per-finding scan time, so each result's start_time is
+// backfilled from the report's @generated timestamp (value-pinned).
+
+func TestConvertZapToHDF_ResultStartTime(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "10021")
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, "2018-12-06T10:53:11Z", req.Results[0].StartTime.UTC().Format(time.RFC3339))
+}
+
+// Every result across every alert shares the single @generated time.
+func TestConvertZapToHDF_ResultStartTimeUniform(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		for _, res := range req.Results {
+			assert.Equal(t, "2018-12-06T10:53:11Z", res.StartTime.UTC().Format(time.RFC3339),
+				"requirement %q result start_time backfilled from @generated", req.ID)
+		}
+	}
+}
+
+// When the report has no parseable @generated, results fall back to the zero time.
+func TestConvertZapToHDF_ResultStartTimeFallbackZero(t *testing.T) {
+	input := []byte(`{"@version":"2.7.0","site":[{"@host":"h","alerts":[{"pluginid":"1","name":"n","instances":[{"uri":"/x"}]}]}]}`)
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1)
+	assert.True(t, req.Results[0].StartTime.IsZero(), "no @generated -> zero-time start_time")
+}
+
 // --- Descriptions ---
 
 func TestConvertZapToHDF_DefaultDescription(t *testing.T) {

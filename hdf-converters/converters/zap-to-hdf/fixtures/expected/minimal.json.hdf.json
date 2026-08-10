@@ -23,7 +23,7 @@
           "results": [
             {
               "codeDesc": "URI: https://example.com/login | Method: GET | Param: X-Content-Type-Options",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
           ],
@@ -43,6 +43,7 @@
               "RA-5"
             ],
             "riskdesc": "Low (Medium)",
+            "sourceid": "3",
             "wascid": "15"
           },
           "code": "GET https://example.com/login\nParam: X-Content-Type-Options",
@@ -68,13 +69,13 @@
           "results": [
             {
               "codeDesc": "URI: https://example.com/api/submit | Method: POST | Evidence: HTTP/1.1 500 Internal Server Error",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: https://example.com/api/login | Method: POST | Param: username | Evidence: HTTP/1.1 500 Internal Server Error",
               "message": "' OR 1=1 --",
-              "startTime": "0001-01-01T00:00:00Z",
+              "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
           ],
@@ -94,6 +95,7 @@
               "RA-5"
             ],
             "riskdesc": "Medium (Low)",
+            "sourceid": "5",
             "wascid": "13"
           },
           "code": "POST https://example.com/api/login\nParam: username\nAttack: ' OR 1=1 --",

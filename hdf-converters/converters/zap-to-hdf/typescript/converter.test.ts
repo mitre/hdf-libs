@@ -481,6 +481,51 @@ describe('ZAP Converter', () => {
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       expect(req?.tags?.confidence).toBe('2');
     });
+
+    // sourceid is ZAP's alert source identifier, emitted as a tag (value-pinned).
+    it('should include sourceid tag', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      expect(hdf.baselines[0].requirements.find(r => r.id === '10021')?.tags?.sourceid).toBe('3');
+      expect(hdf.baselines[0].requirements.find(r => r.id === '90022')?.tags?.sourceid).toBe('5');
+    });
+
+    it('omits the sourceid tag when the alert carries no sourceid', async () => {
+      const zap = {'@version': '2.7.0', site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n'}]}]};
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(JSON.stringify(zap)));
+      expect(hdf.baselines[0].requirements[0].tags?.sourceid).toBeUndefined();
+    });
+  });
+
+  // ZAP carries no per-finding scan time, so each result's startTime is
+  // backfilled from the report's @generated timestamp.
+  describe('result start_time', () => {
+    it('backfills result startTime from @generated', async () => {
+      const input = loadFixture('minimal.json');
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(input));
+
+      const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
+      expect(req?.results[0].startTime).toBe('2018-12-06T10:53:11Z');
+    });
+
+    it('stamps the same @generated time on every result', async () => {
+      const input = loadFixture('minimal.json');
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(input));
+
+      for (const req of hdf.baselines[0].requirements) {
+        for (const result of req.results) {
+          expect(result.startTime).toBe('2018-12-06T10:53:11Z');
+        }
+      }
+    });
+
+    it('falls back to the zero time when @generated is absent', async () => {
+      const zap = {'@version': '2.7.0', site: [{'@host': 'h', alerts: [{pluginid: '1', name: 'n', instances: [{uri: '/x'}]}]}]};
+      const hdf = parseJSON<HDFResults>(await convertZapToHdf(JSON.stringify(zap)));
+      expect(hdf.baselines[0].requirements[0].results[0].startTime).toBe('0001-01-01T00:00:00Z');
+    });
   });
 
   describe('results from instances', () => {
