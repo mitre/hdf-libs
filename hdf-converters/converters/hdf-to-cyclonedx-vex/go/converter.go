@@ -14,6 +14,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"math"
 	"regexp"
 	"sort"
 	"strings"
@@ -111,14 +112,50 @@ func buildCdxRating(cvss *hdf.Cvss) *Rating {
 	return rating
 }
 
+// buildImpactRating maps a bare riskAdjustment impact override (0.0–1.0) to a
+// CycloneDX rating when no structured CVSS block is present. The adjusted impact
+// scales to a 0–10 score (`other` method, no vector) with a banded severity.
+func buildImpactRating(o *hdf.StandaloneOverride) *Rating {
+	if o.Cvss != nil || o.Impact == nil {
+		return nil
+	}
+	score := math.Round(o.Impact.Value*100) / 10
+	return &Rating{Score: &score, Severity: impactSeverityBand(o.Impact.Value), Method: "other"}
+}
+
+// impactSeverityBand maps an HDF impact score (0.0–1.0) to a CVSS-aligned
+// severity band (score×10 against the standard CVSS v3 thresholds).
+func impactSeverityBand(v float64) string {
+	switch {
+	case v >= 0.9:
+		return "critical"
+	case v >= 0.7:
+		return "high"
+	case v >= 0.4:
+		return "medium"
+	case v > 0:
+		return "low"
+	default:
+		return "none"
+	}
+}
+
 type Vulnerability struct {
 	ID             string        `json:"id"`
 	Source         *Source       `json:"source,omitempty"`
 	References     []Reference   `json:"references,omitempty"`
 	Ratings        []Rating      `json:"ratings,omitempty"`
 	Recommendation string        `json:"recommendation,omitempty"`
+	Advisories     []Advisory    `json:"advisories,omitempty"`
 	Analysis       Analysis      `json:"analysis"`
 	Affects        []AffectedRef `json:"affects"`
+}
+
+// Advisory is a CycloneDX vulnerability advisory (a published notification of
+// the threat). url is required; title is the advisory's human-readable name.
+type Advisory struct {
+	Title string `json:"title,omitempty"`
+	URL   string `json:"url"`
 }
 
 type Source struct {
@@ -162,6 +199,8 @@ func ConvertHDFToCycloneDXVEX(input []byte, converterVersion string) ([]byte, er
 
 	componentRegistry := map[string]Component{}
 	var vulnerabilities []Vulnerability
+	var overrideIdentities []hdf.Identity
+	seenIdentity := map[string]bool{}
 	for i := range amendments.Overrides {
 		o := &amendments.Overrides[i]
 		if !cveIDPattern.MatchString(o.RequirementID) {
@@ -172,6 +211,13 @@ func ConvertHDFToCycloneDXVEX(input []byte, converterVersion string) ([]byte, er
 			continue
 		}
 		vulnerabilities = append(vulnerabilities, v)
+		if o.AppliedBy.Identifier != "" {
+			key := string(o.AppliedBy.Type) + "\x00" + o.AppliedBy.Identifier
+			if !seenIdentity[key] {
+				seenIdentity[key] = true
+				overrideIdentities = append(overrideIdentities, o.AppliedBy)
+			}
+		}
 	}
 	if len(vulnerabilities) == 0 {
 		return nil, fmt.Errorf("hdf-to-cyclonedx-vex: no overrides with CVE-shaped requirementIds; nothing to emit")
@@ -189,7 +235,7 @@ func ConvertHDFToCycloneDXVEX(input []byte, converterVersion string) ([]byte, er
 		SpecVersion:     "1.4",
 		SerialNumber:    buildSerialNumber(input, &amendments),
 		Version:         1,
-		Metadata:        buildMetadata(&amendments, docTime, converterVersion),
+		Metadata:        buildMetadata(&amendments, docTime, converterVersion, overrideIdentities),
 		Components:      components,
 		Vulnerabilities: vulnerabilities,
 	}
@@ -272,9 +318,28 @@ func overrideToVulnerability(o *hdf.StandaloneOverride, componentRegistry map[st
 		Affects:  affectsForProducts(pids, pkgByID),
 	}
 
-	// Emit consumer-supplied CVSS enrichment as a CycloneDX rating.
+	// Emit consumer-supplied CVSS enrichment as a CycloneDX rating. When there
+	// is no CVSS block, a bare riskAdjustment impact override still carries an
+	// adjusted score/severity worth surfacing as an `other`-method rating.
 	if rating := buildCdxRating(o.Cvss); rating != nil {
 		v.Ratings = append(v.Ratings, *rating)
+	} else if rating := buildImpactRating(o); rating != nil {
+		v.Ratings = append(v.Ratings, *rating)
+	}
+
+	// externalReferences (advisory/CTI artifacts behind the override) map to
+	// CycloneDX advisories — the native home for advisory URLs. url is required,
+	// so only href-bearing references qualify; the description becomes the title.
+	for i := range o.ExternalReferences {
+		ref := o.ExternalReferences[i]
+		if ref.Href == nil || *ref.Href == "" {
+			continue
+		}
+		adv := Advisory{URL: *ref.Href}
+		if ref.Description != nil && *ref.Description != "" {
+			adv.Title = *ref.Description
+		}
+		v.Advisories = append(v.Advisories, adv)
 	}
 
 	// A fixedInVersion we could not express as a vers range (no ecosystem/purl
@@ -464,7 +529,7 @@ func earliestAppliedAt(a *hdf.HDFAmendments) time.Time {
 	return t
 }
 
-func buildMetadata(a *hdf.HDFAmendments, docTime time.Time, converterVersion string) Metadata {
+func buildMetadata(a *hdf.HDFAmendments, docTime time.Time, converterVersion string, overrideIdentities []hdf.Identity) Metadata {
 	m := Metadata{
 		Timestamp: docTime.Format(time.RFC3339),
 		Tools: []Tool{{
@@ -473,15 +538,23 @@ func buildMetadata(a *hdf.HDFAmendments, docTime time.Time, converterVersion str
 			Version: converterVersion,
 		}},
 	}
+	// Prefer the document-level identity; when it is absent, provenance lives on
+	// each override's appliedBy — surface the distinct authors so it is not lost.
 	if a.AppliedBy != nil && a.AppliedBy.Identifier != "" {
-		author := Author{Name: a.AppliedBy.Identifier}
-		if a.AppliedBy.Type == hdf.Email {
-			author.Email = a.AppliedBy.Identifier
-			author.Name = ""
+		m.Authors = append(m.Authors, authorFromIdentity(*a.AppliedBy))
+	} else {
+		for _, id := range overrideIdentities {
+			m.Authors = append(m.Authors, authorFromIdentity(id))
 		}
-		m.Authors = append(m.Authors, author)
 	}
 	return m
+}
+
+func authorFromIdentity(id hdf.Identity) Author {
+	if id.Type == hdf.Email {
+		return Author{Email: id.Identifier}
+	}
+	return Author{Name: id.Identifier}
 }
 
 func buildSerialNumber(input []byte, a *hdf.HDFAmendments) string {
