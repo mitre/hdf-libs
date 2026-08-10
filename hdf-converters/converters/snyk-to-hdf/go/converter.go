@@ -1,6 +1,7 @@
 package snyk
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -26,38 +27,110 @@ type SnykReport struct {
 	Path            string     `json:"path"`
 }
 
-// SnykVuln represents a single vulnerability entry from Snyk output.
+// SnykVuln represents a single vulnerability entry from Snyk output. Structured
+// slices of it map into dedicated HDF fields (impact, cvss, cwe, refs, tags,
+// affectedPackages, descriptions); every field the converter parses is also
+// re-serialized verbatim into requirement.code as the raw-finding passthrough,
+// so fields with no structured HDF home (exploit, language, semver, functions,
+// disclosure/publication times, …) are not lost. The struct field ORDER is the
+// requirement.code field order and must stay byte-identical to the TS
+// projection — do not reorder without updating typescript/converter.ts.
 type SnykVuln struct {
-	ID          string          `json:"id"`
-	Title       string          `json:"title"`
-	Description string          `json:"description"`
-	Severity    string          `json:"severity"`
-	CvssScore   float64         `json:"cvssScore"`
-	CVSSv3      string          `json:"CVSSv3"`
-	Identifiers SnykIdentifiers `json:"identifiers"`
-	Language    string          `json:"language"`
-	PackageName string          `json:"packageName"`
-	ModuleName  string          `json:"moduleName"`
-	Version     string          `json:"version"`
-	From        []string        `json:"from"`
-	UpgradePath []interface{}   `json:"upgradePath"`
-	FixedIn     []string        `json:"fixedIn"`
-	Exploit     string          `json:"exploit"`
-	References  []SnykReference `json:"references"`
+	ID                   string          `json:"id,omitempty"`
+	Title                string          `json:"title,omitempty"`
+	Description          string          `json:"description,omitempty"`
+	Severity             string          `json:"severity,omitempty"`
+	SeverityWithCritical string          `json:"severityWithCritical,omitempty"`
+	Language             string          `json:"language,omitempty"`
+	PackageName          string          `json:"packageName,omitempty"`
+	ModuleName           string          `json:"moduleName,omitempty"`
+	Name                 string          `json:"name,omitempty"`
+	Version              string          `json:"version,omitempty"`
+	PackageManager       string          `json:"packageManager,omitempty"`
+	CvssScore            float64         `json:"cvssScore,omitempty"`
+	CVSSv3               string          `json:"CVSSv3,omitempty"`
+	Exploit              string          `json:"exploit,omitempty"`
+	Malicious            bool            `json:"malicious,omitempty"`
+	Proprietary          bool            `json:"proprietary,omitempty"`
+	SocialTrendAlert     bool            `json:"socialTrendAlert,omitempty"`
+	IsUpgradable         bool            `json:"isUpgradable,omitempty"`
+	IsPatchable          bool            `json:"isPatchable,omitempty"`
+	Semver               *SnykSemver     `json:"semver,omitempty"`
+	Functions            []SnykFunction  `json:"functions,omitempty"`
+	FunctionsNew         []SnykFunction  `json:"functions_new,omitempty"`
+	FixedIn              []string        `json:"fixedIn,omitempty"`
+	Patches              []SnykPatch     `json:"patches,omitempty"`
+	DisclosureTime       string          `json:"disclosureTime,omitempty"`
+	PublicationTime      string          `json:"publicationTime,omitempty"`
+	CreationTime         string          `json:"creationTime,omitempty"`
+	ModificationTime     string          `json:"modificationTime,omitempty"`
+	Credit               []string        `json:"credit,omitempty"`
+	AlternativeIds       []string        `json:"alternativeIds,omitempty"`
+	Identifiers          SnykIdentifiers `json:"identifiers"`
+	References           []SnykReference `json:"references,omitempty"`
+	From                 []string        `json:"from,omitempty"`
+	UpgradePath          []interface{}   `json:"upgradePath,omitempty"`
 }
 
 // SnykReference is an external link Snyk attaches to a vulnerability. Only the
-// url carries into HDF (Reference.url); title is not a schema field.
+// url carries into HDF (Reference.url) as structured data; both title and url
+// are preserved verbatim in the requirement.code passthrough.
 type SnykReference struct {
-	Title string `json:"title"`
-	URL   string `json:"url"`
+	Title string `json:"title,omitempty"`
+	URL   string `json:"url,omitempty"`
 }
 
 // SnykIdentifiers holds the CVE, CWE, and GHSA identifiers for a vulnerability.
 type SnykIdentifiers struct {
-	CVE  []string `json:"CVE"`
-	CWE  []string `json:"CWE"`
-	GHSA []string `json:"GHSA"`
+	CVE  []string `json:"CVE,omitempty"`
+	CWE  []string `json:"CWE,omitempty"`
+	GHSA []string `json:"GHSA,omitempty"`
+}
+
+// SnykSemver captures Snyk's affected-version-range object. Only `vulnerable`
+// is modeled (the only shape present across our corpus); other keys are dropped
+// from the passthrough rather than risking a Go/TS serialization divergence.
+type SnykSemver struct {
+	Vulnerable []string `json:"vulnerable,omitempty"`
+}
+
+// SnykFunctionID names the affected function within a source file.
+type SnykFunctionID struct {
+	ClassName    *string `json:"className,omitempty"`
+	FilePath     string  `json:"filePath,omitempty"`
+	FunctionName string  `json:"functionName,omitempty"`
+}
+
+// SnykFunction is one affected-function entry (backs both `functions` and
+// `functions_new`).
+type SnykFunction struct {
+	FunctionID *SnykFunctionID `json:"functionId,omitempty"`
+	Version    []string        `json:"version,omitempty"`
+}
+
+// SnykPatch is a Snyk-published patch descriptor for a vulnerability.
+type SnykPatch struct {
+	Comments         []string `json:"comments,omitempty"`
+	ID               string   `json:"id,omitempty"`
+	ModificationTime string   `json:"modificationTime,omitempty"`
+	URLs             []string `json:"urls,omitempty"`
+	Version          string   `json:"version,omitempty"`
+}
+
+// buildVulnCode re-serializes the parsed vulnerability into indented JSON for
+// requirement.code (the raw-finding passthrough, Heimdall's CODE tab). It is
+// byte-identical to the TS projection: json.Encoder with HTML escaping disabled
+// and a two-space indent matches JSON.stringify(vuln, null, 2). The encoder
+// appends a trailing newline that JSON.stringify does not, so it is trimmed.
+func buildVulnCode(v SnykVuln) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(v); err != nil {
+		return ""
+	}
+	return strings.TrimRight(buf.String(), "\n")
 }
 
 // getImpact maps Snyk severity strings to HDF impact values.
@@ -210,6 +283,10 @@ func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageMan
 		Descriptions:       descriptions,
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+
+	if code := buildVulnCode(rep); code != "" {
+		req.Code = &code
 	}
 
 	if cvss := buildSnykCvss(rep); len(cvss) > 0 {

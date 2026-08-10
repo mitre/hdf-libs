@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -354,6 +355,62 @@ func TestBuildSnykRefs_Branches(t *testing.T) {
 	assert.Equal(t, "https://example.com/a", *refs[0].URL)
 	require.NotNil(t, refs[1].URL)
 	assert.Equal(t, "https://example.com/c", *refs[1].URL)
+}
+
+// ---- requirement.code raw-finding passthrough ----
+
+// TestConvertSnyk_Code pins the fields that have no other structured HDF home
+// (exploit, language, semver, functions, disclosure/publication times) into the
+// requirement.code raw passthrough, and asserts the serialization contract that
+// keeps it byte-identical to the TS projection: two-space indent, no trailing
+// newline, raw (unescaped) `&`/`<`/`>`, and the fixed leading field order.
+func TestConvertSnyk_Code(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "npm:adm-zip:20180415")
+	require.NotNil(t, req.Code, "requirement.code must carry the raw-finding passthrough")
+	code := *req.Code
+
+	// Serialization contract (byte-parity with TS JSON.stringify(obj, null, 2)).
+	assert.True(t, strings.HasPrefix(code, "{\n  \"id\": "), "code must be two-space-indented JSON")
+	assert.False(t, strings.HasSuffix(code, "\n"), "code must not have a trailing newline")
+
+	// The parsed object carries the otherwise-lost fields verbatim.
+	var got map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(code), &got))
+	assert.Equal(t, "High", got["exploit"])
+	assert.Equal(t, "js", got["language"])
+	assert.Equal(t, "critical", got["severityWithCritical"])
+	assert.Equal(t, "2018-04-14T21:00:00Z", got["disclosureTime"])
+	assert.Equal(t, "2018-05-31T07:09:16Z", got["publicationTime"])
+
+	semver, ok := got["semver"].(map[string]interface{})
+	require.True(t, ok, "semver object preserved")
+	assert.Equal(t, []interface{}{"<0.4.11"}, semver["vulnerable"])
+
+	functions, ok := got["functions"].([]interface{})
+	require.True(t, ok, "functions preserved")
+	require.Len(t, functions, 1)
+	fn := functions[0].(map[string]interface{})
+	fnID := fn["functionId"].(map[string]interface{})
+	// className was null in source → dropped by both Go omitempty and the TS
+	// truthy check (they must agree for byte-parity).
+	_, hasClassName := fnID["className"]
+	assert.False(t, hasClassName, "null className is dropped")
+	assert.Equal(t, "adm-zip.js", fnID["filePath"])
+	assert.Equal(t, "module.exports.getEntry", fnID["functionName"])
+	assert.Equal(t, []interface{}{">0.1.1 <0.4.11"}, fn["version"])
+}
+
+// TestBuildVulnCode_OmitsEmpty confirms the omitempty/truthy omission rules that
+// keep Go and TS byte-identical: empty string, 0, false, and empty slices are
+// all dropped; a present-but-empty identifiers object is still emitted.
+func TestBuildVulnCode_OmitsEmpty(t *testing.T) {
+	code := buildVulnCode(SnykVuln{ID: "X", CvssScore: 0, Malicious: false})
+	assert.Equal(t, "{\n  \"id\": \"X\",\n  \"identifiers\": {}\n}", code)
 }
 
 // ---- upgradePath remediation description ----
