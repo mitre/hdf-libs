@@ -20,6 +20,8 @@ func newAmendCreateCmd() *cobra.Command {
 	var (
 		outputPath string
 		fromPath   string
+		fromVex    string
+		expires    string
 	)
 
 	cmd := &cobra.Command{
@@ -55,6 +57,10 @@ Examples:
 			if len(args) > 0 {
 				resultsPath = args[0]
 			}
+			// Deterministic VEX import: no interactive/spec path, just the mapping.
+			if fromVex != "" {
+				return runAmendFromVex(fromVex, expires, outputPath)
+			}
 			// Headless when --from is given, or when stdin is not a terminal.
 			if fromPath != "" {
 				return runAmendCreateHeadless(fromPath, outputPath)
@@ -68,6 +74,8 @@ Examples:
 
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
 	cmd.Flags().StringVar(&fromPath, "from", "", "Create headlessly from a spec file (\"-\" for stdin)")
+	cmd.Flags().StringVar(&fromVex, "from-vex", "", "Create deterministically from an OpenVEX file (status→override mapping, stamped appliedBy.type=system)")
+	cmd.Flags().StringVar(&expires, "expires", "", "Expiry for every emitted override (required with --from-vex): RFC3339, YYYY-MM-DD, or a duration like 30d/6m/1y")
 
 	return cmd
 }
