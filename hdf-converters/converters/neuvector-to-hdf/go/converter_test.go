@@ -338,6 +338,96 @@ func TestExtractCVEs_Dedup(t *testing.T) {
 	assert.Nil(t, extractCVEs(NeuVectorVuln{Cves: nil}), "no cves -> no tag")
 }
 
+// ---- severity / status / source / timestamp / cmds tags (h2 parity) ----
+
+// Value-pins vulnerability.severity -> tags["severity"] and the epoch
+// published/last_modified timestamps -> their tags, read from minimal.json which
+// carries no modules or cmds (so status/source/cmds are absent there).
+func TestConvertNeuVector_SeverityAndTimestampTags(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	assert.Equal(t, "Critical", req.Tags["severity"])
+	assert.Equal(t, int64(1699328203), req.Tags["published_timestamp"])
+	assert.Equal(t, int64(1699328203), req.Tags["last_modified_timestamp"])
+
+	// minimal.json has no report.modules or report.cmds → those tags are absent.
+	_, hasStatus := req.Tags["status"]
+	assert.False(t, hasStatus, "no modules → no status tag")
+	_, hasSource := req.Tags["source"]
+	assert.False(t, hasSource, "no modules → no source tag")
+	_, hasCmds := req.Tags["cmds"]
+	assert.False(t, hasCmds, "no report.cmds → no cmds tag")
+}
+
+// Value-pins the module cross-reference: status from report.modules[].cves[].status
+// and source from report.modules[].source, matched by package_name, plus the
+// scan-wide report.cmds repeated on the control.
+func TestConvertNeuVector_StatusSourceCmdsTags(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall2.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "CVE-2019-12904/libgcrypt/1.8.5-7.el8_6")
+	assert.Equal(t, "unpatched", req.Tags["status"])
+	assert.Equal(t, "rhel:8.10", req.Tags["source"])
+	assert.Equal(t, "Medium", req.Tags["severity"])
+
+	cmds := hdfutil.SafeStringSlice(req.Tags["cmds"])
+	require.NotNil(t, cmds, "cmds tag should be present")
+	assert.Len(t, cmds, 66)
+	assert.Equal(t, `CMD ["/usr/local/bin/cmd.sh"]`, cmds[0])
+}
+
+// Absent branch: a vuln with no severity/timestamps and a report with no modules
+// contributes none of the new tags.
+func TestConvertNeuVector_NewTagsAbsent(t *testing.T) {
+	input := []byte(`{
+		"report": {
+			"registry": "reg",
+			"repository": "repo",
+			"tag": "latest",
+			"vulnerabilities": [
+				{"name": "CVE-2020-0001", "package_name": "pkg", "package_version": "1.0"}
+			]
+		}
+	}`)
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-0001/pkg/1.0")
+	for _, k := range []string{"severity", "status", "source", "published_timestamp", "last_modified_timestamp", "cmds"} {
+		_, has := req.Tags[k]
+		assert.Falsef(t, has, "absent source field must not emit tag %q", k)
+	}
+}
+
+// buildModuleLookup unit branches: source first-wins, status matched by
+// (module name, cve name), empty values skipped, and misses returning "".
+func TestBuildModuleLookup(t *testing.T) {
+	ml := buildModuleLookup([]NeuVectorScanModule{
+		{Name: "openssl", Source: "rhel:8.10", Cves: []NeuVectorModuleCVE{
+			{Name: "CVE-2023-1", Status: "unpatched"},
+			{Name: "CVE-2023-2", Status: ""},
+		}},
+		{Name: "openssl", Source: "rhel:9", Cves: []NeuVectorModuleCVE{
+			{Name: "CVE-2023-1", Status: "fix exists"},
+		}},
+		{Name: "empty", Source: ""},
+	})
+
+	assert.Equal(t, "rhel:8.10", ml.source(NeuVectorVuln{PackageName: "openssl"}), "first non-empty source wins")
+	assert.Equal(t, "unpatched", ml.status(NeuVectorVuln{PackageName: "openssl", Name: "CVE-2023-1"}), "first status wins")
+	assert.Empty(t, ml.status(NeuVectorVuln{PackageName: "openssl", Name: "CVE-2023-2"}), "empty status not indexed")
+	assert.Empty(t, ml.source(NeuVectorVuln{PackageName: "empty"}), "empty source not indexed")
+	assert.Empty(t, ml.source(NeuVectorVuln{PackageName: "missing"}), "no module → empty source")
+	assert.Empty(t, ml.status(NeuVectorVuln{PackageName: "missing", Name: "CVE-X"}), "no module → empty status")
+}
+
 // ---- feed_rating tag ----
 
 // Value-pins vulnerability.feed_rating -> tags["feed_rating"], read as a string.

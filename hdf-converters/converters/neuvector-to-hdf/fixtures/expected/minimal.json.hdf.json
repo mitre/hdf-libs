@@ -45,10 +45,13 @@
               "CVE-2021-36159"
             ],
             "feed_rating": "Critical",
+            "last_modified_timestamp": 1699328203,
             "nist": [
               "SI-2",
               "RA-5"
-            ]
+            ],
+            "published_timestamp": 1699328203,
+            "severity": "Critical"
           },
           "code": "{\n  \"name\": \"CVE-2021-36159\",\n  \"score\": 6.4,\n  \"severity\": \"Critical\",\n  \"vectors\": \"AV:N/AC:L/Au:N/C:P/I:N/A:P\",\n  \"description\": \"libfetch before 2021-07-26, as used in apk-tools, xbps, and other products, mishandles numeric strings for the FTP and HTTP protocols. The FTP passive mode implementation allows an out-of-bounds read because strtol is used to parse the relevant numbers into address bytes. It does not check if the line ends prematurely. If it does, the for-loop condition checks for the '\\\\0' terminator one byte too late.\",\n  \"file_name\": \"\",\n  \"package_name\": \"apk-tools\",\n  \"package_version\": \"2.10.5-r1\",\n  \"fixed_version\": \"2.10.7-r0\",\n  \"link\": \"https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-36159\",\n  \"score_v3\": 9.1,\n  \"vectors_v3\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H\",\n  \"published_timestamp\": 1699328203,\n  \"last_modified_timestamp\": 1699328203,\n  \"cves\": [\n    \"CVE-2021-36159\"\n  ],\n  \"feed_rating\": \"Critical\"\n}",
           "refs": [
@@ -102,10 +105,13 @@
               "CVE-2022-25235"
             ],
             "feed_rating": "Critical",
+            "last_modified_timestamp": 1699328684,
             "nist": [
               "SI-2",
               "RA-5"
-            ]
+            ],
+            "published_timestamp": 1699328684,
+            "severity": "Critical"
           },
           "code": "{\n  \"name\": \"CVE-2022-25235\",\n  \"score\": 7.5,\n  \"severity\": \"Critical\",\n  \"vectors\": \"AV:N/AC:L/Au:N/C:P/I:P/A:P\",\n  \"description\": \"xmltok_impl.c in Expat (aka libexpat) before 2.4.5 lacks certain validation of encoding, such as checks for whether a UTF-8 character is valid in a certain context.\",\n  \"file_name\": \"\",\n  \"package_name\": \"expat\",\n  \"package_version\": \"2.2.9-r1\",\n  \"fixed_version\": \"2.2.10-r2\",\n  \"link\": \"https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-25235\",\n  \"score_v3\": 9.8,\n  \"vectors_v3\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\",\n  \"published_timestamp\": 1699328684,\n  \"last_modified_timestamp\": 1699328684,\n  \"cves\": [\n    \"CVE-2022-25235\"\n  ],\n  \"feed_rating\": \"Critical\"\n}",
           "refs": [
@@ -159,10 +165,13 @@
               "CVE-2021-30139"
             ],
             "feed_rating": "High",
+            "last_modified_timestamp": 1619115707,
             "nist": [
               "SI-2",
               "RA-5"
-            ]
+            ],
+            "published_timestamp": 1619115707,
+            "severity": "High"
           },
           "code": "{\n  \"name\": \"CVE-2021-30139\",\n  \"score\": 5,\n  \"severity\": \"High\",\n  \"vectors\": \"AV:N/AC:L/Au:N/C:N/I:N/A:P\",\n  \"description\": \"In Alpine Linux apk-tools before 2.12.5, the tarball parser allows a buffer overflow and crash.\",\n  \"file_name\": \"\",\n  \"package_name\": \"apk-tools\",\n  \"package_version\": \"2.10.5-r1\",\n  \"fixed_version\": \"2.10.6-r0\",\n  \"link\": \"https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-30139\",\n  \"score_v3\": 7.5,\n  \"vectors_v3\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\",\n  \"published_timestamp\": 1619115707,\n  \"last_modified_timestamp\": 1619115707,\n  \"cves\": [\n    \"CVE-2021-30139\"\n  ],\n  \"feed_rating\": \"High\"\n}",
           "refs": [
@@ -216,10 +225,13 @@
               "CVE-2021-36217"
             ],
             "feed_rating": "Medium",
+            "last_modified_timestamp": 1699328204,
             "nist": [
               "SI-2",
               "RA-5"
-            ]
+            ],
+            "published_timestamp": 1699328204,
+            "severity": "Medium"
           },
           "code": "{\n  \"name\": \"CVE-2021-36217\",\n  \"score\": 4,\n  \"severity\": \"Medium\",\n  \"vectors\": \"\",\n  \"description\": \"Rejected reason: DO NOT USE THIS CANDIDATE NUMBER. ConsultIDs: CVE-2021-3502. Reason: This candidate is a duplicate of CVE-2021-3502. Notes: All CVE users should reference CVE-2021-3502 instead of this candidate. All references and descriptions in this candidate have been removed to prevent accidental usage\",\n  \"file_name\": \"\",\n  \"package_name\": \"avahi\",\n  \"package_version\": \"0.8-r0\",\n  \"fixed_version\": \"0.8-r2\",\n  \"link\": \"https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-36217\",\n  \"score_v3\": 6.2,\n  \"vectors_v3\": \"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\",\n  \"published_timestamp\": 1699328204,\n  \"last_modified_timestamp\": 1699328204,\n  \"cves\": [\n    \"CVE-2021-36217\"\n  ],\n  \"feed_rating\": \"Medium\"\n}",
           "refs": [
@@ -275,9 +287,12 @@
               "CVE-2018-25032"
             ],
             "feed_rating": "High",
+            "last_modified_timestamp": 1699325786,
             "nist": [
               "SI-10"
-            ]
+            ],
+            "published_timestamp": 1699325786,
+            "severity": "High"
           },
           "code": "{\n  \"name\": \"CVE-2018-25032\",\n  \"score\": 5,\n  \"severity\": \"High\",\n  \"vectors\": \"AV:N/AC:L/Au:N/C:N/I:N/A:P\",\n  \"description\": \"Out-of-bounds Write in zlib affects Nokogiri/n## Summary\\n\\nNokogiri v1.13.4 updates the vendored zlib from 1.2.11\\nto 1.2.12, which addresses [CVE-2018-25032](https://nvd.nist.gov/vuln/detail/CVE-2018-25032).\\nThat CVE is scored as CVSS 7.4 \\\"High\\\" on the NVD record as of 2022-04-05.\\n\\nPlease note that this advisory only applies to the CRuby implementation of\\nNokogiri `\u003c 1.13.4`, and only if the packaged version of `zlib` is being used.\\nPlease see [this document](https://nokogiri.org/LICENSE-DEPENDENCIES.html#default-platform-release-ruby)\\nfor a complete description of which platform gems vendor `zlib`. If you've\\noverridden defaults at installation time to use system libraries instead of\\npackaged libraries, you should instead pay attention to your distro's `zlib`\\nrelease announcements.\\n\\n## Mitigation\\n\\nUpgrade to Nokogiri `\u003e= v1.13.4`.\\n\\n## Impact\\n\\n### [CVE-2018-25032](https://nvd.nist.gov/vuln/detail/CVE-2018-25032) in zlib\\n\\n- **Severity**: High\\n- **Type**: [CWE-787](https://cwe.mitre.org/data/definitions/787.html)\\n  Out of bounds write\\n- **Description**: zlib before 1.2.12 allows memory corruption when\\n  deflating (i.e., when compressing) if the input has many distant matches.\\n\",\n  \"file_name\": \"var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9\",\n  \"package_name\": \"ruby:nokogiri\",\n  \"package_version\": \"1.10.9\",\n  \"fixed_version\": \"\u003e=1.13.4\",\n  \"link\": \"https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-v6gp-9mmm-c6p5\",\n  \"score_v3\": 7.5,\n  \"vectors_v3\": \"\",\n  \"published_timestamp\": 1699325786,\n  \"last_modified_timestamp\": 1699325786,\n  \"cves\": [\n    \"CVE-2018-25032\"\n  ],\n  \"feed_rating\": \"High\"\n}",
           "controlType": "technical",
@@ -332,10 +347,13 @@
               "CVE-2018-25032"
             ],
             "feed_rating": "High",
+            "last_modified_timestamp": 1699325786,
             "nist": [
               "SI-2",
               "RA-5"
-            ]
+            ],
+            "published_timestamp": 1699325786,
+            "severity": "High"
           },
           "code": "{\n  \"name\": \"CVE-2018-25032\",\n  \"score\": 5,\n  \"severity\": \"High\",\n  \"vectors\": \"AV:N/AC:L/Au:N/C:N/I:N/A:P\",\n  \"description\": \"zlib before 1.2.12 allows memory corruption when deflating (i.e., when compressing) if the input has many distant matches.\",\n  \"file_name\": \"\",\n  \"package_name\": \"zlib\",\n  \"package_version\": \"1.2.11-r3\",\n  \"fixed_version\": \"1.2.12-r0\",\n  \"link\": \"https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-25032\",\n  \"score_v3\": 7.5,\n  \"vectors_v3\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\",\n  \"published_timestamp\": 1699325786,\n  \"last_modified_timestamp\": 1699325786,\n  \"cves\": [\n    \"CVE-2018-25032\"\n  ],\n  \"feed_rating\": \"High\"\n}",
           "refs": [
@@ -391,9 +409,12 @@
               "CVE-2020-25613"
             ],
             "feed_rating": "High",
+            "last_modified_timestamp": 1706073308,
             "nist": [
               "SI-10"
-            ]
+            ],
+            "published_timestamp": 1706073308,
+            "severity": "High"
           },
           "code": "{\n  \"name\": \"CVE-2020-25613\",\n  \"score\": 5,\n  \"severity\": \"High\",\n  \"vectors\": \"AV:N/AC:L/Au:N/C:N/I:P/A:N\",\n  \"description\": \"Potential HTTP Request Smuggling Vulnerability in WEBrick/nWEBrick was too tolerant against an invalid Transfer-Encoding header. This may lead to\\ninconsistent interpretation between WEBrick and some HTTP proxy servers, which may\\nallow the attacker to \\\"smuggle\\\" a request. See CWE-444 in detail.\\n\",\n  \"file_name\": \"usr/local/lib/ruby/gems/2.6.0/specifications/default/webrick-1.4.2\",\n  \"package_name\": \"ruby:webrick\",\n  \"package_version\": \"1.4.2\",\n  \"fixed_version\": \"\u003e=1.6.1\",\n  \"link\": \"https://www.ruby-lang.org/en/news/2020/09/29/http-request-smuggling-cve-2020-25613/\",\n  \"score_v3\": 7.5,\n  \"vectors_v3\": \"\",\n  \"published_timestamp\": 1706073308,\n  \"last_modified_timestamp\": 1706073308,\n  \"cves\": [\n    \"CVE-2020-25613\"\n  ],\n  \"feed_rating\": \"High\"\n}",
           "controlType": "technical",
@@ -447,10 +468,13 @@
               "CVE-2023-37920"
             ],
             "feed_rating": "Low",
+            "last_modified_timestamp": 1718323200,
             "nist": [
               "SI-2",
               "RA-5"
-            ]
+            ],
+            "published_timestamp": 1718323200,
+            "severity": "Critical"
           },
           "code": "{\n  \"name\": \"CVE-2023-37920\",\n  \"score\": 9,\n  \"severity\": \"Critical\",\n  \"vectors\": \"\",\n  \"description\": \"DOCUMENTATION: A flaw was found in the python-certifi package. This issue occurs when the e-Tugra root certificate in Certifi is removed, resulting in an unspecified error that has an unknown impact and attack vector.              STATEMENT: While eTurgra certificates being marked as untrusted by Mozilla is significant from a trust and security standpoint, this is still considered a low severity issue. The certificates were removed from Mozilla's root store in July 2023, indicating a proactive response to security concerns. Additionally, Red Hat does not run its own root store program, but depends on Mozilla for ssl certificates and Microsoft for signing certificates.  These certs are included and marked as don't trust and will not be removed until Mozilla removes them. Browsers are most at risk, which already understand and parse 'don't trust after'. If python-fi is required not to trust these certs, they should parse the 'don't trust after' attribute.\",\n  \"file_name\": \"\",\n  \"package_name\": \"ca-certificates\",\n  \"package_version\": \"2023.2.60_v7.0.306-80.0.el8_8\",\n  \"fixed_version\": \"\",\n  \"link\": \"https://access.redhat.com/security/cve/CVE-2023-37920\",\n  \"score_v3\": 9.1,\n  \"vectors_v3\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N\",\n  \"published_timestamp\": 1718323200,\n  \"last_modified_timestamp\": 1718323200,\n  \"cpes\": [\n    \"cpe:/o:redhat:enterprise_linux:8::baseos\",\n    \"cpe:/o:redhat:rhel:8.3::baseos\",\n    \"cpe:/a:redhat:enterprise_linux:8::appstream\",\n    \"cpe:/a:redhat:rhel:8.3::appstream\"\n  ],\n  \"cves\": [\n    \"CVE-2023-37920\"\n  ],\n  \"feed_rating\": \"Low\"\n}",
           "refs": [

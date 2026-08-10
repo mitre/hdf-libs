@@ -405,6 +405,52 @@ describe('neuvector to HDF converter', async () => {
     });
   });
 
+  describe('severity / status / source / timestamp / cmds tags (h2 parity)', async () => {
+    it('maps severity and the epoch published/last_modified timestamps to tags', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req!.tags?.['severity']).toBe('Critical');
+      expect(req!.tags?.['published_timestamp']).toBe(1699328203);
+      expect(req!.tags?.['last_modified_timestamp']).toBe(1699328203);
+      // minimal.json has no report.modules or report.cmds.
+      expect(req!.tags?.['status']).toBeUndefined();
+      expect(req!.tags?.['source']).toBeUndefined();
+      expect(req!.tags?.['cmds']).toBeUndefined();
+    });
+
+    it('recovers status and source by cross-referencing report.modules, and repeats report.cmds', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall2.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2019-12904/libgcrypt/1.8.5-7.el8_6'
+      );
+      expect(req).toBeDefined();
+      expect(req!.tags?.['status']).toBe('unpatched');
+      expect(req!.tags?.['source']).toBe('rhel:8.10');
+      expect(req!.tags?.['severity']).toBe('Medium');
+      const cmds = req!.tags?.['cmds'] as string[];
+      expect(cmds).toHaveLength(66);
+      expect(cmds[0]).toBe('CMD ["/usr/local/bin/cmd.sh"]');
+    });
+
+    it('omits the new tags when the source carries none of them', async () => {
+      const input = JSON.stringify({
+        report: {
+          registry: 'reg', repository: 'repo', tag: 'latest',
+          vulnerabilities: [
+            { name: 'CVE-2020-0001', description: 'x', package_name: 'pkg', package_version: '1.0' },
+          ],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
+      const tags = hdf.baselines[0]!.requirements[0]!.tags ?? {};
+      for (const k of ['severity', 'status', 'source', 'published_timestamp', 'last_modified_timestamp', 'cmds']) {
+        expect(tags[k]).toBeUndefined();
+      }
+    });
+  });
+
   describe('requirement structure', async () => {
     it('should use name/package_name/package_version as ID', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
