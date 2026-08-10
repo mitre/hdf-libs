@@ -15,6 +15,20 @@ import (
 
 const testConverterVersion = "test-version"
 
+func TestParseBurpTimestamp_TimezoneIndependent(t *testing.T) {
+	// BurpSuite emits a TZ abbreviation; it must resolve to a fixed UTC offset
+	// regardless of host TZ (CI runs UTC; dev machines may not).
+	cases := map[string]string{
+		"Thu Feb 27 09:28:17 EST 2020": "2020-02-27T14:28:17Z",
+		"Thu Feb 27 09:28:17 PST 2020": "2020-02-27T17:28:17Z",
+		"Thu Feb 27 09:28:17 UTC 2020": "2020-02-27T09:28:17Z",
+	}
+	for in, want := range cases {
+		got := parseBurpTimestamp(in).UTC().Format("2006-01-02T15:04:05Z07:00")
+		assert.Equal(t, want, got, in)
+	}
+}
+
 func loadFixture(t *testing.T, name string) []byte {
 	t.Helper()
 	fixturePath := filepath.Join("..", "fixtures", name)

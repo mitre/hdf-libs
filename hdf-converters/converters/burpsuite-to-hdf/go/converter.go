@@ -204,13 +204,34 @@ func buildIssueCode(issue BurpIssue) string {
 
 // --- Timestamp parsing ---
 
+// tzAbbrevOffsets maps the US/UTC timezone abbreviations BurpSuite emits to a
+// fixed UTC offset (seconds). Go's time.Parse resolves a bare abbreviation like
+// "EST" against the *host* location, so the same input yields different instants
+// on an EDT laptop vs a UTC CI runner. Resolving abbreviations here keeps the
+// parsed instant host-independent and matching the TS/Node side.
+var tzAbbrevOffsets = map[string]int{
+	"UTC": 0, "GMT": 0,
+	"EST": -5 * 3600, "EDT": -4 * 3600,
+	"CST": -6 * 3600, "CDT": -5 * 3600,
+	"MST": -7 * 3600, "MDT": -6 * 3600,
+	"PST": -8 * 3600, "PDT": -7 * 3600,
+}
+
 // parseBurpTimestamp parses BurpSuite's "Thu Feb 27 09:28:17 EST 2020" format.
 func parseBurpTimestamp(s string) time.Time {
 	if s == "" {
 		return time.Time{}
 	}
-	// BurpSuite format: "Mon Jan 02 15:04:05 MST 2006"
+	// BurpSuite format: "Mon Jan 02 15:04:05 MST 2006". time.Parse reads the
+	// wall-clock fields and the zone name; reinterpret the wall clock with our
+	// fixed offset table so the resulting instant is host-independent.
 	if t, err := time.Parse("Mon Jan 02 15:04:05 MST 2006", s); err == nil {
+		if name, _ := t.Zone(); name != "" {
+			if off, ok := tzAbbrevOffsets[name]; ok {
+				t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(),
+					t.Second(), t.Nanosecond(), time.FixedZone(name, off))
+			}
+		}
 		return hdfutil.NormalizeTimestamp(t)
 	}
 	// Try shorter format without timezone: "Mon Jan 2 15:04:05 2006"
