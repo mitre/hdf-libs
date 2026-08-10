@@ -74,6 +74,14 @@ describe('ionchannel to HDF converter', async () => {
       const big = '{' + 'x'.repeat(DEFAULT_MAX_INPUT_SIZE + 1) + '}';
       await expect(convertIonchannelToHdf(big)).rejects.toThrow('exceeds maximum');
     });
+
+    it('should throw when scan_summaries is not an array', async () => {
+      // scan_summaries present but the wrong shape (object, not array).
+      const input = JSON.stringify({ source: 'x', scan_summaries: { name: 'dependency' } });
+      await expect(convertIonchannelToHdf(input)).rejects.toThrow(
+        'scan_summaries invalid summary data',
+      );
+    });
   });
 
   describe('minimal fixture', async () => {
@@ -152,6 +160,21 @@ describe('ionchannel to HDF converter', async () => {
       expect(req?.tags?.org).toBe('expressjs');
     });
 
+    it('should surface package and outdated_version in tags', async () => {
+      // heimdall2 spreads the whole dependency object into tags; these two
+      // fields carry data in the fixture (package="npm", patch_behind=1).
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const express = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'dependency-expressjs/express',
+      );
+      expect(express?.tags?.package).toBe('npm');
+      expect(express?.tags?.outdated_version).toEqual({
+        major_behind: 0,
+        minor_behind: 0,
+        patch_behind: 1,
+      });
+    });
+
     it('should track sub-dependencies in tags', async () => {
       const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       const express = hdf.baselines[0]!.requirements.find(
@@ -182,6 +205,16 @@ describe('ionchannel to HDF converter', async () => {
       for (const req of hdf.baselines[0]!.requirements) {
         expect(req.results).toHaveLength(1);
         expect(req.results[0]!.status).toBe('notReviewed');
+      }
+    });
+
+    it('should omit controlType (static-fallback NIST resolves to undefined)', async () => {
+      // CM-8 is a static-fallback bundle → deriveControlTypeFromTags returns
+      // undefined, so no dependency requirement carries a controlType. Mirrors
+      // the Go twin's TestConvertIonChannelToHDF_ControlType.
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.controlType).toBeUndefined();
       }
     });
 
@@ -250,6 +283,38 @@ describe('ionchannel to HDF converter', async () => {
       expect(dep.labels?.risk).toBe('medium');
       expect(dep.labels?.ruleset_name).toBe('strict');
       expect(dep.labels?.ruleset_id).toBe('ruleset-002');
+    });
+  });
+
+  // Fallback-default branches: scans and verdicts whose optional source fields
+  // are absent. Exercises the `||`/`??`/`if` fallback sides the fixtures don't.
+  describe('fallback defaults', async () => {
+    it('falls back scan title/desc/type/code and empty dependency data', async () => {
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        passed: true,
+        ruleset_name: 'foo', // present, but ruleset_id absent (verdictDescription inner branch)
+        scan_summaries: [
+          // dependency scan with no `dependencies` key → allDeps falls back to []
+          { name: 'dependency', results: { type: 'dependency', data: {} } },
+          // license scan with no description/summary and results lacking type/data
+          { name: 'license', results: {} },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+
+      const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis')!;
+      expect(dep.requirements).toHaveLength(0);
+      // verdictDescription: ruleset_name present, ruleset_id absent → no "(id)" suffix.
+      expect(dep.description).toBe('Ion Channel analysis verdict: PASSED. Ruleset: foo.');
+
+      const license = hdf.baselines.find((b) => b.name === 'Ion Channel license Scan')!;
+      const req = license.requirements[0]!;
+      expect(req.title).toBe('License scan');
+      expect(req.descriptions?.[0]?.data).toBe('License scan summary');
+      expect(req.tags?.type).toBe('');
+      expect(req.code).toBe('{}');
     });
   });
 

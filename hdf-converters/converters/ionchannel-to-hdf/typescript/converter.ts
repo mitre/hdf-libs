@@ -190,8 +190,10 @@ function buildTags(
     org: dep.org,
     name: dep.name,
     type: dep.type,
+    package: dep.package,
     version: dep.version,
     latest_version: dep.latest_version,
+    outdated_version: dep.outdated_version,
     scope: dep.scope,
     requirement: dep.requirement,
     file: dep.file,
@@ -356,10 +358,10 @@ export async function convertIonchannelToHdf(input: string, converterVersion = '
       tags,
     }) as EvaluatedRequirement;
     req.code = code;
-    const controlType = deriveControlTypeFromTags(DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS);
-    if (controlType !== undefined) {
-      req.controlType = controlType;
-    }
+    // Static-fallback NIST (CM-8) resolves to undefined here (the fallback gate);
+    // assigned unconditionally to mirror the Go twin. undefined is dropped on
+    // serialize, so no controlType is emitted.
+    req.controlType = deriveControlTypeFromTags(DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS);
     req.verificationMethod = VerificationMethodEnum.Automated;
     return req;
   });

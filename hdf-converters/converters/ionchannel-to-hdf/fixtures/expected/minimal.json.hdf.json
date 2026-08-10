@@ -34,6 +34,12 @@
               "CM-8"
             ],
             "org": "expressjs",
+            "outdated_version": {
+              "major_behind": 0,
+              "minor_behind": 0,
+              "patch_behind": 1
+            },
+            "package": "npm",
             "passed": true,
             "requirement": "^4.18.0",
             "risk": "low",
@@ -71,6 +77,12 @@
               "CM-8"
             ],
             "org": "jshttp",
+            "outdated_version": {
+              "major_behind": 0,
+              "minor_behind": 17,
+              "patch_behind": 0
+            },
+            "package": "npm",
             "parentDependencies": [
               "expressjs/express"
             ],
@@ -111,6 +123,12 @@
               "CM-8"
             ],
             "org": "lodash",
+            "outdated_version": {
+              "major_behind": 6,
+              "minor_behind": 0,
+              "patch_behind": 0
+            },
+            "package": "npm",
             "passed": true,
             "requirement": "^4.17.0",
             "risk": "low",

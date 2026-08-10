@@ -193,14 +193,16 @@ func buildTags(dep contextualizedDependency, analysis IonChannelAnalysis) map[st
 	cciTags := cci.NISTToCCI(nist)
 
 	extras := map[string]interface{}{
-		"org":            dep.Org,
-		"name":           dep.Name,
-		"type":           dep.Type,
-		"version":        dep.Version,
-		"latest_version": dep.LatestVersion,
-		"scope":          dep.Scope,
-		"requirement":    dep.Requirement,
-		"file":           dep.File,
+		"org":              dep.Org,
+		"name":             dep.Name,
+		"type":             dep.Type,
+		"package":          dep.Package,
+		"version":          dep.Version,
+		"latest_version":   dep.LatestVersion,
+		"outdated_version": dep.OutdatedVersion,
+		"scope":            dep.Scope,
+		"requirement":      dep.Requirement,
+		"file":             dep.File,
 	}
 
 	if len(dep.Dependencies) > 0 {

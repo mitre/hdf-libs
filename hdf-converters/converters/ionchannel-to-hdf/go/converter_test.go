@@ -158,6 +158,21 @@ func TestConvert_Minimal_DependencyMetadataInTags(t *testing.T) {
 	assert.Equal(t, "4.18.2", req.Tags["version"])
 }
 
+func TestConvert_Minimal_PackageAndOutdatedVersionInTags(t *testing.T) {
+	// heimdall2 spreads the whole dependency object into tags; these two fields
+	// carry data in the fixture (package="npm", patch_behind=1).
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-expressjs/express")
+
+	assert.Equal(t, "npm", req.Tags["package"])
+	outdated, ok := req.Tags["outdated_version"].(OutdatedVersion)
+	require.True(t, ok, "outdated_version tag should carry the OutdatedVersion struct")
+	assert.Equal(t, OutdatedVersion{MajorBehind: 0, MinorBehind: 0, PatchBehind: 1}, outdated)
+}
+
 func TestConvert_Minimal_SubDependencyTracking(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertIonChannelToHDF(input, testVersion)
