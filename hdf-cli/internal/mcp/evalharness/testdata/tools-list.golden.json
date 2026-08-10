@@ -178,6 +178,106 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Convert source security-tool output into an HDF results document and return a compact SUMMARY (counts, hash, validity) plus a reusable handle — never the converted body, which is routinely megabytes. Conversion goes through the shared converter registry; from is auto-detected (including NDJSON) when omitted. With output set it writes under the shared write model (dry_run previews; a writes-disabled deployment returns a preview). Output that does not validate as hdf-results is refused.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "componentId": {
+            "description": "componentId to set on every component in the output",
+            "type": "string"
+          },
+          "content": {
+            "description": "inline raw tool output (alternative to source)",
+            "type": "string"
+          },
+          "dryRun": {
+            "description": "with output set, preview the write (return the summary, write no file)",
+            "type": "boolean"
+          },
+          "from": {
+            "description": "source format (e.g. nessus, gosec); auto-detected when omitted",
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "labels to apply to every component in the output",
+            "type": "object"
+          },
+          "output": {
+            "description": "path under HDF_MCP_ROOT to write the HDF results document",
+            "type": "string"
+          },
+          "source": {
+            "additionalProperties": false,
+            "description": "the raw tool-output file as {path}",
+            "properties": {
+              "handle": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "name": "hdf_convert",
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "baselineCount": {
+            "type": "integer"
+          },
+          "docType": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "outputPath": {
+            "type": "string"
+          },
+          "requirementCount": {
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "writesDisabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "handle",
+          "docType",
+          "baselineCount",
+          "requirementCount",
+          "sha256",
+          "valid"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
         "readOnlyHint": true
       },
       "description": "Compare two HDF documents: temporal (results across time) or system-drift (system documents). Returns a summary and a bounded change list, and — when output is given — writes a schema-valid hdf-comparison document. Diffing is delegated to the shared hdf-diff engine.",
