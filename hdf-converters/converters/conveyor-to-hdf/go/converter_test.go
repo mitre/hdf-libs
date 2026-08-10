@@ -420,7 +420,7 @@ func findRequirement(baseline *hdf.EvaluatedBaseline, id string) *hdf.EvaluatedR
 // The shared snapshot masks the top-level timestamp, so these assertions pin the
 // exact source-derived values (per the u6j3/timestamp audit) in both languages.
 
-func TestConvertConveyor_PinnedStartTimeFromServiceCompleted(t *testing.T) {
+func TestConvertConveyor_PinnedStartTimeFromServiceStarted(t *testing.T) {
 	input := loadFixture(t, "input/sample-results.json")
 	result, err := ConvertConveyorToHDF(input, testVersion)
 	require.NoError(t, err)
@@ -432,9 +432,63 @@ func TestConvertConveyor_PinnedStartTimeFromServiceCompleted(t *testing.T) {
 	require.NotNil(t, req, "Clamav baseline should contain the pinned requirement")
 	require.NotEmpty(t, req.Results)
 
-	// service_completed = 2023-08-28T12:23:54.179435Z → trimmed-UTC millis.
-	assert.Equal(t, "2023-08-28T12:23:54.179Z",
+	// service_started = 2023-08-28T12:23:54.164548Z → trimmed-UTC millis.
+	assert.Equal(t, "2023-08-28T12:23:54.164Z",
 		req.Results[0].StartTime.UTC().Format(time.RFC3339Nano))
+}
+
+func TestConvertConveyor_PinnedRunTimeFromMilestones(t *testing.T) {
+	input := loadFixture(t, "input/sample-results.json")
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	clamav := findBaseline(result.Baselines, "Clamav")
+	require.NotNil(t, clamav, "should have a Clamav baseline")
+
+	req := findRequirement(clamav, "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602")
+	require.NotNil(t, req, "Clamav baseline should contain the pinned requirement")
+	require.NotEmpty(t, req.Results)
+
+	// service_started .164, service_completed .179 (trimmed-UTC millis) → 0.015s.
+	require.NotNil(t, req.Results[0].RunTime, "run_time should be computed from the milestones")
+	assert.InDelta(t, 0.015, *req.Results[0].RunTime, 1e-9)
+}
+
+func TestConvertConveyor_PinnedTypedTags(t *testing.T) {
+	input := loadFixture(t, "input/sample-results.json")
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	clamav := findBaseline(result.Baselines, "Clamav")
+	require.NotNil(t, clamav, "should have a Clamav baseline")
+
+	req := findRequirement(clamav, "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602")
+	require.NotNil(t, req, "Clamav baseline should contain the pinned requirement")
+
+	// created/expiry_ts canonicalized to trimmed-UTC millis (per repo policy).
+	assert.Equal(t, "2023-08-28T12:23:54.184Z", req.Tags["created"])
+	assert.Equal(t, "TLP:C", req.Tags["classification"])
+	assert.Equal(t, "2023-08-31T12:23:54.184Z", req.Tags["expiry_ts"])
+	assert.Equal(t, float64(351), req.Tags["size"])
+	assert.Equal(t, "document/stigma", req.Tags["type"])
+}
+
+func TestConvertConveyor_TypedTagsOmittedWhenNull(t *testing.T) {
+	input := loadFixture(t, "input/sample-results.json")
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// The trailing Moldy result (…548634) has null size/type but real created.
+	moldy := findBaseline(result.Baselines, "Moldy")
+	require.NotNil(t, moldy)
+	req := findRequirement(moldy, "60e5941e7c34e77decf4d079ae18b531d35326ae8bd26d1dbca7ce23de548634")
+	require.NotNil(t, req)
+
+	assert.Equal(t, "2023-08-28T12:38:41.769Z", req.Tags["created"])
+	_, hasSize := req.Tags["size"]
+	_, hasType := req.Tags["type"]
+	assert.False(t, hasSize, "null size must be omitted, not emitted as null")
+	assert.False(t, hasType, "null type must be omitted, not emitted as null")
 }
 
 func TestConvertConveyor_PinnedToolVersion(t *testing.T) {
@@ -458,7 +512,7 @@ func TestConvertConveyor_PinnedTimestampFromTimesCompleted(t *testing.T) {
 		result.Timestamp.UTC().Format(time.RFC3339Nano))
 }
 
-func TestConvertConveyor_StartTimeFallbackWhenServiceCompletedAbsent(t *testing.T) {
+func TestConvertConveyor_StartTimeFallbackWhenMilestonesAbsent(t *testing.T) {
 	input := []byte(`{"api_response":{"results":{"r1":{"sha256":"abc","response":{"service_name":"Moldy"},"result":{"score":0,"sections":[]}}}}}`)
 	result, err := ConvertConveyorToHDF(input, testVersion)
 	require.NoError(t, err)
@@ -466,9 +520,11 @@ func TestConvertConveyor_StartTimeFallbackWhenServiceCompletedAbsent(t *testing.
 	require.NotEmpty(t, result.Baselines[0].Requirements)
 	require.NotEmpty(t, result.Baselines[0].Requirements[0].Results)
 
-	// Absent service_completed → zero time sentinel (never omitted; startTime is required).
-	assert.Equal(t, "0001-01-01T00:00:00Z",
-		result.Baselines[0].Requirements[0].Results[0].StartTime.UTC().Format(time.RFC3339Nano))
+	res := result.Baselines[0].Requirements[0].Results[0]
+	// Absent service_started → zero time sentinel (never omitted; startTime is required).
+	assert.Equal(t, "0001-01-01T00:00:00Z", res.StartTime.UTC().Format(time.RFC3339Nano))
+	// Absent milestones → run_time omitted (optional field).
+	assert.Nil(t, res.RunTime, "run_time must be omitted when milestones are absent")
 }
 
 func TestConvertConveyor_TimestampFallbackWhenTimesAbsent(t *testing.T) {
