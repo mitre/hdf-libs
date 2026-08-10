@@ -109,6 +109,8 @@ Before writing any code:
 
 **The converter must carry as much of the source format into HDF as can be _defensibly_ mapped — not just the minimum to pass a smoke test.** A field-coverage sweep of the existing converters (epic `hdf-libs-j5hz`) found the same failure mode across dozens of them: real structured data flattened into freetext (`codeDesc`/`message`) or parsed into a struct and never emitted, even though HDF has a structured home for it.
 
+**Enumerate against the source spec, not the sample.** Where the source format has a published spec or schema, work from the *spec's* field list — every field the spec defines gets a disposition below. Do NOT treat the fields that happen to appear in your sample fixture as the coverage checklist: a minimal fixture only exercises the fields it contains, so "the fixture converts cleanly" is never evidence of full coverage. Missed source fields are the single most common converter defect — this check exists to catch them before review does.
+
 For **every** field the source carries, decide one of three and record the decision in the plan:
 
 1. **Map it** — it has an HDF home (a structured field, or a defensible `tags` entry). Do the mapping. This is the default and should cover the large majority of fields.
@@ -234,6 +236,8 @@ Copy or adapt real samples. Keep them small by truncating arrays, but preserve t
 **During development, test against full-size real data locally.** Download or generate realistic full-scale fixtures (hundreds of controls, real scan output) and use them to validate your converter handles real-world volume, field diversity, and edge cases. Keep these outside the repo (e.g., in a gitignored `fixtures/local/` directory or a shared team drive).
 
 **Committed fixtures should be representative subsets**: trim real data to 3-10 rules/findings that exercise all code paths (different severity levels, various field combinations, edge cases like empty arrays or missing optional fields). The goal is coverage of parsing logic, not volume testing.
+
+**Minimal fixtures catch drift, not coverage.** A small committed fixture's job is to lock in behavior and catch *regression/drift* over time — it is NOT a checklist of the fields the converter must handle, and passing on it is NOT evidence of exhaustive coverage during initial buildout. Establish field coverage against the source spec (Step 1a) first; then keep the committed fixture minimal for drift detection.
 
 ---
 
@@ -1286,6 +1290,7 @@ cat output.json | head -40
 - [ ] Sections N/A for amendment-output explicitly skipped (4c routing if not applicable, 4d classification fields, 4e passed-placeholder, Baseline.Name/Components)
 
 **All converters — field coverage (review Step 1a):**
+- [ ] Coverage judged against the source **spec/schema** where one exists (every spec-defined field mapped or justified) — NOT just the fields present in the sample fixture
 - [ ] Every source field has a logged disposition: mapped, no-HDF-home (Step 1b), or asked-the-developer — none silently dropped
 - [ ] Structured data lands in its structured HDF field, not freetext: `cvss[]` (score+vector), `cwe[]`, `epss`/`kev`, `sourceLocation`, `components[]`, `refs[]`, `statusOverrides[]`, `requirement.code`
 - [ ] Top-level `timestamp` / result `startTime` / `tool.version` come from the source when it supplies them (never `time.Now()`/`new Date()` as a substitute for a real source time)
