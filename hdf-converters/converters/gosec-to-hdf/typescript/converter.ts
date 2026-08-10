@@ -23,9 +23,9 @@ import {
  * See https://github.com/securego/gosec for the full schema.
  */
 interface GosecReport {
-  'Golang errors': unknown;
+  'Golang errors'?: Record<string, GosecGoError[]>;
   Issues: GosecIssue[];
-  Stats: GosecStats;
+  Stats?: GosecStats;
   GosecVersion: string;
 }
 
@@ -34,6 +34,21 @@ interface GosecStats {
   lines: number;
   nosec: number;
   found: number;
+}
+
+/** One "Golang errors" entry gosec reports, keyed by file path in the source. */
+interface GosecGoError {
+  line: number;
+  column: number;
+  error: string;
+}
+
+/** A "Golang errors" entry flattened to carry its own file path. */
+interface GosecFlatGoError {
+  file: string;
+  line: number;
+  column: number;
+  error: string;
 }
 
 interface GosecCWE {
@@ -194,6 +209,45 @@ function buildRequirement(ruleId: string, issues: GosecIssue[], scanTime: Date):
 }
 
 /**
+ * Flattens gosec's "Golang errors" file→errors map into a single array, tagging
+ * each entry with its file and sorting by file for deterministic (Go/TS
+ * byte-parity) output. Returns [] when the map is empty or absent.
+ */
+function flattenGoErrors(errs: Record<string, GosecGoError[]> | undefined): GosecFlatGoError[] {
+  if (!errs) {
+    return [];
+  }
+  const out: GosecFlatGoError[] = [];
+  for (const file of Object.keys(errs).sort()) {
+    for (const e of errs[file]!) {
+      out.push({ file, line: e.line, column: e.column, error: e.error });
+    }
+  }
+  return out;
+}
+
+/**
+ * Routes gosec's scan-scope exhaust (Stats + Golang build errors) — data with no
+ * typed HDF home — into baseline.extensions['gosec'] per the Auxiliary Tool
+ * Metadata convention. Returns undefined when neither is present.
+ */
+function buildGosecExtensions(report: GosecReport): Record<string, unknown> | undefined {
+  const gosec: Record<string, unknown> = {};
+  if (report.Stats) {
+    const s = report.Stats;
+    gosec.stats = { files: s.files ?? 0, lines: s.lines ?? 0, nosec: s.nosec ?? 0, found: s.found ?? 0 };
+  }
+  const goErrors = flattenGoErrors(report['Golang errors']);
+  if (goErrors.length > 0) {
+    gosec.goErrors = goErrors;
+  }
+  if (Object.keys(gosec).length === 0) {
+    return undefined;
+  }
+  return { gosec };
+}
+
+/**
  * Converts gosec output to HDF format.
  * Accepts both native gosec JSON and SARIF format — SARIF input is detected
  * automatically and delegated to the shared SARIF converter.
@@ -261,6 +315,11 @@ export async function convertGosecToHdf(input: string, converterVersion = '1.0.0
     requirements,
     { resultsChecksum }
   ) as EvaluatedBaseline;
+
+  const extensions = buildGosecExtensions(report);
+  if (extensions) {
+    baseline.extensions = extensions;
+  }
 
   return buildHdfResults({
     generatorName: 'gosec-to-hdf',

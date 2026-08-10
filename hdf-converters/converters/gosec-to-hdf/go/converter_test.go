@@ -826,6 +826,124 @@ func TestConvertGosecToHDF_DistinctRuleAnchor(t *testing.T) {
 		"ethereum.json: one requirement per distinct rule_id")
 }
 
+// ---- Auxiliary scan metadata (baseline.extensions['gosec']) ----
+
+// gosecExt extracts the gosec extensions object from a converted baseline.
+func gosecExt(t *testing.T, result *hdf.HDFResults) map[string]interface{} {
+	t.Helper()
+	require.NotNil(t, result.Baselines[0].Extensions, "baseline.extensions should be present")
+	gosec, ok := result.Baselines[0].Extensions["gosec"].(map[string]interface{})
+	require.True(t, ok, "extensions.gosec should be an object")
+	return gosec
+}
+
+func TestConvertGosecToHDF_ExtensionsStats(t *testing.T) {
+	// ethereum.json carries Stats={files:156,lines:46219,nosec:0,found:171}.
+	input := loadFixture(t, "input/ethereum.json")
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	gosec := gosecExt(t, result)
+	stats, ok := gosec["stats"].(*GosecStats)
+	require.True(t, ok, "extensions.gosec.stats should be *GosecStats")
+	assert.Equal(t, GosecStats{Files: 156, Lines: 46219, Nosec: 0, Found: 171}, *stats)
+
+	// ethereum.json has an empty "Golang errors" map → goErrors omitted.
+	_, hasErrors := gosec["goErrors"]
+	assert.False(t, hasErrors, "goErrors must be omitted when Golang errors is empty")
+}
+
+func TestConvertGosecToHDF_ExtensionsGoErrors(t *testing.T) {
+	// Non-empty "Golang errors" (real gosec shape: file → [{line,column,error}]).
+	input := []byte(`{
+		"Golang errors": {
+			"/app/z.go": [{"line": 3, "column": 1, "error": "expected ';', found 'EOF'"}],
+			"/app/a.go": [
+				{"line": 10, "column": 5, "error": "undefined: Foo"},
+				{"line": 12, "column": 2, "error": "undefined: Bar"}
+			]
+		},
+		"Issues": [],
+		"Stats": {"files": 2, "lines": 40, "nosec": 0, "found": 0},
+		"GosecVersion": "2.18.0"
+	}`)
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	gosec := gosecExt(t, result)
+	goErrors, ok := gosec["goErrors"].([]gosecFlatGoError)
+	require.True(t, ok, "extensions.gosec.goErrors should be []gosecFlatGoError")
+
+	// Files are sorted ("/app/a.go" before "/app/z.go"); per-file order preserved.
+	assert.Equal(t, []gosecFlatGoError{
+		{File: "/app/a.go", Line: 10, Column: 5, Error: "undefined: Foo"},
+		{File: "/app/a.go", Line: 12, Column: 2, Error: "undefined: Bar"},
+		{File: "/app/z.go", Line: 3, Column: 1, Error: "expected ';', found 'EOF'"},
+	}, goErrors)
+
+	stats, ok := gosec["stats"].(*GosecStats)
+	require.True(t, ok)
+	assert.Equal(t, GosecStats{Files: 2, Lines: 40, Nosec: 0, Found: 0}, *stats)
+}
+
+func TestConvertGosecToHDF_ExtensionsAbsentWhenNoMetadata(t *testing.T) {
+	// No Stats key and no Golang errors → extensions omitted entirely.
+	input := []byte(`{
+		"Issues": [{
+			"severity": "LOW", "confidence": "HIGH",
+			"cwe": {"id": "703", "url": "https://cwe.mitre.org/data/definitions/703.html"},
+			"rule_id": "G104", "details": "Errors unhandled.",
+			"file": "/app/main.go", "code": "defer f.Close()\n",
+			"line": "5", "column": "2", "nosec": false, "suppressions": null
+		}],
+		"GosecVersion": "2.18.0"
+	}`)
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+	assert.Nil(t, result.Baselines[0].Extensions,
+		"extensions must be omitted when the source carries neither Stats nor Golang errors")
+}
+
+func TestFlattenGoErrors(t *testing.T) {
+	// Empty / nil map → nil.
+	assert.Nil(t, flattenGoErrors(nil))
+	assert.Nil(t, flattenGoErrors(map[string][]GosecGoError{}))
+
+	// Sorted by file; per-file order preserved.
+	out := flattenGoErrors(map[string][]GosecGoError{
+		"b.go": {{Line: 1, Column: 1, Err: "e1"}},
+		"a.go": {{Line: 2, Column: 2, Err: "e2"}, {Line: 3, Column: 3, Err: "e3"}},
+	})
+	assert.Equal(t, []gosecFlatGoError{
+		{File: "a.go", Line: 2, Column: 2, Error: "e2"},
+		{File: "a.go", Line: 3, Column: 3, Error: "e3"},
+		{File: "b.go", Line: 1, Column: 1, Error: "e1"},
+	}, out)
+}
+
+func TestBuildGosecExtensions(t *testing.T) {
+	// Neither Stats nor errors → nil.
+	assert.Nil(t, buildGosecExtensions(GosecReport{}))
+
+	// Stats only.
+	ext := buildGosecExtensions(GosecReport{Stats: &GosecStats{Files: 1, Lines: 2, Nosec: 0, Found: 1}})
+	require.NotNil(t, ext)
+	gosec := ext["gosec"].(map[string]interface{})
+	assert.Equal(t, &GosecStats{Files: 1, Lines: 2, Nosec: 0, Found: 1}, gosec["stats"])
+	_, hasErrors := gosec["goErrors"]
+	assert.False(t, hasErrors)
+
+	// Errors only (no Stats).
+	ext = buildGosecExtensions(GosecReport{GolangErrors: map[string][]GosecGoError{
+		"x.go": {{Line: 1, Column: 1, Err: "boom"}},
+	}})
+	require.NotNil(t, ext)
+	gosec = ext["gosec"].(map[string]interface{})
+	_, hasStats := gosec["stats"]
+	assert.False(t, hasStats)
+	assert.Equal(t, []gosecFlatGoError{{File: "x.go", Line: 1, Column: 1, Error: "boom"}}, gosec["goErrors"])
+}
+
 func TestConvertGosecToHDF_ControlType(t *testing.T) {
 	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
