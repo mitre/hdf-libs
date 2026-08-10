@@ -379,6 +379,70 @@ func TestConvertTwistlock_StartTime(t *testing.T) {
 	assert.Equal(t, expected, req.Results[0].StartTime)
 }
 
+// ---- Result message (heimdall2 parity) ----
+
+func TestConvertTwistlock_ResultMessage(t *testing.T) {
+	input := loadFixture(t, "input/twistlock-twistcli-coderepo-scan-sample.json")
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2021-44228")
+	require.NotEmpty(t, req.Results)
+	require.NotNil(t, req.Results[0].Message)
+	assert.Equal(t,
+		"Expected latest version of \"org.apache.logging.log4j_log4j-core\"\nDetected vulnerable version \"2.14.1\" of \"org.apache.logging.log4j_log4j-core\"",
+		*req.Results[0].Message)
+}
+
+func TestConvertTwistlock_FormatMessage(t *testing.T) {
+	assert.Equal(t,
+		"Expected latest version of \"nss\"\nDetected vulnerable version \"3.0\" of \"nss\"",
+		formatMessage(TwistlockVuln{PackageName: "nss", PackageVersion: "3.0"}))
+	// Missing name/version render as bare N/A.
+	assert.Equal(t,
+		"Expected latest version of N/A\nDetected vulnerable version N/A of N/A",
+		formatMessage(TwistlockVuln{}))
+}
+
+// ---- Raw-finding code passthrough (heimdall2 parity) ----
+
+func TestConvertTwistlock_CodePassthrough(t *testing.T) {
+	input := loadFixture(t, "input/twistlock-twistcli-coderepo-scan-sample.json")
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2021-44228")
+	require.NotNil(t, req.Code, "expected raw-finding code passthrough")
+	// Otherwise-unmapped fields survive in the code passthrough.
+	assert.Contains(t, *req.Code, "\"link\":")
+	assert.Contains(t, *req.Code, "\"riskFactors\":")
+	assert.Contains(t, *req.Code, "\"publishedDate\":")
+	assert.Contains(t, *req.Code, "\"layerTime\":")
+}
+
+func TestConvertTwistlock_BuildVulnCode_OrderAndOmission(t *testing.T) {
+	code := buildVulnCode(TwistlockVuln{
+		ID:             "CVE-X",
+		Status:         "affected",
+		CVSS:           7.5,
+		Severity:       "high",
+		PackageName:    "openssl",
+		PackageVersion: "1.0",
+		Link:           "https://example.test/CVE-X",
+	})
+	// Fixed two-space indent, declaration-order fields, empties dropped.
+	expected := "{\n" +
+		"  \"id\": \"CVE-X\",\n" +
+		"  \"status\": \"affected\",\n" +
+		"  \"cvss\": 7.5,\n" +
+		"  \"severity\": \"high\",\n" +
+		"  \"packageName\": \"openssl\",\n" +
+		"  \"packageVersion\": \"1.0\",\n" +
+		"  \"link\": \"https://example.test/CVE-X\"\n" +
+		"}"
+	assert.Equal(t, expected, code)
+}
+
 func TestConvertTwistlock_ControlType(t *testing.T) {
 	input := loadFixture(t, "input/twistlock-twistcli-sample-1.json")
 	result, err := ConvertTwistlockToHDF(input, testVersion)
