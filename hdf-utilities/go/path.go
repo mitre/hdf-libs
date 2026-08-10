@@ -67,6 +67,21 @@ func evalExistingPrefix(p string) (string, error) {
 	for {
 		resolvedCur, err := filepath.EvalSymlinks(cur)
 		if err == nil {
+			// The existing prefix resolves. If path components remain to be
+			// appended, that prefix must be a directory — otherwise the path
+			// descends through a regular file. Unix surfaces this as ENOTDIR from
+			// EvalSymlinks on the full path; Windows returns an IsNotExist-style
+			// error instead, stripping the file component, so check explicitly for
+			// consistent behaviour across platforms.
+			if len(tail) > 0 {
+				info, statErr := os.Stat(resolvedCur)
+				if statErr != nil {
+					return "", fmt.Errorf("resolving path %q: %w", p, statErr)
+				}
+				if !info.IsDir() {
+					return "", fmt.Errorf("resolving path %q: %q is not a directory", p, cur)
+				}
+			}
 			for i := len(tail) - 1; i >= 0; i-- {
 				resolvedCur = filepath.Join(resolvedCur, tail[i])
 			}
