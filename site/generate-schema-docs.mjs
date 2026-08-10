@@ -350,7 +350,13 @@ function renderSchemaPage(schema, name, urlPrefix) {
       const shortId = embeddedId
         .replace('https://mitre.github.io/hdf-libs/schemas/primitives/', '')
         .replace(/\/v\d+\.\d+\.\d+$/, '');
-      lines.push(`### ${shortId}`);
+      // Explicit, namespaced anchor for the group heading. A single-type
+      // primitive whose file slug equals the type's kebab name (e.g.
+      // affected-package / Affected_Package) would otherwise auto-slug this
+      // heading to the same id as the child type's `{#anchorId}` below and
+      // fail the VitePress build on a duplicate id. Cross-links target the
+      // type anchors, not this one.
+      lines.push(`### ${shortId} {#primitive-${shortId}}`);
       lines.push('');
       const innerDefs = embedded.$defs || {};
       if (Object.keys(innerDefs).length > 0) {
