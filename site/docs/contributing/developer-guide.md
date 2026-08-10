@@ -366,6 +366,41 @@ The diff algorithm is format-agnostic once components are extracted.
 
 ---
 
+## Auxiliary Tool Metadata (`extensions` + namespaced `tags`)
+
+Some source tools carry metadata that has no typed HDF home — scanner run
+statistics, per-finding hashes/keys, raw analysis flags. HDF does **not** need a
+new field for these: the schema already provides two open sinks. Route auxiliary
+data there under a **reserved tool-named namespace** rather than dropping it or
+inventing schema.
+
+### Two homes, by scope
+
+- **Scan / baseline scope** → `baseline.extensions['<tool>']` (an object). The
+  `extensions` map (`additionalProperties: true`, present on the document root and
+  `Evaluated_Baseline`) is documented as *"reserved for tool-specific data not
+  defined in the HDF standard."* Use it for whole-scan exhaust: gosec `Stats`
+  (files/lines/nosec counts) + Go build errors, NeuVector `report.cmds`, IonChannel
+  run-verdict metadata.
+- **Requirement scope** → `tags['<tool>/<key>']`. `tags` is an open string map, so
+  a namespaced key absorbs per-finding extras: SonarQube `hash`/`key`/`flows`,
+  IonChannel `trigger_*`.
+
+### Rules
+
+- **Namespace under the tool name.** `baseline.extensions['gosec']`,
+  `tags['sonarqube/hash']` — never a bare top-level key, so two converters never
+  collide and consumers can filter by tool.
+- **Only genuinely-homeless data.** Anything with a typed field (cvss, cwe, refs,
+  severity, status) goes to the typed field. `extensions`/namespaced-`tags` are the
+  last resort for data the typed model can't express, not a shortcut around it.
+- **Scan-level data goes once, at baseline scope** — do not duplicate a whole-scan
+  array onto every requirement's tags.
+- Populate conditionally (only when the source carries the field); Go+TS byte-parity
+  as always.
+
+---
+
 ## Dependency Audit Overrides
 
 The security gate (`pnpm security`) fails on prod advisories at moderate+ and dev
