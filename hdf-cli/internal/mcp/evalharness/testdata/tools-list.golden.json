@@ -6,6 +6,95 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Author an HDF document from model-supplied structured content: the model supplies the content array; the server assembles the schema-valid envelope (name, generator), validates it, and returns a summary plus a reusable handle — never the document body. docType is system (components), plan (assessments), or evidence (contents); the exact per-type shape lives in the hdf://schema/hdf-\u003cdocType\u003e resources. Output that does not validate is refused. Writes under the shared write model (dry_run previews; a writes-disabled deployment returns a preview).",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "description": "the content array — components (system), assessments (plan), or contents (evidence). Learn the exact shape from the hdf://schema/hdf-\u003cdocType\u003e resource; the server validates and refuses invalid content.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "docType": {
+            "description": "the document to author: system, plan, or evidence",
+            "type": "string"
+          },
+          "dryRun": {
+            "description": "with output set, preview the write (write no file)",
+            "type": "boolean"
+          },
+          "name": {
+            "description": "the document name",
+            "type": "string"
+          },
+          "output": {
+            "description": "path under HDF_MCP_ROOT to write the document",
+            "type": "string"
+          }
+        },
+        "required": [
+          "docType",
+          "name",
+          "content"
+        ],
+        "type": "object"
+      },
+      "name": "hdf_author",
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "docType": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "itemCount": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "outputPath": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "writesDisabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "handle",
+          "docType",
+          "name",
+          "itemCount",
+          "sha256",
+          "valid"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
         "readOnlyHint": true
       },
       "description": "Compute aggregate percent compliance and status/severity rollups (by effective status: impact-0 is Not Applicable and excluded from the denominator, overrides honored) for an HDF results document, with an optional grouped breakdown and threshold verdict. counts is aggregate — for per-requirement status use hdf_query. counts uses SAF threshold-file keys: skipped = notReviewed, no_impact = notApplicable. The agentOverrides block is the detective surface: agent-attributed override count and the compliance delta they account for.",
