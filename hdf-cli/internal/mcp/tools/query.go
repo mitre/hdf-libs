@@ -41,6 +41,16 @@ type queryInput struct {
 	Page      int           `json:"page,omitempty" jsonschema:"0-based page when truncated"`
 }
 
+// errorQueryOutput is the structured output returned alongside a toolError.
+// requirements is a required field; the SDK validates a tool's output even on an
+// isError result, so an empty (non-nil) slice serializing as [] — rather than a
+// nil slice serializing as null — keeps the result valid against any schema and
+// prevents a validation failure from masking the taxonomy code (cf.
+// errorComplianceOutput).
+func errorQueryOutput() queryOutput {
+	return queryOutput{Requirements: []map[string]any{}}
+}
+
 // queryOutput is the hdf_query result envelope: the bounded requirement rows plus
 // the pagination metadata, alongside the source handle and detected type.
 type queryOutput struct {
@@ -120,7 +130,7 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in queryInput) (*sdkmcp.CallToolResult, queryOutput, error) {
 		resolved, terr := resolveSource(in.Source, ldr)
 		if terr != nil {
-			return toolError(terr), queryOutput{}, nil
+			return toolError(terr), errorQueryOutput(), nil
 		}
 		encoded, err := handle.Encode(resolved.Handle)
 		if err != nil {
@@ -129,13 +139,13 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 
 		toResults, ok := queryDispatch[resolved.Load.DocType]
 		if !ok {
-			return toolError(wrongDocTypeForQuery(resolved.Load.DocType)), queryOutput{}, nil
+			return toolError(wrongDocTypeForQuery(resolved.Load.DocType)), errorQueryOutput(), nil
 		}
 		if !resolved.Load.Valid {
 			e := mcperr.New(mcperr.SchemaInvalid,
 				fmt.Sprintf("the document is %s but failed schema validation, so its requirements cannot be filtered", resolved.Load.DocType),
 				map[string]any{"docType": resolved.Load.DocType})
-			return toolError(e), queryOutput{}, nil
+			return toolError(e), errorQueryOutput(), nil
 		}
 
 		results := toResults(resolved.Load)

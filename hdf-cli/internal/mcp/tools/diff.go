@@ -54,6 +54,16 @@ type diffOutput struct {
 	WritesDisabled bool                   `json:"writesDisabled,omitempty"`
 }
 
+// errorDiffOutput is the structured output returned alongside a toolError.
+// changes is a required field; the SDK validates a tool's output even on an
+// isError result, so an empty (non-nil) slice serializing as [] — rather than a
+// nil slice serializing as null — keeps the result valid against any schema and
+// prevents a validation failure from masking the taxonomy code (cf.
+// errorComplianceOutput).
+func errorDiffOutput() diffOutput {
+	return diffOutput{Changes: []map[string]any{}}
+}
+
 // RegisterDiff registers the hdf_diff tool on the server.
 func RegisterDiff(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
@@ -74,16 +84,16 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 		if mode != "temporal" && mode != "system-drift" {
 			e := mcperr.New(mcperr.AmbiguousFormat, fmt.Sprintf("unknown mode %q", mode), map[string]any{"mode": mode}).
 				WithNextCall("use mode = temporal or system-drift")
-			return toolError(e), diffOutput{}, nil
+			return toolError(e), errorDiffOutput(), nil
 		}
 
 		from, terr := resolveSource(in.From, ldr)
 		if terr != nil {
-			return toolError(terr), diffOutput{}, nil
+			return toolError(terr), errorDiffOutput(), nil
 		}
 		to, terr := resolveSource(in.To, ldr)
 		if terr != nil {
-			return toolError(terr), diffOutput{}, nil
+			return toolError(terr), errorDiffOutput(), nil
 		}
 		fromH, err := handle.Encode(from.Handle)
 		if err != nil {
@@ -96,7 +106,7 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 
 		comp, terr := computeComparison(mode, from, to)
 		if terr != nil {
-			return toolError(terr), diffOutput{}, nil
+			return toolError(terr), errorDiffOutput(), nil
 		}
 
 		out := diffOutput{FromHandle: fromH, ToHandle: toH, Mode: mode, Summary: comp.Summary}
@@ -108,7 +118,7 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 		// to — not clobbered by — any truncation notice buildDiffResponse set.
 		if in.Output != "" {
 			if terr := emitComparison(&out, comp, in.Output, in.DryRun); terr != nil {
-				return toolError(terr), diffOutput{}, nil
+				return toolError(terr), errorDiffOutput(), nil
 			}
 		}
 		return nil, out, nil

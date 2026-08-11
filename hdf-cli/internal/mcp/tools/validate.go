@@ -53,6 +53,16 @@ type validateOutput struct {
 	Notice             string          `json:"notice,omitempty"`
 }
 
+// errorValidateOutput is the structured output returned alongside a toolError or
+// argError. errors is a required field; the SDK validates a tool's output even on
+// an isError result, so an empty (non-nil) slice serializing as [] — rather than
+// a nil slice serializing as null — keeps the result valid against any schema and
+// prevents a validation failure from masking the taxonomy code (cf.
+// errorComplianceOutput).
+func errorValidateOutput() validateOutput {
+	return validateOutput{Errors: []validateError{}}
+}
+
 // RegisterValidate registers the hdf_validate tool on the server.
 func RegisterValidate(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
@@ -67,12 +77,12 @@ func hdfValidate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[validateInput, valida
 		switch in.Mode {
 		case "schema", "checksums", "completeness":
 		default:
-			return argError(fmt.Sprintf("unknown mode %q", in.Mode), "use mode schema, checksums, or completeness"), validateOutput{}, nil
+			return argError(fmt.Sprintf("unknown mode %q", in.Mode), "use mode schema, checksums, or completeness"), errorValidateOutput(), nil
 		}
 
 		content, baseDir, load, terr := resolveForValidate(in, ldr)
 		if terr != nil {
-			return toolError(terr), validateOutput{}, nil
+			return toolError(terr), errorValidateOutput(), nil
 		}
 
 		out := validateOutput{Mode: in.Mode, Errors: []validateError{}}
