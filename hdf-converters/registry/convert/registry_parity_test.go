@@ -10,8 +10,9 @@ import (
 // converter's init() has run (measured against the pre-move registry in
 // package cmd). It guards the mass relocation: a dropped or double-registered
 // converter changes this count. Bump it deliberately when adding/removing a
-// converter — never to make a failing test pass.
-const wantRegisteredPairs = 78
+// converter — never to make a failing test pass. (79 includes spdx-vex→hdf,
+// added on main and integrated into this registry on the feat/mcp merge.)
+const wantRegisteredPairs = 79
 
 // TestRegistry_ListsAllConverters asserts count parity: importing this package
 // self-registers every converter, so ListConverters must report the full set.

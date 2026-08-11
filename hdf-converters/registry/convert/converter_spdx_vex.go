@@ -1,4 +1,4 @@
-package cmd
+package convert
 
 import spdxvex "github.com/mitre/hdf-libs/hdf-converters/v3/converters/spdx-vex-to-hdf/go"
 
