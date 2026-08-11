@@ -75,6 +75,10 @@ Designed for CI/CD compliance gates.`,
 
 			compliance := hdfengine.CalculateCompliance(counts)
 
+			if !quiet {
+				fmt.Fprintln(os.Stderr, agentOverrideReadout(countAgentOverrides(data)))
+			}
+
 			// Build control ID map for per-control validation
 			controlMap, mapErr := mapControlIDs(data)
 			if mapErr != nil {

@@ -86,8 +86,9 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 
 	// Always verify checksums. Path confinement stays here (the adapter); the
 	// engine performs no IO and classifies match/mismatch/skipped/error.
-	results, counts := toVerifyResults(hdfengine.VerifyChecksums(contents, confinedFetch(pkgDir)))
-	renderVerifyOutput(doc, results, counts)
+	fetch := confinedFetch(pkgDir)
+	results, counts := toVerifyResults(hdfengine.VerifyChecksums(contents, fetch))
+	renderVerifyOutput(doc, results, counts, aggregateAgentOverrides(fetch, contents))
 
 	if counts.mismatch > 0 || counts.errors > 0 {
 		return fmt.Errorf("%d checksum mismatches, %d errors", counts.mismatch, counts.errors)
@@ -206,14 +207,39 @@ func toVerifyResults(checksums []hdfengine.ChecksumResult) ([]evidenceVerifyResu
 	return results, counts
 }
 
-func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResult, counts verifyCounts) {
+// aggregateAgentOverrides sums the agent-attributed override count across the
+// hdf-results documents the evidence package references, reusing the shared
+// engine count. Unreadable or non-results entries are skipped (checksum
+// verification already reports read failures); the read is the same SafePath-
+// confined fetch used for checksums.
+func aggregateAgentOverrides(fetch hdfengine.FetchFunc, contents []hdfengine.EvidenceContent) int {
+	total := 0
+	for _, c := range contents {
+		if c.Type != "hdf-results" || c.URI == "" {
+			continue
+		}
+		data, err := fetch(c.URI)
+		if err != nil {
+			continue
+		}
+		results, err := parseHDFResults(data)
+		if err != nil {
+			continue
+		}
+		total += hdfengine.AgentOverrideCount(results)
+	}
+	return total
+}
+
+func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResult, counts verifyCounts, agentOverrides int) {
 	if jsonOutput {
 		out := map[string]interface{}{
-			"results":    results,
-			"matched":    counts.match,
-			"mismatched": counts.mismatch,
-			"skipped":    counts.skipped,
-			"errors":     counts.errors,
+			"results":        results,
+			"matched":        counts.match,
+			"mismatched":     counts.mismatch,
+			"skipped":        counts.skipped,
+			"errors":         counts.errors,
+			"agentOverrides": agentOverrides,
 		}
 		output, _ := json.MarshalIndent(out, "", "  ")
 		fmt.Println(string(output))
@@ -245,4 +271,5 @@ func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResu
 		fmt.Printf(", %d skipped", counts.skipped)
 	}
 	fmt.Println()
+	fmt.Println(agentOverrideReadout(agentOverrides))
 }
