@@ -8,6 +8,110 @@
         "openWorldHint": false,
         "readOnlyHint": false
       },
+      "description": "Apply an hdf-amendments document to an HDF results document, deterministically producing a NEW results file with effectiveStatus/effectiveImpact/disposition computed — the results input is NEVER overwritten. The applied file retains statusOverrides[] with appliedBy, so attribution and agent-override counts survive on the results artifact itself. Returns the before/after projected compliance, the changed-requirement count, and a reusable handle — never the document body. Writes under the shared write model (dry_run returns the delta without writing; a writes-disabled deployment returns a preview). Output that does not validate as hdf-results is refused.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "amendments": {
+            "additionalProperties": false,
+            "description": "the hdf-amendments document to apply, as {path} or {handle}",
+            "properties": {
+              "handle": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "dryRun": {
+            "description": "with output set, preview the write (return the delta, write no file)",
+            "type": "boolean"
+          },
+          "output": {
+            "description": "path under HDF_MCP_ROOT to write the applied results (a NEW file; the results input is never overwritten)",
+            "type": "string"
+          },
+          "results": {
+            "additionalProperties": false,
+            "description": "the HDF results document to apply amendments to, as {path} or {handle}",
+            "properties": {
+              "handle": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "results",
+          "amendments"
+        ],
+        "type": "object"
+      },
+      "name": "hdf_apply_amendment",
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "changedRequirementCount": {
+            "type": "integer"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "outputPath": {
+            "type": "string"
+          },
+          "projectedCompliance": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "type": "number"
+              },
+              "before": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "before",
+              "after"
+            ],
+            "type": "object"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "writesDisabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "handle",
+          "projectedCompliance",
+          "changedRequirementCount",
+          "sha256",
+          "valid"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
       "description": "Author an HDF document from model-supplied structured content and return a summary plus a reusable handle — never the document body. docType is system (components), plan (assessments), evidence (contents), or amendments (overrides). For amendments the server holds field authority: the judgment path (content[] of overrides) stamps appliedBy.type=agent + appliedAt and requires expiresAt on each; the from_vex path (source = a VEX document + expiresAt) derives overrides and stamps appliedBy.type=system. Per-type shapes are in the hdf://schema/hdf-\u003cdocType\u003e resources; output that does not validate is refused. Writes under the shared write model (dry_run previews; a writes-disabled deployment returns a preview).",
       "inputSchema": {
         "additionalProperties": false,

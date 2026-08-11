@@ -19,4 +19,5 @@ func RegisterAll(s *sdkmcp.Server) {
 	RegisterValidate(s, ldr)
 	RegisterConvert(s)
 	RegisterAuthor(s)
+	RegisterApplyAmendment(s, ldr)
 }
