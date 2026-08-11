@@ -4,8 +4,8 @@ go 1.26.5
 
 require (
 	github.com/mitre/hdf-libs/hdf-fixtures v0.0.0-00010101000000-000000000000
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.5.0
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.5.1
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.5.1
 	github.com/stretchr/testify v1.11.1
 )
 
