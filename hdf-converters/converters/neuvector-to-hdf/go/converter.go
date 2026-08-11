@@ -47,6 +47,7 @@ type NeuVectorScanReport struct {
 	Layers          json.RawMessage       `json:"layers"`
 	Vulnerabilities []NeuVectorVuln       `json:"vulnerabilities"`
 	Modules         []NeuVectorScanModule `json:"modules"`
+	Cmds            []string              `json:"cmds"`
 }
 
 // NeuVectorVuln represents a single vulnerability entry from NeuVector scan output.
@@ -72,12 +73,67 @@ type NeuVectorVuln struct {
 	Tags                  []string `json:"tags,omitempty"`
 }
 
-// NeuVectorScanModule represents a module in the NeuVector scan report.
+// NeuVectorScanModule represents a module in the NeuVector scan report. The
+// module carries the package `source` (e.g. "rhel:8.10") and a per-CVE `status`
+// (e.g. "unpatched", "fix exists") that the flat vulnerabilities[] entries omit,
+// so requirement.status/source are recovered by cross-referencing here.
 type NeuVectorScanModule struct {
-	Name    string `json:"name"`
-	File    string `json:"file"`
-	Version string `json:"version"`
-	Source  string `json:"source"`
+	Name    string               `json:"name"`
+	File    string               `json:"file"`
+	Version string               `json:"version"`
+	Source  string               `json:"source"`
+	Cves    []NeuVectorModuleCVE `json:"cves"`
+}
+
+// NeuVectorModuleCVE is a per-module CVE entry carrying the remediation status.
+type NeuVectorModuleCVE struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
+// moduleLookup indexes report.modules so a flat vulnerability can recover its
+// package `source` and per-CVE `status`. First non-empty value per key wins.
+type moduleLookup struct {
+	sourceByName map[string]string
+	statusByKey  map[[2]string]string
+}
+
+// buildModuleLookup builds the source/status index from report.modules. A vuln
+// matches a module by package_name; its status matches the module CVE by name.
+func buildModuleLookup(modules []NeuVectorScanModule) moduleLookup {
+	ml := moduleLookup{
+		sourceByName: map[string]string{},
+		statusByKey:  map[[2]string]string{},
+	}
+	for _, m := range modules {
+		if m.Source != "" {
+			if _, ok := ml.sourceByName[m.Name]; !ok {
+				ml.sourceByName[m.Name] = m.Source
+			}
+		}
+		for _, c := range m.Cves {
+			if c.Status == "" {
+				continue
+			}
+			key := [2]string{m.Name, c.Name}
+			if _, ok := ml.statusByKey[key]; !ok {
+				ml.statusByKey[key] = c.Status
+			}
+		}
+	}
+	return ml
+}
+
+// source returns the package source for a vulnerability, or "" when the report
+// carries no matching module.
+func (ml moduleLookup) source(vuln NeuVectorVuln) string {
+	return ml.sourceByName[vuln.PackageName]
+}
+
+// status returns the remediation status for a vulnerability, or "" when no
+// matching module CVE entry carries one.
+func (ml moduleLookup) status(vuln NeuVectorVuln) string {
+	return ml.statusByKey[[2]string{vuln.PackageName, vuln.Name}]
 }
 
 // extractCWEs parses CWE identifiers from a vulnerability description string.
@@ -150,10 +206,10 @@ func buildCvssEntries(vuln NeuVectorVuln) []hdf.Cvss {
 // Impact is normalized to 0.0-1.0 by dividing by 10.
 func getImpact(vuln NeuVectorVuln) float64 {
 	if vuln.ScoreV3 > 0 {
-		return vuln.ScoreV3 / 10
+		return hdfutil.RoundImpact(vuln.ScoreV3 / 10)
 	}
 	if vuln.Score > 0 {
-		return vuln.Score / 10
+		return hdfutil.RoundImpact(vuln.Score / 10)
 	}
 	return 0.5 // default when no score available
 }
@@ -250,7 +306,9 @@ func buildRefs(vuln NeuVectorVuln) []hdf.Reference {
 }
 
 // buildRequirement converts a NeuVector vulnerability to an EvaluatedRequirement.
-func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequirement {
+// ml recovers status/source from report.modules. The scan-wide report.cmds is
+// baseline-scope metadata and lives on baseline.extensions, not per requirement.
+func buildRequirement(vuln NeuVectorVuln, scanTime time.Time, ml moduleLookup) hdf.EvaluatedRequirement {
 	cweIDs := extractCWEs(vuln.Description)
 	cveIDs := extractCVEs(vuln)
 	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultRemediationNIST)
@@ -262,6 +320,21 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequi
 	}
 	if vuln.FeedRating != "" {
 		extras["feed_rating"] = vuln.FeedRating
+	}
+	if vuln.Severity != "" {
+		extras["severity"] = vuln.Severity
+	}
+	if status := ml.status(vuln); status != "" {
+		extras["status"] = status
+	}
+	if source := ml.source(vuln); source != "" {
+		extras["source"] = source
+	}
+	if vuln.PublishedTimestamp != 0 {
+		extras["published_timestamp"] = vuln.PublishedTimestamp
+	}
+	if vuln.LastModifiedTimestamp != 0 {
+		extras["last_modified_timestamp"] = vuln.LastModifiedTimestamp
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -442,6 +515,8 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	// time as the single timestamp shared by every result.
 	now := time.Now().UTC()
 
+	ml := buildModuleLookup(scan.Report.Modules)
+
 	// Each vulnerability is unique by name/package_name/package_version,
 	// so no grouping is needed (unlike Snyk which groups by vuln ID).
 	// However, we still deduplicate by the composite ID in case the input
@@ -455,7 +530,7 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			continue
 		}
 		seen[id] = true
-		requirements = append(requirements, buildRequirement(vuln, now))
+		requirements = append(requirements, buildRequirement(vuln, now, ml))
 	}
 
 	target := targetName(scan.Report)
@@ -475,6 +550,14 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Requirements:    requirements,
 		ResultsChecksum: checksum,
 		Title:           &title,
+	}
+
+	// report.cmds is scan-wide image build history — baseline-scope metadata with
+	// no typed HDF home. Emit it once under the tool namespace, only when present.
+	if cmds := hdfutil.StringsToInterfaces(scan.Report.Cmds); len(cmds) > 0 {
+		baseline.Extensions = map[string]interface{}{
+			"neuvector": map[string]interface{}{"cmds": cmds},
+		}
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{

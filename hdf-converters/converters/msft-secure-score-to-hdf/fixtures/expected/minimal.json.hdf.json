@@ -54,7 +54,9 @@
           "impact": 0.1,
           "tags": {
             "action_type": "Config",
+            "category": "Apps",
             "implementation_cost": "Moderate",
+            "maxScore": 1,
             "nist": [
               "SA-11",
               "RA-5"
@@ -102,7 +104,9 @@
           "impact": 0.5,
           "tags": {
             "action_type": "Config",
+            "category": "Data",
             "implementation_cost": "Medium",
+            "maxScore": 5,
             "nist": [
               "SA-11",
               "RA-5"

@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "application": "Dependency-Track",
+    "version": "4.10.1",
+    "timestamp": "2024-04-04T03:51:19Z"
+  },
+  "project": {
+    "uuid": "75512646-e558-47a4-9cc3-0be806bf3482",
+    "name": "attributions-sample",
+    "version": "1.0",
+    "description": "Dependency-Track sample carrying CVSS, EPSS and attribution attributes"
+  },
+  "findings": [
+    {
+      "component": {
+        "name": "angular",
+        "project": "75512646-e558-47a4-9cc3-0be806bf3482",
+        "purl": "pkg:npm/angular@1.8.0",
+        "uuid": "2d964faa-c9c3-4669-900e-0ea3de1a9282",
+        "version": "1.8.0",
+        "latestVersion": "1.8.3"
+      },
+      "attribution": {
+        "alternateIdentifier": "CVE-2022-25844",
+        "analyzerIdentity": "OSSINDEX_ANALYZER",
+        "attributedOn": "2024-04-04 03:50:40.893",
+        "referenceUrl": "https://ossindex.sonatype.org/vulnerability/CVE-2022-25844?component-type=npm&component-name=angular&utm_source=dependency-track&utm_medium=integration&utm_content=v4.10.1"
+      },
+      "vulnerability": {
+        "severity": "HIGH",
+        "cvssV3BaseScore": 7.5,
+        "severityRank": 1,
+        "cweName": "Inefficient Regular Expression Complexity",
+        "vulnId": "CVE-2022-25844",
+        "aliases": [],
+        "cvssV2BaseScore": 5,
+        "cweId": 1333,
+        "description": "The package angular after 1.7.0 are vulnerable to Regular Expression Denial of Service (ReDoS) by providing a custom locale rule that makes it possible to assign the parameter in posPre: ' '.repeat() of NUMBER_FORMATS.PATTERNS[1].posPre with a very high value. **Note:** 1) This package has been deprecated and is no longer maintained. 2) The vulnerable versions are 1.7.0 and higher.",
+        "source": "NVD",
+        "cwes": [
+          {
+            "cweId": 1333,
+            "name": "Inefficient Regular Expression Complexity",
+            "id": 0
+          }
+        ],
+        "uuid": "bf868742-0913-4a88-8dbc-1f6dbaf4b575"
+      },
+      "analysis": {
+        "isSuppressed": false
+      },
+      "matrix": "75512646-e558-47a4-9cc3-0be806bf3482:2d964faa-c9c3-4669-900e-0ea3de1a9282:bf868742-0913-4a88-8dbc-1f6dbaf4b575"
+    },
+    {
+      "component": {
+        "name": "codemirror",
+        "project": "75512646-e558-47a4-9cc3-0be806bf3482",
+        "purl": "pkg:npm/codemirror@5.56.0",
+        "uuid": "8d710299-44a4-4d86-8aeb-511a6f0bb50c",
+        "version": "5.56.0",
+        "latestVersion": "6.0.1"
+      },
+      "attribution": {
+        "alternateIdentifier": "CVE-2020-7760",
+        "analyzerIdentity": "OSSINDEX_ANALYZER",
+        "attributedOn": "2024-04-04 03:50:40.981",
+        "referenceUrl": "https://ossindex.sonatype.org/vulnerability/CVE-2020-7760?component-type=npm&component-name=codemirror&utm_source=dependency-track&utm_medium=integration&utm_content=v4.10.1"
+      },
+      "vulnerability": {
+        "severity": "HIGH",
+        "cvssV3BaseScore": 7.5,
+        "vulnId": "CVE-2020-7760",
+        "aliases": [],
+        "cweId": 400,
+        "description": "This affects the package codemirror before 5.58.2; the package org.apache.marmotta.webjars:codemirror before 5.58.2. The vulnerable regular expression is located in https://github.com/codemirror/CodeMirror/blob/cdb228ac736369c685865b122b736cd0d397836c/mode/javascript/javascript.jsL129. The ReDOS vulnerability of the regex is mainly due to the sub-pattern (s|/*.*?*/)*",
+        "epssScore": 0.01484,
+        "source": "NVD",
+        "cwes": [
+          {
+            "cweId": 400,
+            "name": "Uncontrolled Resource Consumption",
+            "id": 0
+          }
+        ],
+        "uuid": "9cc4665f-3250-4df9-986a-7264f544fc93",
+        "severityRank": 1,
+        "cweName": "Uncontrolled Resource Consumption",
+        "epssPercentile": 0.86529,
+        "cvssV2BaseScore": 5
+      },
+      "analysis": {
+        "isSuppressed": false
+      },
+      "matrix": "75512646-e558-47a4-9cc3-0be806bf3482:8d710299-44a4-4d86-8aeb-511a6f0bb50c:9cc4665f-3250-4df9-986a-7264f544fc93"
+    }
+  ]
+}

@@ -168,6 +168,102 @@ describe('Dependency-Track to HDF converter', async () => {
     });
   });
 
+  describe('cvss / epss / typed tags', async () => {
+    const CODEMIRROR = '75512646-e558-47a4-9cc3-0be806bf3482:8d710299-44a4-4d86-8aeb-511a6f0bb50c:9cc4665f-3250-4df9-986a-7264f544fc93';
+    const ANGULAR = '75512646-e558-47a4-9cc3-0be806bf3482:2d964faa-c9c3-4669-900e-0ea3de1a9282:bf868742-0913-4a88-8dbc-1f6dbaf4b575';
+
+    async function optionalAttrsReq(id: string): Promise<HDFResults['baselines'][0]['requirements'][0]> {
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-optional-attributes.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === id);
+      expect(req).toBeDefined();
+      return req!;
+    }
+
+    it('builds score-only cvss[] from cvssV3/cvssV2 base scores, v3 first', async () => {
+      const req = await optionalAttrsReq(CODEMIRROR);
+      expect(req.cvss).toHaveLength(2);
+      expect(req.cvss![0]).toMatchObject({
+        version: '3.1',
+        baseScore: 7.5,
+        baseSeverity: 'high',
+        source: 'CVE-2020-7760',
+      });
+      expect(req.cvss![1]).toMatchObject({ version: '2.0', baseScore: 5 });
+    });
+
+    it('builds structured epss with a scan-date-derived date', async () => {
+      const req = await optionalAttrsReq(CODEMIRROR);
+      expect(req.epss).toEqual({ date: '2024-04-04', score: 0.01484, percentile: 0.86529 });
+    });
+
+    it('omits epss when the finding carries no EPSS fields', async () => {
+      const req = await optionalAttrsReq(ANGULAR);
+      expect(req.epss).toBeUndefined();
+      expect(req.cvss).toHaveLength(2);
+    });
+
+    it('surfaces typed source attributes as searchable tags', async () => {
+      const req = await optionalAttrsReq(CODEMIRROR);
+      expect(req.tags).toMatchObject({
+        vulnerabilityUuid: '9cc4665f-3250-4df9-986a-7264f544fc93',
+        vulnerabilitySource: 'NVD',
+        vulnerabilityVulnId: 'CVE-2020-7760',
+        vulnerabilitySeverityRank: 1,
+        cweNames: ['Uncontrolled Resource Consumption'],
+        attributionAnalyzerIdentity: 'OSSINDEX_ANALYZER',
+        attributionAlternateIdentifier: 'CVE-2020-7760',
+        attributionAttributedOn: '2024-04-04 03:50:40.981',
+        analysisIsSuppressed: false,
+      });
+      expect(req.tags.attributionReferenceUrl).toContain('ossindex.sonatype.org');
+    });
+
+    it('emits analysisState and subtitle tags when the source carries them', async () => {
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
+      const first = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46'
+      )!;
+      expect(first.tags.analysisState).toBe('NOT_SET');
+      expect(first.tags.vulnerabilitySubtitle).toBe('timespan');
+
+      const second = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'ca4f2da9-0fad-4a13-92d7-f627f3168a56:979f87f5-eaf5-4095-9d38-cde17bf9228e:701a3953-666b-4b7a-96ca-e1e6a3e1def3'
+      )!;
+      expect(second.tags.analysisState).toBeUndefined();
+      expect(second.tags.analysisIsSuppressed).toBe(false);
+    });
+  });
+
+  describe('affected package ecosystem fallback', async () => {
+    it('derives a generic ecosystem for a component with name+version but no purl', async () => {
+      const input = JSON.stringify({
+        meta: { timestamp: '2024-04-04T03:51:19Z' },
+        project: { uuid: 'p1', name: 'test' },
+        findings: [{
+          component: { name: 'internal-lib', version: '1.2.3' },
+          vulnerability: { severity: 'LOW' },
+          matrix: 'm1',
+        }],
+      });
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.affectedPackages).toHaveLength(1);
+      expect(req.affectedPackages![0]).toMatchObject({
+        name: 'internal-lib',
+        version: '1.2.3',
+        ecosystem: 'generic',
+      });
+      expect(req.affectedPackages![0]!.purl).toBeUndefined();
+    });
+  });
+
+  describe('invalid JSON', async () => {
+    it('throws when the parsed input is not an object', async () => {
+      // Valid JSON but a bare number → typeof !== 'object' → the invalid-JSON guard.
+      await expect(convertDeptrackToHdf('123')).rejects.toThrow('deptrack: invalid JSON');
+    });
+  });
+
   describe('descriptions', async () => {
     it('should include check and fix descriptions', async () => {
       const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;

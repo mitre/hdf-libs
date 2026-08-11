@@ -3,6 +3,7 @@
 package diff
 
 import (
+	"math"
 	"reflect"
 	"sort"
 	"strconv"
@@ -310,7 +311,7 @@ func comparePair(
 
 		oldImpact := pair.OldReq.Impact
 		newImpact := pair.NewReq.Impact
-		confidence := pair.Confidence
+		confidence := roundConfidence(pair.Confidence)
 
 		oldReqCopy := pair.OldReq
 		newReqCopy := pair.NewReq
@@ -502,6 +503,12 @@ func formatTimestamp(t *time.Time) string {
 	return t.Format(time.RFC3339)
 }
 
+// roundConfidence rounds a fuzzy-match confidence (0-1 similarity) to 4 decimal
+// places to strip IEEE-754 noise from the serialized matchConfidence value.
+func roundConfidence(x float64) float64 {
+	return math.Round(x*1e4) / 1e4
+}
+
 // derefStr returns the string value of a *string, or "" if nil.
 func derefStr(s *string) string {
 	if s == nil {
@@ -566,7 +573,7 @@ func DiffBaselines(oldBaseline, newBaseline hdf.HDFBaseline, opts Options) (HdfC
 		title := resolveTitle(pair.OldReq.Title, pair.NewReq.Title)
 		oldImpact := pair.OldReq.Impact
 		newImpact := pair.NewReq.Impact
-		confidence := pair.Confidence
+		confidence := roundConfidence(pair.Confidence)
 
 		oldReqCopy := pair.OldReq
 		newReqCopy := pair.NewReq

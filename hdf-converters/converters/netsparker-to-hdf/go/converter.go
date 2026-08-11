@@ -61,6 +61,19 @@ type NetsparkerVuln struct {
 	RemedyReferences   string                   `xml:"remedy-references"`
 	ExternalReferences string                   `xml:"external-references"`
 	ProofOfConcept     string                   `xml:"proof-of-concept"`
+	ExtraInformation   NetsparkerExtraInfoBlock `xml:"extra-information"`
+}
+
+// NetsparkerExtraInfoBlock represents the <extra-information> element: a set of
+// name/value <info> entries Netsparker/Invicti attaches to some findings.
+type NetsparkerExtraInfoBlock struct {
+	Info []NetsparkerExtraInfo `xml:"info"`
+}
+
+// NetsparkerExtraInfo represents a single <info> entry within <extra-information>.
+type NetsparkerExtraInfo struct {
+	Name  string `xml:"name,attr"`
+	Value string `xml:"value,attr"`
 }
 
 // NetsparkerClassification represents the <classification> element.
@@ -132,6 +145,20 @@ func formatMessage(response NetsparkerHTTPResponse) string {
 	return strings.Join(parts, "\n")
 }
 
+// formatExtraInformation renders the <extra-information> info entries as
+// "name=>value" pairs joined by ", ", mirroring the converter's Classification
+// line style. Returns "" when there are no entries.
+func formatExtraInformation(info []NetsparkerExtraInfo) string {
+	if len(info) == 0 {
+		return ""
+	}
+	pairs := make([]string, 0, len(info))
+	for i := range info {
+		pairs = append(pairs, fmt.Sprintf("%s=>%s", info[i].Name, info[i].Value))
+	}
+	return strings.Join(pairs, ", ")
+}
+
 func formatControlDesc(vuln *NetsparkerVuln) string {
 	parts := []string{}
 	if vuln.Description != "" {
@@ -139,6 +166,9 @@ func formatControlDesc(vuln *NetsparkerVuln) string {
 	}
 	if vuln.ExploitationSkills != "" {
 		parts = append(parts, fmt.Sprintf("Exploitation-skills: %s", vuln.ExploitationSkills))
+	}
+	if extra := formatExtraInformation(vuln.ExtraInformation.Info); extra != "" {
+		parts = append(parts, fmt.Sprintf("Extra-information: %s", extra))
 	}
 	if vuln.Classification.CWE != "" || vuln.Classification.OWASP != "" {
 		parts = append(parts, fmt.Sprintf("Classification: cwe=>%s, owasp=>%s", vuln.Classification.CWE, vuln.Classification.OWASP))

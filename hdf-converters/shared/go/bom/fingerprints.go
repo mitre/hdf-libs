@@ -7,6 +7,8 @@
 
 package bom
 
+import "strings"
+
 // FormatDetection reports a detected BOM format and a 0..1 confidence.
 type FormatDetection struct {
 	Format     string
@@ -79,6 +81,39 @@ func DetectSPDX3(input any) float64 {
 	return 0
 }
 
+// DetectSPDX3Security reports confidence that input is an SPDX 3.0 security /
+// VEX document (JSON-LD): an `@context` plus an `@graph` array carrying at least
+// one security_Vex*VulnAssessmentRelationship element (the four VEX assessment
+// subtypes: Affected, NotAffected, Fixed, UnderInvestigation). Structurally
+// disjoint from the SPDX 2.3 detector (which keys on spdxVersion) and from the
+// SPDX 3.0 AI/Dataset detector (which keys on ai_AIPackage /
+// dataset_DatasetPackage), so none of the three conflict. Returns 0 or 1.
+func DetectSPDX3Security(input any) float64 {
+	obj := asRecord(input)
+	if obj == nil {
+		return 0
+	}
+	if _, ok := obj["@context"]; !ok {
+		return 0
+	}
+	graph, ok := obj["@graph"].([]any)
+	if !ok {
+		return 0
+	}
+	for _, el := range graph {
+		if isVexAssessmentType(asString(asRecord(el)["type"])) {
+			return 1
+		}
+	}
+	return 0
+}
+
+// isVexAssessmentType reports whether an SPDX-3 element type is one of the four
+// VEX assessment relationship subtypes.
+func isVexAssessmentType(t string) bool {
+	return strings.HasPrefix(t, "security_Vex") && strings.HasSuffix(t, "VulnAssessmentRelationship")
+}
+
 // DetectFormat detects the BOM format of a parsed JSON value. ML wins over plain
 // CycloneDX by precedence; returns nil when no supported format matches.
 func DetectFormat(input any) *FormatDetection {
@@ -90,6 +125,9 @@ func DetectFormat(input any) *FormatDetection {
 	}
 	if spdx3 := DetectSPDX3(input); spdx3 > 0 {
 		return &FormatDetection{Format: FormatSPDX3AI, Confidence: spdx3}
+	}
+	if sec := DetectSPDX3Security(input); sec > 0 {
+		return &FormatDetection{Format: FormatSPDX3Security, Confidence: sec}
 	}
 	if spdx := DetectSPDX(input); spdx > 0 {
 		return &FormatDetection{Format: FormatSPDX, Confidence: spdx}

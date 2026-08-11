@@ -156,6 +156,36 @@ function formatCodeDesc(
   return parts.join('\n') + '\n';
 }
 
+// --- Raw finding passthrough ---
+
+/**
+ * Render the raw BurpSuite issue as indented JSON for requirement.code,
+ * preserving otherwise-unmapped source fields (e.g. serialNumber). Field order
+ * is fixed to match the Go twin's struct projection so both languages emit
+ * byte-identical output.
+ */
+function buildIssueCode(issue: BurpIssueXml): string {
+  const obj = {
+    serialNumber: issue.serialNumber ?? '',
+    type: issue.type ?? '',
+    name: issue.name ?? '',
+    host: {
+      ip: issue.host?.ip ?? '',
+      url: (issue.host?.['#text'] ?? '').trim(),
+    },
+    path: issue.path ?? '',
+    location: issue.location ?? '',
+    severity: issue.severity ?? '',
+    confidence: issue.confidence ?? '',
+    issueBackground: issue.issueBackground ?? '',
+    remediationBackground: issue.remediationBackground ?? '',
+    references: issue.references ?? '',
+    vulnerabilityClassifications: issue.vulnerabilityClassifications ?? '',
+    issueDetail: issue.issueDetail ?? '',
+  };
+  return JSON.stringify(obj, null, 2);
+}
+
 // --- Main converter ---
 
 /**
@@ -205,10 +235,15 @@ export async function convertBurpsuiteToHdf(input: string, converterVersion = '1
     }
   }
 
+  // Parse the report export time once; it seeds both the top-level timestamp
+  // and every result's start_time (h2 sets result start_time = exportTime).
+  const reportStartTime = exportTime ? parseTimestamp(exportTime) : null;
+  const resultStartTime = reportStartTime ?? new Date('0001-01-01T00:00:00Z');
+
   // Build requirements from grouped issues
   const requirements: EvaluatedRequirement[] = [];
   for (const [issueType, groupIssues] of groups) {
-    requirements.push(buildRequirement(issueType, groupIssues));
+    requirements.push(buildRequirement(issueType, groupIssues, resultStartTime));
   }
 
   // Determine target from the first issue's host
@@ -257,8 +292,8 @@ export async function convertBurpsuiteToHdf(input: string, converterVersion = '1
     tool,
   };
 
-  if (exportTime) {
-    hdf.timestamp = parseTimestamp(exportTime) ?? undefined;
+  if (reportStartTime) {
+    hdf.timestamp = reportStartTime;
   }
 
   return serializeHdf(hdf);
@@ -269,6 +304,7 @@ export async function convertBurpsuiteToHdf(input: string, converterVersion = '1
 function buildRequirement(
   issueType: string,
   issues: BurpIssueXml[],
+  startTime: Date,
 ): EvaluatedRequirement {
   const rep = issues[0]!;
 
@@ -320,7 +356,7 @@ function buildRequirement(
     return {
       status: ResultStatus.Failed,
       codeDesc,
-      startTime: new Date('0001-01-01T00:00:00Z'),
+      startTime,
     };
   });
 
@@ -330,6 +366,7 @@ function buildRequirement(
     id: issueType,
     title: rep.name ?? undefined,
     impact,
+    code: buildIssueCode(rep),
     tags,
     descriptions,
     results,

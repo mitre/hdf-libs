@@ -41,6 +41,14 @@
         {
           "data": "dnsmasq is a lightweight tool that provides DNS caching, DNS forwarding and DHCP (Dynamic Host Configuration Protocol) services. The package can be removed with the following command:",
           "label": "default"
+        },
+        {
+          "data": "oval:ssg-package_dnsmasq_removed:def:1",
+          "label": "check"
+        },
+        {
+          "data": "Unless a system is specifically designated to act as a DNS caching, DNS forwarding and/or DHCP server, it is recommended that the package be removed to reduce the potential attack surface.",
+          "label": "rationale"
         }
       ],
       "id": "xccdf_org.ssgproject.content_rule_package_dnsmasq_removed",
@@ -62,10 +70,24 @@
         {
           "data": "The service can be disabled with the following command:",
           "label": "default"
+        },
+        {
+          "data": "oval:ssg-service_dnsmasq_disabled:def:1",
+          "label": "check"
+        },
+        {
+          "data": "Unless a system is specifically designated to act as a DNS caching, DNS forwarding and/or DHCP server, it is recommended that the package be removed to reduce the potential attack surface.",
+          "label": "rationale"
         }
       ],
       "id": "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled",
       "impact": 0.5,
+      "refs": [
+        {
+          "ref": "2.1.6",
+          "url": "https://www.cisecurity.org/benchmark/red_hat_linux/"
+        }
+      ],
       "severity": "medium",
       "tags": {
         "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
@@ -83,10 +105,292 @@
         {
           "data": "The service is provided by the package. The package can be removed with the following command:",
           "label": "default"
+        },
+        {
+          "data": "oval:ssg-package_bind_removed:def:1",
+          "label": "check"
+        },
+        {
+          "data": "If there is no need to make DNS server software available, removing it provides a safeguard against its activation.",
+          "label": "rationale"
         }
       ],
       "id": "xccdf_org.ssgproject.content_rule_package_bind_removed",
       "impact": 0.3,
+      "refs": [
+        {
+          "ref": "11",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "14",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "3",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "9",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "BAI10.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS06.06",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "4.3.3.5.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.9",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "SR 1.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.10",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.11",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.12",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.13",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.8",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.9",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 7.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "A.12.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.5.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.6.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.3",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.4",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.9.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "CM-7(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-7(b)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-1",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "PR.PT-3",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "2.1.5",
+          "url": "https://www.cisecurity.org/benchmark/red_hat_linux/"
+        }
+      ],
       "severity": "low",
       "tags": {
         "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
@@ -104,10 +408,288 @@
         {
           "data": "The service can be disabled with the following command:",
           "label": "default"
+        },
+        {
+          "data": "oval:ssg-service_named_disabled:def:1",
+          "label": "check"
+        },
+        {
+          "data": "All network services involve some risk of compromise due to implementation flaws and should be disabled if possible.",
+          "label": "rationale"
         }
       ],
       "id": "xccdf_org.ssgproject.content_rule_service_named_disabled",
       "impact": 0.5,
+      "refs": [
+        {
+          "ref": "11",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "14",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "3",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "9",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "BAI10.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS06.06",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "4.3.3.5.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.9",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "SR 1.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.10",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.11",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.12",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.13",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.8",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.9",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 7.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "A.12.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.5.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.6.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.3",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.4",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.9.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "CM-7(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-7(b)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-1",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "PR.PT-3",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        }
+      ],
       "severity": "medium",
       "tags": {
         "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
@@ -125,10 +707,288 @@
         {
           "data": "If it is necessary for a secondary nameserver to receive zone data via zone transfer from the primary server, follow the instructions here. Use dnssec-keygen to create a symmetric key file in the current directory: This output is the name of a file containing the new key. Read the file to find the base64-encoded key string: Add the directives to on the primary server: Add the directives below to on the secondary nameserver:",
           "label": "default"
+        },
+        {
+          "data": "The BIND transaction signature (TSIG) functionality allows primary and secondary nameservers to use a shared secret to verify authorization to perform zone transfers. This method is more secure than using IP-based limiting to restrict nameserver access, since IP addresses can be easily spoofed. However, if you cannot configure TSIG between your servers because, for instance, the secondary nameserver is not under your control and its administrators are unwilling to configure TSIG, you can configure an allow-transfer directive with numerical IP addresses or ACLs as a last resort.",
+          "label": "rationale"
+        },
+        {
+          "data": "The purpose of the dnssec-keygen command is to create the shared secret string base64-key-string. Once this secret has been obtained and inserted into named.conf on the primary and secondary servers, the key files Kdns.example.com .+NNN +MMMMM .key and Kdns.example.com .+NNN +MMMMM .private are no longer needed, and may safely be deleted.",
+          "label": "warning"
         }
       ],
       "id": "xccdf_org.ssgproject.content_rule_dns_server_authenticate_zone_transfers",
       "impact": 0.5,
+      "refs": [
+        {
+          "ref": "11",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "14",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "3",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "9",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "BAI10.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS06.06",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "4.3.3.5.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.9",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "SR 1.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.10",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.11",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.12",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.13",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.8",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.9",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 7.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "A.12.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.5.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.6.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.3",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.4",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.9.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "CM-7(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-7(b)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-1",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "PR.PT-3",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        }
+      ],
       "severity": "medium",
       "tags": {
         "gid": "xccdf_org.ssgproject.content_group_dns_server_protection",
@@ -145,6 +1005,10 @@
         {
           "data": "Is there a mission-critical reason to enable the risky dynamic update functionality? If not, edit . For each zone specification, correct the following directive if necessary:",
           "label": "default"
+        },
+        {
+          "data": "Dynamic updates allow remote servers to add, delete, or modify any entries in your zone file. Therefore, they should be considered highly risky, and disabled unless there is a very good reason for their use. If dynamic updates must be allowed, IP-based ACLs are insufficient protection, since they are easily spoofed. Instead, use TSIG keys (see the previous section for an example), and consider using the update-policy directive to restrict changes to only the precise type of change needed.",
+          "label": "rationale"
         }
       ],
       "id": "xccdf_org.ssgproject.content_rule_dns_server_disable_dynamic_updates",
@@ -164,6 +1028,10 @@
         {
           "data": "Is it necessary for a secondary nameserver to receive zone data via zone transfer from the primary server? If not, follow the instructions in this section. If so, see the next section for instructions on protecting zone transfers. Add or correct the following directive within :",
           "label": "default"
+        },
+        {
+          "data": "If both the primary and secondary nameserver are under your control, or if you have only one nameserver, it may be possible to use an external configuration management mechanism to distribute zone updates. In that case, it is not necessary to allow zone transfers within BIND itself, so they should be disabled to avoid the potential for abuse.",
+          "label": "rationale"
         }
       ],
       "id": "xccdf_org.ssgproject.content_rule_dns_server_disable_zone_transfers",

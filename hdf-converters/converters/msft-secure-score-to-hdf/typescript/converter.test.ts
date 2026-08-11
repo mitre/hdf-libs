@@ -331,4 +331,52 @@ describe('msft-secure-score to HDF converter', async () => {
       expect(withoutOn.length).toBeGreaterThan(0);
     });
   });
+
+  describe('category and maxScore tags (heimdall2 parity)', async () => {
+    it('emits category and maxScore from the matched profile', async () => {
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const reqs = hdf.baselines[0]!.requirements;
+
+      const dlp = reqs.find(r => r.id === 'Data:dlp_datalossprevention')!;
+      expect(dlp.tags?.['category']).toBe('Data');
+      expect(dlp.tags?.['maxScore']).toBe(5);
+
+      const mcas = reqs.find(r => r.id === 'Apps:McasFirewallLogUpload')!;
+      expect(mcas.tags?.['category']).toBe('Apps');
+      expect(mcas.tags?.['maxScore']).toBe(1);
+    });
+
+    it('omits category and maxScore when no profile matches', async () => {
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:spo_idle_session_timeout')!;
+      expect(req.tags?.['category']).toBeUndefined();
+      expect(req.tags?.['maxScore']).toBeUndefined();
+    });
+  });
+
+  describe('multi-profile join (heimdall2 parity)', async () => {
+    // Real MS Graph data has unique profile ids; this synthetic input exercises
+    // the join path where >1 profile matches a control name.
+    it('joins title, fix, and rationale across all matched profiles', async () => {
+      const input = JSON.stringify({
+        secureScore: { value: [{
+          id: 'run-1',
+          azureTenantId: 't-1',
+          createdDateTime: '2024-03-14T09:00:00Z',
+          controlScores: [
+            { controlCategory: 'Apps', controlName: 'dup', description: 'd', score: 0, implementationStatus: 'x', scoreInPercentage: 0, lastSynced: '2024-03-14T09:00:00Z' },
+          ],
+        }] },
+        profiles: { value: [
+          { id: 'dup', controlCategory: 'Apps', title: 'Title A', maxScore: 3, remediation: 'Fix A', remediationImpact: 'Impact A' },
+          { id: 'dup', controlCategory: 'Apps', title: 'Title B', maxScore: 5, remediation: 'Fix B', remediationImpact: 'Impact B' },
+        ] },
+      });
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:dup')!;
+      expect(req.title).toBe('Title A\nTitle B');
+      expect(req.descriptions?.find(d => d.label === 'fix')?.data).toBe('Fix A\nFix B');
+      expect(req.descriptions?.find(d => d.label === 'rationale')?.data).toBe('Impact A\nImpact B');
+    });
+  });
 });

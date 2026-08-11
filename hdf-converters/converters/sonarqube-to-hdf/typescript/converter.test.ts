@@ -666,6 +666,80 @@ describe('backfilled source metadata tags', async () => {
   });
 });
 
+describe('auxiliary per-issue metadata tags (sonarqube/ namespace)', async () => {
+  const byId = async (fixture: string) => {
+    const input = readFileSync(join(__dirname, `../fixtures/input/${fixture}`), 'utf-8');
+    const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+    return new Map(
+      hdf.baselines[0]!.requirements.map(r => [r.id, r.tags as Record<string, unknown>]),
+    );
+  };
+
+  it('pins hash/key/update_date/quick_fix_available and omits empty flows (mqr.json)', async () => {
+    const tags = (await byId('mqr.json')).get('java:S1186')!;
+    expect(tags['sonarqube/hash']).toBe('4fa436e830f0433a248778dafd40f373');
+    expect(tags['sonarqube/key']).toBe('02e8e9bf-5d42-4729-a087-8b7e56e0e908');
+    expect(tags['sonarqube/update_date']).toBe('2026-03-24T03:20:30+0000');
+    expect(tags['sonarqube/quick_fix_available']).toBe(true);
+    expect(tags).not.toHaveProperty('sonarqube/flows');
+  });
+
+  it('preserves quick_fix_available=false and emits populated flows (mqr.json)', async () => {
+    const tags = (await byId('mqr.json')).get('java:S1192')!;
+    expect(tags['sonarqube/quick_fix_available']).toBe(false);
+    const flows = tags['sonarqube/flows'] as unknown[];
+    expect(Array.isArray(flows)).toBe(true);
+    expect(flows.length).toBe(3);
+  });
+
+  it('carries hash/key/update_date but omits flows and quick_fix_available (minimal.json)', async () => {
+    const map = await byId('minimal.json');
+    for (const [, tags] of map) {
+      expect(tags).toHaveProperty('sonarqube/hash');
+      expect(tags).toHaveProperty('sonarqube/key');
+      expect(tags).toHaveProperty('sonarqube/update_date');
+      expect(tags).not.toHaveProperty('sonarqube/flows');
+      expect(tags).not.toHaveProperty('sonarqube/quick_fix_available');
+    }
+  });
+
+  it('omits every aux tag when the issue carries none', async () => {
+    const input = JSON.stringify({
+      total: 1, p: 1, ps: 100,
+      paging: { pageIndex: 1, pageSize: 100, total: 1 },
+      issues: [{
+        rule: 'java:S100', severity: 'MAJOR',
+        component: 'proj:file', project: 'proj', status: 'OPEN', message: 'msg',
+        type: 'CODE_SMELL', creationDate: '2026-01-01T00:00:00+0000',
+      }],
+      components: [], rules: [],
+    });
+    const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+    const tags = hdf.baselines[0]!.requirements[0]!.tags as Record<string, unknown>;
+    for (const key of ['sonarqube/hash', 'sonarqube/key', 'sonarqube/update_date', 'sonarqube/flows', 'sonarqube/quick_fix_available']) {
+      expect(tags).not.toHaveProperty(key);
+    }
+  });
+
+  it('treats an empty flows array as no flows but still emits quick_fix_available=false', async () => {
+    const input = JSON.stringify({
+      total: 1, p: 1, ps: 100,
+      paging: { pageIndex: 1, pageSize: 100, total: 1 },
+      issues: [{
+        key: 'k1', rule: 'java:S100', severity: 'MAJOR',
+        component: 'proj:file', project: 'proj', status: 'OPEN', message: 'msg',
+        flows: [], quickFixAvailable: false,
+        type: 'CODE_SMELL', creationDate: '2026-01-01T00:00:00+0000',
+      }],
+      components: [], rules: [],
+    });
+    const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+    const tags = hdf.baselines[0]!.requirements[0]!.tags as Record<string, unknown>;
+    expect(tags).not.toHaveProperty('sonarqube/flows');
+    expect(tags['sonarqube/quick_fix_available']).toBe(false);
+  });
+});
+
 describe('selectSeverity', () => {
   // The legacy→MQR relationship is per-rule, not a constant offset: a rule can be
   // legacy MAJOR yet MQR LOW (over-rated) or legacy MAJOR yet MQR HIGH (under-rated).

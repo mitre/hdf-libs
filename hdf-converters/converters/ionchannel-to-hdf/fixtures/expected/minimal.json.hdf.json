@@ -2,6 +2,21 @@
   "baselines": [
     {
       "description": "Ion Channel analysis verdict: PASSED (risk: low). Ruleset: default (ruleset-001).",
+      "extensions": {
+        "ionchannel": {
+          "analysis_id": "analysis-001-abcdef",
+          "branch": "main",
+          "description": "Example project for dependency analysis",
+          "duration": 12345,
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "name": "example-project",
+          "project_id": "project-001-mnopqr",
+          "public": false,
+          "status": "finished",
+          "team_id": "team-001-ghijkl",
+          "type": "git"
+        }
+      },
       "integrity": {
         "algorithm": "sha256",
         "checksum": "1a108aa1e84b0bcf77bb20fe87cb84d36ab431a55a98bc7aebcd5994246f5ce9"
@@ -28,12 +43,22 @@
               "accepts"
             ],
             "file": "package.json",
+            "ionchannel/trigger": "source_commit",
+            "ionchannel/trigger_author": "developer@example.com",
+            "ionchannel/trigger_hash": "abc123def456",
+            "ionchannel/trigger_text": "feat: add new feature",
             "latest_version": "4.18.3",
             "name": "express",
             "nist": [
               "CM-8"
             ],
             "org": "expressjs",
+            "outdated_version": {
+              "major_behind": 0,
+              "minor_behind": 0,
+              "patch_behind": 1
+            },
+            "package": "npm",
             "passed": true,
             "requirement": "^4.18.0",
             "risk": "low",
@@ -65,12 +90,22 @@
           "impact": 0,
           "tags": {
             "file": "",
+            "ionchannel/trigger": "source_commit",
+            "ionchannel/trigger_author": "developer@example.com",
+            "ionchannel/trigger_hash": "abc123def456",
+            "ionchannel/trigger_text": "feat: add new feature",
             "latest_version": "1.20.2",
             "name": "accepts",
             "nist": [
               "CM-8"
             ],
             "org": "jshttp",
+            "outdated_version": {
+              "major_behind": 0,
+              "minor_behind": 17,
+              "patch_behind": 0
+            },
+            "package": "npm",
             "parentDependencies": [
               "expressjs/express"
             ],
@@ -105,12 +140,22 @@
           "impact": 0,
           "tags": {
             "file": "package.json",
+            "ionchannel/trigger": "source_commit",
+            "ionchannel/trigger_author": "developer@example.com",
+            "ionchannel/trigger_hash": "abc123def456",
+            "ionchannel/trigger_text": "feat: add new feature",
             "latest_version": "10.4.0",
             "name": "lodash",
             "nist": [
               "CM-8"
             ],
             "org": "lodash",
+            "outdated_version": {
+              "major_behind": 6,
+              "minor_behind": 0,
+              "patch_behind": 0
+            },
+            "package": "npm",
             "passed": true,
             "requirement": "^4.17.0",
             "risk": "low",

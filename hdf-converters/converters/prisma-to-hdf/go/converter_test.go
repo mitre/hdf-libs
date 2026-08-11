@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -465,6 +466,51 @@ func TestConvertPrisma_Refs_BlankLinkOmitted(t *testing.T) {
 	// Compliance finding carries a blank Vulnerability Link → no refs[].
 	req := shared.MustFindRequirement(t, host1.Requirements, "60522-redhat-RHEL7-high")
 	assert.Nil(t, req.Refs)
+}
+
+// ---- Raw finding code passthrough ----
+
+func TestConvertPrisma_RawFindingCode(t *testing.T) {
+	input := loadFixture(t, "input/minimal.csv")
+	result, err := ConvertPrismaToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	host1 := findBaseline(result.Baselines, "host-1.example.com")
+	require.NotNil(t, host1)
+
+	// Byte-pinned so the Go and TS twins stay identical: a fixed field-order
+	// projection of the parsed CSV row keyed by CSV header name.
+	expectedCveCode := strings.Join([]string{
+		"{",
+		`  "Hostname": "host-1.example.com",`,
+		`  "Distro": "redhat-RHEL7",`,
+		`  "CVE ID": "CVE-2021-44142",`,
+		`  "Compliance ID": "46",`,
+		`  "Type": "image",`,
+		`  "Severity": "critical",`,
+		`  "Packages": "samba-common",`,
+		`  "Source Package": "",`,
+		`  "Package Version": "4.10.16-15.el7_9",`,
+		`  "CVSS": "9.90",`,
+		`  "Fix Status": "fixed in 4.10.16-18.el7_9",`,
+		`  "Description": "Samba out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution.",`,
+		`  "Cause": "",`,
+		`  "Published": "2022-01-31 00:00:00.000",`,
+		`  "Vulnerability Link": "http://example.com/security/cve/CVE-2021-44142"`,
+		"}",
+	}, "\n")
+
+	req := shared.MustFindRequirement(t, host1.Requirements, "46-CVE-2021-44142")
+	require.NotNil(t, req.Code)
+	assert.Equal(t, expectedCveCode, *req.Code)
+
+	// Non-CVE compliance finding still projects its populated fields (Cause)
+	// and empties for the absent ones (CVE ID).
+	req = shared.MustFindRequirement(t, host1.Requirements, "60522-redhat-RHEL7-high")
+	require.NotNil(t, req.Code)
+	assert.Contains(t, *req.Code, `"Compliance ID": "60522"`)
+	assert.Contains(t, *req.Code, `"CVE ID": ""`)
+	assert.Contains(t, *req.Code, `"Cause": "File ownership is wrong`)
 }
 
 func TestSnapshots(t *testing.T) {

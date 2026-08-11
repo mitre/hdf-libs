@@ -692,6 +692,192 @@ describe('xccdf-results-to-hdf converter', async () => {
       expect(checkDesc).toBeDefined();
       expect(checkDesc!.data).toContain('OVAL definition logic goes here');
     });
+
+    // heimdall2 sources the check description from the OVAL/SCE definition name
+    // (check-content-ref/@name) that SCAP content carries instead of inline
+    // logic. Ours previously read only the (empty) inline content.
+    it('sources the check description from the OVAL definition name when inline content is absent', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      const req = findReq(hdf, 'SV-204393');
+      const checkDesc = req!.descriptions.find((d) => d.label === 'check');
+      expect(checkDesc).toBeDefined();
+      expect(checkDesc!.data).toBe('oval:mil.disa.stig.rhel7:def:922');
+    });
+
+    // Baseline path: rationale and warning descriptions must be emitted when the
+    // source Rule carries them. Pinned against benchmark-ssg-nested-groups.
+    it('emits rationale and warning descriptions in the baseline path', async () => {
+      const baseline = await parseBaseline('benchmark-ssg-nested-groups.xml');
+      const dnsmasq = findBaselineReq(
+        baseline,
+        'xccdf_org.ssgproject.content_rule_package_dnsmasq_removed'
+      );
+      const rationale = dnsmasq!.descriptions.find(
+        (d) => d.label === 'rationale'
+      );
+      expect(rationale).toBeDefined();
+      expect(rationale!.data).toContain('specifically designated to act as a DNS');
+
+      const withWarning = baseline.requirements.find((r) =>
+        r.descriptions.some((d) => d.label === 'warning')
+      );
+      expect(withWarning).toBeDefined();
+      const warning = withWarning!.descriptions.find(
+        (d) => d.label === 'warning'
+      );
+      expect(warning!.data.length).toBeGreaterThan(0);
+    });
+  });
+
+  // --- requirement.refs (external references) ---
+
+  describe('requirement.refs', () => {
+    // STIG Dublin Core reference (publisher/identifier/type) → ref object array.
+    it('emits a Dublin Core reference as a ref object array in the results path', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      const req = findReq(hdf, 'SV-204393');
+      expect(req!.refs).toBeDefined();
+      expect(req!.refs!).toHaveLength(1);
+      const ref = req!.refs![0]!.ref as Record<string, string>[];
+      expect(Array.isArray(ref)).toBe(true);
+      expect(ref[0]).toEqual({
+        identifier: '2899',
+        publisher: 'DISA',
+        type: 'DPMS Target',
+      });
+      expect(req!.refs![0]!.url).toBeUndefined();
+    });
+
+    // SSG/CIS text-body reference with an href → ref string + url.
+    it('emits a text-body reference as a string with its href as url in the baseline path', async () => {
+      const baseline = await parseBaseline('benchmark-ssg-nested-groups.xml');
+      const req = findBaselineReq(
+        baseline,
+        'xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled'
+      );
+      expect(req!.refs).toBeDefined();
+      expect(req!.refs![0]!.ref).toBe('2.1.6');
+      expect(req!.refs![0]!.url).toBe(
+        'https://www.cisecurity.org/benchmark/red_hat_linux/'
+      );
+    });
+  });
+
+  // --- impact zeroing for skipped statuses ---
+
+  describe('impact zeroing', () => {
+    // heimdall2 zeros impact for not-applicable/not-selected/informational
+    // rule-results regardless of severity; status still records the disposition.
+    it('zeros impact for notapplicable/notselected/informational, keeping real failures weighted', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_impact">
+  <version>1.0</version>
+  <Rule id="rule_na" selected="true" severity="high"><title>NA</title></Rule>
+  <Rule id="rule_ns" selected="true" severity="high"><title>NS</title></Rule>
+  <Rule id="rule_info" selected="true" severity="high"><title>INFO</title></Rule>
+  <Rule id="rule_fail" selected="true" severity="high"><title>FAIL</title></Rule>
+  <TestResult id="xccdf_test_tr" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="rule_na" time="2021-01-01T00:00:00"><result>notapplicable</result></rule-result>
+    <rule-result idref="rule_ns" time="2021-01-01T00:00:00"><result>notselected</result></rule-result>
+    <rule-result idref="rule_info" time="2021-01-01T00:00:00"><result>informational</result></rule-result>
+    <rule-result idref="rule_fail" time="2021-01-01T00:00:00"><result>fail</result></rule-result>
+  </TestResult>
+</Benchmark>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
+      const reqs = hdf.baselines[0]!.requirements;
+      const byTitle = (t: string) => reqs.find((r) => r.title === t)!;
+      expect(byTitle('NA').impact).toBe(0);
+      expect(byTitle('NS').impact).toBe(0);
+      expect(byTitle('INFO').impact).toBe(0);
+      expect(byTitle('FAIL').impact).toBe(0.7);
+    });
+  });
+
+  // Branch pins for the ref/description edge cases the real fixtures never hit
+  // (empty references, inline check-content with attributes, revision-less SV
+  // ids). Synthetic XML inputs, not committed fixtures — no fabricated data.
+  describe('branch coverage (synthetic inputs)', () => {
+    it('skips an empty <reference>, keeps an href-only ref, and carries reference text', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" xmlns:dc="http://purl.org/dc/elements/1.1/" id="xccdf_test_refedge">
+  <version>1.0</version>
+  <Rule id="rule_refs" selected="true" severity="low">
+    <title>Ref edge cases</title>
+    <reference></reference>
+    <reference href="https://example.test/a"/>
+    <reference>freetext<dc:publisher>ACME</dc:publisher></reference>
+  </Rule>
+  <TestResult id="xccdf_test_tr" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="rule_refs" time="2021-01-01T00:00:00"><result>pass</result></rule-result>
+  </TestResult>
+</Benchmark>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
+      const refs = hdf.baselines[0]!.requirements[0]!.refs;
+      // The empty reference is dropped; the href-only and text refs remain.
+      expect(refs).toEqual([
+        { url: 'https://example.test/a' },
+        { ref: [{ publisher: 'ACME', text: 'freetext' }] },
+      ]);
+    });
+
+    it('reads inline check-content that carries an attribute (array-of-object form)', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_ccattr">
+  <version>1.0</version>
+  <Rule id="rule_cc" selected="true" severity="low">
+    <title>CC attr</title>
+    <check system="s"><check-content lang="en">inline logic</check-content></check>
+  </Rule>
+  <TestResult id="xccdf_test_tr" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="rule_cc" time="2021-01-01T00:00:00"><result>pass</result></rule-result>
+  </TestResult>
+</Benchmark>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
+      const checkDesc = hdf.baselines[0]!.requirements[0]!.descriptions.find(
+        (d) => d.label === 'check'
+      );
+      expect(checkDesc!.data).toBe('inline logic');
+    });
+
+    it('falls back to the OVAL name when check-content is an empty attributed element', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_ccempty">
+  <version>1.0</version>
+  <Rule id="rule_cc" selected="true" severity="low">
+    <title>CC empty</title>
+    <check system="s">
+      <check-content lang="en"></check-content>
+      <check-content-ref name="oval:x:def:9" href="o.xml"/>
+    </check>
+  </Rule>
+  <TestResult id="xccdf_test_tr" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="rule_cc" time="2021-01-01T00:00:00"><result>pass</result></rule-result>
+  </TestResult>
+</Benchmark>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
+      const checkDesc = hdf.baselines[0]!.requirements[0]!.descriptions.find(
+        (d) => d.label === 'check'
+      );
+      expect(checkDesc!.data).toBe('oval:x:def:9');
+    });
+
+    it('keeps a revision-less SV id unchanged', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_svid">
+  <version>1.0</version>
+  <Rule id="SV-99999" selected="true" severity="low"><title>No revision</title></Rule>
+  <TestResult id="xccdf_test_tr" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="SV-99999" time="2021-01-01T00:00:00"><result>pass</result></rule-result>
+  </TestResult>
+</Benchmark>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.id).toBe('SV-99999');
+    });
   });
 
   // --- requirement.code (CODE tab) ---

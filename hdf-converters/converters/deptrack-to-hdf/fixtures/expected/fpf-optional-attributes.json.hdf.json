@@ -1,0 +1,178 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "1.8.3",
+              "name": "angular",
+              "purl": "pkg:npm/angular@1.8.0",
+              "version": "1.8.0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "source": "CVE-2022-25844",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "source": "CVE-2022-25844",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-1333"
+          ],
+          "descriptions": [
+            {
+              "data": "The package angular after 1.7.0 are vulnerable to Regular Expression Denial of Service (ReDoS) by providing a custom locale rule that makes it possible to assign the parameter in posPre: ' '.repeat() of NUMBER_FORMATS.PATTERNS[1].posPre with a very high value. **Note:** 1) This package has been deprecated and is no longer maintained. 2) The vulnerable versions are 1.7.0 and higher.",
+              "label": "default"
+            },
+            {
+              "data": "The package angular after 1.7.0 are vulnerable to Regular Expression Denial of Service (ReDoS) by providing a custom locale rule that makes it possible to assign the parameter in posPre: ' '.repeat() of NUMBER_FORMATS.PATTERNS[1].posPre with a very high value. **Note:** 1) This package has been deprecated and is no longer maintained. 2) The vulnerable versions are 1.7.0 and higher.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "No recommendation available",
+              "startTime": "2024-04-04T03:51:19Z",
+              "status": "failed"
+            }
+          ],
+          "id": "75512646-e558-47a4-9cc3-0be806bf3482:2d964faa-c9c3-4669-900e-0ea3de1a9282:bf868742-0913-4a88-8dbc-1f6dbaf4b575",
+          "impact": 0.7,
+          "tags": {
+            "analysisIsSuppressed": false,
+            "attributionAlternateIdentifier": "CVE-2022-25844",
+            "attributionAnalyzerIdentity": "OSSINDEX_ANALYZER",
+            "attributionAttributedOn": "2024-04-04 03:50:40.893",
+            "attributionReferenceUrl": "https://ossindex.sonatype.org/vulnerability/CVE-2022-25844?component-type=npm\u0026component-name=angular\u0026utm_source=dependency-track\u0026utm_medium=integration\u0026utm_content=v4.10.1",
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cweNames": [
+              "Inefficient Regular Expression Complexity"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "vulnerabilitySeverityRank": 1,
+            "vulnerabilitySource": "NVD",
+            "vulnerabilityUuid": "bf868742-0913-4a88-8dbc-1f6dbaf4b575",
+            "vulnerabilityVulnId": "CVE-2022-25844"
+          },
+          "code": "{\n  \"component\": {\n    \"name\": \"angular\",\n    \"project\": \"75512646-e558-47a4-9cc3-0be806bf3482\",\n    \"purl\": \"pkg:npm/angular@1.8.0\",\n    \"uuid\": \"2d964faa-c9c3-4669-900e-0ea3de1a9282\",\n    \"version\": \"1.8.0\",\n    \"latestVersion\": \"1.8.3\"\n  },\n  \"attribution\": {\n    \"alternateIdentifier\": \"CVE-2022-25844\",\n    \"analyzerIdentity\": \"OSSINDEX_ANALYZER\",\n    \"attributedOn\": \"2024-04-04 03:50:40.893\",\n    \"referenceUrl\": \"https://ossindex.sonatype.org/vulnerability/CVE-2022-25844?component-type=npm\u0026component-name=angular\u0026utm_source=dependency-track\u0026utm_medium=integration\u0026utm_content=v4.10.1\"\n  },\n  \"vulnerability\": {\n    \"severity\": \"HIGH\",\n    \"cvssV3BaseScore\": 7.5,\n    \"severityRank\": 1,\n    \"cweName\": \"Inefficient Regular Expression Complexity\",\n    \"vulnId\": \"CVE-2022-25844\",\n    \"aliases\": [],\n    \"cvssV2BaseScore\": 5,\n    \"cweId\": 1333,\n    \"description\": \"The package angular after 1.7.0 are vulnerable to Regular Expression Denial of Service (ReDoS) by providing a custom locale rule that makes it possible to assign the parameter in posPre: ' '.repeat() of NUMBER_FORMATS.PATTERNS[1].posPre with a very high value. **Note:** 1) This package has been deprecated and is no longer maintained. 2) The vulnerable versions are 1.7.0 and higher.\",\n    \"source\": \"NVD\",\n    \"cwes\": [\n      {\n        \"cweId\": 1333,\n        \"name\": \"Inefficient Regular Expression Complexity\",\n        \"id\": 0\n      }\n    ],\n    \"uuid\": \"bf868742-0913-4a88-8dbc-1f6dbaf4b575\"\n  },\n  \"analysis\": {\n    \"isSuppressed\": false\n  },\n  \"matrix\": \"75512646-e558-47a4-9cc3-0be806bf3482:2d964faa-c9c3-4669-900e-0ea3de1a9282:bf868742-0913-4a88-8dbc-1f6dbaf4b575\"\n}",
+          "title": "pkg:npm/angular@1.8.0",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "6.0.1",
+              "name": "codemirror",
+              "purl": "pkg:npm/codemirror@5.56.0",
+              "version": "5.56.0"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "source": "CVE-2020-7760",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "source": "CVE-2020-7760",
+              "version": "2.0"
+            }
+          ],
+          "cwe": [
+            "CWE-400"
+          ],
+          "descriptions": [
+            {
+              "data": "This affects the package codemirror before 5.58.2; the package org.apache.marmotta.webjars:codemirror before 5.58.2. The vulnerable regular expression is located in https://github.com/codemirror/CodeMirror/blob/cdb228ac736369c685865b122b736cd0d397836c/mode/javascript/javascript.jsL129. The ReDOS vulnerability of the regex is mainly due to the sub-pattern (s|/*.*?*/)*",
+              "label": "default"
+            },
+            {
+              "data": "This affects the package codemirror before 5.58.2; the package org.apache.marmotta.webjars:codemirror before 5.58.2. The vulnerable regular expression is located in https://github.com/codemirror/CodeMirror/blob/cdb228ac736369c685865b122b736cd0d397836c/mode/javascript/javascript.jsL129. The ReDOS vulnerability of the regex is mainly due to the sub-pattern (s|/*.*?*/)*",
+              "label": "check"
+            }
+          ],
+          "epss": {
+            "date": "2024-04-04",
+            "percentile": 0.86529,
+            "score": 0.01484
+          },
+          "results": [
+            {
+              "codeDesc": "No recommendation available",
+              "startTime": "2024-04-04T03:51:19Z",
+              "status": "failed"
+            }
+          ],
+          "id": "75512646-e558-47a4-9cc3-0be806bf3482:8d710299-44a4-4d86-8aeb-511a6f0bb50c:9cc4665f-3250-4df9-986a-7264f544fc93",
+          "impact": 0.7,
+          "tags": {
+            "analysisIsSuppressed": false,
+            "attributionAlternateIdentifier": "CVE-2020-7760",
+            "attributionAnalyzerIdentity": "OSSINDEX_ANALYZER",
+            "attributionAttributedOn": "2024-04-04 03:50:40.981",
+            "attributionReferenceUrl": "https://ossindex.sonatype.org/vulnerability/CVE-2020-7760?component-type=npm\u0026component-name=codemirror\u0026utm_source=dependency-track\u0026utm_medium=integration\u0026utm_content=v4.10.1",
+            "cci": [
+              "CCI-001310"
+            ],
+            "cweNames": [
+              "Uncontrolled Resource Consumption"
+            ],
+            "nist": [
+              "SI-10"
+            ],
+            "vulnerabilitySeverityRank": 1,
+            "vulnerabilitySource": "NVD",
+            "vulnerabilityUuid": "9cc4665f-3250-4df9-986a-7264f544fc93",
+            "vulnerabilityVulnId": "CVE-2020-7760"
+          },
+          "code": "{\n  \"component\": {\n    \"name\": \"codemirror\",\n    \"project\": \"75512646-e558-47a4-9cc3-0be806bf3482\",\n    \"purl\": \"pkg:npm/codemirror@5.56.0\",\n    \"uuid\": \"8d710299-44a4-4d86-8aeb-511a6f0bb50c\",\n    \"version\": \"5.56.0\",\n    \"latestVersion\": \"6.0.1\"\n  },\n  \"attribution\": {\n    \"alternateIdentifier\": \"CVE-2020-7760\",\n    \"analyzerIdentity\": \"OSSINDEX_ANALYZER\",\n    \"attributedOn\": \"2024-04-04 03:50:40.981\",\n    \"referenceUrl\": \"https://ossindex.sonatype.org/vulnerability/CVE-2020-7760?component-type=npm\u0026component-name=codemirror\u0026utm_source=dependency-track\u0026utm_medium=integration\u0026utm_content=v4.10.1\"\n  },\n  \"vulnerability\": {\n    \"severity\": \"HIGH\",\n    \"cvssV3BaseScore\": 7.5,\n    \"vulnId\": \"CVE-2020-7760\",\n    \"aliases\": [],\n    \"cweId\": 400,\n    \"description\": \"This affects the package codemirror before 5.58.2; the package org.apache.marmotta.webjars:codemirror before 5.58.2. The vulnerable regular expression is located in https://github.com/codemirror/CodeMirror/blob/cdb228ac736369c685865b122b736cd0d397836c/mode/javascript/javascript.jsL129. The ReDOS vulnerability of the regex is mainly due to the sub-pattern (s|/*.*?*/)*\",\n    \"epssScore\": 0.01484,\n    \"source\": \"NVD\",\n    \"cwes\": [\n      {\n        \"cweId\": 400,\n        \"name\": \"Uncontrolled Resource Consumption\",\n        \"id\": 0\n      }\n    ],\n    \"uuid\": \"9cc4665f-3250-4df9-986a-7264f544fc93\",\n    \"severityRank\": 1,\n    \"cweName\": \"Uncontrolled Resource Consumption\",\n    \"epssPercentile\": 0.86529,\n    \"cvssV2BaseScore\": 5\n  },\n  \"analysis\": {\n    \"isSuppressed\": false\n  },\n  \"matrix\": \"75512646-e558-47a4-9cc3-0be806bf3482:8d710299-44a4-4d86-8aeb-511a6f0bb50c:9cc4665f-3250-4df9-986a-7264f544fc93\"\n}",
+          "controlType": "technical",
+          "title": "pkg:npm/codemirror@5.56.0",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "0c0956599b1cc049553c2eb86c15c035e05b9c4ef3137ce938dc47e922d3924b"
+      },
+      "name": "Dependency-Track Scan",
+      "summary": "Dependency-Track sample carrying CVSS, EPSS and attribution attributes",
+      "title": "Dependency-Track: attributions-sample 1.0"
+    }
+  ],
+  "components": [
+    {
+      "name": "attributions-sample",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "deptrack-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2024-04-04T03:51:19Z",
+  "tool": {
+    "format": "FPF",
+    "name": "Dependency-Track"
+  }
+}

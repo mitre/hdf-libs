@@ -35,6 +35,7 @@ import {
   convertOpenVexToHdf,
   convertCsafVexToHdf,
   convertCyclonedxVexToHdf,
+  convertSpdxVexToHdf,
   convertHdfToCsafVex,
   convertHdfToCyclonedxVex,
   convertHdfToOpenVex,
@@ -297,6 +298,11 @@ describe('Main exports', () => {
   it('should export convertCyclonedxVexToHdf from main index', () => {
     expect(convertCyclonedxVexToHdf).toBeDefined();
     expect(typeof convertCyclonedxVexToHdf).toBe('function');
+  });
+
+  it('should export convertSpdxVexToHdf from main index', () => {
+    expect(convertSpdxVexToHdf).toBeDefined();
+    expect(typeof convertSpdxVexToHdf).toBe('function');
   });
 
   it('should export convertHdfToCsafVex from main index', () => {

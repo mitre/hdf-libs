@@ -9,6 +9,10 @@
             {
               "data": "",
               "label": "default"
+            },
+            {
+              "data": "oval:x:def:1",
+              "label": "check"
             }
           ],
           "id": "xccdf_moc.elpmaxe.www_rule_1",
@@ -31,6 +35,10 @@
             {
               "data": "",
               "label": "default"
+            },
+            {
+              "data": "oval:x:def:1",
+              "label": "check"
             }
           ],
           "id": "xccdf_moc.elpmaxe.www_rule_2",

@@ -625,7 +625,7 @@ func findingImpact(f asffFinding, control *standardsControl) float64 {
 		return severityLabelToImpact(label)
 	}
 	if sev.Normalized != nil {
-		return *sev.Normalized / 100.0
+		return hdfutil.RoundImpact(*sev.Normalized / 100.0)
 	}
 	return 0.0
 }

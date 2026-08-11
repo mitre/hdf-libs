@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -41,7 +42,7 @@ type DeptrackProject struct {
 type DeptrackFinding struct {
 	Component     DeptrackComponent     `json:"component"`
 	Vulnerability DeptrackVulnerability `json:"vulnerability"`
-	Analysis      DeptrackAnalysis      `json:"analysis"`
+	Analysis      *DeptrackAnalysis     `json:"analysis,omitempty"`
 	Attribution   *DeptrackAttribution  `json:"attribution,omitempty"`
 	Matrix        string                `json:"matrix"`
 
@@ -84,17 +85,17 @@ type DeptrackVulnerability struct {
 	Title          string          `json:"title"`
 	Subtitle       string          `json:"subtitle"`
 	Severity       string          `json:"severity"`
-	SeverityRank   int             `json:"severityRank"`
+	SeverityRank   *int            `json:"severityRank"`
 	CweID          int             `json:"cweId"`
 	CweName        string          `json:"cweName"`
 	Cwes           []DeptrackCwe   `json:"cwes"`
 	Description    string          `json:"description"`
 	Recommendation string          `json:"recommendation"`
 	Aliases        []DeptrackAlias `json:"aliases"`
-	CvssV2Base     float64         `json:"cvssV2BaseScore"`
-	CvssV3Base     float64         `json:"cvssV3BaseScore"`
-	EpssScore      float64         `json:"epssScore"`
-	EpssPercentile float64         `json:"epssPercentile"`
+	CvssV2Base     *float64        `json:"cvssV2BaseScore"`
+	CvssV3Base     *float64        `json:"cvssV3BaseScore"`
+	EpssScore      *float64        `json:"epssScore"`
+	EpssPercentile *float64        `json:"epssPercentile"`
 }
 
 // DeptrackAlias is a cross-reference to the same vulnerability under another
@@ -174,6 +175,92 @@ func getCVEs(vuln DeptrackVulnerability) []string {
 	return out
 }
 
+// getCweNames extracts the human-readable CWE names from the cwes array,
+// mirroring the heimdall2 cweNames tag.
+func getCweNames(cwes []DeptrackCwe) []string {
+	if len(cwes) == 0 {
+		return nil
+	}
+	names := make([]string, len(cwes))
+	for i, cwe := range cwes {
+		names[i] = cwe.Name
+	}
+	return names
+}
+
+// resolveCVE returns the CVE identifier a finding is attributed to. When the
+// NVD-sourced vulnId is itself a CVE it is authoritative; otherwise the first
+// aliased CVE stands in. Used as the cvss[].source so a score is traceable to a
+// specific advisory. Returns "" when no CVE is present.
+func resolveCVE(vuln DeptrackVulnerability) string {
+	if strings.HasPrefix(vuln.VulnID, "CVE-") {
+		return vuln.VulnID
+	}
+	if cves := getCVEs(vuln); len(cves) > 0 {
+		return cves[0]
+	}
+	return ""
+}
+
+// buildCvssEntries assembles structured requirement.cvss[] entries from the
+// score-only CVSS metrics Dependency-Track carries. The FPF exposes no vector,
+// so each entry is a bare base score under its major version (v3 → 3.1, the
+// version modern Dependency-Track computes; v2 → 2.0). The v3 entry leads when
+// both are present. Returns nil when the finding carries no CVSS score.
+func buildCvssEntries(vuln DeptrackVulnerability) []hdf.Cvss {
+	source := resolveCVE(vuln)
+	var entries []hdf.Cvss
+	if vuln.CvssV3Base != nil {
+		entries = append(entries, shared.BuildCvss(shared.CvssInput{
+			Version:   hdf.The31,
+			BaseScore: vuln.CvssV3Base,
+			Source:    source,
+		}))
+	}
+	if vuln.CvssV2Base != nil {
+		entries = append(entries, shared.BuildCvss(shared.CvssInput{
+			Version:   hdf.The20,
+			BaseScore: vuln.CvssV2Base,
+			Source:    source,
+		}))
+	}
+	return entries
+}
+
+// buildEpss assembles a structured requirement.epss entry from the EPSS
+// probability and percentile Dependency-Track carries. The FPF omits the EPSS
+// publication date the schema requires, so it is sourced from the scan time
+// (meta.timestamp) in YYYY-MM-DD form — the day the scanner recorded the score.
+// Returns nil when the finding carries neither EPSS field.
+func buildEpss(vuln DeptrackVulnerability, timestamp string) *hdf.Epss {
+	if vuln.EpssScore == nil && vuln.EpssPercentile == nil {
+		return nil
+	}
+	var score, percentile float64
+	if vuln.EpssScore != nil {
+		score = *vuln.EpssScore
+	}
+	if vuln.EpssPercentile != nil {
+		percentile = *vuln.EpssPercentile
+	}
+	return &hdf.Epss{
+		Date:       epssDate(timestamp),
+		Score:      score,
+		Percentile: percentile,
+	}
+}
+
+// epssDate renders the scan time as YYYY-MM-DD, falling back to today's date
+// when meta.timestamp is absent or unparseable.
+func epssDate(timestamp string) string {
+	if timestamp != "" {
+		if t := hdfutil.ParseTimestamp(timestamp); !t.IsZero() {
+			return t.UTC().Format("2006-01-02")
+		}
+	}
+	return time.Now().UTC().Format("2006-01-02")
+}
+
 // buildFindingCode renders the raw Dependency-Track finding as indented JSON for
 // requirement.code (the Heimdall CODE tab). json.Indent reformats the original
 // bytes in place, preserving source key order so the output is byte-identical to
@@ -196,9 +283,50 @@ func buildRequirement(finding DeptrackFinding, timestamp string) hdf.EvaluatedRe
 	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultStaticAnalysisNIST)
 	cciTags := cci.NISTToCCI(nist)
 
+	vuln := finding.Vulnerability
 	extras := map[string]interface{}{}
 	if len(cveIDs) > 0 {
 		extras["cve"] = hdfutil.StringsToInterfaces(cveIDs)
+	}
+	// Typed source attributes heimdall2 surfaces as tags. These also live in
+	// requirement.code (the raw finding), but tagging makes them searchable.
+	if vuln.UUID != "" {
+		extras["vulnerabilityUuid"] = vuln.UUID
+	}
+	if vuln.Source != "" {
+		extras["vulnerabilitySource"] = vuln.Source
+	}
+	if vuln.VulnID != "" {
+		extras["vulnerabilityVulnId"] = vuln.VulnID
+	}
+	if vuln.Subtitle != "" {
+		extras["vulnerabilitySubtitle"] = vuln.Subtitle
+	}
+	if vuln.SeverityRank != nil {
+		extras["vulnerabilitySeverityRank"] = *vuln.SeverityRank
+	}
+	if names := getCweNames(vuln.Cwes); len(names) > 0 {
+		extras["cweNames"] = hdfutil.StringsToInterfaces(names)
+	}
+	if a := finding.Attribution; a != nil {
+		if a.AnalyzerIdentity != "" {
+			extras["attributionAnalyzerIdentity"] = a.AnalyzerIdentity
+		}
+		if a.AttributedOn != "" {
+			extras["attributionAttributedOn"] = a.AttributedOn
+		}
+		if a.AlternateIdentifier != "" {
+			extras["attributionAlternateIdentifier"] = a.AlternateIdentifier
+		}
+		if a.ReferenceURL != "" {
+			extras["attributionReferenceUrl"] = a.ReferenceURL
+		}
+	}
+	if an := finding.Analysis; an != nil {
+		if an.State != "" {
+			extras["analysisState"] = an.State
+		}
+		extras["analysisIsSuppressed"] = an.IsSuppressed
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -254,6 +382,12 @@ func buildRequirement(finding DeptrackFinding, timestamp string) hdf.EvaluatedRe
 	}
 	if len(cweIDs) > 0 {
 		req.Cwe = cweIDs
+	}
+	if cvss := buildCvssEntries(vuln); len(cvss) > 0 {
+		req.Cvss = cvss
+	}
+	if epss := buildEpss(vuln, timestamp); epss != nil {
+		req.Epss = epss
 	}
 	if pkg := buildAffectedPackageFromComponent(finding.Component); pkg != nil {
 		req.AffectedPackages = []hdf.AffectedPackage{*pkg}

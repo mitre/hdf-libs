@@ -149,5 +149,12 @@ export function parseBom(input: string): ParseResult {
       }
       return { format: detected.format, normalized: first.bom };
     }
+    case 'spdx-3-security':
+      // SPDX-3 security / VEX documents carry no software inventory to
+      // normalize into a BillOfMaterials; they are consumed by the
+      // spdx-vex-to-hdf converter as HDF Amendments, not as a BOM.
+      throw new Error(
+        'bom-parser: SPDX-3 security/VEX documents are not inventory BOMs (use --from spdx-vex)',
+      );
   }
 }

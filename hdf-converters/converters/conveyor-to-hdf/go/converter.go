@@ -53,6 +53,7 @@ type ConveyorResult struct {
 	SHA256         string        `json:"sha256"`
 	Classification string        `json:"classification"`
 	Created        string        `json:"created"`
+	ExpiryTs       string        `json:"expiry_ts"`
 	Response       ConveyorResp  `json:"response"`
 	Result         ConveyorScore `json:"result"`
 	Size           interface{}   `json:"size"`
@@ -123,6 +124,53 @@ func determineStatus(score float64) hdf.ResultStatus {
 		return hdf.Passed
 	}
 	return hdf.Failed
+}
+
+// computeRunTime returns the elapsed seconds between a service's start and
+// completion milestones, or nil when either is missing/unparseable.
+func computeRunTime(startedStr, completedStr string) *float64 {
+	started := hdfutil.ParseTimestamp(startedStr)
+	completed := hdfutil.ParseTimestamp(completedStr)
+	if started.IsZero() || completed.IsZero() {
+		return nil
+	}
+	secs := completed.Sub(started).Seconds()
+	return &secs
+}
+
+// canonicalTimestampTag normalizes a Conveyor timestamp string to HDF's
+// canonical trimmed-UTC RFC3339 form (millisecond precision), matching the
+// TypeScript converter byte-for-byte. Returns "" when the source is absent or
+// unparseable so the caller can omit the tag.
+func canonicalTimestampTag(s string) string {
+	t := hdfutil.ParseTimestamp(s)
+	if t.IsZero() {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339Nano)
+}
+
+// scannerTagExtras collects the tool-specific typed tags Conveyor carries per
+// result (created/classification/expiry_ts/size/type), omitting any the source
+// leaves null or empty. Timestamp tags are canonicalized so Go and TS agree.
+func scannerTagExtras(result ConveyorResult) map[string]interface{} {
+	extras := make(map[string]interface{})
+	if created := canonicalTimestampTag(result.Created); created != "" {
+		extras["created"] = created
+	}
+	if result.Classification != "" {
+		extras["classification"] = result.Classification
+	}
+	if expiry := canonicalTimestampTag(result.ExpiryTs); expiry != "" {
+		extras["expiry_ts"] = expiry
+	}
+	if result.Size != nil {
+		extras["size"] = result.Size
+	}
+	if s, ok := result.Type.(string); ok && s != "" {
+		extras["type"] = s
+	}
+	return extras
 }
 
 // scoreToImpact normalizes a Conveyor score (0–1000) to HDF impact (0.0–1.0).
@@ -227,7 +275,7 @@ func firstServiceVersion(results map[string]ConveyorResult) string {
 func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequirement {
 	nist := shared.DefaultStaticAnalysisNIST
 	cciTags := cci.NISTToCCI(nist)
-	tags := shared.BuildNISTCCITags(nist, cciTags)
+	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, scannerTagExtras(result))
 
 	// Build description from sections
 	descText := ""
@@ -246,10 +294,12 @@ func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequi
 		{Label: "default", Data: descText},
 	}
 
-	// Build results from sections. Conveyor's service_completed is the per-scan
-	// completion time; fall back to the zero time when the source omits it.
+	// Build results from sections. start_time is when the scan started
+	// (service_started); fall back to the zero time when the source omits it.
+	// run_time is the scan's elapsed seconds (service_completed − service_started).
 	scannerName := result.Response.ServiceName
-	startTime := hdfutil.ParseTimestamp(result.Response.Milestones.ServiceCompleted)
+	startTime := hdfutil.ParseTimestamp(result.Response.Milestones.ServiceStarted)
+	runTime := computeRunTime(result.Response.Milestones.ServiceStarted, result.Response.Milestones.ServiceCompleted)
 	score := result.Result.Score
 	status := determineStatus(score)
 
@@ -261,6 +311,7 @@ func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequi
 				Status:    status,
 				CodeDesc:  codeDesc,
 				StartTime: startTime,
+				RunTime:   runTime,
 			}
 			results = append(results, r)
 		}
@@ -271,6 +322,7 @@ func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequi
 				Status:    status,
 				CodeDesc:  fmt.Sprintf("No sections reported by %s", scannerName),
 				StartTime: startTime,
+				RunTime:   runTime,
 			},
 		}
 	}

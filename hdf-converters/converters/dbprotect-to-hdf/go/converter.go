@@ -89,6 +89,18 @@ func getStatus(status string) hdf.ResultStatus {
 	}
 }
 
+// getBacktrace mirrors heimdall2: a source "Failed" result carries a fixed
+// marker in results[].backtrace. DBProtect ships no stacktrace, so this sentinel
+// is the only backtrace signal. Keys on the literal source "Result Status", not
+// the mapped HDF status, so "Finding" (also HDF-failed) and the implicit-failed
+// Findings Detail rows get no marker — exactly as heimdall2 does.
+func getBacktrace(resultStatus string) []string {
+	if resultStatus == "Failed" {
+		return []string{"DB Protect Failed Check"}
+	}
+	return nil
+}
+
 // getImpact maps DBProtect risk levels to HDF impact values.
 func getImpact(riskDV string) float64 {
 	return hdfutil.SeverityToImpact(riskDV, 0.5)
@@ -282,6 +294,7 @@ func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.Ev
 			Status:    status,
 			CodeDesc:  f["Details"],
 			StartTime: startTime,
+			Backtrace: getBacktrace(f["Result Status"]),
 		}
 	}
 

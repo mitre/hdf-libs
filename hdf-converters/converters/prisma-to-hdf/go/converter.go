@@ -6,7 +6,9 @@
 package prisma
 
 import (
+	"bytes"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
@@ -122,6 +124,56 @@ func makeMessage(rec prismaRecord) string {
 // makeTitle builds the requirement title following the heimdall2 pattern.
 func makeTitle(rec prismaRecord) string {
 	return fmt.Sprintf("%s-%s-%s", rec.Hostname, rec.Distro, rec.Type)
+}
+
+// rawFindingCode renders the parsed CSV finding as the indented JSON blob
+// carried in the requirement's code field (the CODE tab), so per-row source
+// fields survive the conversion (heimdall2 sets code = JSON.stringify(row)).
+// This is a fixed field-order projection keyed by CSV header name; HTML
+// escaping is off and the trailing newline trimmed so the bytes match the TS
+// twin's JSON.stringify(projection, null, 2).
+func rawFindingCode(rec prismaRecord) string {
+	projection := struct {
+		Hostname          string `json:"Hostname"`
+		Distro            string `json:"Distro"`
+		CVEID             string `json:"CVE ID"`
+		ComplianceID      string `json:"Compliance ID"`
+		Type              string `json:"Type"`
+		Severity          string `json:"Severity"`
+		Packages          string `json:"Packages"`
+		SourcePackage     string `json:"Source Package"`
+		PackageVersion    string `json:"Package Version"`
+		CVSS              string `json:"CVSS"`
+		FixStatus         string `json:"Fix Status"`
+		Description       string `json:"Description"`
+		Cause             string `json:"Cause"`
+		Published         string `json:"Published"`
+		VulnerabilityLink string `json:"Vulnerability Link"`
+	}{
+		Hostname:          rec.Hostname,
+		Distro:            rec.Distro,
+		CVEID:             rec.CVEID,
+		ComplianceID:      rec.ComplianceID,
+		Type:              rec.Type,
+		Severity:          rec.Severity,
+		Packages:          rec.Packages,
+		SourcePackage:     rec.SourcePackage,
+		PackageVersion:    rec.PackageVersion,
+		CVSS:              rec.CVSS,
+		FixStatus:         rec.FixStatus,
+		Description:       rec.Description,
+		Cause:             rec.Cause,
+		Published:         rec.Published,
+		VulnerabilityLink: rec.VulnerabilityLink,
+	}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(projection); err != nil {
+		return "{}"
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
 }
 
 // parseCSV reads the Prisma CSV and returns structured records.
@@ -243,6 +295,7 @@ func buildRequirement(rec prismaRecord, scanTime time.Time) hdf.EvaluatedRequire
 		Tags:               tags,
 		Descriptions:       descriptions,
 		Results:            []hdf.RequirementResult{result},
+		Code:               hdfutil.Ptr(rawFindingCode(rec)),
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}

@@ -48,10 +48,11 @@ const (
 
 // Supported source BOM formats the parser can detect and normalize.
 const (
-	FormatCycloneDX   = "cyclonedx"
-	FormatSPDX        = "spdx"
-	FormatCycloneDXML = "cyclonedx-ml"
-	FormatSPDX3AI     = "spdx-3-ai"
+	FormatCycloneDX     = "cyclonedx"
+	FormatSPDX          = "spdx"
+	FormatCycloneDXML   = "cyclonedx-ml"
+	FormatSPDX3AI       = "spdx-3-ai"
+	FormatSPDX3Security = "spdx-3-security"
 )
 
 // RelationalNode is a node in the reserved relational-BOM graph (CBOM

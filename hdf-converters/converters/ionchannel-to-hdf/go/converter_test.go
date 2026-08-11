@@ -158,6 +158,21 @@ func TestConvert_Minimal_DependencyMetadataInTags(t *testing.T) {
 	assert.Equal(t, "4.18.2", req.Tags["version"])
 }
 
+func TestConvert_Minimal_PackageAndOutdatedVersionInTags(t *testing.T) {
+	// heimdall2 spreads the whole dependency object into tags; these two fields
+	// carry data in the fixture (package="npm", patch_behind=1).
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-expressjs/express")
+
+	assert.Equal(t, "npm", req.Tags["package"])
+	outdated, ok := req.Tags["outdated_version"].(OutdatedVersion)
+	require.True(t, ok, "outdated_version tag should carry the OutdatedVersion struct")
+	assert.Equal(t, OutdatedVersion{MajorBehind: 0, MinorBehind: 0, PatchBehind: 1}, outdated)
+}
+
 func TestConvert_Minimal_SubDependencyTracking(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertIonChannelToHDF(input, testVersion)
@@ -390,6 +405,107 @@ func TestBuildScanRequirement_OmitsAbsentVerdictFields(t *testing.T) {
 	assert.False(t, hasName, "ruleset_name must be omitted when empty")
 	_, hasID := req.Tags["ruleset_id"]
 	assert.False(t, hasID, "ruleset_id must be omitted when empty")
+}
+
+// ---- Auxiliary tool metadata (extensions + namespaced tags) ----
+
+func TestConvert_RunMetadataExtensions(t *testing.T) {
+	// The homeless run-scope analysis metadata lands in baseline.extensions
+	// ["ionchannel"] on the primary SBOM baseline. All fields below carry data in
+	// minimal.json; text is "" so it is omitted.
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	dep := findBaseline(t, result, "Ion Channel SBOM Analysis")
+	require.NotNil(t, dep.Extensions)
+	ion, ok := dep.Extensions["ionchannel"].(map[string]interface{})
+	require.True(t, ok, "extensions must be namespaced under the ionchannel key")
+
+	assert.Equal(t, "a1b2c3d4-e5f6-7890-abcd-ef1234567890", ion["id"])
+	assert.Equal(t, "analysis-001-abcdef", ion["analysis_id"])
+	assert.Equal(t, "team-001-ghijkl", ion["team_id"])
+	assert.Equal(t, "project-001-mnopqr", ion["project_id"])
+	assert.Equal(t, "example-project", ion["name"])
+	assert.Equal(t, "git", ion["type"])
+	assert.Equal(t, "main", ion["branch"])
+	assert.Equal(t, "Example project for dependency analysis", ion["description"])
+	assert.Equal(t, "finished", ion["status"])
+	assert.Equal(t, float64(12345), ion["duration"])
+	assert.Equal(t, false, ion["public"])
+	_, hasText := ion["text"]
+	assert.False(t, hasText, "empty text must be omitted from run metadata")
+}
+
+func TestConvert_RunMetadataExtensions_OnlyPrimaryBaseline(t *testing.T) {
+	// Run-scope metadata goes once, at the primary baseline; non-dependency scan
+	// baselines carry no ionchannel extensions.
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	community := findBaseline(t, result, "Ion Channel community Scan")
+	assert.Nil(t, community.Extensions, "run metadata must not be duplicated onto scan baselines")
+}
+
+func TestIonchannelRunMetadata_OmitsAbsentFields(t *testing.T) {
+	// An analysis carrying only a subset of the homeless fields includes only
+	// those; a public=false pointer is still emitted.
+	pub := false
+	meta := ionchannelRunMetadata(IonChannelAnalysis{Name: "proj", Public: &pub})
+	require.NotNil(t, meta)
+	assert.Equal(t, "proj", meta["name"])
+	assert.Equal(t, false, meta["public"])
+	_, hasID := meta["id"]
+	assert.False(t, hasID, "absent id must be omitted")
+	_, hasBranch := meta["branch"]
+	assert.False(t, hasBranch, "absent branch must be omitted")
+}
+
+func TestIonchannelRunMetadata_NilWhenEmpty(t *testing.T) {
+	// No homeless run metadata (and no public pointer) → nil, so extensions is
+	// omitted entirely.
+	assert.Nil(t, ionchannelRunMetadata(IonChannelAnalysis{}))
+}
+
+func TestConvert_TriggerTags_OnDependencyRequirement(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-expressjs/express")
+	assert.Equal(t, "abc123def456", req.Tags["ionchannel/trigger_hash"])
+	assert.Equal(t, "feat: add new feature", req.Tags["ionchannel/trigger_text"])
+	assert.Equal(t, "developer@example.com", req.Tags["ionchannel/trigger_author"])
+	assert.Equal(t, "source_commit", req.Tags["ionchannel/trigger"])
+}
+
+func TestConvert_TriggerTags_OnScanRequirement(t *testing.T) {
+	input := loadFixture(t, "input/edge-cases.json")
+	result, err := ConvertIonChannelToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	community := findBaseline(t, result, "Ion Channel community Scan")
+	req := community.Requirements[0]
+	assert.Equal(t, "def789ghi012", req.Tags["ionchannel/trigger_hash"])
+	assert.Equal(t, "fix: update deps", req.Tags["ionchannel/trigger_text"])
+	assert.Equal(t, "admin@example.com", req.Tags["ionchannel/trigger_author"])
+	assert.Equal(t, "source_commit", req.Tags["ionchannel/trigger"])
+}
+
+func TestTriggerTags_OmitsAbsent(t *testing.T) {
+	// An analysis with no trigger fields yields no namespaced trigger tags.
+	tags := triggerTags(IonChannelAnalysis{})
+	assert.Empty(t, tags)
+
+	// And a dependency requirement built from such an analysis carries none.
+	dep := contextualizedDependency{
+		Dependency:         Dependency{Org: "acme", Name: "widget"},
+		ParentDependencies: []string{},
+	}
+	built := buildTags(dep, IonChannelAnalysis{})
+	_, hasHash := built["ionchannel/trigger_hash"]
+	assert.False(t, hasHash, "absent trigger fields must not produce namespaced tags")
 }
 
 // ---- Helper function tests ----

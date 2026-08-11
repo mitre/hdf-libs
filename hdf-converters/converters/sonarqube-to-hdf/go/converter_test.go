@@ -16,6 +16,15 @@ import (
 
 const testConverterVersion = "test-version"
 
+func TestHasFlows(t *testing.T) {
+	assert.True(t, hasFlows(json.RawMessage(`[{"x":1}]`)))
+	assert.False(t, hasFlows(json.RawMessage(`[]`)))
+	assert.False(t, hasFlows(json.RawMessage(`[ ]`)))
+	assert.False(t, hasFlows(json.RawMessage("[\n  ]")))
+	assert.False(t, hasFlows(json.RawMessage(`null`)))
+	assert.False(t, hasFlows(json.RawMessage(``)))
+}
+
 func loadMinimalFixture(t *testing.T) []byte {
 	t.Helper()
 	fixturePath := filepath.Join(shared.GetConvertersDir(), "sonarqube-to-hdf", "fixtures", "input", "minimal.json")
@@ -722,6 +731,96 @@ func TestConvertSonarqubeToHDF_LangOmittedWithoutRule(t *testing.T) {
 	assert.NotContains(t, req.Tags, "lang", "lang should be omitted when the rule is unknown")
 	assert.NotContains(t, req.Tags, "langName", "langName should be omitted when the rule is unknown")
 	assert.Equal(t, "3min", req.Tags["effort"], "effort still resolves from the issue")
+}
+
+// Auxiliary per-issue metadata is emitted under the tool-named namespace
+// (sonarqube/hash, /key, /update_date, /flows, /quick_fix_available). Values
+// pinned against mqr.json, which carries every field.
+func TestConvertSonarqubeToHDF_AuxMetadataTags(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMQRFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	reqByID := func(id string) *hdf.EvaluatedRequirement {
+		for i := range result.Baselines[0].Requirements {
+			if result.Baselines[0].Requirements[i].ID == id {
+				return &result.Baselines[0].Requirements[i]
+			}
+		}
+		return nil
+	}
+
+	// java:S1186: hash/key/update_date present, quick_fix_available true, no flows.
+	s1186 := reqByID("java:S1186")
+	require.NotNil(t, s1186, "java:S1186 requirement not found")
+	assert.Equal(t, "4fa436e830f0433a248778dafd40f373", s1186.Tags["sonarqube/hash"])
+	assert.Equal(t, "02e8e9bf-5d42-4729-a087-8b7e56e0e908", s1186.Tags["sonarqube/key"])
+	assert.Equal(t, "2026-03-24T03:20:30+0000", s1186.Tags["sonarqube/update_date"])
+	assert.Equal(t, true, s1186.Tags["sonarqube/quick_fix_available"])
+	assert.NotContains(t, s1186.Tags, "sonarqube/flows",
+		"java:S1186 first issue has empty flows, so the tag is omitted")
+
+	// java:S1192: quick_fix_available false, and flows carries secondary locations.
+	s1192 := reqByID("java:S1192")
+	require.NotNil(t, s1192, "java:S1192 requirement not found")
+	assert.Equal(t, false, s1192.Tags["sonarqube/quick_fix_available"],
+		"explicit false must be preserved (pointer distinguishes it from absent)")
+	require.Contains(t, s1192.Tags, "sonarqube/flows")
+	var flows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(s1192.Tags["sonarqube/flows"].(json.RawMessage), &flows))
+	assert.Len(t, flows, 3, "java:S1192 first issue carries three flow entries")
+}
+
+// The absent branches: minimal.json carries hash/key/update_date but no flows
+// and no quickFixAvailable, so those two tags must be omitted on every rule.
+func TestConvertSonarqubeToHDF_AuxMetadataTags_AbsentBranches(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		assert.Contains(t, req.Tags, "sonarqube/hash",
+			"minimal.json carries hash for %q", req.ID)
+		assert.Contains(t, req.Tags, "sonarqube/key", "minimal.json carries key for %q", req.ID)
+		assert.Contains(t, req.Tags, "sonarqube/update_date",
+			"minimal.json carries updateDate for %q", req.ID)
+		assert.NotContains(t, req.Tags, "sonarqube/flows",
+			"minimal.json carries no flows for %q", req.ID)
+		assert.NotContains(t, req.Tags, "sonarqube/quick_fix_available",
+			"minimal.json carries no quickFixAvailable for %q", req.ID)
+	}
+}
+
+// An issue carrying none of the auxiliary fields must emit none of the tags.
+func TestConvertSonarqubeToHDF_AuxMetadataTags_AllAbsent(t *testing.T) {
+	input := []byte(`{
+		"total": 1, "p": 1, "ps": 100,
+		"paging": {"pageIndex": 1, "pageSize": 100, "total": 1},
+		"issues": [{"rule":"java:S100","severity":"MAJOR","component":"proj:file","project":"proj","status":"OPEN","message":"msg","creationDate":"2026-01-01T00:00:00+0000","type":"CODE_SMELL"}],
+		"components": [], "rules": []
+	}`)
+
+	result, err := ConvertSonarqubeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	for _, key := range []string{"sonarqube/hash", "sonarqube/key", "sonarqube/update_date", "sonarqube/flows", "sonarqube/quick_fix_available"} {
+		assert.NotContains(t, req.Tags, key, "%s must be omitted when the issue carries no aux metadata", key)
+	}
+}
+
+// An explicit empty flows array is treated as "no flows" and the tag stays off.
+func TestConvertSonarqubeToHDF_AuxMetadataTags_EmptyFlows(t *testing.T) {
+	input := []byte(`{
+		"total": 1, "p": 1, "ps": 100,
+		"paging": {"pageIndex": 1, "pageSize": 100, "total": 1},
+		"issues": [{"key":"k1","rule":"java:S100","severity":"MAJOR","component":"proj:file","project":"proj","status":"OPEN","message":"msg","flows":[],"quickFixAvailable":false,"creationDate":"2026-01-01T00:00:00+0000","type":"CODE_SMELL"}],
+		"components": [], "rules": []
+	}`)
+
+	result, err := ConvertSonarqubeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.NotContains(t, req.Tags, "sonarqube/flows", "empty flows array must not emit the tag")
+	assert.Equal(t, false, req.Tags["sonarqube/quick_fix_available"],
+		"explicit false quickFixAvailable is still emitted")
 }
 
 func TestSnapshots(t *testing.T) {

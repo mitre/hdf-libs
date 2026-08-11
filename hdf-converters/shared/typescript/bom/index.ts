@@ -20,6 +20,7 @@ export {
   detectCycloneDXML,
   detectSPDX,
   detectSPDX3,
+  detectSPDX3Security,
 } from './fingerprints.js';
 export { parseCycloneDX } from './cyclonedx.js';
 export { parseSPDX } from './spdx.js';

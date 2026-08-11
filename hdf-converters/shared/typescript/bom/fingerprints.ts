@@ -78,6 +78,32 @@ export function detectSPDX3(input: unknown): number {
 }
 
 /**
+ * SPDX 3.0 security / VEX (JSON-LD): a document with an `@context` and an
+ * `@graph` array carrying at least one security_Vex*VulnAssessmentRelationship
+ * element (the four VEX assessment subtypes: Affected, NotAffected, Fixed,
+ * UnderInvestigation). Structurally disjoint from the SPDX 2.3 detector (which
+ * keys on spdxVersion) and from the SPDX 3.0 AI/Dataset detector (which keys on
+ * ai_AIPackage / dataset_DatasetPackage), so none of the three conflict.
+ */
+export function detectSPDX3Security(input: unknown): number {
+  const obj = record(input);
+  if (!obj || obj['@context'] === undefined) return 0;
+  const graph = obj['@graph'];
+  if (!Array.isArray(graph)) return 0;
+  const hasVexAssessment = graph.some(el => isVexAssessmentType(record(el)?.type));
+  return hasVexAssessment ? 1 : 0;
+}
+
+/** True when an SPDX-3 element type is one of the four VEX assessment subtypes. */
+function isVexAssessmentType(type: unknown): boolean {
+  return (
+    typeof type === 'string' &&
+    type.startsWith('security_Vex') &&
+    type.endsWith('VulnAssessmentRelationship')
+  );
+}
+
+/**
  * Detect the BOM format of a parsed JSON object. ML wins over plain CycloneDX
  * by precedence; returns undefined when no supported format matches.
  */
@@ -88,6 +114,8 @@ export function detectFormat(input: unknown): FormatDetection | undefined {
   if (cdx > 0) return { format: 'cyclonedx', confidence: cdx };
   const spdx3 = detectSPDX3(input);
   if (spdx3 > 0) return { format: 'spdx-3-ai', confidence: spdx3 };
+  const spdx3sec = detectSPDX3Security(input);
+  if (spdx3sec > 0) return { format: 'spdx-3-security', confidence: spdx3sec };
   const spdx = detectSPDX(input);
   if (spdx > 0) return { format: 'spdx', confidence: spdx };
   return undefined;

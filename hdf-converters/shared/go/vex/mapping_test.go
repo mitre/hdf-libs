@@ -55,6 +55,13 @@ func TestNormalizeJustification(t *testing.T) {
 		"protected_by_compiler":  hdf.ProtectedByCompiler,
 		"protected_at_runtime":   hdf.ProtectedAtRuntime,
 		"protected_at_perimeter": hdf.ProtectedAtPerimeter,
+		// SPDX-3 security profile emits camelCase justification tokens; they
+		// must canonicalize to the same enum values as their snake_case twins.
+		"vulnerableCodeNotInExecutePath":              hdf.VulnerableCodeNotInExecutePath,
+		"componentNotPresent":                         hdf.ComponentNotPresent,
+		"vulnerableCodeNotPresent":                    hdf.VulnerableCodeNotPresent,
+		"vulnerableCodeCannotBeControlledByAdversary": hdf.VulnerableCodeCannotBeControlledByAdversary,
+		"inlineMitigationsAlreadyExist":               hdf.InlineMitigationsAlreadyExist,
 	}
 	for raw, want := range cases {
 		got, ok := NormalizeJustification(raw)

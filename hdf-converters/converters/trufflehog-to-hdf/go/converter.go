@@ -70,7 +70,7 @@ type DockerSource struct {
 // IA-5(7): "No Embedded Unencrypted Static Authenticators"
 var (
 	trufflehogNIST = []string{"IA-5 (7)"}
-	trufflehogCCI  = []string{"CCI-000202", "CCI-000203", "CCI-002367"}
+	trufflehogCCI  = []string{"CCI-004069", "CCI-000202", "CCI-000203", "CCI-002367"}
 )
 
 // A verified secret is a confirmed-live credential (TruffleHog reached the
@@ -164,6 +164,10 @@ func marshalPlain(v interface{}) (string, error) {
 // trufflehogMessage is the embedded Result.Message payload. It is a struct, not
 // a map, because the field order is part of the serialized string the snapshot
 // compares — a map would emit Go's alphabetical order instead.
+//
+// Raw/RawV2 (the plaintext live secret) are deliberately withheld for secret
+// hygiene — only the masked Redacted form is carried, so the HDF output never
+// embeds a usable credential. Do not add them back for heimdall2 parity.
 type trufflehogMessage struct {
 	Verified          bool                   `json:"Verified"`
 	Redacted          string                 `json:"Redacted"`

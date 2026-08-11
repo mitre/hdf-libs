@@ -12,12 +12,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:922",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to display the Standard Mandatory DoD Notice and Consent Banner before granting access to the system. Note: If the system does not have GNOME installed, this requirement is Not Applicable. Create a database to contain the system-wide graphical user logon settings (if it does not already exist) with the following command: # touch /etc/dconf/db/local.d/01-banner-message Add the following line to the [org/gnome/login-screen] section of the \"/etc/dconf/db/local.d/01-banner-message\": [org/gnome/login-screen] banner-message-enable=true Update the system databases: # dconf update Users must log out and back in again before the system-wide settings take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204393",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204393r603261_rule",
@@ -54,12 +69,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:988",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to enable a user's session lock until that user re-establishes access using established identification and authentication procedures. Create a database to contain the system-wide screensaver settings (if it does not already exist) with the following example: # touch /etc/dconf/db/local.d/00-screensaver Edit the \"[org/gnome/desktop/screensaver]\" section of the database file and add or update the following lines: # Set this to true to lock the screen when the screensaver activates lock-enabled=true Update the system databases: # dconf update Users must log out and back in again before the system-wide settings take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204396",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204396r603261_rule",
@@ -96,12 +126,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:95715",
+              "label": "check"
+            },
+            {
               "data": "Configure PAM to utilize /etc/pam.d/system-auth when changing passwords. Add the following line to \"/etc/pam.d/passwd\" (or modify the line to have the required value): password substack system-auth",
               "label": "fix"
             }
           ],
           "id": "SV-204405",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204405r603261_rule",
@@ -137,12 +182,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1229",
+              "label": "check"
+            },
+            {
               "data": "If an account is configured for password authentication but does not have an assigned password, it may be possible to log on to the account without authenticating. Remove any instances of the \"nullok\" option in \"/etc/pam.d/system-auth\" and \"/etc/pam.d/password-auth\" to prevent logons with empty passwords. Note: Manual changes to the listed files may be overwritten by the \"authconfig\" program. The \"authconfig\" program should not be used to update the configurations listed in this requirement.",
               "label": "fix"
             }
           ],
           "id": "SV-204424",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204424r603261_rule",
@@ -179,12 +239,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:108",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to remove all software components after updated versions have been installed. Set the \"clean_requirements_on_remove\" option to \"1\" in the \"/etc/yum.conf\" file: clean_requirements_on_remove=1",
               "label": "fix"
             }
           ],
           "id": "SV-204452",
           "impact": 0.3,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204452r603261_rule",

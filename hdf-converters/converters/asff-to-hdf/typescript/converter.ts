@@ -8,7 +8,7 @@
  * per-file split the predecessor SAF CLI produced.
  */
 
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp, roundImpact } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   getAwsConfigNistControlsBySubstring,
@@ -184,7 +184,7 @@ export function findingImpact(f: AsffFinding): number {
     return severityLabelToImpact(label);
   }
   if (typeof sev?.Normalized === 'number') {
-    return sev.Normalized / 100.0;
+    return roundImpact(sev.Normalized / 100.0);
   }
   return 0.0;
 }

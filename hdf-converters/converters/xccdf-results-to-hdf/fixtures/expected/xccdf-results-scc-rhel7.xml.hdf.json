@@ -12,12 +12,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:922",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to display the Standard Mandatory DoD Notice and Consent Banner before granting access to the system. Note: If the system does not have GNOME installed, this requirement is Not Applicable. Create a database to contain the system-wide graphical user logon settings (if it does not already exist) with the following command: # touch /etc/dconf/db/local.d/01-banner-message Add the following line to the [org/gnome/login-screen] section of the \"/etc/dconf/db/local.d/01-banner-message\": [org/gnome/login-screen] banner-message-enable=true Update the system databases: # dconf update Users must log out and back in again before the system-wide settings take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204393",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204393r603261_rule",
@@ -54,12 +69,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:988",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to enable a user's session lock until that user re-establishes access using established identification and authentication procedures. Create a database to contain the system-wide screensaver settings (if it does not already exist) with the following example: # touch /etc/dconf/db/local.d/00-screensaver Edit the \"[org/gnome/desktop/screensaver]\" section of the database file and add or update the following lines: # Set this to true to lock the screen when the screensaver activates lock-enabled=true Update the system databases: # dconf update Users must log out and back in again before the system-wide settings take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204396",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204396r603261_rule",
@@ -96,12 +126,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:92515",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to uniquely identify and authenticate users using multifactor authentication via a graphical user logon. Note: If the system does not have GNOME installed, this requirement is Not Applicable. Create a database to contain the system-wide screensaver settings (if it does not already exist) with the following command: Note: The example is using the database local for the system, so if the system is using another database in \"/etc/dconf/profile/user\", the file should be created under the appropriate subdirectory. # touch /etc/dconf/db/local.d/00-defaults Edit \"[org/gnome/login-screen]\" and add or update the following line: enable-smartcard-authentication=true Update the system databases: # dconf update",
               "label": "fix"
             }
           ],
           "id": "SV-204397",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204397r603261_rule",
@@ -139,12 +184,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:981",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to initiate a screensaver after a 15-minute period of inactivity for graphical user interfaces. Create a database to contain the system-wide screensaver settings (if it does not already exist) with the following command: # touch /etc/dconf/db/local.d/00-screensaver Edit /etc/dconf/db/local.d/00-screensaver and add or update the following lines: [org/gnome/desktop/session] # Set the lock time out to 900 seconds before the session is considered idle idle-delay=uint32 900 You must include the \"uint32\" along with the integer key values as shown. Update the system databases: # dconf update Users must log out and back in again before the system-wide settings take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204398",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204398r603261_rule",
@@ -181,12 +241,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:999",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to prevent a user from overriding a screensaver lock after a 15-minute period of inactivity for graphical user interfaces. Create a database to contain the system-wide screensaver settings (if it does not already exist) with the following command: Note: The example below is using the database \"local\" for the system, so if the system is using another database in \"/etc/dconf/profile/user\", the file should be created under the appropriate subdirectory. # touch /etc/dconf/db/local.d/locks/session Add the setting to lock the screensaver lock delay: /org/gnome/desktop/screensaver/lock-delay",
               "label": "fix"
             }
           ],
           "id": "SV-204399",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204399r603261_rule",
@@ -223,12 +298,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:978",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to initiate a session lock after a 15-minute period of inactivity for graphical user interfaces. Create a database to contain the system-wide screensaver settings (if it does not already exist) with the following command: # touch /etc/dconf/db/local.d/00-screensaver Add the setting to enable screensaver locking after 15 minutes of inactivity: [org/gnome/desktop/screensaver] idle-activation-enabled=true Update the system databases: # dconf update Users must log out and back in again before the system-wide settings take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204402",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204402r603261_rule",
@@ -265,12 +355,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:93703",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to prevent a user from overriding a screensaver lock after a 15-minute period of inactivity for graphical user interfaces. Create a database to contain the system-wide screensaver settings (if it does not already exist) with the following command: Note: The example below is using the database \"local\" for the system, so if the system is using another database in \"/etc/dconf/profile/user\", the file should be created under the appropriate subdirectory. # touch /etc/dconf/db/local.d/locks/session Add the setting to lock the screensaver idle-activation-enabled setting: /org/gnome/desktop/screensaver/idle-activation-enabled",
               "label": "fix"
             }
           ],
           "id": "SV-204403",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204403r603261_rule",
@@ -306,12 +411,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:985",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to initiate a session lock for graphical user interfaces when a screensaver is activated. Create a database to contain the system-wide screensaver settings (if it does not already exist) with the following command: # touch /etc/dconf/db/local.d/00-screensaver Add the setting to enable session locking when a screensaver is activated: [org/gnome/desktop/screensaver] lock-delay=uint32 5 The \"uint32\" must be included along with the integer key values as shown. Update the system databases: # dconf update Users must log out and back in again before the system-wide settings take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204404",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204404r603261_rule",
@@ -348,12 +468,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:95715",
+              "label": "check"
+            },
+            {
               "data": "Configure PAM to utilize /etc/pam.d/system-auth when changing passwords. Add the following line to \"/etc/pam.d/passwd\" (or modify the line to have the required value): password substack system-auth",
               "label": "fix"
             }
           ],
           "id": "SV-204405",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204405r603261_rule",
@@ -389,12 +524,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:481",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to use \"pwquality\" to enforce password complexity rules. Add the following line to \"/etc/pam.d/system-auth\" (or modify the line to have the required value): password required pam_pwquality.so retry=3 Note: The value of \"retry\" should be between \"1\" and \"3\".",
               "label": "fix"
             }
           ],
           "id": "SV-204406",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204406r603261_rule",
@@ -431,12 +581,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:484",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to enforce password complexity by requiring that at least one upper-case character be used by setting the \"ucredit\" option. Add the following line to \"/etc/security/pwquality.conf\" (or modify the line to have the required value): ucredit = -1",
               "label": "fix"
             }
           ],
           "id": "SV-204407",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204407r603261_rule",
@@ -473,12 +638,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:468",
+              "label": "check"
+            },
+            {
               "data": "Configure the system to require at least one lower-case character when creating or changing a password. Add or modify the following line in \"/etc/security/pwquality.conf\": lcredit = -1",
               "label": "fix"
             }
           ],
           "id": "SV-204408",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204408r603261_rule",
@@ -515,12 +695,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:463",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to enforce password complexity by requiring that at least one numeric character be used by setting the \"dcredit\" option. Add the following line to /etc/security/pwquality.conf (or modify the line to have the required value): dcredit = -1",
               "label": "fix"
             }
           ],
           "id": "SV-204409",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204409r603261_rule",
@@ -557,12 +752,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:478",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to enforce password complexity by requiring that at least one special character be used by setting the \"ocredit\" option. Add the following line to \"/etc/security/pwquality.conf\" (or modify the line to have the required value): ocredit = -1",
               "label": "fix"
             }
           ],
           "id": "SV-204410",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204410r603261_rule",
@@ -599,12 +809,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:466",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to require the change of at least eight of the total number of characters when passwords are changed by setting the \"difok\" option. Add the following line to \"/etc/security/pwquality.conf\" (or modify the line to have the required value): difok = 8",
               "label": "fix"
             }
           ],
           "id": "SV-204411",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204411r603261_rule",
@@ -641,12 +866,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:474",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to require the change of at least four character classes when passwords are changed by setting the \"minclass\" option. Add the following line to \"/etc/security/pwquality.conf conf\" (or modify the line to have the required value): minclass = 4",
               "label": "fix"
             }
           ],
           "id": "SV-204412",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204412r603261_rule",
@@ -683,12 +923,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:472",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to require the change of the number of repeating consecutive characters when passwords are changed by setting the \"maxrepeat\" option. Add the following line to \"/etc/security/pwquality.conf conf\" (or modify the line to have the required value): maxrepeat = 3",
               "label": "fix"
             }
           ],
           "id": "SV-204413",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204413r603261_rule",
@@ -725,12 +980,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:470",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to require the change of the number of repeating characters of the same character class when passwords are changed by setting the \"maxclassrepeat\" option. Add the following line to \"/etc/security/pwquality.conf\" conf (or modify the line to have the required value): maxclassrepeat = 4",
               "label": "fix"
             }
           ],
           "id": "SV-204414",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204414r603261_rule",
@@ -767,12 +1037,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1367",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to store only SHA512 encrypted representations of passwords. Add the following line in \"/etc/pam.d/system-auth\": pam_unix.so sha512 shadow try_first_pass use_authtok Add the following line in \"/etc/pam.d/password-auth\": pam_unix.so sha512 shadow try_first_pass use_authtok Note: Manual changes to the listed files may be overwritten by the \"authconfig\" program. The \"authconfig\" program should not be used to update the configurations listed in this requirement.",
               "label": "fix"
             }
           ],
           "id": "SV-204415",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204415r603261_rule",
@@ -809,12 +1094,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1365",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to store only SHA512 encrypted representations of passwords. Add or update the following line in \"/etc/login.defs\": ENCRYPT_METHOD SHA512",
               "label": "fix"
             }
           ],
           "id": "SV-204416",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204416r603261_rule",
@@ -851,12 +1151,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1363",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to store only SHA512 encrypted representations of passwords. Add or update the following line in \"/etc/libuser.conf\" in the [defaults] section: crypt_style = sha512",
               "label": "fix"
             }
           ],
           "id": "SV-204417",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204417r603261_rule",
@@ -893,12 +1208,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:455",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to enforce 24 hours/1 day as the minimum password lifetime. Add the following line in \"/etc/login.defs\" (or modify the line to have the required value): PASS_MIN_DAYS 1",
               "label": "fix"
             }
           ],
           "id": "SV-204418",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204418r603261_rule",
@@ -935,12 +1265,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86551",
+              "label": "check"
+            },
+            {
               "data": "Configure non-compliant accounts to enforce a 24 hours/1 day minimum password lifetime: # chage -m 1 [user]",
               "label": "fix"
             }
           ],
           "id": "SV-204419",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204419r603261_rule",
@@ -976,12 +1321,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:453",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to enforce a 60-day maximum password lifetime restriction. Add the following line in \"/etc/login.defs\" (or modify the line to have the required value): PASS_MAX_DAYS 60",
               "label": "fix"
             }
           ],
           "id": "SV-204420",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204420r603261_rule",
@@ -1018,12 +1378,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86555",
+              "label": "check"
+            },
+            {
               "data": "Configure non-compliant accounts to enforce a 60-day maximum password lifetime restriction. # chage -M 60 [user]",
               "label": "fix"
             }
           ],
           "id": "SV-204421",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204421r603261_rule",
@@ -1059,12 +1434,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:486",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to prohibit password reuse for a minimum of five generations. Add the following line in \"/etc/pam.d/system-auth\" and \"/etc/pam.d/password-auth\" (or modify the line to have the required value): password requisite pam_pwhistory.so use_authtok remember=5 retry=3 Note: Manual changes to the listed files may be overwritten by the \"authconfig\" program. The \"authconfig\" program should not be used to update the configurations listed in this requirement.",
               "label": "fix"
             }
           ],
           "id": "SV-204422",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204422r603261_rule",
@@ -1101,12 +1491,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:476",
+              "label": "check"
+            },
+            {
               "data": "Configure operating system to enforce a minimum 15-character password length. Add the following line to \"/etc/security/pwquality.conf\" (or modify the line to have the required value): minlen = 15",
               "label": "fix"
             }
           ],
           "id": "SV-204423",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204423r603261_rule",
@@ -1143,12 +1548,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1229",
+              "label": "check"
+            },
+            {
               "data": "If an account is configured for password authentication but does not have an assigned password, it may be possible to log on to the account without authenticating. Remove any instances of the \"nullok\" option in \"/etc/pam.d/system-auth\" and \"/etc/pam.d/password-auth\" to prevent logons with empty passwords. Note: Manual changes to the listed files may be overwritten by the \"authconfig\" program. The \"authconfig\" program should not be used to update the configurations listed in this requirement.",
               "label": "fix"
             }
           ],
           "id": "SV-204424",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204424r603261_rule",
@@ -1185,12 +1605,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1375",
+              "label": "check"
+            },
+            {
               "data": "To explicitly disallow remote logon from accounts with empty passwords, add or correct the following line in \"/etc/ssh/sshd_config\": PermitEmptyPasswords no The SSH service must be restarted for changes to take effect. Any accounts with empty passwords should be disabled immediately, and PAM configuration should prevent users from being able to assign themselves empty passwords.",
               "label": "fix"
             }
           ],
           "id": "SV-204425",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204425r603261_rule",
@@ -1227,12 +1662,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:443",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to disable account identifiers (individuals, groups, roles, and devices) after the password expires. Add the following line to \"/etc/default/useradd\" (or modify the line to have the required value): INACTIVE=0",
               "label": "fix"
             }
           ],
           "id": "SV-204426",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204426r603261_rule",
@@ -1269,12 +1719,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:176",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to require users to supply a password for privilege escalation. Check the configuration of the \"/etc/sudoers\" file with the following command: # visudo Remove any occurrences of \"NOPASSWD\" tags in the file. Check the configuration of the /etc/sudoers.d/* files with the following command: # grep -i nopasswd /etc/sudoers.d/* Remove any occurrences of \"NOPASSWD\" tags in the file.",
               "label": "fix"
             }
           ],
           "id": "SV-204429",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204429r603261_rule",
@@ -1310,12 +1775,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:173",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to require users to reauthenticate for privilege escalation. Check the configuration of the \"/etc/sudoers\" file with the following command: # visudo Remove any occurrences of \"!authenticate\" tags in the file. Check the configuration of the \"/etc/sudoers.d/*\" files with the following command: # grep -i authenticate /etc/sudoers /etc/sudoers.d/* Remove any occurrences of \"!authenticate\" tags in the file(s).",
               "label": "fix"
             }
           ],
           "id": "SV-204430",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204430r603261_rule",
@@ -1351,12 +1831,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:101",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to enforce a delay of at least four seconds between logon prompts following a failed console logon attempt. Modify the \"/etc/login.defs\" file to set the \"FAIL_DELAY\" parameter to \"4\" or greater: FAIL_DELAY 4",
               "label": "fix"
             }
           ],
           "id": "SV-204431",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204431r603261_rule",
@@ -1393,12 +1888,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1119",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to not allow an unattended or automatic logon to the system via a graphical user interface. Note: If the system does not have GNOME installed, this requirement is Not Applicable. Add or edit the line for the \"AutomaticLoginEnable\" parameter in the [daemon] section of the \"/etc/gdm/custom.conf\" file to \"false\": [daemon] AutomaticLoginEnable=false",
               "label": "fix"
             }
           ],
           "id": "SV-204432",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204432r603261_rule",
@@ -1435,12 +1945,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1122",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to not allow an unrestricted account to log on to the system via a graphical user interface. Note: If the system does not have GNOME installed, this requirement is Not Applicable. Add or edit the line for the \"TimedLoginEnable\" parameter in the [daemon] section of the \"/etc/gdm/custom.conf\" file to \"false\": [daemon] TimedLoginEnable=false",
               "label": "fix"
             }
           ],
           "id": "SV-204433",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204433r603261_rule",
@@ -1477,12 +2002,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1385",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to not allow users to override environment variables to the SSH daemon. Edit the \"/etc/ssh/sshd_config\" file to uncomment or add the line for \"PermitUserEnvironment\" keyword and set the value to \"no\": PermitUserEnvironment no The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204434",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204434r603261_rule",
@@ -1519,12 +2059,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1011",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to not allow a non-certificate trusted host SSH logon to the system. Edit the \"/etc/ssh/sshd_config\" file to uncomment or add the line for \"HostbasedAuthentication\" keyword and set the value to \"no\": HostbasedAuthentication no The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204435",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204435r603261_rule",
@@ -1561,12 +2116,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:908",
+              "label": "check"
+            },
+            {
               "data": "Configure the system to encrypt the boot password for root. Generate an encrypted grub2 password for root with the following command: Note: The hash generated is an example. # grub2-mkpasswd-pbkdf2 Enter Password: Reenter Password: PBKDF2 hash of your password is grub.pbkdf2.sha512.10000.F3A7CFAA5A51EED123BE8238C23B25B2A6909AFC9812F0D45 Edit \"/etc/grub.d/40_custom\" and add the following lines below the comments: # vi /etc/grub.d/40_custom set superusers=\"root\" password_pbkdf2 root {hash from grub2-mkpasswd-pbkdf2 command} Generate a new \"grub.conf\" file with the new password with the following commands: # grub2-mkconfig --output=/tmp/grub2.cfg # mv /tmp/grub2.cfg /boot/grub2/grub.cfg",
               "label": "fix"
             }
           ],
           "id": "SV-204436",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204436r603261_rule",
@@ -1603,12 +2173,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:92519",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to require authentication upon booting into single-user and maintenance modes. Add or modify the \"ExecStart\" line in \"/usr/lib/systemd/system/rescue.service\" to include \"/usr/sbin/sulogin\": ExecStart=-/bin/sh -c \"/usr/sbin/sulogin; /usr/bin/systemctl --fail --no-block default\"",
               "label": "fix"
             }
           ],
           "id": "SV-204437",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204437r603261_rule",
@@ -1644,12 +2229,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:95717",
+              "label": "check"
+            },
+            {
               "data": "Configure the system to encrypt the boot password for root. Generate an encrypted grub2 password for root with the following command: Note: The hash generated is an example. # grub2-setpassword Enter password: Confirm password: Edit the /boot/grub2/grub.cfg file and add or modify the following lines in the \"### BEGIN /etc/grub.d/01_users ###\" section: set superusers=\"root\" export superusers",
               "label": "fix"
             }
           ],
           "id": "SV-204438",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204438r603261_rule",
@@ -1686,12 +2286,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:912",
+              "label": "check"
+            },
+            {
               "data": "Configure the system to encrypt the boot password for root. Generate an encrypted grub2 password for root with the following command: Note: The hash generated is an example. # grub2-mkpasswd-pbkdf2 Enter Password: Reenter Password: PBKDF2 hash of your password is grub.pbkdf2.sha512.10000.F3A7CFAA5A51EED123BE8238C23B25B2A6909AFC9812F0D45 Edit \"/etc/grub.d/40_custom\" and add the following lines below the comments: # vi /etc/grub.d/40_custom set superusers=\"root\" password_pbkdf2 root {hash from grub2-mkpasswd-pbkdf2 command} Generate a new \"grub.conf\" file with the new password with the following commands: # grub2-mkconfig --output=/tmp/grub2.cfg # mv /tmp/grub2.cfg /boot/efi/EFI/redhat/grub.cfg",
               "label": "fix"
             }
           ],
           "id": "SV-204439",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204439r603261_rule",
@@ -1728,12 +2343,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:95719",
+              "label": "check"
+            },
+            {
               "data": "Configure the system to encrypt the boot password for root. Generate an encrypted grub2 password for root with the following command: Note: The hash generated is an example. # grub2-setpassword Enter password: Confirm password: Edit the /boot/efi/EFI/redhat/grub.cfg file and add or modify the following lines in the \"### BEGIN /etc/grub.d/01_users ###\" section: set superusers=\"root\" export superusers",
               "label": "fix"
             }
           ],
           "id": "SV-204440",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204440r603261_rule",
@@ -1770,12 +2400,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1271",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to disable non-essential capabilities by removing the rsh-server package from the system with the following command: # yum remove rsh-server",
               "label": "fix"
             }
           ],
           "id": "SV-204442",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204442r603261_rule",
@@ -1813,12 +2458,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1309",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to disable non-essential capabilities by removing the \"ypserv\" package from the system with the following command: # yum remove ypserv",
               "label": "fix"
             }
           ],
           "id": "SV-204443",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204443r603261_rule",
@@ -1856,12 +2516,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:525",
+              "label": "check"
+            },
+            {
               "data": "Configure the file integrity tool to run automatically on the system at least weekly. The following example output is generic. It will set cron to run AIDE daily, but other file integrity tools may be used: # more /etc/cron.daily/aide #!/bin/bash /usr/sbin/aide --check | /bin/mail -s \"$HOSTNAME - Daily aide integrity check run\" root@sysname.mil",
               "label": "fix"
             }
           ],
           "id": "SV-204445",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204445r603261_rule",
@@ -1897,12 +2572,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1027",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to verify the signature of packages from a repository prior to install by setting the following option in the \"/etc/yum.conf\" file: gpgcheck=1",
               "label": "fix"
             }
           ],
           "id": "SV-204447",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204447r603261_rule",
@@ -1938,12 +2628,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:110",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to verify the signature of local packages prior to install by setting the following option in the \"/etc/yum.conf\" file: localpkg_gpgcheck=1",
               "label": "fix"
             }
           ],
           "id": "SV-204448",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204448r603261_rule",
@@ -1979,12 +2684,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1141",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to disable the ability to use the USB Storage kernel module. Create a file under \"/etc/modprobe.d\" with the following command: # touch /etc/modprobe.d/usb-storage.conf Add the following line to the created file: install usb-storage /bin/true Configure the operating system to disable the ability to use USB mass storage devices. # vi /etc/modprobe.d/blacklist.conf Add or update the line: blacklist usb-storage",
               "label": "fix"
             }
           ],
           "id": "SV-204449",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204449r603261_rule",
@@ -2024,12 +2744,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:92517",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to disable the ability to use the DCCP kernel module. Create a file under \"/etc/modprobe.d\" with the following command: # touch /etc/modprobe.d/dccp.conf Add the following line to the created file: install dccp /bin/true Ensure that the DCCP module is blacklisted: # vi /etc/modprobe.d/blacklist.conf Add or update the line: blacklist dccp",
               "label": "fix"
             }
           ],
           "id": "SV-204450",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204450r603261_rule",
@@ -2064,12 +2799,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86609",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to disable the ability to automount devices. Turn off the automount service with the following commands: # systemctl stop autofs # systemctl disable autofs If \"autofs\" is required for Network File System (NFS), it must be documented with the ISSO.",
               "label": "fix"
             }
           ],
           "id": "SV-204451",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204451r603261_rule",
@@ -2110,12 +2860,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:108",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to remove all software components after updated versions have been installed. Set the \"clean_requirements_on_remove\" option to \"1\" in the \"/etc/yum.conf\" file: clean_requirements_on_remove=1",
               "label": "fix"
             }
           ],
           "id": "SV-204452",
           "impact": 0.3,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204452r603261_rule",
@@ -2151,12 +2916,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:518",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to define default permissions for all authenticated users in such a way that the user can only read and modify their own files. Add or edit the line for the \"UMASK\" parameter in \"/etc/login.defs\" file to \"077\": UMASK 077",
               "label": "fix"
             }
           ],
           "id": "SV-204457",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204457r603261_rule",
@@ -2193,12 +2973,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:169",
+              "label": "check"
+            },
+            {
               "data": "Upgrade to a supported version of the operating system.",
               "label": "fix"
             }
           ],
           "id": "SV-204458",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204458r603261_rule",
@@ -2235,12 +3030,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1117",
+              "label": "check"
+            },
+            {
               "data": "Configure the system to define all GIDs found in the \"/etc/passwd\" file by modifying the \"/etc/group\" file to add any non-existent group referenced in the \"/etc/passwd\" file, or change the GIDs referenced in the \"/etc/passwd\" file to a group that exists in \"/etc/group\".",
               "label": "fix"
             }
           ],
           "id": "SV-204461",
           "impact": 0.3,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204461r603261_rule",
@@ -2277,12 +3087,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:457",
+              "label": "check"
+            },
+            {
               "data": "Change the UID of any account on the system, other than root, that has a UID of \"0\". If the account is associated with system commands or applications, the UID should be changed to one greater than \"0\" but less than \"1000\". Otherwise, assign a UID of greater than \"1000\" that has not already been assigned.",
               "label": "fix"
             }
           ],
           "id": "SV-204462",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204462r603261_rule",
@@ -2319,12 +3144,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:447",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to assign home directories to all new local interactive users by setting the \"CREATE_HOME\" parameter in \"/etc/login.defs\" to \"yes\" as follows. CREATE_HOME yes",
               "label": "fix"
             }
           ],
           "id": "SV-204466",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204466r603261_rule",
@@ -2361,12 +3201,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86639",
+              "label": "check"
+            },
+            {
               "data": "Create home directories to all local interactive users that currently do not have a home directory assigned. Use the following commands to create the user home directory assigned in \"/etc/ passwd\": Note: The example will be for the user smithj, who has a home directory of \"/home/smithj\", a UID of \"smithj\", and a Group Identifier (GID) of \"users\" assigned in \"/etc/passwd\". # mkdir /home/smithj # chown smithj /home/smithj # chgrp users /home/smithj # chmod 0750 /home/smithj",
               "label": "fix"
             }
           ],
           "id": "SV-204467",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204467r603826_rule",
@@ -2402,12 +3257,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1186",
+              "label": "check"
+            },
+            {
               "data": "Configure the \"/etc/fstab\" to use the \"nosuid\" option on file systems that are being imported via NFS.",
               "label": "fix"
             }
           ],
           "id": "SV-204482",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204482r603261_rule",
@@ -2444,12 +3314,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1178",
+              "label": "check"
+            },
+            {
               "data": "Configure the \"/etc/fstab\" to use the \"noexec\" option on file systems that are being imported via NFS.",
               "label": "fix"
             }
           ],
           "id": "SV-204483",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204483r603261_rule",
@@ -2486,12 +3371,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1009",
+              "label": "check"
+            },
+            {
               "data": "All directories in local partitions which are world-writable should be group-owned by root or another system account. If any world-writable directories are not group-owned by a system account, this should be investigated. Following this, the directories should be deleted or assigned to an appropriate group.",
               "label": "fix"
             }
           ],
           "id": "SV-204487",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204487r603261_rule",
@@ -2528,12 +3428,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:116",
+              "label": "check"
+            },
+            {
               "data": "Set the owner on the \"/etc/cron.allow\" file to root with the following command: # chown root /etc/cron.allow",
               "label": "fix"
             }
           ],
           "id": "SV-204490",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204490r603261_rule",
@@ -2570,12 +3485,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:114",
+              "label": "check"
+            },
+            {
               "data": "Set the group owner on the \"/etc/cron.allow\" file to root with the following command: # chgrp root /etc/cron.allow",
               "label": "fix"
             }
           ],
           "id": "SV-204491",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204491r603261_rule",
@@ -2612,12 +3542,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1311",
+              "label": "check"
+            },
+            {
               "data": "Migrate the \"/home\" directory onto a separate file system/partition.",
               "label": "fix"
             }
           ],
           "id": "SV-204493",
           "impact": 0.3,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204493r603840_rule",
@@ -2654,12 +3599,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1315",
+              "label": "check"
+            },
+            {
               "data": "Migrate the \"/var\" path onto a separate file system.",
               "label": "fix"
             }
           ],
           "id": "SV-204494",
           "impact": 0.3,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204494r603261_rule",
@@ -2696,12 +3656,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1319",
+              "label": "check"
+            },
+            {
               "data": "Migrate the system audit data path onto a separate file system.",
               "label": "fix"
             }
           ],
           "id": "SV-204495",
           "impact": 0.3,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204495r603261_rule",
@@ -2737,12 +3712,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86689",
+              "label": "check"
+            },
+            {
               "data": "Start the \"tmp.mount\" service with the following command: # systemctl enable tmp.mount OR Edit the \"/etc/fstab\" file and ensure the \"/tmp\" directory is defined in the fstab with a device and mount point.",
               "label": "fix"
             }
           ],
           "id": "SV-204496",
           "impact": 0.3,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204496r603261_rule",
@@ -2779,12 +3769,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:126",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to implement DoD-approved encryption by installing the dracut-fips package. To enable strict FIPS compliance, the fips=1 kernel option needs to be added to the kernel command line during system installation so key generation is done with FIPS-approved algorithms and continuous monitoring tests in place. Configure the operating system to implement DoD-approved encryption by following the steps below: The fips=1 kernel option needs to be added to the kernel command line during system installation so that key generation is done with FIPS-approved algorithms and continuous monitoring tests in place. Users should also ensure that the system has plenty of entropy during the installation process by moving the mouse around, or if no mouse is available, ensuring that many keystrokes are typed. The recommended amount of keystrokes is 256 and more. Less than 256 keystrokes may generate a non-unique key. Install the dracut-fips package with the following command: # yum install dracut-fips Recreate the \"initramfs\" file with the following command: Note: This command will overwrite the existing \"initramfs\" file. # dracut -f Modify the kernel command line of the current kernel in the \"grub.cfg\" file by adding the following option to the GRUB_CMDLINE_LINUX key in the \"/etc/default/grub\" file and then rebuild the \"grub.cfg\" file: fips=1 Changes to \"/etc/default/grub\" require rebuilding the \"grub.cfg\" file as follows: On BIOS-based machines, use the following command: # grub2-mkconfig -o /boot/grub2/grub.cfg On UEFI-based machines, use the following command: # grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg If /boot or /boot/efi reside on separate partitions, the kernel parameter boot= must be added to the kernel command line. You can identify a partition by running the df /boot or df /boot/efi command: # df /boot Filesystem 1K-blocks Used Available Use% Mounted on /dev/sda1 495844 53780 416464 12% /boot To ensure the \"boot=\" configuration option will work even if device naming changes occur between boots, identify the universally unique identifier (UUID) of the partition with the following command: # blkid /dev/sda1 /dev/sda1: UUID=\"05c000f1-a213-759e-c7a2-f11b7424c797\" TYPE=\"ext4\" For the example above, append the following string to the kernel command line: boot=UUID=05c000f1-a213-759e-c7a2-f11b7424c797 If the file /etc/system-fips does not exists, recreate it: # touch /etc/ system-fips Reboot the system for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204497",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204497r603261_rule",
@@ -2828,12 +3833,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1292",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to disable non-essential capabilities by removing the telnet-server package from the system with the following command: # yum remove telnet-server",
               "label": "fix"
             }
           ],
           "id": "SV-204502",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204502r603261_rule",
@@ -2871,12 +3891,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86703",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to produce audit records containing information to establish when (date and time) the events occurred. Enable the auditd service with the following command: # systemctl start auditd.service",
               "label": "fix"
             }
           ],
           "id": "SV-204503",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204503r603261_rule",
@@ -2916,12 +3951,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:776",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to shut down in the event of an audit processing failure. Add or correct the option to shut down the operating system with the following command: # auditctl -f 2 Edit the \"/etc/audit/rules.d/audit.rules\" file and add the following line: -f 2 If availability has been determined to be more important, and this decision is documented with the ISSO, configure the operating system to notify system administration staff and ISSO staff in the event of an audit processing failure with the following command: # auditctl -f 1 Edit the \"/etc/audit/rules.d/audit.rules\" file and add the following line: -f 1 Kernel log monitoring must also be configured to properly alert designated staff. The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204504",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204504r603261_rule",
@@ -2958,12 +4008,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:95729",
+              "label": "check"
+            },
+            {
               "data": "Edit the /etc/audisp/plugins.d/au-remote.conf file and add or update the following values: direction = out path = /sbin/audisp-remote type = always The audit daemon must be restarted for changes to take effect: # service auditd restart",
               "label": "fix"
             }
           ],
           "id": "SV-204506",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204506r603261_rule",
@@ -2998,12 +4063,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:95731",
+              "label": "check"
+            },
+            {
               "data": "Edit the /etc/audisp/audispd.conf file and add or update the \"overflow_action\" option: overflow_action = syslog The audit daemon must be restarted for changes to take effect: # service auditd restart",
               "label": "fix"
             }
           ],
           "id": "SV-204507",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204507r603261_rule",
@@ -3038,12 +4118,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:95733",
+              "label": "check"
+            },
+            {
               "data": "Edit the /etc/audisp/audispd.conf file and add or update the \"name_format\" option: name_format = hostname The audit daemon must be restarted for changes to take effect: # service auditd restart",
               "label": "fix"
             }
           ],
           "id": "SV-204508",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204508r603261_rule",
@@ -3078,12 +4173,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86707",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to off-load audit records onto a different system or media from the system being audited. Set the remote server option in \"/etc/audisp/audisp-remote.conf\" with the IP address of the log aggregation server.",
               "label": "fix"
             }
           ],
           "id": "SV-204509",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204509r603261_rule",
@@ -3118,12 +4228,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86709",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to encrypt the transfer of off-loaded audit records onto a different system or media from the system being audited. Uncomment the \"enable_krb5\" option in \"/etc/audisp/audisp-remote.conf\" and set it with the following line: enable_krb5 = yes",
               "label": "fix"
             }
           ],
           "id": "SV-204510",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204510r603261_rule",
@@ -3158,12 +4283,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86711",
+              "label": "check"
+            },
+            {
               "data": "Configure the action the operating system takes if the disk the audit records are written to becomes full. Uncomment or edit the \"disk_full_action\" option in \"/etc/audisp/audisp-remote.conf\" and set it to \"syslog\", \"single\", or \"halt\", such as the following line: disk_full_action = single",
               "label": "fix"
             }
           ],
           "id": "SV-204511",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204511r603261_rule",
@@ -3198,12 +4338,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:87815",
+              "label": "check"
+            },
+            {
               "data": "Configure the action the operating system takes if there is an error sending audit records to a remote system. Uncomment the \"network_failure_action\" option in \"/etc/audisp/audisp-remote.conf\" and set it to \"syslog\", \"single\", or \"halt\". network_failure_action = syslog",
               "label": "fix"
             }
           ],
           "id": "SV-204512",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204512r603261_rule",
@@ -3238,12 +4393,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86715",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to immediately notify the SA and ISSO (at a minimum) when the threshold for the repository maximum audit record storage capacity is reached. Uncomment or edit the \"space_left_action\" keyword in \"/etc/audit/auditd.conf\" and set it to \"email\". space_left_action = email",
               "label": "fix"
             }
           ],
           "id": "SV-204514",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204514r603261_rule",
@@ -3278,12 +4448,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:885",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to immediately notify the SA and ISSO (at a minimum) when the threshold for the repository maximum audit record storage capacity is reached. Uncomment or edit the \"action_mail_acct\" keyword in \"/etc/audit/auditd.conf\" and set it to root and any other accounts associated with security personnel. action_mail_acct = root",
               "label": "fix"
             }
           ],
           "id": "SV-204515",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204515r603261_rule",
@@ -3319,12 +4504,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:710",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to audit the execution of privileged functions. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S execve -C uid!=euid -F euid=0 -k setuid -a always,exit -F arch=b64 -S execve -C uid!=euid -F euid=0 -k setuid -a always,exit -F arch=b32 -S execve -C gid!=egid -F egid=0 -k setgid -a always,exit -F arch=b64 -S execve -C gid!=egid -F egid=0 -k setgid The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204516",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204516r603261_rule",
@@ -3359,12 +4559,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:552",
+              "label": "check"
+            },
+            {
               "data": "Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S chown -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S chown -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204517",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204517r603261_rule",
@@ -3404,12 +4619,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:567",
+              "label": "check"
+            },
+            {
               "data": "Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S fchown -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S fchown -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204518",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204518r603261_rule",
@@ -3449,12 +4679,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:587",
+              "label": "check"
+            },
+            {
               "data": "Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S lchown -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S lchown -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204519",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204519r603261_rule",
@@ -3494,12 +4739,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:572",
+              "label": "check"
+            },
+            {
               "data": "Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S fchownat -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S fchownat -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204520",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204520r603261_rule",
@@ -3539,12 +4799,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:546",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"chmod\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S chmod -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S chmod -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204521",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204521r603261_rule",
@@ -3581,12 +4856,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:557",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"fchmod\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S fchmod -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S fchmod -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204522",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204522r603261_rule",
@@ -3623,12 +4913,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:562",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"fchmodat\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S fchmodat -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S fchmodat -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204523",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204523r603261_rule",
@@ -3665,12 +4970,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:607",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"setxattr\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S setxattr -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S setxattr -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204524",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204524r603261_rule",
@@ -3707,12 +5027,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:582",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"fsetxattr\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S fsetxattr -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S fsetxattr -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204525",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204525r603261_rule",
@@ -3749,12 +5084,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:597",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"lsetxattr\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S lsetxattr -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S lsetxattr -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204526",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204526r603261_rule",
@@ -3791,12 +5141,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:602",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"removexattr\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S removexattr -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S removexattr -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204527",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204527r603261_rule",
@@ -3833,12 +5198,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:577",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"fremovexattr\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S fremovexattr -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S fremovexattr -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204528",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204528r603261_rule",
@@ -3875,12 +5255,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:592",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"lremovexattr\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S lremovexattr -F auid\u003e=1000 -F auid!=unset -k perm_mod -a always,exit -F arch=b64 -S lremovexattr -F auid\u003e=1000 -F auid!=unset -k perm_mod The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204529",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204529r603261_rule",
@@ -3917,12 +5312,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:801",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"creat\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules: -a always,exit -F arch=b32 -S creat -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b32 -S creat -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S creat -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S creat -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204530",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204530r603261_rule",
@@ -3961,12 +5371,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:805",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"open\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S open -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b32 -S open -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S open -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S open -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204531",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204531r603261_rule",
@@ -4005,12 +5430,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:803",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"openat\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S openat -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b32 -S openat -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S openat -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S openat -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204532",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204532r603261_rule",
@@ -4049,12 +5489,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:804",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"open_by_handle_at\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S open_by_handle_at -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b32 -S open_by_handle_at -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S open_by_handle_at -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S open_by_handle_at -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204533",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204533r603261_rule",
@@ -4093,12 +5548,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:806",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"truncate\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S truncate -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b32 -S truncate -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S truncate -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S truncate -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204534",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204534r603261_rule",
@@ -4137,12 +5607,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:802",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"ftruncate\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S ftruncate -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b32 -S ftruncate -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S ftruncate -F exit=-EPERM -F auid\u003e=1000 -F auid!=unset -k access -a always,exit -F arch=b64 -S ftruncate -F exit=-EACCES -F auid\u003e=1000 -F auid!=unset -k access The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204535",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204535r603261_rule",
@@ -4181,12 +5666,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:618",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"semanage\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/sbin/semanage -F auid\u003e=1000 -F auid!=unset -k privileged-priv_change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204536",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204536r603261_rule",
@@ -4225,12 +5725,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:621",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"setsebool\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/sbin/setsebool -F auid\u003e=1000 -F auid!=unset -k privileged-priv_change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204537",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204537r603261_rule",
@@ -4269,12 +5784,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:612",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"chcon\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/bin/chcon -F auid\u003e=1000 -F auid!=unset -k privileged-priv_change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204538",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204538r603261_rule",
@@ -4313,12 +5843,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86765",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"setfiles\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/sbin/setfiles -F auid\u003e=1000 -F auid!=unset -k privileged-priv_change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204539",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204539r603261_rule",
@@ -4356,12 +5901,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:675",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when unsuccessful account access events occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -w /var/run/faillock -p wa -k logins The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204540",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204540r603261_rule",
@@ -4403,12 +5963,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:676",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful account access events occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -w /var/log/lastlog -p wa -k logins The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204541",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204541r603261_rule",
@@ -4450,12 +6025,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:733",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"passwd\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/bin/passwd -F auid\u003e=1000 -F auid!=unset -k privileged-passwd The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204542",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204542r603261_rule",
@@ -4497,12 +6087,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:760",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"unix_chkpwd\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/sbin/unix_chkpwd -F auid\u003e=1000 -F auid!=unset -k privileged-passwd The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204543",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204543r603261_rule",
@@ -4544,12 +6149,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:724",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"gpasswd\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/bin/gpasswd -F auid\u003e=1000 -F auid!=unset -k privileged-passwd The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204544",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204544r603261_rule",
@@ -4591,12 +6211,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:715",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"chage\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/bin/chage -F auid\u003e=1000 -F auid!=unset -k privileged-passwd The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204545",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204545r603261_rule",
@@ -4638,12 +6273,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:763",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"userhelper\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/sbin/userhelper -F auid\u003e=1000 -F auid!=unset -k privileged-passwd The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204546",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204546r603261_rule",
@@ -4685,12 +6335,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:748",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"su\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/bin/su -F auid\u003e=1000 -F auid!=unset -k privileged-priv_change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204547",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204547r603261_rule",
@@ -4735,12 +6400,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:751",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"sudo\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/bin/sudo -F auid\u003e=1000 -F auid!=unset -k privileged-priv_change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204548",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204548r603261_rule",
@@ -4785,12 +6465,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:773",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to access the \"/etc/sudoers\" file and files in the \"/etc/sudoers.d/\" directory. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -w /etc/sudoers -p wa -k privileged-actions -w /etc/sudoers.d/ -p wa -k privileged-actions The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204549",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204549r603261_rule",
@@ -4835,12 +6530,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:727",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"newgrp\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/bin/newgrp -F auid\u003e=1000 -F auid!=unset -k privileged-priv_change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204550",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204550r603261_rule",
@@ -4885,12 +6595,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:718",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"chsh\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/bin/chsh -F auid\u003e=1000 -F auid!=unset -k privileged-priv_change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204551",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204551r603261_rule",
@@ -4935,12 +6660,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:686",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"mount\" command and syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S mount -F auid\u003e=1000 -F auid!=unset -k privileged-mount -a always,exit -F arch=b64 -S mount -F auid\u003e=1000 -F auid!=unset -k privileged-mount -a always,exit -F path=/usr/bin/mount -F auid\u003e=1000 -F auid!=unset -k privileged-mount The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204552",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204552r603261_rule",
@@ -4979,12 +6719,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:757",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"umount\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/bin/umount -F auid\u003e=1000 -F auid!=unset -k privileged-mount The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204553",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204553r603261_rule",
@@ -5023,12 +6778,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:736",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"postdrop\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/sbin/postdrop -F auid\u003e=1000 -F auid!=unset -k privileged-postfix The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204554",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204554r603261_rule",
@@ -5067,12 +6837,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:739",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"postqueue\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/sbin/postqueue -F auid\u003e=1000 -F auid!=unset -k privileged-postfix The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204555",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204555r603261_rule",
@@ -5111,12 +6896,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:745",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"ssh-keysign\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/libexec/openssh/ssh-keysign -F auid\u003e=1000 -F auid!=unset -k privileged-ssh The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204556",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204556r603261_rule",
@@ -5158,12 +6958,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:721",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"crontab\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/bin/crontab -F auid\u003e=1000 -F auid!=unset -k privileged-cron The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204557",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204557r603261_rule",
@@ -5205,12 +7020,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:730",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"pam_timestamp_check\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F path=/usr/sbin/pam_timestamp_check -F auid\u003e=1000 -F auid!=unset -k privileged-pam The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204558",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204558r603261_rule",
@@ -5247,12 +7077,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:93705",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"create_module\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S create_module -k module-change -a always,exit -F arch=b64 -S create_module -k module-change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204559",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204559r603261_rule",
@@ -5288,12 +7133,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:657",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"init_module\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S init_module -k module-change -a always,exit -F arch=b64 -S init_module -k module-change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204560",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204560r603261_rule",
@@ -5330,12 +7190,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:93707",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"finit_module\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S finit_module -k module-change -a always,exit -F arch=b64 -S finit_module -k module-change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204561",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204561r603261_rule",
@@ -5372,12 +7247,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:658",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"delete_module\" syscall occur. Add or update the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S delete_module -k module-change -a always,exit -F arch=b64 -S delete_module -k module-change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204562",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204562r603261_rule",
@@ -5414,12 +7304,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86815",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"kmod\" command occur. Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -w /usr/bin/kmod -p x -F auid!=unset -k module-change The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204563",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204563r603261_rule",
@@ -5455,12 +7360,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:875",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/passwd\". Add or update the following rule \"/etc/audit/rules.d/audit.rules\": -w /etc/passwd -p wa -k identity The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204564",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204564r603261_rule",
@@ -5502,12 +7422,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:866",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/group\". Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -w /etc/group -p wa -k identity The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204565",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204565r603261_rule",
@@ -5549,12 +7484,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:869",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/gshadow\". Add or update the following rule in \"/etc/audit/rules.d/audit.rules\": -w /etc/gshadow -p wa -k identity The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204566",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204566r603261_rule",
@@ -5596,12 +7546,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:878",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/shadow. Add or update the following file system rule in \"/etc/audit/rules.d/audit.rules\": -w /etc/shadow -p wa -k identity The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204567",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204567r603261_rule",
@@ -5643,12 +7608,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:872",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/opasswd. Add or update the following file system rule in \"/etc/audit/rules.d/audit.rules\": -w /etc/security/opasswd -p wa -k identity The audit daemon must be restarted for the changes to take effect: # systemctl restart auditd",
               "label": "fix"
             }
           ],
           "id": "SV-204568",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204568r603261_rule",
@@ -5690,12 +7670,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:628",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"rename\" syscall occur. Add the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S rename -F auid\u003e=1000 -F auid!=unset -k delete -a always,exit -F arch=b64 -S rename -F auid\u003e=1000 -F auid!=unset -k delete The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204569",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204569r603261_rule",
@@ -5734,12 +7729,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:629",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"renameat\" syscall occur. Add the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S renameat -F auid\u003e=1000 -F auid!=unset -k delete -a always,exit -F arch=b64 -S renameat -F auid\u003e=1000 -F auid!=unset -k delete The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204570",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204570r603261_rule",
@@ -5778,12 +7788,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:625",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"rmdir\" syscall occur. Add the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S rmdir -F auid\u003e=1000 -F auid!=unset -k delete -a always,exit -F arch=b64 -S rmdir -F auid\u003e=1000 -F auid!=unset -k delete The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204571",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204571r603261_rule",
@@ -5822,12 +7847,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:626",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"unlink\" syscall occur. Add the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S unlink -F auid\u003e=1000 -F auid!=unset -k delete -a always,exit -F arch=b64 -S unlink -F auid\u003e=1000 -F auid!=unset -k delete The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204572",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204572r603261_rule",
@@ -5866,12 +7906,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:627",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to generate audit records when successful/unsuccessful attempts to use the \"unlinkat\" syscall occur. Add the following rules in \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -S unlinkat -F auid\u003e=1000 -F auid!=unset -k delete -a always,exit -F arch=b64 -S unlinkat -F auid\u003e=1000 -F auid!=unset -k delete The audit daemon must be restarted for the changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204573",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204573r603261_rule",
@@ -5910,12 +7965,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:449",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to limit the number of concurrent sessions to \"10\" for all accounts and/or account types. Add the following line to the top of the /etc/security/limits.conf or in a \".conf\" file defined in /etc/security/limits.d/ : * hard maxlogins 10",
               "label": "fix"
             }
           ],
           "id": "SV-204576",
           "impact": 0.3,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204576r603261_rule",
@@ -5952,12 +8022,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1399",
+              "label": "check"
+            },
+            {
               "data": "Configure SSH to use FIPS 140-2 approved cryptographic algorithms. Add the following line (or modify the line to have the required value) to the \"/etc/ssh/sshd_config\" file (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor). Ciphers aes256-ctr,aes192-ctr,aes128-ctr The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204578",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204578r603843_rule",
@@ -6000,12 +8085,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:92521",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system implement virtual address space randomization. Set the system to the required kernel parameter by adding the following line to \"/etc/sysctl.conf\" or a config file in the /etc/sysctl.d/ directory (or modify the line to have the required value): kernel.randomize_va_space = 2 Issue the following command to make the changes take effect: # sysctl --system",
               "label": "fix"
             }
           ],
           "id": "SV-204584",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204584r603261_rule",
@@ -6041,12 +8141,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:4248",
+              "label": "check"
+            },
+            {
               "data": "Install SSH packages onto the host with the following commands: # yum install openssh-server.x86_64",
               "label": "fix"
             }
           ],
           "id": "SV-204585",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204585r603261_rule",
@@ -6087,12 +8202,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1391",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to automatically terminate a user session after inactivity time-outs have expired or at shutdown. Add the following line (or modify the line to have the required value) to the \"/etc/ssh/sshd_config\" file (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor): ClientAliveInterval 600 The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204587",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204587r603261_rule",
@@ -6131,12 +8261,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1379",
+              "label": "check"
+            },
+            {
               "data": "Configure the SSH daemon to not allow authentication using RSA rhosts authentication. Add the following line in \"/etc/ssh/sshd_config\", or uncomment the line and set the value to \"no\": RhostsRSAAuthentication no The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204588",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204588r603261_rule",
@@ -6173,12 +8318,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1393",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to terminate automatically a user session after inactivity time-outs have expired or at shutdown. Add the following line (or modify the line to have the required value) to the \"/etc/ssh/sshd_config\" file (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor): ClientAliveCountMax 0 The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204589",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204589r603261_rule",
@@ -6217,12 +8377,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1377",
+              "label": "check"
+            },
+            {
               "data": "Configure the SSH daemon to not allow authentication using known hosts authentication. Add the following line in \"/etc/ssh/sshd_config\", or uncomment the line and set the value to \"yes\": IgnoreRhosts yes",
               "label": "fix"
             }
           ],
           "id": "SV-204590",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204590r603261_rule",
@@ -6259,12 +8434,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:166",
+              "label": "check"
+            },
+            {
               "data": "Configure SSH to provide users with feedback on when account accesses last occurred by setting the required configuration options in \"/etc/pam.d/sshd\" or in the \"sshd_config\" file used by the system (\"/etc/ssh/sshd_config\" will be used in the example) (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor). Modify the \"PrintLastLog\" line in \"/etc/ssh/sshd_config\" to match the following: PrintLastLog yes The SSH service must be restarted for changes to \"sshd_config\" to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204591",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204591r603261_rule",
@@ -6301,12 +8491,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1381",
+              "label": "check"
+            },
+            {
               "data": "Configure SSH to stop users from logging on remotely as the root user. Edit the appropriate \"/etc/ssh/sshd_config\" file to uncomment or add the line for the \"PermitRootLogin\" keyword and set its value to \"no\" (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor): PermitRootLogin no The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204592",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204592r603261_rule",
@@ -6343,12 +8548,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1383",
+              "label": "check"
+            },
+            {
               "data": "Configure the SSH daemon to not allow authentication using known hosts authentication. Add the following line in \"/etc/ssh/sshd_config\", or uncomment the line and set the value to \"yes\": IgnoreUserKnownHosts yes The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204593",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204593r603261_rule",
@@ -6385,12 +8605,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1373",
+              "label": "check"
+            },
+            {
               "data": "Remove all Protocol lines that reference version \"1\" in \"/etc/ssh/sshd_config\" (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor). The \"Protocol\" line must be as follows: Protocol 2 The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204594",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204594r603261_rule",
@@ -6430,12 +8665,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:168",
+              "label": "check"
+            },
+            {
               "data": "Edit the \"/etc/ssh/sshd_config\" file to uncomment or add the line for the \"MACs\" keyword and set its value to \"hmac-sha2-512\" and/or \"hmac-sha2-256\" (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor): MACs hmac-sha2-512,hmac-sha2-256 The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204595",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204595r603846_rule",
@@ -6472,12 +8722,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:120",
+              "label": "check"
+            },
+            {
               "data": "Note: SSH public key files may be found in other directories on the system depending on the installation. Change the mode of public host key files under \"/etc/ssh\" to \"0644\" with the following command: # chmod 0644 /etc/ssh/*.key.pub",
               "label": "fix"
             }
           ],
           "id": "SV-204596",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204596r603261_rule",
@@ -6514,12 +8779,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:118",
+              "label": "check"
+            },
+            {
               "data": "Configure the mode of SSH private host key files under \"/etc/ssh\" to \"0640\" with the following command: # chmod 0640 /path/to/file/ssh_host*key",
               "label": "fix"
             }
           ],
           "id": "SV-204597",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204597r603261_rule",
@@ -6556,12 +8836,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:160",
+              "label": "check"
+            },
+            {
               "data": "Uncomment the \"GSSAPIAuthentication\" keyword in \"/etc/ssh/sshd_config\" (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor) and set the value to \"no\": GSSAPIAuthentication no The SSH service must be restarted for changes to take effect. If GSSAPI authentication is required, it must be documented, to include the location of the configuration file, with the ISSO.",
               "label": "fix"
             }
           ],
           "id": "SV-204598",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204598r603261_rule",
@@ -6606,12 +8901,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:162",
+              "label": "check"
+            },
+            {
               "data": "Uncomment the \"KerberosAuthentication\" keyword in \"/etc/ssh/sshd_config\" (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor) and set the value to \"no\": KerberosAuthentication no The SSH service must be restarted for changes to take effect. If Kerberos authentication is required, it must be documented, to include the location of the configuration file, with the ISSO.",
               "label": "fix"
             }
           ],
           "id": "SV-204599",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204599r603261_rule",
@@ -6657,12 +8967,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:164",
+              "label": "check"
+            },
+            {
               "data": "Uncomment the \"StrictModes\" keyword in \"/etc/ssh/sshd_config\" (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor) and set the value to \"yes\": StrictModes yes The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204600",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204600r603261_rule",
@@ -6699,12 +9024,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:171",
+              "label": "check"
+            },
+            {
               "data": "Uncomment the \"UsePrivilegeSeparation\" keyword in \"/etc/ssh/sshd_config\" (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor) and set the value to \"sandbox\" or \"yes\": UsePrivilegeSeparation sandbox The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204601",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204601r603261_rule",
@@ -6741,12 +9081,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:158",
+              "label": "check"
+            },
+            {
               "data": "Uncomment the \"Compression\" keyword in \"/etc/ssh/sshd_config\" (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor) on the system and set the value to \"delayed\" or \"no\": Compression no The SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
           "id": "SV-204602",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204602r603261_rule",
@@ -6782,12 +9137,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1020",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to provide users with feedback on when account accesses last occurred by setting the required configuration options in \"/etc/pam.d/postlogin\". Add the following line to the top of \"/etc/pam.d/postlogin\": session required pam_lastlog.so showfailed",
               "label": "fix"
             }
           ],
           "id": "SV-204605",
           "impact": 0.3,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204605r603261_rule",
@@ -6823,12 +9193,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86901",
+              "label": "check"
+            },
+            {
               "data": "Remove any found \".shosts\" files from the system. # rm /[path]/[to]/[file]/.shosts",
               "label": "fix"
             }
           ],
           "id": "SV-204606",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204606r603261_rule",
@@ -6864,12 +9249,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:86903",
+              "label": "check"
+            },
+            {
               "data": "Remove any found \"shosts.equiv\" files from the system. # rm /[path]/[to]/[file]/shosts.equiv",
               "label": "fix"
             }
           ],
           "id": "SV-204607",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204607r603261_rule",
@@ -6905,12 +9305,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:251",
+              "label": "check"
+            },
+            {
               "data": "Set the system to the required kernel parameter by adding the following line to \"/etc/sysctl.conf\" or a configuration file in the /etc/sysctl.d/ directory (or modify the line to have the required value): net.ipv4.conf.all.accept_source_route = 0 Issue the following command to make the changes take effect: # sysctl -system",
               "label": "fix"
             }
           ],
           "id": "SV-204609",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204609r603261_rule",
@@ -6947,12 +9362,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:269",
+              "label": "check"
+            },
+            {
               "data": "Set the system to the required kernel parameter by adding the following line to \"/etc/sysctl.conf\" or a configuration file in the /etc/sysctl.d/ directory (or modify the line to have the required value): net.ipv4.conf.default.accept_source_route = 0 Issue the following command to make the changes take effect: # sysctl --system",
               "label": "fix"
             }
           ],
           "id": "SV-204612",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204612r603261_rule",
@@ -6989,12 +9419,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:284",
+              "label": "check"
+            },
+            {
               "data": "Set the system to the required kernel parameter by adding the following line to \"/etc/sysctl.conf\" or a configuration file in the /etc/sysctl.d/ directory (or modify the line to have the required value): net.ipv4.icmp_echo_ignore_broadcasts = 1 Issue the following command to make the changes take effect: # sysctl --system",
               "label": "fix"
             }
           ],
           "id": "SV-204613",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204613r603261_rule",
@@ -7031,12 +9476,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:266",
+              "label": "check"
+            },
+            {
               "data": "Set the system to not accept IPv4 ICMP redirect messages by adding the following line to \"/etc/sysctl.conf\" or a configuration file in the /etc/sysctl.d/ directory (or modify the line to have the required value): net.ipv4.conf.default.accept_redirects = 0 Issue the following command to make the changes take effect: # sysctl --system",
               "label": "fix"
             }
           ],
           "id": "SV-204614",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204614r603261_rule",
@@ -7073,12 +9533,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:248",
+              "label": "check"
+            },
+            {
               "data": "Set the system to ignore IPv4 ICMP redirect messages by adding the following line to \"/etc/sysctl.conf\" or a configuration file in the /etc/sysctl.d/ directory (or modify the line to have the required value): net.ipv4.conf.all.accept_redirects = 0 Issue the following command to make the changes take effect: # sysctl --system",
               "label": "fix"
             }
           ],
           "id": "SV-204615",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204615r603261_rule",
@@ -7115,12 +9590,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:281",
+              "label": "check"
+            },
+            {
               "data": "Configure the system to not allow interfaces to perform IPv4 ICMP redirects by default. Set the system to the required kernel parameter by adding the following line to \"/etc/sysctl.conf\" or a configuration file in the /etc/sysctl.d/ directory (or modify the line to have the required value): net.ipv4.conf.default.send_redirects = 0 Issue the following command to make the changes take effect: # sysctl --system",
               "label": "fix"
             }
           ],
           "id": "SV-204616",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204616r603261_rule",
@@ -7157,12 +9647,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:263",
+              "label": "check"
+            },
+            {
               "data": "Configure the system to not allow interfaces to perform IPv4 ICMP redirects. Set the system to the required kernel parameter by adding the following line to \"/etc/sysctl.conf\" or a configuration file in the /etc/sysctl.d/ directory (or modify the line to have the required value): net.ipv4.conf.all.send_redirects = 0 Issue the following command to make the changes take effect: # sysctl --system",
               "label": "fix"
             }
           ],
           "id": "SV-204617",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204617r603261_rule",
@@ -7199,12 +9704,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1301",
+              "label": "check"
+            },
+            {
               "data": "Document the \"vsftpd\" package with the ISSO as an operational requirement or remove it from the system with the following command: # yum remove vsftpd",
               "label": "fix"
             }
           ],
           "id": "SV-204620",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204620r603261_rule",
@@ -7240,12 +9760,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1296",
+              "label": "check"
+            },
+            {
               "data": "Remove the TFTP package from the system with the following command: # yum remove tftp-server",
               "label": "fix"
             }
           ],
           "id": "SV-204621",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204621r603261_rule",
@@ -7291,12 +9826,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1389",
+              "label": "check"
+            },
+            {
               "data": "Edit the \"/etc/ssh/sshd_config\" file to uncomment or add the line for the \"X11Forwarding\" keyword and set its value to \"no\" (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor): X11Forwarding no The SSH service must be restarted for changes to take effect: # systemctl restart sshd",
               "label": "fix"
             }
           ],
           "id": "SV-204622",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204622r603849_rule",
@@ -7333,12 +9883,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1305",
+              "label": "check"
+            },
+            {
               "data": "Document the requirement for a graphical user interface with the ISSO or remove the related packages with the following commands: # rpm -e xorg-x11-server-common # systemctl set-default multi-user.target",
               "label": "fix"
             }
           ],
           "id": "SV-204624",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204624r603261_rule",
@@ -7375,12 +9940,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:290",
+              "label": "check"
+            },
+            {
               "data": "Set the system to the required kernel parameter by adding the following line to \"/etc/sysctl.conf\" or a configuration file in the /etc/sysctl.d/ directory (or modify the line to have the required value): net.ipv4.ip_forward = 0 Issue the following command to make the changes take effect: # sysctl --system",
               "label": "fix"
             }
           ],
           "id": "SV-204625",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204625r603261_rule",
@@ -7417,12 +9997,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1369",
+              "label": "check"
+            },
+            {
               "data": "If the \"/etc/snmp/snmpd.conf\" file exists, modify any lines that contain a community string value of \"public\" or \"private\" to another string value.",
               "label": "fix"
             }
           ],
           "id": "SV-204627",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204627r603261_rule",
@@ -7459,12 +10054,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:303",
+              "label": "check"
+            },
+            {
               "data": "Set the system to the required kernel parameter, if IPv6 is enabled, by adding the following line to \"/etc/sysctl.conf\" or a configuration file in the /etc/sysctl.d/ directory (or modify the line to have the required value): net.ipv6.conf.all.accept_source_route = 0 Issue the following command to make the changes take effect: # sysctl --system",
               "label": "fix"
             }
           ],
           "id": "SV-204630",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204630r603261_rule",
@@ -7501,12 +10111,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:87041",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to implement multifactor authentication by installing the required packages. Install the pam_pkcs11 package with the following command: # yum install pam_pkcs11",
               "label": "fix"
             }
           ],
           "id": "SV-204631",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204631r603261_rule",
@@ -7544,12 +10169,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1405",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to implement multifactor authentication for remote access to privileged accounts via pluggable authentication modules (PAM). Modify all of the services lines in \"/etc/sssd/sssd.conf\" or in configuration files found under \"/etc/sssd/conf.d\" to include pam.",
               "label": "fix"
             }
           ],
           "id": "SV-204632",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204632r603261_rule",
@@ -7588,12 +10228,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:87057",
+              "label": "check"
+            },
+            {
               "data": "Configure the operating system to do certificate status checking for PKI authentication. Modify all of the \"cert_policy\" lines in \"/etc/pam_pkcs11/pam_pkcs11.conf\" to include \"ocsp_on\".",
               "label": "fix"
             }
           ],
           "id": "SV-204633",
           "impact": 0.5,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204633r603261_rule",
@@ -7631,12 +10286,27 @@
               "label": "default"
             },
             {
+              "data": "oval:mil.disa.stig.rhel7:def:1340",
+              "label": "check"
+            },
+            {
               "data": "Run the following command to determine which package owns the file: # rpm -qf The package can be reinstalled from a yum repository using the command: # sudo yum reinstall Alternatively, the package can be reinstalled from trusted media using the command: # sudo rpm -Uvh",
               "label": "fix"
             }
           ],
           "id": "SV-214799",
           "impact": 0.7,
+          "refs": [
+            {
+              "ref": [
+                {
+                  "identifier": "2899",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            }
+          ],
           "results": [
             {
               "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-214799r603261_rule",

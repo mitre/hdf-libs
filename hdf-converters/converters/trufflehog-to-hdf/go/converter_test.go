@@ -146,6 +146,7 @@ func TestConvertTrufflehogToHDF_Tags(t *testing.T) {
 
 	cci := hdfutil.SafeStringSlice(req.Tags["cci"])
 	require.NotNil(t, cci)
+	assert.Contains(t, cci, "CCI-004069")
 	assert.Contains(t, cci, "CCI-000202")
 	assert.Contains(t, cci, "CCI-000203")
 	assert.Contains(t, cci, "CCI-002367")

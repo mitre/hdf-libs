@@ -1,6 +1,7 @@
 package sonarqube
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -42,13 +43,20 @@ type Issue struct {
 	Line      *int       `json:"line,omitempty"`
 	Hash      string     `json:"hash,omitempty"`
 	TextRange *TextRange `json:"textRange,omitempty"`
-	Flows     []Flow     `json:"flows,omitempty"`
-	Status    string     `json:"status"`
-	Message   string     `json:"message"`
-	Effort    string     `json:"effort,omitempty"`
-	Debt      string     `json:"debt,omitempty"`
-	Author    string     `json:"author,omitempty"`
-	Tags      []string   `json:"tags,omitempty"`
+	// Flows is kept as raw JSON so the secondary-location structure round-trips
+	// byte-for-byte to the sonarqube/flows tag. Re-marshalling through typed
+	// structs would drop source-only keys (e.g. msgFormattings) and diverge from
+	// the TypeScript twin, which passes the parsed value through unchanged.
+	Flows json.RawMessage `json:"flows,omitempty"`
+	// QuickFixAvailable is a pointer so an absent field (nil) is distinguishable
+	// from an explicit false.
+	QuickFixAvailable *bool    `json:"quickFixAvailable,omitempty"`
+	Status            string   `json:"status"`
+	Message           string   `json:"message"`
+	Effort            string   `json:"effort,omitempty"`
+	Debt              string   `json:"debt,omitempty"`
+	Author            string   `json:"author,omitempty"`
+	Tags              []string `json:"tags,omitempty"`
 	// Impacts carries the Multi-Quality-Rule (Clean Code) software-quality
 	// severities. Present only when the server is in MQR mode, where SonarQube
 	// treats these — not the deprecated top-level Severity — as authoritative.
@@ -72,16 +80,6 @@ type TextRange struct {
 	EndLine     int `json:"endLine"`
 	StartOffset int `json:"startOffset"`
 	EndOffset   int `json:"endOffset"`
-}
-
-type Flow struct {
-	Locations []Location `json:"locations"`
-}
-
-type Location struct {
-	Component string     `json:"component"`
-	TextRange *TextRange `json:"textRange,omitempty"`
-	Msg       string     `json:"msg,omitempty"`
 }
 
 type Component struct {
@@ -183,6 +181,21 @@ func severityToImpactScore(severity, source string) float64 {
 		return hdfutil.SeverityToImpactWithAliases(severity, mqrAliases, 0.5)
 	}
 	return hdfutil.SeverityToImpactWithAliases(severity, sonarqubeAliases, 0.5)
+}
+
+// hasFlows reports whether the raw flows value carries any secondary locations.
+// An absent field (nil), an explicit null, or an empty array are all treated as
+// "no flows" so the sonarqube/flows tag stays off rather than pinning "[]".
+func hasFlows(raw json.RawMessage) bool {
+	// Parse the array rather than string-compare: json.RawMessage preserves the
+	// source formatting, so an empty array written as "[ ]" or pretty-printed
+	// would slip past a literal "[]" check and emit an empty flows tag.
+	var arr []json.RawMessage
+	if err := json.Unmarshal(raw, &arr); err == nil {
+		return len(arr) > 0
+	}
+	trimmed := bytes.TrimSpace(raw)
+	return len(trimmed) > 0 && string(trimmed) != "null"
 }
 
 // defaultNistTag is the fallback NIST control for SonarQube findings without
@@ -405,6 +418,24 @@ func convertRuleToRequirement(
 	}
 	if firstIssue.Author != "" {
 		tags["author"] = firstIssue.Author
+	}
+	// Auxiliary per-issue metadata that has no typed HDF home, namespaced under
+	// the tool name per the convention (developer-guide.md, Auxiliary Tool
+	// Metadata). Each is emitted only when the source issue carries it.
+	if firstIssue.Hash != "" {
+		tags["sonarqube/hash"] = firstIssue.Hash
+	}
+	if firstIssue.Key != "" {
+		tags["sonarqube/key"] = firstIssue.Key
+	}
+	if firstIssue.UpdateDate != "" {
+		tags["sonarqube/update_date"] = firstIssue.UpdateDate
+	}
+	if hasFlows(firstIssue.Flows) {
+		tags["sonarqube/flows"] = firstIssue.Flows
+	}
+	if firstIssue.QuickFixAvailable != nil {
+		tags["sonarqube/quick_fix_available"] = *firstIssue.QuickFixAvailable
 	}
 	// Language is a property of the rule, not the issue.
 	if hasRule {

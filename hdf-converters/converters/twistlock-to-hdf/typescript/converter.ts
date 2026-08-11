@@ -273,6 +273,52 @@ function formatCodeDesc(vuln: TwistlockVuln): string {
 }
 
 /**
+ * Builds the result message for a vulnerability, mirroring heimdall2's twistlock
+ * mapper: the package name/version are JSON-quoted when present and rendered as
+ * bare "N/A" when absent.
+ */
+function formatMessage(vuln: TwistlockVuln): string {
+  const packageName = vuln.packageName ? JSON.stringify(vuln.packageName) : 'N/A';
+  const packageVersion = vuln.packageVersion ? JSON.stringify(vuln.packageVersion) : 'N/A';
+  return `Expected latest version of ${packageName}\nDetected vulnerable version ${packageVersion} of ${packageName}`;
+}
+
+/**
+ * Re-serialize the parsed vulnerability into indented JSON for requirement.code
+ * (the raw-finding passthrough, Heimdall's CODE tab), so fields with no
+ * structured HDF home (link, riskFactors, publishedDate, fixDate, layerTime)
+ * are not lost. The projection is byte-identical to the Go projection: field
+ * order and the conditional-omission rules (empty string / 0 / empty array
+ * dropped, matching Go's `omitempty`) mirror the TwistlockVuln struct, and
+ * JSON.stringify(obj, null, 2) matches Go's json.Encoder with HTML escaping
+ * disabled and a two-space indent. Do not reorder without updating
+ * go/converter.go.
+ */
+function buildVulnCode(vuln: TwistlockVuln): string {
+  const o: Record<string, unknown> = {};
+  if (vuln.id) o.id = vuln.id;
+  if (vuln.cve) o.cve = vuln.cve;
+  if (vuln.status) o.status = vuln.status;
+  if (vuln.cvss) o.cvss = vuln.cvss;
+  if (vuln.vector) o.vector = vuln.vector;
+  if (vuln.description) o.description = vuln.description;
+  if (vuln.severity) o.severity = vuln.severity;
+  if (vuln.packageName) o.packageName = vuln.packageName;
+  if (vuln.packageVersion) o.packageVersion = vuln.packageVersion;
+  if (vuln.packageType) o.packageType = vuln.packageType;
+  if (vuln.cwe) o.cwe = vuln.cwe;
+  if (vuln.link) o.link = vuln.link;
+  if (vuln.fixedBy) o.fixedBy = vuln.fixedBy;
+  if (vuln.riskFactors?.length) o.riskFactors = vuln.riskFactors;
+  if (vuln.impactedVersions?.length) o.impactedVersions = vuln.impactedVersions;
+  if (vuln.publishedDate) o.publishedDate = vuln.publishedDate;
+  if (vuln.discoveredDate) o.discoveredDate = vuln.discoveredDate;
+  if (vuln.fixDate) o.fixDate = vuln.fixDate;
+  if (vuln.layerTime) o.layerTime = vuln.layerTime;
+  return JSON.stringify(o, null, 2);
+}
+
+/**
  * Converts a single vulnerability into an EvaluatedRequirement.
  *
  * @param vuln - The Twistlock vulnerability object
@@ -304,7 +350,7 @@ function buildRequirement(
   const startTime = (vuln.discoveredDate ? parseTimestamp(vuln.discoveredDate) : null) ?? new Date('0001-01-01T00:00:00Z');
 
   const results: RequirementResult[] = [
-    createResult(ResultStatus.Failed, undefined, {
+    createResult(ResultStatus.Failed, formatMessage(vuln), {
       codeDesc: formatCodeDesc(vuln),
       startTime,
     }),
@@ -324,6 +370,9 @@ function buildRequirement(
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  const code = buildVulnCode(vuln);
+  if (code) req.code = code;
 
   const cv = buildCvss(vuln);
   if (cv) req.cvss = [cv];

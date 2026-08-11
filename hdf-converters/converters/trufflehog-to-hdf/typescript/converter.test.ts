@@ -150,6 +150,7 @@ describe('trufflehog to HDF converter', async () => {
       const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('minimal.json'))) as HDFResults;
       const tags = hdf.baselines[0]!.requirements[0]!.tags;
       const cci = tags?.['cci'] as string[];
+      expect(cci).toContain('CCI-004069');
       expect(cci).toContain('CCI-000202');
       expect(cci).toContain('CCI-000203');
       expect(cci).toContain('CCI-002367');

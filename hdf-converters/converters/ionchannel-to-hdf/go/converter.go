@@ -40,7 +40,7 @@ type IonChannelAnalysis struct {
 	TriggerText   string        `json:"trigger_text"`
 	TriggerAuthor string        `json:"trigger_author"`
 	Trigger       string        `json:"trigger"`
-	Public        bool          `json:"public"`
+	Public        *bool         `json:"public"`
 	ScanSummaries []ScanSummary `json:"scan_summaries"`
 }
 
@@ -187,20 +187,92 @@ func analysisTags(a IonChannelAnalysis) map[string]interface{} {
 	return tags
 }
 
+// ionchannelRunMetadata returns the IonChannel run-scope analysis metadata that
+// has no typed HDF home, for baseline.extensions["ionchannel"] (the auxiliary
+// tool-metadata convention). Typed fields (source, summary, risk, passed,
+// ruleset_*, timestamps) are excluded — they already have homes. Each field is
+// emitted only when the source carries it; returns nil when none is present.
+func ionchannelRunMetadata(a IonChannelAnalysis) map[string]interface{} {
+	meta := map[string]interface{}{}
+	if a.ID != "" {
+		meta["id"] = a.ID
+	}
+	if a.AnalysisID != "" {
+		meta["analysis_id"] = a.AnalysisID
+	}
+	if a.TeamID != "" {
+		meta["team_id"] = a.TeamID
+	}
+	if a.ProjectID != "" {
+		meta["project_id"] = a.ProjectID
+	}
+	if a.Name != "" {
+		meta["name"] = a.Name
+	}
+	if a.Text != "" {
+		meta["text"] = a.Text
+	}
+	if a.Type != "" {
+		meta["type"] = a.Type
+	}
+	if a.Branch != "" {
+		meta["branch"] = a.Branch
+	}
+	if a.Description != "" {
+		meta["description"] = a.Description
+	}
+	if a.Status != "" {
+		meta["status"] = a.Status
+	}
+	if a.Duration != 0 {
+		meta["duration"] = a.Duration
+	}
+	if a.Public != nil {
+		meta["public"] = *a.Public
+	}
+	if len(meta) == 0 {
+		return nil
+	}
+	return meta
+}
+
+// triggerTags returns the IonChannel run-trigger fields (what kicked off the
+// analysis) as namespaced requirement tags. Per the auxiliary-metadata
+// convention these homeless per-analysis fields land under the "ionchannel/"
+// tag namespace. Each is emitted only when the source carries it.
+func triggerTags(a IonChannelAnalysis) map[string]interface{} {
+	tags := map[string]interface{}{}
+	if a.TriggerHash != "" {
+		tags["ionchannel/trigger_hash"] = a.TriggerHash
+	}
+	if a.TriggerText != "" {
+		tags["ionchannel/trigger_text"] = a.TriggerText
+	}
+	if a.TriggerAuthor != "" {
+		tags["ionchannel/trigger_author"] = a.TriggerAuthor
+	}
+	if a.Trigger != "" {
+		tags["ionchannel/trigger"] = a.Trigger
+	}
+	return tags
+}
+
 // buildTags builds the tags map for a dependency requirement.
 func buildTags(dep contextualizedDependency, analysis IonChannelAnalysis) map[string]interface{} {
 	nist := shared.DefaultComponentManagementNIST
 	cciTags := cci.NISTToCCI(nist)
 
 	extras := map[string]interface{}{
-		"org":            dep.Org,
-		"name":           dep.Name,
-		"type":           dep.Type,
-		"version":        dep.Version,
-		"latest_version": dep.LatestVersion,
-		"scope":          dep.Scope,
-		"requirement":    dep.Requirement,
-		"file":           dep.File,
+		"org":              dep.Org,
+		"name":             dep.Name,
+		"type":             dep.Type,
+		"package":          dep.Package,
+		"version":          dep.Version,
+		"latest_version":   dep.LatestVersion,
+		"outdated_version": dep.OutdatedVersion,
+		"scope":            dep.Scope,
+		"requirement":      dep.Requirement,
+		"file":             dep.File,
 	}
 
 	if len(dep.Dependencies) > 0 {
@@ -216,6 +288,9 @@ func buildTags(dep contextualizedDependency, analysis IonChannelAnalysis) map[st
 	}
 
 	for k, v := range analysisTags(analysis) {
+		extras[k] = v
+	}
+	for k, v := range triggerTags(analysis) {
 		extras[k] = v
 	}
 
@@ -307,6 +382,9 @@ func buildScanRequirement(scan ScanSummary, analysis IonChannelAnalysis) hdf.Eva
 		"type": scan.Results.Type,
 	}
 	for k, v := range analysisTags(analysis) {
+		tags[k] = v
+	}
+	for k, v := range triggerTags(analysis) {
 		tags[k] = v
 	}
 
@@ -452,6 +530,10 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		Requirements: requirements,
 		Integrity:    integrity,
 		Status:       hdfutil.Ptr("loaded"),
+	}
+
+	if meta := ionchannelRunMetadata(analysis); meta != nil {
+		baseline.Extensions = map[string]interface{}{"ionchannel": meta}
 	}
 
 	baselines := []hdf.EvaluatedBaseline{baseline}

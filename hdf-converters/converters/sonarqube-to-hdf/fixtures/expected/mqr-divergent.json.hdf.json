@@ -48,6 +48,327 @@
             "owasp": [],
             "severity": "high",
             "severitySource": "mqr",
+            "sonarqube/flows": [
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 55,
+                      "endLine": 55,
+                      "startOffset": 1,
+                      "endOffset": 3
+                    },
+                    "msg": "+1",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 60,
+                      "endLine": 60,
+                      "startOffset": 1,
+                      "endOffset": 3
+                    },
+                    "msg": "+1",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 61,
+                      "endLine": 61,
+                      "startOffset": 2,
+                      "endOffset": 4
+                    },
+                    "msg": "+2 (incl 1 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 67,
+                      "endLine": 67,
+                      "startOffset": 1,
+                      "endOffset": 3
+                    },
+                    "msg": "+1",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 72,
+                      "endLine": 72,
+                      "startOffset": 1,
+                      "endOffset": 3
+                    },
+                    "msg": "+1",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 77,
+                      "endLine": 77,
+                      "startOffset": 1,
+                      "endOffset": 3
+                    },
+                    "msg": "+1",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 77,
+                      "endLine": 77,
+                      "startOffset": 56,
+                      "endOffset": 58
+                    },
+                    "msg": "+1",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 79,
+                      "endLine": 79,
+                      "startOffset": 2,
+                      "endOffset": 5
+                    },
+                    "msg": "+2 (incl 1 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 81,
+                      "endLine": 81,
+                      "startOffset": 3,
+                      "endOffset": 5
+                    },
+                    "msg": "+3 (incl 2 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 88,
+                      "endLine": 88,
+                      "startOffset": 3,
+                      "endOffset": 5
+                    },
+                    "msg": "+3 (incl 2 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 97,
+                      "endLine": 97,
+                      "startOffset": 1,
+                      "endOffset": 3
+                    },
+                    "msg": "+1",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 97,
+                      "endLine": 97,
+                      "startOffset": 59,
+                      "endOffset": 61
+                    },
+                    "msg": "+1",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 99,
+                      "endLine": 99,
+                      "startOffset": 2,
+                      "endOffset": 5
+                    },
+                    "msg": "+2 (incl 1 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 101,
+                      "endLine": 101,
+                      "startOffset": 3,
+                      "endOffset": 5
+                    },
+                    "msg": "+3 (incl 2 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 108,
+                      "endLine": 108,
+                      "startOffset": 3,
+                      "endOffset": 5
+                    },
+                    "msg": "+3 (incl 2 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 117,
+                      "endLine": 117,
+                      "startOffset": 1,
+                      "endOffset": 3
+                    },
+                    "msg": "+1",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 120,
+                      "endLine": 120,
+                      "startOffset": 2,
+                      "endOffset": 4
+                    },
+                    "msg": "+2 (incl 1 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 123,
+                      "endLine": 123,
+                      "startOffset": 2,
+                      "endOffset": 4
+                    },
+                    "msg": "+2 (incl 1 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 126,
+                      "endLine": 126,
+                      "startOffset": 2,
+                      "endOffset": 4
+                    },
+                    "msg": "+2 (incl 1 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 129,
+                      "endLine": 129,
+                      "startOffset": 2,
+                      "endOffset": 4
+                    },
+                    "msg": "+2 (incl 1 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              },
+              {
+                "locations": [
+                  {
+                    "component": "hdf-libs:hdf-cli/cmd/hdf/cmd/evidence.go",
+                    "textRange": {
+                      "startLine": 132,
+                      "endLine": 132,
+                      "startOffset": 2,
+                      "endOffset": 4
+                    },
+                    "msg": "+2 (incl 1 for nesting)",
+                    "msgFormattings": []
+                  }
+                ]
+              }
+            ],
+            "sonarqube/hash": "e97b9998e97293d2d44f2f1d5fb412fc",
+            "sonarqube/key": "4c5042bf-bcf8-445d-baea-31c90d9a8c2f",
+            "sonarqube/quick_fix_available": false,
+            "sonarqube/update_date": "2026-07-12T22:55:46+0000",
             "type": "code_smell"
           },
           "controlType": "management",
@@ -100,6 +421,10 @@
             "owasp": [],
             "severity": "medium",
             "severitySource": "mqr",
+            "sonarqube/hash": "b561a6854011601a6d403f2bb81dcae8",
+            "sonarqube/key": "2aecaa7d-8ec5-4ba9-a18a-1f9115932100",
+            "sonarqube/quick_fix_available": true,
+            "sonarqube/update_date": "2026-07-12T22:55:46+0000",
             "type": "code_smell"
           },
           "controlType": "management",
@@ -152,6 +477,10 @@
             "owasp": [],
             "severity": "medium",
             "severitySource": "mqr",
+            "sonarqube/hash": "d786fa4fcbfd06b2238db3731c475be0",
+            "sonarqube/key": "517032fa-f3cd-4d43-b864-6489e2eeea33",
+            "sonarqube/quick_fix_available": true,
+            "sonarqube/update_date": "2026-07-12T22:55:46+0000",
             "type": "code_smell"
           },
           "controlType": "management",
@@ -208,6 +537,10 @@
             "owasp": [],
             "severity": "medium",
             "severitySource": "mqr",
+            "sonarqube/hash": "3cc1e566340dce2c3201707354e59667",
+            "sonarqube/key": "ccbe4e6b-6f16-479c-bff3-558519b26bac",
+            "sonarqube/quick_fix_available": true,
+            "sonarqube/update_date": "2026-07-12T22:55:46+0000",
             "type": "code_smell"
           },
           "controlType": "management",
@@ -260,6 +593,10 @@
             "owasp": [],
             "severity": "medium",
             "severitySource": "mqr",
+            "sonarqube/hash": "be32ab6176374f244c3146202eb5ae9f",
+            "sonarqube/key": "f0f1bd58-ebab-47ef-8a2b-9a6ca502adb3",
+            "sonarqube/quick_fix_available": false,
+            "sonarqube/update_date": "2026-07-12T22:55:46+0000",
             "type": "code_smell"
           },
           "controlType": "management",
