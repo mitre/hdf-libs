@@ -1,4 +1,4 @@
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp, roundImpact } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -160,7 +160,7 @@ function maxImpact(ratings: CycloneDXRating[]): number {
       rating.score !== undefined &&
       rating.score !== null
     ) {
-      impact = rating.score / 10;
+      impact = roundImpact(rating.score / 10);
     } else {
       impact = severityToImpact(rating.severity ?? 'medium');
     }

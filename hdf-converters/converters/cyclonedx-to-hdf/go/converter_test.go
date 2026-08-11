@@ -141,7 +141,7 @@ func TestConvertCycloneDX_ImpactFromCVSSScore(t *testing.T) {
 	require.NoError(t, err)
 
 	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
-	assert.InDelta(t, 0.82, req.Impact, 0.001)
+	assert.Equal(t, 0.82, req.Impact)
 }
 
 // ---- Impact from severity string ----

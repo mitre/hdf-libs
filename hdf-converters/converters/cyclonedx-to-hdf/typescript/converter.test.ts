@@ -121,7 +121,7 @@ describe('cyclonedx to HDF converter', async () => {
         await convertCyclonedxToHdf(loadFixture('vex.json'))
       ) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
-      expect(req.impact).toBeCloseTo(0.82, 2);
+      expect(req.impact).toBe(0.82);
     });
   });
 

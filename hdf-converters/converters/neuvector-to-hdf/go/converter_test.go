@@ -119,11 +119,11 @@ func TestConvertNeuVector_ImpactFromCVSSv3(t *testing.T) {
 
 	// CVE-2021-36159/apk-tools/2.10.5-r1 has score_v3=9.1 -> impact=0.91
 	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
-	assert.InDelta(t, 0.91, req.Impact, 0.001)
+	assert.Equal(t, 0.91, req.Impact)
 
 	// CVE-2021-36217/avahi/0.8-r0 has score_v3=6.2 -> impact=0.62
 	reqMedium := shared.MustFindRequirement(t, reqs, "CVE-2021-36217/avahi/0.8-r0")
-	assert.InDelta(t, 0.62, reqMedium.Impact, 0.001)
+	assert.Equal(t, 0.62, reqMedium.Impact)
 }
 
 func TestConvertNeuVector_ImpactFallbackToCVSSv2(t *testing.T) {
@@ -168,7 +168,7 @@ func TestConvertNeuVector_ImpactFallbackToCVSSv2(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 	require.Len(t, reqs, 1)
 	// score=7.5 / 10 = 0.75
-	assert.InDelta(t, 0.75, reqs[0].Impact, 0.001)
+	assert.Equal(t, 0.75, reqs[0].Impact)
 }
 
 // ---- CWE extraction from description ----

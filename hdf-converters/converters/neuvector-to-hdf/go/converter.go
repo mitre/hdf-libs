@@ -206,10 +206,10 @@ func buildCvssEntries(vuln NeuVectorVuln) []hdf.Cvss {
 // Impact is normalized to 0.0-1.0 by dividing by 10.
 func getImpact(vuln NeuVectorVuln) float64 {
 	if vuln.ScoreV3 > 0 {
-		return vuln.ScoreV3 / 10
+		return hdfutil.RoundImpact(vuln.ScoreV3 / 10)
 	}
 	if vuln.Score > 0 {
-		return vuln.Score / 10
+		return hdfutil.RoundImpact(vuln.Score / 10)
 	}
 	return 0.5 // default when no score available
 }

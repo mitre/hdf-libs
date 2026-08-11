@@ -362,7 +362,7 @@ func maxImpact(ratings []CDXRating) float64 {
 	for _, r := range ratings {
 		var impact float64
 		if cvssMethods[r.Method] && r.Score != nil {
-			impact = *r.Score / 10
+			impact = hdfutil.RoundImpact(*r.Score / 10)
 		} else {
 			sev := r.Severity
 			if sev == "" {

@@ -4,7 +4,6 @@ package msftsecurescore
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -125,13 +124,12 @@ func getImpact(profiles []SecureScoreControlProfile, cs ControlScore) float64 {
 			maxScore = p.MaxScore
 		}
 	}
-	impact := maxScore / 10.0
+	impact := hdfutil.RoundImpact(maxScore / 10.0)
 	// Cap at 1.0
 	if impact > 1.0 {
 		impact = 1.0
 	}
-	// Round to avoid floating point noise
-	return math.Round(impact*100) / 100
+	return impact
 }
 
 // getStatus determines the result status based on scoreInPercentage and profile maxScore.

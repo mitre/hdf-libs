@@ -132,7 +132,7 @@ describe('neuvector to HDF converter', async () => {
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
       );
-      expect(req?.impact).toBeCloseTo(0.91, 2);
+      expect(req?.impact).toBe(0.91);
     });
 
     it('should handle medium-score CVSS v3', async () => {
@@ -141,7 +141,7 @@ describe('neuvector to HDF converter', async () => {
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2021-36217/avahi/0.8-r0'
       );
-      expect(req?.impact).toBeCloseTo(0.62, 2);
+      expect(req?.impact).toBe(0.62);
     });
 
     it('should fall back to CVSS v2 when v3 is 0', async () => {
@@ -183,7 +183,7 @@ describe('neuvector to HDF converter', async () => {
       const reqs = hdf.baselines[0]!.requirements;
       expect(reqs).toHaveLength(1);
       // score=7.5 / 10 = 0.75
-      expect(reqs[0]!.impact).toBeCloseTo(0.75, 2);
+      expect(reqs[0]!.impact).toBe(0.75);
     });
   });
 

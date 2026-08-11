@@ -1,4 +1,4 @@
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp, roundImpact } from '@mitre/hdf-utilities';
 import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
@@ -129,8 +129,7 @@ function getImpact(
   }
 
   const maxScore = Math.max(...matched.map(p => p.maxScore ?? 0));
-  const impact = maxScore / 10.0;
-  return Math.min(Math.round(impact * 100) / 100, 1.0);
+  return Math.min(roundImpact(maxScore / 10.0), 1.0);
 }
 
 /**
