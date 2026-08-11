@@ -42,7 +42,7 @@
       }
     },
     "docType": "results",
-    "schemaVersion": "3.5.0"
+    "engineSchemaVersion": "3.5.0"
   },
   "hdf_convert": {
     "baselineCount": 1,
@@ -73,7 +73,7 @@
         "state": "regressed"
       }
     ],
-    "fromHandle": "eyJwYXRoIjoiZnJvbS5qc29uIiwic2l6ZSI6ODE3LCJjb250ZW50U2hhMjU2IjoiOGEzYjJiNjNlZDE2Nzk0NmU1MzA1NzZlYTVmYzE2NTBiNGU4MWZlNDczZTg3YzFlMWIzYzk5OWQxZjFmMTJhNiIsImRvY1R5cGUiOiJyZXN1bHRzIiwic2NoZW1hVmVyc2lvbiI6IjMuNS4wIn0=",
+    "fromHandle": "eyJwYXRoIjoiZnJvbS5qc29uIiwic2l6ZSI6ODE3LCJjb250ZW50U2hhMjU2IjoiOGEzYjJiNjNlZDE2Nzk0NmU1MzA1NzZlYTVmYzE2NTBiNGU4MWZlNDczZTg3YzFlMWIzYzk5OWQxZjFmMTJhNiIsImRvY1R5cGUiOiJyZXN1bHRzIiwiZW5naW5lU2NoZW1hVmVyc2lvbiI6IjMuNS4wIn0=",
     "mode": "temporal",
     "returned": 2,
     "summary": {
@@ -88,12 +88,12 @@
       "unmatchedOldCount": 0,
       "updated": 0
     },
-    "toHandle": "eyJwYXRoIjoidG8uanNvbiIsInNpemUiOjExMTAsImNvbnRlbnRTaGEyNTYiOiIyYjJlYjhjZDcxMmJmNmY0ZTFkZTAxMjQ1NzFiMzdiYThlMjYzM2ZmZTk5Yzg4YmZlZjQzZjU0MGUzZGRkMzY5IiwiZG9jVHlwZSI6InJlc3VsdHMiLCJzY2hlbWFWZXJzaW9uIjoiMy41LjAifQ==",
+    "toHandle": "eyJwYXRoIjoidG8uanNvbiIsInNpemUiOjExMTAsImNvbnRlbnRTaGEyNTYiOiIyYjJlYjhjZDcxMmJmNmY0ZTFkZTAxMjQ1NzFiMzdiYThlMjYzM2ZmZTk5Yzg4YmZlZjQzZjU0MGUzZGRkMzY5IiwiZG9jVHlwZSI6InJlc3VsdHMiLCJlbmdpbmVTY2hlbWFWZXJzaW9uIjoiMy41LjAifQ==",
     "total": 2
   },
   "hdf_inspect": {
     "docType": "system",
-    "schemaVersion": "3.5.0",
+    "engineSchemaVersion": "3.5.0",
     "structure": {
       "components": {
         "byType": {
@@ -117,7 +117,7 @@
   },
   "hdf_open": {
     "docType": "system",
-    "schemaVersion": "3.5.0",
+    "engineSchemaVersion": "3.5.0",
     "summary": {
       "componentByType": {
         "application": 2
@@ -128,6 +128,7 @@
   },
   "hdf_query": {
     "docType": "results",
+    "engineSchemaVersion": "3.5.0",
     "requirements": [
       {
         "id": "V-D-FAIL",
@@ -138,7 +139,6 @@
       }
     ],
     "returned": 1,
-    "schemaVersion": "3.5.0",
     "total": 1
   },
   "hdf_validate": {

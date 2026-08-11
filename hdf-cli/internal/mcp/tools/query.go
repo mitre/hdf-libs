@@ -44,15 +44,15 @@ type queryInput struct {
 // queryOutput is the hdf_query result envelope: the bounded requirement rows plus
 // the pagination metadata, alongside the source handle and detected type.
 type queryOutput struct {
-	Handle        string           `json:"handle"`
-	DocType       string           `json:"docType"`
-	SchemaVersion string           `json:"schemaVersion"`
-	Total         int              `json:"total"`
-	Returned      int              `json:"returned"`
-	Truncated     bool             `json:"truncated,omitempty"`
-	NextPage      int              `json:"nextPage,omitempty"`
-	Notice        string           `json:"notice,omitempty"`
-	Requirements  []map[string]any `json:"requirements"`
+	Handle              string           `json:"handle"`
+	DocType             string           `json:"docType"`
+	EngineSchemaVersion string           `json:"engineSchemaVersion"`
+	Total               int              `json:"total"`
+	Returned            int              `json:"returned"`
+	Truncated           bool             `json:"truncated,omitempty"`
+	NextPage            int              `json:"nextPage,omitempty"`
+	Notice              string           `json:"notice,omitempty"`
+	Requirements        []map[string]any `json:"requirements"`
 }
 
 // conciseRow is the default requirement projection: exactly id/title/status/
@@ -147,7 +147,7 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 			StatusOf: effectiveStatus,
 		})
 
-		out := queryOutput{Handle: encoded, DocType: resolved.Load.DocType, SchemaVersion: resolved.Handle.SchemaVersion}
+		out := queryOutput{Handle: encoded, DocType: resolved.Load.DocType, EngineSchemaVersion: resolved.Handle.EngineSchemaVersion}
 		buildQueryResponse(&out, results, matches, in.Verbosity, in.Limit, in.Page)
 		return nil, out, nil
 	}

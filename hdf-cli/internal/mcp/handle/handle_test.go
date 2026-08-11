@@ -59,7 +59,7 @@ func TestHandle_RoundTrip(t *testing.T) {
 		t.Errorf("round-trip mismatch:\n got %+v\nwant %+v", got, h)
 	}
 	// Compute populated the identity fields correctly.
-	if h.Path != samplePath || h.DocType != sampleType || h.SchemaVersion != sampleVersion {
+	if h.Path != samplePath || h.DocType != sampleType || h.EngineSchemaVersion != sampleVersion {
 		t.Errorf("identity fields not set: %+v", h)
 	}
 	if h.Size != int64(len(sampleContent)) {

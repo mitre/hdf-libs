@@ -24,16 +24,16 @@ type inspectInput struct {
 }
 
 type inspectOutput struct {
-	Handle           string            `json:"handle"`
-	DocType          string            `json:"docType"`
-	SchemaVersion    string            `json:"schemaVersion"`
-	Valid            bool              `json:"valid"`
-	ValidationErrors []validationError `json:"validationErrors,omitempty"`
-	Section          string            `json:"section,omitempty"`
-	Structure        map[string]any    `json:"structure,omitempty"`
-	Truncated        bool              `json:"truncated,omitempty"`
-	NextPage         int               `json:"nextPage,omitempty"`
-	Notice           string            `json:"notice,omitempty"`
+	Handle              string            `json:"handle"`
+	DocType             string            `json:"docType"`
+	EngineSchemaVersion string            `json:"engineSchemaVersion"`
+	Valid               bool              `json:"valid"`
+	ValidationErrors    []validationError `json:"validationErrors,omitempty"`
+	Section             string            `json:"section,omitempty"`
+	Structure           map[string]any    `json:"structure,omitempty"`
+	Truncated           bool              `json:"truncated,omitempty"`
+	NextPage            int               `json:"nextPage,omitempty"`
+	Notice              string            `json:"notice,omitempty"`
 }
 
 // RegisterInspect registers hdf_inspect on the server.
@@ -58,10 +58,10 @@ func hdfInspect(ldr *loader.Loader) sdkmcp.ToolHandlerFor[inspectInput, inspectO
 		}
 
 		out := inspectOutput{
-			Handle:        encoded,
-			DocType:       resolved.Load.DocType,
-			SchemaVersion: resolved.Handle.SchemaVersion,
-			Valid:         resolved.Load.Valid,
+			Handle:              encoded,
+			DocType:             resolved.Load.DocType,
+			EngineSchemaVersion: resolved.Handle.EngineSchemaVersion,
+			Valid:               resolved.Load.Valid,
 		}
 		if !resolved.Load.Valid {
 			out.ValidationErrors = toValidationErrors(resolved.Load.Errors)

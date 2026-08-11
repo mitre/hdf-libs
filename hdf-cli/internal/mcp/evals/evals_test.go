@@ -35,7 +35,7 @@ func TestEval_NotReviewedToAttestation(t *testing.T) {
 				}},
 			}},
 		},
-		900,
+		950,
 		func(responses []string) error {
 			return answerContains(responses, "V-251559", `"docType":"amendments"`, `"valid":true`)
 		},

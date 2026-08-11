@@ -1,6 +1,6 @@
 // Package handle implements the self-encoding source handle every
 // document-taking MCP tool depends on. A handle is base64 of
-// {path, size, contentSha256, docType, schemaVersion} — self-describing, not a
+// {path, size, contentSha256, docType, engineSchemaVersion} — self-describing, not a
 // cache key — so it survives process death, serializes into pipeline state, and
 // doubles as a staleness check: a content-hash mismatch returns ErrHandleStale
 // rather than silently re-reading changed content.
@@ -28,19 +28,26 @@ type Handle struct {
 	Size          int64  `json:"size"`
 	ContentSHA256 string `json:"contentSha256"`
 	DocType       string `json:"docType"`
-	SchemaVersion string `json:"schemaVersion"`
+	// EngineSchemaVersion is the schema version the validating HDF engine bundles
+	// and interprets the document under — NOT a version the document declares
+	// (HDF documents carry no top-level schema-version field). It is sourced from
+	// hdfengine.Version() (the engine and schema versions move in lockstep), so
+	// it records "which schema version this handle was minted under", not the
+	// document's own claim. Named to say so, rather than the misleading bare
+	// "schemaVersion" it replaced.
+	EngineSchemaVersion string `json:"engineSchemaVersion"`
 }
 
 // Compute builds a Handle from a document's path and content, computing size and
-// the content SHA-256; docType and schemaVersion are supplied by the caller
+// the content SHA-256; docType and engineSchemaVersion are supplied by the caller
 // (which has already detected them).
-func Compute(path string, content []byte, docType, schemaVersion string) Handle {
+func Compute(path string, content []byte, docType, engineSchemaVersion string) Handle {
 	return Handle{
-		Path:          path,
-		Size:          int64(len(content)),
-		ContentSHA256: sha256Hex(content),
-		DocType:       docType,
-		SchemaVersion: schemaVersion,
+		Path:                path,
+		Size:                int64(len(content)),
+		ContentSHA256:       sha256Hex(content),
+		DocType:             docType,
+		EngineSchemaVersion: engineSchemaVersion,
 	}
 }
 
@@ -84,10 +91,10 @@ type Source struct {
 }
 
 // PathLoader reads a path source and reports its content plus the detected
-// docType and schemaVersion, so Resolve can build the same identity a handle
+// docType and engineSchemaVersion, so Resolve can build the same identity a handle
 // carries. It is injected so this codec stays free of file-I/O and confinement
 // policy (the caller supplies a confined, size-guarded reader).
-type PathLoader func(path string) (content []byte, docType, schemaVersion string, err error)
+type PathLoader func(path string) (content []byte, docType, engineSchemaVersion string, err error)
 
 // Resolve turns a Source into a Handle: a {handle} is decoded; a {path} is read
 // via load and Computed. Both routes yield the same identity for the same
@@ -103,11 +110,11 @@ func Resolve(src Source, load PathLoader) (Handle, error) {
 		if load == nil {
 			return Handle{}, errors.New("resolving a path source requires a loader")
 		}
-		content, docType, schemaVersion, err := load(src.Path)
+		content, docType, engineSchemaVersion, err := load(src.Path)
 		if err != nil {
 			return Handle{}, err
 		}
-		return Compute(src.Path, content, docType, schemaVersion), nil
+		return Compute(src.Path, content, docType, engineSchemaVersion), nil
 	default:
 		return Handle{}, errors.New("source must set either path or handle")
 	}

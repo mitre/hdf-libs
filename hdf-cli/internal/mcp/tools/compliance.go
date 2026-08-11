@@ -42,10 +42,10 @@ type thresholdInput struct {
 // status×severity rollup, the §3 agent-override detective block, an optional
 // grouped rollup, and an optional threshold verdict.
 type complianceOutput struct {
-	Handle        string  `json:"handle"`
-	DocType       string  `json:"docType"`
-	SchemaVersion string  `json:"schemaVersion"`
-	Compliance    float64 `json:"compliance"`
+	Handle              string  `json:"handle"`
+	DocType             string  `json:"docType"`
+	EngineSchemaVersion string  `json:"engineSchemaVersion"`
+	Compliance          float64 `json:"compliance"`
 	// Counts holds the status × severity StatusCounts as status → severity → int.
 	// This reflects to object→object→integer (value-typed) — richer than a bare
 	// additionalProperties:true, yet far cheaper than the fully named-key
@@ -124,11 +124,11 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 		results := toResults(resolved.Load)
 		counts := countByEffectiveStatus(results)
 		out := complianceOutput{
-			Handle:        encoded,
-			DocType:       resolved.Load.DocType,
-			SchemaVersion: resolved.Handle.SchemaVersion,
-			Compliance:    hdfengine.CalculateCompliance(counts),
-			Counts:        countsToNestedInt(counts),
+			Handle:              encoded,
+			DocType:             resolved.Load.DocType,
+			EngineSchemaVersion: resolved.Handle.EngineSchemaVersion,
+			Compliance:          hdfengine.CalculateCompliance(counts),
+			Counts:              countsToNestedInt(counts),
 			AgentOverrides: agentOverrideSummary{
 				Count:           hdfengine.AgentOverrideCount(results),
 				ComplianceDelta: agentComplianceDelta(results),

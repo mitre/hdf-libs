@@ -28,13 +28,13 @@ type openInput struct {
 // openOutput is the hdf_open result: a minted handle, detected type/version,
 // validity, degraded-read errors, and a type-specific headline summary.
 type openOutput struct {
-	Handle           string            `json:"handle"`
-	DocType          string            `json:"docType"`
-	SchemaVersion    string            `json:"schemaVersion"`
-	Valid            bool              `json:"valid"`
-	ValidationErrors []validationError `json:"validationErrors,omitempty"`
-	Summary          map[string]any    `json:"summary,omitempty"`
-	Notice           string            `json:"notice,omitempty"`
+	Handle              string            `json:"handle"`
+	DocType             string            `json:"docType"`
+	EngineSchemaVersion string            `json:"engineSchemaVersion"`
+	Valid               bool              `json:"valid"`
+	ValidationErrors    []validationError `json:"validationErrors,omitempty"`
+	Summary             map[string]any    `json:"summary,omitempty"`
+	Notice              string            `json:"notice,omitempty"`
 }
 
 type validationError struct {
@@ -72,10 +72,10 @@ func hdfOpen(ldr *loader.Loader) sdkmcp.ToolHandlerFor[openInput, openOutput] {
 		}
 
 		out := openOutput{
-			Handle:        encoded,
-			DocType:       resolved.Load.DocType,
-			SchemaVersion: resolved.Handle.SchemaVersion,
-			Valid:         resolved.Load.Valid,
+			Handle:              encoded,
+			DocType:             resolved.Load.DocType,
+			EngineSchemaVersion: resolved.Handle.EngineSchemaVersion,
+			Valid:               resolved.Load.Valid,
 		}
 
 		if !resolved.Load.Valid {

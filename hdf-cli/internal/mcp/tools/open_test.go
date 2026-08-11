@@ -58,8 +58,14 @@ func TestHdfOpen_MintsHandle_AndTypeSpecificSummary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("handle does not decode: %v", err)
 	}
-	if h.Path != path || h.DocType != "results" || h.SchemaVersion == "" || h.ContentSHA256 == "" || h.Size != int64(len(content)) {
+	if h.Path != path || h.DocType != "results" || h.EngineSchemaVersion == "" || h.ContentSHA256 == "" || h.Size != int64(len(content)) {
 		t.Errorf("handle identity fields wrong: %+v", h)
+	}
+	// The field records the validating engine's schema version (HDF documents
+	// do not self-declare one), sourced from hdfengine.Version() — decided in
+	// w913.29.
+	if h.EngineSchemaVersion != hdfengine.Version() {
+		t.Errorf("engineSchemaVersion = %q, want the engine version %q", h.EngineSchemaVersion, hdfengine.Version())
 	}
 	// ...and passes the staleness check against the same file.
 	if verr := handle.Verify(h, content); verr != nil {
