@@ -507,6 +507,22 @@ var impactMap = map[string]float64{
 }
 ```
 
+**When impact is COMPUTED by division** (e.g. `cvssScore / 10`, `severity / 5`), wrap
+the result in the canonical rounder so binary-float noise (`0.98000000000001`) collapses
+to the 0.01 grid and stays byte-identical across Go/TS:
+
+```go
+import hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+impact := hdfutil.RoundImpact(score / 10.0)   // Go
+```
+```typescript
+import { roundImpact } from '@mitre/hdf-utilities';
+const impact = roundImpact(score / 10);        // TS
+```
+
+Never hand-roll `math.Round(x*100)/100` — use `RoundImpact`/`roundImpact`. (Table-lookup
+impacts like the map above are already clean and need no rounding.)
+
 ### NIST / CCI Tags
 
 Use the mappings packages when the source format provides NIST or CCI references:
