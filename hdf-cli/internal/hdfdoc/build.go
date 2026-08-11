@@ -37,6 +37,14 @@ func BuildEvidencePackage(name string, contents []map[string]any, generator *hdf
 	return buildDoc(name, "contents", contents, generator)
 }
 
+// BuildAmendments assembles a minimal hdf-amendments document from a name and
+// overrides. Like the other builders it copies the overrides verbatim; the
+// server's field-authority stamping (appliedBy/appliedAt) is the caller's step,
+// applied to the override maps before this call.
+func BuildAmendments(name string, overrides []map[string]any, generator *hdf.Generator) ([]byte, error) {
+	return buildDoc(name, "overrides", overrides, generator)
+}
+
 // buildDoc assembles the envelope: name + the content array under contentKey +
 // an optional generator. The content items are marshalled verbatim, preserving
 // every field the caller supplied.

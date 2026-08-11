@@ -84,6 +84,20 @@ func TestBuild_PreservesContentFieldsExactly(t *testing.T) {
 	}
 }
 
+func TestBuildAmendments_ValidMinimal(t *testing.T) {
+	out, err := BuildAmendments("Risk decisions", decodeArray(t, `[
+		{"type":"riskAdjustment","requirementId":"V-1","reason":"compensating control",
+		 "status":"notApplicable","appliedBy":{"identifier":"hdf-mcp","type":"agent"},
+		 "appliedAt":"2026-01-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z"}
+	]`), gen())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if vr := validators.Validate(out, validators.TypeAmendments); !vr.Valid {
+		t.Fatalf("built amendments must validate: %s", vr.Error())
+	}
+}
+
 func TestBuild_NilGeneratorOmitted(t *testing.T) {
 	out, err := BuildSystem("S", decodeArray(t, `[{"type":"host","name":"h1"}]`), nil)
 	if err != nil {

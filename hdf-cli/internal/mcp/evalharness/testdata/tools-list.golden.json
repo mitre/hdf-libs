@@ -8,12 +8,12 @@
         "openWorldHint": false,
         "readOnlyHint": false
       },
-      "description": "Author an HDF document from model-supplied structured content: the model supplies the content array; the server assembles the schema-valid envelope (name, generator), validates it, and returns a summary plus a reusable handle — never the document body. docType is system (components), plan (assessments), or evidence (contents); the exact per-type shape lives in the hdf://schema/hdf-\u003cdocType\u003e resources. Output that does not validate is refused. Writes under the shared write model (dry_run previews; a writes-disabled deployment returns a preview).",
+      "description": "Author an HDF document from model-supplied structured content and return a summary plus a reusable handle — never the document body. docType is system (components), plan (assessments), evidence (contents), or amendments (overrides). For amendments the server holds field authority: the judgment path (content[] of overrides) stamps appliedBy.type=agent + appliedAt and requires expiresAt on each; the from_vex path (source = a VEX document + expiresAt) derives overrides and stamps appliedBy.type=system. Per-type shapes are in the hdf://schema/hdf-\u003cdocType\u003e resources; output that does not validate is refused. Writes under the shared write model (dry_run previews; a writes-disabled deployment returns a preview).",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
           "content": {
-            "description": "the content array — components (system), assessments (plan), or contents (evidence). Learn the exact shape from the hdf://schema/hdf-\u003cdocType\u003e resource; the server validates and refuses invalid content.",
+            "description": "content array: components/assessments/contents, or overrides (amendments judgment path). Shape is in hdf://schema/hdf-\u003cdocType\u003e; the server validates and refuses invalid content.",
             "items": {
               "additionalProperties": true,
               "type": "object"
@@ -24,12 +24,16 @@
             ]
           },
           "docType": {
-            "description": "the document to author: system, plan, or evidence",
+            "description": "document to author: system, plan, evidence, or amendments",
             "type": "string"
           },
           "dryRun": {
             "description": "with output set, preview the write (write no file)",
             "type": "boolean"
+          },
+          "expiresAt": {
+            "description": "amendments from_vex only: RFC3339 expiry applied to every derived override",
+            "type": "string"
           },
           "name": {
             "description": "the document name",
@@ -38,12 +42,27 @@
           "output": {
             "description": "path under HDF_MCP_ROOT to write the document",
             "type": "string"
+          },
+          "source": {
+            "additionalProperties": false,
+            "description": "amendments from_vex only: a VEX document as {path}; overrides are derived and stamped appliedBy.type=system",
+            "properties": {
+              "handle": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
           }
         },
         "required": [
           "docType",
-          "name",
-          "content"
+          "name"
         ],
         "type": "object"
       },
