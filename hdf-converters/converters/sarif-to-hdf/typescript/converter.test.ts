@@ -587,6 +587,35 @@ describe('SARIF Converter', async () => {
       expect(req.disposition).toBe('falsePositive');
     });
 
+    it('should treat a suppression with no status as accepted per the SARIF default', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: { driver: { name: 'Test', version: '1.0' } },
+          results: [{
+            ruleId: 'TEST',
+            level: 'error',
+            message: { text: 'test: suppressed finding' },
+            locations: [{
+              physicalLocation: {
+                artifactLocation: { uri: 'file.go' },
+                region: { startLine: 1, startColumn: 1 }
+              }
+            }],
+            suppressions: [{ kind: 'inSource' }]
+          }]
+        }]
+      });
+
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.results[0].status).toBe('failed');
+      expect(req.statusOverrides).toHaveLength(1);
+      expect(req.statusOverrides[0].type).toBe('waiver');
+      expect(req.statusOverrides[0].reason).toBe('Suppressed in SARIF source');
+      expect(req.effectiveStatus).toBe('passed');
+    });
+
     it('should NOT override an underReview suppression', async () => {
       const input = JSON.stringify({
         version: '2.1.0',

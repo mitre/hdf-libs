@@ -1,4 +1,4 @@
-import { parseJSON, parsePurl } from '@mitre/hdf-utilities';
+import { parseJSON, parsePurl, worstStatus } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -580,11 +580,13 @@ function mapKindToStatus(kind?: string): ResultStatus {
 // (reason is REQUIRED on a Status_Override).
 const DEFAULT_SUPPRESSION_REASON = 'Suppressed in SARIF source';
 
-// Returns the suppressions whose status is "accepted". underReview and rejected
+// Returns the suppressions in force: status "accepted" or absent — SARIF 2.1.0
+// treats a suppression without status as effective, and real producers (CodeQL,
+// semgrep) commonly emit only {"kind": ...}. underReview and rejected
 // suppressions are NOT overrides — an underReview decision is not final and a
 // rejected one was declined.
 function acceptedSuppressions(suppressions?: Suppression[]): Suppression[] {
-  return (suppressions ?? []).filter(s => s.status === 'accepted');
+  return (suppressions ?? []).filter(s => s.status === 'accepted' || !s.status);
 }
 
 // Joins the justifications of a result's accepted suppressions, falling back to a
@@ -634,28 +636,10 @@ function buildSuppressionOverride(result: SarifResult, timestamp: Date): { overr
   return { override, effective };
 }
 
-// Orders result statuses for requirement-level rollup (higher = worse). Used to
-// decide whether accepted suppressions actually change the effective status.
-const STATUS_SEVERITY_RANK: Record<string, number> = {
-  [ResultStatus.Failed]: 5,
-  [ResultStatus.Error]: 4,
-  [ResultStatus.NotReviewed]: 3,
-  [ResultStatus.Passed]: 2,
-  [ResultStatus.NotApplicable]: 1,
-};
-
-// Returns the worst status in the set — the requirement-level status.
+// Returns the worst status in the set per the canonical worst-wins ordering
+// (STATUS_SEVERITY_ORDER in @mitre/hdf-utilities) — the requirement-level status.
 function rollupStatus(statuses: ResultStatus[]): ResultStatus {
-  let worst = statuses[0]!;
-  let worstRank = -1;
-  for (const s of statuses) {
-    const rank = STATUS_SEVERITY_RANK[s] ?? 0;
-    if (rank > worstRank) {
-      worstRank = rank;
-      worst = s;
-    }
-  }
-  return worst;
+  return worstStatus(statuses) as ResultStatus;
 }
 
 // Picks the override type that produced the effective rollup status (the governing
