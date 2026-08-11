@@ -1,23 +1,31 @@
 // Glob matching — the TypeScript peer of hdf-engine/go/safematch.go. Kept at
-// behavioural parity, including the doubled-backslash quirk of globToRegex.
+// behavioural parity with the Go matcher.
 
 const MAX_PATTERN_LENGTH = 256;
 
+const REGEX_SPECIAL = new Set(['.', '+', '^', '$', '(', ')', '[', ']', '{', '}', '|', '\\']);
+
 /**
  * globToRegex converts a glob pattern (with * and ? wildcards) to an anchored
- * regular expression, escaping all other regex metacharacters. Note: because
- * the backslash is escaped last, the backslash added when escaping '.' is itself
- * doubled — this matches the Go implementation exactly and is preserved verbatim.
+ * regular expression, escaping every other regex metacharacter exactly once. A
+ * single pass avoids re-escaping the backslash introduced by escaping an earlier
+ * metacharacter (the doubled-backslash defect that made any dotted pattern match
+ * nothing).
  */
 export function globToRegex(glob: string): string {
-  const special = ['.', '+', '^', '$', '(', ')', '[', ']', '{', '}', '|', '\\'];
-  let result = glob;
-  for (const s of special) {
-    result = result.split(s).join('\\' + s);
+  let result = '^';
+  for (const ch of glob) {
+    if (ch === '*') {
+      result += '.*';
+    } else if (ch === '?') {
+      result += '.';
+    } else if (REGEX_SPECIAL.has(ch)) {
+      result += '\\' + ch;
+    } else {
+      result += ch;
+    }
   }
-  result = result.split('*').join('.*');
-  result = result.split('?').join('.');
-  return '^' + result + '$';
+  return result + '$';
 }
 
 /**

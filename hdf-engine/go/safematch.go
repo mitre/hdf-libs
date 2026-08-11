@@ -64,16 +64,26 @@ func safeGlobMatch(s, pattern string) bool {
 }
 
 // globToRegex converts a glob pattern (with * and ? wildcards) to an anchored
-// regular expression, escaping all other regex metacharacters.
+// regular expression, escaping every other regex metacharacter exactly once. A
+// single pass avoids re-escaping the backslash introduced by escaping an earlier
+// metacharacter (the doubled-backslash defect that made any dotted pattern match
+// nothing).
 func globToRegex(glob string) string {
-	// Escape regex special chars except * and ?
-	special := []string{".", "+", "^", "$", "(", ")", "[", "]", "{", "}", "|", "\\"}
-	result := glob
-	for _, s := range special {
-		result = strings.ReplaceAll(result, s, "\\"+s)
+	var b strings.Builder
+	b.WriteByte('^')
+	for _, r := range glob {
+		switch r {
+		case '*':
+			b.WriteString(".*")
+		case '?':
+			b.WriteByte('.')
+		case '.', '+', '^', '$', '(', ')', '[', ']', '{', '}', '|', '\\':
+			b.WriteByte('\\')
+			b.WriteRune(r)
+		default:
+			b.WriteRune(r)
+		}
 	}
-	// Convert glob wildcards to regex
-	result = strings.ReplaceAll(result, "*", ".*")
-	result = strings.ReplaceAll(result, "?", ".")
-	return "^" + result + "$"
+	b.WriteByte('$')
+	return b.String()
 }

@@ -249,11 +249,10 @@ func TestGlobToRegex(t *testing.T) {
 		{"simple", "AC-2", "^AC-2$"},
 		{"asterisk", "AC-*", "^AC-.*$"},
 		{"question mark", "AC-?", "^AC-.$"},
-		// globToRegex escapes '.' to '\.', then escapes the backslash itself
-		// (backslash is last in the special-char list) → a doubled backslash.
-		// This is the shipped behavior, preserved verbatim (relocation, not rewrite).
-		{"escape dot", "test.json", "^test\\\\.json$"},
-		{"multiple wildcards", "*.test.*", "^.*\\\\.test\\\\..*$"},
+		// Each regex metacharacter is escaped exactly once: '.' → '\.'.
+		{"escape dot", "test.json", "^test\\.json$"},
+		{"multiple wildcards", "*.test.*", "^.*\\.test\\..*$"},
+		{"literal backslash", "a\\b", "^a\\\\b$"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -276,6 +275,9 @@ func TestMatchesGlob(t *testing.T) {
 		{"case insensitive", "AC-2", "ac-2", true},
 		{"question mark", "AC-2", "AC-?", true},
 		{"complex pattern", "profile-name-v123", "profile-*-v???", true},
+		{"exact dotted string", "test.json", "test.json", true},
+		{"exact dotted no false match", "testXjson", "test.json", false},
+		{"dotted wildcard prefix", "v1.2.3-base", "v1.2*", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

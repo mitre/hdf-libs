@@ -167,10 +167,15 @@ describe('hdf-engine filter helpers — parity with the Go helper unit tests', (
     expect(globToRegex('AC-2')).toBe('^AC-2$');
     expect(globToRegex('AC-*')).toBe('^AC-.*$');
     expect(globToRegex('AC-?')).toBe('^AC-.$');
-    // Doubled backslash — parity with go/filter_test.go TestGlobToRegex.
-    expect(globToRegex('test.json')).toBe('^test\\\\.json$');
+    // Each metacharacter escaped exactly once — parity with go/filter_test.go TestGlobToRegex.
+    expect(globToRegex('test.json')).toBe('^test\\.json$');
+    expect(globToRegex('a\\b')).toBe('^a\\\\b$');
     expect(matchesGlob('AC-2', 'ac-2')).toBe(true);
     expect(matchesGlob('profile-name-v123', 'profile-*-v???')).toBe(true);
     expect(safeGlobMatch('test', 'x'.repeat(257))).toBe(false);
+    // Dotted patterns must match — regression guard for the doubled-backslash bug.
+    expect(safeGlobMatch('test.json', 'test.json')).toBe(true);
+    expect(safeGlobMatch('testXjson', 'test.json')).toBe(false);
+    expect(safeGlobMatch('v1.2.3-base', 'v1.2*')).toBe(true);
   });
 });
