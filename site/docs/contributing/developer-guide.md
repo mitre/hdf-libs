@@ -275,6 +275,24 @@ Full rationale documented in CHANGELOG.md.
 8. Add subpath export to `package.json`
 9. Add to `src/create-index.ts` for barrel exports
 
+### Adding or Changing a Field — Propagate to Every Output Converter
+
+A new HDF field is invisible to consumers until the converters emit it. When you
+add a field to a schema, before release confirm it reaches the whole pipeline:
+
+1. **Importers** (`*-to-hdf`) — populate the field wherever a source carries the data.
+2. **Every output converter** (`hdf-to-*`) — map the field into the target format's
+   home, or record a documented reason it can't (NOT-IN-SOURCE / no target home).
+   `hdf-to-xml` is a generic serializer and renders any field automatically — **no
+   change needed there** — but the other exporters (asff, ckl, cklb, oscal-poam,
+   oscal-sar, xccdf, csv, ocsf, ecs, csaf-vex, openvex, cyclonedx-vex, splunk) each
+   need the field mapped by hand.
+3. **New plural/array field?** Add its `plural→singular` entry to `hdf-to-xml`'s
+   container map so its XML child element is named (unmapped array keys fall back to
+   `<item>` — lossless but generically named).
+4. Tool-specific metadata with no typed home goes to `extensions`/namespaced `tags`,
+   not a new field — see "Auxiliary Tool Metadata" above.
+
 ### Naming Conventions
 
 - Schema `$defs`: `Snake_Case` (e.g., `Evaluated_Requirement`, `Authorization_Status`)
