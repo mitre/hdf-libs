@@ -44,10 +44,10 @@ After plan approval, implement in order:
 2. Implement TypeScript converter (`converter.ts`) — run TS tests until green
 3. Wire TypeScript barrel exports
 
-### Phase 4 — CLI Integration
+### Phase 4 — Registry & CLI Integration
 
-1. Write CLI registration (`converter_<snake>.go`)
-2. Write CLI tests (`converter_<snake>_test.go`)
+1. Write the registry wrapper: `hdf-converters/registry/convert/converter_<snake>.go` (an `init()` calling the right `registerHDF*Converter` helper) + a fingerprint blank-import in `hdf-converters/registry/all/all.go`
+2. Write CLI integration tests (`hdf-cli/cmd/hdf/cmd/converter_<snake>_test.go`)
 3. Spot-check output via CLI binary
 4. Add the new format to the "Supported Conversions" table in `hdf-cli/README.md`
 5. Add the new format to the converter table in `hdf-converters/README.md`
@@ -80,12 +80,15 @@ hdf-converters/converters/<name>/
     input/                # Source format samples (minimal.*, real.*, edge cases)
     output/               # Expected HDF JSON output (optional; prefer assertion-based tests)
 
+hdf-converters/registry/convert/
+  converter_<snake>.go    # registry wrapper: init() calls registerHDF*Converter (wraps the Go impl)
+hdf-converters/registry/all/
+  all.go                  # add a blank import of the converter's Go pkg to register its fingerprint
 hdf-cli/cmd/hdf/cmd/
-  converter_<snake>.go    # CLI registration (wraps Go hdf-converters impl)
-  converter_<snake>_test.go
+  converter_<snake>_test.go # CLI integration test (exercises the re-exported GetConverter)
 ```
 
-**Both Go and TypeScript implementations are required.** A converter is not done until both are implemented, tested, and passing. The CLI integration wraps the Go implementation only — the TypeScript implementation is consumed by JS/TS tooling that imports from `@mitre/hdf-converters`.
+**Both Go and TypeScript implementations are required.** A converter is not done until both are implemented, tested, and passing. The registry wrapper wraps the Go implementation only — the TypeScript implementation is consumed by JS/TS tooling that imports from `@mitre/hdf-converters`.
 
 Converter name conventions:
 - Directory: `{source}-to-hdf` or `hdf-to-{dest}` (kebab-case)
@@ -1020,7 +1023,7 @@ VEX `fixed` = "the vendor has released a fix in product version X." It is NOT ev
 
 ### Infrastructure
 
-- **Go registry type**: `hdfAmendmentsConverter` in `hdf-cli/cmd/hdf/cmd/converter_registry.go` (parallel to `hdfResultsConverter` / `hdfBaselineConverter`).
+- **Go registry type**: `hdfAmendmentsConverter` in `hdf-converters/registry/convert/registry.go` (parallel to `hdfResultsConverter` / `hdfBaselineConverter`).
 - **One-liner CLI registration**: `registerHDFAmendmentsConverter(source, displayName, errPrefix, fn)` where `fn` is `func([]byte, string) (*hdf.HDFAmendments, error)`.
 - **Auto-detect**: `detectHDFDocType` in `output_validation.go` recognizes top-level `overrides[]` → "amendments" and routes auto-validation through `validators.ValidateAmendments`.
 
@@ -1071,11 +1074,11 @@ When building an amendment-output converter, the following standard sections do 
 - **Baseline.Name / Components conventions**: Amendments have no embedded baselines or components — they reference a baseline via `baselineRef` and a component via `componentRef`, both URI / id fields.
 - **Tool driver name / NIST mapping**: amendments don't restate the underlying scanner. The original tool + NIST mapping live on the HDF Results document this amendments document is amending.
 
-### CLI integration shape
+### Registry integration shape
 
 ```go
-// hdf-cli/cmd/hdf/cmd/converter_<snake>.go
-package cmd
+// hdf-converters/registry/convert/converter_<snake>.go
+package convert
 
 import <pkg> "github.com/mitre/hdf-libs/hdf-converters/v3/converters/<name>/go"
 
@@ -1122,42 +1125,27 @@ Also test the empty-input error path: a fixture with no actionable source statem
 
 ---
 
-## Step 5 — CLI Integration
+## Step 5 — Registry Integration
 
-File: `hdf-cli/cmd/hdf/cmd/converter_<snake>.go`
+Register the converter in the shared, cobra-free `hdf-converters/registry/convert` package (package `convert`) — the CLI and the MCP both consume this one populated registry. Registration is a one-line `init()`: the shared `registerHDFConverter` helper wraps your `Convert<Name>` fn (JSON marshalling, error prefixing, empty-input policy), so no per-converter struct is needed.
+
+File: `hdf-converters/registry/convert/converter_<snake>.go`
 
 ```go
-package cmd
+package convert
 
-import (
-    "encoding/json"
-    "fmt"
-
-    <pkg> "github.com/mitre/hdf-libs/hdf-converters/v3/converters/<name>/go"
-)
-
-type <name>Converter struct{}
-
-func (c *<name>Converter) Name() string { return "<Source> to HDF" }
-
-func (c *<name>Converter) Convert(input []byte) ([]byte, error) {
-    result, err := <pkg>.Convert<Name>(input, version)
-    if err != nil {
-        return nil, fmt.Errorf("<source> conversion failed: %w", err)
-    }
-    output, err := json.MarshalIndent(result, "", "  ")
-    if err != nil {
-        return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
-    }
-    return output, nil
-}
+import <pkg> "github.com/mitre/hdf-libs/hdf-converters/v3/converters/<name>/go"
 
 func init() {
-    RegisterConverter("<source>", "hdf", &<name>Converter{})
+    registerHDFConverter("<source>", "<Source> to HDF", "<source>", <pkg>.Convert<Name>)
 }
 ```
 
-For HDF-from converters (hdf → something), the `Convert` signature is the same — input is HDF JSON, output is the target format bytes.
+Use the helper matching your output type: `registerHDFConverter` (results), `registerHDFBaselineConverter` (baseline), `registerHDFPlanConverter` (plan), `registerHDFAmendmentsConverter` (amendments — the VEX family). For a converter that accepts multiple source names (e.g. xccdf + arf) use `registerHDFConverterMulti`; tune empty-input behavior with the `WithEmptyInputOK` option. The convert fn signature is `func(input []byte, converterVersion string) (*hdf.HDF<Type>, error)`.
+
+Then register the converter's fingerprint for auto-detect by adding a blank import of the converter's Go package to `hdf-converters/registry/all/all.go` (the fingerprint's own `init()` lives in the converter package's `fingerprint.go`).
+
+For HDF-from converters (hdf → something), follow the existing `converter_hdf_to_*.go` wrappers in that same package (they register under source `hdf`).
 
 ---
 
@@ -1258,7 +1246,7 @@ cat output.json | head -40
 - [ ] **TypeScript:** Implementation complete (`typescript/converter.ts`)
 - [ ] **TypeScript:** Barrel export (`typescript/index.ts`) and re-export from `hdf-converters/src/index.ts`
 - [ ] **TypeScript:** Export existence test in `hdf-converters/test/index.test.ts`
-- [ ] CLI registration file (`converter_<snake>.go`) — add `//nolint:dupl` if lint flags it as a duplicate of another thin converter wrapper
+- [ ] Registry wrapper (`hdf-converters/registry/convert/converter_<snake>.go`) — one-line `init()` calling the right `registerHDF*Converter` helper — plus the fingerprint blank-import in `hdf-converters/registry/all/all.go`
 - [ ] CLI tests passing (`converter_<snake>_test.go`)
 - [ ] `pnpm lint` clean
 - [ ] `pnpm test` passes (Go and TypeScript)
