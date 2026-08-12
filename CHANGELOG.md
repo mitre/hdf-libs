@@ -23,6 +23,7 @@ Patch release: a new SPDX-VEX importer, NIST Rev 4 ↔ Rev 5 revision infrastruc
 - **SARIF suppressions without a `status` property are honored.** SARIF 2.1.0 treats a status-less suppression as in force, and real producers (CodeQL, semgrep) emit exactly that shape; the suppression-to-override importer now treats absent status as accepted instead of silently dropping the suppression. Found in the pre-release review.
 - **SARIF requirement roll-up follows the canonical worst-wins ordering.** The suppression-effectiveness check used a local ordering that ranked `failed` above `error` and `notReviewed` above `passed`; it now delegates to the shared `worstStatus` helper, matching every other component. Found in the pre-release review.
 - **Nessus ACAS-shape regression guard.** A committed Go + TS test locks in that `cvss3_base_score` is promoted to a tag and CVSS entry and that IAVM xrefs and `stig_severity` survive, with fixture provenance documented. (#208)
+- **STIX enrich fan-out is bounded.** `enrich stix` embedded the full raw STIX object into `externalReferences[]` of every finding matching a cited CVE (and of the results root) with no cap — an untrusted threat-intel bundle could amplify quadratically (N objects citing one CVE × M duplicate-id findings that cite it). STIX references are now capped per container via the shared truncation helper, preserving pre-existing references. Found in the pre-release review.
 
 ### Notable behavior changes
 
