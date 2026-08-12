@@ -257,8 +257,11 @@ function appendExternalReference(container: Doc, ref: Doc): void {
 const MAX_STIX_REFS_PER_CONTAINER = 50;
 
 // capStixExternalRefs truncates a container's STIX-sourced externalReferences[]
-// to MAX_STIX_REFS_PER_CONTAINER, preserving every non-STIX reference and their
-// relative order. A no-op when the container is under the cap.
+// to MAX_STIX_REFS_PER_CONTAINER, keeping every non-STIX reference. On truncation
+// it logs a warning (via limitArrayWithWarning) and rebuilds the array regrouped —
+// non-STIX references first, capped STIX references after — so only the relative
+// order WITHIN each group is preserved, not the original interleaving. A no-op
+// when the container is under the cap.
 function capStixExternalRefs(container: Doc, label: string): void {
   const refs = container.externalReferences;
   if (!Array.isArray(refs) || refs.length === 0) return;

@@ -106,8 +106,11 @@ func EnrichStix(resultsInput, bundleInput []byte, opts ...EnrichOptions) ([]byte
 const maxStixRefsPerContainer = 50
 
 // capStixExternalRefs truncates a container's STIX-sourced externalReferences[]
-// to maxStixRefsPerContainer, preserving every non-STIX reference already on the
-// container and their relative order. A no-op when the container is under the cap.
+// to maxStixRefsPerContainer, keeping every non-STIX reference. On truncation it
+// logs a warning (via LimitSliceWithWarning) and rebuilds the array regrouped —
+// non-STIX references first, capped STIX references after — so only the relative
+// order WITHIN each group is preserved, not the original interleaving. A no-op
+// when the container is under the cap.
 func capStixExternalRefs(container map[string]interface{}, label string) {
 	refs, ok := container["externalReferences"].([]interface{})
 	if !ok || len(refs) == 0 {
