@@ -12,7 +12,7 @@ import (
 
 // Global flag variables for validate command (used by runValidate).
 var (
-	schemaType string // "results", "baseline", "comparison", "system", "plan", or "amendments"
+	schemaType string // "results", "baseline", "comparison", "system", "plan", "amendments", "evidence-package", or "requirement-change-event"
 	quiet      bool
 )
 
@@ -29,7 +29,7 @@ func NewValidateCmd() *cobra.Command { //nolint:dupl // Cobra command setup; fla
 		Short: "Validate an HDF file against the schema",
 		Long: `Validate an HDF document against its JSON schema.
 
-Supported types: results, baseline, comparison, system, plan, amendments.
+Supported types: results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event.
 
 Reads from stdin if file is '-' or omitted.
 
@@ -58,7 +58,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "", "Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package")
+	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "", "Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event")
 	cmd.Flags().BoolVarP(&localQuiet, "quiet", "q", false, "Suppress output on success (exit code only)")
 
 	cmd.AddCommand(newValidateThresholdCmd())
@@ -96,7 +96,7 @@ func runValidate(_ *cobra.Command, args []string) error {
 
 	if schemaType == "" {
 		fmt.Fprintf(os.Stderr, "✗ %s — input not recognized as any HDF document type\n", displayName)
-		fmt.Fprintf(os.Stderr, "  Use --type to specify: results, baseline, comparison, system, plan, amendments, evidence-package\n")
+		fmt.Fprintf(os.Stderr, "  Use --type to specify: results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event\n")
 		return &exitCodeError{code: 1, message: fmt.Sprintf("unrecognized document type for %s", displayName)}
 	}
 
@@ -104,7 +104,7 @@ func runValidate(_ *cobra.Command, args []string) error {
 	validType := validators.SchemaType(schemaType)
 	if !isKnownSchemaType(validType) {
 		fmt.Fprintf(os.Stderr, "Unknown schema type: %s\n", schemaType)
-		fmt.Fprintf(os.Stderr, "  Use --type=results|baseline|comparison|system|plan|amendments|evidence-package\n")
+		fmt.Fprintf(os.Stderr, "  Use --type=results|baseline|comparison|system|plan|amendments|evidence-package|requirement-change-event\n")
 		return &exitCodeError{code: 1, message: fmt.Sprintf("unknown schema type: %s", schemaType)}
 	}
 
@@ -159,7 +159,7 @@ func isKnownSchemaType(st validators.SchemaType) bool {
 	switch st {
 	case validators.TypeResults, validators.TypeBaseline, validators.TypeComparison,
 		validators.TypeSystem, validators.TypePlan, validators.TypeAmendments,
-		validators.TypeEvidencePackage:
+		validators.TypeEvidencePackage, validators.TypeRequirementChangeEvent:
 		return true
 	default:
 		return false

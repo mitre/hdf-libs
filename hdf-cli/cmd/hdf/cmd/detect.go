@@ -30,6 +30,9 @@ func detectHDFDocumentType(data []byte) string {
 	if _, ok := doc["comparisonMode"]; ok {
 		return string(validators.TypeComparison)
 	}
+	if _, ok := doc["eventId"]; ok {
+		return string(validators.TypeRequirementChangeEvent)
+	}
 	// Results have baselines; systems have components but not baselines
 	if _, ok := doc["baselines"]; ok {
 		return string(validators.TypeResults)
@@ -108,6 +111,8 @@ func suggestCommand(docType string) string {
 		return "hdf plan"
 	case string(validators.TypeEvidencePackage):
 		return "hdf evidence"
+	case string(validators.TypeRequirementChangeEvent):
+		return "hdf events"
 	default:
 		return ""
 	}
