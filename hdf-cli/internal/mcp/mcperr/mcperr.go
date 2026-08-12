@@ -28,6 +28,7 @@ const (
 	NoConverter      Code = "NO_CONVERTER"
 	Truncated        Code = "TRUNCATED"
 	AmbiguousFormat  Code = "AMBIGUOUS_FORMAT"
+	OutputExists     Code = "OUTPUT_EXISTS"
 )
 
 // Codes is the exhaustive, closed taxonomy. Every member appears here exactly
@@ -42,6 +43,7 @@ var Codes = []Code{
 	NoConverter,
 	Truncated,
 	AmbiguousFormat,
+	OutputExists,
 }
 
 // defaultNextCall maps each code to the concrete recovery it recommends by
@@ -57,6 +59,7 @@ var defaultNextCall = map[Code]string{
 	NoConverter:      "check the hdf://catalog/converters resource for a supported `from` format",
 	Truncated:        "narrow the result with filters, or fetch the next page with `page`",
 	AmbiguousFormat:  "specify `from` explicitly to disambiguate the source format",
+	OutputExists:     "the output path already exists; pass `overwrite: true` to replace it, or choose a different `output` path",
 }
 
 // Error is a taxonomy error. It implements the error interface and is recoverable

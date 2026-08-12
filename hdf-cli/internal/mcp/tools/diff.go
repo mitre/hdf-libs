@@ -32,6 +32,7 @@ type diffInput struct {
 	Page      int           `json:"page,omitempty" jsonschema:"0-based page when the change list is truncated"`
 	Output    string        `json:"output,omitempty" jsonschema:"path under HDF_MCP_ROOT to write the hdf-comparison document"`
 	DryRun    bool          `json:"dryRun,omitempty" jsonschema:"with output set, preview the write (return the summary + sha256, write no file)"`
+	Overwrite bool          `json:"overwrite,omitempty" jsonschema:"replace an existing output file (default false)"`
 }
 
 // diffOutput is the hdf_diff result: the comparison summary, a bounded change
@@ -69,8 +70,8 @@ func RegisterDiff(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
 		Name: "hdf_diff",
 		Description: "Compare two HDF documents: temporal (results across time) or system-drift (system " +
-			"documents). Returns a summary and a bounded change list, and — when output is given — writes a " +
-			"schema-valid hdf-comparison document. Diffing is delegated to the shared hdf-diff engine.",
+			"documents). Returns a summary and a bounded change list; with output set, writes an " +
+			"hdf-comparison document.",
 		Annotations: appmcp.ReadOnly(),
 	}, hdfDiff(ldr))
 }
@@ -120,7 +121,14 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 		// Emit last so a write-model notice (dry-run / WRITES_DISABLED) is appended
 		// to — not clobbered by — any truncation notice buildDiffResponse set.
 		if in.Output != "" {
-			if terr := emitComparison(&out, comp, in.Output, in.DryRun); terr != nil {
+			// Never write the comparison over either input document, even with overwrite.
+			if terr := refuseOverwritingInput(in.Output, from.Handle.Path); terr != nil {
+				return toolError(terr), errorDiffOutput(), nil
+			}
+			if terr := refuseOverwritingInput(in.Output, to.Handle.Path); terr != nil {
+				return toolError(terr), errorDiffOutput(), nil
+			}
+			if terr := emitComparison(&out, comp, in.Output, in.DryRun, in.Overwrite); terr != nil {
 				return toolError(terr), errorDiffOutput(), nil
 			}
 		}
@@ -191,7 +199,7 @@ func requireDocType(r *Resolved, want, mode string) *mcperr.Error {
 
 // emitComparison marshals the engine comparison (already schema-shaped), writes
 // it to the confined output path, and records the path, hash, and schema validity.
-func emitComparison(out *diffOutput, comp diff.HdfComparison, output string, dryRun bool) *mcperr.Error {
+func emitComparison(out *diffOutput, comp diff.HdfComparison, output string, dryRun, overwrite bool) *mcperr.Error {
 	docBytes, err := json.MarshalIndent(comp, "", "  ")
 	if err != nil {
 		return mcperr.New(mcperr.SchemaInvalid, "could not serialize the comparison", nil)
@@ -204,7 +212,7 @@ func emitComparison(out *diffOutput, comp diff.HdfComparison, output string, dry
 
 	// The write itself goes through the one shared write model (gate + dry_run +
 	// confinement) — no direct filesystem write in the tool.
-	writtenPath, notice, terr := writeArtifact(output, dryRun, docBytes)
+	writtenPath, notice, terr := writeArtifact(output, dryRun, overwrite, docBytes)
 	if terr != nil {
 		return terr
 	}

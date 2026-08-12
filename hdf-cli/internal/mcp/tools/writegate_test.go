@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +14,7 @@ func TestWriteArtifact_ModelMatrix(t *testing.T) {
 		root := t.TempDir()
 		t.Setenv("HDF_MCP_ROOT", root)
 		t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-		path, notice, terr := writeArtifact("", false, data)
+		path, notice, terr := writeArtifact("", false, false, data)
 		if terr != nil {
 			t.Fatalf("unexpected error: %v", terr)
 		}
@@ -26,7 +27,7 @@ func TestWriteArtifact_ModelMatrix(t *testing.T) {
 		root := t.TempDir()
 		t.Setenv("HDF_MCP_ROOT", root)
 		t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-		path, notice, terr := writeArtifact("out.json", true, data)
+		path, notice, terr := writeArtifact("out.json", true, false, data)
 		if terr != nil {
 			t.Fatalf("unexpected error: %v", terr)
 		}
@@ -45,7 +46,7 @@ func TestWriteArtifact_ModelMatrix(t *testing.T) {
 		root := t.TempDir()
 		t.Setenv("HDF_MCP_ROOT", root)
 		t.Setenv("HDF_MCP_ENABLE_WRITES", "") // disabled (the deployer ceiling default)
-		path, notice, terr := writeArtifact("out.json", false, data)
+		path, notice, terr := writeArtifact("out.json", false, false, data)
 		if terr != nil {
 			t.Fatalf("writes-disabled must be a successful preview, not an error: %v", terr)
 		}
@@ -64,7 +65,7 @@ func TestWriteArtifact_ModelMatrix(t *testing.T) {
 		root := t.TempDir()
 		t.Setenv("HDF_MCP_ROOT", root)
 		t.Setenv("HDF_MCP_ENABLE_WRITES", "true")
-		path, notice, terr := writeArtifact("out.json", false, data)
+		path, notice, terr := writeArtifact("out.json", false, false, data)
 		if terr != nil {
 			t.Fatalf("unexpected error: %v", terr)
 		}
@@ -84,9 +85,46 @@ func TestWriteArtifact_ModelMatrix(t *testing.T) {
 		root := t.TempDir()
 		t.Setenv("HDF_MCP_ROOT", root)
 		t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-		_, _, terr := writeArtifact("../escape.json", false, data)
+		_, _, terr := writeArtifact("../escape.json", false, false, data)
 		if terr == nil {
 			t.Fatal("a path escaping HDF_MCP_ROOT must be denied")
+		}
+	})
+
+	t.Run("existing output + no overwrite → OUTPUT_EXISTS, file preserved", func(t *testing.T) {
+		root := t.TempDir()
+		t.Setenv("HDF_MCP_ROOT", root)
+		t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+		if err := os.WriteFile(filepath.Join(root, "out.json"), []byte("original"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		_, _, terr := writeArtifact("out.json", false, false, data)
+		if terr == nil || terr.Code != mcperr.OutputExists {
+			t.Fatalf("expected OUTPUT_EXISTS, got %v", terr)
+		}
+		got, _ := os.ReadFile(filepath.Join(root, "out.json"))
+		if string(got) != "original" {
+			t.Fatalf("an existing file must not be clobbered, got %q", got)
+		}
+	})
+
+	t.Run("existing output + overwrite → replaced", func(t *testing.T) {
+		root := t.TempDir()
+		t.Setenv("HDF_MCP_ROOT", root)
+		t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+		if err := os.WriteFile(filepath.Join(root, "out.json"), []byte("original"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		path, _, terr := writeArtifact("out.json", false, true, data)
+		if terr != nil {
+			t.Fatalf("overwrite must succeed: %v", terr)
+		}
+		if path != "out.json" {
+			t.Fatalf("path = %q, want out.json", path)
+		}
+		got, _ := os.ReadFile(filepath.Join(root, "out.json"))
+		if string(got) != string(data) {
+			t.Fatalf("overwrite must replace content, got %q", got)
 		}
 	})
 }

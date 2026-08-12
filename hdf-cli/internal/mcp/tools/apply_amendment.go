@@ -28,6 +28,7 @@ type applyAmendmentInput struct {
 	Amendments handle.Source `json:"amendments" jsonschema:"the hdf-amendments document to apply, as {path} or {handle}"`
 	Output     string        `json:"output,omitempty" jsonschema:"path under HDF_MCP_ROOT to write the applied results (a NEW file; the results input is never overwritten)"`
 	DryRun     bool          `json:"dryRun,omitempty" jsonschema:"with output set, preview the write (return the delta, write no file)"`
+	Overwrite  bool          `json:"overwrite,omitempty" jsonschema:"replace an existing output file (default false)"`
 }
 
 // projectedCompliance is the before/after effective-compliance percentage the
@@ -89,7 +90,7 @@ func hdfApplyAmendment(ldr *loader.Loader) sdkmcp.ToolHandlerFor[applyAmendmentI
 			return toolError(terr), applyAmendmentOutput{}, nil
 		}
 
-		writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, merged)
+		writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, in.Overwrite, merged)
 		if werr != nil {
 			return toolError(werr), applyAmendmentOutput{}, nil
 		}
@@ -135,19 +136,21 @@ func resolveTyped(src handle.Source, want string, ldr *loader.Loader) (*Resolved
 }
 
 // refuseOverwritingInput rejects an output path that resolves to the same
-// confined file as the results input — apply is create-a-new-file, never
-// in-place.
-func refuseOverwritingInput(output, resultsPath string) *mcperr.Error {
-	if output == "" {
+// confined file as an input document being read — a produced document is always
+// a new file, never written in place over its own input (which would destroy the
+// input mid-read). Shared by hdf_apply_amendment (results input) and hdf_convert
+// (source input).
+func refuseOverwritingInput(output, inputPath string) *mcperr.Error {
+	if output == "" || inputPath == "" {
 		return nil
 	}
 	// Compare only when both confine cleanly; an unconfinable output falls
 	// through to the write model, which reports PATH_DENIED.
 	outConfined, oerr := hdfutil.SafePath(mcpRoot(), output)
-	inConfined, ierr := hdfutil.SafePath(mcpRoot(), resultsPath)
+	inConfined, ierr := hdfutil.SafePath(mcpRoot(), inputPath)
 	if oerr == nil && ierr == nil && outConfined == inConfined {
-		return mcperr.New(mcperr.PathDenied, "output would overwrite the results input", map[string]any{"path": output}).
-			WithNextCall("choose a different output path — apply always writes a new file")
+		return mcperr.New(mcperr.PathDenied, "output would overwrite the input document being read", map[string]any{"path": output}).
+			WithNextCall("choose a different output path — the input is never overwritten in place")
 	}
 	return nil
 }

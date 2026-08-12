@@ -40,6 +40,7 @@ type authorInput struct {
 	ExpiresAt string           `json:"expiresAt,omitempty" jsonschema:"amendments from_vex only: RFC3339 expiry applied to every derived override"`
 	Output    string           `json:"output,omitempty" jsonschema:"path under HDF_MCP_ROOT to write the document"`
 	DryRun    bool             `json:"dryRun,omitempty" jsonschema:"with output set, preview the write (write no file)"`
+	Overwrite bool             `json:"overwrite,omitempty" jsonschema:"replace an existing output file (default false)"`
 }
 
 // authorOutput is summary-only — never the assembled document body. ItemCount is
@@ -95,7 +96,7 @@ func hdfAuthor() sdkmcp.ToolHandlerFor[authorInput, authorOutput] {
 		sum := sha256.Sum256(docBytes)
 		out.Sha256 = hex.EncodeToString(sum[:])
 
-		writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, docBytes)
+		writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, in.Overwrite, docBytes)
 		if werr != nil {
 			return toolError(werr), authorOutput{}, nil
 		}

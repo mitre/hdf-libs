@@ -35,10 +35,15 @@ const (
 // returns a successful preview with a WRITES_DISABLED notice — never an error,
 // since the agent cannot lift the deployer ceiling and an isError would only
 // invite a retry loop. Otherwise the document is written to the HDF_MCP_ROOT-
-// confined path. Returns the path actually written ("" if none), a notice ("" on
-// a real write and on pure compute), or a taxonomy error (only PATH_DENIED / a
-// filesystem failure on an enabled write).
-func writeArtifact(output string, dryRun bool, data []byte) (writtenPath, notice string, terr *mcperr.Error) {
+// confined path.
+//
+// A write is additive by default: it refuses to overwrite an existing file
+// (atomic O_EXCL, no TOCTOU) and returns OUTPUT_EXISTS so a caller cannot
+// silently destroy in-root data. Passing overwrite replaces the file — the
+// opt-in that keeps re-running a pipeline possible. Returns the path actually
+// written ("" if none), a notice ("" on a real write and on pure compute), or a
+// taxonomy error (PATH_DENIED / OUTPUT_EXISTS / a filesystem failure).
+func writeArtifact(output string, dryRun, overwrite bool, data []byte) (writtenPath, notice string, terr *mcperr.Error) {
 	if output == "" {
 		return "", "", nil
 	}
@@ -52,10 +57,26 @@ func writeArtifact(output string, dryRun bool, data []byte) (writtenPath, notice
 	if err != nil {
 		return "", "", mcperr.New(mcperr.PathDenied, "output path resolves outside HDF_MCP_ROOT", map[string]any{"path": output})
 	}
-	if werr := os.WriteFile(confined, data, 0o600); werr != nil { //nolint:gosec // confined to HDF_MCP_ROOT by SafePath
-		if os.IsNotExist(werr) {
+	flags := os.O_WRONLY | os.O_CREATE | os.O_TRUNC
+	if !overwrite {
+		flags = os.O_WRONLY | os.O_CREATE | os.O_EXCL // refuse to clobber an existing file
+	}
+	f, werr := os.OpenFile(confined, flags, 0o600) //nolint:gosec // confined to HDF_MCP_ROOT by SafePath
+	if werr != nil {
+		switch {
+		case os.IsExist(werr):
+			return "", "", mcperr.New(mcperr.OutputExists, "output path already exists", map[string]any{"path": output})
+		case os.IsNotExist(werr):
 			return "", "", mcperr.New(mcperr.DocumentNotFound, "output directory does not exist", map[string]any{"path": output})
+		default:
+			return "", "", mcperr.New(mcperr.DocumentNotFound, "could not write output", map[string]any{"error": werr.Error()})
 		}
+	}
+	if _, werr := f.Write(data); werr != nil {
+		_ = f.Close()
+		return "", "", mcperr.New(mcperr.DocumentNotFound, "could not write output", map[string]any{"error": werr.Error()})
+	}
+	if werr := f.Close(); werr != nil {
 		return "", "", mcperr.New(mcperr.DocumentNotFound, "could not write output", map[string]any{"error": werr.Error()})
 	}
 	return output, "", nil

@@ -441,3 +441,22 @@ func TestPaginateChanges_DisjointWindows(t *testing.T) {
 		t.Errorf("pages must cover every row once, covered %d/300", len(seen))
 	}
 }
+
+func TestHdfDiff_RefusesOverwritingInput(t *testing.T) {
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+	writeRootFiles(t, map[string][]byte{
+		"from.json": readToolsFixture(t, "diff-from.json"),
+		"to.json":   readToolsFixture(t, "diff-to.json"),
+	})
+	// output == an input document must be refused even with overwrite:true.
+	res, _, err := hdfDiff(loader.New(0, 0, 0))(context.Background(), nil, diffInput{
+		From: handle.Source{Path: "from.json"}, To: handle.Source{Path: "to.json"},
+		Output: "from.json", Overwrite: true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected Go error: %v", err)
+	}
+	if res == nil {
+		t.Fatal("writing the comparison over an input document must be refused, even with overwrite:true")
+	}
+}

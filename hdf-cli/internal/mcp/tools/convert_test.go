@@ -96,6 +96,48 @@ func TestHdfConvert_WritesEnabled(t *testing.T) {
 	}
 }
 
+func TestHdfConvert_RefusesOverwritingSourceInput(t *testing.T) {
+	t.Setenv("HDF_MCP_ROOT", t.TempDir())
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+	writeInRoot(t, "scan.json", gosecFixture(t))
+	// output == the source path being read must be refused even with overwrite:true —
+	// writing the converted result there would destroy the input mid-conversion.
+	res, _ := callConvert(t, convertInput{
+		Source: &handle.Source{Path: "scan.json"}, From: "gosec", Output: "scan.json", Overwrite: true,
+	})
+	if res == nil {
+		t.Fatal("converting with output == source input must be refused, even with overwrite:true")
+	}
+	got, _ := os.ReadFile(filepath.Join(os.Getenv("HDF_MCP_ROOT"), "scan.json"))
+	if string(got) != string(gosecFixture(t)) {
+		t.Fatal("the source input must be left intact")
+	}
+}
+
+func TestHdfConvert_RefusesClobberWithoutOverwrite(t *testing.T) {
+	t.Setenv("HDF_MCP_ROOT", t.TempDir())
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+	writeInRoot(t, "out.json", []byte("precious existing data"))
+	// Existing output, no overwrite → refused; the existing file is preserved.
+	res, _ := callConvert(t, convertInput{Content: string(gosecFixture(t)), From: "gosec", Output: "out.json"})
+	if res == nil {
+		t.Fatal("writing over an existing output without overwrite must be refused")
+	}
+	got, _ := os.ReadFile(filepath.Join(os.Getenv("HDF_MCP_ROOT"), "out.json"))
+	if string(got) != "precious existing data" {
+		t.Fatalf("existing file must be preserved, got %q", got)
+	}
+	// With overwrite:true it replaces the file with valid HDF.
+	_, out := callConvert(t, convertInput{Content: string(gosecFixture(t)), From: "gosec", Output: "out.json", Overwrite: true})
+	if out.OutputPath != "out.json" {
+		t.Fatalf("overwrite:true must write, got %+v", out)
+	}
+	got, _ = os.ReadFile(filepath.Join(os.Getenv("HDF_MCP_ROOT"), "out.json"))
+	if !validators.ValidateResults(got).Valid {
+		t.Fatal("overwritten document must validate as hdf-results")
+	}
+}
+
 func TestHdfConvert_DryRun(t *testing.T) {
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")

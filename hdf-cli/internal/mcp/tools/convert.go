@@ -36,6 +36,7 @@ type convertInput struct {
 	From        string            `json:"from,omitempty" jsonschema:"source format (e.g. nessus, gosec); auto-detected when omitted"`
 	Output      string            `json:"output,omitempty" jsonschema:"path under HDF_MCP_ROOT to write the HDF results document"`
 	DryRun      bool              `json:"dryRun,omitempty" jsonschema:"with output set, preview the write (return the summary, write no file)"`
+	Overwrite   bool              `json:"overwrite,omitempty" jsonschema:"replace an existing output file (default false)"`
 	Labels      map[string]string `json:"labels,omitempty" jsonschema:"labels to apply to every component in the output"`
 	ComponentID string            `json:"componentId,omitempty" jsonschema:"componentId to set on every component in the output"`
 }
@@ -87,7 +88,15 @@ func hdfConvert() sdkmcp.ToolHandlerFor[convertInput, convertOutput] {
 
 		out := convertSummary(hdfBytes)
 
-		writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, hdfBytes)
+		// Never overwrite the source being converted, even with overwrite set —
+		// that would destroy the input mid-read (hdf_convert source=x output=x).
+		if in.Source != nil {
+			if terr := refuseOverwritingInput(in.Output, in.Source.Path); terr != nil {
+				return toolError(terr), convertOutput{}, nil
+			}
+		}
+
+		writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, in.Overwrite, hdfBytes)
 		if werr != nil {
 			return toolError(werr), convertOutput{}, nil
 		}
