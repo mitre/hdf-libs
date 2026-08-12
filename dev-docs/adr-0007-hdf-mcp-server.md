@@ -96,7 +96,26 @@ No prior art exists in the MITRE SAF ecosystem — there is no MCP server for SA
 
 15. **A closed, machine-readable error taxonomy, where every error names the next call.** §10's truncation rule generalizes: an error that does not tell the agent what to do next causes a retry loop. Codes: `DOCUMENT_NOT_FOUND`, `PATH_DENIED`, `TOO_LARGE`, `WRONG_DOC_TYPE`, `SCHEMA_INVALID`, `HANDLE_STALE`, `NO_CONVERTER`, `TRUNCATED`, `AMBIGUOUS_FORMAT`. All are returned as **tool results with `isError: true`** and a structured payload — they are recoverable and the model should retry differently. Only malformed calls surface as JSON-RPC protocol errors. `WRITES_DISABLED` is deliberately **not** in this set: a write call in a writes-disabled deployment returns a *successful* response carrying the would-write preview plus a `writesDisabled: true` notice (§12) — the agent cannot enable writes, so there is nothing to retry and an `isError` would only invite the loop this taxonomy exists to prevent.
 
-16. **All v1 tools are synchronous, with declared per-tool timeouts and honoured cancellation.** Handlers respect the SDK request context so client cancellation actually stops work. Any operation measured above 10 s against the largest fixture (`hdf-fixtures/inspec/wrapper.json`, 5.0 MB) is deferred to a follow-up built on the Tasks extension (`tasks/get` / `tasks/cancel`, stateless polling in this revision) rather than blocking. Measured timings go in the ADR before acceptance.
+16. **All v1 tools are synchronous, with declared per-tool timeouts and honoured cancellation.** Handlers respect the SDK request context so client cancellation actually stops work (implemented for the heavy read ops — `hdf_query`/`hdf_diff` — in the `feat/mcp` branch). Any operation measured above 10 s against the largest fixture is deferred to a follow-up built on the Tasks extension (`tasks/get` / `tasks/cancel`, stateless polling in this revision) rather than blocking.
+
+    **Measured timings (2026-08-11, `hdf-libs-huzc.1`).** Against real converter-output HDF results (`grype-to-hdf` expected, 14.2 MB / 1621 requirements — larger and better-formed than the originally-cited `wrapper.json`, which is InSpec *source*, not HDF) and a 2.95 MB / 534-requirement doc:
+
+    | Operation | 14.2 MB / 1621 req | 2.95 MB / 534 req |
+    |---|---|---|
+    | full-verbosity `hdf_query` (Filter + project all) | 0.020 s | 0.007 s |
+    | temporal `hdf_diff` (`DiffHdf`) | 0.003 s | 0.001 s |
+    | emit comparison (marshal + schema-validate + sha256) | 0.260 s | 0.050 s |
+    | `hdf_validate` schema (5–14 MB) | 0.106 s | 0.022 s |
+    | `hdf_convert` (grype, 7.9 MB source) | 0.181 s | — |
+
+    **No single-document op approaches 10 s** — the slowest (emit at 0.26 s on a 14 MB doc) is ~38× under the threshold. The two multiplicative paths were then measured directly:
+
+    | Fan-out op | scale tested | time | extrapolated to 10 s |
+    |---|---|---|---|
+    | fleet `hdf_diff` (`DiffHdf` ModeFleet) | 100 / 500 systems × 534 req | 0.099 s / 0.490 s | ~10,000 systems |
+    | evidence-package checksum fan-out (`VerifyChecksums`) | 100 / 500 files × 14.2 MB | 0.540 s / 2.624 s | ~1,900 files × 14.2 MB (~28 GB referenced) |
+
+    **Neither reaches 10 s at any realistic scale.** A fleet would need ~10,000 systems; an evidence package would need ~1,900 large referenced files. The durable-task machine (a durable store + a custom `tools/call` dispatch shim) is therefore **not justified by current or extrapolated realistic HDF workloads** — it is a spec-completeness / far-future investment, not a present need. The Tasks-extension buildout (`hdf-libs-huzc`) is re-scoped on this evidence; core-spec `ctx` cancellation (this clause) is shipped independently.
 
 17. **Contract versioning and advertised spec revisions are explicit.** SDK pinned to `github.com/modelcontextprotocol/go-sdk` v1.7.x — note its support for the 2026-07-28 revision is pre-release/experimental (the `v1.7.0-pre.1` line), so any reliance on revision-specific surface inherits pre-release churn. This is a further reason v1 treats the ratified **2025-11-25** as its build baseline and the 2026-07-28 revision as forward-compatible rather than required; **nothing in v1 hard-depends on an unratified feature** (the stateless-handle design of §8 is just "use tool arguments" and works under either revision). The server advertises both revisions, asserted by test. The tool surface is a public API: additive-only within a major version, renames get a deprecation window, response shapes are golden-tested, and `serverInfo.version` tracks the CLI version.
 
