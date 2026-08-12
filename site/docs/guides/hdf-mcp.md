@@ -131,6 +131,7 @@ The server is configured entirely through environment variables:
 | `HDF_MCP_ROOT` | Path-confinement root. Every `source.path` and write `output` is resolved under it; anything resolving outside is refused (`PATH_DENIED`). | the process working directory |
 | `HDF_MCP_ENABLE_WRITES` | The write gate. Truthy (`1`, `true`, `yes`, `on`) permits writes; anything else disables them (write calls return previews). | disabled |
 | `HDF_MCP_CACHE_BYTES` | Budget for the byte-bounded LRU parsed-document cache, so repeated reads of the same document skip re-parsing. | 256 MB |
+| `HDF_MCP_MAX_SIZE` | Per-document input ceiling in bytes. A file larger than this is refused (`TOO_LARGE`) before it is read into memory, and the same ceiling applies to a parsed document. | 50 MB |
 | `HDF_MCP_LOG_LEVEL` | Structured-log level written to **stderr** (`error`, `warn`, `info`, `debug`). stdout carries only JSON-RPC frames. | `info` |
 
 Set `HDF_MCP_ROOT` to the directory that holds the documents the agent

@@ -10,7 +10,7 @@ import (
 // to mcp.Run as the registration hook, which keeps the mcp package free of any
 // dependency on this one (mcp never imports tools; the wiring is injected).
 func RegisterAll(s *sdkmcp.Server) {
-	ldr := loader.New(0, 0, 0)
+	ldr := loader.New(int(mcpMaxInputSize()), 0, 0)
 	RegisterOpen(s, ldr)
 	RegisterInspect(s, ldr)
 	RegisterQuery(s, ldr)

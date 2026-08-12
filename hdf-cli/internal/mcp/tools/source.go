@@ -7,7 +7,9 @@ package tools
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
@@ -36,6 +38,37 @@ func mcpRoot() string {
 		return "."
 	}
 	return wd
+}
+
+// mcpMaxInputSize is the per-document read ceiling in bytes: HDF_MCP_MAX_SIZE if
+// set to a positive integer, else hdfutil.DefaultMaxInputSize (50 MB). It gates a
+// file BEFORE it is read into memory and is the same ceiling the loader applies
+// after the read (register.go builds the loader with it), so the two never
+// diverge.
+func mcpMaxInputSize() int64 {
+	if v := os.Getenv("HDF_MCP_MAX_SIZE"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
+			return n
+		}
+	}
+	return int64(hdfutil.DefaultMaxInputSize)
+}
+
+// guardFileSize rejects a file larger than maxSize before it is read into
+// memory, so an over-large document returns TOO_LARGE without the allocation
+// spike. The loader's post-read size guard remains the backstop.
+func guardFileSize(confined string, maxSize int64) *mcperr.Error {
+	fi, err := os.Stat(confined)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return mcperr.New(mcperr.DocumentNotFound, "no document at the given path", nil)
+		}
+		return mcperr.New(mcperr.DocumentNotFound, "could not read the document", map[string]any{"error": err.Error()})
+	}
+	if fi.Size() > maxSize {
+		return mcperr.New(mcperr.TooLarge, fmt.Sprintf("document is %d bytes, over the %d-byte limit", fi.Size(), maxSize), nil)
+	}
+	return nil
 }
 
 // resolveSource turns a {path} | {handle} source into confined bytes, a loaded
@@ -105,6 +138,9 @@ func resolveHandle(encoded string, ldr *loader.Loader) (*Resolved, *mcperr.Error
 
 // readFile reads a confined path, mapping filesystem errors to taxonomy codes.
 func readFile(confined string) ([]byte, *mcperr.Error) {
+	if terr := guardFileSize(confined, mcpMaxInputSize()); terr != nil {
+		return nil, terr
+	}
 	content, err := os.ReadFile(confined) //nolint:gosec // confined to HDF_MCP_ROOT by SafePath
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
