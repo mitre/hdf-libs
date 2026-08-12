@@ -135,11 +135,13 @@ func buildFilters(opts Options) []filterFunc {
 		})
 	}
 
-	// Impact filter (supports >, >=, <, <=, =)
+	// Impact filter (supports >, >=, <, <=, =). A malformed filter matches
+	// NOTHING rather than silently degrading to impact==0 — callers should
+	// validate with ValidImpactFilter and reject before filtering.
 	if opts.Impact != "" {
-		op, val := parseImpactFilter(opts.Impact)
+		op, val, ok := parseImpactFilter(opts.Impact)
 		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-			return compareImpact(c.Impact, op, val)
+			return ok && compareImpact(c.Impact, op, val)
 		})
 	}
 
@@ -237,26 +239,37 @@ func applyFilters(control hdf.EvaluatedRequirement, status, severity string, fil
 	return true
 }
 
-func parseImpactFilter(filter string) (string, float64) {
+// parseImpactFilter parses a comparison filter (e.g. ">0.5", "=0", "0.7"). ok is
+// false when the operand does not parse as a number — the caller must treat that
+// as an invalid filter, NOT coerce it to a predicate (silently degrading a typo
+// to impact==0 returned confidently-wrong rows).
+func parseImpactFilter(filter string) (op string, val float64, ok bool) {
 	filter = strings.TrimSpace(filter)
 
 	operators := []string{">=", "<=", ">", "<", "="}
-	for _, op := range operators {
-		if strings.HasPrefix(filter, op) {
-			valStr := strings.TrimSpace(filter[len(op):])
-			val, err := strconv.ParseFloat(valStr, 64)
+	for _, o := range operators {
+		if strings.HasPrefix(filter, o) {
+			v, err := strconv.ParseFloat(strings.TrimSpace(filter[len(o):]), 64)
 			if err != nil {
-				return "=", 0
+				return "", 0, false
 			}
-			return op, val
+			return o, v, true
 		}
 	}
 
-	val, err := strconv.ParseFloat(filter, 64)
+	v, err := strconv.ParseFloat(filter, 64)
 	if err != nil {
-		return "=", 0
+		return "", 0, false
 	}
-	return "=", val
+	return "=", v, true
+}
+
+// ValidImpactFilter reports whether s is a well-formed impact comparison filter
+// (a comparator plus a number, or a bare number). Callers validate at the
+// boundary and reject a malformed filter rather than let it match nothing.
+func ValidImpactFilter(s string) bool {
+	_, _, ok := parseImpactFilter(s)
+	return ok
 }
 
 func compareImpact(impact float64, op string, val float64) bool {

@@ -128,6 +128,10 @@ func RegisterQuery(s *sdkmcp.Server, ldr *loader.Loader) {
 // paginated result set.
 func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput] {
 	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, in queryInput) (*sdkmcp.CallToolResult, queryOutput, error) {
+		if in.Impact != "" && !hdfengine.ValidImpactFilter(in.Impact) {
+			return argError(fmt.Sprintf("invalid impact filter %q", in.Impact),
+				"use a comparison like >0.5, >=0.7, <0.5, or =0"), errorQueryOutput(), nil
+		}
 		resolved, terr := resolveSource(in.Source, ldr)
 		if terr != nil {
 			return toolError(terr), errorQueryOutput(), nil

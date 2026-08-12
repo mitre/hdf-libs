@@ -124,6 +124,10 @@ func runQuery(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to parse HDF file: %w", err)
 	}
 
+	if queryImpact != "" && !hdfengine.ValidImpactFilter(queryImpact) {
+		return fmt.Errorf("invalid --impact filter %q: use a comparison like >0.5, >=0.7, <0.5, or =0", queryImpact)
+	}
+
 	// Filtering is delegated to the shared hdf-engine library; the CLI supplies
 	// its display-status resolver so the engine stays convention-agnostic.
 	matches := hdfengine.Filter(context.Background(), results, hdfengine.Options{

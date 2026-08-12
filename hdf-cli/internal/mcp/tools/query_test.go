@@ -393,3 +393,14 @@ func itoa(i int) string {
 	b, _ := json.Marshal(i)
 	return string(b)
 }
+
+func TestHdfQuery_RejectsMalformedImpact(t *testing.T) {
+	path := writeRoot(t, "q.json", readToolsFixture(t, "query-results.json"))
+	res, out := callQuery(t, queryInput{Source: handle.Source{Path: path}, Impact: ">x"})
+	if res == nil {
+		t.Fatal("a malformed impact filter must be refused (argError), not silently return impact==0 rows")
+	}
+	if len(out.Requirements) != 0 {
+		t.Fatalf("refused query must return no rows, got %d", len(out.Requirements))
+	}
+}

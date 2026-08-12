@@ -195,11 +195,23 @@ func TestParseImpactFilter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			op, val := parseImpactFilter(tt.filter)
+			op, val, ok := parseImpactFilter(tt.filter)
+			assert.True(t, ok, "valid filter must parse")
 			assert.Equal(t, tt.expectedOp, op)
 			assert.Equal(t, tt.expectedV, val)
 		})
 	}
+}
+
+func TestParseImpactFilter_Malformed(t *testing.T) {
+	// A malformed operand must be reported (ok=false), NOT coerced to =0.
+	for _, bad := range []string{">x", ">=", "<=abc", "0x1f", "impact", ""} {
+		_, _, ok := parseImpactFilter(bad)
+		assert.False(t, ok, "%q must be reported invalid, not coerced", bad)
+		assert.False(t, ValidImpactFilter(bad), "%q must be invalid", bad)
+	}
+	assert.True(t, ValidImpactFilter(">0.5"))
+	assert.True(t, ValidImpactFilter("0"))
 }
 
 func TestCompareImpact(t *testing.T) {
@@ -347,13 +359,21 @@ func TestSafeGlobMatch_TooLongPattern(t *testing.T) {
 }
 
 func TestParseImpactFilter_InvalidValues(t *testing.T) {
-	// Non-numeric values fall back to ("=", 0) for both operator and bare forms.
+	// Non-numeric operands must be reported invalid (ok=false), NOT coerced to
+	// ("=", 0) — a coerced typo returned confidently-wrong impact==0 rows.
 	cases := []string{">abc", "<=xyz", "notanumber"}
 	for _, c := range cases {
-		op, val := parseImpactFilter(c)
-		assert.Equal(t, "=", op, c)
-		assert.Equal(t, 0.0, val, c)
+		_, _, ok := parseImpactFilter(c)
+		assert.False(t, ok, c)
 	}
+}
+
+// TestFilter_MalformedImpactMatchesNothing proves the engine no longer silently
+// degrades a malformed impact filter to impact==0.
+func TestFilter_MalformedImpactMatchesNothing(t *testing.T) {
+	results := loadQueryFixture(t)
+	assert.Empty(t, Filter(context.Background(), results, Options{Impact: ">x", StatusOf: testStatusOf}),
+		"a malformed impact filter must match nothing, not impact==0 rows")
 }
 
 func TestFilter_TagWithoutColon(t *testing.T) {
