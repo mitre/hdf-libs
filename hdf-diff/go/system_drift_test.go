@@ -1,6 +1,7 @@
 package diff
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -74,7 +75,7 @@ func findComponentDiff(diffs []ComponentDiff, name string) *ComponentDiff {
 // -- Tests --------------------------------------------------------------------
 
 func TestDiffSystems_ComparisonMode(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -84,7 +85,7 @@ func TestDiffSystems_ComparisonMode(t *testing.T) {
 }
 
 func TestDiffSystems_FormatVersion(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -94,7 +95,7 @@ func TestDiffSystems_FormatVersion(t *testing.T) {
 }
 
 func TestDiffSystems_Timestamp(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -104,7 +105,7 @@ func TestDiffSystems_Timestamp(t *testing.T) {
 }
 
 func TestDiffSystems_Sources(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -126,7 +127,7 @@ func TestDiffSystems_Sources(t *testing.T) {
 }
 
 func TestDiffSystems_WebTierUpdated(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -140,7 +141,7 @@ func TestDiffSystems_WebTierUpdated(t *testing.T) {
 }
 
 func TestDiffSystems_DatabaseTierUnchanged(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -157,7 +158,7 @@ func TestDiffSystems_DatabaseTierUnchanged(t *testing.T) {
 // conformance fix: an unchanged component's fieldChanges must marshal as [] (not
 // null), matching the hdf-comparison schema and the TS peer.
 func TestDiffSystems_UnchangedFieldChangesMarshalAsArray(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -178,7 +179,7 @@ func TestDiffSystems_UnchangedFieldChangesMarshalAsArray(t *testing.T) {
 }
 
 func TestDiffSystems_LegacyAPIAbsent(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -198,7 +199,7 @@ func TestDiffSystems_LegacyAPIAbsent(t *testing.T) {
 }
 
 func TestDiffSystems_CacheTierNew(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -218,7 +219,7 @@ func TestDiffSystems_CacheTierNew(t *testing.T) {
 }
 
 func TestDiffSystems_WebTierFieldChanges(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -242,7 +243,7 @@ func TestDiffSystems_WebTierFieldChanges(t *testing.T) {
 }
 
 func TestDiffSystems_AuthorizationStatusChange(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -275,7 +276,7 @@ func TestDiffSystems_AuthorizationStatusChange(t *testing.T) {
 
 func TestDiffSystems_NoExtensionsWhenIdentical(t *testing.T) {
 	v1 := systemV1Fixture()
-	result, err := DiffSystems(v1, v1)
+	result, err := DiffSystems(context.Background(), v1, v1)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -285,7 +286,7 @@ func TestDiffSystems_NoExtensionsWhenIdentical(t *testing.T) {
 }
 
 func TestDiffSystems_SummaryCounts(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -323,7 +324,7 @@ func TestDiffSystems_SummaryCounts(t *testing.T) {
 }
 
 func TestDiffSystems_EmptyRequirementAndBaselineDiffs(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -337,7 +338,7 @@ func TestDiffSystems_EmptyRequirementAndBaselineDiffs(t *testing.T) {
 
 func TestDiffSystems_IdenticalSystems(t *testing.T) {
 	v1 := systemV1Fixture()
-	result, err := DiffSystems(v1, v1)
+	result, err := DiffSystems(context.Background(), v1, v1)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -349,7 +350,7 @@ func TestDiffSystems_IdenticalSystems(t *testing.T) {
 }
 
 func TestDiffSystems_ComponentDiffsSortedByName(t *testing.T) {
-	result, err := DiffSystems(systemV1Fixture(), systemV2Fixture())
+	result, err := DiffSystems(context.Background(), systemV1Fixture(), systemV2Fixture())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -388,7 +389,7 @@ func TestDiffSystems_MatchByComponentId(t *testing.T) {
 		},
 	}
 
-	result, err := DiffSystems(oldSys, newSys)
+	result, err := DiffSystems(context.Background(), oldSys, newSys)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -447,7 +448,7 @@ func TestDiffSystems_ComponentIdTakesPrecedenceOverName(t *testing.T) {
 		},
 	}
 
-	result, err := DiffSystems(oldSys, newSys)
+	result, err := DiffSystems(context.Background(), oldSys, newSys)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -483,7 +484,7 @@ func TestDiffSystems_BomsFieldChange(t *testing.T) {
 		},
 	}
 
-	result, err := DiffSystems(oldSys, newSys)
+	result, err := DiffSystems(context.Background(), oldSys, newSys)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -517,7 +518,7 @@ func TestDiffSystems_BomsUnchanged(t *testing.T) {
 		},
 	}
 
-	result, err := DiffSystems(sys, sys)
+	result, err := DiffSystems(context.Background(), sys, sys)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -546,7 +547,7 @@ func TestDiffSystems_UntrackedFieldNoDrift(t *testing.T) {
 		},
 	}
 
-	result, err := DiffSystems(oldSys, newSys)
+	result, err := DiffSystems(context.Background(), oldSys, newSys)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -581,7 +582,7 @@ func TestDiffSystems_DataFlowAdded(t *testing.T) {
 		},
 	}
 
-	result, err := DiffSystems(oldSys, newSys)
+	result, err := DiffSystems(context.Background(), oldSys, newSys)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -622,7 +623,7 @@ func TestDiffSystems_DataFlowRemoved(t *testing.T) {
 		"components": []any{},
 	}
 
-	result, err := DiffSystems(oldSys, newSys)
+	result, err := DiffSystems(context.Background(), oldSys, newSys)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -663,7 +664,7 @@ func TestDiffSystems_DataFlowUpdated(t *testing.T) {
 		},
 	}
 
-	result, err := DiffSystems(oldSys, newSys)
+	result, err := DiffSystems(context.Background(), oldSys, newSys)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -693,7 +694,7 @@ func TestDiffSystems_NoDataFlowChanges_NoExtension(t *testing.T) {
 		},
 	}
 
-	result, err := DiffSystems(oldSys, oldSys)
+	result, err := DiffSystems(context.Background(), oldSys, oldSys)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

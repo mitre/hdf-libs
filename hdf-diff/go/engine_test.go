@@ -1,6 +1,8 @@
 package diff
 
 import (
+	"context"
+	"errors"
 	"sort"
 	"strings"
 	"testing"
@@ -96,11 +98,23 @@ func defaultOpts() Options {
 // mustDiffHdf calls DiffHdf and fails the test if it returns an error.
 func mustDiffHdf(t *testing.T, oldResults hdf.HDFResults, newResults []hdf.HDFResults, opts Options) HdfComparison {
 	t.Helper()
-	comp, err := DiffHdf(oldResults, newResults, opts)
+	comp, err := DiffHdf(context.Background(), oldResults, newResults, opts)
 	if err != nil {
 		t.Fatalf("DiffHdf returned unexpected error: %v", err)
 	}
 	return comp
+}
+
+// TestDiffHdf_HonorsCancellation proves DiffHdf returns context.Canceled from a
+// pre-cancelled context instead of running the comparison.
+func TestDiffHdf_HonorsCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	doc := makeResults(makeBaseline("b", "1.0.0"))
+	_, err := DiffHdf(ctx, doc, []hdf.HDFResults{doc}, defaultOpts())
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
 }
 
 // assertAbsentAndNewSlicesEmpty validates that both changeReasons and fieldChanges
@@ -1456,7 +1470,7 @@ func TestDiffHdf_InvalidStrategy(t *testing.T) {
 		MatchStrategy:  "nonexistentStrategy",
 	}
 
-	_, err := DiffHdf(oldResults, []hdf.HDFResults{newResults}, opts)
+	_, err := DiffHdf(context.Background(), oldResults, []hdf.HDFResults{newResults}, opts)
 	if err == nil {
 		t.Fatal("expected error for invalid strategy, got nil")
 	}
@@ -1480,7 +1494,7 @@ func TestDiffHdf_InvalidFallbackStrategy(t *testing.T) {
 		FallbackStrategies: []string{"badFallback"},
 	}
 
-	_, err := DiffHdf(oldResults, []hdf.HDFResults{newResults}, opts)
+	_, err := DiffHdf(context.Background(), oldResults, []hdf.HDFResults{newResults}, opts)
 	if err == nil {
 		t.Fatal("expected error for invalid fallback strategy, got nil")
 	}
@@ -1494,7 +1508,7 @@ func TestDiffHdf_ValidStrategy_NoError(t *testing.T) {
 		makeRequirement("SV-001", hdf.Passed, 0.7),
 	))
 
-	comp, err := DiffHdf(oldResults, []hdf.HDFResults{newResults}, defaultOpts())
+	comp, err := DiffHdf(context.Background(), oldResults, []hdf.HDFResults{newResults}, defaultOpts())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1525,7 +1539,7 @@ func TestFieldChanges_KeyOrderIndependentMaps(t *testing.T) {
 		ComparisonMode: ModeTemporal,
 		MatchStrategy:  stratExactID,
 	}
-	comp, err := DiffHdf(makeResults(oldBaseline), []hdf.HDFResults{makeResults(newBaseline)}, opts)
+	comp, err := DiffHdf(context.Background(), makeResults(oldBaseline), []hdf.HDFResults{makeResults(newBaseline)}, opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -76,7 +76,7 @@ func RegisterDiff(s *sdkmcp.Server, ldr *loader.Loader) {
 }
 
 func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
-	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in diffInput) (*sdkmcp.CallToolResult, diffOutput, error) {
+	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, in diffInput) (*sdkmcp.CallToolResult, diffOutput, error) {
 		mode := in.Mode
 		if mode == "" {
 			mode = "temporal"
@@ -104,8 +104,11 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 			return nil, diffOutput{}, fmt.Errorf("encoding to handle: %w", err)
 		}
 
-		comp, terr := computeComparison(mode, from, to)
+		comp, terr := computeComparison(ctx, mode, from, to)
 		if terr != nil {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return nil, diffOutput{}, ctxErr // client cancelled — propagate, don't mislabel as SchemaInvalid
+			}
 			return toolError(terr), errorDiffOutput(), nil
 		}
 
@@ -128,7 +131,7 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 // computeComparison delegates to the shared engine: temporal compares two results
 // documents, system-drift two system documents. A document of the wrong type for
 // the mode returns WRONG_DOC_TYPE; a schema-invalid one returns SCHEMA_INVALID.
-func computeComparison(mode string, from, to *Resolved) (diff.HdfComparison, *mcperr.Error) {
+func computeComparison(ctx context.Context, mode string, from, to *Resolved) (diff.HdfComparison, *mcperr.Error) {
 	switch mode {
 	case "temporal":
 		if terr := requireDocType(from, "results", mode); terr != nil {
@@ -137,7 +140,7 @@ func computeComparison(mode string, from, to *Resolved) (diff.HdfComparison, *mc
 		if terr := requireDocType(to, "results", mode); terr != nil {
 			return diff.HdfComparison{}, terr
 		}
-		comp, err := diff.DiffHdf(*from.Load.Engine.Results, []hdf.HDFResults{*to.Load.Engine.Results},
+		comp, err := diff.DiffHdf(ctx, *from.Load.Engine.Results, []hdf.HDFResults{*to.Load.Engine.Results},
 			diff.Options{ComparisonMode: diff.ModeTemporal})
 		if err != nil {
 			return diff.HdfComparison{}, mcperr.New(mcperr.SchemaInvalid, "diff failed: "+err.Error(), nil)
@@ -157,7 +160,7 @@ func computeComparison(mode string, from, to *Resolved) (diff.HdfComparison, *mc
 		if err := json.Unmarshal(to.Content, &newSys); err != nil {
 			return diff.HdfComparison{}, mcperr.New(mcperr.SchemaInvalid, "to system document did not parse", nil)
 		}
-		comp, err := diff.DiffSystems(oldSys, newSys)
+		comp, err := diff.DiffSystems(ctx, oldSys, newSys)
 		if err != nil {
 			return diff.HdfComparison{}, mcperr.New(mcperr.SchemaInvalid, "system diff failed: "+err.Error(), nil)
 		}

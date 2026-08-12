@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -125,7 +126,7 @@ func runQuery(_ *cobra.Command, args []string) error {
 
 	// Filtering is delegated to the shared hdf-engine library; the CLI supplies
 	// its display-status resolver so the engine stays convention-agnostic.
-	matches := hdfengine.Filter(results, hdfengine.Options{
+	matches := hdfengine.Filter(context.Background(), results, hdfengine.Options{
 		Status:   queryStatus,
 		Severity: querySeverity,
 		Impact:   queryImpact,

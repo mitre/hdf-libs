@@ -1,6 +1,7 @@
 package hdfengine
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -70,11 +71,11 @@ func TestFilter_Concurrent(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		failedIDs = ids(Filter(results, Options{Status: []string{"failed"}, StatusOf: testStatusOf}))
+		failedIDs = ids(Filter(context.Background(), results, Options{Status: []string{"failed"}, StatusOf: testStatusOf}))
 	}()
 	go func() {
 		defer wg.Done()
-		highIDs = ids(Filter(results, Options{Severity: []string{"high"}, StatusOf: testStatusOf}))
+		highIDs = ids(Filter(context.Background(), results, Options{Severity: []string{"high"}, StatusOf: testStatusOf}))
 	}()
 	wg.Wait()
 	assert.Equal(t, []string{"SV-230221"}, failedIDs, "status=failed selection")
@@ -113,7 +114,7 @@ func TestFilter_AllNineFilters(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.opts.StatusOf = testStatusOf
-			assert.Equal(t, tc.want, ids(Filter(results, tc.opts)))
+			assert.Equal(t, tc.want, ids(Filter(context.Background(), results, tc.opts)))
 		})
 	}
 }
@@ -132,12 +133,12 @@ func TestFilter_StatusCaseInsensitive(t *testing.T) {
 		return string(c.Results[0].Status)
 	}
 	// A camelCase filter and a lowercased filter select the same requirement.
-	camel := ids(Filter(results, Options{Status: []string{"notApplicable"}, StatusOf: schemaStatusOf}))
-	lower := ids(Filter(results, Options{Status: []string{"notapplicable"}, StatusOf: schemaStatusOf}))
+	camel := ids(Filter(context.Background(), results, Options{Status: []string{"notApplicable"}, StatusOf: schemaStatusOf}))
+	lower := ids(Filter(context.Background(), results, Options{Status: []string{"notapplicable"}, StatusOf: schemaStatusOf}))
 	assert.Equal(t, []string{"SV-230223"}, camel, "camelCase filter must match the canonical notApplicable status")
 	assert.Equal(t, camel, lower, "status match must be case-insensitive on both sides")
 	// And a canonical failed status matches a lowercase filter.
-	assert.Equal(t, []string{"SV-230221"}, ids(Filter(results, Options{Status: []string{"failed"}, StatusOf: schemaStatusOf})))
+	assert.Equal(t, []string{"SV-230221"}, ids(Filter(context.Background(), results, Options{Status: []string{"failed"}, StatusOf: schemaStatusOf})))
 }
 
 // TestFilter_SeverityHonorsExplicitTag proves Filter uses the explicit STIG
@@ -149,17 +150,28 @@ func TestFilter_SeverityHonorsExplicitTag(t *testing.T) {
 		{ID: "X", Impact: 0.0, Severity: &sev, Descriptions: []hdf.Description{{Label: "default", Data: "x"}}, Results: []hdf.RequirementResult{{Status: hdf.NotReviewed}}},
 	}}}}
 	// The explicit "high" tag wins over the impact-0 derivation ("none").
-	assert.Equal(t, []string{"X"}, ids(Filter(results, Options{Severity: []string{"high"}, StatusOf: testStatusOf})))
-	assert.Empty(t, Filter(results, Options{Severity: []string{"none"}, StatusOf: testStatusOf}))
-	assert.Equal(t, "high", Filter(results, Options{StatusOf: testStatusOf})[0].Severity)
+	assert.Equal(t, []string{"X"}, ids(Filter(context.Background(), results, Options{Severity: []string{"high"}, StatusOf: testStatusOf})))
+	assert.Empty(t, Filter(context.Background(), results, Options{Severity: []string{"none"}, StatusOf: testStatusOf}))
+	assert.Equal(t, "high", Filter(context.Background(), results, Options{StatusOf: testStatusOf})[0].Severity)
 }
 
 func TestFilter_NilStatusOf(t *testing.T) {
 	results := loadQueryFixture(t)
 	// With no resolver, status is empty and the status filter selects nothing.
-	assert.Empty(t, Filter(results, Options{Status: []string{"failed"}}))
+	assert.Empty(t, Filter(context.Background(), results, Options{Status: []string{"failed"}}))
 	// Non-status filters still work with a nil resolver.
-	assert.Equal(t, []string{"SV-230221"}, ids(Filter(results, Options{Severity: []string{"critical"}})))
+	assert.Equal(t, []string{"SV-230221"}, ids(Filter(context.Background(), results, Options{Severity: []string{"critical"}})))
+}
+
+// TestFilter_HonorsCancellation proves a cancelled context stops the scan: an
+// already-cancelled ctx yields no matches even with no filters (which would
+// otherwise return every requirement).
+func TestFilter_HonorsCancellation(t *testing.T) {
+	results := loadQueryFixture(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	assert.Empty(t, Filter(ctx, results, Options{StatusOf: testStatusOf}),
+		"a cancelled context must stop the scan before any requirement is collected")
 }
 
 // --- helper unit tests, relocated verbatim from hdf-cli query_test.go ---
@@ -348,7 +360,7 @@ func TestFilter_TagWithoutColon(t *testing.T) {
 	// A --tag value with no "key:value" colon yields no tag filter, so nothing is
 	// narrowed on that axis (matches the shipped buildFilters behavior).
 	results := loadQueryFixture(t)
-	all := ids(Filter(results, Options{StatusOf: testStatusOf}))
-	got := ids(Filter(results, Options{Tag: []string{"nocolonhere"}, StatusOf: testStatusOf}))
+	all := ids(Filter(context.Background(), results, Options{StatusOf: testStatusOf}))
+	got := ids(Filter(context.Background(), results, Options{Tag: []string{"nocolonhere"}, StatusOf: testStatusOf}))
 	assert.Equal(t, all, got)
 }

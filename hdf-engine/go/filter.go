@@ -1,6 +1,7 @@
 package hdfengine
 
 import (
+	"context"
 	"strconv"
 	"strings"
 
@@ -47,7 +48,12 @@ type filterFunc func(control hdf.EvaluatedRequirement, status, severity string) 
 // opts. It applies to requirement collections (results/baseline documents); the
 // calling adapter is responsible for rejecting document types that carry no
 // requirements.
-func Filter(results hdf.HDFResults, opts Options) []Match {
+//
+// ctx cancellation is honored at per-requirement granularity: a cancelled ctx
+// stops the scan and returns the matches gathered so far, so a caller (or the
+// Tasks executor) can abort a large query. The caller checks ctx.Err() to
+// distinguish a cancelled partial result from a complete one.
+func Filter(ctx context.Context, results hdf.HDFResults, opts Options) []Match {
 	filters := buildFilters(opts)
 
 	var matches []Match
@@ -56,6 +62,9 @@ func Filter(results hdf.HDFResults, opts Options) []Match {
 			continue
 		}
 		for _, control := range baseline.Requirements {
+			if ctx.Err() != nil {
+				return matches
+			}
 			if opts.Limit > 0 && len(matches) >= opts.Limit && !opts.Count {
 				return matches
 			}

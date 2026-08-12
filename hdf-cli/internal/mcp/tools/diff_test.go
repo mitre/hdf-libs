@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,6 +24,26 @@ func callDiff(t *testing.T, in diffInput) (*sdkmcp.CallToolResult, diffOutput) {
 		t.Fatalf("hdfDiff Go error (should be taxonomy tool result): %v", err)
 	}
 	return res, out
+}
+
+// TestHdfDiff_HonorsCancellation proves the handler respects the request
+// context: a cancelled ctx propagates as a context.Canceled Go error rather than
+// running the comparison or mislabeling it as a taxonomy error.
+func TestHdfDiff_HonorsCancellation(t *testing.T) {
+	writeRootFiles(t, map[string][]byte{
+		"from.json": readToolsFixture(t, "diff-from.json"),
+		"to.json":   readToolsFixture(t, "diff-to.json"),
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, _, err := hdfDiff(loader.New(0, 0, 0))(ctx, nil, diffInput{
+		From: handle.Source{Path: "from.json"},
+		To:   handle.Source{Path: "to.json"},
+		Mode: "temporal",
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled from a cancelled diff, got %v", err)
+	}
 }
 
 // writeRootFiles writes several fixtures into one HDF_MCP_ROOT and returns their

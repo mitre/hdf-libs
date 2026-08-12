@@ -3,6 +3,7 @@ package diff
 // integration_helpers_test.go provides shared fixture loading for integration tests.
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -68,7 +69,7 @@ func loadV1FixturePair(t *testing.T, pair *v1FixturePair, beforeFile, afterFile 
 	}
 
 	// Compute diff: before -> after.
-	pair.diff, err = DiffHdf(pair.before, []hdf.HDFResults{pair.after}, Options{})
+	pair.diff, err = DiffHdf(context.Background(), pair.before, []hdf.HDFResults{pair.after}, Options{})
 	if err != nil {
 		t.Fatalf("DiffHdf returned error: %v", err)
 	}

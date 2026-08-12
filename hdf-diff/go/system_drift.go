@@ -1,6 +1,7 @@
 package diff
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -27,7 +28,10 @@ type DataFlowChange struct {
 // and data flows are also compared.
 //
 //nolint:revive // matches TypeScript export name
-func DiffSystems(oldSystem, newSystem map[string]any) (HdfComparison, error) {
+func DiffSystems(ctx context.Context, oldSystem, newSystem map[string]any) (HdfComparison, error) {
+	if err := ctx.Err(); err != nil {
+		return HdfComparison{}, err
+	}
 	oldComponents := extractComponents(oldSystem)
 	newComponents := extractComponents(newSystem)
 
@@ -36,6 +40,9 @@ func DiffSystems(oldSystem, newSystem map[string]any) (HdfComparison, error) {
 
 	var componentDiffs []ComponentDiff
 	for _, p := range pairs {
+		if err := ctx.Err(); err != nil {
+			return HdfComparison{}, err
+		}
 		switch {
 		case p.oldComp != nil && p.newComp != nil:
 			fieldChanges := computeMapFieldChanges(p.oldComp, p.newComp, systemTrackedFields)

@@ -127,7 +127,7 @@ func RegisterQuery(s *sdkmcp.Server, ldr *loader.Loader) {
 // types), delegates all matching to the shared engine, and returns a bounded,
 // paginated result set.
 func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput] {
-	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in queryInput) (*sdkmcp.CallToolResult, queryOutput, error) {
+	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, in queryInput) (*sdkmcp.CallToolResult, queryOutput, error) {
 		resolved, terr := resolveSource(in.Source, ldr)
 		if terr != nil {
 			return toolError(terr), errorQueryOutput(), nil
@@ -149,7 +149,7 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 		}
 
 		results := toResults(resolved.Load)
-		matches := hdfengine.Filter(results, hdfengine.Options{
+		matches := hdfengine.Filter(ctx, results, hdfengine.Options{
 			Status: in.Status, Severity: in.Severity, Impact: in.Impact,
 			CCI: in.CCI, NIST: in.NIST, ID: in.ID, Tag: in.Tag,
 			Search: in.Search, Baseline: in.Baseline,
