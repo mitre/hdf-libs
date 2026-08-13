@@ -33,13 +33,28 @@ export function globToRegex(glob: string): string {
  * Returns false for over-length or invalid patterns (fail-safe), mirroring the
  * Go matcher's length cap and error handling.
  */
+const byteEncoder = new TextEncoder();
+
+/** byteLength returns the UTF-8 byte length, matching Go's len(string). */
+function byteLength(s: string): number {
+  return byteEncoder.encode(s).length;
+}
+
 export function safeGlobMatch(s: string, pattern: string): boolean {
-  if (pattern.length > MAX_PATTERN_LENGTH) {
+  // Cap on UTF-8 byte length (matching Go's len(pattern)), and — like Go's
+  // compileSafeRegex — re-cap the EXPANDED regex, so an over-length glob or a
+  // small glob that expands past the limit is rejected identically in both
+  // languages (not just capped on the raw glob's UTF-16 length).
+  if (byteLength(pattern) > MAX_PATTERN_LENGTH) {
+    return false;
+  }
+  const rx = globToRegex(pattern);
+  if (byteLength(rx) > MAX_PATTERN_LENGTH) {
     return false;
   }
   let re: RegExp;
   try {
-    re = new RegExp(globToRegex(pattern), 'i');
+    re = new RegExp(rx, 'i');
   } catch {
     return false;
   }

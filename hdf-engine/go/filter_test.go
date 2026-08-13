@@ -370,6 +370,19 @@ func TestParseImpactFilter_InvalidValues(t *testing.T) {
 
 // TestFilter_MalformedImpactMatchesNothing proves the engine no longer silently
 // degrades a malformed impact filter to impact==0.
+// TestSafeGlobMatch_LengthCaps documents the byte + expanded-regex caps the TS
+// peer (src/safematch.ts) is held to for parity: an over-byte glob and a small
+// glob that expands past the limit are both rejected.
+func TestSafeGlobMatch_LengthCaps(t *testing.T) {
+	// Subject == pattern so a MISSING cap would MATCH; the cap makes it false.
+	// 200 accented chars = 400 UTF-8 bytes → over the 256 glob byte cap.
+	assert.False(t, safeGlobMatch(strings.Repeat("é", 200), strings.Repeat("é", 200)))
+	// 200 dots = 200-byte glob but a 402-byte expanded regex → over the cap.
+	assert.False(t, safeGlobMatch(strings.Repeat(".", 200), strings.Repeat(".", 200)))
+	// A short pattern whose expansion stays under the cap still matches.
+	assert.True(t, safeGlobMatch("AC-2", "AC-*"))
+}
+
 func TestFilter_MalformedImpactMatchesNothing(t *testing.T) {
 	results := loadQueryFixture(t)
 	assert.Empty(t, Filter(context.Background(), results, Options{Impact: ">x", StatusOf: testStatusOf}),

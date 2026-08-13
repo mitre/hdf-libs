@@ -178,4 +178,18 @@ describe('hdf-engine filter helpers — parity with the Go helper unit tests', (
     expect(safeGlobMatch('testXjson', 'test.json')).toBe(false);
     expect(safeGlobMatch('v1.2.3-base', 'v1.2*')).toBe(true);
   });
+
+  it('length caps match Go (byte length + expanded regex) — parity fork fixed', () => {
+    // Subject == pattern so a MISSING cap would MATCH (return true); the cap is
+    // what makes these false. This is the discriminating check: pre-fix TS (a
+    // UTF-16 .length cap, no expanded cap) returned true for both.
+    // (i) 200 accented chars: UTF-16 length 200 (<256) but 400 UTF-8 bytes —
+    // trips the glob byte cap (matching Go's len(pattern)).
+    expect(safeGlobMatch('é'.repeat(200), 'é'.repeat(200))).toBe(false);
+    // (ii) 200 dots: a 200-byte glob that expands to a 402-byte regex — trips
+    // the expanded-regex cap (matching Go's compileSafeRegex).
+    expect(safeGlobMatch('.'.repeat(200), '.'.repeat(200))).toBe(false);
+    // A short ASCII pattern with an expansion under the cap still matches.
+    expect(safeGlobMatch('AC-2', 'AC-*')).toBe(true);
+  });
 });
