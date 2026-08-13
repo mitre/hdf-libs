@@ -272,8 +272,8 @@ func confinedFetchAt(base string) hdfengine.FetchFunc {
 		if err != nil {
 			return nil, err
 		}
-		if max := mcpMaxInputSize(); fi.Size() > max {
-			return nil, fmt.Errorf("referenced file %q is %d bytes, over the %d-byte limit", uri, fi.Size(), max)
+		if limit := mcpMaxInputSize(); fi.Size() > limit {
+			return nil, fmt.Errorf("referenced file %q is %d bytes, over the %d-byte limit", uri, fi.Size(), limit)
 		}
 		return os.ReadFile(p) //nolint:gosec // confined by SafePath, size-guarded above
 	}

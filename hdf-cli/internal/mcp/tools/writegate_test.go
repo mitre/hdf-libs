@@ -1,10 +1,11 @@
 package tools
 
 import (
-	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 )
 
 func TestWriteArtifact_ModelMatrix(t *testing.T) {
