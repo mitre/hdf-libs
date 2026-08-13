@@ -65,9 +65,13 @@ func TestGolden_ToolResponses(t *testing.T) {
 		"results": src("results.json"), "amendments": src("amendments.json")}}})[0])
 
 	// Strip content-integrity values that are not "shape": handle and sha256 are
-	// content-derived, and for authored/applied docs they fold in a stamped
-	// appliedAt, so they vary run-to-run. The golden asserts the response
-	// STRUCTURE and its stable values, which is what must surface in review.
+	// content-derived, and for authored/applied docs they fold in the judgment
+	// path's stamped appliedAt — the real when-applied action timestamp that is
+	// ADR-0007 §12's ONE deliberate exception to output determinism, so they vary
+	// run-to-run by design (not a hidden non-determinism). The golden asserts the
+	// response STRUCTURE and its stable values, which is what must surface in
+	// review; the appliedAt exception is covered by the determinism-suite test
+	// TestDeterminism_JudgmentPathStampsActionTimestamp.
 	for k := range got {
 		got[k] = stripVolatile(got[k])
 	}

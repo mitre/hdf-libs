@@ -37,8 +37,11 @@ func TestDeterminism_ByteIdenticalOutput(t *testing.T) {
 	}
 }
 
-// TestDeterminism_AuthorHandleStable — authoring the same document twice yields
-// the same content hash and the same handle (the handle is content-derived).
+// TestDeterminism_AuthorHandleStable — authoring the same NON-judgment document
+// twice yields the same content hash and handle. This holds for the paths that
+// carry no wall-clock: system (here), plan, evidence, and VEX-derived (system)
+// amendments — the byte-reproducible set (§12). The judgment path is the one
+// deliberate exception, covered separately below.
 func TestDeterminism_AuthorHandleStable(t *testing.T) {
 	stageRoot(t)
 	call1 := call{"hdf_author", map[string]any{
@@ -52,5 +55,30 @@ func TestDeterminism_AuthorHandleStable(t *testing.T) {
 	}
 	if a["handle"] != b["handle"] || a["handle"] == "" {
 		t.Fatalf("handle not stable: %v vs %v", a["handle"], b["handle"])
+	}
+}
+
+// TestDeterminism_JudgmentPathStampsActionTimestamp documents the ONE deliberate
+// exception to output determinism: the judgment path (content[] of overrides)
+// stamps a real appliedAt — the "when the agent applied this" accountability
+// timestamp of §2 — which folds into the document's sha256/handle. So an
+// authored amendments document is NOT byte-reproducible across calls, by design
+// (ADR-0007 §12). This is why the response-golden strips handle/sha256 for
+// author/apply — the exception is documented, not a hidden determinism gap. The
+// test exercises the judgment path (which the stable-handle test above does not)
+// and confirms it produces a content-derived handle/sha256; it deliberately does
+// NOT assert stability, since a real appliedAt makes that timing-dependent.
+func TestDeterminism_JudgmentPathStampsActionTimestamp(t *testing.T) {
+	stageRoot(t)
+	c := call{"hdf_author", map[string]any{
+		"docType": "amendments", "name": "A",
+		"content": []any{map[string]any{
+			"type": "attestation", "requirementId": "V-1", "status": "passed",
+			"reason": "manually verified", "expiresAt": "2099-12-31T00:00:00Z",
+		}},
+	}}
+	got := structured(t, driveCalls(t, []call{c})[0])
+	if got["sha256"] == "" || got["handle"] == "" {
+		t.Fatalf("judgment-path author must return a content-derived handle+sha256: %v", got)
 	}
 }
