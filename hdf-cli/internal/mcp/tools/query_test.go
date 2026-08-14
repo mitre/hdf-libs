@@ -10,6 +10,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -371,7 +372,14 @@ func TestPaginateRows_DisjointWindows(t *testing.T) {
 		}))
 	}
 	base := queryOutput{Handle: "h", DocType: "results"}
-	pages := paginateRows(base, rows, 800)
+	sizeOf := func(page []map[string]any) int {
+		trial := base
+		trial.Requirements = page
+		trial.Truncated = true
+		trial.NextPage = 1
+		return respond.EstimateTokens(mustJSON(&trial))
+	}
+	pages := respond.Paginate(rows, 800, sizeOf)
 	if len(pages) < 2 {
 		t.Fatalf("expected multiple pages, got %d", len(pages))
 	}

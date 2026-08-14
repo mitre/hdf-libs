@@ -222,3 +222,52 @@ func TestSerialize_DefaultsToJSON(t *testing.T) {
 		t.Error("default payload must be valid JSON")
 	}
 }
+
+func TestPaginate_GreedyBudgetPacking(t *testing.T) {
+	rows := make([]map[string]any, 10)
+	for i := range rows {
+		rows[i] = map[string]any{"i": i}
+	}
+	// Constant 100 tokens/row, budget 250 → 2 rows per page → 5 pages.
+	pages := Paginate(rows, 250, func(p []map[string]any) int { return len(p) * 100 })
+	if len(pages) != 5 {
+		t.Fatalf("want 5 pages, got %d", len(pages))
+	}
+	seen := 0
+	for _, p := range pages {
+		if len(p) != 2 {
+			t.Errorf("want 2 rows/page, got %d", len(p))
+		}
+		for _, r := range p {
+			if r["i"] != seen {
+				t.Errorf("row order not preserved: got %v at position %d", r["i"], seen)
+			}
+			seen++
+		}
+	}
+	if seen != 10 {
+		t.Errorf("all rows must be paginated, got %d of 10", seen)
+	}
+}
+
+func TestPaginate_OversizeRowGetsOwnPage(t *testing.T) {
+	rows := []map[string]any{{"i": 0}, {"i": 1}, {"i": 2}}
+	// Each row alone is 1000 tokens, over the 500 budget — but paging must still
+	// advance one row at a time rather than loop forever.
+	pages := Paginate(rows, 500, func(p []map[string]any) int { return len(p) * 1000 })
+	if len(pages) != 3 {
+		t.Fatalf("each oversize row must get its own page, got %d pages", len(pages))
+	}
+	for _, p := range pages {
+		if len(p) != 1 {
+			t.Errorf("oversize page must hold exactly its one row, got %d", len(p))
+		}
+	}
+}
+
+func TestPaginate_EmptyInputYieldsOneEmptyPage(t *testing.T) {
+	pages := Paginate(nil, 100, func([]map[string]any) int { return 0 })
+	if len(pages) != 1 || len(pages[0]) != 0 {
+		t.Fatalf("empty input must yield exactly one empty page, got %v", pages)
+	}
+}

@@ -234,7 +234,16 @@ func buildQueryResponse(out *queryOutput, results hdf.HDFResults, matches []hdfe
 	if verbosity == "full" {
 		budget = respond.FullTokenBudget
 	}
-	pages := paginateRows(*out, candidates, budget)
+	// Measure the real envelope (fixed handle/metadata overhead counts), not the
+	// rows alone, so pagination shares the exact budget the response is bound to.
+	sizeOf := func(page []map[string]any) int {
+		trial := *out
+		trial.Requirements = page
+		trial.Truncated = true
+		trial.NextPage = 1
+		return respond.EstimateTokens(mustJSON(&trial))
+	}
+	pages := respond.Paginate(candidates, budget, sizeOf)
 
 	if page < 0 || page >= len(pages) {
 		out.Requirements = []map[string]any{}
@@ -323,34 +332,4 @@ func indexRequirements(results hdf.HDFResults) map[string]*hdf.EvaluatedRequirem
 
 func requirementKey(baseline, id string) string {
 	return baseline + "\x00" + id
-}
-
-// paginateRows greedily packs rows into pages that each fit the token budget
-// (measured on a trial envelope so the fixed handle/metadata overhead counts). A
-// single row too large to fit alone gets its own page so paging always advances.
-func paginateRows(base queryOutput, rows []map[string]any, budget int) [][]map[string]any {
-	var pages [][]map[string]any
-	i := 0
-	for i < len(rows) {
-		var cur []map[string]any
-		for i < len(rows) {
-			trial := base
-			next := make([]map[string]any, len(cur), len(cur)+1)
-			copy(next, cur)
-			next = append(next, rows[i])
-			trial.Requirements = next
-			trial.Truncated = true
-			trial.NextPage = 1
-			if respond.EstimateTokens(mustJSON(&trial)) > budget && len(cur) > 0 {
-				break // this row belongs on the next page
-			}
-			cur = next
-			i++
-		}
-		pages = append(pages, cur)
-	}
-	if len(pages) == 0 {
-		pages = append(pages, nil)
-	}
-	return pages
 }

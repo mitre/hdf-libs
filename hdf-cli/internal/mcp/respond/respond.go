@@ -78,6 +78,42 @@ func EstimateTokens(s string) int {
 	return (len(s) + 3) / 4
 }
 
+// Paginate greedily packs rows into pages that each fit the token budget. sizeOf
+// measures the serialized token size of the response carrying a given row prefix
+// — the caller builds its REAL envelope (handle, metadata, truncation flags) so
+// the fixed per-response overhead counts toward the budget, not the rows alone. A
+// single row too large to fit alone gets its own page, so paging always advances;
+// row order is preserved. The result always has at least one (possibly empty)
+// page, so callers can index page 0 unconditionally.
+//
+// This is the shared token-budget paginator for the collection tools (hdf_query,
+// hdf_diff). It is intentionally distinct from Serialize: Paginate is a
+// multi-page, always-advance paginator over a caller-owned envelope, whereas
+// Serialize is a single-shot serializer+encoder with its own conservative
+// pathological contract (emit an empty envelope when even zero rows overflow).
+func Paginate(rows []map[string]any, budget int, sizeOf func(page []map[string]any) int) [][]map[string]any {
+	var pages [][]map[string]any
+	i := 0
+	for i < len(rows) {
+		var cur []map[string]any
+		for i < len(rows) {
+			next := make([]map[string]any, len(cur), len(cur)+1)
+			copy(next, cur)
+			next = append(next, rows[i])
+			if sizeOf(next) > budget && len(cur) > 0 {
+				break // this row belongs on the next page
+			}
+			cur = next
+			i++
+		}
+		pages = append(pages, cur)
+	}
+	if len(pages) == 0 {
+		pages = append(pages, nil)
+	}
+	return pages
+}
+
 // Serialize renders rows into a token-bounded envelope, dropping rows to fit the
 // verbosity budget in the chosen encoding. The envelope carries total, returned,
 // truncated, and — when truncated — nextPage and a remedy-naming notice, plus the
