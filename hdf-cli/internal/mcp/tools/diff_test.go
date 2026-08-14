@@ -378,8 +378,10 @@ func TestHdfDiff_OutputDirMissing(t *testing.T) {
 	if res == nil || !res.IsError {
 		t.Fatal("writing under a missing directory must error")
 	}
-	if tr := toolResultPayload(t, res); tr.Code != mcperr.DocumentNotFound {
-		t.Errorf("code = %q, want DOCUMENT_NOT_FOUND", tr.Code)
+	// A missing parent directory is a write failure, not a missing document to
+	// read — WRITE_FAILED, not DOCUMENT_NOT_FOUND.
+	if tr := toolResultPayload(t, res); tr.Code != mcperr.WriteFailed {
+		t.Errorf("code = %q, want WRITE_FAILED", tr.Code)
 	}
 }
 

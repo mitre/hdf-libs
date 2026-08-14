@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"errors"
 	"os"
 	"strings"
 
@@ -42,7 +43,8 @@ const (
 // silently destroy in-root data. Passing overwrite replaces the file — the
 // opt-in that keeps re-running a pipeline possible. Returns the path actually
 // written ("" if none), a notice ("" on a real write and on pure compute), or a
-// taxonomy error (PATH_DENIED / OUTPUT_EXISTS / a filesystem failure).
+// taxonomy error (PATH_DENIED / OUTPUT_EXISTS / WRITE_FAILED for a filesystem
+// failure such as permission-denied or a missing parent directory).
 func writeArtifact(output string, dryRun, overwrite bool, data []byte) (writtenPath, notice string, terr *mcperr.Error) {
 	if output == "" {
 		return "", "", nil
@@ -64,20 +66,21 @@ func writeArtifact(output string, dryRun, overwrite bool, data []byte) (writtenP
 	f, werr := os.OpenFile(confined, flags, 0o600) //nolint:gosec // confined to HDF_MCP_ROOT by SafePath
 	if werr != nil {
 		switch {
-		case os.IsExist(werr):
+		case errors.Is(werr, os.ErrExist):
 			return "", "", mcperr.New(mcperr.OutputExists, "output path already exists", map[string]any{"path": output})
-		case os.IsNotExist(werr):
-			return "", "", mcperr.New(mcperr.DocumentNotFound, "output directory does not exist", map[string]any{"path": output})
+		case errors.Is(werr, os.ErrNotExist):
+			return "", "", mcperr.New(mcperr.WriteFailed, "output directory does not exist", map[string]any{"path": output}).
+				WithNextCall("create the parent directory, or choose an `output` path under an existing directory")
 		default:
-			return "", "", mcperr.New(mcperr.DocumentNotFound, "could not write output", map[string]any{"error": werr.Error()})
+			return "", "", mcperr.New(mcperr.WriteFailed, "could not write output", map[string]any{"error": werr.Error()})
 		}
 	}
 	if _, werr := f.Write(data); werr != nil {
 		_ = f.Close()
-		return "", "", mcperr.New(mcperr.DocumentNotFound, "could not write output", map[string]any{"error": werr.Error()})
+		return "", "", mcperr.New(mcperr.WriteFailed, "could not write output", map[string]any{"error": werr.Error()})
 	}
 	if werr := f.Close(); werr != nil {
-		return "", "", mcperr.New(mcperr.DocumentNotFound, "could not write output", map[string]any{"error": werr.Error()})
+		return "", "", mcperr.New(mcperr.WriteFailed, "could not write output", map[string]any{"error": werr.Error()})
 	}
 	return output, "", nil
 }

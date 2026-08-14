@@ -33,6 +33,7 @@ func TestClosedSet_Exhaustive(t *testing.T) {
 		Truncated:        true,
 		AmbiguousFormat:  true,
 		OutputExists:     true,
+		WriteFailed:      true,
 	}
 	if len(Codes) != len(want) {
 		t.Fatalf("Codes has %d entries, want %d", len(Codes), len(want))

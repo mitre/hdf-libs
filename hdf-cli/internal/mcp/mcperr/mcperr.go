@@ -29,6 +29,7 @@ const (
 	Truncated        Code = "TRUNCATED"
 	AmbiguousFormat  Code = "AMBIGUOUS_FORMAT"
 	OutputExists     Code = "OUTPUT_EXISTS"
+	WriteFailed      Code = "WRITE_FAILED"
 )
 
 // Codes is the exhaustive, closed taxonomy. Every member appears here exactly
@@ -44,6 +45,7 @@ var Codes = []Code{
 	Truncated,
 	AmbiguousFormat,
 	OutputExists,
+	WriteFailed,
 }
 
 // defaultNextCall maps each code to the concrete recovery it recommends by
@@ -60,6 +62,7 @@ var defaultNextCall = map[Code]string{
 	Truncated:        "narrow the result with filters, or fetch the next page with `page`",
 	AmbiguousFormat:  "specify `from` explicitly to disambiguate the source format",
 	OutputExists:     "the output path already exists; pass `overwrite: true` to replace it, or choose a different `output` path",
+	WriteFailed:      "the write failed (e.g. permission denied, no space, or a missing parent directory); check the destination is writable or choose a different `output` path",
 }
 
 // Error is a taxonomy error. It implements the error interface and is recoverable

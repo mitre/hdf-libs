@@ -3,6 +3,7 @@ package tools
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
@@ -126,6 +127,44 @@ func TestWriteArtifact_ModelMatrix(t *testing.T) {
 		got, _ := os.ReadFile(filepath.Join(root, "out.json"))
 		if string(got) != string(data) {
 			t.Fatalf("overwrite must replace content, got %q", got)
+		}
+	})
+
+	// A filesystem write failure is a WRITE_FAILED, not a read-oriented code:
+	// permission-denied and missing-parent-directory tell the agent to fix the
+	// destination, not to "verify the path exists / call hdf_open".
+	t.Run("permission-denied write → WRITE_FAILED", func(t *testing.T) {
+		if os.Geteuid() == 0 {
+			t.Skip("running as root bypasses directory write permissions")
+		}
+		root := t.TempDir()
+		t.Setenv("HDF_MCP_ROOT", root)
+		t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+		if err := os.Mkdir(filepath.Join(root, "ro"), 0o555); err != nil { // read+execute, no write
+			t.Fatal(err)
+		}
+		_, _, terr := writeArtifact("ro/out.json", false, false, data)
+		if terr == nil || terr.Code != mcperr.WriteFailed {
+			t.Fatalf("expected WRITE_FAILED, got %v", terr)
+		}
+		if terr.Code == mcperr.DocumentNotFound || terr.Code == mcperr.PathDenied {
+			t.Fatalf("write failure must not reuse a read/confinement code, got %s", terr.Code)
+		}
+		if terr.NextCall == "" {
+			t.Fatal("WRITE_FAILED must carry recovery guidance")
+		}
+	})
+
+	t.Run("missing parent directory → WRITE_FAILED", func(t *testing.T) {
+		root := t.TempDir()
+		t.Setenv("HDF_MCP_ROOT", root)
+		t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+		_, _, terr := writeArtifact("nope/out.json", false, false, data)
+		if terr == nil || terr.Code != mcperr.WriteFailed {
+			t.Fatalf("expected WRITE_FAILED, got %v", terr)
+		}
+		if !strings.Contains(terr.Message, "directory") {
+			t.Fatalf("a missing-parent failure should say so, got %q", terr.Message)
 		}
 	})
 }
