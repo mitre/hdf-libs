@@ -1,0 +1,1021 @@
+{
+  "SchemaVersion": 2,
+  "Trivy": {
+    "Version": "0.74.0"
+  },
+  "ReportID": "01a000ec-61ae-7553-aa05-90f03f7ef4bc",
+  "CreatedAt": "2026-08-14T00:00:00Z",
+  "ArtifactID": "sha256:44dd504e64b5c43a4e797c3013ebf984e6ed24822cae23edb4b0f0cd00920f5d",
+  "ArtifactName": "webgoat/webgoat:latest",
+  "ArtifactType": "container_image",
+  "Metadata": {
+    "Size": 605314048,
+    "OS": {
+      "Family": "ubuntu",
+      "Name": "24.04"
+    },
+    "ImageID": "sha256:d8434d588ee36502faa03b6027b75d874edb641f072ce00ecf8eaca548f7af61",
+    "DiffIDs": [
+      "sha256:4b7c01ed0534d4f9be9cf97d068da1598c6c20b26cb6134fad066defdb6d541d",
+      "sha256:f5f96ab7ce3cc03a63186644d580976eb133315fd9c443cfa7c8603c4c615154",
+      "sha256:ebd5db3f33e7186c90788f2e275547523934e22b2d32c3fd74bc3c5b5991575b",
+      "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+      "sha256:34d79389ddabc58f403943f3a39a8be8bc385c0bdce732fe7a1dca14d7dba51b",
+      "sha256:52935dda5e4c48bc6842bab0a79fb47fb3cac5c2051ed04e6778dfedd6c85ddb",
+      "sha256:1a892a854c70946b878b2ec0de7fc21dbbda4f059cedfe916b736e8bb17b7fe6",
+      "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+    ],
+    "RepoTags": [
+      "webgoat/webgoat:latest"
+    ],
+    "RepoDigests": [
+      "webgoat/webgoat@sha256:3101bd9e7bcfe122d7ef91e690ef3720de36cc4e86b3d06763a1ddf2e2751a4b"
+    ],
+    "Reference": "webgoat/webgoat:latest",
+    "ImageConfig": {
+      "architecture": "amd64",
+      "created": "2025-03-11T19:20:13.710428449Z",
+      "history": [
+        {
+          "created": "2025-01-27T04:14:00.804659581Z",
+          "created_by": "/bin/sh -c #(nop)  ARG RELEASE",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-01-27T04:14:00.843852546Z",
+          "created_by": "/bin/sh -c #(nop)  ARG LAUNCHPAD_BUILD_ARCH",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-01-27T04:14:00.879415142Z",
+          "created_by": "/bin/sh -c #(nop)  LABEL org.opencontainers.image.ref.name=ubuntu",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-01-27T04:14:00.911187279Z",
+          "created_by": "/bin/sh -c #(nop)  LABEL org.opencontainers.image.version=24.04",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-01-27T04:14:03.198942067Z",
+          "created_by": "/bin/sh -c #(nop) ADD file:6df775300d76441aa33f31b22c1afce8dfe35c8ffbc14ef27c27009235b12a95 in / "
+        },
+        {
+          "created": "2025-01-27T04:14:03.599776663Z",
+          "created_by": "/bin/sh -c #(nop)  CMD [\"/bin/bash\"]",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-01-30T14:32:57Z",
+          "created_by": "ENV JAVA_HOME=/opt/java/openjdk",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-01-30T14:32:57Z",
+          "created_by": "ENV PATH=/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-01-30T14:32:57Z",
+          "created_by": "ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-01-30T14:32:57Z",
+          "created_by": "RUN /bin/sh -c set -eux;     apt-get update;     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends         wget         gnupg         fontconfig         ca-certificates p11-kit         binutils         tzdata         locales     ;     echo \"en_US.UTF-8 UTF-8\" >> /etc/locale.gen;     locale-gen en_US.UTF-8;     rm -rf /var/lib/apt/lists/* # buildkit",
+          "comment": "buildkit.dockerfile.v0"
+        },
+        {
+          "created": "2025-01-30T14:32:57Z",
+          "created_by": "ENV JAVA_VERSION=jdk-23.0.2+7",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-01-30T14:32:57Z",
+          "created_by": "RUN /bin/sh -c set -eux;     ARCH=\"$(dpkg --print-architecture)\";     case \"${ARCH}\" in        amd64)          ESUM='870ac8c05c6fe563e7a3878a47d0234b83c050e83651d2c47e8b822ec74512dd';          BINARY_URL='https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.2%2B7/OpenJDK23U-jdk_x64_linux_hotspot_23.0.2_7.tar.gz';          ;;        arm64)          ESUM='fb43ae1202402842559cb6223886ec1663b90ffbec48479abbcb92c92c9012eb';          BINARY_URL='https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.2%2B7/OpenJDK23U-jdk_aarch64_linux_hotspot_23.0.2_7.tar.gz';          ;;        ppc64el)          ESUM='548fd82af4eb0802fe20b0b61a4664a69c7f03cd963540908f30dbf73636dafe';          BINARY_URL='https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.2%2B7/OpenJDK23U-jdk_ppc64le_linux_hotspot_23.0.2_7.tar.gz';          ;;        riscv64)          ESUM='1e102e1e6653f8810ef6c275b0d38ea7036abd4a8709f0f916b339f65e76bb56';          BINARY_URL='https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.2%2B7/OpenJDK23U-jdk_riscv64_linux_hotspot_23.0.2_7.tar.gz';          ;;        s390x)          ESUM='591ccf4d27016315700cc9cc979f7cf343900b6bee1b0b45c93f2c5f946e5aac';          BINARY_URL='https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.2%2B7/OpenJDK23U-jdk_s390x_linux_hotspot_23.0.2_7.tar.gz';          ;;        *)          echo \"Unsupported arch: ${ARCH}\";          exit 1;          ;;     esac;     wget --progress=dot:giga -O /tmp/openjdk.tar.gz ${BINARY_URL};     wget --progress=dot:giga -O /tmp/openjdk.tar.gz.sig ${BINARY_URL}.sig;     export GNUPGHOME=\"$(mktemp -d)\";     gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 3B04D753C9050D9A5D343F39843C48A565F8F04B;     gpg --batch --verify /tmp/openjdk.tar.gz.sig /tmp/openjdk.tar.gz;     rm -rf \"${GNUPGHOME}\" /tmp/openjdk.tar.gz.sig;     echo \"${ESUM} */tmp/openjdk.tar.gz\" | sha256sum -c -;     mkdir -p \"$JAVA_HOME\";     tar --extract         --file /tmp/openjdk.tar.gz         --directory \"$JAVA_HOME\"         --strip-components 1         --no-same-owner     ;     rm -f /tmp/openjdk.tar.gz ${JAVA_HOME}/lib/src.zip;     find \"$JAVA_HOME/lib\" -name '*.so' -exec dirname '{}' ';' | sort -u > /etc/ld.so.conf.d/docker-openjdk.conf;     ldconfig;     java -Xshare:dump; # buildkit",
+          "comment": "buildkit.dockerfile.v0"
+        },
+        {
+          "created": "2025-01-30T14:32:57Z",
+          "created_by": "RUN /bin/sh -c set -eux;     echo \"Verifying install ...\";     fileEncoding=\"$(echo 'System.out.println(System.getProperty(\"file.encoding\"))' | jshell -s -)\"; [ \"$fileEncoding\" = 'UTF-8' ]; rm -rf ~/.java;     echo \"javac --version\"; javac --version;     echo \"java --version\"; java --version;     echo \"Complete.\" # buildkit",
+          "comment": "buildkit.dockerfile.v0"
+        },
+        {
+          "created": "2025-01-30T14:32:57Z",
+          "created_by": "COPY --chmod=755 entrypoint.sh /__cacert_entrypoint.sh # buildkit",
+          "comment": "buildkit.dockerfile.v0"
+        },
+        {
+          "created": "2025-01-30T14:32:57Z",
+          "created_by": "ENTRYPOINT [\"/__cacert_entrypoint.sh\"]",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-01-30T14:32:57Z",
+          "created_by": "CMD [\"jshell\"]",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-03-11T19:20:13.169949706Z",
+          "created_by": "LABEL name=WebGoat: A deliberately insecure Web Application",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-03-11T19:20:13.169949706Z",
+          "created_by": "LABEL maintainer=WebGoat team",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-03-11T19:20:13.169949706Z",
+          "created_by": "RUN /bin/sh -c useradd -ms /bin/bash webgoat &&   chgrp -R 0 /home/webgoat &&   chmod -R g=u /home/webgoat # buildkit",
+          "comment": "buildkit.dockerfile.v0"
+        },
+        {
+          "created": "2025-03-11T19:20:13.169949706Z",
+          "created_by": "USER webgoat",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-03-11T19:20:13.681606294Z",
+          "created_by": "COPY --chown=webgoat target/webgoat-*.jar /home/webgoat/webgoat.jar # buildkit",
+          "comment": "buildkit.dockerfile.v0"
+        },
+        {
+          "created": "2025-03-11T19:20:13.681606294Z",
+          "created_by": "EXPOSE map[8080/tcp:{}]",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-03-11T19:20:13.681606294Z",
+          "created_by": "EXPOSE map[9090/tcp:{}]",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-03-11T19:20:13.681606294Z",
+          "created_by": "ENV TZ=Europe/Amsterdam",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-03-11T19:20:13.710428449Z",
+          "created_by": "WORKDIR /home/webgoat",
+          "comment": "buildkit.dockerfile.v0"
+        },
+        {
+          "created": "2025-03-11T19:20:13.710428449Z",
+          "created_by": "ENTRYPOINT [\"java\" \"-Duser.home=/home/webgoat\" \"-Dfile.encoding=UTF-8\" \"--add-opens\" \"java.base/java.lang=ALL-UNNAMED\" \"--add-opens\" \"java.base/java.util=ALL-UNNAMED\" \"--add-opens\" \"java.base/java.lang.reflect=ALL-UNNAMED\" \"--add-opens\" \"java.base/java.text=ALL-UNNAMED\" \"--add-opens\" \"java.desktop/java.beans=ALL-UNNAMED\" \"--add-opens\" \"java.desktop/java.awt.font=ALL-UNNAMED\" \"--add-opens\" \"java.base/sun.nio.ch=ALL-UNNAMED\" \"--add-opens\" \"java.base/java.io=ALL-UNNAMED\" \"--add-opens\" \"java.base/java.util=ALL-UNNAMED\" \"--add-opens\" \"java.base/sun.nio.ch=ALL-UNNAMED\" \"--add-opens\" \"java.base/java.io=ALL-UNNAMED\" \"-Drunning.in.docker=true\" \"-jar\" \"webgoat.jar\" \"--server.address\" \"0.0.0.0\"]",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        },
+        {
+          "created": "2025-03-11T19:20:13.710428449Z",
+          "created_by": "HEALTHCHECK &{[\"CMD-SHELL\" \"curl --fail http://localhost:8080/WebGoat/actuator/health || exit 1\"] \"5s\" \"3s\" \"0s\" \"0s\" '\\x00'}",
+          "comment": "buildkit.dockerfile.v0",
+          "empty_layer": true
+        }
+      ],
+      "os": "linux",
+      "rootfs": {
+        "type": "layers",
+        "diff_ids": [
+          "sha256:4b7c01ed0534d4f9be9cf97d068da1598c6c20b26cb6134fad066defdb6d541d",
+          "sha256:f5f96ab7ce3cc03a63186644d580976eb133315fd9c443cfa7c8603c4c615154",
+          "sha256:ebd5db3f33e7186c90788f2e275547523934e22b2d32c3fd74bc3c5b5991575b",
+          "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+          "sha256:34d79389ddabc58f403943f3a39a8be8bc385c0bdce732fe7a1dca14d7dba51b",
+          "sha256:52935dda5e4c48bc6842bab0a79fb47fb3cac5c2051ed04e6778dfedd6c85ddb",
+          "sha256:1a892a854c70946b878b2ec0de7fc21dbbda4f059cedfe916b736e8bb17b7fe6",
+          "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+        ]
+      },
+      "config": {
+        "Healthcheck": {
+          "Test": [
+            "CMD-SHELL",
+            "curl --fail http://localhost:8080/WebGoat/actuator/health || exit 1"
+          ],
+          "Interval": 5000000000,
+          "Timeout": 3000000000
+        },
+        "Entrypoint": [
+          "java",
+          "-Duser.home=/home/webgoat",
+          "-Dfile.encoding=UTF-8",
+          "--add-opens",
+          "java.base/java.lang=ALL-UNNAMED",
+          "--add-opens",
+          "java.base/java.util=ALL-UNNAMED",
+          "--add-opens",
+          "java.base/java.lang.reflect=ALL-UNNAMED",
+          "--add-opens",
+          "java.base/java.text=ALL-UNNAMED",
+          "--add-opens",
+          "java.desktop/java.beans=ALL-UNNAMED",
+          "--add-opens",
+          "java.desktop/java.awt.font=ALL-UNNAMED",
+          "--add-opens",
+          "java.base/sun.nio.ch=ALL-UNNAMED",
+          "--add-opens",
+          "java.base/java.io=ALL-UNNAMED",
+          "--add-opens",
+          "java.base/java.util=ALL-UNNAMED",
+          "--add-opens",
+          "java.base/sun.nio.ch=ALL-UNNAMED",
+          "--add-opens",
+          "java.base/java.io=ALL-UNNAMED",
+          "-Drunning.in.docker=true",
+          "-jar",
+          "webgoat.jar",
+          "--server.address",
+          "0.0.0.0"
+        ],
+        "Env": [
+          "PATH=/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+          "JAVA_HOME=/opt/java/openjdk",
+          "LANG=en_US.UTF-8",
+          "LANGUAGE=en_US:en",
+          "LC_ALL=en_US.UTF-8",
+          "JAVA_VERSION=jdk-23.0.2+7",
+          "TZ=Europe/Amsterdam"
+        ],
+        "Labels": {
+          "maintainer": "WebGoat team",
+          "name": "WebGoat: A deliberately insecure Web Application",
+          "org.opencontainers.image.ref.name": "ubuntu",
+          "org.opencontainers.image.version": "24.04"
+        },
+        "User": "webgoat",
+        "WorkingDir": "/home/webgoat",
+        "ExposedPorts": {
+          "8080/tcp": {},
+          "9090/tcp": {}
+        }
+      }
+    },
+    "Layers": [
+      {
+        "Size": 80645120,
+        "Digest": "sha256:5a7813e071bfadf18aaa6ca8318be4824a9b6297b3240f2cc84c1db6f4113040",
+        "DiffID": "sha256:4b7c01ed0534d4f9be9cf97d068da1598c6c20b26cb6134fad066defdb6d541d"
+      },
+      {
+        "Size": 60721152,
+        "Digest": "sha256:d1504bee8985780f3a868793411f26933d71ee828bc50880d128017596324321",
+        "DiffID": "sha256:f5f96ab7ce3cc03a63186644d580976eb133315fd9c443cfa7c8603c4c615154"
+      },
+      {
+        "Size": 314788864,
+        "Digest": "sha256:7b5a3507f742036dd166ee8b5a8ceeb35d451eacd472188cb43fdf7844a9e06b",
+        "DiffID": "sha256:ebd5db3f33e7186c90788f2e275547523934e22b2d32c3fd74bc3c5b5991575b"
+      },
+      {
+        "Size": 1024,
+        "Digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+        "DiffID": "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+      },
+      {
+        "Size": 7168,
+        "Digest": "sha256:ea28f6f7f0aa0864f252fa90ca3f85687428d91dd6f829f2ba81dc8719e2e3be",
+        "DiffID": "sha256:34d79389ddabc58f403943f3a39a8be8bc385c0bdce732fe7a1dca14d7dba51b"
+      },
+      {
+        "Size": 24064,
+        "Digest": "sha256:7b2e4df376c9460785beef98088c99ac6c5f92613a04b8f09566c6257a0da47d",
+        "DiffID": "sha256:52935dda5e4c48bc6842bab0a79fb47fb3cac5c2051ed04e6778dfedd6c85ddb"
+      },
+      {
+        "Size": 149125632,
+        "Digest": "sha256:307ac9d4e99939465c7ae6235f951c371a4f2792c96f50fb6a65556fb3147350",
+        "DiffID": "sha256:1a892a854c70946b878b2ec0de7fc21dbbda4f059cedfe916b736e8bb17b7fe6"
+      },
+      {
+        "Size": 1024,
+        "Digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+        "DiffID": "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+      }
+    ]
+  },
+  "Results": [
+    {
+      "Target": "webgoat/webgoat:latest (ubuntu 24.04)",
+      "Class": "os-pkgs",
+      "Type": "ubuntu",
+      "Packages": [
+        {
+          "ID": "dirmngr@2.4.4-2ubuntu17",
+          "Name": "dirmngr",
+          "Identifier": {
+            "PURL": "pkg:deb/ubuntu/dirmngr@2.4.4-2ubuntu17?arch=amd64&distro=ubuntu-24.04",
+            "UID": "2f64c51133ee9c64"
+          },
+          "Version": "2.4.4",
+          "Release": "2ubuntu17",
+          "Arch": "amd64",
+          "SrcName": "gnupg2",
+          "SrcVersion": "2.4.4",
+          "SrcRelease": "2ubuntu17",
+          "Licenses": [
+            "GPL-3.0-or-later",
+            "permissive",
+            "LGPL-2.1-or-later",
+            "LGPL-3.0-or-later",
+            "GPL-2.0-or-later",
+            "MIT",
+            "BSD-3-Clause",
+            "RFC-Reference",
+            "TinySCHEME",
+            "CC0-1.0",
+            "GPL-3.0-only",
+            "LGPL-3.0-only",
+            "LGPL-2.1-only",
+            "GPL-2.0-only"
+          ],
+          "Maintainer": "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
+          "Repository": {
+            "Class": "official"
+          },
+          "DependsOn": [
+            "adduser@3.137ubuntu1",
+            "gpgconf@2.4.4-2ubuntu17",
+            "init-system-helpers@1.66ubuntu1",
+            "libassuan0@2.5.6-1build1",
+            "libc6@2.39-0ubuntu8.3",
+            "libgcrypt20@1.10.3-2build1",
+            "libgnutls30t64@3.8.3-1.1ubuntu3.2",
+            "libgpg-error0@1.47-3build2",
+            "libksba8@1.6.6-1build1",
+            "libldap2@2.6.7+dfsg-1~exp1ubuntu8.1",
+            "libnpth0t64@1.6-3.1build1"
+          ],
+          "Layer": {
+            "Digest": "sha256:d1504bee8985780f3a868793411f26933d71ee828bc50880d128017596324321",
+            "DiffID": "sha256:f5f96ab7ce3cc03a63186644d580976eb133315fd9c443cfa7c8603c4c615154"
+          },
+          "InstalledFiles": [
+            "/usr/bin/dirmngr",
+            "/usr/bin/dirmngr-client",
+            "/usr/lib/gnupg/dirmngr_ldap",
+            "/usr/lib/systemd/user/dirmngr.service",
+            "/usr/lib/systemd/user/dirmngr.socket",
+            "/usr/share/doc/dirmngr/AUTHORS.gz",
+            "/usr/share/doc/dirmngr/KEYSERVER",
+            "/usr/share/doc/dirmngr/NEWS.gz",
+            "/usr/share/doc/dirmngr/README.Debian",
+            "/usr/share/doc/dirmngr/THANKS.gz",
+            "/usr/share/doc/dirmngr/TODO",
+            "/usr/share/doc/dirmngr/copyright",
+            "/usr/share/gnupg/sks-keyservers.netCA.pem",
+            "/usr/share/man/man1/dirmngr-client.1.gz",
+            "/usr/share/man/man8/dirmngr.8.gz"
+          ],
+          "AnalyzedBy": "dpkg"
+        },
+        {
+          "ID": "gnupg@2.4.4-2ubuntu17",
+          "Name": "gnupg",
+          "Identifier": {
+            "PURL": "pkg:deb/ubuntu/gnupg@2.4.4-2ubuntu17?arch=all&distro=ubuntu-24.04",
+            "UID": "6e228b8f78fbb8c2"
+          },
+          "Version": "2.4.4",
+          "Release": "2ubuntu17",
+          "Arch": "all",
+          "SrcName": "gnupg2",
+          "SrcVersion": "2.4.4",
+          "SrcRelease": "2ubuntu17",
+          "Licenses": [
+            "GPL-3.0-or-later",
+            "permissive",
+            "LGPL-2.1-or-later",
+            "LGPL-3.0-or-later",
+            "GPL-2.0-or-later",
+            "MIT",
+            "BSD-3-Clause",
+            "RFC-Reference",
+            "TinySCHEME",
+            "CC0-1.0",
+            "GPL-3.0-only",
+            "LGPL-3.0-only",
+            "LGPL-2.1-only",
+            "GPL-2.0-only"
+          ],
+          "Maintainer": "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
+          "Repository": {
+            "Class": "official"
+          },
+          "DependsOn": [
+            "dirmngr@2.4.4-2ubuntu17",
+            "gnupg-utils@2.4.4-2ubuntu17",
+            "gpg-agent@2.4.4-2ubuntu17",
+            "gpg@2.4.4-2ubuntu17",
+            "gpgsm@2.4.4-2ubuntu17",
+            "gpgv@2.4.4-2ubuntu17",
+            "keyboxd@2.4.4-2ubuntu17"
+          ],
+          "Layer": {
+            "Digest": "sha256:d1504bee8985780f3a868793411f26933d71ee828bc50880d128017596324321",
+            "DiffID": "sha256:f5f96ab7ce3cc03a63186644d580976eb133315fd9c443cfa7c8603c4c615154"
+          },
+          "InstalledFiles": [
+            "/usr/share/doc/gnupg/DCO",
+            "/usr/share/doc/gnupg/DETAILS.gz",
+            "/usr/share/doc/gnupg/FAQ",
+            "/usr/share/doc/gnupg/HACKING.gz",
+            "/usr/share/doc/gnupg/OpenPGP.gz",
+            "/usr/share/doc/gnupg/README.Debian",
+            "/usr/share/doc/gnupg/README.gz",
+            "/usr/share/doc/gnupg/TRANSLATE",
+            "/usr/share/doc/gnupg/copyright",
+            "/usr/share/doc/gnupg/examples/README",
+            "/usr/share/doc/gnupg/examples/common.conf",
+            "/usr/share/doc/gnupg/examples/gpgconf.conf",
+            "/usr/share/doc/gnupg/examples/gpgconf.rnames",
+            "/usr/share/doc/gnupg/examples/qualified.txt",
+            "/usr/share/doc/gnupg/examples/scd-event",
+            "/usr/share/info/gnupg-card-architecture.png",
+            "/usr/share/info/gnupg-module-overview.png",
+            "/usr/share/info/gnupg.info-1.gz",
+            "/usr/share/info/gnupg.info-2.gz",
+            "/usr/share/info/gnupg.info-3.gz",
+            "/usr/share/info/gnupg.info.gz",
+            "/usr/share/man/man7/gnupg.7.gz"
+          ],
+          "AnalyzedBy": "dpkg"
+        },
+        {
+          "ID": "libsqlite3-0@3.45.1-1ubuntu2.1",
+          "Name": "libsqlite3-0",
+          "Identifier": {
+            "PURL": "pkg:deb/ubuntu/libsqlite3-0@3.45.1-1ubuntu2.1?arch=amd64&distro=ubuntu-24.04",
+            "UID": "dcfe6ae048203265"
+          },
+          "Version": "3.45.1",
+          "Release": "1ubuntu2.1",
+          "Arch": "amd64",
+          "SrcName": "sqlite3",
+          "SrcVersion": "3.45.1",
+          "SrcRelease": "1ubuntu2.1",
+          "Licenses": [
+            "public-domain",
+            "GPL-2.0-or-later",
+            "GPL-2.0-only"
+          ],
+          "Maintainer": "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
+          "Repository": {
+            "Class": "official"
+          },
+          "DependsOn": [
+            "libc6@2.39-0ubuntu8.3"
+          ],
+          "Layer": {
+            "Digest": "sha256:d1504bee8985780f3a868793411f26933d71ee828bc50880d128017596324321",
+            "DiffID": "sha256:f5f96ab7ce3cc03a63186644d580976eb133315fd9c443cfa7c8603c4c615154"
+          },
+          "InstalledFiles": [
+            "/usr/lib/x86_64-linux-gnu/libsqlite3.so.0.8.6",
+            "/usr/share/doc/libsqlite3-0/README.Debian",
+            "/usr/share/doc/libsqlite3-0/changelog.Debian.gz",
+            "/usr/share/doc/libsqlite3-0/copyright"
+          ],
+          "AnalyzedBy": "dpkg"
+        }
+      ],
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2025-6965",
+          "PkgID": "libsqlite3-0@3.45.1-1ubuntu2.1",
+          "PkgName": "libsqlite3-0",
+          "PkgIdentifier": {
+            "PURL": "pkg:deb/ubuntu/libsqlite3-0@3.45.1-1ubuntu2.1?arch=amd64&distro=ubuntu-24.04",
+            "UID": "dcfe6ae048203265"
+          },
+          "InstalledVersion": "3.45.1-1ubuntu2.1",
+          "FixedVersion": "3.45.1-1ubuntu2.4",
+          "Status": "fixed",
+          "Layer": {
+            "Digest": "sha256:d1504bee8985780f3a868793411f26933d71ee828bc50880d128017596324321",
+            "DiffID": "sha256:f5f96ab7ce3cc03a63186644d580976eb133315fd9c443cfa7c8603c4c615154"
+          },
+          "SeveritySource": "ubuntu",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-6965",
+          "DataSource": {
+            "ID": "ubuntu",
+            "Name": "Ubuntu CVE Tracker",
+            "URL": "https://git.launchpad.net/ubuntu-cve-tracker"
+          },
+          "Fingerprint": "sha256:41ea5580b0a33d54e5551b76847a2f2bcc8228605db5cd25ae3f36c0904a9a3f",
+          "Title": "sqlite: Integer Truncation in SQLite",
+          "Description": "There exists a vulnerability in SQLite versions before 3.50.2 where the number of aggregate terms could exceed the number of columns available. This could lead to a memory corruption issue. We recommend upgrading to version 3.50.2 or above.",
+          "Severity": "MEDIUM",
+          "CweIDs": [
+            "CWE-197"
+          ],
+          "VendorSeverity": {
+            "alma": 3,
+            "amazon": 2,
+            "azure": 3,
+            "bitnami": 3,
+            "cbl-mariner": 3,
+            "ghsa": 3,
+            "nvd": 3,
+            "oracle-oval": 3,
+            "photon": 3,
+            "redhat": 3,
+            "rocky": 3,
+            "ubuntu": 2
+          },
+          "CVSS": {
+            "bitnami": {
+              "V40Vector": "CVSS:4.0/AV:N/AC:H/AT:P/PR:L/UI:N/VC:L/VI:H/VA:L/SC:L/SI:H/SA:L/S:N/AU:N/R:U/V:D/RE:L/U:Green",
+              "V40Score": 7.2
+            },
+            "ghsa": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "V40Vector": "CVSS:4.0/AV:N/AC:H/AT:P/PR:L/UI:N/VC:L/VI:H/VA:L/SC:L/SI:H/SA:L/S:N/AU:N/R:U/V:D/RE:L/U:Green",
+              "V3Score": 9.8,
+              "V40Score": 7.2
+            },
+            "nvd": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:L/I:H/A:L",
+              "V3Score": 7.7
+            },
+            "redhat": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:L/I:H/A:L",
+              "V3Score": 7.7
+            }
+          },
+          "References": [
+            "http://seclists.org/fulldisclosure/2025/Sep/49",
+            "http://seclists.org/fulldisclosure/2025/Sep/53",
+            "http://seclists.org/fulldisclosure/2025/Sep/56",
+            "http://seclists.org/fulldisclosure/2025/Sep/57"
+          ],
+          "PublishedDate": "2025-07-15T14:15:31.08Z",
+          "LastModifiedDate": "2026-06-26T16:36:04.37Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2025-30258",
+          "PkgID": "dirmngr@2.4.4-2ubuntu17",
+          "PkgName": "dirmngr",
+          "PkgIdentifier": {
+            "PURL": "pkg:deb/ubuntu/dirmngr@2.4.4-2ubuntu17?arch=amd64&distro=ubuntu-24.04",
+            "UID": "2f64c51133ee9c64"
+          },
+          "InstalledVersion": "2.4.4-2ubuntu17",
+          "FixedVersion": "2.4.4-2ubuntu17.2",
+          "Status": "fixed",
+          "Layer": {
+            "Digest": "sha256:d1504bee8985780f3a868793411f26933d71ee828bc50880d128017596324321",
+            "DiffID": "sha256:f5f96ab7ce3cc03a63186644d580976eb133315fd9c443cfa7c8603c4c615154"
+          },
+          "SeveritySource": "ubuntu",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-30258",
+          "DataSource": {
+            "ID": "ubuntu",
+            "Name": "Ubuntu CVE Tracker",
+            "URL": "https://git.launchpad.net/ubuntu-cve-tracker"
+          },
+          "Fingerprint": "sha256:ed31f0afffedeb841b2e09009d812fae07cf73bbe4ee99e1caf53074c9ada732",
+          "Title": "gnupg: verification DoS due to a malicious subkey in the keyring",
+          "Description": "In GnuPG before 2.5.5, if a user chooses to import a certificate with certain crafted subkey data that lacks a valid backsig or that has incorrect usage flags, the user loses the ability to verify signatures made from certain other signing keys, aka a \"verification DoS.\"",
+          "Severity": "MEDIUM",
+          "CweIDs": [
+            "CWE-754"
+          ],
+          "VendorSeverity": {
+            "amazon": 1,
+            "azure": 1,
+            "julia": 2,
+            "nvd": 2,
+            "redhat": 1,
+            "ubuntu": 2
+          },
+          "CVSS": {
+            "julia": {
+              "V3Vector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "V3Score": 4.7
+            },
+            "nvd": {
+              "V3Vector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "V3Score": 4.7
+            },
+            "redhat": {
+              "V3Vector": "CVSS:3.1/AV:L/AC:H/PR:N/UI:R/S:C/C:N/I:N/A:L",
+              "V3Score": 2.7
+            }
+          },
+          "References": [
+            "https://access.redhat.com/security/cve/CVE-2025-30258",
+            "https://dev.gnupg.org/T7527",
+            "https://dev.gnupg.org/rG48978ccb4e20866472ef18436a32744350a65158",
+            "https://lists.gnupg.org/pipermail/gnupg-announce/2025q1/000491.html"
+          ],
+          "PublishedDate": "2025-03-19T20:15:20.14Z",
+          "LastModifiedDate": "2026-06-17T09:08:24.79Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2025-30258",
+          "PkgID": "gnupg@2.4.4-2ubuntu17",
+          "PkgName": "gnupg",
+          "PkgIdentifier": {
+            "PURL": "pkg:deb/ubuntu/gnupg@2.4.4-2ubuntu17?arch=all&distro=ubuntu-24.04",
+            "UID": "6e228b8f78fbb8c2"
+          },
+          "InstalledVersion": "2.4.4-2ubuntu17",
+          "FixedVersion": "2.4.4-2ubuntu17.2",
+          "Status": "fixed",
+          "Layer": {
+            "Digest": "sha256:d1504bee8985780f3a868793411f26933d71ee828bc50880d128017596324321",
+            "DiffID": "sha256:f5f96ab7ce3cc03a63186644d580976eb133315fd9c443cfa7c8603c4c615154"
+          },
+          "SeveritySource": "ubuntu",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-30258",
+          "DataSource": {
+            "ID": "ubuntu",
+            "Name": "Ubuntu CVE Tracker",
+            "URL": "https://git.launchpad.net/ubuntu-cve-tracker"
+          },
+          "Fingerprint": "sha256:3bff04ddc7503e9ee0f3772dd4d5d2c4f7497f86e6a76aa6a9e91b6152b4a317",
+          "Title": "gnupg: verification DoS due to a malicious subkey in the keyring",
+          "Description": "In GnuPG before 2.5.5, if a user chooses to import a certificate with certain crafted subkey data that lacks a valid backsig or that has incorrect usage flags, the user loses the ability to verify signatures made from certain other signing keys, aka a \"verification DoS.\"",
+          "Severity": "MEDIUM",
+          "CweIDs": [
+            "CWE-754"
+          ],
+          "VendorSeverity": {
+            "amazon": 1,
+            "azure": 1,
+            "julia": 2,
+            "nvd": 2,
+            "redhat": 1,
+            "ubuntu": 2
+          },
+          "CVSS": {
+            "julia": {
+              "V3Vector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "V3Score": 4.7
+            },
+            "nvd": {
+              "V3Vector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "V3Score": 4.7
+            },
+            "redhat": {
+              "V3Vector": "CVSS:3.1/AV:L/AC:H/PR:N/UI:R/S:C/C:N/I:N/A:L",
+              "V3Score": 2.7
+            }
+          },
+          "References": [
+            "https://access.redhat.com/security/cve/CVE-2025-30258",
+            "https://dev.gnupg.org/T7527",
+            "https://dev.gnupg.org/rG48978ccb4e20866472ef18436a32744350a65158",
+            "https://lists.gnupg.org/pipermail/gnupg-announce/2025q1/000491.html"
+          ],
+          "PublishedDate": "2025-03-19T20:15:20.14Z",
+          "LastModifiedDate": "2026-06-17T09:08:24.79Z"
+        }
+      ]
+    },
+    {
+      "Target": "Java",
+      "Class": "lang-pkgs",
+      "Type": "jar",
+      "Packages": [
+        {
+          "Name": "com.thoughtworks.xstream:xstream",
+          "Identifier": {
+            "PURL": "pkg:maven/com.thoughtworks.xstream/xstream@1.4.5",
+            "UID": "91bcc58ed0ea547c"
+          },
+          "Version": "1.4.5",
+          "Layer": {
+            "Digest": "sha256:307ac9d4e99939465c7ae6235f951c371a4f2792c96f50fb6a65556fb3147350",
+            "DiffID": "sha256:1a892a854c70946b878b2ec0de7fc21dbbda4f059cedfe916b736e8bb17b7fe6"
+          },
+          "FilePath": "home/webgoat/webgoat.jar/BOOT-INF/lib/xstream-1.4.5.jar",
+          "AnalyzedBy": "jar"
+        },
+        {
+          "Name": "org.apache.tomcat.embed:tomcat-embed-core",
+          "Identifier": {
+            "PURL": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@10.1.36",
+            "UID": "75496e6ac8f1a4d8"
+          },
+          "Version": "10.1.36",
+          "Licenses": [
+            "Apache-2.0"
+          ],
+          "Layer": {
+            "Digest": "sha256:307ac9d4e99939465c7ae6235f951c371a4f2792c96f50fb6a65556fb3147350",
+            "DiffID": "sha256:1a892a854c70946b878b2ec0de7fc21dbbda4f059cedfe916b736e8bb17b7fe6"
+          },
+          "FilePath": "home/webgoat/webgoat.jar/BOOT-INF/lib/tomcat-embed-core-10.1.36.jar",
+          "AnalyzedBy": "jar"
+        },
+        {
+          "Name": "org.jruby:jruby",
+          "Identifier": {
+            "PURL": "pkg:maven/org.jruby/jruby@9.4.12.0",
+            "UID": "f1ab730ef84dc5f3"
+          },
+          "Version": "9.4.12.0",
+          "Licenses": [
+            "Ruby"
+          ],
+          "Layer": {
+            "Digest": "sha256:307ac9d4e99939465c7ae6235f951c371a4f2792c96f50fb6a65556fb3147350",
+            "DiffID": "sha256:1a892a854c70946b878b2ec0de7fc21dbbda4f059cedfe916b736e8bb17b7fe6"
+          },
+          "FilePath": "home/webgoat/webgoat.jar/BOOT-INF/lib/jruby-9.4.12.0.jar",
+          "AnalyzedBy": "jar"
+        }
+      ],
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2020-26217",
+          "VendorIDs": [
+            "GHSA-mw36-7c6c-q4q2"
+          ],
+          "PkgName": "com.thoughtworks.xstream:xstream",
+          "PkgPath": "home/webgoat/webgoat.jar/BOOT-INF/lib/xstream-1.4.5.jar",
+          "PkgIdentifier": {
+            "PURL": "pkg:maven/com.thoughtworks.xstream/xstream@1.4.5",
+            "UID": "91bcc58ed0ea547c"
+          },
+          "InstalledVersion": "1.4.5",
+          "FixedVersion": "1.4.14-java7",
+          "Status": "fixed",
+          "Layer": {
+            "Digest": "sha256:307ac9d4e99939465c7ae6235f951c371a4f2792c96f50fb6a65556fb3147350",
+            "DiffID": "sha256:1a892a854c70946b878b2ec0de7fc21dbbda4f059cedfe916b736e8bb17b7fe6"
+          },
+          "SeveritySource": "ghsa",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2020-26217",
+          "DataSource": {
+            "ID": "ghsa",
+            "Name": "GitHub Security Advisory Maven",
+            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Amaven"
+          },
+          "Fingerprint": "sha256:78ba5d2dcf6a62f60b288455a4d91058b72d56497efacbd8c3ecb2b06e826423",
+          "Title": "XStream: remote code execution due to insecure XML deserialization when relying on blocklists",
+          "Description": "XStream before version 1.4.14 is vulnerable to Remote Code Execution.The vulnerability may allow a remote attacker to run arbitrary shell commands only by manipulating the processed input stream. Only users who rely on blocklists are affected. Anyone using XStream's Security Framework allowlist is not affected. The linked advisory provides code workarounds for users who cannot upgrade. The issue is fixed in version 1.4.14.",
+          "Severity": "HIGH",
+          "CweIDs": [
+            "CWE-78"
+          ],
+          "VendorSeverity": {
+            "amazon": 3,
+            "bitnami": 3,
+            "ghsa": 3,
+            "nvd": 3,
+            "oracle-oval": 3,
+            "redhat": 3,
+            "ubuntu": 2
+          },
+          "CVSS": {
+            "bitnami": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+              "V3Score": 8.8
+            },
+            "ghsa": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:R/S:C/C:H/I:H/A:H",
+              "V3Score": 8.1
+            },
+            "nvd": {
+              "V2Vector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+              "V2Score": 9.3,
+              "V3Score": 8.8
+            },
+            "redhat": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H",
+              "V3Score": 9
+            }
+          },
+          "References": [
+            "https://access.redhat.com/security/cve/CVE-2020-26217",
+            "https://github.com/x-stream/xstream",
+            "https://github.com/x-stream/xstream/commit/0fec095d534126931c99fd38e9c6d41f5c685c1a",
+            "https://github.com/x-stream/xstream/security/advisories/GHSA-mw36-7c6c-q4q2"
+          ],
+          "PublishedDate": "2020-11-16T21:15:12.893Z",
+          "LastModifiedDate": "2026-06-17T03:07:50.633Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2025-31650",
+          "VendorIDs": [
+            "GHSA-3p2h-wqq4-wf4h"
+          ],
+          "PkgName": "org.apache.tomcat.embed:tomcat-embed-core",
+          "PkgPath": "home/webgoat/webgoat.jar/BOOT-INF/lib/tomcat-embed-core-10.1.36.jar",
+          "PkgIdentifier": {
+            "PURL": "pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@10.1.36",
+            "UID": "75496e6ac8f1a4d8"
+          },
+          "InstalledVersion": "10.1.36",
+          "FixedVersion": "9.0.104, 10.1.40, 11.0.6",
+          "Status": "fixed",
+          "Layer": {
+            "Digest": "sha256:307ac9d4e99939465c7ae6235f951c371a4f2792c96f50fb6a65556fb3147350",
+            "DiffID": "sha256:1a892a854c70946b878b2ec0de7fc21dbbda4f059cedfe916b736e8bb17b7fe6"
+          },
+          "SeveritySource": "ghsa",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-31650",
+          "DataSource": {
+            "ID": "ghsa",
+            "Name": "GitHub Security Advisory Maven",
+            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Amaven"
+          },
+          "Fingerprint": "sha256:fb5a8f1daec39095124f216a6fb104b77885a9e39d8e6b23175b7056920cfb8c",
+          "Title": "tomcat: Apache Tomcat: DoS via malformed HTTP/2 PRIORITY_UPDATE frame",
+          "Description": "Improper Input Validation vulnerability in Apache Tomcat. Incorrect error handling for some invalid HTTP priority headers resulted in incomplete clean-up of the failed request which created a memory leak. A large number of such requests could trigger an OutOfMemoryException resulting in a denial of service.\n\nThis issue affects Apache Tomcat: from 9.0.76 through 9.0.102, from 10.1.10 through 10.1.39, from 11.0.0-M2 through 11.0.5.\nThe following versions were EOL at the time the CVE was created but are \nknown to be affected: 8.5.90 though 8.5.100.\n\n\nUsers are recommended to upgrade to version 9.0.104, 10.1.40 or 11.0.6 which fix the issue.",
+          "Severity": "MEDIUM",
+          "CweIDs": [
+            "CWE-459"
+          ],
+          "VendorSeverity": {
+            "alma": 3,
+            "amazon": 3,
+            "bitnami": 3,
+            "ghsa": 2,
+            "nvd": 3,
+            "oracle-oval": 3,
+            "photon": 3,
+            "redhat": 3,
+            "rocky": 3,
+            "ubuntu": 2
+          },
+          "CVSS": {
+            "bitnami": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "V3Score": 7.5
+            },
+            "ghsa": {
+              "V40Vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N/E:U",
+              "V40Score": 6.6
+            },
+            "nvd": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "V3Score": 7.5
+            },
+            "redhat": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "V3Score": 7.5
+            }
+          },
+          "References": [
+            "http://www.openwall.com/lists/oss-security/2025/04/28/2",
+            "https://access.redhat.com/errata/RHSA-2025:11332",
+            "https://access.redhat.com/errata/RHSA-2025:11335",
+            "https://access.redhat.com/security/cve/CVE-2025-31650"
+          ],
+          "PublishedDate": "2025-04-28T20:15:20.653Z",
+          "LastModifiedDate": "2026-06-17T09:10:43.967Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2025-46551",
+          "VendorIDs": [
+            "GHSA-72qj-48g4-5xgx"
+          ],
+          "PkgName": "org.jruby:jruby",
+          "PkgPath": "home/webgoat/webgoat.jar/BOOT-INF/lib/jruby-9.4.12.0.jar",
+          "PkgIdentifier": {
+            "PURL": "pkg:maven/org.jruby/jruby@9.4.12.0",
+            "UID": "f1ab730ef84dc5f3"
+          },
+          "InstalledVersion": "9.4.12.0",
+          "FixedVersion": "10.0.0.1, 9.4.12.1",
+          "Status": "fixed",
+          "Layer": {
+            "Digest": "sha256:307ac9d4e99939465c7ae6235f951c371a4f2792c96f50fb6a65556fb3147350",
+            "DiffID": "sha256:1a892a854c70946b878b2ec0de7fc21dbbda4f059cedfe916b736e8bb17b7fe6"
+          },
+          "SeveritySource": "ghsa",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-46551",
+          "DataSource": {
+            "ID": "ghsa",
+            "Name": "GitHub Security Advisory Maven",
+            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Amaven"
+          },
+          "Fingerprint": "sha256:f26c74d0e3bf0b0a56573492deac52489156a41b03a619b62c28eb362ff0afb0",
+          "Title": "jruby-openssl: jruby: JRuby-OpenSSL has hostname verification disabled by default",
+          "Description": "JRuby-OpenSSL is an add-on gem for JRuby that emulates the Ruby OpenSSL native library. Starting in JRuby-OpenSSL version 0.12.1 and prior to version 0.15.4 (corresponding to JRuby versions starting in 9.3.4.0 prior to 9.4.12.1 and 10.0.0.0 prior to 10.0.0.1), when verifying SSL certificates, JRuby-OpenSSL does not verify that the hostname presented in the certificate matches the one the user tries to connect to. This means a man-in-the-middle could just present any valid cert for a completely different domain they own, and JRuby would accept the cert. Anybody using JRuby to make requests of external APIs, or scraping the web, that depends on https to connect securely. JRuby-OpenSSL version 0.15.4 contains a fix for the issue. This fix is included in JRuby versions 10.0.0.1 and 9.4.12.1.",
+          "Severity": "MEDIUM",
+          "CweIDs": [
+            "CWE-295"
+          ],
+          "VendorSeverity": {
+            "ghsa": 2,
+            "nvd": 1,
+            "redhat": 2,
+            "ruby-advisory-db": 1
+          },
+          "CVSS": {
+            "ghsa": {
+              "V40Vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:N/VI:H/VA:N/SC:N/SI:N/SA:N/E:P",
+              "V40Score": 5.7
+            },
+            "nvd": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N",
+              "V3Score": 3.7
+            },
+            "redhat": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N",
+              "V3Score": 6.5
+            }
+          },
+          "References": [
+            "https://access.redhat.com/security/cve/CVE-2025-46551",
+            "https://bsky.app/profile/jrubyproject.bsky.social/post/3lolurlze3p2s",
+            "https://github.com/advisories/GHSA-72qj-48g4-5xgx",
+            "https://github.com/jruby/jruby-openssl"
+          ],
+          "PublishedDate": "2025-05-07T17:15:58.153Z",
+          "LastModifiedDate": "2026-06-17T09:26:36.93Z"
+        }
+      ]
+    },
+    {
+      "Target": "OS Packages",
+      "Class": "license",
+      "Licenses": [
+        {
+          "Severity": "HIGH",
+          "Category": "restricted",
+          "PkgName": "adduser",
+          "FilePath": "",
+          "Name": "GPL-2.0-or-later",
+          "Text": "",
+          "Confidence": 1,
+          "Link": ""
+        },
+        {
+          "Severity": "HIGH",
+          "Category": "restricted",
+          "PkgName": "adduser",
+          "FilePath": "",
+          "Name": "GPL-2.0-only",
+          "Text": "",
+          "Confidence": 1,
+          "Link": ""
+        },
+        {
+          "Severity": "HIGH",
+          "Category": "restricted",
+          "PkgName": "apt",
+          "FilePath": "",
+          "Name": "GPL-2.0-or-later",
+          "Text": "",
+          "Confidence": 1,
+          "Link": ""
+        }
+      ]
+    },
+    {
+      "Target": "Java",
+      "Class": "license",
+      "Licenses": [
+        {
+          "Severity": "MEDIUM",
+          "Category": "reciprocal",
+          "PkgName": "ch.qos.logback:logback-classic",
+          "FilePath": "home/webgoat/webgoat.jar/BOOT-INF/lib/logback-classic-1.5.16.jar",
+          "Name": "EPL-1.0",
+          "Text": "",
+          "Confidence": 1,
+          "Link": ""
+        },
+        {
+          "Severity": "HIGH",
+          "Category": "restricted",
+          "PkgName": "ch.qos.logback:logback-classic",
+          "FilePath": "home/webgoat/webgoat.jar/BOOT-INF/lib/logback-classic-1.5.16.jar",
+          "Name": "LGPL-2.1-only",
+          "Text": "",
+          "Confidence": 1,
+          "Link": ""
+        },
+        {
+          "Severity": "MEDIUM",
+          "Category": "reciprocal",
+          "PkgName": "ch.qos.logback:logback-core",
+          "FilePath": "home/webgoat/webgoat.jar/BOOT-INF/lib/logback-core-1.5.16.jar",
+          "Name": "EPL-1.0",
+          "Text": "",
+          "Confidence": 1,
+          "Link": ""
+        }
+      ]
+    }
+  ]
+}
