@@ -666,3 +666,38 @@ func TestBoundComplianceResponse_TrimsGroups(t *testing.T) {
 		t.Errorf("notice should name the narrowing parameter, got %q", out.Notice)
 	}
 }
+
+// When BOTH the groups branch and the threshold branch truncate, the final
+// notice is their concatenation. Each branch independently reserving one fixed
+// headroom under-budgets that concatenation, pushing a boundary response over the
+// cap. The two notices must be budgeted jointly so the compound case still fits.
+func TestBoundComplianceResponse_CompoundTruncationFitsBudget(t *testing.T) {
+	out := complianceOutput{
+		DocType: "results", GroupBy: "nistFamily", Counts: map[string]map[string]int{},
+		ThresholdVerdict: &thresholdVerdict{Pass: false},
+	}
+	for i := 0; i < 400; i++ {
+		out.Groups = append(out.Groups, groupRollup{
+			Group:      "FAM-" + strings.Repeat("x", 3) + string(rune('A'+i%26)) + strings.Repeat("y", 2),
+			Compliance: 50.0,
+			Counts:     map[string]map[string]int{},
+		})
+	}
+	for i := 0; i < 500; i++ {
+		out.ThresholdVerdict.Failures = append(out.ThresholdVerdict.Failures,
+			"failed.critical: control "+strings.Repeat("V-", 4)+string(rune('A'+i%26))+" exceeds maximum 0")
+	}
+	boundComplianceResponse(&out)
+	// Both collections must have truncated (this is the compound case).
+	if len(out.Groups) >= 400 || len(out.ThresholdVerdict.Failures) >= 500 {
+		t.Fatalf("both collections must truncate: %d groups, %d failures", len(out.Groups), len(out.ThresholdVerdict.Failures))
+	}
+	// The concatenated notice must NOT push the response over the cap.
+	if got := respond.EstimateTokens(mustJSON(&out)); got > respond.ConciseTokenBudget {
+		t.Errorf("compound-truncation response is %d tokens, over the %d cap", got, respond.ConciseTokenBudget)
+	}
+	// The combined notice carries both remedies.
+	if !strings.Contains(out.Notice, "groupBy") || !strings.Contains(out.Notice, "threshold failures") {
+		t.Errorf("compound notice must carry both remedies, got %q", out.Notice)
+	}
+}

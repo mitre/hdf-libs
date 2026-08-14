@@ -389,7 +389,10 @@ func boundComplianceResponse(out *complianceOutput) {
 		return
 	}
 	// A generous fixed placeholder so the fits() check reserves room for the real
-	// (variable-length) truncation notice set afterwards.
+	// (variable-length) truncation notice set afterwards. One notice fits in 320
+	// chars; the two notices are budgeted JOINTLY below (the threshold branch
+	// reserves the groups notice already set plus this headroom) so a response
+	// that trips both branches cannot overflow by their concatenation.
 	noticeHeadroom := strings.Repeat("x", 320)
 	if len(out.Groups) > 0 {
 		kept := largestPrefixFitting(len(out.Groups), func(n int) bool {
@@ -417,7 +420,10 @@ func boundComplianceResponse(out *complianceOutput) {
 			tv.Failures = out.ThresholdVerdict.Failures[:n]
 			trial.ThresholdVerdict = &tv
 			trial.Truncated = true
-			trial.Notice = noticeHeadroom
+			// Reserve room for the groups notice already set (empty when the groups
+			// branch did not fire) PLUS this branch's notice — the final notice is
+			// their concatenation, so budgeting only one headroom underestimates it.
+			trial.Notice = strings.TrimSpace(out.Notice + " " + noticeHeadroom)
 			return respond.EstimateTokens(mustJSON(&trial)) <= respond.ConciseTokenBudget
 		})
 		out.ThresholdVerdict.Failures = out.ThresholdVerdict.Failures[:kept]
