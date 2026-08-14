@@ -90,36 +90,6 @@ type Source struct {
 	Handle string `json:"handle,omitempty"`
 }
 
-// PathLoader reads a path source and reports its content plus the detected
-// docType and engineSchemaVersion, so Resolve can build the same identity a handle
-// carries. It is injected so this codec stays free of file-I/O and confinement
-// policy (the caller supplies a confined, size-guarded reader).
-type PathLoader func(path string) (content []byte, docType, engineSchemaVersion string, err error)
-
-// Resolve turns a Source into a Handle: a {handle} is decoded; a {path} is read
-// via load and Computed. Both routes yield the same identity for the same
-// document. It errors when neither or both fields are set, or when a path source
-// is given without a loader.
-func Resolve(src Source, load PathLoader) (Handle, error) {
-	switch {
-	case src.Handle != "" && src.Path != "":
-		return Handle{}, errors.New("source must set exactly one of path or handle, not both")
-	case src.Handle != "":
-		return Decode(src.Handle)
-	case src.Path != "":
-		if load == nil {
-			return Handle{}, errors.New("resolving a path source requires a loader")
-		}
-		content, docType, engineSchemaVersion, err := load(src.Path)
-		if err != nil {
-			return Handle{}, err
-		}
-		return Compute(src.Path, content, docType, engineSchemaVersion), nil
-	default:
-		return Handle{}, errors.New("source must set either path or handle")
-	}
-}
-
 func sha256Hex(content []byte) string {
 	sum := sha256.Sum256(content)
 	return hex.EncodeToString(sum[:])

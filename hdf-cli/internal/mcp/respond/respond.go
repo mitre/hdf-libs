@@ -1,10 +1,18 @@
-// Package respond is the shared, token-bounded response serializer every
-// collection-returning MCP tool uses to stay inside a token budget. Caps are
-// enforced on serialized SIZE (not row count): rows are dropped to fit the
-// verbosity tier's budget, and a truncated response always states what was
-// dropped and names the narrowing parameter to use next — silent truncation is
-// a defect. Encoding is JSON (default) or opt-in TOON; both sort object keys, so
-// output is byte-deterministic across calls.
+// Package respond holds the token-budget primitives shared by the MCP tools: the
+// EstimateTokens heuristic and the per-verbosity budget constants that every
+// collection-returning tool bounds its response against. Caps are enforced on
+// serialized SIZE (not row count): rows are dropped to fit the verbosity tier's
+// budget, and a truncated response always states what was dropped and names the
+// narrowing parameter to use next — silent truncation is a defect.
+//
+// Serialize is a self-contained bounded serializer with JSON and TOON encodings.
+// It is the reference implementation that the collection tools are being routed
+// onto (bead hdf-libs-4908.14) and is exercised by the eval harness that measures
+// the JSON-vs-TOON token delta; today hdf_query/hdf_diff/hdf_compliance still
+// carry their own bounding. TOON is retained as a measured option, not a default:
+// on real HDF shapes it saved only ~17% on concise hdf_query (below the ADR §11
+// ~20% bar) and was negative on hdf_diff and hdf_compliance, so tool wiring is
+// deferred (see the eval and ADR-0007 §11).
 package respond
 
 import (
