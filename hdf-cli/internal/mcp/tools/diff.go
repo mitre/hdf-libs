@@ -317,7 +317,16 @@ func buildDiffResponse(out *diffOutput, rows []map[string]any, verbosity string,
 	if verbosity == "full" {
 		budget = respond.FullTokenBudget
 	}
-	pages := paginateChanges(*out, rows, budget)
+	// Measure the real envelope (the summary sibling + handle overhead counts),
+	// not the change rows alone, via the shared paginator.
+	sizeOf := func(page []map[string]any) int {
+		trial := *out
+		trial.Changes = page
+		trial.Truncated = true
+		trial.NextPage = 1
+		return respond.EstimateTokens(mustJSON(&trial))
+	}
+	pages := respond.Paginate(rows, budget, sizeOf)
 	if page < 0 || page >= len(pages) {
 		out.Changes = []map[string]any{}
 		out.Returned = 0
@@ -336,33 +345,4 @@ func buildDiffResponse(out *diffOutput, rows []map[string]any, verbosity string,
 			"Change list spans %d pages within the %s budget; showing page %d of %d (%d of %d changes). Narrow with %s.",
 			len(pages), verbosityLabel(verbosity), page, len(pages), out.Returned, out.Total, diffNarrowParam)
 	}
-}
-
-// paginateChanges greedily packs change rows into budget-sized pages (measured on
-// a trial envelope so the fixed summary/handle overhead counts).
-func paginateChanges(base diffOutput, rows []map[string]any, budget int) [][]map[string]any {
-	var pages [][]map[string]any
-	i := 0
-	for i < len(rows) {
-		var cur []map[string]any
-		for i < len(rows) {
-			next := make([]map[string]any, len(cur), len(cur)+1)
-			copy(next, cur)
-			next = append(next, rows[i])
-			trial := base
-			trial.Changes = next
-			trial.Truncated = true
-			trial.NextPage = 1
-			if respond.EstimateTokens(mustJSON(&trial)) > budget && len(cur) > 0 {
-				break
-			}
-			cur = next
-			i++
-		}
-		pages = append(pages, cur)
-	}
-	if len(pages) == 0 {
-		pages = append(pages, nil)
-	}
-	return pages
 }
