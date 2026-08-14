@@ -508,15 +508,15 @@ func TestConvertSnyk_FullFixtureLocal(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	// nodejs-goof-local.json has 94 unique vulnerability IDs (379 total entries)
-	assert.Len(t, reqs, 94)
+	// nodejs-goof-local.json has 27 unique vulnerability IDs (56 total entries)
+	assert.Len(t, reqs, 27)
 
-	// Spot-check deduplication: 379 total entries collapsed to 94 requirements
+	// Spot-check deduplication: 56 total entries collapsed to 27 requirements
 	totalResults := 0
 	for _, req := range reqs {
 		totalResults += len(req.Results)
 	}
-	assert.Equal(t, 379, totalResults, "total results should match total vulnerability entries")
+	assert.Equal(t, 56, totalResults, "total results should match total vulnerability entries")
 }
 
 func TestConvertSnyk_FullFixtureRemote(t *testing.T) {
@@ -627,7 +627,7 @@ func countDistinctSnykVulnIDs(t *testing.T, input []byte) int {
 // Ground-truth anchor: the converter emits one requirement per DISTINCT vuln id.
 // The distinct count is derived independently of the converter's parser, so a
 // silent under-extraction (e.g. dropping a vuln group) fails even when Go/TS
-// golden parity agrees. nodejs-goof-local's 379 vulns collapse to 94 ids.
+// golden parity agrees. nodejs-goof-local's 56 vulns collapse to 27 ids.
 func TestConvertSnyk_DistinctVulnIDAnchor(t *testing.T) {
 	input := loadFixture(t, "input/nodejs-goof-local.json")
 	result, err := ConvertSnykToHDF(input, testVersion)

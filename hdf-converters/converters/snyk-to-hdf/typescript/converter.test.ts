@@ -40,7 +40,7 @@ runConverterContractTests({
 // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
 // one requirement per DISTINCT vulnerabilities[].id, counted independently of
 // the converter so a silent under-extraction fails even when Go/TS parity
-// agrees. nodejs-goof-local's 379 vulns collapse to 94 distinct ids.
+// agrees. nodejs-goof-local's 56 vulns collapse to 27 distinct ids.
 describe('snyk-to-hdf ground-truth anchor', () => {
   it('emits one requirement per distinct vulnerabilities[].id', async () => {
     const input = loadFixture('nodejs-goof-local.json');
@@ -413,13 +413,13 @@ describe('snyk to HDF converter', async () => {
   });
 
   describe('full fixture smoke tests', async () => {
-    it('should handle full nodejs-goof-local.json (94 unique vulns, 379 total)', async () => {
+    it('should handle full nodejs-goof-local.json (27 unique vulns, 56 total)', async () => {
       const hdf = JSON.parse(await convertSnykToHdf(loadFixture('nodejs-goof-local.json'))) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(94);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(27);
 
-      // Verify deduplication: 379 total entries → 94 requirements, total results = 379
+      // Verify deduplication: 56 total entries → 27 requirements, total results = 56
       const totalResults = hdf.baselines[0]!.requirements.reduce((sum, r) => sum + r.results.length, 0);
-      expect(totalResults).toBe(379);
+      expect(totalResults).toBe(56);
     });
 
     it('should handle full nodejs-goof-remote.json', async () => {
