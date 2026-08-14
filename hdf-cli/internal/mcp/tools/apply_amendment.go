@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
@@ -148,11 +149,33 @@ func refuseOverwritingInput(output, inputPath string) *mcperr.Error {
 	// through to the write model, which reports PATH_DENIED.
 	outConfined, oerr := hdfutil.SafePath(mcpRoot(), output)
 	inConfined, ierr := hdfutil.SafePath(mcpRoot(), inputPath)
-	if oerr == nil && ierr == nil && outConfined == inConfined {
+	if oerr == nil && ierr == nil && sameConfinedFile(outConfined, inConfined) {
 		return mcperr.New(mcperr.PathDenied, "output would overwrite the input document being read", map[string]any{"path": output}).
 			WithNextCall("choose a different output path — the input is never overwritten in place")
 	}
 	return nil
+}
+
+// sameConfinedFile reports whether two confined paths resolve to the same file.
+// Lexical equality is a cheap pre-check but NOT authoritative: SafePath validates
+// a symlink for containment without expanding it, so an in-root symlink or
+// hardlink alias of the input has a different path string yet the same underlying
+// file. Device+inode identity is the authority — os.Stat follows symlinks, so
+// os.SameFile catches both alias kinds. A not-yet-created output has nothing to
+// alias, so the lexical result stands.
+func sameConfinedFile(a, b string) bool {
+	if a == b {
+		return true
+	}
+	ai, err := os.Stat(a)
+	if err != nil {
+		return false
+	}
+	bi, err := os.Stat(b)
+	if err != nil {
+		return false
+	}
+	return os.SameFile(ai, bi)
 }
 
 // applySummary computes the before/after compliance delta and the changed-

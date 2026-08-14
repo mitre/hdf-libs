@@ -132,6 +132,61 @@ func TestApplyAmendment_RejectsOverwritingInput(t *testing.T) {
 	}
 }
 
+// refuseOverwritingInput must use device+inode identity, not lexical equality:
+// an in-root symlink or hardlink alias of the input has a different path string
+// but the same underlying file, so a lexical-only guard would let apply truncate
+// the input through the alias.
+func TestRefuseOverwritingInput_SymlinkAlias(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+	if err := os.WriteFile(filepath.Join(root, "results.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(root, "results.json"), filepath.Join(root, "alias.json")); err != nil {
+		t.Fatal(err)
+	}
+	if terr := refuseOverwritingInput("alias.json", "results.json"); terr == nil {
+		t.Fatal("writing through a symlink alias of the input must be refused")
+	}
+}
+
+func TestRefuseOverwritingInput_HardlinkAlias(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+	if err := os.WriteFile(filepath.Join(root, "results.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Link(filepath.Join(root, "results.json"), filepath.Join(root, "hard.json")); err != nil {
+		t.Fatal(err)
+	}
+	if terr := refuseOverwritingInput("hard.json", "results.json"); terr == nil {
+		t.Fatal("writing through a hardlink alias of the input must be refused")
+	}
+}
+
+func TestRefuseOverwritingInput_DistinctAndMissingAllowed(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+	if err := os.WriteFile(filepath.Join(root, "results.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// A different existing file must be allowed.
+	if err := os.WriteFile(filepath.Join(root, "other.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if terr := refuseOverwritingInput("other.json", "results.json"); terr != nil {
+		t.Fatalf("a distinct existing output must be allowed: %v", terr)
+	}
+	// A not-yet-created output must be allowed (no stat crash; lexical stands).
+	if terr := refuseOverwritingInput("new-output.json", "results.json"); terr != nil {
+		t.Fatalf("a not-yet-created output must be allowed: %v", terr)
+	}
+	// The lexical fast-path still refuses the identical path even with no file.
+	if terr := refuseOverwritingInput("ghost.json", "ghost.json"); terr == nil {
+		t.Fatal("identical output/input path must be refused by the lexical pre-check")
+	}
+}
+
 // TestAttributionSurvivesApply — the applied results file carries
 // statusOverrides[].appliedBy on the affected requirement.
 func TestAttributionSurvivesApply(t *testing.T) {
