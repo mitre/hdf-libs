@@ -264,10 +264,11 @@ func TestHdfConvert_ConversionError(t *testing.T) {
 }
 
 func TestHdfConvert_BothSourceAndContent(t *testing.T) {
+	// A mutually-exclusive-argument conflict is a caller mistake: a code-less
+	// argError, not the AMBIGUOUS_FORMAT document code (reserved for converter
+	// format ties).
 	res, _ := callConvert(t, convertInput{Source: &handle.Source{Path: "x"}, Content: "y", From: "gosec"})
-	if res == nil || !res.IsError {
-		t.Fatal("both source and content must be an isError result")
-	}
+	assertArgError(t, res, "either source or content")
 }
 
 func TestHdfConvert_PathDenied(t *testing.T) {

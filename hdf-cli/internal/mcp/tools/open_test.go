@@ -210,13 +210,35 @@ func TestHdfOpen_PathDenied(t *testing.T) {
 
 func TestHdfOpen_AmbiguousAndEmptySource(t *testing.T) {
 	writeRoot(t, "scan.json", fixtures.Results.Minimal)
+	// Both path and handle set, and neither set, are caller-argument mistakes:
+	// code-less argError results, NOT the document codes they used to borrow
+	// (AMBIGUOUS_FORMAT / DOCUMENT_NOT_FOUND).
 	errRes, _ := callOpen(t, openInput{Source: handle.Source{Path: "scan.json", Handle: "x"}})
-	if errRes == nil || !strings.Contains(payloadText(t, errRes), "AMBIGUOUS_FORMAT") {
-		t.Error("both path and handle set must be AMBIGUOUS_FORMAT")
+	assertArgError(t, errRes, "both path and handle")
+	if strings.Contains(payloadText(t, errRes), "AMBIGUOUS_FORMAT") {
+		t.Error("both path and handle must not borrow the AMBIGUOUS_FORMAT document code")
 	}
 	errRes2, _ := callOpen(t, openInput{Source: handle.Source{}})
-	if errRes2 == nil || !strings.Contains(payloadText(t, errRes2), "DOCUMENT_NOT_FOUND") {
-		t.Error("neither path nor handle must be DOCUMENT_NOT_FOUND")
+	assertArgError(t, errRes2, "neither path nor handle")
+	if strings.Contains(payloadText(t, errRes2), "DOCUMENT_NOT_FOUND") {
+		t.Error("neither path nor handle must not borrow the DOCUMENT_NOT_FOUND document code")
+	}
+}
+
+// assertArgError asserts res is a code-less caller-argument error (the argError
+// shape): an isError result carrying no taxonomy code, whose payload contains
+// want. This is the discriminator between a caller mistake and a document
+// condition — a taxonomy error would carry a non-empty Code.
+func assertArgError(t *testing.T, res *sdkmcp.CallToolResult, want string) {
+	t.Helper()
+	if res == nil || !res.IsError {
+		t.Fatalf("expected an isError argument result, got %+v", res)
+	}
+	if tr := toolResultPayload(t, res); tr.Code != "" {
+		t.Errorf("argument error must carry no taxonomy code, got %q", tr.Code)
+	}
+	if txt := payloadText(t, res); !strings.Contains(txt, want) {
+		t.Errorf("argument error payload = %s, want substring %q", txt, want)
 	}
 }
 
@@ -277,9 +299,13 @@ func TestHdfOpen_DocumentNotFound(t *testing.T) {
 
 func TestHdfOpen_MalformedHandle(t *testing.T) {
 	writeRoot(t, "x.json", fixtures.Results.Minimal)
+	// An undecodable handle is a caller mistake (garbage argument), not a stale
+	// handle: it returns a code-less argError, not HANDLE_STALE (reserved for a
+	// valid handle whose referenced file changed).
 	errRes, _ := callOpen(t, openInput{Source: handle.Source{Handle: "!!!not-base64!!!"}})
-	if errRes == nil || !strings.Contains(payloadText(t, errRes), "HANDLE_STALE") {
-		t.Errorf("a malformed handle must be HANDLE_STALE, got %s", payloadText(t, errRes))
+	assertArgError(t, errRes, "not a valid hdf_open handle")
+	if strings.Contains(payloadText(t, errRes), "HANDLE_STALE") {
+		t.Error("a malformed handle must not borrow the HANDLE_STALE code")
 	}
 }
 

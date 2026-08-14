@@ -69,7 +69,25 @@ type Error struct {
 	Message  string
 	NextCall string
 	Details  map[string]any
+	// arg marks a caller-argument mistake (conflicting/unknown arguments) rather
+	// than a document-taxonomy condition. It carries no Code — the render layer
+	// (toolError) routes it through the code-less argError shape — so a caller
+	// mistake never borrows a document code like AMBIGUOUS_FORMAT.
+	arg bool
 }
+
+// Arg builds a caller-argument error: a conflicting or unknown argument the agent
+// must fix in its call, not a document condition. It carries no taxonomy Code and
+// renders through the argError shape, so it flows up the same *Error return path
+// as taxonomy errors without overloading one of the closed document codes.
+func Arg(message, nextCall string) *Error {
+	return &Error{Message: message, NextCall: nextCall, arg: true}
+}
+
+// IsArgError reports whether this is a caller-argument mistake (built via Arg)
+// rather than a document-taxonomy error. The render layer uses it to select the
+// code-less argument-error shape.
+func (e *Error) IsArgError() bool { return e.arg }
 
 // Error implements the error interface.
 func (e *Error) Error() string {

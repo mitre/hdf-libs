@@ -231,8 +231,13 @@ func structToMap(v any) map[string]any {
 }
 
 // toolError renders a taxonomy error as an isError tool result carrying the
-// structured payload (code, message, nextCall).
+// structured payload (code, message, nextCall). A caller-argument mistake
+// (mcperr.Arg) carries no document code, so it is rendered through the shared
+// argError shape instead — one render path, no code overloading.
 func toolError(e *mcperr.Error) *sdkmcp.CallToolResult {
+	if e.IsArgError() {
+		return argError(e.Message, e.NextCall)
+	}
 	tr := e.AsToolResult()
 	return &sdkmcp.CallToolResult{
 		IsError: true,

@@ -420,12 +420,7 @@ func TestHdfCompliance_ThresholdAmbiguous(t *testing.T) {
 		Source:    handle.Source{Path: path},
 		Threshold: &thresholdInput{Path: "t.yaml", Inline: map[string]any{"compliance": map[string]any{"min": 80}}},
 	})
-	if res == nil || !res.IsError {
-		t.Fatal("threshold with both path and inline must error")
-	}
-	if tr := toolResultPayload(t, res); tr.Code != mcperr.AmbiguousFormat {
-		t.Errorf("code = %q, want AMBIGUOUS_FORMAT", tr.Code)
-	}
+	assertArgError(t, res, "threshold sets both path and inline")
 }
 
 // TestHdfCompliance_PerControlThresholdUsesEffectiveStatus is the lj0g.11
@@ -540,12 +535,7 @@ func TestHdfCompliance_Annotations(t *testing.T) {
 func TestHdfCompliance_UnknownGroupBy(t *testing.T) {
 	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
 	res, _ := callCompliance(t, complianceInput{Source: handle.Source{Path: path}, GroupBy: "bogus"})
-	if res == nil || !res.IsError {
-		t.Fatal("an unknown groupBy must error")
-	}
-	if tr := toolResultPayload(t, res); tr.Code != mcperr.AmbiguousFormat {
-		t.Errorf("code = %q, want AMBIGUOUS_FORMAT", tr.Code)
-	}
+	assertArgError(t, res, "unknown groupBy")
 }
 
 func TestGroupSeverity_ExplicitAndDerived(t *testing.T) {

@@ -140,8 +140,7 @@ func rawInput(src *handle.Source, content string) ([]byte, *mcperr.Error) {
 	hasSource := src != nil && (src.Path != "" || src.Handle != "")
 	switch {
 	case hasContent && hasSource:
-		return nil, mcperr.New(mcperr.AmbiguousFormat, "pass either source or content, not both", nil).
-			WithNextCall("pass exactly one of source or content")
+		return nil, mcperr.Arg("pass either source or content, not both", "pass exactly one of source or content")
 	case hasContent:
 		return []byte(content), nil
 	case hasSource:

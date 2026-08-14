@@ -108,8 +108,7 @@ func resolveForValidate(in validateInput, ldr *loader.Loader) ([]byte, string, *
 	hasSource := in.Source != nil && (in.Source.Path != "" || in.Source.Handle != "")
 	switch {
 	case hasContent && hasSource:
-		return nil, "", nil, mcperr.New(mcperr.AmbiguousFormat, "pass either source or content, not both", nil).
-			WithNextCall("pass exactly one of source or content")
+		return nil, "", nil, mcperr.Arg("pass either source or content, not both", "pass exactly one of source or content")
 	case hasContent:
 		res, err := ldr.Load([]byte(in.Content))
 		if err != nil {

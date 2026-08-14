@@ -83,9 +83,7 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 			mode = "temporal"
 		}
 		if mode != "temporal" && mode != "system-drift" {
-			e := mcperr.New(mcperr.AmbiguousFormat, fmt.Sprintf("unknown mode %q", mode), map[string]any{"mode": mode}).
-				WithNextCall("use mode = temporal or system-drift")
-			return toolError(e), errorDiffOutput(), nil
+			return argError(fmt.Sprintf("unknown mode %q", mode), "use mode = temporal or system-drift"), errorDiffOutput(), nil
 		}
 
 		from, terr := resolveSource(in.From, ldr)

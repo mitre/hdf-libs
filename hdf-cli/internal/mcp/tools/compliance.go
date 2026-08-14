@@ -250,9 +250,8 @@ func partitionResults(results hdf.HDFResults, mode string) (map[string]hdf.HDFRe
 	case "nistFamily":
 		return partitionBy(results, nistFamilies), nil
 	default:
-		return nil, mcperr.New(mcperr.AmbiguousFormat,
-			fmt.Sprintf("unknown groupBy %q", mode), map[string]any{"groupBy": mode}).
-			WithNextCall("use groupBy = baseline, severity, or nistFamily (or omit it)")
+		return nil, mcperr.Arg(fmt.Sprintf("unknown groupBy %q", mode),
+			"use groupBy = baseline, severity, or nistFamily (or omit it)")
 	}
 }
 
@@ -344,8 +343,8 @@ func resolveThreshold(t *thresholdInput) (*hdfengine.ThresholdConfig, *mcperr.Er
 		return nil, nil
 	}
 	if t.Path != "" && len(t.Inline) > 0 {
-		return nil, mcperr.New(mcperr.AmbiguousFormat, "threshold sets both path and inline", nil).
-			WithNextCall("pass exactly one of threshold.path or threshold.inline")
+		return nil, mcperr.Arg("threshold sets both path and inline",
+			"pass exactly one of threshold.path or threshold.inline")
 	}
 
 	var raw []byte

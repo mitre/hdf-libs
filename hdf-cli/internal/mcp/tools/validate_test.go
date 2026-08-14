@@ -303,9 +303,7 @@ func TestHdfValidate_Completeness_PlanUnreadableAndUnparseable(t *testing.T) {
 func TestHdfValidate_BothSourceAndContent(t *testing.T) {
 	writeRoot(t, "scan.json", fixtures.Results.Minimal)
 	res, _ := callValidate(t, validateInput{Source: &handle.Source{Path: "scan.json"}, Content: "x", Mode: "schema"})
-	if res == nil || !res.IsError {
-		t.Fatal("passing both source and content must be an isError result")
-	}
+	assertArgError(t, res, "either source or content")
 }
 
 func TestHdfValidate_ConfinedFetchRejectsTraversal(t *testing.T) {

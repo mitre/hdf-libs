@@ -80,15 +80,13 @@ func guardFileSize(confined string, maxSize int64) *mcperr.Error {
 func resolveSource(src handle.Source, ldr *loader.Loader) (*Resolved, *mcperr.Error) {
 	switch {
 	case src.Handle != "" && src.Path != "":
-		return nil, mcperr.New(mcperr.AmbiguousFormat, "source sets both path and handle", nil).
-			WithNextCall("pass exactly one of source.path or source.handle")
+		return nil, mcperr.Arg("source sets both path and handle", "pass exactly one of source.path or source.handle")
 	case src.Handle != "":
 		return resolveHandle(src.Handle, ldr)
 	case src.Path != "":
 		return resolvePath(src.Path, ldr)
 	default:
-		return nil, mcperr.New(mcperr.DocumentNotFound, "source sets neither path nor handle", nil).
-			WithNextCall("pass source.path (or source.handle from a prior hdf_open)")
+		return nil, mcperr.Arg("source sets neither path nor handle", "pass source.path (or source.handle from a prior hdf_open)")
 	}
 }
 
@@ -115,8 +113,8 @@ func resolvePath(path string, ldr *loader.Loader) (*Resolved, *mcperr.Error) {
 func resolveHandle(encoded string, ldr *loader.Loader) (*Resolved, *mcperr.Error) {
 	h, err := handle.Decode(encoded)
 	if err != nil {
-		return nil, mcperr.New(mcperr.HandleStale, "handle is malformed or unreadable", nil).
-			WithNextCall("re-open the source with hdf_open to mint a fresh handle")
+		return nil, mcperr.Arg("source.handle is not a valid hdf_open handle",
+			"pass a handle from a prior hdf_open response, or use source.path")
 	}
 	confined, serr := hdfutil.SafePath(mcpRoot(), h.Path)
 	if serr != nil {

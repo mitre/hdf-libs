@@ -319,12 +319,7 @@ func TestHdfDiff_UnknownMode(t *testing.T) {
 		"to.json":   readToolsFixture(t, "diff-to.json"),
 	})
 	res, _ := callDiff(t, diffInput{From: handle.Source{Path: "from.json"}, To: handle.Source{Path: "to.json"}, Mode: "bogus"})
-	if res == nil || !res.IsError {
-		t.Fatal("unknown mode must error")
-	}
-	if tr := toolResultPayload(t, res); tr.Code != mcperr.AmbiguousFormat {
-		t.Errorf("code = %q, want AMBIGUOUS_FORMAT", tr.Code)
-	}
+	assertArgError(t, res, "unknown mode")
 }
 
 func TestHdfDiff_OutputPathDenied(t *testing.T) {
