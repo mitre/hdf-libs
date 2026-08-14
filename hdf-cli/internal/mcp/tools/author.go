@@ -260,7 +260,7 @@ func vexBytes(src *handle.Source) ([]byte, *mcperr.Error) {
 	if err != nil {
 		return nil, mcperr.New(mcperr.PathDenied, "path resolves outside HDF_MCP_ROOT", map[string]any{"path": src.Path})
 	}
-	return readFile(confined)
+	return readFile(confined, src.Path)
 }
 
 // resourceSlug maps a docType to its hdf://schema resource slug.

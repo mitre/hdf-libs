@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -265,16 +266,25 @@ func confinedFetchAt(base string) hdfengine.FetchFunc {
 	return func(uri string) ([]byte, error) {
 		p, err := hdfutil.SafePath(base, uri)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("referenced file %q is outside the evidence package root", uri)
 		}
 		fi, err := os.Stat(p)
 		if err != nil {
-			return nil, err
+			// Redact: a raw *PathError would carry the absolute confined path and
+			// errno into the checksum result the client sees. Reference the
+			// caller-relative uri only; log the cause for the operator.
+			slog.Error("evidence fetch failed", "uri", uri, "cause", err)
+			return nil, fmt.Errorf("referenced file %q could not be read", uri)
 		}
 		if limit := mcpMaxInputSize(); fi.Size() > limit {
 			return nil, fmt.Errorf("referenced file %q is %d bytes, over the %d-byte limit", uri, fi.Size(), limit)
 		}
-		return os.ReadFile(p) //nolint:gosec // confined by SafePath, size-guarded above
+		data, err := os.ReadFile(p) //nolint:gosec // confined by SafePath, size-guarded above
+		if err != nil {
+			slog.Error("evidence fetch failed", "uri", uri, "cause", err)
+			return nil, fmt.Errorf("referenced file %q could not be read", uri)
+		}
+		return data, nil
 	}
 }
 

@@ -8,6 +8,7 @@ package tools
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 
@@ -54,19 +55,31 @@ func mcpMaxInputSize() int64 {
 	return int64(hdfutil.DefaultMaxInputSize)
 }
 
+// redactFileErr builds a filesystem taxonomy error whose CLIENT payload names
+// only the caller-relative path — never the absolute confined path or errno a
+// *PathError's Error() would expose (which would reveal the deployer's
+// HDF_MCP_ROOT layout). The raw cause is logged to stderr for the operator
+// (stdout stays JSON-RPC only), matching the relative-path discipline the
+// PATH_DENIED branches already follow.
+func redactFileErr(code mcperr.Code, message, relPath string, cause error) *mcperr.Error {
+	slog.Error(message, "path", relPath, "cause", cause)
+	return mcperr.New(code, message, map[string]any{"path": relPath})
+}
+
 // guardFileSize rejects a file larger than maxSize before it is read into
 // memory, so an over-large document returns TOO_LARGE without the allocation
-// spike. The loader's post-read size guard remains the backstop.
-func guardFileSize(confined string, maxSize int64) *mcperr.Error {
+// spike. The loader's post-read size guard remains the backstop. relPath is the
+// caller-supplied path used in the (redacted) client-facing error.
+func guardFileSize(confined, relPath string, maxSize int64) *mcperr.Error {
 	fi, err := os.Stat(confined)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return mcperr.New(mcperr.DocumentNotFound, "no document at the given path", nil)
+			return mcperr.New(mcperr.DocumentNotFound, "no document at the given path", map[string]any{"path": relPath})
 		}
-		return mcperr.New(mcperr.DocumentNotFound, "could not read the document", map[string]any{"error": err.Error()})
+		return redactFileErr(mcperr.DocumentNotFound, "could not read the document", relPath, err)
 	}
 	if fi.Size() > maxSize {
-		return mcperr.New(mcperr.TooLarge, fmt.Sprintf("document is %d bytes, over the %d-byte limit", fi.Size(), maxSize), nil)
+		return mcperr.New(mcperr.TooLarge, fmt.Sprintf("document is %d bytes, over the %d-byte limit", fi.Size(), maxSize), map[string]any{"path": relPath})
 	}
 	return nil
 }
@@ -95,7 +108,7 @@ func resolvePath(path string, ldr *loader.Loader) (*Resolved, *mcperr.Error) {
 	if err != nil {
 		return nil, mcperr.New(mcperr.PathDenied, "path resolves outside HDF_MCP_ROOT", map[string]any{"path": path})
 	}
-	content, rerr := readFile(confined)
+	content, rerr := readFile(confined, path)
 	if rerr != nil {
 		return nil, rerr
 	}
@@ -120,7 +133,7 @@ func resolveHandle(encoded string, ldr *loader.Loader) (*Resolved, *mcperr.Error
 	if serr != nil {
 		return nil, mcperr.New(mcperr.PathDenied, "handle path resolves outside HDF_MCP_ROOT", map[string]any{"path": h.Path})
 	}
-	content, rerr := readFile(confined)
+	content, rerr := readFile(confined, h.Path)
 	if rerr != nil {
 		return nil, rerr
 	}
@@ -135,16 +148,18 @@ func resolveHandle(encoded string, ldr *loader.Loader) (*Resolved, *mcperr.Error
 }
 
 // readFile reads a confined path, mapping filesystem errors to taxonomy codes.
-func readFile(confined string) ([]byte, *mcperr.Error) {
-	if terr := guardFileSize(confined, mcpMaxInputSize()); terr != nil {
+// relPath is the caller-supplied path surfaced in the (redacted) client error;
+// the absolute confined path never reaches the client.
+func readFile(confined, relPath string) ([]byte, *mcperr.Error) {
+	if terr := guardFileSize(confined, relPath, mcpMaxInputSize()); terr != nil {
 		return nil, terr
 	}
 	content, err := os.ReadFile(confined) //nolint:gosec // confined to HDF_MCP_ROOT by SafePath
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, mcperr.New(mcperr.DocumentNotFound, "no document at the given path", nil)
+			return nil, mcperr.New(mcperr.DocumentNotFound, "no document at the given path", map[string]any{"path": relPath})
 		}
-		return nil, mcperr.New(mcperr.DocumentNotFound, "could not read the document", map[string]any{"error": err.Error()})
+		return nil, redactFileErr(mcperr.DocumentNotFound, "could not read the document", relPath, err)
 	}
 	return content, nil
 }

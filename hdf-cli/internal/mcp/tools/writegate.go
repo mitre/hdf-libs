@@ -72,15 +72,15 @@ func writeArtifact(output string, dryRun, overwrite bool, data []byte) (writtenP
 			return "", "", mcperr.New(mcperr.WriteFailed, "output directory does not exist", map[string]any{"path": output}).
 				WithNextCall("create the parent directory, or choose an `output` path under an existing directory")
 		default:
-			return "", "", mcperr.New(mcperr.WriteFailed, "could not write output", map[string]any{"error": werr.Error()})
+			return "", "", redactFileErr(mcperr.WriteFailed, "could not write output", output, werr)
 		}
 	}
 	if _, werr := f.Write(data); werr != nil {
 		_ = f.Close()
-		return "", "", mcperr.New(mcperr.WriteFailed, "could not write output", map[string]any{"error": werr.Error()})
+		return "", "", redactFileErr(mcperr.WriteFailed, "could not write output", output, werr)
 	}
 	if werr := f.Close(); werr != nil {
-		return "", "", mcperr.New(mcperr.WriteFailed, "could not write output", map[string]any{"error": werr.Error()})
+		return "", "", redactFileErr(mcperr.WriteFailed, "could not write output", output, werr)
 	}
 	return output, "", nil
 }

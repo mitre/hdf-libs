@@ -31,6 +31,10 @@ func NewServer(version string, logger *slog.Logger) *mcp.Server {
 	if logger == nil {
 		logger = NewStderrLogger(os.Getenv("HDF_MCP_LOG_LEVEL"))
 	}
+	// Route the process default logger to the same stderr logger so tool-side
+	// diagnostics (e.g. redacted filesystem-error causes) never reach stdout,
+	// which carries the JSON-RPC stream.
+	slog.SetDefault(logger)
 	return mcp.NewServer(&mcp.Implementation{
 		Name:    ServerName,
 		Title:   ServerTitle,

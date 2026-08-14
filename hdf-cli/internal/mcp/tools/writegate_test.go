@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -152,6 +153,17 @@ func TestWriteArtifact_ModelMatrix(t *testing.T) {
 		}
 		if terr.NextCall == "" {
 			t.Fatal("WRITE_FAILED must carry recovery guidance")
+		}
+		// The client payload must carry only the caller-relative path, never the
+		// absolute confined path or the raw errno *PathError string.
+		if _, leaked := terr.Details["error"]; leaked {
+			t.Errorf("write error must not surface raw err.Error(); details = %v", terr.Details)
+		}
+		if terr.Details["path"] != "ro/out.json" {
+			t.Errorf("client payload path = %v, want the relative ro/out.json", terr.Details["path"])
+		}
+		if strings.Contains(fmt.Sprint(terr.Details), root) {
+			t.Errorf("client payload leaked the absolute root %q: %v", root, terr.Details)
 		}
 	})
 

@@ -359,7 +359,7 @@ func resolveThreshold(t *thresholdInput) (*hdfengine.ThresholdConfig, *mcperr.Er
 			if errors.Is(rerr, os.ErrNotExist) {
 				return nil, mcperr.New(mcperr.DocumentNotFound, "no threshold file at the given path", map[string]any{"path": t.Path})
 			}
-			return nil, mcperr.New(mcperr.DocumentNotFound, "could not read the threshold file", map[string]any{"error": rerr.Error()})
+			return nil, redactFileErr(mcperr.DocumentNotFound, "could not read the threshold file", t.Path, rerr)
 		}
 		raw = b
 	case len(t.Inline) > 0:

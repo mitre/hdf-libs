@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
@@ -304,6 +305,24 @@ func TestHdfValidate_BothSourceAndContent(t *testing.T) {
 	writeRoot(t, "scan.json", fixtures.Results.Minimal)
 	res, _ := callValidate(t, validateInput{Source: &handle.Source{Path: "scan.json"}, Content: "x", Mode: "schema"})
 	assertArgError(t, res, "either source or content")
+}
+
+// A fetch failure must reference only the caller-relative uri, never the
+// absolute confined path or raw errno — the error text flows into the
+// client-visible ChecksumResult.Error, so a *PathError here would leak the
+// deployer's filesystem layout.
+func TestConfinedFetchAt_RedactsAbsolutePath(t *testing.T) {
+	base := t.TempDir()
+	_, err := confinedFetchAt(base)("missing.json")
+	if err == nil {
+		t.Fatal("fetching a missing referenced file must error")
+	}
+	if strings.Contains(err.Error(), base) {
+		t.Errorf("fetch error leaked the absolute base path %q: %s", base, err.Error())
+	}
+	if !strings.Contains(err.Error(), "missing.json") {
+		t.Errorf("fetch error should name the relative uri, got %s", err.Error())
+	}
 }
 
 func TestHdfValidate_ConfinedFetchRejectsTraversal(t *testing.T) {
