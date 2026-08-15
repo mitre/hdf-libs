@@ -3,6 +3,7 @@ package tools
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -16,6 +17,9 @@ import (
 // HDF_MCP_ROOT layout. Mirrors the PATH_DENIED branches' relative-path
 // discipline.
 func TestResolveSource_ReadFailureRedactsAbsolutePath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows ignores the 0o000 mode bit, so the file stays readable; the redaction logic is OS-agnostic and covered on unix")
+	}
 	if os.Geteuid() == 0 {
 		t.Skip("running as root bypasses file read permissions")
 	}

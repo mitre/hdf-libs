@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -135,6 +136,9 @@ func TestWriteArtifact_ModelMatrix(t *testing.T) {
 	// permission-denied and missing-parent-directory tell the agent to fix the
 	// destination, not to "verify the path exists / call hdf_open".
 	t.Run("permission-denied write → WRITE_FAILED", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Windows ignores the 0o555 dir mode, so the write is not denied; WRITE_FAILED is covered OS-agnostically by the missing-parent-directory subtest")
+		}
 		if os.Geteuid() == 0 {
 			t.Skip("running as root bypasses directory write permissions")
 		}

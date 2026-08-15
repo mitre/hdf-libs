@@ -7,6 +7,8 @@
 # approach (Prettier, Hugo, ESLint, etc.).
 hdf-converters/**/fixtures/** eol=lf
 hdf-cli/cmd/hdf/cmd/testdata/**/*.json eol=lf
+hdf-cli/internal/mcp/**/testdata/**/*.json eol=lf
+hdf-cli/internal/mcp/**/testdata/**/*.jsonl eol=lf
 hdf-schema/test/**/*.json eol=lf
 hdf-generators/test/**/*.json eol=lf
 hdf-validators/test/**/*.json eol=lf
