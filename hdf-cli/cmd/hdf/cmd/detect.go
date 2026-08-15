@@ -81,6 +81,8 @@ func suggestCommand(docType string) string {
 		return "hdf plan"
 	case string(validators.TypeEvidencePackage):
 		return "hdf evidence"
+	case string(validators.TypeRequirementChangeEvent):
+		return "hdf events"
 	default:
 		return ""
 	}

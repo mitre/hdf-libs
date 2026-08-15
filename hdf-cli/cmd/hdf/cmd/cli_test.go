@@ -134,12 +134,15 @@ func runNoPanicTests(t *testing.T, tests []cliTest) {
 // TestValidateCommand tests the validate command.
 func TestValidateCommand(t *testing.T) {
 	fixture := testFixturePath(t, "minimal-v2.json")
+	changeEvent := testFixturePath(t, "minimal-requirement-change-event.json")
 
 	runCLITests(t, []cliTest{
 		{name: "valid file", args: []string{"validate", fixture}, wantContain: "valid HDF results file"},
 		{name: "missing file", args: []string{"validate", "nonexistent.json"}, wantErr: true, wantErrMsg: "file not found"},
 		{name: "no arguments", args: []string{"validate"}, wantErr: true, wantErrMsg: "no input provided"},
 		{name: "with --json flag", args: []string{"validate", "--json", fixture}, wantContain: `"valid": true`},
+		{name: "change-event auto-detect", args: []string{"validate", changeEvent}, wantContain: "valid HDF requirement-change-event file"},
+		{name: "change-event explicit --type", args: []string{"validate", "--type", "requirement-change-event", changeEvent}, wantContain: "valid HDF requirement-change-event file"},
 	})
 }
 

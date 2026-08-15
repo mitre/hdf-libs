@@ -1,5 +1,5 @@
 import { computeCvssScore, roundImpact } from '@mitre/hdf-utilities';
-import { validateInputSize } from './converterutil.js';
+import { limitArrayWithWarning, validateInputSize } from './converterutil.js';
 import {
   parseStixBundle,
   stixObjectCVEs,
@@ -77,6 +77,15 @@ export function enrichStix(resultsInput: string, bundleInput: string, opts?: Enr
     }
     if (!matched) appendExternalReference(doc, buildStixRef(obj, 'reference'));
   }
+
+  // Bound the fan-out. Both dimensions are attacker-controlled from an untrusted
+  // threat-intel feed: N bundle objects citing one CVE × M duplicate-id findings
+  // that cite it = NxM references, each embedding the full STIX object. Cap the
+  // STIX references on every container so output stays linear in the input.
+  for (const reqs of reqById.values()) {
+    for (const req of reqs) capStixExternalRefs(req, 'finding');
+  }
+  capStixExternalRefs(doc, 'results root');
 
   if (opts?.recomputeCvss) recomputeExploitation(bundle, reqById, opts);
 
@@ -240,4 +249,29 @@ function stixFallbackDescription(obj: StixObject): string {
 function appendExternalReference(container: Doc, ref: Doc): void {
   const existing = Array.isArray(container.externalReferences) ? container.externalReferences : [];
   container.externalReferences = [...existing, ref];
+}
+
+// Bounds how many STIX externalReferences[] the enrich pass may attach to a
+// single container (a finding or the results root). Caps the quadratic fan-out
+// from an untrusted bundle without dropping pre-existing (non-STIX) references.
+const MAX_STIX_REFS_PER_CONTAINER = 50;
+
+// capStixExternalRefs truncates a container's STIX-sourced externalReferences[]
+// to MAX_STIX_REFS_PER_CONTAINER, keeping every non-STIX reference. On truncation
+// it logs a warning (via limitArrayWithWarning) and rebuilds the array regrouped —
+// non-STIX references first, capped STIX references after — so only the relative
+// order WITHIN each group is preserved, not the original interleaving. A no-op
+// when the container is under the cap.
+function capStixExternalRefs(container: Doc, label: string): void {
+  const refs = container.externalReferences;
+  if (!Array.isArray(refs) || refs.length === 0) return;
+  const stix: unknown[] = [];
+  const other: unknown[] = [];
+  for (const r of refs) {
+    if (r !== null && typeof r === 'object' && (r as Doc).sourceName === 'stix') stix.push(r);
+    else other.push(r);
+  }
+  if (stix.length <= MAX_STIX_REFS_PER_CONTAINER) return;
+  const capped = limitArrayWithWarning(stix, `enrich-stix ${label} references`, MAX_STIX_REFS_PER_CONTAINER);
+  container.externalReferences = [...other, ...capped];
 }

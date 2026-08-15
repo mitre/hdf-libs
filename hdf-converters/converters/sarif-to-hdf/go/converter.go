@@ -831,13 +831,15 @@ func mapKindToStatus(kind string) hdf.ResultStatus {
 // that carries no justification text (Reason is REQUIRED on a Status_Override).
 const defaultSuppressionReason = "Suppressed in SARIF source"
 
-// acceptedSuppressions returns the suppressions whose status is "accepted".
-// underReview and rejected suppressions are NOT overrides — an underReview
-// decision is not final and a rejected one was declined.
+// acceptedSuppressions returns the suppressions in force: status "accepted" or
+// absent — SARIF 2.1.0 treats a suppression without status as effective, and
+// real producers (CodeQL, semgrep) commonly emit only {"kind": ...}. underReview
+// and rejected suppressions are NOT overrides — an underReview decision is not
+// final and a rejected one was declined.
 func acceptedSuppressions(suppressions []Suppression) []Suppression {
 	var out []Suppression
 	for _, s := range suppressions {
-		if s.Status == "accepted" {
+		if s.Status == "accepted" || s.Status == "" {
 			out = append(out, s)
 		}
 	}
@@ -907,37 +909,14 @@ func buildSuppressionOverride(result SarifResult, timestamp time.Time) (hdf.Stat
 	return override, effective, true
 }
 
-// statusSeverityRank orders result statuses for requirement-level rollup
-// (higher = worse). Used to decide whether accepted suppressions actually change
-// the requirement's effective status.
-func statusSeverityRank(s hdf.ResultStatus) int {
-	switch s {
-	case hdf.Failed:
-		return 5
-	case hdf.Error:
-		return 4
-	case hdf.NotReviewed:
-		return 3
-	case hdf.Passed:
-		return 2
-	case hdf.NotApplicable:
-		return 1
-	default:
-		return 0
-	}
-}
-
-// rollupStatus returns the worst status in the set — the requirement-level status.
+// rollupStatus returns the worst status in the set per the canonical worst-wins
+// ordering (hdfutil.StatusSeverityOrder) — the requirement-level status.
 func rollupStatus(statuses []hdf.ResultStatus) hdf.ResultStatus {
-	worst := hdf.ResultStatus("")
-	worstRank := -1
-	for _, s := range statuses {
-		if r := statusSeverityRank(s); r > worstRank {
-			worstRank = r
-			worst = s
-		}
+	strs := make([]string, len(statuses))
+	for i, s := range statuses {
+		strs[i] = string(s)
 	}
-	return worst
+	return hdf.ResultStatus(hdfutil.WorstStatus(strs))
 }
 
 // governingDisposition picks the override type that produced the effective

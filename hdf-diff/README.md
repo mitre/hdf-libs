@@ -66,10 +66,11 @@ hdf-diff supports multiple strategies for matching requirements across evaluatio
 - **Fuzzy title** — Jaccard similarity on tokenized titles
 
 ```typescript
-import { diffHdf, createFuzzyTitleStrategy } from '@mitre/hdf-diff';
+import { diffHdf } from '@mitre/hdf-diff';
 
 const comparison = diffHdf(oldResults, newResults, {
-  matchStrategy: createFuzzyTitleStrategy(0.8), // 80% similarity threshold
+  matchStrategy: 'fuzzyTitle',
+  minConfidence: 0.8, // 80% similarity threshold
 });
 ```
 
@@ -96,7 +97,7 @@ hdf diff old-system.json new-system.json
 # SBOM comparison
 hdf diff --sbom old.cdx.json new.cdx.json
 
-# Encode the security outcome in the exit code (10=fixes, 11=regressions, 12=mixed, 13=baseline change)
+# Encode the security outcome in the exit code (10=fixes, 11=regressions, 12=mixed, 13=baseline change, 14=metadata drift only)
 hdf diff old-results.json new-results.json --detailed-exitcode
 ```
 

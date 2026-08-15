@@ -80,11 +80,55 @@ func EnrichStix(resultsInput, bundleInput []byte, opts ...EnrichOptions) ([]byte
 		}
 	}
 
+	// Bound the enrichment fan-out. Both dimensions are attacker-controlled from
+	// an untrusted threat-intel feed: N bundle objects citing one CVE × M
+	// duplicate-id findings that cite it = NxM references, each embedding the
+	// full STIX object. Cap the STIX references on every container (each matched
+	// finding, and the results root) so output size stays linear in the input.
+	for _, reqs := range reqByID {
+		for _, req := range reqs {
+			capStixExternalRefs(req, "finding")
+		}
+	}
+	capStixExternalRefs(doc, "results root")
+
 	if len(opts) > 0 && opts[0].RecomputeCVSS {
 		recomputeExploitation(bundle, reqByID, opts[0])
 	}
 
 	return json.MarshalIndent(doc, "", "  ")
+}
+
+// maxStixRefsPerContainer bounds how many STIX externalReferences[] the enrich
+// pass may attach to a single container (a finding or the results root). It caps
+// the quadratic fan-out from an untrusted bundle without dropping the container's
+// pre-existing (non-STIX) references.
+const maxStixRefsPerContainer = 50
+
+// capStixExternalRefs truncates a container's STIX-sourced externalReferences[]
+// to maxStixRefsPerContainer, keeping every non-STIX reference. On truncation it
+// logs a warning (via LimitSliceWithWarning) and rebuilds the array regrouped —
+// non-STIX references first, capped STIX references after — so only the relative
+// order WITHIN each group is preserved, not the original interleaving. A no-op
+// when the container is under the cap.
+func capStixExternalRefs(container map[string]interface{}, label string) {
+	refs, ok := container["externalReferences"].([]interface{})
+	if !ok || len(refs) == 0 {
+		return
+	}
+	var stix, other []interface{}
+	for _, r := range refs {
+		if rm, ok := r.(map[string]interface{}); ok && rm["sourceName"] == "stix" {
+			stix = append(stix, r)
+		} else {
+			other = append(other, r)
+		}
+	}
+	if len(stix) <= maxStixRefsPerContainer {
+		return
+	}
+	stix = LimitSliceWithWarning(stix, maxStixRefsPerContainer, "enrich-stix "+label+" references")
+	container["externalReferences"] = append(other, stix...)
 }
 
 // indexRequirementsByID maps each finding id to the (mutable) requirement maps
