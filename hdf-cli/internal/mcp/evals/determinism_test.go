@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // TestDeterminism_ByteIdenticalOutput — identical inputs run twice produce
@@ -11,6 +12,13 @@ import (
 // payloads, canonical trimmed-UTC timestamps, stable key ordering). Exercised on
 // hdf_diff (which stamps effective checksums anchored to the doc timestamp, not
 // the wall clock).
+//
+// The two runs are deliberately separated past a one-second boundary: any
+// wall-clock value leaking into the payload (the engine's generation Timestamp
+// is trimmed to whole seconds) would otherwise only diverge when the two runs
+// happened to straddle a tick — a flake that passes locally and fails on a
+// loaded CI runner. Forcing the gap turns that latent flake into a deterministic
+// regression guard.
 func TestDeterminism_ByteIdenticalOutput(t *testing.T) {
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
 	root := stageRoot(t, [2]string{fxDiffFrom, "from.json"}, [2]string{fxDiffTo, "to.json"})
@@ -28,6 +36,7 @@ func TestDeterminism_ByteIdenticalOutput(t *testing.T) {
 	}
 
 	sha1, body1 := run("a.json")
+	time.Sleep(1100 * time.Millisecond)
 	sha2, body2 := run("b.json")
 	if sha1 == "" || sha1 != sha2 {
 		t.Fatalf("content hash not deterministic: %q vs %q", sha1, sha2)

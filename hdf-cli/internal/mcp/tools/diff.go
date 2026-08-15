@@ -110,6 +110,13 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 			}
 			return toolError(terr), errorDiffOutput(), nil
 		}
+		// The shared engine stamps a wall-clock generation Timestamp — correct for
+		// the CLI's "generated at", but it makes the MCP's content-addressed diff
+		// artifact hash differently for identical inputs across a one-second tick,
+		// violating the no-wall-clock determinism contract (ADR-0007 §10). Drop it:
+		// timestamp is optional in hdf-comparison and the artifact is anchored by
+		// its sources/handles, not its generation time.
+		comp.Timestamp = ""
 
 		out := diffOutput{FromHandle: fromH, ToHandle: toH, Mode: mode, Summary: comp.Summary}
 
