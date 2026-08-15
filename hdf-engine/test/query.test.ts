@@ -130,9 +130,30 @@ describe('hdf-engine filter helpers — parity with the Go helper unit tests', (
     expect(parseImpactFilter('0.5')).toEqual(['=', 0.5]);
     expect(parseImpactFilter('> 0.5')).toEqual(['>', 0.5]);
     expect(parseImpactFilter('0')).toEqual(['=', 0]);
-    // Invalid values fall back to ('=', 0), matching Go strconv.ParseFloat.
-    expect(parseImpactFilter('>abc')).toEqual(['=', 0]);
-    expect(parseImpactFilter('notanumber')).toEqual(['=', 0]);
+    // An invalid operand safe-degrades to match NOTHING (val NaN), mirroring the
+    // Go engine's `return ok && compareImpact(...)`. It must NOT coerce to
+    // ('=', 0), which silently returns confidently-wrong impact==0 rows.
+    for (const bad of ['>abc', 'notanumber']) {
+      const [, val] = parseImpactFilter(bad);
+      expect(Number.isNaN(val)).toBe(true);
+    }
+  });
+
+  // The impact-filter operand is a plain-decimal grammar kept in lockstep with
+  // the Go engine (bead 4908.15). JS Number() is more liberal than the shared
+  // grammar (0x1f→31, 0b101→5, 0o17→15, Infinity→Infinity); Go strconv.ParseFloat
+  // is liberal in other directions (1_000, 0x1p-2, Inf/NaN). Both engines reject
+  // the identical set so a filter behaves the same in Go and TS.
+  it('parseImpactFilter enforces the strict-decimal grammar (Go/TS parity)', () => {
+    for (const good of ['0.5', '.5', '5.', '+0.5', '-0.5', '1e-2', '1E2', '017', '0', '1', '>=0.7', '<0.5', '  0.5  ', '  >0.5', '> 0.5']) {
+      const [, val] = parseImpactFilter(good);
+      expect(Number.isNaN(val)).toBe(false);
+    }
+    for (const bad of ['0x1f', '0X1F', '0b101', '0o17', '1_000', '1_0', '0x1p-2',
+      '0x1.8p1', 'Inf', 'inf', 'Infinity', 'NaN', 'nan', '1e400', '>1_000', '>=Inf']) {
+      const [, val] = parseImpactFilter(bad);
+      expect(Number.isNaN(val)).toBe(true);
+    }
   });
 
   it('compareImpact', () => {

@@ -214,6 +214,26 @@ func TestParseImpactFilter_Malformed(t *testing.T) {
 	assert.True(t, ValidImpactFilter("0"))
 }
 
+// TestParseImpactFilter_StrictDecimalParity locks the impact-filter operand to a
+// plain-decimal grammar, kept byte-for-byte in lockstep with the TS engine
+// (bead 4908.15). strconv.ParseFloat is more liberal than JS Number(): it also
+// accepts underscores (1_000), hex-floats (0x1p-2), and Inf/NaN — none of which
+// are a sensible 0.0–1.0 threshold and all of which JS parses differently. Both
+// engines reject the identical set so a filter behaves the same in Go and TS.
+func TestParseImpactFilter_StrictDecimalParity(t *testing.T) {
+	for _, good := range []string{"0.5", ".5", "5.", "+0.5", "-0.5", "1e-2", "1E2", "017", "0", "1", ">=0.7", "<0.5", "  0.5  ", "  >0.5", "> 0.5"} {
+		_, _, ok := parseImpactFilter(good)
+		assert.True(t, ok, "%q must be accepted", good)
+		assert.True(t, ValidImpactFilter(good), "%q must be valid", good)
+	}
+	for _, bad := range []string{"0x1f", "0X1F", "0b101", "0o17", "1_000", "1_0",
+		"0x1p-2", "0x1.8p1", "Inf", "inf", "Infinity", "NaN", "nan", "1e400", ">1_000", ">=Inf"} {
+		_, _, ok := parseImpactFilter(bad)
+		assert.False(t, ok, "%q must be rejected", bad)
+		assert.False(t, ValidImpactFilter(bad), "%q must be invalid", bad)
+	}
+}
+
 func TestCompareImpact(t *testing.T) {
 	tests := []struct {
 		name     string

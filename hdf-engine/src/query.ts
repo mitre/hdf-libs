@@ -157,17 +157,38 @@ function applyFilters(
   return filters.every((f) => f(control, status, severity));
 }
 
+// DECIMAL_FLOAT is the shared impact-filter operand grammar — a plain decimal:
+// optional sign, digits with an optional fraction (or a leading-dot fraction),
+// optional decimal exponent. It excludes the forms JS Number() accepts but that
+// make no sense as a 0.0–1.0 threshold and diverge from Go strconv.ParseFloat:
+// hex/binary/octal integers (0x1f→31, 0b101→5, 0o17→15) and Infinity. The Go
+// engine applies the identical pattern so a filter is accepted or rejected the
+// same in both languages (bead 4908.15).
+const DECIMAL_FLOAT = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
+
+// parseDecimal parses a plain-decimal operand, returning null for anything
+// outside the shared grammar (including overflow to Infinity, e.g. '1e400', so
+// Go's ParseFloat ErrRange rejection is mirrored).
+function parseDecimal(s: string): number | null {
+  if (!DECIMAL_FLOAT.test(s)) return null;
+  const v = Number(s);
+  return Number.isFinite(v) ? v : null;
+}
+
+// An invalid operand safe-degrades to ('=', NaN), which compareImpact treats as
+// matching NOTHING — mirroring the Go engine's `return ok && compareImpact(...)`.
+// It must never coerce to ('=', 0), which silently returns confidently-wrong
+// impact==0 rows for a typo'd or garbage filter.
 export function parseImpactFilter(f: string): [string, number] {
   const trimmed = f.trim();
   for (const op of ['>=', '<=', '>', '<', '=']) {
     if (trimmed.startsWith(op)) {
-      const rest = trimmed.slice(op.length).trim();
-      const v = rest === '' ? NaN : Number(rest);
-      return Number.isNaN(v) ? ['=', 0] : [op, v];
+      const v = parseDecimal(trimmed.slice(op.length).trim());
+      return v === null ? ['=', NaN] : [op, v];
     }
   }
-  const v = trimmed === '' ? NaN : Number(trimmed);
-  return Number.isNaN(v) ? ['=', 0] : ['=', v];
+  const v = parseDecimal(trimmed);
+  return v === null ? ['=', NaN] : ['=', v];
 }
 
 export function compareImpact(impact: number, op: string, val: number): boolean {

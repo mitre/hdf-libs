@@ -2,11 +2,21 @@ package hdfengine
 
 import (
 	"context"
+	"regexp"
 	"strconv"
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
+
+// decimalFloat is the shared impact-filter operand grammar: a plain decimal —
+// optional sign, digits with an optional fraction (or a leading-dot fraction),
+// optional decimal exponent. It deliberately excludes the forms strconv.ParseFloat
+// also accepts but that make no sense as a 0.0–1.0 threshold and diverge from JS
+// Number(): hex-floats (0x1p-2), digit-separator underscores (1_000), and
+// Inf/NaN. The TS engine applies the identical pattern so a filter is accepted
+// or rejected the same in both languages (bead 4908.15).
+var decimalFloat = regexp.MustCompile(`^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$`)
 
 // Options configures a requirements query. Every filter input arrives here — the
 // engine reads no package-level state, so Filter is re-entrant and safe to call
@@ -249,19 +259,33 @@ func parseImpactFilter(filter string) (op string, val float64, ok bool) {
 	operators := []string{">=", "<=", ">", "<", "="}
 	for _, o := range operators {
 		if strings.HasPrefix(filter, o) {
-			v, err := strconv.ParseFloat(strings.TrimSpace(filter[len(o):]), 64)
-			if err != nil {
+			v, ok := parseDecimal(strings.TrimSpace(filter[len(o):]))
+			if !ok {
 				return "", 0, false
 			}
 			return o, v, true
 		}
 	}
 
-	v, err := strconv.ParseFloat(filter, 64)
-	if err != nil {
+	v, ok := parseDecimal(filter)
+	if !ok {
 		return "", 0, false
 	}
 	return "=", v, true
+}
+
+// parseDecimal parses a plain-decimal operand, rejecting the non-decimal forms
+// strconv.ParseFloat would otherwise accept (see decimalFloat). The ParseFloat
+// call still runs so overflow to ±Inf (ErrRange, e.g. "1e400") is rejected too.
+func parseDecimal(s string) (float64, bool) {
+	if !decimalFloat.MatchString(s) {
+		return 0, false
+	}
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0, false
+	}
+	return v, true
 }
 
 // ValidImpactFilter reports whether s is a well-formed impact comparison filter
