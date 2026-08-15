@@ -94,7 +94,11 @@ export function overallStatus(results: RequirementResult[]): string {
  * severity, using impactToSeverity. Maps "informational" to "none".
  */
 export function deriveSeverity(impact: number, severity?: Severity | null): string {
-  if (severity) {
+  // Presence-based, matching Go DeriveSeverity's `if severity != nil`: an explicit
+  // severity — including an empty string — is returned verbatim; only a
+  // null/undefined severity derives from impact. Testing truthiness here would
+  // send "" through the impact path and diverge from Go (bead 4908.20).
+  if (severity != null) {
     return String(severity);
   }
   const sev = impactToSeverity(impact);

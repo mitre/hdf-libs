@@ -184,6 +184,19 @@ describe('deriveSeverity', () => {
   it('impact-derived high', () => {
     expect(deriveSeverity(0.7)).toBe('high');
   });
+  // Parity with Go DeriveSeverity, which is presence-based (`if severity != nil`):
+  // an explicit empty-string severity is returned verbatim, NOT re-derived from
+  // impact. TS must test presence (severity != null), not truthiness — otherwise
+  // "" (falsy) would fall through to impact and the same requirement could land
+  // in a different compliance bucket than Go (bead 4908.20). Go ground truth:
+  // DeriveSeverity(0.7, &"") => "", DeriveSeverity(0.7, nil) => "high".
+  it('empty-string severity is returned verbatim (Go presence-parity)', () => {
+    expect(deriveSeverity(0.7, '' as unknown as Severity)).toBe('');
+  });
+  it('null/undefined severity still derives from impact', () => {
+    expect(deriveSeverity(0.7, null)).toBe('high');
+    expect(deriveSeverity(0.7, undefined)).toBe('high');
+  });
 });
 
 describe('agent-override detective surface — parity with go/compliance_test.go', () => {
