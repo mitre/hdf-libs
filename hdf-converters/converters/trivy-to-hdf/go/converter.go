@@ -300,9 +300,11 @@ func convertVuln(raw json.RawMessage, res trivyResult, startTime time.Time) (hdf
 			Message:   hdfutil.Ptr(fmt.Sprintf("Severity: %s", firstNonEmpty(v.Severity, "UNKNOWN"))),
 		}},
 	}
-	// Emit affectedPackages only when it satisfies the schema anyOf (name or
-	// purl present) — a package-less vuln would otherwise produce an invalid {}.
-	if ap := buildAffectedPackage(v); ap.Name != nil || ap.Purl != nil {
+	// Emit affectedPackages only when it satisfies the schema anyOf. Trivy's
+	// package identity comes from the PURL (which also yields the ecosystem);
+	// a name/version without a PURL lacks the required ecosystem and would be
+	// schema-invalid, so gate on the PURL.
+	if ap := buildAffectedPackage(v); ap.Purl != nil {
 		req.AffectedPackages = []hdf.AffectedPackage{ap}
 	}
 	if v.PkgPath != "" {

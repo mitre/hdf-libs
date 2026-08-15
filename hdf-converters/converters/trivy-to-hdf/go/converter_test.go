@@ -158,13 +158,16 @@ func TestConvert_Empty(t *testing.T) {
 	assert.Contains(t, req.Results[0].CodeDesc, "Trivy")
 }
 
-func TestConvert_SparseVulnOmitsAffectedPackages(t *testing.T) {
-	input := []byte(`{"SchemaVersion":2,"ArtifactName":"x","ArtifactType":"filesystem","Results":[{"Class":"os-pkgs","Vulnerabilities":[{}]}]}`)
+func TestConvert_VulnWithoutPurlOmitsAffectedPackages(t *testing.T) {
+	// A vuln with name+version but no PURL lacks the ecosystem the schema
+	// requires; emitting {name,version} would be schema-invalid, so omit it.
+	input := []byte(`{"SchemaVersion":2,"ArtifactName":"x","ArtifactType":"filesystem","Results":[{"Class":"os-pkgs","Vulnerabilities":[{"VulnerabilityID":"CVE-Z","PkgName":"p","InstalledVersion":"1","Severity":"LOW"}]}]}`)
 	res, err := ConvertTrivyToHDF(input, converterVersion)
 	require.NoError(t, err)
-	req := findReq(res, "Trivy/")
+	req := findReq(res, "Trivy/CVE-Z")
 	require.NotNil(t, req)
-	assert.Nil(t, req.AffectedPackages, "a package-less vuln must not emit an invalid empty affectedPackage")
+	assert.Nil(t, req.AffectedPackages, "a vuln without a PURL must not emit a schema-invalid affectedPackage")
+	assertSchemaValid(t, res)
 }
 
 func TestConvert_InvalidInput(t *testing.T) {

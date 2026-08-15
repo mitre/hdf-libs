@@ -177,7 +177,9 @@ async function convertNative(input: string, converterVersion: string): Promise<s
   const report = parseJSON<TrivyReport>(input);
   const resultsChecksum: Checksum = await inputChecksum(input);
   const scanTime = report.CreatedAt ? parseTimestamp(report.CreatedAt) : null;
-  const startTime = scanTime ?? new Date(0);
+  // Match the Go peer's zero-time sentinel (0001-01-01) rather than epoch, so an
+  // unknown scan time doesn't imply a real 1970 date and TS/Go output aligns.
+  const startTime = scanTime ?? new Date('0001-01-01T00:00:00Z');
 
   const requirements: EvaluatedRequirement[] = [];
   for (const res of report.Results ?? []) {
@@ -247,9 +249,12 @@ function convertVuln(v: TrivyVuln, res: TrivyResult, startTime: Date): Evaluated
       } as RequirementResult,
     ],
   };
-  // Emit affectedPackages only when it satisfies the schema anyOf (name or purl).
+  // Emit affectedPackages only when it satisfies the schema anyOf. Package
+  // identity comes from the PURL (which also yields the ecosystem); a
+  // name/version without a PURL lacks the required ecosystem and would be
+  // schema-invalid, so gate on the PURL.
   const ap = buildAffectedPackage(v);
-  if (ap.name || ap.purl) req.affectedPackages = [ap];
+  if (ap.purl) req.affectedPackages = [ap];
   if (v.PkgPath) req.sourceLocation = {ref: v.PkgPath} as SourceLocation;
   return req;
 }
