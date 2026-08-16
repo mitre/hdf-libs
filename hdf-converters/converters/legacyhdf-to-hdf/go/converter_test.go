@@ -98,11 +98,11 @@ func sharedLegacyInput(inputName string) ([]byte, bool) {
 // always-masked document timestamp.
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTestsWithInput(t, "legacyhdf-to-hdf", func(input []byte) (interface{}, error) {
-		var v1 HDFV1Results
+		var v1 LegacyHDFResults
 		if err := json.Unmarshal(input, &v1); err != nil {
 			return nil, err
 		}
-		return ConvertV1ToV2(&v1, "1.0.0"), nil
+		return ConvertLegacyHDF(&v1, "1.0.0"), nil
 	}, sharedLegacyInput)
 }
 
@@ -113,12 +113,12 @@ func TestConvertV1ToV2_Minimal(t *testing.T) {
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err, "Failed to read input file")
 
-	var v1 HDFV1Results
+	var v1 LegacyHDFResults
 	err = json.Unmarshal(inputData, &v1)
 	require.NoError(t, err, "Failed to unmarshal input")
 
 	// Convert
-	v2 := ConvertV1ToV2(&v1, "1.0.0")
+	v2 := ConvertLegacyHDF(&v1, "1.0.0")
 
 	// Write output for differential testing
 	outputDir := getOutputDir()
@@ -143,11 +143,11 @@ func TestConvertV1ToV2_Tool(t *testing.T) {
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 
-	var v1 HDFV1Results
+	var v1 LegacyHDFResults
 	err = json.Unmarshal(inputData, &v1)
 	require.NoError(t, err)
 
-	v2 := ConvertV1ToV2(&v1, "1.0.0")
+	v2 := ConvertLegacyHDF(&v1, "1.0.0")
 
 	require.NotNil(t, v2.Tool)
 	require.NotNil(t, v2.Tool.Name)
@@ -158,20 +158,20 @@ func TestConvertV1ToV2_Tool(t *testing.T) {
 
 // v1WithResultTimes builds a minimal v1 document whose controls carry the given
 // result start_times, for exercising document-metadata derivation.
-func v1WithResultTimes(version string, startTimes ...string) *HDFV1Results {
-	results := make([]V1Result, len(startTimes))
+func v1WithResultTimes(version string, startTimes ...string) *LegacyHDFResults {
+	results := make([]LegacyResult, len(startTimes))
 	for i, st := range startTimes {
 		s := st
-		results[i] = V1Result{Status: "passed", StartTime: &s}
+		results[i] = LegacyResult{Status: "passed", StartTime: &s}
 	}
-	return &HDFV1Results{
+	return &LegacyHDFResults{
 		Version:  version,
-		Platform: V1Platform{Name: "test-system"},
-		Profiles: []V1Profile{{
+		Platform: LegacyPlatform{Name: "test-system"},
+		Profiles: []LegacyProfile{{
 			Name:     "p",
-			Controls: []V1Control{{ID: "c-1", Impact: 0.5, Results: results}},
+			Controls: []LegacyControl{{ID: "c-1", Impact: 0.5, Results: results}},
 		}},
-		Statistics: V1Statistics{},
+		Statistics: LegacyStatistics{},
 	}
 }
 
@@ -182,7 +182,7 @@ func TestConvertV1ToV2_SetsDocumentTimestampFromResults(t *testing.T) {
 		"2024-03-01T09:58:00Z",
 	)
 
-	v2 := ConvertV1ToV2(v1, "1.0.0")
+	v2 := ConvertLegacyHDF(v1, "1.0.0")
 
 	require.NotNil(t, v2.Timestamp, "top-level timestamp must be derived from results")
 	assert.Equal(t, "2024-03-01T10:05:30Z", v2.Timestamp.UTC().Format(time.RFC3339),
@@ -192,7 +192,7 @@ func TestConvertV1ToV2_SetsDocumentTimestampFromResults(t *testing.T) {
 func TestConvertV1ToV2_TimestampNormalizesOffsetToUTC(t *testing.T) {
 	v1 := v1WithResultTimes("5.22.3", "2024-03-01T10:05:30-05:00")
 
-	v2 := ConvertV1ToV2(v1, "1.0.0")
+	v2 := ConvertLegacyHDF(v1, "1.0.0")
 
 	require.NotNil(t, v2.Timestamp)
 	assert.Equal(t, "2024-03-01T15:05:30Z", v2.Timestamp.UTC().Format(time.RFC3339),
@@ -204,7 +204,7 @@ func TestConvertV1ToV2_PrefersExplicitTimestamp(t *testing.T) {
 	explicit := "2020-01-02T03:04:05Z"
 	v1.Timestamp = &explicit
 
-	v2 := ConvertV1ToV2(v1, "1.0.0")
+	v2 := ConvertLegacyHDF(v1, "1.0.0")
 
 	require.NotNil(t, v2.Timestamp)
 	assert.Equal(t, "2020-01-02T03:04:05Z", v2.Timestamp.UTC().Format(time.RFC3339),
@@ -212,34 +212,34 @@ func TestConvertV1ToV2_PrefersExplicitTimestamp(t *testing.T) {
 }
 
 func TestConvertV1ToV2_NoTimestampWhenSourceHasNoTimes(t *testing.T) {
-	v1 := &HDFV1Results{
+	v1 := &LegacyHDFResults{
 		Version:    "5.22.3",
-		Platform:   V1Platform{Name: "test-system"},
-		Profiles:   []V1Profile{{Name: "p", Controls: []V1Control{{ID: "c-1", Impact: 0}}}},
-		Statistics: V1Statistics{},
+		Platform:   LegacyPlatform{Name: "test-system"},
+		Profiles:   []LegacyProfile{{Name: "p", Controls: []LegacyControl{{ID: "c-1", Impact: 0}}}},
+		Statistics: LegacyStatistics{},
 	}
 
-	v2 := ConvertV1ToV2(v1, "1.0.0")
+	v2 := ConvertLegacyHDF(v1, "1.0.0")
 
 	assert.Nil(t, v2.Timestamp, "no result times and no explicit timestamp → nil (never wall clock)")
 }
 
 func TestConvertV1ToV2_IgnoresTimelessResults(t *testing.T) {
 	timed := "2024-06-01T00:00:00Z"
-	v1 := &HDFV1Results{
+	v1 := &LegacyHDFResults{
 		Version:  "5.22.3",
-		Platform: V1Platform{Name: "test-system"},
-		Profiles: []V1Profile{{
+		Platform: LegacyPlatform{Name: "test-system"},
+		Profiles: []LegacyProfile{{
 			Name: "p",
-			Controls: []V1Control{
-				{ID: "c-1", Impact: 0.5, Results: []V1Result{{Status: "passed"}}},
-				{ID: "c-2", Impact: 0.5, Results: []V1Result{{Status: "passed", StartTime: &timed}}},
+			Controls: []LegacyControl{
+				{ID: "c-1", Impact: 0.5, Results: []LegacyResult{{Status: "passed"}}},
+				{ID: "c-2", Impact: 0.5, Results: []LegacyResult{{Status: "passed", StartTime: &timed}}},
 			},
 		}},
-		Statistics: V1Statistics{},
+		Statistics: LegacyStatistics{},
 	}
 
-	v2 := ConvertV1ToV2(v1, "1.0.0")
+	v2 := ConvertLegacyHDF(v1, "1.0.0")
 
 	require.NotNil(t, v2.Timestamp)
 	assert.Equal(t, "2024-06-01T00:00:00Z", v2.Timestamp.UTC().Format(time.RFC3339),
@@ -249,7 +249,7 @@ func TestConvertV1ToV2_IgnoresTimelessResults(t *testing.T) {
 func TestConvertV1ToV2_SetsGenerator(t *testing.T) {
 	v1 := v1WithResultTimes("5.22.3", "2024-03-01T10:00:00Z")
 
-	v2 := ConvertV1ToV2(v1, "3.4.5")
+	v2 := ConvertLegacyHDF(v1, "3.4.5")
 
 	require.NotNil(t, v2.Generator)
 	assert.Equal(t, "legacyhdf-to-hdf", v2.Generator.Name)
@@ -260,7 +260,7 @@ func TestConvertV1ToV2_PreservesInputGenerator(t *testing.T) {
 	v1 := v1WithResultTimes("5.22.3", "2024-03-01T10:00:00Z")
 	v1.Generator = &hdf.Generator{Name: "inspec", Version: "4.18.0"}
 
-	v2 := ConvertV1ToV2(v1, "3.4.5")
+	v2 := ConvertLegacyHDF(v1, "3.4.5")
 
 	require.NotNil(t, v2.Generator)
 	assert.Equal(t, "inspec", v2.Generator.Name, "an input generator is preserved")
@@ -270,7 +270,7 @@ func TestConvertV1ToV2_PreservesInputGenerator(t *testing.T) {
 func TestConvertV1ToV2_ToolInSpecFromRealVersion(t *testing.T) {
 	v1 := v1WithResultTimes("5.22.3", "2024-03-01T10:00:00Z")
 
-	v2 := ConvertV1ToV2(v1, "1.0.0")
+	v2 := ConvertLegacyHDF(v1, "1.0.0")
 
 	require.NotNil(t, v2.Tool)
 	require.NotNil(t, v2.Tool.Name)
@@ -285,7 +285,7 @@ func TestConvertV1ToV2_ToolKeepsLegacyLabelForNonInSpecVersion(t *testing.T) {
 	// major < 2 is a legacy HDF v1 format marker, not a modern InSpec release.
 	v1 := v1WithResultTimes("1.37.6", "2024-03-01T10:00:00Z")
 
-	v2 := ConvertV1ToV2(v1, "1.0.0")
+	v2 := ConvertLegacyHDF(v1, "1.0.0")
 
 	require.NotNil(t, v2.Tool)
 	require.NotNil(t, v2.Tool.Name)
@@ -301,12 +301,12 @@ func TestConvertV1ToV2_ContainerScan(t *testing.T) {
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err, "Failed to read input file")
 
-	var v1 HDFV1Results
+	var v1 LegacyHDFResults
 	err = json.Unmarshal(inputData, &v1)
 	require.NoError(t, err, "Failed to unmarshal input")
 
 	// Convert
-	v2 := ConvertV1ToV2(&v1, "1.0.0")
+	v2 := ConvertLegacyHDF(&v1, "1.0.0")
 
 	// Write output for differential testing
 	outputDir := getOutputDir()
@@ -331,12 +331,12 @@ func TestConvertV1ToV2_Wrapper(t *testing.T) {
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err, "Failed to read input file")
 
-	var v1 HDFV1Results
+	var v1 LegacyHDFResults
 	err = json.Unmarshal(inputData, &v1)
 	require.NoError(t, err, "Failed to unmarshal input")
 
 	// Convert
-	v2 := ConvertV1ToV2(&v1, "1.0.0")
+	v2 := ConvertLegacyHDF(&v1, "1.0.0")
 
 	// Write output for differential testing
 	outputDir := getOutputDir()
@@ -409,7 +409,7 @@ func TestIsHDFV1(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := IsHDFV1([]byte(tc.input))
+			result := IsLegacyHDF([]byte(tc.input))
 			assert.Equal(t, tc.expected, result)
 		})
 	}
@@ -507,23 +507,23 @@ func TestIsHDFV1FromMap(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := IsHDFV1FromMap(tc.input)
+			result := IsLegacyHDFFromMap(tc.input)
 			assert.Equal(t, tc.expected, result)
 		})
 	}
 }
 
 func TestConvertV1ToV2_WithNilProfiles(t *testing.T) {
-	v1 := &HDFV1Results{
+	v1 := &LegacyHDFResults{
 		Version: "1.0.0",
-		Platform: V1Platform{
+		Platform: LegacyPlatform{
 			Name: "test-system",
 		},
 		Profiles:   nil,
-		Statistics: V1Statistics{},
+		Statistics: LegacyStatistics{},
 	}
 
-	v2 := ConvertV1ToV2(v1, "1.0.0")
+	v2 := ConvertLegacyHDF(v1, "1.0.0")
 
 	// Should handle nil profiles
 	require.NotNil(t, v2.Baselines)
@@ -545,7 +545,7 @@ func TestConvertResult_AllOptionalFields(t *testing.T) {
 	resourceClass := "File"
 	resourceID := "res-123"
 
-	v1 := V1Result{
+	v1 := LegacyResult{
 		Status:        "passed",
 		CodeDesc:      &codeDesc,
 		RunTime:       &runTime,
@@ -584,7 +584,7 @@ func TestConvertDependency_AllFields(t *testing.T) {
 	compliance := "compliance-id"
 	status := "loaded"
 
-	v1 := V1Dependency{
+	v1 := LegacyDependency{
 		Name:        &name,
 		URL:         &url,
 		Path:        &path,
@@ -617,7 +617,7 @@ func TestConvertDependency_AllFields(t *testing.T) {
 
 func TestConvertGroup_WithTitle(t *testing.T) {
 	title := "Test Group Title"
-	v1 := V1Group{
+	v1 := LegacyGroup{
 		ID:       "group-1",
 		Title:    &title,
 		Controls: []string{"ctrl-1", "ctrl-2"},
@@ -645,7 +645,7 @@ func TestConvertProfile_AllOptionalFields(t *testing.T) {
 	statusMessage := "Loaded successfully"
 	groupTitle := "Group Title"
 
-	v1 := V1Profile{
+	v1 := LegacyProfile{
 		Name:           "test-profile",
 		Version:        &version,
 		Title:          &title,
@@ -654,14 +654,14 @@ func TestConvertProfile_AllOptionalFields(t *testing.T) {
 		License:        &license,
 		Copyright:      &copyright,
 		CopyrightEmail: &copyrightEmail,
-		Groups: []V1Group{
+		Groups: []LegacyGroup{
 			{ID: "group-1", Title: &groupTitle, Controls: []string{"ctrl-1"}},
 		},
-		Controls: []V1Control{
+		Controls: []LegacyControl{
 			{ID: "ctrl-1", Impact: 0.5},
 		},
 		SHA256:        &sha256,
-		Depends:       []V1Dependency{{Name: &maintainer}},
+		Depends:       []LegacyDependency{{Name: &maintainer}},
 		ParentProfile: &parentProfile,
 		Status:        &status,
 		StatusMessage: &statusMessage,
@@ -704,11 +704,11 @@ func TestConvertV1ToV2_DeepOverlayFlatten(t *testing.T) {
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 
-	var v1 HDFV1Results
+	var v1 LegacyHDFResults
 	require.NoError(t, json.Unmarshal(inputData, &v1))
 	require.Len(t, v1.Profiles, 3, "fixture should have 3 profiles before conversion")
 
-	v2 := ConvertV1ToV2(&v1, "1.0.0")
+	v2 := ConvertLegacyHDF(&v1, "1.0.0")
 
 	t.Run("flattens 3 profiles into 1 baseline", func(t *testing.T) {
 		assert.Len(t, v2.Baselines, 1)
@@ -742,11 +742,11 @@ func TestConvertV1ToV2_WideWrapperFlatten(t *testing.T) {
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 
-	var v1 HDFV1Results
+	var v1 LegacyHDFResults
 	require.NoError(t, json.Unmarshal(inputData, &v1))
 	require.Len(t, v1.Profiles, 4, "fixture should have 4 profiles before conversion")
 
-	v2 := ConvertV1ToV2(&v1, "1.0.0")
+	v2 := ConvertLegacyHDF(&v1, "1.0.0")
 
 	t.Run("flattens 4 profiles into 1 baseline", func(t *testing.T) {
 		assert.Len(t, v2.Baselines, 1)
@@ -762,20 +762,20 @@ func TestConvertV1ToV2_WideWrapperFlatten(t *testing.T) {
 }
 
 func TestConvertV1ToV2_PassthroughNoOverlays(t *testing.T) {
-	v1 := &HDFV1Results{
+	v1 := &LegacyHDFResults{
 		Version:  "1.0.0",
-		Platform: V1Platform{Name: "test"},
-		Profiles: []V1Profile{{
+		Platform: LegacyPlatform{Name: "test"},
+		Profiles: []LegacyProfile{{
 			Name: "simple-profile",
-			Controls: []V1Control{{
+			Controls: []LegacyControl{{
 				ID:      "V-1",
 				Impact:  0.5,
-				Results: []V1Result{{Status: "passed"}},
+				Results: []LegacyResult{{Status: "passed"}},
 			}},
 		}},
 	}
 
-	v2 := ConvertV1ToV2(v1, "1.0.0")
+	v2 := ConvertLegacyHDF(v1, "1.0.0")
 
 	t.Run("single profile passes through as single baseline", func(t *testing.T) {
 		assert.Len(t, v2.Baselines, 1)
@@ -786,18 +786,18 @@ func TestConvertV1ToV2_PassthroughNoOverlays(t *testing.T) {
 
 func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 	t.Run("sets effectiveStatus to notApplicable when impact is 0 and no explicit status", func(t *testing.T) {
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
-			Profiles: []V1Profile{{
+			Platform: LegacyPlatform{Name: "test"},
+			Profiles: []LegacyProfile{{
 				Name: "test",
-				Controls: []V1Control{
-					{ID: "V-1", Impact: 0, Results: []V1Result{{Status: "skipped"}}},
-					{ID: "V-2", Impact: 0.7, Results: []V1Result{{Status: "passed"}}},
+				Controls: []LegacyControl{
+					{ID: "V-1", Impact: 0, Results: []LegacyResult{{Status: "skipped"}}},
+					{ID: "V-2", Impact: 0.7, Results: []LegacyResult{{Status: "passed"}}},
 				},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		reqs := v2.Baselines[0].Requirements
 
 		require.NotNil(t, reqs[0].EffectiveStatus)
@@ -808,17 +808,17 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 
 	t.Run("does not override explicit effectiveStatus even if impact is 0", func(t *testing.T) {
 		passed := "passed"
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
-			Profiles: []V1Profile{{
+			Platform: LegacyPlatform{Name: "test"},
+			Profiles: []LegacyProfile{{
 				Name: "test",
-				Controls: []V1Control{
-					{ID: "V-1", Impact: 0, Status: &passed, Results: []V1Result{{Status: "passed"}}},
+				Controls: []LegacyControl{
+					{ID: "V-1", Impact: 0, Status: &passed, Results: []LegacyResult{{Status: "passed"}}},
 				},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
@@ -828,10 +828,10 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 		inputData, err := os.ReadFile(inputPath)
 		require.NoError(t, err)
 
-		var v1 HDFV1Results
+		var v1 LegacyHDFResults
 		require.NoError(t, json.Unmarshal(inputData, &v1))
 
-		v2 := ConvertV1ToV2(&v1, "1.0.0")
+		v2 := ConvertLegacyHDF(&v1, "1.0.0")
 		reqs := v2.Baselines[0].Requirements
 
 		notApplicable := 0
@@ -847,71 +847,71 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 
 func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 	t.Run("passed when all results passed", func(t *testing.T) {
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
-			Profiles: []V1Profile{{
+			Platform: LegacyPlatform{Name: "test"},
+			Profiles: []LegacyProfile{{
 				Name:     "test",
-				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "passed"}}}},
+				Controls: []LegacyControl{{ID: "V-1", Impact: 0.7, Results: []LegacyResult{{Status: "passed"}}}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
 
 	t.Run("failed when any result failed", func(t *testing.T) {
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
-			Profiles: []V1Profile{{
+			Platform: LegacyPlatform{Name: "test"},
+			Profiles: []LegacyProfile{{
 				Name:     "test",
-				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "passed"}, {Status: "failed"}}}},
+				Controls: []LegacyControl{{ID: "V-1", Impact: 0.7, Results: []LegacyResult{{Status: "passed"}, {Status: "failed"}}}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.Failed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
 
 	t.Run("passed when mixed passed and skipped", func(t *testing.T) {
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
-			Profiles: []V1Profile{{
+			Platform: LegacyPlatform{Name: "test"},
+			Profiles: []LegacyProfile{{
 				Name:     "test",
-				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "skipped"}, {Status: "passed"}}}},
+				Controls: []LegacyControl{{ID: "V-1", Impact: 0.7, Results: []LegacyResult{{Status: "skipped"}, {Status: "passed"}}}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
 
 	t.Run("notReviewed when all results skipped", func(t *testing.T) {
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
-			Profiles: []V1Profile{{
+			Platform: LegacyPlatform{Name: "test"},
+			Profiles: []LegacyProfile{{
 				Name:     "test",
-				Controls: []V1Control{{ID: "V-1", Impact: 0.5, Results: []V1Result{{Status: "skipped"}}}},
+				Controls: []LegacyControl{{ID: "V-1", Impact: 0.5, Results: []LegacyResult{{Status: "skipped"}}}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.NotReviewed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
 
 	t.Run("notReviewed when no results", func(t *testing.T) {
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
-			Profiles: []V1Profile{{
+			Platform: LegacyPlatform{Name: "test"},
+			Profiles: []LegacyProfile{{
 				Name:     "test",
-				Controls: []V1Control{{ID: "V-1", Impact: 0.5, Results: []V1Result{}}},
+				Controls: []LegacyControl{{ID: "V-1", Impact: 0.5, Results: []LegacyResult{}}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
 		assert.Equal(t, hdf.NotReviewed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
@@ -920,9 +920,9 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 		inputPath := sharedOrLocalInputPath(t, "three-layer-overlay.json")
 		inputData, err := os.ReadFile(inputPath)
 		require.NoError(t, err)
-		var v1 HDFV1Results
+		var v1 LegacyHDFResults
 		require.NoError(t, json.Unmarshal(inputData, &v1))
-		v2 := ConvertV1ToV2(&v1, "1.0.0")
+		v2 := ConvertLegacyHDF(&v1, "1.0.0")
 
 		for _, r := range v2.Baselines[0].Requirements {
 			assert.NotNilf(t, r.EffectiveStatus, "control %s missing effectiveStatus", r.ID)
@@ -933,9 +933,9 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 		inputPath := sharedOrLocalInputPath(t, "three-layer-overlay.json")
 		inputData, err := os.ReadFile(inputPath)
 		require.NoError(t, err)
-		var v1 HDFV1Results
+		var v1 LegacyHDFResults
 		require.NoError(t, json.Unmarshal(inputData, &v1))
-		v2 := ConvertV1ToV2(&v1, "1.0.0")
+		v2 := ConvertLegacyHDF(&v1, "1.0.0")
 
 		counts := map[hdf.ResultStatus]int{}
 		for _, r := range v2.Baselines[0].Requirements {
@@ -955,20 +955,20 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 
 func TestSeverityFromTagsSeverity(t *testing.T) {
 	t.Run("populates severity from tags.severity for NA controls (impact=0)", func(t *testing.T) {
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
-			Profiles: []V1Profile{{
+			Platform: LegacyPlatform{Name: "test"},
+			Profiles: []LegacyProfile{{
 				Name: "test",
-				Controls: []V1Control{{
+				Controls: []LegacyControl{{
 					ID:      "V-1",
 					Impact:  0,
 					Tags:    map[string]interface{}{"severity": "medium", "nist": []string{"AC-1"}},
-					Results: []V1Result{{Status: "skipped"}},
+					Results: []LegacyResult{{Status: "skipped"}},
 				}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		req := v2.Baselines[0].Requirements[0]
 		require.NotNil(t, req.Severity, "severity should be set")
 		assert.Equal(t, hdf.SeverityMedium, *req.Severity)
@@ -977,38 +977,38 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 	})
 
 	t.Run("populates severity from tags.severity for non-NA controls", func(t *testing.T) {
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
-			Profiles: []V1Profile{{
+			Platform: LegacyPlatform{Name: "test"},
+			Profiles: []LegacyProfile{{
 				Name: "test",
-				Controls: []V1Control{{
+				Controls: []LegacyControl{{
 					ID:      "V-1",
 					Impact:  0.7,
 					Tags:    map[string]interface{}{"severity": "high"},
-					Results: []V1Result{{Status: "passed"}},
+					Results: []LegacyResult{{Status: "passed"}},
 				}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
 		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
 
 	t.Run("falls back to impact-derived severity when tags.severity missing", func(t *testing.T) {
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
-			Profiles: []V1Profile{{
+			Platform: LegacyPlatform{Name: "test"},
+			Profiles: []LegacyProfile{{
 				Name: "test",
-				Controls: []V1Control{{
+				Controls: []LegacyControl{{
 					ID:      "V-1",
 					Impact:  0.7,
-					Results: []V1Result{{Status: "passed"}},
+					Results: []LegacyResult{{Status: "passed"}},
 				}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
 		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
@@ -1024,35 +1024,35 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 			{0.3, hdf.SeverityLow},
 		}
 		for _, tc := range cases {
-			v1 := &HDFV1Results{
+			v1 := &LegacyHDFResults{
 				Version:  "1.0.0",
-				Platform: V1Platform{Name: "test"},
-				Profiles: []V1Profile{{
+				Platform: LegacyPlatform{Name: "test"},
+				Profiles: []LegacyProfile{{
 					Name:     "test",
-					Controls: []V1Control{{ID: "V-1", Impact: tc.impact, Results: []V1Result{}}},
+					Controls: []LegacyControl{{ID: "V-1", Impact: tc.impact, Results: []LegacyResult{}}},
 				}},
 			}
-			v2 := ConvertV1ToV2(v1, "1.0.0")
+			v2 := ConvertLegacyHDF(v1, "1.0.0")
 			require.NotNilf(t, v2.Baselines[0].Requirements[0].Severity, "impact=%.1f should have severity", tc.impact)
 			assert.Equalf(t, tc.expected, *v2.Baselines[0].Requirements[0].Severity, "impact=%.1f", tc.impact)
 		}
 	})
 
 	t.Run("ignores invalid tags.severity and falls back to impact", func(t *testing.T) {
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
-			Profiles: []V1Profile{{
+			Platform: LegacyPlatform{Name: "test"},
+			Profiles: []LegacyProfile{{
 				Name: "test",
-				Controls: []V1Control{{
+				Controls: []LegacyControl{{
 					ID:      "V-1",
 					Impact:  0.7,
 					Tags:    map[string]interface{}{"severity": "bogus"},
-					Results: []V1Result{{Status: "passed"}},
+					Results: []LegacyResult{{Status: "passed"}},
 				}},
 			}},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
 		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
@@ -1062,10 +1062,10 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 		inputData, err := os.ReadFile(inputPath)
 		require.NoError(t, err)
 
-		var v1 HDFV1Results
+		var v1 LegacyHDFResults
 		require.NoError(t, json.Unmarshal(inputData, &v1))
 
-		v2 := ConvertV1ToV2(&v1, "1.0.0")
+		v2 := ConvertLegacyHDF(&v1, "1.0.0")
 		reqs := v2.Baselines[0].Requirements
 
 		// Find SV-257779: impact=0, tags.severity=medium
@@ -1104,10 +1104,10 @@ func TestConvertV1ToV2_ControlType(t *testing.T) {
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 
-	var v1 HDFV1Results
+	var v1 LegacyHDFResults
 	require.NoError(t, json.Unmarshal(inputData, &v1))
 
-	v2 := ConvertV1ToV2(&v1, "1.0.0")
+	v2 := ConvertLegacyHDF(&v1, "1.0.0")
 	require.NotEmpty(t, v2.Baselines)
 
 	reqs := v2.Baselines[0].Requirements
@@ -1131,7 +1131,7 @@ func TestConvertV1ToV2_ControlType(t *testing.T) {
 
 func TestConvertControl_RefsMapped(t *testing.T) {
 	t.Run("string-valued ref maps to Reference.Ref.String", func(t *testing.T) {
-		v1 := V1Control{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+		v1 := LegacyControl{ID: "V-1", Impact: 0.5, Refs: []interface{}{
 			map[string]interface{}{"ref": "DPMS Target Red Hat Enterprise Linux 9"},
 		}}
 		v2 := convertControl(v1)
@@ -1142,7 +1142,7 @@ func TestConvertControl_RefsMapped(t *testing.T) {
 	})
 
 	t.Run("bare string element maps to Reference.Ref.String", func(t *testing.T) {
-		v1 := V1Control{ID: "V-1", Impact: 0.5, Refs: []interface{}{"NIST SP 800-53"}}
+		v1 := LegacyControl{ID: "V-1", Impact: 0.5, Refs: []interface{}{"NIST SP 800-53"}}
 		v2 := convertControl(v1)
 		require.Len(t, v2.Refs, 1)
 		require.NotNil(t, v2.Refs[0].Ref.String)
@@ -1150,7 +1150,7 @@ func TestConvertControl_RefsMapped(t *testing.T) {
 	})
 
 	t.Run("url and uri are preserved", func(t *testing.T) {
-		v1 := V1Control{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+		v1 := LegacyControl{ID: "V-1", Impact: 0.5, Refs: []interface{}{
 			map[string]interface{}{"ref": "doc", "url": "https://example.com", "uri": "urn:x"},
 		}}
 		v2 := convertControl(v1)
@@ -1162,7 +1162,7 @@ func TestConvertControl_RefsMapped(t *testing.T) {
 	})
 
 	t.Run("array-of-objects ref maps to Reference.Ref.AnythingMapArray", func(t *testing.T) {
-		v1 := V1Control{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+		v1 := LegacyControl{ID: "V-1", Impact: 0.5, Refs: []interface{}{
 			map[string]interface{}{"ref": []interface{}{
 				map[string]interface{}{"url": "https://example.com/doc"},
 			}},
@@ -1175,7 +1175,7 @@ func TestConvertControl_RefsMapped(t *testing.T) {
 	})
 
 	t.Run("empty ref array carries no content and is dropped", func(t *testing.T) {
-		v1 := V1Control{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+		v1 := LegacyControl{ID: "V-1", Impact: 0.5, Refs: []interface{}{
 			map[string]interface{}{"ref": []interface{}{}},
 		}}
 		v2 := convertControl(v1)
@@ -1183,7 +1183,7 @@ func TestConvertControl_RefsMapped(t *testing.T) {
 	})
 
 	t.Run("absent refs yield nil", func(t *testing.T) {
-		v2 := convertControl(V1Control{ID: "V-1", Impact: 0.5})
+		v2 := convertControl(LegacyControl{ID: "V-1", Impact: 0.5})
 		assert.Nil(t, v2.Refs)
 	})
 }
@@ -1191,7 +1191,7 @@ func TestConvertControl_RefsMapped(t *testing.T) {
 func TestConvertResult_SkipMessageMapsToMessage(t *testing.T) {
 	t.Run("skip_message becomes message when message is absent", func(t *testing.T) {
 		skip := "Skipped control due to only_if condition"
-		v1 := V1Result{Status: "skipped", SkipMessage: &skip}
+		v1 := LegacyResult{Status: "skipped", SkipMessage: &skip}
 		v2 := convertResult(v1)
 		require.NotNil(t, v2.Message)
 		assert.Equal(t, skip, *v2.Message)
@@ -1200,7 +1200,7 @@ func TestConvertResult_SkipMessageMapsToMessage(t *testing.T) {
 	t.Run("explicit message is not overridden by skip_message", func(t *testing.T) {
 		msg := "real message"
 		skip := "skip message"
-		v1 := V1Result{Status: "failed", Message: &msg, SkipMessage: &skip}
+		v1 := LegacyResult{Status: "failed", Message: &msg, SkipMessage: &skip}
 		v2 := convertResult(v1)
 		require.NotNil(t, v2.Message)
 		assert.Equal(t, msg, *v2.Message)
@@ -1208,7 +1208,7 @@ func TestConvertResult_SkipMessageMapsToMessage(t *testing.T) {
 }
 
 func TestConvertProfile_SupportsMapped(t *testing.T) {
-	v1 := V1Profile{Name: "p", Supports: []map[string]interface{}{
+	v1 := LegacyProfile{Name: "p", Supports: []map[string]interface{}{
 		{"platform-family": "redhat", "release": "9.*"},
 		{"platform-name": "centos", "release": "7.*"},
 		{"platform": "os"},
@@ -1229,7 +1229,7 @@ func TestConvertProfile_SupportsMapped(t *testing.T) {
 }
 
 func TestConvertProfile_SupportsEmptyOrUnknownDropped(t *testing.T) {
-	v1 := V1Profile{Name: "p", Supports: []map[string]interface{}{
+	v1 := LegacyProfile{Name: "p", Supports: []map[string]interface{}{
 		{"unknown-key": "x"},
 		{},
 	}}
@@ -1241,10 +1241,10 @@ func TestConvertV1ToV2_UBI9RefsAndSupports(t *testing.T) {
 	inputPath := sharedOrLocalInputPath(t, "ubi9-scan.json")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
-	var v1 HDFV1Results
+	var v1 LegacyHDFResults
 	require.NoError(t, json.Unmarshal(inputData, &v1))
 
-	v2 := ConvertV1ToV2(&v1, "1.0.0")
+	v2 := ConvertLegacyHDF(&v1, "1.0.0")
 	require.NotEmpty(t, v2.Baselines)
 
 	t.Run("profile supports mapped onto baseline", func(t *testing.T) {
@@ -1272,11 +1272,11 @@ func TestConvertV1ToV2_UBI9RefsAndSupports(t *testing.T) {
 func TestConvertV1ToV2_PlatformReleaseWithoutTargetID(t *testing.T) {
 	t.Run("release present without target_id still populates osName/osVersion", func(t *testing.T) {
 		release := "7.9.2009"
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "centos", Release: &release},
+			Platform: LegacyPlatform{Name: "centos", Release: &release},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.Len(t, v2.Components, 1)
 		require.NotNil(t, v2.Components[0].OSName)
 		assert.Equal(t, "centos", *v2.Components[0].OSName)
@@ -1285,11 +1285,11 @@ func TestConvertV1ToV2_PlatformReleaseWithoutTargetID(t *testing.T) {
 	})
 
 	t.Run("neither release nor target_id leaves OS fields unset", func(t *testing.T) {
-		v1 := &HDFV1Results{
+		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
-			Platform: V1Platform{Name: "test"},
+			Platform: LegacyPlatform{Name: "test"},
 		}
-		v2 := ConvertV1ToV2(v1, "1.0.0")
+		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.Len(t, v2.Components, 1)
 		assert.Nil(t, v2.Components[0].OSName)
 		assert.Nil(t, v2.Components[0].OSVersion)
@@ -1301,10 +1301,10 @@ func TestConvertV1ToV2_VerificationMethodNotFabricated(t *testing.T) {
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 
-	var v1 HDFV1Results
+	var v1 LegacyHDFResults
 	require.NoError(t, json.Unmarshal(inputData, &v1))
 
-	v2 := ConvertV1ToV2(&v1, "1.0.0")
+	v2 := ConvertLegacyHDF(&v1, "1.0.0")
 	require.NotEmpty(t, v2.Baselines)
 	reqs := v2.Baselines[0].Requirements
 	require.NotEmpty(t, reqs)
@@ -1329,11 +1329,11 @@ func TestConvertV1ToV2_RequirementCountAnchor(t *testing.T) {
 	input, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 
-	var v1 HDFV1Results
+	var v1 LegacyHDFResults
 	require.NoError(t, json.Unmarshal(input, &v1))
 	require.Len(t, v1.Profiles, 1, "anchor requires a single-profile fixture (no overlay flattening)")
 
-	v2 := ConvertV1ToV2(&v1, "1.0.0")
+	v2 := ConvertLegacyHDF(&v1, "1.0.0")
 	shared.AssertRequirementCount(t, v2, countProfileControls(t, input),
 		"ubi9-scan.json: one requirement per profiles[0].controls[] (single profile, no overlay flatten)")
 }

@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { inspec } from '@mitre/hdf-fixtures';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
-import { convertV1ToV2, convertV2ToV1, isHDFV1, HDFV1Results, HDFV2Results } from './converter.js';
+import { convertLegacyHdf, downgradeToLegacyHdf, isLegacyHdf, LegacyHDFResults, HDFV2Results } from './converter.js';
 import { createMinimalBaseline, createRequirement, createResult, createDescription } from '@mitre/hdf-schema/helpers';
 
 // Count control OBJECTS under every profiles[].controls[] array in raw v1 HDF,
@@ -41,16 +41,16 @@ function inputFixturePath(name: string): string {
 }
 
 describe('HDF v1.0 to v2.0 Converter', () => {
-  describe('convertV1ToV2', () => {
+  describe('convertLegacyHdf', () => {
     it('should convert minimal v1.0 to v2.0', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'ubuntu', release: '20.04' },
         profiles: [],
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.baselines).toEqual([]);
       expect(v2.statistics).toEqual({});
@@ -69,14 +69,14 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should rename profiles to baselines', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{ name: 'profile1' }, { name: 'profile2' }],
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.baselines).toHaveLength(2);
       expect(v2.baselines[0]).toEqual({ name: 'profile1' });
@@ -84,7 +84,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should transform platform to targets array', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: {
           name: 'redhat',
@@ -95,7 +95,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.components).toHaveLength(1);
       // Mirrors the Go converter: {type, name} plus osName/osVersion when the
@@ -109,21 +109,21 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should emit only {type,name} when target_id is absent', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'debian' },
         profiles: [],
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.components![0]).toEqual({ type: 'host', name: 'debian' });
     });
 
     it('should preserve generator information', () => {
       const generator = { name: 'inspec', version: '4.18.0' };
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [],
@@ -131,14 +131,14 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         generator,
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.generator).toEqual(generator);
     });
 
     it('should preserve timestamp', () => {
       const timestamp = '2024-01-03T12:00:00Z';
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [],
@@ -146,20 +146,20 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         timestamp,
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.timestamp).toBe(timestamp);
     });
 
     it('stamps the converter generator and no timestamp when the source carries neither', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [],
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1, '3.4.5');
+      const v2 = convertLegacyHdf(v1, '3.4.5');
 
       // generator identifies the converter that produced the file.
       expect(v2.generator).toEqual({ name: 'legacyhdf-to-hdf', version: '3.4.5' });
@@ -168,7 +168,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('derives the document timestamp from the latest result start_time', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '5.22.3',
         platform: { name: 'redhat' },
         profiles: [
@@ -190,13 +190,13 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.timestamp).toBe('2024-03-01T15:05:30Z');
     });
 
     it('ignores results without start_time when deriving the timestamp', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '5.22.3',
         platform: { name: 'redhat' },
         profiles: [
@@ -211,7 +211,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       // A result without start_time is not an observation; the latest real
       // time wins and no sentinel value can leak into the document.
@@ -219,7 +219,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('normalizes an offset-bearing explicit timestamp to canonical UTC', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '5.22.3',
         platform: { name: 'redhat' },
         timestamp: '2023-11-05T00:00:00-05:00',
@@ -229,7 +229,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       // Explicit-timestamp precedence must still produce the repo's
       // canonical trimmed-UTC form, never the source's offset rendering.
@@ -237,33 +237,33 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('sets InSpec tool identity from a real InSpec version', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '5.22.3',
         platform: { name: 'redhat' },
         profiles: [],
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.tool).toEqual({ name: 'InSpec', version: '5.22.3', format: 'exec-json' });
     });
 
     it('keeps the legacy tool label for a non-InSpec (major<2) version', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.37.6',
         platform: { name: 'test' },
         profiles: [],
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.tool).toEqual({ name: 'Heimdall Data Format v1' });
     });
 
     it('should move unknown fields to extensions', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [],
@@ -272,7 +272,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         anotherField: { nested: 'data' },
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.extensions).toBeDefined();
       expect(v2.extensions!.customField).toBe('custom value');
@@ -281,27 +281,27 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should not create extensions if no unknown fields', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [],
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.extensions).toBeUndefined();
     });
 
     it('should handle platform without release', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test-system' },
         profiles: [],
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.components![0]).toEqual({
         type: 'host',
@@ -319,14 +319,14 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         skipped: 5,
       };
 
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [],
         statistics,
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.statistics).toEqual(statistics);
     });
@@ -336,9 +336,9 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         version: '1.0.0',
         platform: { name: 'test' },
         statistics: {},
-      } as HDFV1Results;
+      } as LegacyHDFResults;
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.baselines).toEqual([]);
     });
@@ -348,9 +348,9 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [],
-      } as HDFV1Results;
+      } as LegacyHDFResults;
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
 
       expect(v2.statistics).toEqual({});
     });
@@ -358,7 +358,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
   describe('Optional Field Coverage', () => {
     it('should convert all result optional fields', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -384,7 +384,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       const result = v2.baselines[0].requirements![0].results[0];
 
       expect(result.codeDesc).toBe('Test code description');
@@ -404,7 +404,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('emits Go zero-value time for an unparseable start_time (schema-valid, not passthrough)', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -413,14 +413,14 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       // Matches the Go converter: an unparseable value becomes time.Time{}'s
       // zero rendering rather than an invalid passthrough string.
       expect(v2.baselines[0].requirements![0].results[0].startTime).toBe('0001-01-01T00:00:00Z');
     });
 
     it('emits Go zero-value time when start_time is absent (startTime stays present)', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -429,12 +429,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].results[0].startTime).toBe('0001-01-01T00:00:00Z');
     });
 
     it('normalizes an offset-bearing start_time to UTC', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -443,12 +443,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].results[0].startTime).toBe('2026-02-22T20:57:06Z');
     });
 
     it('should convert all control/requirement optional fields', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -471,7 +471,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       const req = v2.baselines[0].requirements![0];
 
       expect(req.title).toBe('Test Title');
@@ -497,7 +497,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       ];
 
       statuses.forEach(({ v1: v1Status, v2: v2Status }) => {
-        const v1: HDFV1Results = {
+        const v1: LegacyHDFResults = {
           version: '1.0.0',
           platform: { name: 'test' },
           profiles: [{
@@ -512,14 +512,14 @@ describe('HDF v1.0 to v2.0 Converter', () => {
           statistics: {},
         };
 
-        const v2 = convertV1ToV2(v1);
+        const v2 = convertLegacyHdf(v1);
         expect(v2.baselines[0].requirements![0].effectiveStatus).toBe(v2Status);
         expect(v2.baselines[0].requirements![0].results[0].status).toBe(v2Status);
       });
     });
 
     it('should default unknown status values to notReviewed', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -534,13 +534,13 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notReviewed');
       expect(v2.baselines[0].requirements![0].results![0].status).toBe('notReviewed');
     });
 
     it('should convert group with all optional fields', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -555,7 +555,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       const group = v2.baselines[0].groups![0];
 
       expect(group.id).toBe('group-1');
@@ -564,7 +564,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should convert dependency with all optional fields', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -588,7 +588,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       const dep = v2.baselines[0].depends![0];
 
       expect(dep.name).toBe('dep-profile');
@@ -606,7 +606,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should convert profile/baseline with all optional fields', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -632,7 +632,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       const baseline = v2.baselines[0];
 
       expect(baseline.version).toBe('1.0.0');
@@ -652,7 +652,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should drop unknown fields in results (closed v2 shape)', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -669,14 +669,14 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       // Requirement_Result is a closed schema shape; unknown v1 fields are not
       // carried (matches the Go converter).
       expect(v2.baselines[0].requirements![0].results[0]).not.toHaveProperty('custom_field');
     });
 
     it('should drop unknown fields in controls (closed v2 shape)', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -691,12 +691,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0]).not.toHaveProperty('custom_control_field');
     });
 
     it('should preserve unknown fields in groups', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -711,12 +711,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].groups![0]).toHaveProperty('custom_group_field', 'custom');
     });
 
     it('should preserve unknown fields in dependencies', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -730,12 +730,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].depends![0]).toHaveProperty('custom_dep_field', 'custom');
     });
 
     it('should drop unknown fields in profiles/baselines (closed v2 shape)', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -746,7 +746,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0]).not.toHaveProperty('custom_profile_field');
     });
   });
@@ -758,18 +758,18 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       inputFixturePath('ubi9-scan.json'),
       'utf-8'
     );
-    const v1 = JSON.parse(raw) as HDFV1Results;
+    const v1 = JSON.parse(raw) as LegacyHDFResults;
 
     it('should be detected as valid HDF v1.0', () => {
-      expect(isHDFV1(v1)).toBe(true);
+      expect(isLegacyHdf(v1)).toBe(true);
     });
 
     it('should convert without throwing', () => {
-      expect(() => convertV1ToV2(v1)).not.toThrow();
+      expect(() => convertLegacyHdf(v1)).not.toThrow();
     });
 
     it('should produce one baseline from one profile', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expectValidResults(v2);
       expect(v2.baselines).toHaveLength(1);
       expect(v2.baselines[0].name).toBe(
@@ -778,12 +778,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should convert all 452 controls to requirements', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements).toHaveLength(452);
     });
 
     it('should map platform to target', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.components).toHaveLength(1);
       // target_id present → osName/osVersion populated (mirrors Go).
       expect(v2.components![0]).toEqual({
@@ -795,12 +795,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should preserve statistics', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.statistics).toMatchObject({ duration: 47.904315 });
     });
 
     it('should normalize status values', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       const reqs = v2.baselines[0].requirements!;
       const statuses = reqs.map((r) => r.effectiveStatus);
       expect(statuses).toContain('passed');
@@ -813,7 +813,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should preserve NIST tags on controls', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       const withNist = v2.baselines[0].requirements!.filter(
         (r) => r.tags?.['nist']
       );
@@ -821,7 +821,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should preserve sha256 as integrity', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].integrity).toEqual({
         algorithm: 'sha256',
         checksum: expect.stringMatching(/^[a-f0-9]{64}$/),
@@ -829,12 +829,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('maps profile supports onto the baseline (real data)', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].supports).toEqual([{ platformFamily: 'redhat', release: '9.*' }]);
     });
 
     it('maps control refs onto requirements (real DPMS ref)', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       const sawDpms = v2.baselines[0].requirements!.some(
         (r) =>
           Array.isArray(r.refs) &&
@@ -850,7 +850,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     // requirement per profiles[0].controls[] entry.
     it('emits one requirement per source control (input-derived anchor)', () => {
       expect(v1.profiles).toHaveLength(1);
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       assertRequirementCount(
         v2,
         countProfileControls(raw),
@@ -864,20 +864,20 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       inputFixturePath('three-layer-overlay.json'),
       'utf-8'
     );
-    const v1 = JSON.parse(raw) as HDFV1Results;
+    const v1 = JSON.parse(raw) as LegacyHDFResults;
 
     it('should flatten 3 profiles into 1 baseline', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines).toHaveLength(1);
     });
 
     it('should produce exactly 247 deduplicated requirements', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements).toHaveLength(247);
     });
 
     it('should have results on every requirement (from base profile)', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       const withResults = v2.baselines[0].requirements!.filter(
         (r) => r.results && r.results.length > 0
       );
@@ -885,12 +885,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('should clear parentBaseline on flattened output', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].parentBaseline).toBeUndefined();
     });
 
     it('should use top overlay name as baseline name', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].name).toContain('second-layer');
     });
   });
@@ -900,27 +900,27 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       inputFixturePath('wrapper.json'),
       'utf-8'
     );
-    const v1 = JSON.parse(raw) as HDFV1Results;
+    const v1 = JSON.parse(raw) as LegacyHDFResults;
 
     it('should flatten 4 profiles into 1 baseline', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines).toHaveLength(1);
     });
 
     it('should produce 534 aggregated requirements', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements).toHaveLength(534);
     });
 
     it('should use wrapper name as baseline name', () => {
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].name).toBe('wrapper');
     });
   });
 
   describe('overlay flattening — passthrough (no overlays)', () => {
     it('should pass through single-profile input unchanged', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -931,7 +931,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines).toHaveLength(1);
       expect(v2.baselines[0].name).toBe('simple-profile');
       expect(v2.baselines[0].requirements).toHaveLength(1);
@@ -940,7 +940,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
   describe('impact=0 → effectiveStatus notApplicable', () => {
     it('should set effectiveStatus to notApplicable when impact is 0 and no explicit status', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -952,14 +952,14 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       const reqs = v2.baselines[0].requirements!;
       expect(reqs.find(r => r.id === 'V-1')!.effectiveStatus).toBe('notApplicable');
       expect(reqs.find(r => r.id === 'V-2')!.effectiveStatus).toBe('passed');
     });
 
     it('should not override explicit effectiveStatus even if impact is 0', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -970,7 +970,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('passed');
     });
 
@@ -979,8 +979,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         inputFixturePath('three-layer-overlay.json'),
         'utf-8'
       );
-      const v1 = JSON.parse(raw) as HDFV1Results;
-      const v2 = convertV1ToV2(v1);
+      const v1 = JSON.parse(raw) as LegacyHDFResults;
+      const v2 = convertLegacyHdf(v1);
       const reqs = v2.baselines[0].requirements!;
       const notApplicable = reqs.filter(r => r.effectiveStatus === 'notApplicable');
       expect(notApplicable).toHaveLength(27);
@@ -994,7 +994,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
   describe('effectiveStatus always computed from results', () => {
     it('should set effectiveStatus=passed when all results passed', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -1005,12 +1005,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('passed');
     });
 
     it('should set effectiveStatus=failed when any result failed', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -1021,12 +1021,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('failed');
     });
 
     it('should set effectiveStatus=passed when mixed passed+skipped (not all passed)', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -1037,12 +1037,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('passed');
     });
 
     it('should set effectiveStatus=notReviewed when all results skipped', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -1053,12 +1053,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notReviewed');
     });
 
     it('should set effectiveStatus=notReviewed when no results', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -1069,12 +1069,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notReviewed');
     });
 
     it('should set effectiveStatus=error when any result errored', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -1085,7 +1085,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('error');
     });
 
@@ -1094,8 +1094,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         inputFixturePath('three-layer-overlay.json'),
         'utf-8'
       );
-      const v1 = JSON.parse(raw) as HDFV1Results;
-      const v2 = convertV1ToV2(v1);
+      const v1 = JSON.parse(raw) as LegacyHDFResults;
+      const v2 = convertLegacyHdf(v1);
       const reqs = v2.baselines[0].requirements!;
       const withoutES = reqs.filter(r => r.effectiveStatus === undefined);
       expect(withoutES).toHaveLength(0);
@@ -1106,8 +1106,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         inputFixturePath('three-layer-overlay.json'),
         'utf-8'
       );
-      const v1 = JSON.parse(raw) as HDFV1Results;
-      const v2 = convertV1ToV2(v1);
+      const v1 = JSON.parse(raw) as LegacyHDFResults;
+      const v2 = convertLegacyHdf(v1);
       const reqs = v2.baselines[0].requirements!;
       const counts = { passed: 0, failed: 0, notApplicable: 0, notReviewed: 0, error: 0 };
       for (const r of reqs) {
@@ -1124,7 +1124,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
   describe('severity from tags.severity', () => {
     it('should populate severity from tags.severity for NA controls (impact=0)', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -1138,14 +1138,14 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       const req = v2.baselines[0].requirements![0];
       expect(req.severity).toBe('medium');
       expect(req.effectiveStatus).toBe('notApplicable');
     });
 
     it('should populate severity from tags.severity for non-NA controls', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -1159,12 +1159,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].severity).toBe('high');
     });
 
     it('should fall back to impact-derived severity when tags.severity missing', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -1177,7 +1177,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].severity).toBe('high');
     });
 
@@ -1190,7 +1190,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         { impact: 0, expected: 'informational' }, // canonical bands: 0 → informational (never 'none')
       ];
       for (const { impact, expected } of cases) {
-        const v1: HDFV1Results = {
+        const v1: LegacyHDFResults = {
           version: '1.0.0',
           platform: { name: 'test' },
           profiles: [{
@@ -1199,13 +1199,13 @@ describe('HDF v1.0 to v2.0 Converter', () => {
           }],
           statistics: {},
         };
-        const v2 = convertV1ToV2(v1);
+        const v2 = convertLegacyHdf(v1);
         expect(v2.baselines[0].requirements![0].severity).toBe(expected);
       }
     });
 
     it('should ignore invalid tags.severity values and fall back to impact', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -1219,14 +1219,14 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].requirements![0].severity).toBe('high');
     });
 
     it('ubi9 fixture: NA controls should have severity from tags, not "none"', () => {
       const raw = readFileSync(inputFixturePath('ubi9-scan.json'), 'utf-8');
-      const v1 = JSON.parse(raw) as HDFV1Results;
-      const v2 = convertV1ToV2(v1);
+      const v1 = JSON.parse(raw) as LegacyHDFResults;
+      const v2 = convertLegacyHdf(v1);
       const reqs = v2.baselines[0].requirements!;
 
       // SV-257779 has impact=0 (NA) but tags.severity=medium
@@ -1245,7 +1245,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
   // ── v1 field fidelity (bead hdf-libs-9q8o) ──────────────────
   describe('v1 field fidelity', () => {
-    function singleControl(control: Record<string, unknown>): HDFV1Results {
+    function singleControl(control: Record<string, unknown>): LegacyHDFResults {
       return {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -1255,7 +1255,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     }
 
     it('maps a string-valued control ref to requirement refs', () => {
-      const v2 = convertV1ToV2(
+      const v2 = convertLegacyHdf(
         singleControl({ id: 'V-1', impact: 0.5, refs: [{ ref: 'DPMS Target Red Hat Enterprise Linux 9' }] }),
       );
       expect(v2.baselines[0].requirements![0].refs).toEqual([
@@ -1264,12 +1264,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('maps a bare-string ref element', () => {
-      const v2 = convertV1ToV2(singleControl({ id: 'V-1', impact: 0.5, refs: ['NIST SP 800-53'] }));
+      const v2 = convertLegacyHdf(singleControl({ id: 'V-1', impact: 0.5, refs: ['NIST SP 800-53'] }));
       expect(v2.baselines[0].requirements![0].refs).toEqual([{ ref: 'NIST SP 800-53' }]);
     });
 
     it('preserves url and uri on a ref', () => {
-      const v2 = convertV1ToV2(
+      const v2 = convertLegacyHdf(
         singleControl({ id: 'V-1', impact: 0.5, refs: [{ ref: 'doc', url: 'https://example.com', uri: 'urn:x' }] }),
       );
       expect(v2.baselines[0].requirements![0].refs).toEqual([
@@ -1278,7 +1278,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('maps an array-of-objects ref through unchanged', () => {
-      const v2 = convertV1ToV2(
+      const v2 = convertLegacyHdf(
         singleControl({ id: 'V-1', impact: 0.5, refs: [{ ref: [{ url: 'https://example.com/doc' }] }] }),
       );
       expect(v2.baselines[0].requirements![0].refs).toEqual([
@@ -1287,12 +1287,12 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('drops an empty ref array (no content)', () => {
-      const v2 = convertV1ToV2(singleControl({ id: 'V-1', impact: 0.5, refs: [{ ref: [] }] }));
+      const v2 = convertLegacyHdf(singleControl({ id: 'V-1', impact: 0.5, refs: [{ ref: [] }] }));
       expect(v2.baselines[0].requirements![0].refs).toBeUndefined();
     });
 
     it('maps result skip_message to result.message when message is absent', () => {
-      const v2 = convertV1ToV2(
+      const v2 = convertLegacyHdf(
         singleControl({
           id: 'V-1',
           impact: 0.5,
@@ -1305,7 +1305,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('does not override an explicit result message with skip_message', () => {
-      const v2 = convertV1ToV2(
+      const v2 = convertLegacyHdf(
         singleControl({
           id: 'V-1',
           impact: 0.5,
@@ -1316,7 +1316,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('maps profile supports (hyphenated keys) to baseline supports (camelCase)', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{
@@ -1330,7 +1330,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].supports).toEqual([
         { platformFamily: 'redhat', release: '9.*' },
         { platformName: 'centos', release: '7.*' },
@@ -1339,40 +1339,40 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('drops supports entries with no recognized keys', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [{ name: 'p', supports: [{ 'unknown-key': 'x' }, {}], controls: [] }],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.baselines[0].supports).toBeUndefined();
     });
 
     it('populates osName/osVersion from release even without target_id', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'centos', release: '7.9.2009' },
         profiles: [],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.components![0]).toEqual({ type: 'host', name: 'centos', osName: 'centos', osVersion: '7.9.2009' });
     });
 
     it('leaves OS fields unset when neither release nor target_id present', () => {
-      const v1: HDFV1Results = {
+      const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [],
         statistics: {},
       };
-      const v2 = convertV1ToV2(v1);
+      const v2 = convertLegacyHdf(v1);
       expect(v2.components![0]).toEqual({ type: 'host', name: 'test' });
     });
   });
 
-  describe('isHDFV1', () => {
+  describe('isLegacyHdf', () => {
     it('should return true for valid v1.0 structure', () => {
       const data = {
         version: '1.0.0',
@@ -1381,7 +1381,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      expect(isHDFV1(data)).toBe(true);
+      expect(isLegacyHdf(data)).toBe(true);
     });
 
     it('should return false for v2.0 structure (baselines instead of profiles)', () => {
@@ -1390,22 +1390,22 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      expect(isHDFV1(data)).toBe(false);
+      expect(isLegacyHdf(data)).toBe(false);
     });
 
     it('should return false for null', () => {
-      expect(isHDFV1(null)).toBe(false);
+      expect(isLegacyHdf(null)).toBe(false);
     });
 
     it('should return false for undefined', () => {
-      expect(isHDFV1(undefined)).toBe(false);
+      expect(isLegacyHdf(undefined)).toBe(false);
     });
 
     it('should return false for non-object types', () => {
-      expect(isHDFV1('string')).toBe(false);
-      expect(isHDFV1(123)).toBe(false);
-      expect(isHDFV1(true)).toBe(false);
-      expect(isHDFV1([])).toBe(false);
+      expect(isLegacyHdf('string')).toBe(false);
+      expect(isLegacyHdf(123)).toBe(false);
+      expect(isLegacyHdf(true)).toBe(false);
+      expect(isLegacyHdf([])).toBe(false);
     });
 
     it('should return false if missing version', () => {
@@ -1415,7 +1415,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      expect(isHDFV1(data)).toBe(false);
+      expect(isLegacyHdf(data)).toBe(false);
     });
 
     it('should return false if missing profiles', () => {
@@ -1425,7 +1425,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      expect(isHDFV1(data)).toBe(false);
+      expect(isLegacyHdf(data)).toBe(false);
     });
 
     it('should return false if missing platform', () => {
@@ -1435,7 +1435,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      expect(isHDFV1(data)).toBe(false);
+      expect(isLegacyHdf(data)).toBe(false);
     });
 
     it('should return false if platform is null', () => {
@@ -1446,7 +1446,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      expect(isHDFV1(data)).toBe(false);
+      expect(isLegacyHdf(data)).toBe(false);
     });
 
     it('should return false if profiles is not an array', () => {
@@ -1457,7 +1457,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      expect(isHDFV1(data)).toBe(false);
+      expect(isLegacyHdf(data)).toBe(false);
     });
 
     it('should return false if version is not a string', () => {
@@ -1468,7 +1468,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
 
-      expect(isHDFV1(data)).toBe(false);
+      expect(isLegacyHdf(data)).toBe(false);
     });
   });
 });
@@ -1479,8 +1479,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 // overlay result must validate against hdf-results.
 describe('three-layer-overlay overlay output', () => {
   it('is schema-valid after overlay flattening', () => {
-    const v1 = JSON.parse(readFileSync(inputFixturePath('three-layer-overlay.json'), 'utf-8')) as HDFV1Results;
-    expectValidResults(convertV1ToV2(v1));
+    const v1 = JSON.parse(readFileSync(inputFixturePath('three-layer-overlay.json'), 'utf-8')) as LegacyHDFResults;
+    expectValidResults(convertLegacyHdf(v1));
   });
 });
 
@@ -1488,12 +1488,12 @@ describe('three-layer-overlay overlay output', () => {
 // (hdf-converters/shared/go/hdfversion/hdf_version_test.go). Reads the SAME fixture
 // and asserts the same flatten, so the amendment-flattening logic cannot drift
 // between the two languages even though the CLI transform is Go-only.
-describe('convertV2ToV1 downgrade (Go parity)', () => {
+describe('downgradeToLegacyHdf downgrade (Go parity)', () => {
   const fixture = join(__dirname, '..', '..', '..', 'shared', 'go', 'hdfversion', 'testdata', 'modern_with_amendments.json');
 
   it('flattens amendments into the legacy shape, matching the Go transform', () => {
     const v2 = JSON.parse(readFileSync(fixture, 'utf-8')) as HDFV2Results;
-    const { hdf, warnings } = convertV2ToV1(v2);
+    const { hdf, warnings } = downgradeToLegacyHdf(v2);
 
     expect(hdf.version).toBe('5.22.65'); // gap C: version reconstructed from the source tool
 
@@ -1557,9 +1557,9 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
       platform: {name: 'rhel', release: '9'},
       profiles: [{name: 'p', sha256: '570c6a9e8a19093085ead8b98d88ba9dc', controls: [], groups: [], supports: [], attributes: []}],
       statistics: {},
-    } as unknown as HDFV1Results;
-    const v2 = convertV1ToV2(v1);
-    const {hdf} = convertV2ToV1(v2);
+    } as unknown as LegacyHDFResults;
+    const v2 = convertLegacyHdf(v1);
+    const {hdf} = downgradeToLegacyHdf(v2);
     // The fingerprint survives inspec(v1)→modern(v2/integrity)→legacy(v1/sha256).
     expect(hdf.profiles[0]!.sha256).toBe('570c6a9e8a19093085ead8b98d88ba9dc');
   });
@@ -1580,7 +1580,7 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
       components: [{name: 'h'}],
       generator: {name: 'g', version: '1.0.0'},
     } as unknown as HDFV2Results;
-    const {hdf} = convertV2ToV1(v2);
+    const {hdf} = downgradeToLegacyHdf(v2);
     expect(hdf.profiles[0]!.controls![0]!.waiver_data?.override_type).toBeUndefined();
   });
 
@@ -1589,7 +1589,7 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
     // exec-json schema Heimdall's parser enforces (vendored in Go testdata), rather
     // than trusting per-field presence assertions that can drift from the contract.
     const v2 = JSON.parse(readFileSync(fixture, 'utf-8')) as HDFV2Results;
-    const { hdf } = convertV2ToV1(v2);
+    const { hdf } = downgradeToLegacyHdf(v2);
 
     const schemaPath = join(__dirname, '..', '..', '..', 'shared', 'go', 'hdfversion', 'testdata', 'exec-json.schema.json');
     const schema = JSON.parse(readFileSync(schemaPath, 'utf-8'));
@@ -1653,7 +1653,7 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
       components: [{ name: 'host', osVersion: '9.3' }],
       generator: { name: 'gen', version: '2.2.2' }, // no tool → generator version used
     } as unknown as HDFV2Results;
-    const { hdf, warnings } = convertV2ToV1(v2);
+    const { hdf, warnings } = downgradeToLegacyHdf(v2);
     expect(hdf.version).toBe('2.2.2');
     expect(hdf.platform.name).toBe('host');
     expect(hdf.platform.release).toBe('9.3');
@@ -1678,7 +1678,7 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
   });
 
   it('uses the sentinel version when neither tool nor generator version is present', () => {
-    const { hdf } = convertV2ToV1({ baselines: [], statistics: {} } as unknown as HDFV2Results);
+    const { hdf } = downgradeToLegacyHdf({ baselines: [], statistics: {} } as unknown as HDFV2Results);
     expect(hdf.version).toBe('0.0.0');
     expect(hdf.platform.name).toBe('');
   });
@@ -1686,9 +1686,9 @@ describe('convertV2ToV1 downgrade (Go parity)', () => {
 
 // Upgrade edge cases: a notApplicable-only control (effectiveStatus rollup) and
 // non-string / contentless control refs (dropped rather than passed through).
-describe('convertV1ToV2 upgrade edge cases', () => {
+describe('convertLegacyHdf upgrade edge cases', () => {
   it('rolls up a notApplicable-only control and drops non-string / empty refs', () => {
-    const v1: HDFV1Results = {
+    const v1: LegacyHDFResults = {
       version: '1.0',
       platform: { name: 'x' },
       statistics: {},
@@ -1706,7 +1706,7 @@ describe('convertV1ToV2 upgrade edge cases', () => {
         },
       ],
     };
-    const v2 = convertV1ToV2(v1);
+    const v2 = convertLegacyHdf(v1);
     const req = v2.baselines[0]!.requirements![0]!;
     expect(req.effectiveStatus).toBe('notApplicable');
     expect(req.refs ?? []).toHaveLength(0);

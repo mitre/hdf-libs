@@ -315,7 +315,7 @@ func normalizeLegacyHDFInput(data []byte, fromFormat, fromVersion, toFormat stri
 	}
 	// Detect the legacy shape by content so `--from hdf`, `--from hdf@2`, and
 	// auto-detected legacyhdf input are all handled; modern HDF is left untouched.
-	if !legacyhdf.IsHDFV1(data) {
+	if !legacyhdf.IsLegacyHDF(data) {
 		return data, fromFormat, fromVersion, nil
 	}
 	upgraded, _, err := hdfversion.TransformHDF(data, hdfversion.LegacyVersion, hdfversion.ModernVersion)

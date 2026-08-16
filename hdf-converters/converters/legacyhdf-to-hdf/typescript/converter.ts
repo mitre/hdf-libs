@@ -22,7 +22,7 @@ import { deriveControlTypeFromTags, validateInputSize } from '../../../shared/ty
 
 // ===== V1.0 Type Definitions =====
 
-export interface V1Result {
+export interface LegacyResult {
   status: string;
   code_desc?: string;
   run_time?: number;
@@ -37,7 +37,7 @@ export interface V1Result {
   [key: string]: unknown;
 }
 
-export interface V1Control {
+export interface LegacyControl {
   id: string;
   title?: string;
   desc?: string;
@@ -51,19 +51,19 @@ export interface V1Control {
     line?: number;
   };
   waiver_data?: Record<string, unknown>;
-  results?: V1Result[];
+  results?: LegacyResult[];
   status?: string; // overall_status in some v1.0 variants
   [key: string]: unknown;
 }
 
-export interface V1Group {
+export interface LegacyGroup {
   id: string;
   title?: string;
   controls: string[]; // Array of control IDs
   [key: string]: unknown;
 }
 
-export interface V1Dependency {
+export interface LegacyDependency {
   name?: string;
   url?: string;
   path?: string;
@@ -79,7 +79,7 @@ export interface V1Dependency {
   [key: string]: unknown;
 }
 
-export interface V1Profile {
+export interface LegacyProfile {
   name: string;
   version?: string;
   title?: string;
@@ -90,10 +90,10 @@ export interface V1Profile {
   copyright_email?: string;
   supports?: unknown[];
   attributes?: unknown[];
-  groups?: V1Group[];
-  controls?: V1Control[];
+  groups?: LegacyGroup[];
+  controls?: LegacyControl[];
   sha256?: string;
-  depends?: V1Dependency[];
+  depends?: LegacyDependency[];
   parent_profile?: string;
   status?: string;
   status_message?: string;
@@ -101,17 +101,17 @@ export interface V1Profile {
   [key: string]: unknown;
 }
 
-export interface V1Platform {
+export interface LegacyPlatform {
   name: string;
   release?: string;
   target_id?: string;
   [key: string]: unknown;
 }
 
-export interface HDFV1Results {
+export interface LegacyHDFResults {
   version: string;
-  platform: V1Platform;
-  profiles: V1Profile[];
+  platform: LegacyPlatform;
+  profiles: LegacyProfile[];
   statistics: unknown;
   generator?: unknown;
   timestamp?: string;
@@ -322,7 +322,7 @@ function legacyStartTime(s: string | undefined): string {
 // (converter.go convertResult): v1 resource_class becomes v2 `resource`, and
 // the non-schema legacy fields (resource, resource_params, skip_message) are
 // dropped rather than passed through (Requirement_Result is closed).
-function convertResult(v1Result: V1Result): V2Result {
+function convertResult(v1Result: LegacyResult): V2Result {
   const v2Result: V2Result = {
     status: normalizeStatus(v1Result.status),
   };
@@ -410,7 +410,7 @@ function convertRefs(refs: unknown[]): Record<string, unknown>[] | undefined {
  * Convert v1.0 control to v2.0 requirement.
  * Transforms field names and structure.
  */
-function convertControl(v1Control: V1Control): V2Requirement {
+function convertControl(v1Control: LegacyControl): V2Requirement {
   const v2Req: V2Requirement = {
     id: v1Control.id,
     impact: v1Control.impact,
@@ -481,7 +481,7 @@ function convertControl(v1Control: V1Control): V2Requirement {
  * Convert v1.0 group to v2.0 group.
  * Renames controls array to requirements.
  */
-function convertGroup(v1Group: V1Group): V2Group {
+function convertGroup(v1Group: LegacyGroup): V2Group {
   const v2Group: V2Group = {
     id: v1Group.id,
     requirements: v1Group.controls, // Rename controls to requirements
@@ -506,7 +506,7 @@ function convertGroup(v1Group: V1Group): V2Group {
  * Convert v1.0 dependency to v2.0 dependency.
  * Transforms snake_case to camelCase for skip_message.
  */
-function convertDependency(v1Dep: V1Dependency): V2Dependency {
+function convertDependency(v1Dep: LegacyDependency): V2Dependency {
   const v2Dep: V2Dependency = {};
 
   // Copy most fields as-is
@@ -596,7 +596,7 @@ function convertAttributes(attrs: unknown[]): Record<string, unknown>[] {
  * Convert v1.0 profile to v2.0 baseline.
  * Transforms field names and nested structures.
  */
-function convertProfile(v1Profile: V1Profile): V2Baseline {
+function convertProfile(v1Profile: LegacyProfile): V2Baseline {
   const v2Baseline: V2Baseline = {
     name: v1Profile.name,
   };
@@ -678,7 +678,7 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
  *   profiles: [...],
  *   statistics: {...}
  * };
- * const v2 = convertV1ToV2(v1);
+ * const v2 = convertLegacyHdf(v1);
  * // v2 = { baselines: [...], components: [{...}], statistics: {...} }
  * ```
  */
@@ -777,8 +777,8 @@ function nonRepresentableWarnings(req: V2Requirement): string[] {
   return w;
 }
 
-function convertResultToV1(r: V2Result): V1Result {
-  const v1: V1Result = {status: denormalizeStatus(r.status)};
+function convertResultToV1(r: V2Result): LegacyResult {
+  const v1: LegacyResult = {status: denormalizeStatus(r.status)};
   if (r.codeDesc !== undefined) v1.code_desc = r.codeDesc;
   if (r.runTime !== undefined) v1.run_time = r.runTime;
   // start_time is required by the InSpec exec-json schema Heimdall loads; always present.
@@ -792,8 +792,8 @@ function convertResultToV1(r: V2Result): V1Result {
   return v1;
 }
 
-function convertRequirementToV1Control(req: V2Requirement): {control: V1Control; warnings: string[]} {
-  const c: V1Control = {
+function convertRequirementToV1Control(req: V2Requirement): {control: LegacyControl; warnings: string[]} {
+  const c: LegacyControl = {
     id: req.id,
     // riskAdjustment (any impact override) re-scores the displayed impact.
     impact: req.effectiveImpact ?? req.impact,
@@ -829,8 +829,8 @@ function convertRequirementToV1Control(req: V2Requirement): {control: V1Control;
 }
 
 /** Mirror the Go convertDependencyToV2: only name/url/path/git survive to the v1 profile. */
-function convertDependencyToV1(d: V2Dependency): V1Dependency {
-  const out: V1Dependency = {};
+function convertDependencyToV1(d: V2Dependency): LegacyDependency {
+  const out: LegacyDependency = {};
   if (d.name !== undefined) out.name = d.name;
   if (d.url !== undefined) out.url = d.url;
   if (d.path !== undefined) out.path = d.path;
@@ -847,10 +847,10 @@ function baselineSha256(b: V2Baseline): string {
   return b.integrity?.checksum || b.resultsChecksum?.value || b.originalChecksum?.value || '';
 }
 
-function convertBaselineToV1Profile(b: V2Baseline): {profile: V1Profile; warnings: string[]} {
+function convertBaselineToV1Profile(b: V2Baseline): {profile: LegacyProfile; warnings: string[]} {
   // supports/attributes/groups (arrays) and sha256 (string) are required by the InSpec
   // exec-json schema Heimdall loads — always present even when the modern baseline has none.
-  const p: V1Profile = {
+  const p: LegacyProfile = {
     name: b.name,
     supports: [],
     attributes: [],
@@ -897,12 +897,12 @@ function downgradeV1Version(v2: HDFV2Results): string {
  * document and warnings for amendments that could not be represented in v2. This is
  * the TypeScript peer of the Go `downgradeV3ToV2`; keep the two in sync.
  */
-export function convertV2ToV1(v2Data: HDFV2Results): {hdf: HDFV1Results; warnings: string[]} {
+export function downgradeToLegacyHdf(v2Data: HDFV2Results): {hdf: LegacyHDFResults; warnings: string[]} {
   const warnings: string[] = [];
 
   // name + release are required by the InSpec exec-json schema Heimdall loads, so
   // release is always present (empty string when no OS version is known).
-  const platform: V1Platform = {name: '', release: ''};
+  const platform: LegacyPlatform = {name: '', release: ''};
   const components = v2Data.components as Array<{name?: string; osVersion?: string}> | undefined;
   const t = components?.[0];
   if (t) {
@@ -917,7 +917,7 @@ export function convertV2ToV1(v2Data: HDFV2Results): {hdf: HDFV1Results; warning
     return profile;
   });
 
-  const hdf: HDFV1Results = {
+  const hdf: LegacyHDFResults = {
     version: downgradeV1Version(v2Data),
     platform,
     profiles,
@@ -954,7 +954,7 @@ function toolIdentity(version: string): { name: string; version?: string; format
  * `hdf events derive` consumes. Returns undefined only when the source carries
  * no usable time; never the wall clock. Canonical trimmed-UTC form.
  */
-function documentTimestamp(v1Data: HDFV1Results): string | undefined {
+function documentTimestamp(v1Data: LegacyHDFResults): string | undefined {
   if (v1Data.timestamp) {
     const t = parseTimestamp(v1Data.timestamp);
     if (t) return formatTimestamp(t);
@@ -972,7 +972,7 @@ function documentTimestamp(v1Data: HDFV1Results): string | undefined {
   return latest ? formatTimestamp(latest) : undefined;
 }
 
-export function convertV1ToV2(v1Data: HDFV1Results, converterVersion = '1.0.0'): HDFV2Results {
+export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1.0.0'): HDFV2Results {
   validateInputSize(JSON.stringify(v1Data), 'legacyhdf-to-hdf');
   const v2: HDFV2Results = {
     baselines: (v1Data.profiles || []).map(convertProfile),
@@ -1036,7 +1036,7 @@ export function convertV1ToV2(v1Data: HDFV1Results, converterVersion = '1.0.0'):
  * @param data - Unknown data to validate
  * @returns true if data looks like HDF v1.0
  */
-export function isHDFV1(data: unknown): data is HDFV1Results {
+export function isLegacyHdf(data: unknown): data is LegacyHDFResults {
   if (typeof data !== 'object' || data === null) {
     return false;
   }

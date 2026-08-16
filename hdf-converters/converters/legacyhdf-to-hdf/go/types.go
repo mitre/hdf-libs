@@ -9,8 +9,8 @@ package legacyhdf
 
 import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 
-// V1Result represents a test result in HDF v1.0 format.
-type V1Result struct {
+// LegacyResult represents a test result in HDF v1.0 format.
+type LegacyResult struct {
 	Status         string   `json:"status"`
 	CodeDesc       *string  `json:"code_desc,omitempty"`
 	RunTime        *float64 `json:"run_time,omitempty"`
@@ -24,45 +24,45 @@ type V1Result struct {
 	SkipMessage    *string  `json:"skip_message,omitempty"`
 }
 
-// V1SourceLocation represents the source location of a control.
-type V1SourceLocation struct {
+// LegacySourceLocation represents the source location of a control.
+type LegacySourceLocation struct {
 	Ref  *string `json:"ref,omitempty"`
 	Line *int    `json:"line,omitempty"`
 }
 
-// V1Description represents a labeled description.
-type V1Description struct {
+// LegacyDescription represents a labeled description.
+type LegacyDescription struct {
 	Label string `json:"label"`
 	Data  string `json:"data"`
 }
 
-// V1Control represents a control in HDF v1.0 format.
-type V1Control struct {
-	ID           string          `json:"id"`
-	Title        *string         `json:"title,omitempty"`
-	Desc         *string         `json:"desc,omitempty"`
-	Descriptions []V1Description `json:"descriptions,omitempty"`
-	Impact       float64         `json:"impact"`
+// LegacyControl represents a control in HDF v1.0 format.
+type LegacyControl struct {
+	ID           string              `json:"id"`
+	Title        *string             `json:"title,omitempty"`
+	Desc         *string             `json:"desc,omitempty"`
+	Descriptions []LegacyDescription `json:"descriptions,omitempty"`
+	Impact       float64             `json:"impact"`
 	// refs/tags are required by the InSpec exec-json schema Heimdall loads (empty is
 	// valid, but the key must be present), so no omitempty.
 	Refs           []interface{}          `json:"refs"`
 	Tags           map[string]interface{} `json:"tags"`
 	Code           *string                `json:"code,omitempty"`
-	SourceLocation *V1SourceLocation      `json:"source_location,omitempty"`
+	SourceLocation *LegacySourceLocation  `json:"source_location,omitempty"`
 	WaiverData     map[string]interface{} `json:"waiver_data,omitempty"`
-	Results        []V1Result             `json:"results,omitempty"`
+	Results        []LegacyResult         `json:"results,omitempty"`
 	Status         *string                `json:"status,omitempty"`
 }
 
-// V1Group represents a group of controls in HDF v1.0 format.
-type V1Group struct {
+// LegacyGroup represents a group of controls in HDF v1.0 format.
+type LegacyGroup struct {
 	ID       string   `json:"id"`
 	Title    *string  `json:"title,omitempty"`
 	Controls []string `json:"controls"`
 }
 
-// V1Dependency represents a profile dependency in HDF v1.0 format.
-type V1Dependency struct {
+// LegacyDependency represents a profile dependency in HDF v1.0 format.
+type LegacyDependency struct {
 	Name        *string `json:"name,omitempty"`
 	URL         *string `json:"url,omitempty"`
 	Path        *string `json:"path,omitempty"`
@@ -77,8 +77,8 @@ type V1Dependency struct {
 	SkipMessage *string `json:"skip_message,omitempty"`
 }
 
-// V1Profile represents a profile in HDF v1.0 format.
-type V1Profile struct {
+// LegacyProfile represents a profile in HDF v1.0 format.
+type LegacyProfile struct {
 	Name           string  `json:"name"`
 	Version        *string `json:"version,omitempty"`
 	Title          *string `json:"title,omitempty"`
@@ -91,34 +91,34 @@ type V1Profile struct {
 	// loads (an empty array is valid, but the key must be present), so no omitempty.
 	Supports      []map[string]interface{} `json:"supports"`
 	Attributes    []map[string]interface{} `json:"attributes"`
-	Groups        []V1Group                `json:"groups"`
-	Controls      []V1Control              `json:"controls,omitempty"`
+	Groups        []LegacyGroup            `json:"groups"`
+	Controls      []LegacyControl          `json:"controls,omitempty"`
 	SHA256        *string                  `json:"sha256,omitempty"`
-	Depends       []V1Dependency           `json:"depends,omitempty"`
+	Depends       []LegacyDependency       `json:"depends,omitempty"`
 	ParentProfile *string                  `json:"parent_profile,omitempty"`
 	Status        *string                  `json:"status,omitempty"`
 	StatusMessage *string                  `json:"status_message,omitempty"`
 	SkipMessage   *string                  `json:"skip_message,omitempty"`
 }
 
-// V1Platform represents the platform in HDF v1.0 format.
-type V1Platform struct {
+// LegacyPlatform represents the platform in HDF v1.0 format.
+type LegacyPlatform struct {
 	Name     string  `json:"name"`
 	Release  *string `json:"release,omitempty"`
 	TargetID *string `json:"target_id,omitempty"`
 }
 
-// V1Statistics represents statistics in HDF v1.0 format.
-type V1Statistics struct {
+// LegacyStatistics represents statistics in HDF v1.0 format.
+type LegacyStatistics struct {
 	Duration *float64 `json:"duration,omitempty"`
 }
 
-// HDFV1Results represents HDF v1.0 results format.
-type HDFV1Results struct {
-	Version    string       `json:"version"`
-	Platform   V1Platform   `json:"platform"`
-	Profiles   []V1Profile  `json:"profiles"`
-	Statistics V1Statistics `json:"statistics"`
+// LegacyHDFResults represents HDF v1.0 results format.
+type LegacyHDFResults struct {
+	Version    string           `json:"version"`
+	Platform   LegacyPlatform   `json:"platform"`
+	Profiles   []LegacyProfile  `json:"profiles"`
+	Statistics LegacyStatistics `json:"statistics"`
 	// Timestamp/Generator are absent from genuine InSpec exec-json but a
 	// re-exported HDF v1 document may carry them; preserve when present.
 	Timestamp *string        `json:"timestamp,omitempty"`
