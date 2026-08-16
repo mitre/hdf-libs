@@ -10,6 +10,7 @@ import {
   inputChecksum,
   buildNistCciTags,
   limitArray,
+  markUnratedSeverity,
   stripHTML,
   validateInputSize,
   buildHdfResults,
@@ -373,6 +374,7 @@ function buildRequirement(
   }
 
   const tags = buildNistCciTags(nist, cciTags, Object.keys(extras).length > 0 ? extras : undefined);
+  markUnratedSeverity(tags, vuln.severity);
 
   // Default description
   const defaultDesc = formatControlDesc(vuln);

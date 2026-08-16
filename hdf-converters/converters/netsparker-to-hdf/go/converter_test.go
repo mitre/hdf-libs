@@ -616,6 +616,46 @@ func TestConvertNetsparkerToHDF_EmptyVulnerabilities(t *testing.T) {
 	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
 }
 
+func TestConvertNetsparkerToHDF_UnratedSeverityMarker(t *testing.T) {
+	// Absent <severity> → severity_rating: unrated; rated severities —
+	// including Information — must not carry the marker.
+	xml := `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise generated="03/07/2023 03:15 PM">
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>vuln-unrated</LookupId>
+			<name>No Severity Vuln</name>
+		</vulnerability>
+		<vulnerability>
+			<LookupId>vuln-high</LookupId>
+			<name>High Severity Vuln</name>
+			<severity>High</severity>
+		</vulnerability>
+		<vulnerability>
+			<LookupId>vuln-info</LookupId>
+			<name>Information Severity Vuln</name>
+			<severity>Information</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`
+
+	result, err := ConvertNetsparkerToHDF([]byte(xml), testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	unrated := shared.MustFindRequirement(t, reqs, "vuln-unrated")
+	assert.Equal(t, "unrated", unrated.Tags["severity_rating"], "absent severity must carry severity_rating: unrated")
+
+	for _, id := range []string{"vuln-high", "vuln-info"} {
+		req := shared.MustFindRequirement(t, reqs, id)
+		_, has := req.Tags["severity_rating"]
+		assert.False(t, has, "rated severity must not carry the severity_rating tag (%s)", id)
+	}
+}
+
 func TestConvertNetsparkerToHDF_EntityExpansion(t *testing.T) {
 	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
 	_, err := ConvertNetsparkerToHDF(input, testVersion)

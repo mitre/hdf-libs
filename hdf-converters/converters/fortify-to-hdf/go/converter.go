@@ -181,6 +181,11 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 	if len(vulns) > 0 {
 		impact = hdfutil.RoundImpact(vulns[0].InstanceInfo.InstanceSeverity / 5.0)
 	}
+	// Fortify's InstanceSeverity is numeric on a 1.0-5.0 scale; zero means the
+	// attribute was absent, i.e. the finding carries no rating at all.
+	if !(len(vulns) > 0 && vulns[0].InstanceInfo.InstanceSeverity > 0) {
+		shared.MarkUnratedSeverity(tags, "")
+	}
 
 	// Build results — one per vulnerability instance
 	results := buildResults(vulns, snippetMap, fvdl)

@@ -95,3 +95,22 @@ export function cvssScoreToSeverity(
   if (score < 9.0) return 'high';
   return 'critical';
 }
+
+// Severity vocabulary values that assert "no rating was made" (grype Unknown,
+// Dependency-Track UNASSIGNED, Microsoft Graph unSpecified). Distinct from the
+// zero-impact RATED tier (info/none/informational) and from grype's
+// negligible, which is the lowest rating, not an absent one.
+const unratedSeverityTokens = new Set(['unknown', 'unassigned', 'unspecified']);
+
+/**
+ * Report whether a source severity carries no rating at all: the field is
+ * absent/blank, or the token is an explicit no-rating value. Tokens the
+ * vocabulary simply doesn't recognize are NOT unrated — an unknown word is not
+ * an assertion of unratedness. Converters use this to emit the shared unrated
+ * marker so a defaulted impact stays distinguishable from a genuine medium.
+ */
+export function isUnratedSeverity(severity?: string | null): boolean {
+  if (severity === undefined || severity === null) return true;
+  const s = severity.trim().toLowerCase();
+  return s === '' || unratedSeverityTokens.has(s);
+}

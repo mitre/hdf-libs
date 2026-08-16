@@ -463,6 +463,41 @@ func TestConvertGosecToHDF_ConfidenceTagAbsentWhenEmpty(t *testing.T) {
 	assert.False(t, has, "confidence tag must be omitted when source confidence is empty")
 }
 
+func TestConvertGosecToHDF_UnratedSeverityMarker(t *testing.T) {
+	// Empty severity → severity_rating: unrated; a rated severity must not
+	// carry the marker.
+	input := []byte(`{
+		"Golang errors": {},
+		"Issues": [{
+			"severity": "", "confidence": "HIGH",
+			"cwe": {"id": "22", "url": "https://cwe.mitre.org/data/definitions/22.html"},
+			"rule_id": "G304", "details": "File inclusion",
+			"file": "/app/main.go", "code": "f, _ := os.Open(x)\n",
+			"line": "5", "column": "2", "nosec": false, "suppressions": null
+		}, {
+			"severity": "HIGH", "confidence": "HIGH",
+			"cwe": {"id": "338", "url": "https://cwe.mitre.org/data/definitions/338.html"},
+			"rule_id": "G404", "details": "Weak random number generator",
+			"file": "/app/rand.go", "code": "rand.Intn(10)\n",
+			"line": "8", "column": "2", "nosec": false, "suppressions": null
+		}],
+		"Stats": {"files": 2, "lines": 20, "nosec": 0, "found": 2},
+		"GosecVersion": "2.18.0"
+	}`)
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	byID := map[string]map[string]interface{}{}
+	for _, req := range result.Baselines[0].Requirements {
+		byID[req.ID] = req.Tags
+	}
+	require.Contains(t, byID, "G304")
+	require.Contains(t, byID, "G404")
+	assert.Equal(t, "unrated", byID["G304"]["severity_rating"], "empty severity must carry severity_rating: unrated")
+	_, has := byID["G404"]["severity_rating"]
+	assert.False(t, has, "rated severity must not carry the severity_rating tag")
+}
+
 func TestConvertGosecToHDF_CWEFirstClass(t *testing.T) {
 	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)

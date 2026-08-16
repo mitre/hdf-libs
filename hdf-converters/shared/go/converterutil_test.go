@@ -464,3 +464,23 @@ func TestDigestToChecksums(t *testing.T) {
 		})
 	}
 }
+
+func TestMarkUnratedSeverity(t *testing.T) {
+	t.Run("tags an unrated severity", func(t *testing.T) {
+		for _, sev := range []string{"", "unknown", "UNASSIGNED", "unSpecified"} {
+			tags := map[string]interface{}{"nist": []string{"RA-5"}}
+			MarkUnratedSeverity(tags, sev)
+			assert.Equal(t, "unrated", tags["severity_rating"], "%q", sev)
+		}
+	})
+	t.Run("leaves rated severities untagged", func(t *testing.T) {
+		for _, sev := range []string{"critical", "low", "info", "none", "negligible", "wibble"} {
+			tags := map[string]interface{}{}
+			MarkUnratedSeverity(tags, sev)
+			assert.NotContains(t, tags, "severity_rating", "%q", sev)
+		}
+	})
+	t.Run("nil map is a no-op", func(t *testing.T) {
+		assert.NotPanics(t, func() { MarkUnratedSeverity(nil, "unknown") })
+	})
+}

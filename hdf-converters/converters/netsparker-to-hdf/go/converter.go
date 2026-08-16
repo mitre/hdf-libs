@@ -331,6 +331,7 @@ func buildRequirement(vuln *NetsparkerVuln, initiated string) hdf.EvaluatedRequi
 	}
 
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
+	shared.MarkUnratedSeverity(tags, vuln.Severity)
 
 	// Description
 	defaultDesc := formatControlDesc(vuln)

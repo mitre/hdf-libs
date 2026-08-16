@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums } from './converterutil.js';
+import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -448,4 +448,22 @@ describe('digestToChecksums', () => {
       expect(digestToChecksums(digest)).toBeUndefined();
     },
   );
+});
+
+describe('markUnratedSeverity', () => {
+  it('tags an unrated severity', () => {
+    for (const sev of [undefined, null, '', 'unknown', 'UNASSIGNED', 'unSpecified']) {
+      const tags: Record<string, unknown> = {nist: ['RA-5']};
+      markUnratedSeverity(tags, sev);
+      expect(tags.severity_rating, String(sev)).toBe('unrated');
+    }
+  });
+
+  it('leaves rated severities untagged', () => {
+    for (const sev of ['critical', 'low', 'info', 'none', 'negligible', 'wibble']) {
+      const tags: Record<string, unknown> = {};
+      markUnratedSeverity(tags, sev);
+      expect(tags, sev).not.toHaveProperty('severity_rating');
+    }
+  });
 });

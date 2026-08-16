@@ -200,6 +200,11 @@ func buildRequirement(checkID string, group []checkWithType, now time.Time) hdf.
 	if rep.BcCheckID != nil && *rep.BcCheckID != "" {
 		tags["bc_check_id"] = *rep.BcCheckID
 	}
+	severity := ""
+	if rep.Severity != nil {
+		severity = *rep.Severity
+	}
+	shared.MarkUnratedSeverity(tags, severity)
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: rep.CheckName},

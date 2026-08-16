@@ -16,7 +16,7 @@ import {
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 import {buildCvss as buildSharedCvss, cvssVersionFromString} from '../../../shared/typescript/cvss.js';
 
 // Input types for Grype JSON
@@ -401,12 +401,12 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
   const cvssInfo = getCVSSInfo(vuln, match.relatedVulnerabilities);
   const refs = getReferences(vuln, match.relatedVulnerabilities);
 
-  // Determine status
+  // Determine status. Severity never changes it (unknown-severity
+  // convention): a detected vulnerability is failed regardless of rating
+  // confidence; only the ignore-rules triage axis differs.
   let status: ResultStatus;
   if (isIgnored) {
     status = ResultStatus.NotReviewed; // Ignored by configured rules
-  } else if (isNegligibleOrUnknown(severity)) {
-    status = ResultStatus.NotApplicable;
   } else {
     status = ResultStatus.Failed;
   }
@@ -438,6 +438,7 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
 
   // Build tags object - only include cci if not empty
   const tags = buildNistCciTags(DEFAULT_STATIC_ANALYSIS_NIST_TAGS, cciTags);
+  markUnratedSeverity(tags, severity);
 
   // Build requirement. Grype carries no literal source snippet, so code holds
   // the whole match serialized as indented JSON (byte-identical to the Go twin's

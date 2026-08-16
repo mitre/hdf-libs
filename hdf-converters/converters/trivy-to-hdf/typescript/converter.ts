@@ -24,6 +24,7 @@ import {
   buildNoFindingsRequirement,
   deriveControlTypeFromTags,
   digestToChecksums,
+  markUnratedSeverity,
   validateInputSize,
   buildHdfResults,
 } from '../../../shared/typescript/converterutil.js';
@@ -228,6 +229,7 @@ function convertVuln(v: TrivyVuln, res: TrivyResult, startTime: Date): Evaluated
   putIf(extras, 'published_date', v.PublishedDate);
   if (v.VendorSeverity && Object.keys(v.VendorSeverity).length > 0) extras.vendor_severity = v.VendorSeverity;
   const tags = buildTags(extras);
+  markUnratedSeverity(tags, v.Severity);
 
   const req: EvaluatedRequirement = {
     id: `Trivy/${v.VulnerabilityID ?? ''}`,
@@ -267,6 +269,7 @@ function convertMisconf(m: TrivyMisconf, res: TrivyResult, startTime: Date): Eva
   if (m.Resolution) descriptions.push({label: 'fix', data: m.Resolution});
 
   const tags = buildTags({class: res.Class, ...(m.Type ? {misconfig_type: m.Type} : {})});
+  markUnratedSeverity(tags, m.Severity);
   const req: EvaluatedRequirement = {
     id: `Trivy/${firstNonEmpty(m.ID, m.AVDID)}`,
     title: m.Title,
@@ -295,6 +298,7 @@ function convertMisconf(m: TrivyMisconf, res: TrivyResult, startTime: Date): Eva
 
 function convertSecret(s: TrivySecret, res: TrivyResult, startTime: Date): EvaluatedRequirement {
   const tags = buildTags({class: res.Class, ...(s.Category ? {secret_category: s.Category} : {})});
+  markUnratedSeverity(tags, s.Severity);
   const req: EvaluatedRequirement = {
     id: `Trivy/secret/${s.RuleID ?? ''}@${res.Target ?? ''}:${s.StartLine ?? 0}`,
     title: s.Title,
@@ -325,6 +329,7 @@ function convertLicense(l: TrivyLicense, res: TrivyResult, startTime: Date): Eva
   putIf(extras, 'package', l.PkgName);
   if (l.Confidence && l.Confidence > 0) extras.confidence = l.Confidence;
   const tags = buildTags(extras);
+  markUnratedSeverity(tags, l.Severity);
 
   // No affectedPackages: a license finding carries only the package name, and
   // AffectedPackage requires name+version+ecosystem, a purl, or a cpe.

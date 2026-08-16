@@ -2,7 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { buildNoFindingsRequirement, inputChecksum, limitArray, validateInputSize, mapCWEToNIST, DEFAULT_REMEDIATION_NIST_TAGS, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, inputChecksum, limitArray, markUnratedSeverity, validateInputSize, mapCWEToNIST, DEFAULT_REMEDIATION_NIST_TAGS, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -180,6 +180,7 @@ function buildRequirement(ruleId: string, issues: GosecIssue[], scanTime: Date):
   if (rep.confidence) {
     tags.confidence = rep.confidence;
   }
+  markUnratedSeverity(tags, rep.severity);
 
   const results = issues.map((issue) => issueToResult(issue, scanTime));
 

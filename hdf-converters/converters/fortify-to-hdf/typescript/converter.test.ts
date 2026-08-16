@@ -766,3 +766,34 @@ describe('Fortify to HDF Converter', () => {
     expect('sourceLocation' in reqs[0]!).toBe(false);
   });
 });
+
+describe('fortify unrated severity marker', () => {
+  const buildFvdl = (instanceInfo: string): string => `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>CU</ClassID><DefaultSeverity>3.0</DefaultSeverity></ClassInfo>
+    ${instanceInfo}
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="CU"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`;
+
+  it('tags severity_rating unrated when InstanceSeverity is absent and omits it when rated', async () => {
+    const unratedOut = parseOutput(
+      await convertFortifyToHdf(buildFvdl('<InstanceInfo><InstanceID>I</InstanceID></InstanceInfo>')),
+    );
+    const unratedReqs = (unratedOut.baselines as Array<Record<string, unknown>>)[0]!
+      .requirements as Array<Record<string, unknown>>;
+    expect((unratedReqs[0]!.tags as Record<string, unknown>).severity_rating).toBe('unrated');
+
+    const ratedOut = parseOutput(
+      await convertFortifyToHdf(
+        buildFvdl('<InstanceInfo><InstanceID>I</InstanceID><InstanceSeverity>3.0</InstanceSeverity></InstanceInfo>'),
+      ),
+    );
+    const ratedReqs = (ratedOut.baselines as Array<Record<string, unknown>>)[0]!
+      .requirements as Array<Record<string, unknown>>;
+    expect((ratedReqs[0]!.tags as Record<string, unknown>).severity_rating).toBeUndefined();
+  });
+});

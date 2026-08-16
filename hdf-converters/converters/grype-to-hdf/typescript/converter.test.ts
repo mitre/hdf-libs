@@ -483,3 +483,48 @@ describe('grype-to-hdf sha512 manifest digest (fpx5 regression)', () => {
     expect(hdf.components?.[0].integrity).toEqual([{algorithm: 'sha512', value: 'deadbeef'}]);
   });
 });
+
+describe('unknown-severity convention', () => {
+  it('keeps detected vulns failed and marks unrated severities, negligible stays a rating', async () => {
+    // Agreed rule: severity never changes status. Unrated (Unknown/absent) ->
+    // failed @ 0.5 + severity_rating=unrated tag; negligible -> failed @ 0.0,
+    // untagged. Manual-review message preserved.
+    const report = JSON.stringify({
+      descriptor: {name: 'grype', version: '0.79.3'},
+      source: {target: {userInput: 'test-image'}},
+      matches: [
+        {vulnerability: {id: 'CVE-UNKNOWN', severity: 'Unknown'}, artifact: {name: 'a', version: '1'}},
+        {vulnerability: {id: 'CVE-ABSENT'}, artifact: {name: 'b', version: '1'}},
+        {vulnerability: {id: 'CVE-NEGLIGIBLE', severity: 'Negligible'}, artifact: {name: 'c', version: '1'}},
+        {vulnerability: {id: 'CVE-HIGH', severity: 'High'}, artifact: {name: 'd', version: '1'}},
+      ],
+    });
+    const hdf = JSON.parse(await convertGrypeToHdf(report)) as HDFResults;
+    const reqs = hdf.baselines[0].requirements;
+    const byId = (id: string) => {
+      const r = reqs.find((x) => x.id === id);
+      expect(r, id).toBeDefined();
+      return r!;
+    };
+
+    for (const [id, impact, unrated] of [
+      ['Grype/CVE-UNKNOWN', 0.5, true],
+      ['Grype/CVE-ABSENT', 0.5, true],
+      ['Grype/CVE-NEGLIGIBLE', 0.0, false],
+      ['Grype/CVE-HIGH', 0.7, false],
+    ] as const) {
+      const req = byId(id);
+      expect(req.results[0].status, id).toBe('failed');
+      expect(req.impact, id).toBe(impact);
+      if (unrated) {
+        expect(req.tags, id).toMatchObject({severity_rating: 'unrated'});
+      } else {
+        expect(req.tags, id).not.toHaveProperty('severity_rating');
+      }
+    }
+
+    for (const id of ['Grype/CVE-UNKNOWN', 'Grype/CVE-ABSENT', 'Grype/CVE-NEGLIGIBLE']) {
+      expect(byId(id).results[0].message, id).toContain('Manual review required');
+    }
+  });
+});

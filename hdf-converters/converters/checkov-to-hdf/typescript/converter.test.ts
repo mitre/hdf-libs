@@ -186,6 +186,47 @@ describe('checkov to HDF converter', async () => {
       expect(ckvTF1?.results[0]?.codeDesc).toContain('vpc');
     });
 
+    it('tags unrated severities with severity_rating: unrated', async () => {
+      const input = JSON.stringify({
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [{
+            check_id: 'CKV_UNRATED_1',
+            check_name: 'Check without severity',
+            check_result: { result: 'FAILED' },
+            severity: null,
+            file_path: '/main.tf',
+            file_line_range: [1, 5],
+            resource: 'aws_s3_bucket.test',
+            guideline: null,
+            code_block: null,
+            check_class: 'checkov.terraform.checks.resource.Test',
+          }, {
+            check_id: 'CKV_RATED_1',
+            check_name: 'Check with severity',
+            check_result: { result: 'FAILED' },
+            severity: 'HIGH',
+            file_path: '/main.tf',
+            file_line_range: [6, 10],
+            resource: 'aws_s3_bucket.test2',
+            guideline: null,
+            code_block: null,
+            check_class: 'checkov.terraform.checks.resource.Test',
+          }],
+          skipped_checks: [],
+          parsing_errors: [],
+        },
+        summary: { passed: 0, failed: 2, skipped: 0, parsing_errors: 0, resource_count: 2, checkov_version: '3.2.524' },
+      });
+      const hdf = JSON.parse(await convertCheckovToHdf(input)) as HDFResults;
+      const reqs = hdf.baselines[0]!.requirements;
+      const unrated = reqs.find(r => r.id === 'CKV_UNRATED_1');
+      const rated = reqs.find(r => r.id === 'CKV_RATED_1');
+      expect(unrated?.tags?.['severity_rating']).toBe('unrated');
+      expect(rated?.tags?.['severity_rating']).toBeUndefined();
+    });
+
     it('should use default 0.5 impact when severity is null', async () => {
       const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');

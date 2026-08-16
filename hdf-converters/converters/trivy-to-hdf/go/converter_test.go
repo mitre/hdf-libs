@@ -286,3 +286,36 @@ func TestHelperEdges(t *testing.T) {
 	assert.Equal(t, "", architecture(json.RawMessage(``)))
 	assert.Equal(t, "", architecture(json.RawMessage(`not json`)))
 }
+
+func TestUnratedSeverityMarker(t *testing.T) {
+	// Unrated severities (UNKNOWN/absent) carry the shared severity_rating
+	// marker on every finding class; rated severities never do.
+	input := []byte(`{"SchemaVersion":2,"ArtifactName":"x","ArtifactType":"filesystem","Results":[
+		{"Class":"os-pkgs","Vulnerabilities":[
+			{"VulnerabilityID":"CVE-UNRATED","PkgName":"p","InstalledVersion":"1","Severity":"UNKNOWN"},
+			{"VulnerabilityID":"CVE-RATED","PkgName":"p","InstalledVersion":"1","Severity":"LOW"}]},
+		{"Target":"Dockerfile","Class":"config","Misconfigurations":[
+			{"ID":"M-UNRATED","Title":"t","Status":"FAIL"},
+			{"ID":"M-RATED","Title":"t","Severity":"LOW","Status":"FAIL"}]},
+		{"Target":"f","Class":"secret","Secrets":[
+			{"RuleID":"unrated-secret","StartLine":1},
+			{"RuleID":"rated-secret","Severity":"HIGH","StartLine":2}]},
+		{"Target":"L","Class":"license","Licenses":[
+			{"PkgName":"pk","Name":"MIT"},
+			{"PkgName":"pk2","Name":"MIT","Severity":"LOW"}]}]}`)
+	res, err := ConvertTrivyToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	unrated := []string{"Trivy/CVE-UNRATED", "Trivy/M-UNRATED", "Trivy/secret/unrated-secret@f:1", "Trivy/license/pk/MIT"}
+	rated := []string{"Trivy/CVE-RATED", "Trivy/M-RATED", "Trivy/secret/rated-secret@f:2", "Trivy/license/pk2/MIT"}
+	for _, id := range unrated {
+		req := findReq(res, id)
+		require.NotNil(t, req, id)
+		assert.Equal(t, "unrated", req.Tags["severity_rating"], id)
+	}
+	for _, id := range rated {
+		req := findReq(res, id)
+		require.NotNil(t, req, id)
+		assert.NotContains(t, req.Tags, "severity_rating", id)
+	}
+}

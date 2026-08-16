@@ -280,6 +280,7 @@ func convertVuln(raw json.RawMessage, res trivyResult, startTime time.Time) (hdf
 		extras["vendor_severity"] = v.VendorSeverity
 	}
 	tags := buildTags(extras)
+	shared.MarkUnratedSeverity(tags, v.Severity)
 
 	req := hdf.EvaluatedRequirement{
 		ID:                 "Trivy/" + v.VulnerabilityID,
@@ -327,6 +328,7 @@ func convertMisconf(raw json.RawMessage, res trivyResult, startTime time.Time) (
 	extras := map[string]interface{}{}
 	putIf(extras, "misconfig_type", m.Type)
 	tags := buildTags(withClass(res.Class, extras))
+	shared.MarkUnratedSeverity(tags, m.Severity)
 	req := hdf.EvaluatedRequirement{
 		ID:                 "Trivy/" + firstNonEmpty(m.ID, m.AVDID),
 		Title:              hdfutil.Ptr(m.Title),
@@ -360,6 +362,7 @@ func convertSecret(raw json.RawMessage, res trivyResult, startTime time.Time) (h
 		return hdf.EvaluatedRequirement{}, false
 	}
 	tags := buildTags(withClass(res.Class, map[string]interface{}{"secret_category": s.Category}))
+	shared.MarkUnratedSeverity(tags, s.Severity)
 	req := hdf.EvaluatedRequirement{
 		ID:                 fmt.Sprintf("Trivy/secret/%s@%s:%d", s.RuleID, res.Target, s.StartLine),
 		Title:              hdfutil.Ptr(s.Title),
@@ -398,6 +401,7 @@ func convertLicense(raw json.RawMessage, res trivyResult, startTime time.Time) (
 		extras["confidence"] = l.Confidence
 	}
 	tags := buildTags(extras)
+	shared.MarkUnratedSeverity(tags, l.Severity)
 
 	// No affectedPackages: a license finding carries only the package name, and
 	// AffectedPackage requires name+version+ecosystem, a purl, or a cpe. The
