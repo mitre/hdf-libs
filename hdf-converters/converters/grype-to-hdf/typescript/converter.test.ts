@@ -471,3 +471,15 @@ describe('grype-to-hdf scan-target component', () => {
     expect(c.labels).toBeUndefined();
   });
 });
+
+describe('grype-to-hdf sha512 manifest digest (fpx5 regression)', () => {
+  it('labels a sha512 manifest digest correctly with the prefix stripped', async () => {
+    const report = JSON.stringify({
+      matches: [],
+      source: {target: {userInput: 'img', manifestDigest: 'sha512:deadbeef'}},
+      descriptor: {name: 'grype', version: '0.1.0'},
+    });
+    const hdf = JSON.parse(await convertGrypeToHdf(report)) as HDFResults;
+    expect(hdf.components?.[0].integrity).toEqual([{algorithm: 'sha512', value: 'deadbeef'}]);
+  });
+});

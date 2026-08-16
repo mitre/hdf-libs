@@ -248,8 +248,8 @@ func TestMisconfStatus(t *testing.T) {
 func TestHelperEdges(t *testing.T) {
 	assert.Equal(t, hdf.Maven, ecosystemFromPURL("pkg:maven/g/a@1"))
 	assert.Equal(t, hdf.Ecosystem(""), ecosystemFromPURL("pkg:unknown/x"))
-	assert.Equal(t, "abc", sha256Digest("img@sha256:abc"))
-	assert.Equal(t, "", sha256Digest("no-digest-here"))
+	assert.Equal(t, "sha256:abc", digestPart("img@sha256:abc"))
+	assert.Equal(t, "bare", digestPart("bare"))
 	assert.Equal(t, "n", pkgLabel("n", ""))
 	assert.Equal(t, "n@1", pkgLabel("n", "1"))
 	assert.Equal(t, "amd64", architecture(json.RawMessage(`{"architecture":"amd64"}`)))

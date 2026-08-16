@@ -725,3 +725,26 @@ func TestConvertGrypeToHDF_ArtifactFallbackComponent(t *testing.T) {
 		t.Errorf("artifact fallback must carry no image identity, got %+v", c)
 	}
 }
+
+func TestConvertGrypeToHDF_Sha512ManifestDigest(t *testing.T) {
+	// Regression (fpx5): a sha512 manifest digest must be labeled sha512 with the
+	// prefix stripped, not mislabeled as sha256 with the "sha512:" prefix retained.
+	report := `{"matches":[],"source":{"target":{"userInput":"img","manifestDigest":"sha512:deadbeef"}},"descriptor":{"name":"grype","version":"0.1.0"}}`
+	res, err := ConvertGrypeToHDF([]byte(report), testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+	if len(res.Components) != 1 {
+		t.Fatalf("expected 1 component, got %d", len(res.Components))
+	}
+	ck := res.Components[0].Integrity
+	if len(ck) != 1 {
+		t.Fatalf("expected 1 integrity checksum, got %d", len(ck))
+	}
+	if ck[0].Algorithm != hdf.Sha512 {
+		t.Errorf("expected sha512 algorithm, got %q", ck[0].Algorithm)
+	}
+	if ck[0].Value != "deadbeef" {
+		t.Errorf("expected value 'deadbeef' (prefix stripped), got %q", ck[0].Value)
+	}
+}

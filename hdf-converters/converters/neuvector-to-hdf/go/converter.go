@@ -414,15 +414,6 @@ func targetName(report NeuVectorScanReport) string {
 		report.Registry, report.Repository, report.Tag)
 }
 
-// digestAlgorithms maps a NeuVector digest's algorithm prefix to the HDF hash
-// algorithm. NeuVector emits `sha256:<hex>`; the others are defensive.
-var digestAlgorithms = map[string]hdf.HashAlgorithm{
-	"sha256": hdf.Sha256,
-	"sha384": hdf.Sha384,
-	"sha512": hdf.Sha512,
-	"blake3": hdf.Blake3,
-}
-
 // splitBaseOS splits NeuVector's base_os "name:version" form (e.g. "alpine:3.12.1")
 // into OS name and version. A value with no ":" is the name with no version; an
 // empty value yields two empty strings.
@@ -434,24 +425,6 @@ func splitBaseOS(baseOS string) (name, version string) {
 		return baseOS[:i], baseOS[i+1:]
 	}
 	return baseOS, ""
-}
-
-// digestIntegrity turns the report digest ("sha256:<hex>") into the component's
-// Integrity checksum, folding the algorithm prefix into Checksum.Algorithm.
-// Returns nil when the report carries no digest.
-func digestIntegrity(digest string) []hdf.Checksum {
-	if digest == "" {
-		return nil
-	}
-	algo := hdf.Sha256
-	value := digest
-	if i := strings.IndexByte(digest, ':'); i >= 0 {
-		if mapped, ok := digestAlgorithms[digest[:i]]; ok {
-			algo = mapped
-			value = digest[i+1:]
-		}
-	}
-	return []hdf.Checksum{{Algorithm: algo, Value: value}}
 }
 
 // buildComponent assembles the scan-wide containerImage component from the
@@ -484,7 +457,7 @@ func buildComponent(report NeuVectorScanReport) hdf.Component {
 	if report.Tag != "" {
 		comp.Tag = hdfutil.Ptr(report.Tag)
 	}
-	if integrity := digestIntegrity(report.Digest); len(integrity) > 0 {
+	if integrity := shared.DigestToChecksums(report.Digest); len(integrity) > 0 {
 		comp.Integrity = integrity
 	}
 	return comp

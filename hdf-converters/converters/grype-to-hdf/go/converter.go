@@ -635,11 +635,8 @@ func buildComponent(report GrypeReport, targetName string) hdf.Component {
 			component.OSVersion = hdfutil.Ptr(report.Distro.Version)
 		}
 	}
-	if t.ManifestDigest != "" {
-		component.Integrity = []hdf.Checksum{{
-			Algorithm: hdf.Sha256,
-			Value:     strings.TrimPrefix(t.ManifestDigest, "sha256:"),
-		}}
+	if integrity := shared.DigestToChecksums(t.ManifestDigest); len(integrity) > 0 {
+		component.Integrity = integrity
 	}
 	if t.Architecture != "" {
 		component.Labels = map[string]string{"architecture": t.Architecture}

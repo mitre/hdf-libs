@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement } from './converterutil.js';
+import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -430,4 +430,22 @@ describe('buildAffectedPackage', () => {
       buildAffectedPackage({ name: '', version: '', ecosystem: Ecosystem.Generic, purl: '' }),
     ).toBeUndefined();
   });
+});
+
+describe('digestToChecksums', () => {
+  it.each([
+    ['sha256:abc', [{ algorithm: 'sha256', value: 'abc' }]],
+    ['sha384:abc', [{ algorithm: 'sha384', value: 'abc' }]],
+    ['sha512:deadbeef', [{ algorithm: 'sha512', value: 'deadbeef' }]],
+    ['blake3:abc', [{ algorithm: 'blake3', value: 'abc' }]],
+  ])('labels %s by its algorithm prefix', (digest, want) => {
+    expect(digestToChecksums(digest as string)).toEqual(want);
+  });
+
+  it.each(['sha1:abc', 'md5:abc', 'abc123', ''])(
+    'drops the unrepresentable/prefixless digest %s rather than mislabeling it',
+    (digest) => {
+      expect(digestToChecksums(digest)).toBeUndefined();
+    },
+  );
 });

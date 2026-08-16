@@ -443,3 +443,24 @@ func TestDeriveVerificationMethod(t *testing.T) {
 func ptrControlType(ct hdf.ControlType) *hdf.ControlType {
 	return &ct
 }
+
+func TestDigestToChecksums(t *testing.T) {
+	cases := []struct {
+		name, digest string
+		want         []hdf.Checksum
+	}{
+		{"sha256", "sha256:abc", []hdf.Checksum{{Algorithm: hdf.Sha256, Value: "abc"}}},
+		{"sha384", "sha384:abc", []hdf.Checksum{{Algorithm: hdf.Sha384, Value: "abc"}}},
+		{"sha512", "sha512:deadbeef", []hdf.Checksum{{Algorithm: hdf.Sha512, Value: "deadbeef"}}},
+		{"blake3", "blake3:abc", []hdf.Checksum{{Algorithm: hdf.Blake3, Value: "abc"}}},
+		{"unrepresentable sha1 dropped", "sha1:abc", nil},
+		{"unrepresentable md5 dropped", "md5:abc", nil},
+		{"no prefix dropped", "abc123", nil},
+		{"empty dropped", "", nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, DigestToChecksums(tc.digest))
+		})
+	}
+}

@@ -32,6 +32,35 @@ func InputChecksum(input []byte) *hdf.Checksum {
 	}
 }
 
+// digestHashAlgorithms maps a digest's algorithm prefix to the HDF hash
+// algorithm. Only algorithms the closed Hash_Algorithm enum can represent are
+// listed; a digest with any other prefix is dropped rather than mislabeled.
+var digestHashAlgorithms = map[string]hdf.HashAlgorithm{
+	"sha256": hdf.Sha256,
+	"sha384": hdf.Sha384,
+	"sha512": hdf.Sha512,
+	"blake3": hdf.Blake3,
+}
+
+// DigestToChecksums converts a container/artifact digest string ("<algo>:<hex>")
+// into a Component.Integrity checksum, folding the algorithm prefix into
+// Checksum.Algorithm. Returns nil for an empty digest, one with no algorithm
+// prefix, or one whose algorithm the closed Hash_Algorithm enum cannot represent
+// (e.g. sha1/md5) — it never mislabels a digest under a wrong algorithm.
+// Callers whose digest is embedded in a larger reference (e.g. "name@sha256:hex")
+// must extract the "<algo>:<hex>" portion first.
+func DigestToChecksums(digest string) []hdf.Checksum {
+	i := strings.IndexByte(digest, ':')
+	if i < 0 {
+		return nil
+	}
+	algo, ok := digestHashAlgorithms[digest[:i]]
+	if !ok {
+		return nil
+	}
+	return []hdf.Checksum{{Algorithm: algo, Value: digest[i+1:]}}
+}
+
 // InputIntegrity computes the SHA-256 checksum of raw input bytes and returns
 // it as an hdf.Integrity. Used for root-level integrity fields on document
 // types (HDFBaseline, HDFSystem, HDFPlan, HDFAmendments, HDFEvidencePackage).

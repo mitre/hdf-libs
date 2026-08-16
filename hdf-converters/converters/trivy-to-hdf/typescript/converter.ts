@@ -23,6 +23,7 @@ import {
   buildNistCciTags,
   buildNoFindingsRequirement,
   deriveControlTypeFromTags,
+  digestToChecksums,
   validateInputSize,
   buildHdfResults,
 } from '../../../shared/typescript/converterutil.js';
@@ -363,8 +364,8 @@ function buildComponent(report: TrivyReport): Component | undefined {
   const repoDigest = md.RepoDigests?.[0];
   if (repoDigest) {
     c.image = repoDigest;
-    const dig = sha256Digest(repoDigest);
-    if (dig) c.integrity = [{algorithm: 'sha256', value: dig} as Checksum];
+    const integrity = digestToChecksums(digestPart(repoDigest));
+    if (integrity) c.integrity = integrity;
   }
   if (md.ImageConfig?.architecture) c.labels = {architecture: md.ImageConfig.architecture};
   return c;
@@ -470,9 +471,12 @@ function pkgLabel(name?: string, version?: string): string {
   return `${name ?? ''}@${version}`;
 }
 
-function sha256Digest(ref: string): string {
-  const i = ref.indexOf('sha256:');
-  return i >= 0 ? ref.slice(i + 'sha256:'.length) : '';
+// Returns the "<algo>:<hex>" digest portion of a repo digest reference
+// ("name@<algo>:<hex>"), or the input unchanged when it carries no "@". The
+// algorithm labeling is then handled by digestToChecksums. Go peer: digestPart.
+function digestPart(ref: string): string {
+  const at = ref.lastIndexOf('@');
+  return at >= 0 ? ref.slice(at + 1) : ref;
 }
 
 function firstNonEmpty(...vals: (string | undefined)[]): string {

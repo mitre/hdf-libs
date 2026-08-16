@@ -2,7 +2,6 @@ import {
   type AffectedPackage,
   type Checksum,
   type Component,
-  HashAlgorithm,
   TargetType,
   createMinimalBaseline,
   type Cvss,
@@ -17,7 +16,7 @@ import {
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 import {buildCvss as buildSharedCvss, cvssVersionFromString} from '../../../shared/typescript/cvss.js';
 
 // Input types for Grype JSON
@@ -501,12 +500,8 @@ function buildComponent(report: GrypeReport, targetName: string): Component {
   if (image) component.image = image;
   if (report.distro?.name) component.osName = report.distro.name;
   if (report.distro?.version) component.osVersion = report.distro.version;
-  if (t.manifestDigest) {
-    component.integrity = [{
-      algorithm: HashAlgorithm.Sha256,
-      value: t.manifestDigest.replace(/^sha256:/, ''),
-    }];
-  }
+  const integrity = digestToChecksums(t.manifestDigest);
+  if (integrity) component.integrity = integrity;
   if (t.architecture) component.labels = {architecture: t.architecture};
   return component;
 }

@@ -450,9 +450,7 @@ func buildComponent(report trivyReport) (hdf.Component, bool) {
 	}
 	if len(md.RepoDigests) > 0 {
 		c.Image = hdfutil.Ptr(md.RepoDigests[0])
-		if dig := sha256Digest(md.RepoDigests[0]); dig != "" {
-			c.Integrity = []hdf.Checksum{{Algorithm: hdf.Sha256, Value: dig}}
-		}
+		c.Integrity = shared.DigestToChecksums(digestPart(md.RepoDigests[0]))
 	}
 	if arch := architecture(md.ImageConfig); arch != "" {
 		c.Labels = map[string]string{"architecture": arch}
@@ -604,11 +602,14 @@ func indentRaw(raw json.RawMessage) string {
 	return buf.String()
 }
 
-func sha256Digest(ref string) string {
-	if i := strings.Index(ref, "sha256:"); i >= 0 {
-		return ref[i+len("sha256:"):]
+// digestPart returns the "<algo>:<hex>" digest portion of a repo digest
+// reference ("name@<algo>:<hex>"), or the input unchanged when it carries no
+// "@". The algorithm labeling is then handled by shared.DigestToChecksums.
+func digestPart(ref string) string {
+	if at := strings.LastIndexByte(ref, '@'); at >= 0 {
+		return ref[at+1:]
 	}
-	return ""
+	return ref
 }
 
 func architecture(imageConfig json.RawMessage) string {
