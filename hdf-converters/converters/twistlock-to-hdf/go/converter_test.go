@@ -729,3 +729,36 @@ func TestConvertTwistlock_VerificationMethod(t *testing.T) {
 			"requirement %q expected verificationMethod=automated", req.ID)
 	}
 }
+
+// ---- Unrated severity marker ----
+
+func TestConvertTwistlock_UnratedSeverityMarker(t *testing.T) {
+	input := []byte(`{
+		"results": [{
+			"name": "synthetic-image",
+			"vulnerabilities": [
+				{"id": "CVE-2099-1001", "severity": "", "description": "empty severity"},
+				{"id": "CVE-2099-1002", "severity": "unknown", "description": "unknown severity"},
+				{"id": "CVE-2099-1003", "severity": "moderate", "description": "rated severity"},
+				{"id": "CVE-2099-1004", "severity": "info", "description": "zero-impact tier is rated"}
+			]
+		}]
+	}`)
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+
+	for _, id := range []string{"CVE-2099-1001", "CVE-2099-1002"} {
+		req := shared.MustFindRequirement(t, reqs, id)
+		assert.Equal(t, "unrated", req.Tags["severity_rating"],
+			"%s: unrated severity should carry severity_rating=unrated", id)
+	}
+
+	// Tag-only assertions: the zero-impact tier is RATED (no marker); impact is
+	// deliberately not asserted here (tracked TS info/none impact-map gap).
+	for _, id := range []string{"CVE-2099-1003", "CVE-2099-1004"} {
+		rated := shared.MustFindRequirement(t, reqs, id)
+		_, present := rated.Tags["severity_rating"]
+		assert.False(t, present, "%s: rated severity must not carry the severity_rating tag", id)
+	}
+}

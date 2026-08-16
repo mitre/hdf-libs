@@ -477,3 +477,19 @@ describe('prisma to HDF converter', () => {
     });
   });
 });
+
+describe('unrated severity marker', () => {
+  it('tags an empty Severity cell with severity_rating: unrated and leaves rated untagged', async () => {
+    const csvInput =
+      'Hostname,Distro,CVE ID,Compliance ID,Type,Severity,Packages,Source Package,Package Version,Package License,CVSS,Fix Status,Vulnerability Tags,Description,Cause,Published,Services,Cluster,Vulnerability Link\n' +
+      'host-1.example.com,redhat-RHEL7,CVE-2099-1001,46,image,,pkg-a,,1.0,,0.00,,,Empty severity cell.,,,,,\n' +
+      'host-1.example.com,redhat-RHEL7,CVE-2099-1002,46,image,informational,pkg-b,,1.0,,0.00,,,Rated informational.,,,,,\n' +
+      'host-1.example.com,redhat-RHEL7,CVE-2099-1003,46,image,high,pkg-c,,1.0,,7.50,,,Rated high.,,,,,\n';
+    const hdf = JSON.parse(await convertPrismaToHdf(csvInput)) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+
+    expect(findRequirement(reqs, '46-CVE-2099-1001')?.tags?.['severity_rating']).toBe('unrated');
+    expect(findRequirement(reqs, '46-CVE-2099-1002')?.tags).not.toHaveProperty('severity_rating');
+    expect(findRequirement(reqs, '46-CVE-2099-1003')?.tags).not.toHaveProperty('severity_rating');
+  });
+});

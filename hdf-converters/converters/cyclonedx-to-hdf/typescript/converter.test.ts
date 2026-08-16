@@ -837,3 +837,32 @@ describe('result.message component summary', async () => {
     expect(req.results[0]!.message).toBeUndefined();
   });
 });
+
+describe('unrated-severity marker', () => {
+  it('tags vulnerabilities whose ratings carry no rating information', async () => {
+    // Unrated: ratings[] absent, only severity "unknown", or an empty severity
+    // with no CVSS score (the fabricated-"medium" path). Any CVSS score or
+    // rated severity token makes it rated — no marker.
+    const input = JSON.stringify({
+      bomFormat: 'CycloneDX',
+      specVersion: '1.5',
+      vulnerabilities: [
+        {id: 'CVE-NO-RATINGS'},
+        {id: 'CVE-UNKNOWN', ratings: [{method: 'other', severity: 'unknown'}]},
+        {id: 'CVE-FABRICATED', ratings: [{method: 'other', severity: ''}]},
+        {id: 'CVE-RATED-SEV', ratings: [{method: 'other', severity: 'high'}]},
+        {id: 'CVE-RATED-SCORE', ratings: [{method: 'CVSSv31', score: 7.5}]},
+        {id: 'CVE-MIXED', ratings: [{method: 'other', severity: 'unknown'}, {method: 'CVSSv31', score: 5.0}]},
+      ],
+    });
+    const hdf = JSON.parse(await convertCyclonedxToHdf(input)) as HDFResults;
+    const byId = (id: string) => hdf.baselines[0].requirements.find((r) => r.id === id);
+    for (const id of ['CVE-NO-RATINGS', 'CVE-UNKNOWN', 'CVE-FABRICATED']) {
+      expect(byId(id)?.tags, id).toMatchObject({severity_rating: 'unrated'});
+    }
+    for (const id of ['CVE-RATED-SEV', 'CVE-RATED-SCORE', 'CVE-MIXED']) {
+      expect(byId(id), id).toBeDefined();
+      expect(byId(id)?.tags, id).not.toHaveProperty('severity_rating');
+    }
+  });
+});

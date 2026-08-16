@@ -11,7 +11,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, markUnratedSeverity, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { buildCvss, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type {
@@ -189,6 +189,7 @@ function buildRequirement(rec: PrismaRecord, scanTime: Date): EvaluatedRequireme
   }
 
   const tags = buildNistCciTags(nist, cciTags, Object.keys(extras).length > 0 ? extras : undefined);
+  markUnratedSeverity(tags, rec.Severity);
 
   const descriptions: Description[] = [
     { label: 'default', data: rec.Description },

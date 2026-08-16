@@ -920,3 +920,30 @@ func TestConvertCycloneDX_NoMessageForUnresolvedRef(t *testing.T) {
 	require.NotEmpty(t, req.Results)
 	assert.Nil(t, req.Results[0].Message, "unresolved component ref must not produce a message")
 }
+
+func TestUnratedSeverityMarker(t *testing.T) {
+	// A vulnerability is unrated when NO rating carries rating information:
+	// ratings[] absent, only severity "unknown", or an empty severity with no
+	// CVSS score (the fabricated-"medium" path). Any CVSS score or rated
+	// severity token makes it rated — no marker.
+	input := []byte(`{"bomFormat":"CycloneDX","specVersion":"1.5","vulnerabilities":[
+		{"id":"CVE-NO-RATINGS"},
+		{"id":"CVE-UNKNOWN","ratings":[{"method":"other","severity":"unknown"}]},
+		{"id":"CVE-FABRICATED","ratings":[{"method":"other","severity":""}]},
+		{"id":"CVE-RATED-SEV","ratings":[{"method":"other","severity":"high"}]},
+		{"id":"CVE-RATED-SCORE","ratings":[{"method":"CVSSv31","score":7.5}]},
+		{"id":"CVE-MIXED","ratings":[{"method":"other","severity":"unknown"},{"method":"CVSSv31","score":5.0}]}
+	]}`)
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+
+	for _, id := range []string{"CVE-NO-RATINGS", "CVE-UNKNOWN", "CVE-FABRICATED"} {
+		req := shared.MustFindRequirement(t, reqs, id)
+		assert.Equal(t, "unrated", req.Tags["severity_rating"], id)
+	}
+	for _, id := range []string{"CVE-RATED-SEV", "CVE-RATED-SCORE", "CVE-MIXED"} {
+		req := shared.MustFindRequirement(t, reqs, id)
+		assert.NotContains(t, req.Tags, "severity_rating", id)
+	}
+}

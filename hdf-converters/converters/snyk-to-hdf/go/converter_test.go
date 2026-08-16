@@ -678,3 +678,30 @@ func TestConvertSnyk_NoVulnerabilities(t *testing.T) {
 	require.NotEmpty(t, result.Components)
 	assert.Equal(t, "clean-project", result.Components[0].Name)
 }
+
+func TestConvertSnykToHDF_UnratedSeverityMarker(t *testing.T) {
+	// Absent/empty severity is unrated → severity_rating: unrated; a rated
+	// severity (snyk enum: critical/high/medium/low) must not carry the marker.
+	input := []byte(`{
+		"ok": false,
+		"projectName": "unrated-project",
+		"packageManager": "npm",
+		"vulnerabilities": [
+			{"id": "SNYK-UNRATED-1", "title": "No severity", "description": "d", "identifiers": {}, "from": ["a@1.0.0"]},
+			{"id": "SNYK-RATED-1", "title": "High severity", "description": "d", "severity": "high", "identifiers": {}, "from": ["b@1.0.0"]}
+		]
+	}`)
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	tagsByID := map[string]map[string]interface{}{}
+	for _, req := range result.Baselines[0].Requirements {
+		tagsByID[req.ID] = req.Tags
+	}
+	require.Contains(t, tagsByID, "SNYK-UNRATED-1")
+	require.Contains(t, tagsByID, "SNYK-RATED-1")
+	assert.Equal(t, shared.UnratedSeverityValue, tagsByID["SNYK-UNRATED-1"][shared.UnratedSeverityTag],
+		"absent severity must carry severity_rating: unrated")
+	_, has := tagsByID["SNYK-RATED-1"][shared.UnratedSeverityTag]
+	assert.False(t, has, "rated severity must not carry the severity_rating tag")
+}

@@ -338,3 +338,23 @@ describe('jfrog-xray to HDF converter', async () => {
     });
   });
 });
+
+describe('unrated severity marker', () => {
+  it('tags Unknown severity with severity_rating: unrated, leaves rated tiers untagged', async () => {
+    const input = JSON.stringify({
+      total_count: 3,
+      data: [
+        {id: 'XRAY-UNRATED', severity: 'Unknown', summary: 'Unrated finding', component: 'a', source_comp_id: 'npm://a:1.0.0'},
+        {id: 'XRAY-RATED', severity: 'High', summary: 'Rated finding', component: 'b', source_comp_id: 'npm://b:1.0.0'},
+        {id: 'XRAY-INFO', severity: 'Information', summary: 'Informational finding', component: 'c', source_comp_id: 'npm://c:1.0.0'},
+      ],
+    });
+    const hdf = JSON.parse(await convertJfrogXrayToHdf(input)) as HDFResults;
+    const byId = new Map(hdf.baselines[0]!.requirements.map((r) => [r.id, r.tags]));
+
+    expect(byId.get('XRAY-UNRATED')?.['severity_rating']).toBe('unrated');
+    for (const id of ['XRAY-RATED', 'XRAY-INFO']) {
+      expect(byId.get(id), id).not.toHaveProperty('severity_rating');
+    }
+  });
+});
