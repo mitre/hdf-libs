@@ -549,4 +549,62 @@ describe('twistlock to HDF converter', async () => {
       expect(hdf.components![0]!.name).toBe('my-repo');
     });
   });
+
+  describe('result message (heimdall2 parity)', () => {
+    it('sets the expected/detected-version message from packageName/packageVersion', async () => {
+      const input = loadFixture('twistlock-twistcli-coderepo-scan-sample.json');
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228')!;
+      expect(req.results[0]!.message).toBe(
+        'Expected latest version of "org.apache.logging.log4j_log4j-core"\nDetected vulnerable version "2.14.1" of "org.apache.logging.log4j_log4j-core"',
+      );
+    });
+
+    it('renders bare N/A when packageName/packageVersion are absent', async () => {
+      const input = JSON.stringify({
+        results: [{ vulnerabilities: [{ id: 'CVE-7', severity: 'low', description: 'd' }] }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.message).toBe(
+        'Expected latest version of N/A\nDetected vulnerable version N/A of N/A',
+      );
+    });
+  });
+
+  describe('raw-finding code passthrough (heimdall2 parity)', () => {
+    it('preserves otherwise-unmapped fields in requirement.code', async () => {
+      const input = loadFixture('twistlock-twistcli-coderepo-scan-sample.json');
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228')!;
+      expect(req.code).toBeDefined();
+      expect(req.code).toContain('"link":');
+      expect(req.code).toContain('"riskFactors":');
+      expect(req.code).toContain('"publishedDate":');
+      expect(req.code).toContain('"layerTime":');
+    });
+
+    it('projects fixed field order with empties dropped (Go-parity)', async () => {
+      const input = JSON.stringify({
+        results: [{
+          vulnerabilities: [{
+            id: 'CVE-X', status: 'affected', cvss: 7.5, severity: 'high',
+            packageName: 'openssl', packageVersion: '1.0', link: 'https://example.test/CVE-X',
+          }],
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.code).toBe(
+        '{\n' +
+        '  "id": "CVE-X",\n' +
+        '  "status": "affected",\n' +
+        '  "cvss": 7.5,\n' +
+        '  "severity": "high",\n' +
+        '  "packageName": "openssl",\n' +
+        '  "packageVersion": "1.0",\n' +
+        '  "link": "https://example.test/CVE-X"\n' +
+        '}',
+      );
+    });
+  });
 });

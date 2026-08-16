@@ -40,7 +40,7 @@ runConverterContractTests({
 // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
 // one requirement per DISTINCT vulnerabilities[].id, counted independently of
 // the converter so a silent under-extraction fails even when Go/TS parity
-// agrees. nodejs-goof-local's 379 vulns collapse to 94 distinct ids.
+// agrees. nodejs-goof-local's 56 vulns collapse to 27 distinct ids.
 describe('snyk-to-hdf ground-truth anchor', () => {
   it('emits one requirement per distinct vulnerabilities[].id', async () => {
     const input = loadFixture('nodejs-goof-local.json');
@@ -310,6 +310,62 @@ describe('snyk to HDF converter', async () => {
     });
   });
 
+  describe('requirement.code raw-finding passthrough', async () => {
+    it('preserves the otherwise-unmapped fields verbatim in requirement.code', async () => {
+      const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'npm:adm-zip:20180415');
+      expect(req).toBeDefined();
+      expect(req!.code).toBeDefined();
+      const code = req!.code!;
+
+      // Serialization contract (byte-parity with Go json.Encoder).
+      expect(code.startsWith('{\n  "id": ')).toBe(true);
+      expect(code.endsWith('\n')).toBe(false);
+
+      const got = JSON.parse(code) as Record<string, unknown>;
+      expect(got.exploit).toBe('High');
+      expect(got.language).toBe('js');
+      expect(got.severityWithCritical).toBe('critical');
+      expect(got.disclosureTime).toBe('2018-04-14T21:00:00Z');
+      expect(got.publicationTime).toBe('2018-05-31T07:09:16Z');
+      expect((got.semver as { vulnerable: string[] }).vulnerable).toEqual(['<0.4.11']);
+
+      const functions = got.functions as Array<{
+        functionId: Record<string, unknown>;
+        version: string[];
+      }>;
+      expect(functions).toHaveLength(1);
+      // null className was dropped by both Go omitempty and the TS truthy check.
+      expect('className' in functions[0]!.functionId).toBe(false);
+      expect(functions[0]!.functionId.filePath).toBe('adm-zip.js');
+      expect(functions[0]!.functionId.functionName).toBe('module.exports.getEntry');
+      expect(functions[0]!.version).toEqual(['>0.1.1 <0.4.11']);
+    });
+
+    it('drops empty string/0/false/empty-array fields but keeps identifiers', async () => {
+      const input = JSON.stringify({
+        ok: false,
+        packageManager: 'npm',
+        projectName: 'test',
+        vulnerabilities: [
+          {
+            id: 'X',
+            title: '',
+            description: '',
+            severity: 'low',
+            cvssScore: 0,
+            malicious: false,
+            identifiers: {},
+            from: [],
+          },
+        ],
+      });
+      const out = JSON.parse(await convertSnykToHdf(input)) as HDFResults;
+      const code = out.baselines[0]!.requirements[0]!.code;
+      expect(code).toBe('{\n  "id": "X",\n  "severity": "low",\n  "identifiers": {}\n}');
+    });
+  });
+
   describe('upgradePath remediation description', async () => {
     it('joins the upgradePath package chain into an upgradePath description', async () => {
       const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HDFResults;
@@ -357,13 +413,13 @@ describe('snyk to HDF converter', async () => {
   });
 
   describe('full fixture smoke tests', async () => {
-    it('should handle full nodejs-goof-local.json (94 unique vulns, 379 total)', async () => {
+    it('should handle full nodejs-goof-local.json (27 unique vulns, 56 total)', async () => {
       const hdf = JSON.parse(await convertSnykToHdf(loadFixture('nodejs-goof-local.json'))) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(94);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(27);
 
-      // Verify deduplication: 379 total entries → 94 requirements, total results = 379
+      // Verify deduplication: 56 total entries → 27 requirements, total results = 56
       const totalResults = hdf.baselines[0]!.requirements.reduce((sum, r) => sum + r.results.length, 0);
-      expect(totalResults).toBe(379);
+      expect(totalResults).toBe(56);
     });
 
     it('should handle full nodejs-goof-remote.json', async () => {

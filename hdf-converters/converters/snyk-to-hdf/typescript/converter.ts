@@ -47,17 +47,35 @@ interface SnykVuln {
   title: string;
   description: string;
   severity: string;
+  severityWithCritical?: string;
   cvssScore?: number;
   CVSSv3?: string;
   identifiers: SnykIdentifiers;
   language?: string;
   packageName?: string;
   moduleName?: string;
+  name?: string;
   version?: string;
+  packageManager?: string;
   from: string[];
   upgradePath?: unknown[];
   fixedIn?: string[];
   exploit?: string;
+  malicious?: boolean;
+  proprietary?: boolean;
+  socialTrendAlert?: boolean;
+  isUpgradable?: boolean;
+  isPatchable?: boolean;
+  semver?: SnykSemver;
+  functions?: SnykFunction[];
+  functions_new?: SnykFunction[];
+  patches?: SnykPatch[];
+  disclosureTime?: string;
+  publicationTime?: string;
+  creationTime?: string;
+  modificationTime?: string;
+  credit?: string[];
+  alternativeIds?: string[];
   references?: SnykReference[];
 }
 
@@ -70,6 +88,123 @@ interface SnykIdentifiers {
   CVE?: string[];
   CWE?: string[];
   GHSA?: string[];
+}
+
+interface SnykSemver {
+  vulnerable?: string[];
+}
+
+interface SnykFunctionID {
+  className?: string | null;
+  filePath?: string;
+  functionName?: string;
+}
+
+interface SnykFunction {
+  functionId?: SnykFunctionID;
+  version?: string[];
+}
+
+interface SnykPatch {
+  comments?: string[];
+  id?: string;
+  modificationTime?: string;
+  urls?: string[];
+  version?: string;
+}
+
+/**
+ * Re-serialize the parsed vulnerability into indented JSON for requirement.code
+ * (the raw-finding passthrough, Heimdall's CODE tab), so fields with no
+ * structured HDF home (exploit, language, semver, functions, disclosure/
+ * publication times, …) are not lost. The projection is byte-identical to the
+ * Go projection: field order, the conditional-omission rules (empty string /
+ * 0 / false / empty array / absent nested object are dropped, matching Go's
+ * `omitempty`), and JSON.stringify(obj, null, 2) matching Go's json.Encoder
+ * with HTML escaping disabled and a two-space indent. Do not reorder without
+ * updating go/converter.go.
+ */
+function buildIdentifiersCode(id: SnykIdentifiers | undefined): Record<string, unknown> {
+  const o: Record<string, unknown> = {};
+  if (id?.CVE?.length) o.CVE = id.CVE;
+  if (id?.CWE?.length) o.CWE = id.CWE;
+  if (id?.GHSA?.length) o.GHSA = id.GHSA;
+  return o;
+}
+
+function buildSemverCode(s: SnykSemver): Record<string, unknown> {
+  const o: Record<string, unknown> = {};
+  if (s.vulnerable?.length) o.vulnerable = s.vulnerable;
+  return o;
+}
+
+function buildFunctionCode(fn: SnykFunction): Record<string, unknown> {
+  const o: Record<string, unknown> = {};
+  if (fn.functionId) {
+    const fid: Record<string, unknown> = {};
+    if (fn.functionId.className) fid.className = fn.functionId.className;
+    if (fn.functionId.filePath) fid.filePath = fn.functionId.filePath;
+    if (fn.functionId.functionName) fid.functionName = fn.functionId.functionName;
+    o.functionId = fid;
+  }
+  if (fn.version?.length) o.version = fn.version;
+  return o;
+}
+
+function buildPatchCode(p: SnykPatch): Record<string, unknown> {
+  const o: Record<string, unknown> = {};
+  if (p.comments?.length) o.comments = p.comments;
+  if (p.id) o.id = p.id;
+  if (p.modificationTime) o.modificationTime = p.modificationTime;
+  if (p.urls?.length) o.urls = p.urls;
+  if (p.version) o.version = p.version;
+  return o;
+}
+
+function buildReferenceCode(r: SnykReference): Record<string, unknown> {
+  const o: Record<string, unknown> = {};
+  if (r.title) o.title = r.title;
+  if (r.url) o.url = r.url;
+  return o;
+}
+
+function buildVulnCode(v: SnykVuln): string {
+  const o: Record<string, unknown> = {};
+  if (v.id) o.id = v.id;
+  if (v.title) o.title = v.title;
+  if (v.description) o.description = v.description;
+  if (v.severity) o.severity = v.severity;
+  if (v.severityWithCritical) o.severityWithCritical = v.severityWithCritical;
+  if (v.language) o.language = v.language;
+  if (v.packageName) o.packageName = v.packageName;
+  if (v.moduleName) o.moduleName = v.moduleName;
+  if (v.name) o.name = v.name;
+  if (v.version) o.version = v.version;
+  if (v.packageManager) o.packageManager = v.packageManager;
+  if (v.cvssScore) o.cvssScore = v.cvssScore;
+  if (v.CVSSv3) o.CVSSv3 = v.CVSSv3;
+  if (v.exploit) o.exploit = v.exploit;
+  if (v.malicious) o.malicious = v.malicious;
+  if (v.proprietary) o.proprietary = v.proprietary;
+  if (v.socialTrendAlert) o.socialTrendAlert = v.socialTrendAlert;
+  if (v.isUpgradable) o.isUpgradable = v.isUpgradable;
+  if (v.isPatchable) o.isPatchable = v.isPatchable;
+  if (v.semver) o.semver = buildSemverCode(v.semver);
+  if (v.functions?.length) o.functions = v.functions.map(buildFunctionCode);
+  if (v.functions_new?.length) o.functions_new = v.functions_new.map(buildFunctionCode);
+  if (v.fixedIn?.length) o.fixedIn = v.fixedIn;
+  if (v.patches?.length) o.patches = v.patches.map(buildPatchCode);
+  if (v.disclosureTime) o.disclosureTime = v.disclosureTime;
+  if (v.publicationTime) o.publicationTime = v.publicationTime;
+  if (v.creationTime) o.creationTime = v.creationTime;
+  if (v.modificationTime) o.modificationTime = v.modificationTime;
+  if (v.credit?.length) o.credit = v.credit;
+  if (v.alternativeIds?.length) o.alternativeIds = v.alternativeIds;
+  o.identifiers = buildIdentifiersCode(v.identifiers);
+  if (v.references?.length) o.references = v.references.map(buildReferenceCode);
+  if (v.from?.length) o.from = v.from;
+  if (v.upgradePath?.length) o.upgradePath = v.upgradePath;
+  return JSON.stringify(o, null, 2);
 }
 
 /**
@@ -200,6 +335,11 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, pac
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  const code = buildVulnCode(rep);
+  if (code) {
+    req.code = code;
+  }
 
   const cvss = buildSnykCvss(rep);
   if (cvss.length > 0) {

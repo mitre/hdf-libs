@@ -210,6 +210,252 @@ func TestConvertHDFToOSCALSAR_FieldCoverage(t *testing.T) {
 		hrefs = append(hrefs, l.Href)
 	}
 	assert.Equal(t, []string{"https://example.gov/a", "https://example.gov/b"}, hrefs)
+
+	// url/uri refs are also emitted as observation relevant-evidence so they
+	// round-trip through the reverse importer (which ignores finding.links).
+	require.Len(t, doc.AssessmentResults.Results[0].Observations, 1)
+	var evHrefs []string
+	for _, e := range doc.AssessmentResults.Results[0].Observations[0].RelevantEvidence {
+		evHrefs = append(evHrefs, e.Href)
+	}
+	assert.Equal(t, []string{"https://example.gov/a", "https://example.gov/b"}, evHrefs)
+}
+
+// a1: the finding target state must reflect effectiveStatus (post-override
+// posture), not the raw failing result, and the disposition + override
+// provenance must land in target.status.remarks. The governing override expiry
+// becomes the risk deadline and an accepted remediation is recorded.
+func TestConvertHDFToOSCALSAR_EffectiveStatusAndOverrideProvenance(t *testing.T) {
+	input := []byte(`{
+		"baselines": [{
+			"name": "b",
+			"requirements": [{
+				"id": "AC-1", "impact": 0.7, "tags": { "nist": ["AC-1"] },
+				"descriptions": [{ "label": "default", "data": "d" }],
+				"results": [{ "status": "failed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }],
+				"effectiveStatus": "passed",
+				"disposition": "falsePositive",
+				"statusOverrides": [{
+					"type": "falsePositive",
+					"status": "passed",
+					"reason": "scanner mis-detection",
+					"appliedBy": { "type": "simple", "identifier": "jdoe" },
+					"appliedAt": "2026-01-02T00:00:00Z",
+					"expiresAt": "2099-12-31T00:00:00Z"
+				}]
+			}]
+		}]
+	}`)
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+
+	finding := doc.AssessmentResults.Results[0].Findings[0]
+	assert.Equal(t, "satisfied", finding.Target.Status.State,
+		"effectiveStatus=passed must win over the raw failed result")
+	remarks := finding.Target.Status.Remarks
+	assert.Contains(t, remarks, "Disposition: falsePositive")
+	assert.Contains(t, remarks, "Override: falsePositive")
+	assert.Contains(t, remarks, "Reason: scanner mis-detection")
+	assert.Contains(t, remarks, "Applied by: jdoe")
+	assert.Contains(t, remarks, "Expires at: 2099-12-31T00:00:00Z")
+
+	// Raw result status is preserved verbatim in the observation.
+	assert.Contains(t, doc.AssessmentResults.Results[0].Observations[0].Description, "[failed]")
+
+	risk := doc.AssessmentResults.Results[0].Risks[0]
+	assert.Equal(t, "2099-12-31T00:00:00Z", risk.Deadline)
+	var accepted *oscal.Remediation
+	for i := range risk.Remediations {
+		if risk.Remediations[i].Lifecycle == "accepted" {
+			accepted = &risk.Remediations[i]
+		}
+	}
+	require.NotNil(t, accepted, "expected an accepted remediation for the governing override")
+	assert.Equal(t, "falsePositive", accepted.Title)
+	assert.Equal(t, "scanner mis-detection", accepted.Description)
+}
+
+// a1: effectiveStatus=notApplicable maps to not-satisfied with reason
+// "not-applicable".
+func TestConvertHDFToOSCALSAR_EffectiveStatusNotApplicable(t *testing.T) {
+	input := []byte(`{
+		"baselines": [{ "name": "b", "requirements": [{
+			"id": "AC-1", "impact": 0.5, "tags": { "nist": ["AC-1"] },
+			"descriptions": [{ "label": "default", "data": "d" }],
+			"results": [{ "status": "passed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }],
+			"effectiveStatus": "notApplicable"
+		}]}]
+	}`)
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	status := doc.AssessmentResults.Results[0].Findings[0].Target.Status
+	assert.Equal(t, "not-satisfied", status.State)
+	assert.Equal(t, "not-applicable", status.Reason)
+}
+
+// a3: explicit severity drives the risk facet; cwe/epss/kev/cvss surface as
+// finding props.
+func TestConvertHDFToOSCALSAR_EnrichmentSurfaced(t *testing.T) {
+	input := []byte(`{
+		"baselines": [{ "name": "b", "requirements": [{
+			"id": "AC-1", "impact": 0.3, "tags": { "nist": ["AC-1"] },
+			"descriptions": [{ "label": "default", "data": "d" }],
+			"results": [{ "status": "failed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }],
+			"severity": "critical",
+			"cwe": ["CWE-79", "CWE-89"],
+			"epss": { "date": "2026-01-01", "score": 0.97532, "percentile": 0.999 },
+			"kev": { "inKev": true, "dateAdded": "2025-01-01", "dueDate": "2025-02-01" },
+			"cvss": [{ "version": "3.1", "baseScore": 9.8, "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H" }]
+		}]}]
+	}`)
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	finding := doc.AssessmentResults.Results[0].Findings[0]
+	propVals := func(name string) []string {
+		var vs []string
+		for _, p := range finding.Props {
+			if p.Name == name {
+				vs = append(vs, p.Value)
+			}
+		}
+		return vs
+	}
+	assert.Equal(t, []string{"CWE-79", "CWE-89"}, propVals("cwe"))
+	assert.Equal(t, []string{"0.97532"}, propVals("epss-score"))
+	assert.Equal(t, []string{"true"}, propVals("kev"))
+	assert.Equal(t, []string{"2025-02-01"}, propVals("kev-due-date"))
+	assert.Equal(t, []string{"9.8"}, propVals("cvss-base-score"))
+
+	// Explicit severity (critical) overrides the impact-derived band (low) in the
+	// facet the reverse importer reads.
+	facet := doc.AssessmentResults.Results[0].Risks[0].Characterizations[0].Facets[0]
+	assert.Equal(t, "critical", facet.Value)
+}
+
+// a4/a5: evidence, sourceLocation, and refs land in observation
+// relevant-evidence and round-trip back to HDF via the reverse importer.
+func TestConvertHDFToOSCALSAR_RelevantEvidenceRoundTrips(t *testing.T) {
+	input := []byte(`{
+		"baselines": [{ "name": "b", "requirements": [{
+			"id": "AC-1", "impact": 0.5, "tags": { "nist": ["AC-1"] },
+			"descriptions": [{ "label": "default", "data": "d" }],
+			"results": [{ "status": "failed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }],
+			"refs": [{ "url": "https://example.gov/evidence" }],
+			"evidence": [{ "type": "log", "data": "saw the thing", "description": "log excerpt" }],
+			"sourceLocation": { "ref": "controls/ac-1.rb", "line": 42 }
+		}]}]
+	}`)
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	ev := doc.AssessmentResults.Results[0].Observations[0].RelevantEvidence
+	var hrefs, descs []string
+	for _, e := range ev {
+		if e.Href != "" {
+			hrefs = append(hrefs, e.Href)
+		}
+		if e.Description != "" {
+			descs = append(descs, e.Description)
+		}
+	}
+	assert.Equal(t, []string{"https://example.gov/evidence"}, hrefs)
+	assert.Contains(t, descs, "log excerpt")
+	assert.Contains(t, descs, "Source location: controls/ac-1.rb:42")
+
+	// Round-trip: the reverse importer reads the ref href back into HDF refs.
+	hdfResults, err := oscal.ConvertAssessmentResultsToHDF(output, "1.0.0")
+	require.NoError(t, err)
+	req := hdfResults.Baselines[0].Requirements[0]
+	require.Len(t, req.Refs, 1)
+	require.NotNil(t, req.Refs[0].URL)
+	assert.Equal(t, "https://example.gov/evidence", *req.Refs[0].URL)
+}
+
+// a6: the fix description becomes a risk remediation (round-trips as the HDF
+// remediation description), not merely a prop.
+func TestConvertHDFToOSCALSAR_FixBecomesRemediation(t *testing.T) {
+	input := []byte(`{
+		"baselines": [{ "name": "b", "requirements": [{
+			"id": "AC-1", "impact": 0.5, "tags": { "nist": ["AC-1"] },
+			"descriptions": [
+				{ "label": "default", "data": "d" },
+				{ "label": "fix", "data": "apply the patch" }
+			],
+			"results": [{ "status": "failed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }]
+		}]}]
+	}`)
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	rems := doc.AssessmentResults.Results[0].Risks[0].Remediations
+	require.NotEmpty(t, rems)
+	assert.Equal(t, "recommendation", rems[0].Lifecycle)
+	assert.Equal(t, "apply the patch", rems[0].Description)
+
+	// Round-trips into the HDF remediation description.
+	hdfResults, err := oscal.ConvertAssessmentResultsToHDF(output, "1.0.0")
+	require.NoError(t, err)
+	var remediationDesc string
+	for _, d := range hdfResults.Baselines[0].Requirements[0].Descriptions {
+		if d.Label == "remediation" {
+			remediationDesc = d.Data
+		}
+	}
+	assert.Contains(t, remediationDesc, "apply the patch")
+}
+
+// a7: externalReferences with an href become finding links.
+func TestConvertHDFToOSCALSAR_ExternalReferencesBecomeLinks(t *testing.T) {
+	input := []byte(`{
+		"baselines": [{ "name": "b", "requirements": [{
+			"id": "AC-1", "impact": 0.5, "tags": { "nist": ["AC-1"] },
+			"descriptions": [{ "label": "default", "data": "d" }],
+			"results": [{ "status": "failed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }],
+			"externalReferences": [{ "sourceName": "cve", "href": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228" }]
+		}]}]
+	}`)
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	var hrefs []string
+	for _, l := range doc.AssessmentResults.Results[0].Findings[0].Links {
+		hrefs = append(hrefs, l.Href)
+	}
+	assert.Contains(t, hrefs, "https://nvd.nist.gov/vuln/detail/CVE-2021-44228")
+}
+
+// a2/a8: the shared minimal fixture carries a component and a baseline version;
+// both must surface (subjects on the observation, baseline-version result prop).
+func TestConvertHDFToOSCALSAR_ComponentsAndBaselineVersion(t *testing.T) {
+	output, err := ConvertHDFToOSCALSAR(fixtures.Results.Minimal, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	result := doc.AssessmentResults.Results[0]
+
+	var baselineVersion string
+	for _, p := range result.Props {
+		if p.Name == "baseline-version" {
+			baselineVersion = p.Value
+		}
+	}
+	assert.Equal(t, "1.0.0", baselineVersion)
+
+	require.Len(t, result.Observations, 1)
+	require.Len(t, result.Observations[0].Subjects, 1)
+	subj := result.Observations[0].Subjects[0]
+	assert.Equal(t, "web-server-01", subj.Title)
+	assert.Equal(t, "host", subj.Type)
+	assert.NotEmpty(t, subj.SubjectUUID)
 }
 
 func TestConvertHDFToOSCALSAR_MinimalFailed(t *testing.T) {

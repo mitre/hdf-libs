@@ -307,6 +307,41 @@ func TestConvertNetsparker_Descriptions(t *testing.T) {
 	_ = check
 }
 
+// ---- Extra-information → default description ----
+
+func TestConvertNetsparker_ExtraInformation(t *testing.T) {
+	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// Vuln 1 carries an <extra-information> block: it must be appended to the
+	// default description as an "Extra-information:" line with decoded entities.
+	v1 := shared.MustFindRequirement(t, reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
+	d1 := findDescription(v1.Descriptions, "default")
+	require.NotNil(t, d1)
+	assert.Contains(t, d1.Data,
+		"Extra-information: List of Supported Weak Ciphers=>TLS_RSA_WITH_AES_128_CBC_SHA256 (0x003C)",
+		"extra-information appended with entities (&#32;) decoded to spaces")
+
+	// Vuln 3 has no <extra-information> → the line must be absent.
+	v3 := shared.MustFindRequirement(t, reqs, "8d8e6052-221d-41c4-8f1e-af9704473901")
+	d3 := findDescription(v3.Descriptions, "default")
+	require.NotNil(t, d3)
+	assert.NotContains(t, d3.Data, "Extra-information:",
+		"vuln without extra-information omits the line")
+}
+
+func TestFormatExtraInformation(t *testing.T) {
+	assert.Equal(t, "", formatExtraInformation(nil), "no entries → empty string")
+	assert.Equal(t, "", formatExtraInformation([]NetsparkerExtraInfo{}), "empty slice → empty string")
+	assert.Equal(t,
+		"a=>1, b=>2",
+		formatExtraInformation([]NetsparkerExtraInfo{{Name: "a", Value: "1"}, {Name: "b", Value: "2"}}),
+		"multiple entries joined as name=>value pairs")
+}
+
 // ---- External references → refs[] ----
 
 func TestConvertNetsparker_Refs(t *testing.T) {

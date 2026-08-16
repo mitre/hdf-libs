@@ -479,6 +479,147 @@ func TestGetImpact(t *testing.T) {
 	}
 }
 
+// ---- CVSS: score-only cvss[] from cvssV2/V3 base scores ----
+
+func TestConvertDeptrack_Cvss(t *testing.T) {
+	input := loadFixture(t, "input/fpf-optional-attributes.json")
+	result, err := ConvertDeptrackToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// codemirror CVE-2020-7760 carries both cvssV3BaseScore 7.5 and cvssV2BaseScore 5.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements,
+		"75512646-e558-47a4-9cc3-0be806bf3482:8d710299-44a4-4d86-8aeb-511a6f0bb50c:9cc4665f-3250-4df9-986a-7264f544fc93")
+	require.Len(t, req.Cvss, 2, "both cvssV3 and cvssV2 base scores produce entries")
+
+	assert.Equal(t, hdf.The31, req.Cvss[0].Version, "v3 entry leads")
+	require.NotNil(t, req.Cvss[0].BaseScore)
+	assert.InDelta(t, 7.5, *req.Cvss[0].BaseScore, 0.001)
+	require.NotNil(t, req.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityHigh, *req.Cvss[0].BaseSeverity)
+	require.NotNil(t, req.Cvss[0].Source)
+	assert.Equal(t, "CVE-2020-7760", *req.Cvss[0].Source)
+
+	assert.Equal(t, hdf.The20, req.Cvss[1].Version)
+	require.NotNil(t, req.Cvss[1].BaseScore)
+	assert.InDelta(t, 5.0, *req.Cvss[1].BaseScore, 0.001)
+}
+
+// A finding with only cvssV3 produces a single v3 entry; a finding with no CVSS
+// score produces no cvss[].
+func TestBuildCvssEntries_Branches(t *testing.T) {
+	v3 := 9.8
+	entries := buildCvssEntries(DeptrackVulnerability{CvssV3Base: &v3, VulnID: "CVE-2021-44228"})
+	require.Len(t, entries, 1)
+	assert.Equal(t, hdf.The31, entries[0].Version)
+	require.NotNil(t, entries[0].Source)
+	assert.Equal(t, "CVE-2021-44228", *entries[0].Source)
+
+	assert.Empty(t, buildCvssEntries(DeptrackVulnerability{VulnID: "533", Source: "NPM"}),
+		"no cvss score → no cvss[]")
+
+	// vulnId is not a CVE → source falls back to the first aliased CVE.
+	v2 := 5.0
+	aliased := buildCvssEntries(DeptrackVulnerability{
+		CvssV2Base: &v2, VulnID: "48",
+		Aliases: []DeptrackAlias{{CveID: "CVE-2022-2053"}},
+	})
+	require.Len(t, aliased, 1)
+	require.NotNil(t, aliased[0].Source)
+	assert.Equal(t, "CVE-2022-2053", *aliased[0].Source)
+}
+
+// ---- EPSS: structured requirement.epss with scan-date-derived date ----
+
+func TestConvertDeptrack_Epss(t *testing.T) {
+	input := loadFixture(t, "input/fpf-optional-attributes.json")
+	result, err := ConvertDeptrackToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements,
+		"75512646-e558-47a4-9cc3-0be806bf3482:8d710299-44a4-4d86-8aeb-511a6f0bb50c:9cc4665f-3250-4df9-986a-7264f544fc93")
+	require.NotNil(t, req.Epss, "codemirror finding carries epssScore/epssPercentile")
+	assert.InDelta(t, 0.01484, req.Epss.Score, 1e-6)
+	assert.InDelta(t, 0.86529, req.Epss.Percentile, 1e-6)
+	assert.Equal(t, "2024-04-04", req.Epss.Date, "date derived from meta.timestamp (YYYY-MM-DD)")
+
+	// angular finding carries no EPSS → no epss.
+	noEpss := shared.MustFindRequirement(t, result.Baselines[0].Requirements,
+		"75512646-e558-47a4-9cc3-0be806bf3482:2d964faa-c9c3-4669-900e-0ea3de1a9282:bf868742-0913-4a88-8dbc-1f6dbaf4b575")
+	assert.Nil(t, noEpss.Epss, "finding without EPSS fields → epss omitted")
+}
+
+// buildEpss branches: percentile-only present, and both absent.
+func TestBuildEpss_Branches(t *testing.T) {
+	assert.Nil(t, buildEpss(DeptrackVulnerability{}, "2024-04-04T03:51:19Z"), "no epss fields → nil")
+
+	pct := 0.5
+	e := buildEpss(DeptrackVulnerability{EpssPercentile: &pct}, "2024-04-04T03:51:19Z")
+	require.NotNil(t, e)
+	assert.InDelta(t, 0.0, e.Score, 1e-9, "missing score defaults to 0")
+	assert.InDelta(t, 0.5, e.Percentile, 1e-9)
+}
+
+// ---- Typed source attributes surfaced as searchable tags ----
+
+func TestConvertDeptrack_TypedTags(t *testing.T) {
+	input := loadFixture(t, "input/fpf-optional-attributes.json")
+	result, err := ConvertDeptrackToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements,
+		"75512646-e558-47a4-9cc3-0be806bf3482:8d710299-44a4-4d86-8aeb-511a6f0bb50c:9cc4665f-3250-4df9-986a-7264f544fc93")
+
+	assert.Equal(t, "9cc4665f-3250-4df9-986a-7264f544fc93", req.Tags["vulnerabilityUuid"])
+	assert.Equal(t, "NVD", req.Tags["vulnerabilitySource"])
+	assert.Equal(t, "CVE-2020-7760", req.Tags["vulnerabilityVulnId"])
+	assert.Equal(t, 1, req.Tags["vulnerabilitySeverityRank"])
+	assert.Equal(t, []interface{}{"Uncontrolled Resource Consumption"},
+		req.Tags["cweNames"])
+	assert.Equal(t, "OSSINDEX_ANALYZER", req.Tags["attributionAnalyzerIdentity"])
+	assert.Equal(t, "CVE-2020-7760", req.Tags["attributionAlternateIdentifier"])
+	assert.Equal(t, "2024-04-04 03:50:40.981", req.Tags["attributionAttributedOn"])
+	assert.Contains(t, req.Tags["attributionReferenceUrl"], "ossindex.sonatype.org")
+	assert.Equal(t, false, req.Tags["analysisIsSuppressed"])
+}
+
+// analysisState tag is emitted when the source carries it (fpf-default finding 1
+// has analysis.state = NOT_SET); subtitle tag likewise from the source subtitle.
+func TestConvertDeptrack_AnalysisAndSubtitleTags(t *testing.T) {
+	input := loadFixture(t, "input/fpf-default.json")
+	result, err := ConvertDeptrackToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements,
+		"ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46")
+	assert.Equal(t, "NOT_SET", req.Tags["analysisState"])
+	assert.Equal(t, "timespan", req.Tags["vulnerabilitySubtitle"])
+
+	// Second finding's analysis omits state → no analysisState tag, but isSuppressed present.
+	second := shared.MustFindRequirement(t, result.Baselines[0].Requirements,
+		"ca4f2da9-0fad-4a13-92d7-f627f3168a56:979f87f5-eaf5-4095-9d38-cde17bf9228e:701a3953-666b-4b7a-96ca-e1e6a3e1def3")
+	_, hasState := second.Tags["analysisState"]
+	assert.False(t, hasState, "finding whose analysis omits state emits no analysisState tag")
+	assert.Equal(t, false, second.Tags["analysisIsSuppressed"])
+}
+
+// buildAffectedPackageFromComponent: a component with name+version but no purl
+// takes the generic-ecosystem branch (parity with the TS converter).
+func TestConvertDeptrack_AffectedPackage_NoPurl(t *testing.T) {
+	input := []byte(`{"meta":{"timestamp":"2024-04-04T03:51:19Z"},"project":{"uuid":"p1","name":"t"},"findings":[{"component":{"name":"internal-lib","version":"1.2.3"},"vulnerability":{"severity":"LOW"},"matrix":"m1"}]}`)
+	result, err := ConvertDeptrackToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.AffectedPackages, 1)
+	pkg := req.AffectedPackages[0]
+	require.NotNil(t, pkg.Name)
+	assert.Equal(t, "internal-lib", *pkg.Name)
+	require.NotNil(t, pkg.Version)
+	assert.Equal(t, "1.2.3", *pkg.Version)
+	require.NotNil(t, pkg.Ecosystem)
+	assert.Equal(t, hdf.Generic, *pkg.Ecosystem)
+}
+
 func TestSnapshots(t *testing.T) {
 	// fpf-no-vulnerabilities has zero findings, so its startTime is the synthesized
 	// no-findings placeholder time (not input-derived); mask only that fixture. The

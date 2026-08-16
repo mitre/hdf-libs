@@ -69,7 +69,7 @@ interface DockerSource {
 
 /** Hardcoded NIST/CCI constants for credential exposure findings. */
 const TRUFFLEHOG_NIST = ['IA-5 (7)'];
-const TRUFFLEHOG_CCI = ['CCI-000202', 'CCI-000203', 'CCI-002367'];
+const TRUFFLEHOG_CCI = ['CCI-004069', 'CCI-000202', 'CCI-000203', 'CCI-002367'];
 
 /**
  * A verified secret is a confirmed-live credential (TruffleHog reached the
@@ -157,6 +157,10 @@ function canonicalize(value: unknown): unknown {
 
 /**
  * Build the Result.Message JSON from selected finding fields.
+ *
+ * Raw/RawV2 (the plaintext live secret) are deliberately withheld for secret
+ * hygiene — only the masked Redacted form is carried, so the HDF output never
+ * embeds a usable credential. Do not add them back for heimdall2 parity.
  */
 function buildMessage(f: TrufflehogFinding): string {
   const msg: Record<string, unknown> = {

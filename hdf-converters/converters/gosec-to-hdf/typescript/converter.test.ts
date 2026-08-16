@@ -332,6 +332,55 @@ describe('gosec to HDF converter', async () => {
     });
   });
 
+  describe('auxiliary scan metadata (baseline.extensions.gosec)', async () => {
+    it('should route Stats into baseline.extensions.gosec.stats', async () => {
+      // ethereum.json carries Stats={files:156,lines:46219,nosec:0,found:171}.
+      const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
+      const ext = hdf.baselines[0]!.extensions as { gosec?: { stats?: unknown; goErrors?: unknown } } | undefined;
+      expect(ext?.gosec?.stats).toEqual({ files: 156, lines: 46219, nosec: 0, found: 171 });
+      // Empty "Golang errors" → goErrors omitted.
+      expect(ext?.gosec?.goErrors).toBeUndefined();
+    });
+
+    it('should flatten non-empty Golang errors into goErrors, sorted by file', async () => {
+      const input = JSON.stringify({
+        'Golang errors': {
+          '/app/z.go': [{ line: 3, column: 1, error: "expected ';', found 'EOF'" }],
+          '/app/a.go': [
+            { line: 10, column: 5, error: 'undefined: Foo' },
+            { line: 12, column: 2, error: 'undefined: Bar' },
+          ],
+        },
+        Issues: [],
+        Stats: { files: 2, lines: 40, nosec: 0, found: 0 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      const ext = hdf.baselines[0]!.extensions as { gosec?: { stats?: unknown; goErrors?: unknown } } | undefined;
+      expect(ext?.gosec?.goErrors).toEqual([
+        { file: '/app/a.go', line: 10, column: 5, error: 'undefined: Foo' },
+        { file: '/app/a.go', line: 12, column: 2, error: 'undefined: Bar' },
+        { file: '/app/z.go', line: 3, column: 1, error: "expected ';', found 'EOF'" },
+      ]);
+      expect(ext?.gosec?.stats).toEqual({ files: 2, lines: 40, nosec: 0, found: 0 });
+    });
+
+    it('should omit extensions entirely when neither Stats nor Golang errors is present', async () => {
+      const input = JSON.stringify({
+        Issues: [{
+          severity: 'LOW', confidence: 'HIGH',
+          cwe: { id: '703', url: 'https://cwe.mitre.org/data/definitions/703.html' },
+          rule_id: 'G104', details: 'Errors unhandled.',
+          file: '/app/main.go', code: 'defer f.Close()\n',
+          line: '5', column: '2', nosec: false, suppressions: null,
+        }],
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.extensions).toBeUndefined();
+    });
+  });
+
   describe('SARIF format routing', async () => {
     function loadSarifFixture(name: string): string {
       return readFileSync(join(__dirname, '..', '..', 'sarif-to-hdf', 'fixtures', 'input', name), 'utf-8');

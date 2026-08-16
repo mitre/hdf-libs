@@ -104,3 +104,4 @@ hdf-cli/SAF_CLI_COMPARISON.md
 
 # VitePress build cache (regenerated locally; not part of release artifact)
 site/.vitepress/cache/
+.tools/

@@ -153,7 +153,6 @@ type Flaw struct {
 	Module                   string `xml:"module,attr"`
 	Type                     string `xml:"type,attr"`
 	Description              string `xml:"description,attr"`
-	Note                     string `xml:"note,attr"`
 	CWEID                    string `xml:"cweid,attr"`
 	RemediationEffort        string `xml:"remediationeffort,attr"`
 	ExploitLevel             string `xml:"exploitLevel,attr"`
@@ -172,6 +171,20 @@ type Flaw struct {
 	Scope                    string `xml:"scope,attr"`
 	FunctionPrototype        string `xml:"functionprototype,attr"`
 	FunctionRelativeLocation string `xml:"functionrelativelocation,attr"`
+	// Veracode records exploitability reasoning as nested <exploitability_adjustments>
+	// elements (not the empty note attribute). Each adjustment's <note> child carries
+	// the human-readable message mapped to result.message.
+	ExploitabilityAdjustments []ExploitabilityAdjustments `xml:"exploitability_adjustments"`
+}
+
+// ExploitabilityAdjustments wraps the list of exploitability adjustments on a flaw.
+type ExploitabilityAdjustments struct {
+	Adjustments []ExploitabilityAdjustment `xml:"exploitability_adjustment"`
+}
+
+// ExploitabilityAdjustment is a single exploitability adjustment carrying a note.
+type ExploitabilityAdjustment struct {
+	Note string `xml:"note"`
 }
 
 // SoftwareCompositionSCA is the SCA section of a Veracode report.
@@ -539,13 +552,26 @@ func buildFlawResult(flaw Flaw, firstBuildDate string) hdf.RequirementResult {
 		StartTime: startTime,
 	}
 
-	// Add exploitability note as message if present
-	// Note: Flaw.Note field can contain an exploitability message
-	if flaw.Note != "" {
-		result.Message = &flaw.Note
+	if msg := formatFlawMessage(flaw); msg != "" {
+		result.Message = &msg
 	}
 
 	return result
+}
+
+// formatFlawMessage collects the exploitability-adjustment notes on a flaw, in
+// document order, joined by newline. Returns "" when the flaw carries no nested
+// note (the NOT-IN-SOURCE case), so result.message is omitted.
+func formatFlawMessage(flaw Flaw) string {
+	var notes []string
+	for _, block := range flaw.ExploitabilityAdjustments {
+		for _, adj := range block.Adjustments {
+			if adj.Note != "" {
+				notes = append(notes, adj.Note)
+			}
+		}
+	}
+	return strings.Join(notes, "\n")
 }
 
 // buildCVERequirements creates HDF requirements from SCA vulnerable components.

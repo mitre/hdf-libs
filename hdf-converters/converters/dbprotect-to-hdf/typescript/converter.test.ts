@@ -221,6 +221,37 @@ describe('dbprotect to HDF converter', () => {
     });
   });
 
+  describe('backtrace (heimdall2 Failed-check marker)', () => {
+    it('sets the marker on a source "Failed" result', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2841');
+      expect(req!.results[0]!.backtrace).toEqual(['DB Protect Failed Check']);
+    });
+
+    it('omits the marker on a source "Finding" result (HDF-failed, not literal Failed)', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2801');
+      for (const res of req!.results) {
+        expect(res.backtrace).toBeUndefined();
+      }
+    });
+
+    it('omits the marker on a passing result', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '2942');
+      expect(req!.results[0]!.backtrace).toBeUndefined();
+    });
+
+    it('omits the marker on implicit-failed Findings Detail rows', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-findings-detail.xml'))) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        for (const res of req.results) {
+          expect(res.backtrace).toBeUndefined();
+        }
+      }
+    });
+  });
+
   describe('code description and start time', () => {
     it('should set codeDesc from Details column', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HDFResults;

@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -13,6 +14,20 @@ import (
 )
 
 const testConverterVersion = "test-version"
+
+func TestParseBurpTimestamp_TimezoneIndependent(t *testing.T) {
+	// BurpSuite emits a TZ abbreviation; it must resolve to a fixed UTC offset
+	// regardless of host TZ (CI runs UTC; dev machines may not).
+	cases := map[string]string{
+		"Thu Feb 27 09:28:17 EST 2020": "2020-02-27T14:28:17Z",
+		"Thu Feb 27 09:28:17 PST 2020": "2020-02-27T17:28:17Z",
+		"Thu Feb 27 09:28:17 UTC 2020": "2020-02-27T09:28:17Z",
+	}
+	for in, want := range cases {
+		got := parseBurpTimestamp(in).UTC().Format("2006-01-02T15:04:05Z07:00")
+		assert.Equal(t, want, got, in)
+	}
+}
 
 func loadFixture(t *testing.T, name string) []byte {
 	t.Helper()
@@ -565,6 +580,61 @@ func TestConvertBurpsuiteToHDF_EntityExpansion(t *testing.T) {
 	_, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+// --- Result start_time backfill (sourced from exportTime) ---
+
+func TestConvertBurpsuiteToHDF_ResultStartTime(t *testing.T) {
+	input := loadFixture(t, "input/zero.webappsecurity.com.xml")
+	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Timestamp)
+	want := *result.Timestamp
+
+	var count int
+	for _, req := range result.Baselines[0].Requirements {
+		for _, res := range req.Results {
+			assert.Equal(t, want, res.StartTime,
+				"result start_time must be backfilled from the report export time")
+			assert.False(t, res.StartTime.IsZero(), "result start_time must not be zero-time")
+			count++
+		}
+	}
+	assert.Equal(t, 60, count, "all 60 results carry a backfilled start_time")
+}
+
+// --- Raw-issue code passthrough ---
+
+func TestConvertBurpsuiteToHDF_Code(t *testing.T) {
+	input := loadFixture(t, "input/zero.webappsecurity.com.xml")
+	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2098688")
+	require.NotNil(t, req.Code, "requirement.code must carry the raw issue passthrough")
+
+	// serialNumber is otherwise unmapped — the passthrough is what preserves it.
+	assert.Contains(t, *req.Code, `"serialNumber": "2940178995452886016"`)
+	assert.Contains(t, *req.Code, `"type": "2098688"`)
+	// HTML must be preserved verbatim (not stripped/escaped) so the raw finding survives.
+	assert.Contains(t, *req.Code, "<p>An HTML5 cross-origin resource sharing")
+}
+
+func Test_buildIssueCode(t *testing.T) {
+	issue := BurpIssue{
+		SerialNumber: "42",
+		Type:         "1",
+		Name:         "Example",
+		Host:         BurpHost{IP: "1.2.3.4", Text: " http://test.com "},
+		Path:         "/a",
+		Severity:     "Low",
+	}
+	code := buildIssueCode(issue)
+	assert.Contains(t, code, `"serialNumber": "42"`)
+	assert.Contains(t, code, `"url": "http://test.com"`)
+	assert.True(t, strings.HasPrefix(code, "{\n  "), "code is 2-space indented JSON")
+	assert.False(t, strings.HasSuffix(code, "\n"), "trailing newline is trimmed")
 }
 
 func TestSnapshots(t *testing.T) {

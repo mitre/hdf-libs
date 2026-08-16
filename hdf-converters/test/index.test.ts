@@ -24,6 +24,7 @@ import {
   convertHdfToCsv,
   convertHdfToXml,
   convertGitlabToHdf,
+  convertTrivyToHdf,
   convertTrufflehogToHdf,
   convertHipcheckToHdf,
   convertBurpsuiteToHdf,
@@ -35,6 +36,7 @@ import {
   convertOpenVexToHdf,
   convertCsafVexToHdf,
   convertCyclonedxVexToHdf,
+  convertSpdxVexToHdf,
   convertHdfToCsafVex,
   convertHdfToCyclonedxVex,
   convertHdfToOpenVex,
@@ -199,6 +201,11 @@ describe('Main exports', () => {
     expect(typeof convertGitlabToHdf).toBe('function');
   });
 
+  it('should export convertTrivyToHdf from main index', () => {
+    expect(convertTrivyToHdf).toBeDefined();
+    expect(typeof convertTrivyToHdf).toBe('function');
+  });
+
   it('should export convertTrufflehogToHdf from main index', () => {
     expect(convertTrufflehogToHdf).toBeDefined();
     expect(typeof convertTrufflehogToHdf).toBe('function');
@@ -297,6 +304,11 @@ describe('Main exports', () => {
   it('should export convertCyclonedxVexToHdf from main index', () => {
     expect(convertCyclonedxVexToHdf).toBeDefined();
     expect(typeof convertCyclonedxVexToHdf).toBe('function');
+  });
+
+  it('should export convertSpdxVexToHdf from main index', () => {
+    expect(convertSpdxVexToHdf).toBeDefined();
+    expect(typeof convertSpdxVexToHdf).toBe('function');
   });
 
   it('should export convertHdfToCsafVex from main index', () => {

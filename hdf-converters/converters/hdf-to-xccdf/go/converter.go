@@ -43,16 +43,30 @@ func ConvertHDFToXCCDF(input []byte, converterVersion string) ([]byte, error) {
 
 // XCCDFBenchmark is the root element of an XCCDF 1.2 document.
 type XCCDFBenchmark struct {
-	XMLName    xml.Name         `xml:"Benchmark"`
-	XMLNS      string           `xml:"xmlns,attr"`
-	ID         string           `xml:"id,attr"`
-	Resolved   string           `xml:"resolved,attr"`
-	Status     string           `xml:"status"`
-	Title      string           `xml:"title"`
-	Version    string           `xml:"version"`
-	Profiles   []XCCDFProfile   `xml:"Profile,omitempty"`
-	Rules      []XCCDFRule      `xml:"Rule"`
+	XMLName  xml.Name `xml:"Benchmark"`
+	XMLNS    string   `xml:"xmlns,attr"`
+	ID       string   `xml:"id,attr"`
+	Resolved string   `xml:"resolved,attr"`
+	Status   string   `xml:"status"`
+	Title    string   `xml:"title"`
+	// XCCDF benchmarkType orders description after title and before version.
+	Description string         `xml:"description,omitempty"`
+	Version     string         `xml:"version"`
+	Profiles    []XCCDFProfile `xml:"Profile,omitempty"`
+	// Rules carrying a Group (gid/gtitle tags) are emitted inside their Group so
+	// the reverse importer reconstructs the SSG/STIG hierarchy; ungrouped rules
+	// stay flat under the Benchmark.
+	Groups     []XCCDFGroup     `xml:"Group,omitempty"`
+	Rules      []XCCDFRule      `xml:"Rule,omitempty"`
 	TestResult *XCCDFTestResult `xml:"TestResult,omitempty"`
+}
+
+// XCCDFGroup represents an XCCDF Group element wrapping one or more Rules.
+type XCCDFGroup struct {
+	XMLName xml.Name    `xml:"Group"`
+	ID      string      `xml:"id,attr"`
+	Title   string      `xml:"title,omitempty"`
+	Rules   []XCCDFRule `xml:"Rule"`
 }
 
 // XCCDFProfile represents an XCCDF Profile element.
@@ -64,10 +78,12 @@ type XCCDFProfile struct {
 
 // XCCDFRule represents an XCCDF Rule element.
 type XCCDFRule struct {
-	XMLName     xml.Name         `xml:"Rule"`
-	ID          string           `xml:"id,attr"`
-	Severity    string           `xml:"severity,attr"`
-	Selected    string           `xml:"selected,attr"`
+	XMLName  xml.Name `xml:"Rule"`
+	ID       string   `xml:"id,attr"`
+	Severity string   `xml:"severity,attr"`
+	Selected string   `xml:"selected,attr"`
+	// XCCDF ruleType orders version before title; carries the STIG ID.
+	Version     string           `xml:"version,omitempty"`
 	Title       string           `xml:"title"`
 	Description string           `xml:"description,omitempty"`
 	References  []XCCDFReference `xml:"reference,omitempty"`
@@ -105,6 +121,7 @@ type XCCDFTestResult struct {
 	ID            string            `xml:"id,attr"`
 	StartTime     string            `xml:"start-time,attr,omitempty"`
 	EndTime       string            `xml:"end-time,attr,omitempty"`
+	TestSystem    string            `xml:"test-system,attr,omitempty"`
 	Title         string            `xml:"title"`
 	Target        string            `xml:"target"`
 	TargetAddress string            `xml:"target-address,omitempty"`
@@ -126,6 +143,7 @@ type XCCDFRuleResult struct {
 	XMLName xml.Name    `xml:"rule-result"`
 	IDRef   string      `xml:"idref,attr"`
 	Time    string      `xml:"time,attr,omitempty"`
+	Version string      `xml:"version,attr,omitempty"`
 	Result  string      `xml:"result"`
 	Message string      `xml:"message,omitempty"`
 	Check   *XCCDFCheck `xml:"check,omitempty"`
@@ -205,6 +223,10 @@ func buildBenchmark(hdfData *hdf.HDFResults) *XCCDFBenchmark {
 		benchmark.Version = "1.0"
 	}
 
+	if baseline.Summary != nil {
+		benchmark.Description = *baseline.Summary
+	}
+
 	// Add profile
 	benchmark.Profiles = []XCCDFProfile{
 		{
@@ -213,10 +235,26 @@ func buildBenchmark(hdfData *hdf.HDFResults) *XCCDFBenchmark {
 		},
 	}
 
-	// Build rules from requirements
+	// Build rules from requirements, wrapping any rule that carries a gid tag in
+	// its XCCDF Group (dedup by gid, preserving first-seen order).
+	groupIndex := make(map[string]int)
 	for _, req := range baseline.Requirements {
 		rule := buildRule(req)
-		benchmark.Rules = append(benchmark.Rules, rule)
+		gid := hdfutil.SafeString(req.Tags["gid"])
+		if gid == "" {
+			benchmark.Rules = append(benchmark.Rules, rule)
+			continue
+		}
+		idx, ok := groupIndex[gid]
+		if !ok {
+			idx = len(benchmark.Groups)
+			groupIndex[gid] = idx
+			benchmark.Groups = append(benchmark.Groups, XCCDFGroup{
+				ID:    gid,
+				Title: hdfutil.SafeString(req.Tags["gtitle"]),
+			})
+		}
+		benchmark.Groups[idx].Rules = append(benchmark.Groups[idx].Rules, rule)
 	}
 
 	// Build TestResult
@@ -233,6 +271,10 @@ func buildRule(req hdf.EvaluatedRequirement) XCCDFRule {
 		ID:       ruleID,
 		Severity: impactToSeverity(req.Impact),
 		Selected: "true",
+	}
+
+	if stigID := hdfutil.SafeString(req.Tags["stig_id"]); stigID != "" {
+		rule.Version = stigID
 	}
 
 	if req.Title != nil {
@@ -272,17 +314,21 @@ func buildRule(req hdf.EvaluatedRequirement) XCCDFRule {
 		})
 	}
 
-	// Idents: CCI and NIST 800-53 controls
+	// Idents: CCI, CCE, legacy DISA IDs, and NIST 800-53 controls. Order (cci,
+	// cce, legacy, nist) is shared with the TS twin for byte parity; the reverse
+	// importer buckets by @system so order does not affect the round-trip.
 	if req.Tags != nil {
-		if cciRaw, ok := req.Tags["cci"]; ok {
-			for _, cci := range hdfutil.SafeStringSlice(cciRaw) {
-				rule.Idents = append(rule.Idents, XCCDFIdent{System: "http://cyber.mil/cci", Value: cci})
-			}
+		for _, cci := range hdfutil.SafeStringSlice(req.Tags["cci"]) {
+			rule.Idents = append(rule.Idents, XCCDFIdent{System: "http://cyber.mil/cci", Value: cci})
 		}
-		if nistRaw, ok := req.Tags["nist"]; ok {
-			for _, n := range hdfutil.SafeStringSlice(nistRaw) {
-				rule.Idents = append(rule.Idents, XCCDFIdent{System: "https://csrc.nist.gov/projects/risk-management/sp800-53-controls", Value: n})
-			}
+		if cce := hdfutil.SafeString(req.Tags["cce"]); cce != "" {
+			rule.Idents = append(rule.Idents, XCCDFIdent{System: "http://cce.mitre.org", Value: cce})
+		}
+		for _, legacy := range hdfutil.SafeStringSlice(req.Tags["legacy_id"]) {
+			rule.Idents = append(rule.Idents, XCCDFIdent{System: "http://cyber.mil/legacy", Value: legacy})
+		}
+		for _, n := range hdfutil.SafeStringSlice(req.Tags["nist"]) {
+			rule.Idents = append(rule.Idents, XCCDFIdent{System: "https://csrc.nist.gov/projects/risk-management/sp800-53-controls", Value: n})
 		}
 	}
 
@@ -296,12 +342,21 @@ func buildTestResult(hdfData *hdf.HDFResults, baseline hdf.EvaluatedBaseline) *X
 		Title: "HDF Assessment Results",
 	}
 
-	// Set timestamps
+	// Set timestamps. end-time carries the scan window: start + statistics.duration
+	// so the duration round-trips (the importer derives duration = end − start).
 	if hdfData.Timestamp != nil {
-		ts := hdfData.Timestamp.Format(time.RFC3339Nano)
-		testResult.StartTime = ts
-		testResult.EndTime = ts
+		start := hdfData.Timestamp.UTC()
+		testResult.StartTime = start.Format(time.RFC3339Nano)
+		end := start
+		if hdfData.Statistics != nil && hdfData.Statistics.Duration != nil && *hdfData.Statistics.Duration > 0 {
+			end = start.Add(time.Duration(*hdfData.Statistics.Duration * float64(time.Second)))
+		}
+		testResult.EndTime = end.Format(time.RFC3339Nano)
 	}
+
+	// @test-system names the scanner via a CPE URI so the importer recovers
+	// tool.version from it. Emitted only when the HDF carries a tool identity.
+	testResult.TestSystem = toolTestSystem(hdfData.Tool)
 
 	// Set target info
 	if len(hdfData.Components) > 0 {
@@ -317,11 +372,25 @@ func buildTestResult(hdfData *hdf.HDFResults, baseline hdf.EvaluatedBaseline) *X
 	// Build rule-results from requirement results
 	for _, req := range baseline.Requirements {
 		ruleIDRef := sanitizeXCCDFID("xccdf_hdf_rule_" + req.ID + "_rule")
+		stigID := hdfutil.SafeString(req.Tags["stig_id"])
+
+		// When an override set requirement.effectiveStatus, the emitted result
+		// reflects the governing (post-override) status; otherwise each result's
+		// own raw status carries through.
+		var effective string
+		if req.EffectiveStatus != nil {
+			effective = hdfStatusToXCCDF(*req.EffectiveStatus)
+		}
 
 		for _, result := range req.Results {
+			status := effective
+			if status == "" {
+				status = hdfStatusToXCCDF(result.Status)
+			}
 			rr := XCCDFRuleResult{
-				IDRef:  ruleIDRef,
-				Result: hdfStatusToXCCDF(result.Status),
+				IDRef:   ruleIDRef,
+				Version: stigID,
+				Result:  status,
 			}
 
 			// RFC3339Nano keeps the sub-second fraction, matching the canonical
@@ -366,6 +435,34 @@ func buildTestResult(hdfData *hdf.HDFResults, baseline hdf.EvaluatedBaseline) *X
 	}
 
 	return testResult
+}
+
+// toolTestSystem renders the HDF tool identity as the CPE 2.2 URI that XCCDF's
+// TestResult/@test-system conventionally carries, so the reverse importer
+// recovers tool.version from it (it reads the 4th colon-field). Returns "" when
+// no tool version is available, leaving the attribute unset rather than
+// fabricating a scanner identity.
+func toolTestSystem(tool *hdf.Tool) string {
+	if tool == nil || tool.Version == nil || *tool.Version == "" {
+		return ""
+	}
+	name := "tool"
+	if tool.Name != nil && *tool.Name != "" {
+		name = cpeField(*tool.Name)
+	}
+	return fmt.Sprintf("cpe:/a:%s:%s:%s", name, name, cpeField(*tool.Version))
+}
+
+// cpeField lowercases a value and strips the ':' and whitespace that would
+// break CPE 2.2 field parsing.
+func cpeField(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	return strings.Map(func(r rune) rune {
+		if r == ':' || r == ' ' {
+			return '_'
+		}
+		return r
+	}, s)
 }
 
 // sanitizeXCCDFID replaces characters not valid in XCCDF IDs with underscores.

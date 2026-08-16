@@ -1,6 +1,8 @@
 package burpsuite
 
 import (
+	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"regexp"
@@ -142,15 +144,94 @@ func buildSourceLocation(hostURL, path string) *hdf.SourceLocation {
 	return &hdf.SourceLocation{Ref: &ref}
 }
 
+// --- Raw finding passthrough ---
+
+// burpCodeHost mirrors the BurpSuite host element for the raw-issue code blob.
+type burpCodeHost struct {
+	IP  string `json:"ip"`
+	URL string `json:"url"`
+}
+
+// burpCodeIssue is a fixed-order projection of a BurpSuite issue used to render
+// requirement.code. Field order and JSON tags are kept identical to the
+// TypeScript twin's object literal so the two languages emit byte-identical
+// indented JSON.
+type burpCodeIssue struct {
+	SerialNumber                 string       `json:"serialNumber"`
+	Type                         string       `json:"type"`
+	Name                         string       `json:"name"`
+	Host                         burpCodeHost `json:"host"`
+	Path                         string       `json:"path"`
+	Location                     string       `json:"location"`
+	Severity                     string       `json:"severity"`
+	Confidence                   string       `json:"confidence"`
+	IssueBackground              string       `json:"issueBackground"`
+	RemediationBackground        string       `json:"remediationBackground"`
+	References                   string       `json:"references"`
+	VulnerabilityClassifications string       `json:"vulnerabilityClassifications"`
+	IssueDetail                  string       `json:"issueDetail"`
+}
+
+// buildIssueCode renders the raw BurpSuite issue as indented JSON for
+// requirement.code, preserving otherwise-unmapped source fields (e.g.
+// serialNumber). HTML escaping is disabled so the output matches the
+// TypeScript twin's JSON.stringify(issue, null, 2) byte-for-byte.
+func buildIssueCode(issue BurpIssue) string {
+	obj := burpCodeIssue{
+		SerialNumber:                 issue.SerialNumber,
+		Type:                         issue.Type,
+		Name:                         issue.Name,
+		Host:                         burpCodeHost{IP: issue.Host.IP, URL: strings.TrimSpace(issue.Host.Text)},
+		Path:                         issue.Path,
+		Location:                     issue.Location,
+		Severity:                     issue.Severity,
+		Confidence:                   issue.Confidence,
+		IssueBackground:              issue.IssueBackground,
+		RemediationBackground:        issue.RemediationBackground,
+		References:                   issue.References,
+		VulnerabilityClassifications: issue.VulnerabilityClassifications,
+		IssueDetail:                  issue.IssueDetail,
+	}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(obj); err != nil {
+		return "{}"
+	}
+	return strings.TrimRight(buf.String(), "\n")
+}
+
 // --- Timestamp parsing ---
+
+// tzAbbrevOffsets maps the US/UTC timezone abbreviations BurpSuite emits to a
+// fixed UTC offset (seconds). Go's time.Parse resolves a bare abbreviation like
+// "EST" against the *host* location, so the same input yields different instants
+// on an EDT laptop vs a UTC CI runner. Resolving abbreviations here keeps the
+// parsed instant host-independent and matching the TS/Node side.
+var tzAbbrevOffsets = map[string]int{
+	"UTC": 0, "GMT": 0,
+	"EST": -5 * 3600, "EDT": -4 * 3600,
+	"CST": -6 * 3600, "CDT": -5 * 3600,
+	"MST": -7 * 3600, "MDT": -6 * 3600,
+	"PST": -8 * 3600, "PDT": -7 * 3600,
+}
 
 // parseBurpTimestamp parses BurpSuite's "Thu Feb 27 09:28:17 EST 2020" format.
 func parseBurpTimestamp(s string) time.Time {
 	if s == "" {
 		return time.Time{}
 	}
-	// BurpSuite format: "Mon Jan 02 15:04:05 MST 2006"
+	// BurpSuite format: "Mon Jan 02 15:04:05 MST 2006". time.Parse reads the
+	// wall-clock fields and the zone name; reinterpret the wall clock with our
+	// fixed offset table so the resulting instant is host-independent.
 	if t, err := time.Parse("Mon Jan 02 15:04:05 MST 2006", s); err == nil {
+		if name, _ := t.Zone(); name != "" {
+			if off, ok := tzAbbrevOffsets[name]; ok {
+				t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(),
+					t.Second(), t.Nanosecond(), time.FixedZone(name, off))
+			}
+		}
 		return hdfutil.NormalizeTimestamp(t)
 	}
 	// Try shorter format without timezone: "Mon Jan 2 15:04:05 2006"
@@ -190,10 +271,17 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		groups[issue.Type] = append(groups[issue.Type], issue)
 	}
 
+	// Parse the report export time once; it seeds both the top-level timestamp
+	// and every result's start_time (h2 sets result start_time = exportTime).
+	var startTime time.Time
+	if burpData.ExportTime != "" {
+		startTime = parseBurpTimestamp(burpData.ExportTime)
+	}
+
 	// Build requirements from grouped issues
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, issueType := range order {
-		requirements[i] = buildRequirement(issueType, groups[issueType], burpData.ExportTime)
+		requirements[i] = buildRequirement(issueType, groups[issueType], startTime)
 	}
 
 	// Determine target from the first issue's host
@@ -221,13 +309,11 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ResultsChecksum: resultsChecksum,
 	}
 
-	// Compute timestamp before building results
+	// Top-level timestamp reuses the parsed export time.
 	var timestamp *time.Time
-	if burpData.ExportTime != "" {
-		ts := parseBurpTimestamp(burpData.ExportTime)
-		if !ts.IsZero() {
-			timestamp = &ts
-		}
+	if !startTime.IsZero() {
+		ts := startTime
+		timestamp = &ts
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
@@ -250,7 +336,7 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 // buildRequirement converts a group of issues sharing a type into one
 // EvaluatedRequirement with multiple results.
-func buildRequirement(issueType string, issues []BurpIssue, exportTime string) hdf.EvaluatedRequirement {
+func buildRequirement(issueType string, issues []BurpIssue, startTime time.Time) hdf.EvaluatedRequirement {
 	rep := issues[0]
 
 	// Parse CWE IDs from vulnerabilityClassifications HTML
@@ -311,8 +397,9 @@ func buildRequirement(issueType string, issues []BurpIssue, exportTime string) h
 			issue.Confidence,
 		)
 		results[i] = hdf.RequirementResult{
-			Status:   hdf.Failed,
-			CodeDesc: codeDesc,
+			Status:    hdf.Failed,
+			CodeDesc:  codeDesc,
+			StartTime: startTime,
 		}
 	}
 
@@ -332,6 +419,7 @@ func buildRequirement(issueType string, issues []BurpIssue, exportTime string) h
 		ID:                 issueType,
 		Title:              &rep.Name,
 		Impact:             impact,
+		Code:               hdfutil.Ptr(buildIssueCode(rep)),
 		Tags:               tags,
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		Descriptions:       descriptions,

@@ -2,6 +2,7 @@ package shared
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -84,6 +85,86 @@ func asRefs(v interface{}) []map[string]interface{} {
 		}
 	}
 	return out
+}
+
+func mustJSONBytes(t *testing.T, v interface{}) []byte {
+	t.Helper()
+	b, err := json.Marshal(v)
+	require.NoError(t, err)
+	return b
+}
+
+// stixBundleCiting builds a bundle of n distinct vulnerability objects that all
+// cite the same CVE — the attacker-controlled fan-out the cap must bound.
+func stixBundleCiting(t *testing.T, n int, cve string) []byte {
+	t.Helper()
+	objs := make([]interface{}, 0, n)
+	for i := 0; i < n; i++ {
+		objs = append(objs, map[string]interface{}{
+			"type": "vulnerability",
+			"id":   fmt.Sprintf("vulnerability--%08d-0000-4000-8000-000000000000", i),
+			"name": "v",
+			"external_references": []interface{}{
+				map[string]interface{}{"source_name": "cve", "external_id": cve},
+			},
+		})
+	}
+	return mustJSONBytes(t, map[string]interface{}{
+		"type":    "bundle",
+		"id":      "bundle--00000000-0000-4000-8000-000000000000",
+		"objects": objs,
+	})
+}
+
+func resultsWithFindingIDs(t *testing.T, req map[string]interface{}) []byte {
+	t.Helper()
+	return mustJSONBytes(t, map[string]interface{}{
+		"baselines": []interface{}{
+			map[string]interface{}{"requirements": []interface{}{req}},
+		},
+	})
+}
+
+// TestEnrichStix_CapsFanOut locks in the bound on the enrichment fan-out: an
+// untrusted bundle must not amplify past maxStixRefsPerContainer per container.
+func TestEnrichStix_CapsFanOut(t *testing.T) {
+	n := maxStixRefsPerContainer + 20
+
+	t.Run("caps STIX refs on a matched finding", func(t *testing.T) {
+		results := resultsWithFindingIDs(t, map[string]interface{}{"id": "CVE-2021-9999"})
+		out, err := EnrichStix(results, stixBundleCiting(t, n, "CVE-2021-9999"))
+		require.NoError(t, err)
+		assert.Len(t, reqRefs(requirementByID(t, enrichDoc(t, out), "CVE-2021-9999")), maxStixRefsPerContainer,
+			"matched finding's STIX refs are capped despite %d citing objects", n)
+	})
+
+	t.Run("caps STIX refs on the results root", func(t *testing.T) {
+		results := resultsWithFindingIDs(t, map[string]interface{}{"id": "SV-1"})
+		out, err := EnrichStix(results, stixBundleCiting(t, n, "CVE-2021-0000")) // matches no finding
+		require.NoError(t, err)
+		assert.Len(t, rootRefs(t, enrichDoc(t, out)), maxStixRefsPerContainer,
+			"unmatched objects on the results root are capped")
+	})
+
+	t.Run("preserves pre-existing non-STIX references", func(t *testing.T) {
+		results := resultsWithFindingIDs(t, map[string]interface{}{
+			"id": "CVE-2021-9999",
+			"externalReferences": []interface{}{
+				map[string]interface{}{"sourceName": "nvd", "href": "https://example.test/x"},
+			},
+		})
+		out, err := EnrichStix(results, stixBundleCiting(t, n, "CVE-2021-9999"))
+		require.NoError(t, err)
+		refs := reqRefs(requirementByID(t, enrichDoc(t, out), "CVE-2021-9999"))
+		assert.Len(t, refs, maxStixRefsPerContainer+1, "the pre-existing non-STIX ref survives on top of the cap")
+		nvd := 0
+		for _, r := range refs {
+			if r.(map[string]interface{})["sourceName"] == "nvd" {
+				nvd++
+			}
+		}
+		assert.Equal(t, 1, nvd, "the pre-existing nvd reference is retained")
+	})
 }
 
 func TestEnrichStix_CVEMatchAndRoot(t *testing.T) {

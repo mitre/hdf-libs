@@ -50,6 +50,14 @@ interface RequirementLike {
 }
 
 /**
+ * Round a fuzzy-match confidence (0-1 similarity) to 4 decimal places to strip
+ * IEEE-754 noise from the serialized matchConfidence value.
+ */
+export function roundConfidence(x: number): number {
+  return Math.round(x * 1e4) / 1e4;
+}
+
+/**
  * Extract a dataSource label from a document, if available.
  * Looks for `dataSource.name` in the raw (pre-normalized) document.
  */
@@ -443,7 +451,7 @@ function comparePair(
       before: oldReq as unknown as Record<string, unknown>,
       after: newReq as unknown as Record<string, unknown>,
       matchStrategy: pair.strategy,
-      matchConfidence: pair.confidence,
+      matchConfidence: roundConfidence(pair.confidence),
     });
   }
 
@@ -981,7 +989,7 @@ export function diffBaselines(
       before: oldReq as unknown as Record<string, unknown>,
       after: newReq as unknown as Record<string, unknown>,
       matchStrategy: pair.strategy,
-      matchConfidence: pair.confidence,
+      matchConfidence: roundConfidence(pair.confidence),
     });
   }
 

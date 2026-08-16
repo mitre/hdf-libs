@@ -370,8 +370,12 @@ func TestConvertHDFToOSCALPOAM_AppliedByInMetadata(t *testing.T) {
 	meta := doc.PlanOfActionAndMilestones.Metadata
 	require.Len(t, meta.ResponsibleParties, 1)
 	assert.Equal(t, "prepared-by", meta.ResponsibleParties[0].RoleID)
-	require.Len(t, meta.Parties, 1)
+	// Document applier is party[0]; the distinct per-override applier is surfaced too.
+	require.Len(t, meta.Parties, 2)
 	assert.Equal(t, "security-team@example.com", meta.Parties[0].Name)
+	assert.Equal(t, meta.Parties[0].UUID, meta.ResponsibleParties[0].PartyIDs[0])
+	names := map[string]bool{meta.Parties[0].Name: true, meta.Parties[1].Name: true}
+	assert.True(t, names["admin"], "per-override applier should be a party")
 }
 
 func TestConvertHDFToOSCALPOAM_ExpiresAtInRiskLog(t *testing.T) {

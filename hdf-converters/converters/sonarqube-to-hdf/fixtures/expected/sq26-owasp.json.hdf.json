@@ -1,0 +1,654 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Commented-out code distracts the focus from the actual executed code. It creates a noise that increases maintenance code. And because it is never executed, it quickly becomes out of date and invalid. Commented-out code should be deleted and can be retrieved from source control history if required.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "frontend/src/app/user-details/user-details.component.html LINE : 18",
+              "message": "Remove this commented out code.",
+              "startTime": "2026-08-16T00:08:33Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 18,
+            "ref": "frontend/src/app/user-details/user-details.component.html"
+          },
+          "id": "Web:AvoidCommentedOutCodeCheck",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "CLEAR",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
+            "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "lang": "web",
+            "langName": "HTML",
+            "legacySeverity": "major",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "sonarqube/hash": "2c3a9fc08d6fec2c8357ad825abd7dfd",
+            "sonarqube/key": "47f05b0f-861f-4002-9968-b2527403e890",
+            "sonarqube/update_date": "2026-08-16T00:08:33+0000",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Sections of code should not be commented out",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "CSS allows duplicate property names but only the last instance of a duplicated name determines the actual value that will be used for it. Therefore, changing values of other occurrences of a duplicated name will have no effect and may cause misunderstandings and bugs. This rule ignores $sass , @less , and var(--custom-property) variable syntaxes. Noncompliant code example a { color: pink; background: orange; color: orange } Compliant solution a { color: pink; background: orange }",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "frontend/src/app/score-board/components/challenge-card/challenge-card.component.scss LINE : 142",
+              "message": "Unexpected duplicate \"color\"",
+              "startTime": "2026-08-16T00:08:33Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 142,
+            "ref": "frontend/src/app/score-board/components/challenge-card/challenge-card.component.scss"
+          },
+          "id": "css:S4656",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "LOGICAL",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
+            "cwe": [],
+            "debt": "1min",
+            "effort": "1min",
+            "impacts": [
+              {
+                "softwareQuality": "RELIABILITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "lang": "css",
+            "langName": "CSS",
+            "legacySeverity": "major",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "sonarqube/hash": "8f9cae35b6843b69f6a86b8b0667e9eb",
+            "sonarqube/key": "5caca857-08cc-4a2b-b72b-6f6bcb5a0acf",
+            "sonarqube/update_date": "2026-08-16T00:08:33+0000",
+            "type": "bug"
+          },
+          "controlType": "management",
+          "title": "Properties should not be duplicated",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Commented-out code distracts the focus from the actual executed code. It creates a noise that increases maintenance code. And because it is never executed, it quickly becomes out of date and invalid. Commented-out code should be deleted and can be retrieved from source control history if required.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "frontend/src/assets/private/three.js LINE : 124",
+              "message": "Remove this commented out code.",
+              "startTime": "2026-08-16T00:08:33Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 124,
+            "ref": "frontend/src/assets/private/three.js"
+          },
+          "id": "javascript:S125",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "CLEAR",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
+            "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "lang": "js",
+            "langName": "JavaScript",
+            "legacySeverity": "major",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "sonarqube/hash": "ecff699dd5edd5c5ebbf4c3d25e8afc1",
+            "sonarqube/key": "01a09748-67af-4048-b4a1-7008be409b68",
+            "sonarqube/update_date": "2026-08-16T00:08:33+0000",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Sections of code should not be commented out",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "When exceptions occur, it is usually a bad idea to simply ignore them. Instead, it is better to handle them properly, or at least to log them. Noncompliant code example function f() { try { doSomething(); } catch (err) { } } Compliant solution function f() { try { doSomething(); } catch (err) { console.log(`Exception while doing something: ${err}`); } }",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "frontend/src/assets/private/three.js LINE : 17098",
+              "message": "Handle this exception or don't catch it at all.",
+              "startTime": "2026-08-16T00:08:33Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 17098,
+            "ref": "frontend/src/assets/private/three.js"
+          },
+          "id": "javascript:S2486",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-000172"
+            ],
+            "cleanCodeAttribute": "CLEAR",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
+            "cwe": [
+              "CWE-390"
+            ],
+            "debt": "1h",
+            "effort": "1h",
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "LOW"
+              }
+            ],
+            "lang": "js",
+            "langName": "JavaScript",
+            "legacySeverity": "minor",
+            "nist": [
+              "AU-12"
+            ],
+            "owasp": [
+              "A10"
+            ],
+            "severity": "low",
+            "severitySource": "mqr",
+            "sonarqube/hash": "72c888ed5890cd47c4dd0fc6068bd8ca",
+            "sonarqube/key": "b3623cfc-cda7-43c7-88f9-b67053c5f8bf",
+            "sonarqube/update_date": "2026-08-16T00:08:33+0000",
+            "type": "code_smell"
+          },
+          "controlType": "operational",
+          "title": "Exceptions should not be ignored",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Having all branches of a switch or if chain with the same implementation indicates a problem. In the following code: if (b == 0) { // Noncompliant doOneMoreThing(); } else { doOneMoreThing(); } let a = (b == 0) ? getValue() : getValue(); // Noncompliant switch (i) { // Noncompliant case 1: doSomething(); break; case 2: doSomething(); break; case 3: doSomething(); break; default: doSomething(); } Either there is a copy-paste error that needs fixing or an unnecessary switch or if chain that should be removed. Exceptions This rule does not apply to if chains without else , nor to switch without a default clause. if(b == 0) { //no issue, this could have been done on purpose to make the code more readable doSomething(); } else if(b == 1) { doSomething(); }",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "frontend/src/assets/private/three.js LINE : 25348",
+              "message": "Remove this conditional structure or edit its code blocks so that they're not all the same.",
+              "startTime": "2026-08-16T00:08:33Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 25348,
+            "ref": "frontend/src/assets/private/three.js"
+          },
+          "id": "javascript:S3923",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "CLEAR",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
+            "cwe": [],
+            "debt": "15min",
+            "effort": "15min",
+            "impacts": [
+              {
+                "softwareQuality": "RELIABILITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "lang": "js",
+            "langName": "JavaScript",
+            "legacySeverity": "major",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "sonarqube/hash": "b63a7642d038bfac526f204fdccd2c1a",
+            "sonarqube/key": "1371af82-b2b3-4e54-9f1b-ead3147b1cc8",
+            "sonarqube/update_date": "2026-08-16T00:08:33+0000",
+            "type": "bug"
+          },
+          "controlType": "management",
+          "title": "All branches in a conditional structure should not have exactly the same implementation",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "In most cases, trust boundaries are violated when a secret is exposed in a source code repository or an uncontrolled deployment environment. Unintended people who don’t need to know the secret might get access to it. They might then be able to use it to gain unwanted access to associated services or resources. The trust issue can be more or less severe depending on the people’s role and entitlement. What is the potential impact? In most cases, trust boundaries are violated when a secret is exposed in a source code repository or an uncontrolled deployment environment. Unintended people who don’t need to know the secret might get access to it. They might then be able to use it to gain unwanted access to associated services or resources. The trust issue can be more or less severe depending on the people’s role and entitlement.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "lib/insecurity.ts LINE : 23",
+              "message": "Make sure this private key gets revoked, changed, and removed from the code.",
+              "startTime": "2026-08-16T00:08:33Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 23,
+            "ref": "lib/insecurity.ts"
+          },
+          "id": "secrets:S6706",
+          "impact": 1,
+          "tags": {
+            "cci": [
+              "CCI-001312"
+            ],
+            "cleanCodeAttribute": "TRUSTWORTHY",
+            "cleanCodeAttributeCategory": "RESPONSIBLE",
+            "cwe": [
+              "CWE-259",
+              "CWE-798"
+            ],
+            "debt": "30min",
+            "effort": "30min",
+            "impacts": [
+              {
+                "softwareQuality": "SECURITY",
+                "severity": "BLOCKER"
+              }
+            ],
+            "lang": "secrets",
+            "langName": "Secrets",
+            "legacySeverity": "blocker",
+            "nist": [
+              "SI-11"
+            ],
+            "owasp": [
+              "A3"
+            ],
+            "severity": "blocker",
+            "severitySource": "mqr",
+            "sonarqube/hash": "648b1c2b0817f9c92f0cadebbe3e4bdf",
+            "sonarqube/key": "9454d236-7c52-4576-8fee-af01411fa1aa",
+            "sonarqube/update_date": "2026-08-16T00:08:33+0000",
+            "type": "vulnerability"
+          },
+          "controlType": "technical",
+          "title": "Cryptographic private keys should not be disclosed",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Commented-out code distracts the focus from the actual executed code. It creates a noise that increases maintenance code. And because it is never executed, it quickly becomes out of date and invalid. Commented-out code should be deleted and can be retrieved from source control history if required.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "frontend/src/app/two-factor-auth-enter/two-factor-auth-enter.component.ts LINE : 59",
+              "message": "Remove this commented out code.",
+              "startTime": "2026-08-16T00:08:33Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 59,
+            "ref": "frontend/src/app/two-factor-auth-enter/two-factor-auth-enter.component.ts"
+          },
+          "id": "typescript:S125",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "cleanCodeAttribute": "CLEAR",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
+            "cwe": [],
+            "debt": "5min",
+            "effort": "5min",
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "lang": "ts",
+            "langName": "TypeScript",
+            "legacySeverity": "major",
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "sonarqube/hash": "88f77d0f711a5e094066adcf0795571c",
+            "sonarqube/key": "21c2932f-8a01-4e24-b050-52a25f905e28",
+            "sonarqube/update_date": "2026-08-16T00:08:33+0000",
+            "type": "code_smell"
+          },
+          "controlType": "management",
+          "title": "Sections of code should not be commented out",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "When exceptions occur, it is usually a bad idea to simply ignore them. Instead, it is better to handle them properly, or at least to log them. Noncompliant code example function f() { try { doSomething(); } catch (err) { } } Compliant solution function f() { try { doSomething(); } catch (err) { console.log(`Exception while doing something: ${err}`); } }",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "lib/codingChallenges.ts LINE : 37",
+              "message": "Handle this exception or don't catch it at all.",
+              "startTime": "2026-08-16T00:08:33Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 37,
+            "ref": "lib/codingChallenges.ts"
+          },
+          "id": "typescript:S2486",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-000172"
+            ],
+            "cleanCodeAttribute": "CLEAR",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
+            "cwe": [
+              "CWE-390"
+            ],
+            "debt": "1h",
+            "effort": "1h",
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "LOW"
+              }
+            ],
+            "lang": "ts",
+            "langName": "TypeScript",
+            "legacySeverity": "minor",
+            "nist": [
+              "AU-12"
+            ],
+            "owasp": [
+              "A10"
+            ],
+            "severity": "low",
+            "severitySource": "mqr",
+            "sonarqube/hash": "550051ee6b000602ffe414172dfff76d",
+            "sonarqube/key": "19945c09-f129-4980-9dcd-b861e805c343",
+            "sonarqube/update_date": "2026-08-16T00:08:33+0000",
+            "type": "code_smell"
+          },
+          "controlType": "operational",
+          "title": "Exceptions should not be ignored",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "In most cases, trust boundaries are violated when a secret is exposed in a source code repository or an uncontrolled deployment environment. Unintended people who don’t need to know the secret might get access to it. They might then be able to use it to gain unwanted access to associated services or resources. The trust issue can be more or less severe depending on the people’s role and entitlement. What is the potential impact? The consequences vary greatly depending on the situation and the secret-exposed audience. Still, two main scenarios should be considered. Financial loss Financial losses can occur when a secret is used to access a paid third-party-provided service and is disclosed as part of the source code of client applications. Having the secret, each user of the application will be able to use it without limit to use the third party service to their own need, including in a way that was not expected. This additional use of the secret will lead to added costs with the service provider. Moreover, when rate or volume limiting is set up on the provider side, this additional use can prevent the regular operation of the affected application. This might result in a partial denial of service for all the application’s users. Application’s security downgrade A downgrade can happen when the disclosed secret is used to protect security-sensitive assets or features of the application. Depending on the affected asset or feature, the practical impact can range from a sensitive information leak to a complete takeover of the application, its hosting server or another linked component. For example, an application that would disclose a secret used to sign user authentication tokens would be at risk of user identity impersonation. An attacker accessing the leaked secret could sign session tokens for arbitrary users and take over their privileges and entitlements.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "lib/insecurity.ts LINE : 44",
+              "message": "Revoke and change this password, as it is compromised.",
+              "startTime": "2026-08-16T00:08:33Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 44,
+            "ref": "lib/insecurity.ts"
+          },
+          "id": "typescript:S6437",
+          "impact": 1,
+          "tags": {
+            "cci": [
+              "CCI-001184"
+            ],
+            "cleanCodeAttribute": "TRUSTWORTHY",
+            "cleanCodeAttributeCategory": "RESPONSIBLE",
+            "cwe": [
+              "CWE-259",
+              "CWE-798"
+            ],
+            "debt": "1h",
+            "effort": "1h",
+            "impacts": [
+              {
+                "softwareQuality": "SECURITY",
+                "severity": "BLOCKER"
+              }
+            ],
+            "lang": "ts",
+            "langName": "TypeScript",
+            "legacySeverity": "blocker",
+            "nist": [
+              "SC-23"
+            ],
+            "owasp": [
+              "A2"
+            ],
+            "severity": "blocker",
+            "severitySource": "mqr",
+            "sonarqube/hash": "f0812a9968209c58008afba7878097b7",
+            "sonarqube/key": "ed6e3c25-0be8-4715-a5db-db40765f38b7",
+            "sonarqube/update_date": "2026-08-16T00:08:33+0000",
+            "type": "vulnerability"
+          },
+          "controlType": "technical",
+          "title": "Credentials should not be hard-coded",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "In most cases, trust boundaries are violated when a secret is exposed in a source code repository or an uncontrolled deployment environment. Unintended people who don’t need to know the secret might get access to it. They might then be able to use it to gain unwanted access to associated services or resources. The trust issue can be more or less severe depending on the people’s role and entitlement. In that case, the wallet seed phrase, also known as a recovery phrase or mnemonic seed, is arguably the most critical element in managing cryptocurrency. Its importance cannot be overstated, as it serves as the master key to entire crypto portfolios. What is the potential impact? The consequences vary greatly by situation and by audience. Below is the critical impact of an attacker accessing the wallet phrase. Cryptocurrency theft Access to your seed phrase means complete control over your wallet. An attacker can import your wallet on their own device and drain all your assets to their own address. Due to the irreversible nature of blockchain transactions, there is no way to undo the theft.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "routes/checkKeys.ts LINE : 10",
+              "message": "Revoke and change this seed phrase, as it is compromised.",
+              "startTime": "2026-08-16T00:08:33Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 10,
+            "ref": "routes/checkKeys.ts"
+          },
+          "id": "typescript:S7639",
+          "impact": 1,
+          "tags": {
+            "cci": [
+              "CCI-001184"
+            ],
+            "cleanCodeAttribute": "CONVENTIONAL",
+            "cleanCodeAttributeCategory": "CONSISTENT",
+            "cwe": [
+              "CWE-259",
+              "CWE-798"
+            ],
+            "debt": "1h",
+            "effort": "1h",
+            "impacts": [
+              {
+                "softwareQuality": "SECURITY",
+                "severity": "BLOCKER"
+              }
+            ],
+            "lang": "ts",
+            "langName": "TypeScript",
+            "legacySeverity": "blocker",
+            "nist": [
+              "SC-23"
+            ],
+            "owasp": [
+              "A2"
+            ],
+            "severity": "blocker",
+            "severitySource": "mqr",
+            "sonarqube/hash": "de73c3ec5f8e587d9b46be21a6a07cfa",
+            "sonarqube/key": "ab19f6d4-9a97-4bab-b027-9f593d7ffbc0",
+            "sonarqube/update_date": "2026-08-16T00:08:33+0000",
+            "type": "vulnerability"
+          },
+          "controlType": "technical",
+          "title": "Wallet phrases should not be hard-coded",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Constructing templates by dynamically inserting strings coming from third-party sources is an anti-pattern which creates code that is brittle, difficult to read, and challenging to debug. Moreover, in the long run, this practice progressively increases the likelihood of introducing Server-Side Template Injections (SSTI) , sometimes in complex ways that are hard to detect. An SSTI is the insertion of third-party data (like user data) within templates, which enables attackers to execute arbitrary commands on the underlying operating system.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "routes/errorHandler.ts LINE : 27",
+              "message": "Make sure this dynamically formatted template is safe here.",
+              "startTime": "2026-08-16T00:08:33Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 27,
+            "ref": "routes/errorHandler.ts"
+          },
+          "id": "typescript:S7790",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cleanCodeAttribute": "COMPLETE",
+            "cleanCodeAttributeCategory": "INTENTIONAL",
+            "cwe": [
+              "CWE-20"
+            ],
+            "debt": "20min",
+            "effort": "20min",
+            "impacts": [
+              {
+                "softwareQuality": "MAINTAINABILITY",
+                "severity": "LOW"
+              },
+              {
+                "softwareQuality": "SECURITY",
+                "severity": "MEDIUM"
+              }
+            ],
+            "lang": "ts",
+            "langName": "TypeScript",
+            "legacySeverity": "major",
+            "nist": [
+              "SI-10"
+            ],
+            "owasp": [
+              "A1"
+            ],
+            "severity": "medium",
+            "severitySource": "mqr",
+            "sonarqube/hash": "39cf65b2f3dfa28585ebc87e697b677a",
+            "sonarqube/key": "f69bb2ff-2981-4cbd-adcc-bc002b4e69c4",
+            "sonarqube/update_date": "2026-08-16T00:08:33+0000",
+            "type": "vulnerability"
+          },
+          "controlType": "technical",
+          "title": "Templates should not be constructed dynamically",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "020de03a13b08014c97ee53ef0a906a1f2bbd0f353180eb456fd27078dfdbbea"
+      },
+      "name": "juice-shop",
+      "title": "SonarQube Analysis for juice-shop"
+    }
+  ],
+  "components": [
+    {
+      "name": "juice-shop",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "sonarqube-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-08-16T01:20:21.078371Z",
+  "tool": {
+    "name": "SonarQube",
+    "version": "26.1.0.118079"
+  }
+}

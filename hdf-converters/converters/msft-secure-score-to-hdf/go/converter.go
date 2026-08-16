@@ -4,7 +4,7 @@ package msftsecurescore
 import (
 	"encoding/json"
 	"fmt"
-	"math"
+	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -87,8 +87,9 @@ func getProfiles(profiles []SecureScoreControlProfile, controlName string) []Sec
 	return matched
 }
 
-// getTitle returns the profile title if available, otherwise falls back to
-// controlCategory:controlName.
+// getTitle returns the joined profile titles if available, otherwise falls back
+// to controlCategory:controlName. When multiple profiles match a control name,
+// all of their titles are joined (mirrors heimdall2's multi-profile join).
 func getTitle(profiles []SecureScoreControlProfile, cs ControlScore) string {
 	matched := getProfiles(profiles, cs.ControlName)
 	titles := make([]string, 0)
@@ -98,7 +99,7 @@ func getTitle(profiles []SecureScoreControlProfile, cs ControlScore) string {
 		}
 	}
 	if len(titles) > 0 {
-		return titles[0]
+		return strings.Join(titles, "\n")
 	}
 	// Fallback: category:name
 	if cs.ControlCategory != "" && cs.ControlName != "" {
@@ -123,13 +124,12 @@ func getImpact(profiles []SecureScoreControlProfile, cs ControlScore) float64 {
 			maxScore = p.MaxScore
 		}
 	}
-	impact := maxScore / 10.0
+	impact := hdfutil.RoundImpact(maxScore / 10.0)
 	// Cap at 1.0
 	if impact > 1.0 {
 		impact = 1.0
 	}
-	// Round to avoid floating point noise
-	return math.Round(impact*100) / 100
+	return impact
 }
 
 // getStatus determines the result status based on scoreInPercentage and profile maxScore.
@@ -189,7 +189,7 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 		if len(remediations) > 0 {
 			descriptions = append(descriptions, hdf.Description{
 				Label: "fix",
-				Data:  remediations[0],
+				Data:  strings.Join(remediations, "\n"),
 			})
 		}
 
@@ -203,13 +203,25 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 		if len(impacts) > 0 {
 			descriptions = append(descriptions, hdf.Description{
 				Label: "rationale",
-				Data:  impacts[0],
+				Data:  strings.Join(impacts, "\n"),
 			})
 		}
 
 		// Source categorization/metadata from the matched profile(s). Emit each
 		// tag only when a matched profile actually carries the value; preserve the
 		// source's natural JSON type (threats array, numeric rank, strings).
+		for _, p := range matched {
+			if p.ControlCategory != "" {
+				tags["category"] = p.ControlCategory
+				break
+			}
+		}
+		for _, p := range matched {
+			if p.MaxScore != 0 {
+				tags["maxScore"] = p.MaxScore
+				break
+			}
+		}
 		for _, p := range matched {
 			if arr, ok := p.Threats.([]interface{}); ok && len(arr) > 0 {
 				tags["threats"] = arr

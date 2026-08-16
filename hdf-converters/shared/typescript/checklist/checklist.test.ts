@@ -176,10 +176,10 @@ describe('checklist shared model', () => {
     expect(n.vulnDiscuss).toBe(o.vulnDiscuss);
     expect(n.checkContent).toBe(o.checkContent);
     expect(n.fixText).toBe(o.fixText);
-    // finding_details and comments occupy separate CKL fields and must stay
-    // separable through HDF: message carries only finding_details, comments
-    // round-trips through tags.
-    expect(n.findingDetails).toBe(o.findingDetails);
+    // finding_details is composed from every result's status+codeDesc+message on
+    // export (carries the original message plus the synthesized codeDesc);
+    // comments stays separable and round-trips exactly through tags.
+    expect(n.findingDetails).toContain(o.findingDetails);
     expect(n.comments).toBe(o.comments);
 
     const xml = serializeCkl(rt);
@@ -190,7 +190,7 @@ describe('checklist shared model', () => {
     expect(rv.vulnDiscuss).toBe(o.vulnDiscuss);
     expect(rv.checkContent).toBe(o.checkContent);
     expect(rv.fixText).toBe(o.fixText);
-    expect(rv.findingDetails).toBe(o.findingDetails);
+    expect(rv.findingDetails).toContain(o.findingDetails);
     expect(rv.comments).toBe(o.comments);
     // Fields must serialize as child ELEMENTS, not VULN/ASSET attributes —
     // STIG Viewer rejects the attribute form. (Regression guard: with the
@@ -218,7 +218,7 @@ describe('checklist shared model', () => {
     expect(rv.vulnDiscuss).toBe(o.vulnDiscuss);
     expect(rv.checkContent).toBe(o.checkContent);
     expect(rv.fixText).toBe(o.fixText);
-    expect(rv.findingDetails).toBe(o.findingDetails);
+    expect(rv.findingDetails).toContain(o.findingDetails);
     expect(rv.comments).toBe(o.comments);
     // CKLB STIG Viewer document flags survive the full CKLB->HDF->CKLB round-trip
     // (were silently dropped to active:false/has_path:false before).
@@ -453,6 +453,105 @@ describe('checklist shared model', () => {
     expect(rt.cklbVersion).toBe('1.0');
     expect(rt.stigs[0].uuid).toBe('u-1');
     expect(rt.stigs[0].referenceIdentifier).toBe('ref');
+  });
+
+  // --- export field-fidelity (a1-a4) -------------------------------------
+
+  const exportVuln = (req: Record<string, unknown>) =>
+    hdfToChecklist(JSON.stringify({ baselines: [{ name: 'b', requirements: [req] }] })).stigs[0].vulns[0];
+
+  it('drives STATUS from effectiveStatus, falling back to raw result status (a1)', () => {
+    expect(
+      exportVuln({
+        id: 'V-1', impact: 0.7, tags: {}, descriptions: [],
+        effectiveStatus: 'notApplicable',
+        results: [{ status: 'failed', codeDesc: 'check' }],
+      }).status,
+    ).toBe(CheckStatus.NotApplicable);
+
+    expect(
+      exportVuln({
+        id: 'V-2', impact: 0.7, tags: {}, descriptions: [],
+        results: [{ status: 'failed', codeDesc: 'check' }],
+      }).status,
+    ).toBe(CheckStatus.Open);
+  });
+
+  it('surfaces override provenance into comments + severity override (a2)', () => {
+    const v = exportVuln({
+      id: 'V-1', impact: 0.7, tags: {}, descriptions: [],
+      results: [{ status: 'failed', codeDesc: 'check' }],
+      statusOverrides: [{
+        type: 'riskAdjustment', reason: 'compensating control in place',
+        appliedBy: { type: 'username', identifier: 'jdoe' },
+        appliedAt: '2020-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+        impact: { value: 0.4 },
+      }],
+    });
+    expect(v.comments).toBe(
+      'Override [riskAdjustment]: compensating control in place ' +
+        '(by jdoe, applied 2020-01-01T00:00:00Z, expires 2099-12-31T00:00:00Z)',
+    );
+    expect(v.severityOverride).toBe('medium');
+    expect(v.severityJustification).toBe('compensating control in place');
+  });
+
+  it('merges existing comments with override provenance, comments first (a2)', () => {
+    const v = exportVuln({
+      id: 'V-1', impact: 0.7, tags: { comments: 'reviewer note' }, descriptions: [],
+      results: [{ status: 'failed', codeDesc: 'check' }],
+      statusOverrides: [{ type: 'waiver', reason: 'accepted risk' }],
+    });
+    expect(v.comments).toBe('reviewer note\n\nOverride [waiver]: accepted risk');
+  });
+
+  it('falls back to disposition when no overrides array is present (a2)', () => {
+    const v = exportVuln({
+      id: 'V-1', impact: 0.7, tags: {}, descriptions: [], disposition: 'falsePositive',
+      results: [{ status: 'failed', codeDesc: 'check' }],
+    });
+    expect(v.comments).toBe('Disposition: falsePositive');
+  });
+
+  it('composes finding_details from ALL results status+codeDesc+message (a3)', () => {
+    const v = exportVuln({
+      id: 'V-1', impact: 0.7, tags: {}, descriptions: [],
+      results: [
+        { status: 'passed', codeDesc: 'port 22 is closed' },
+        { status: 'failed', codeDesc: 'port 23 is closed', message: 'telnet still open' },
+      ],
+    });
+    expect(v.findingDetails).toBe('[passed] port 22 is closed\n\n[failed] port 23 is closed\ntelnet still open');
+  });
+
+  it('emits LEGACY_ID STIG_DATA in CKL and round-trips it (a4)', () => {
+    const cl: Checklist = {
+      format: 'ckl',
+      asset: {},
+      stigs: [{ stigID: 'S', vulns: [{ vulnNum: 'V-1', ccis: [], status: CheckStatus.Open, legacyIDs: ['V-9999', 'SV-8888'] }] }],
+    };
+    const xml = serializeCkl(cl);
+    expect(xml).toContain('<VULN_ATTRIBUTE>LEGACY_ID</VULN_ATTRIBUTE>');
+    expect(xml).toContain('<ATTRIBUTE_DATA>V-9999</ATTRIBUTE_DATA>');
+    expect(parseCkl(xml).stigs[0].vulns[0].legacyIDs).toEqual(['V-9999', 'SV-8888']);
+  });
+
+  it('emits overrides.severity in CKLB (empty object when none) and round-trips (a4)', () => {
+    const cl: Checklist = {
+      format: 'cklb',
+      asset: {},
+      stigs: [{ vulns: [
+        { vulnNum: 'V-1', ccis: [], status: CheckStatus.Open, severityOverride: 'low', severityJustification: 'downgraded' },
+        { vulnNum: 'V-2', ccis: [], status: CheckStatus.Open },
+      ] }],
+    };
+    const out = serializeCklb(cl);
+    expect(out).toContain('"overrides": {}');
+    expect(out).toContain('"severity": "low"');
+    expect(out).toContain('"justification": "downgraded"');
+    const rv = parseCklb(out).stigs[0].vulns[0];
+    expect(rv.severityOverride).toBe('low');
+    expect(rv.severityJustification).toBe('downgraded');
   });
 
   it('hdfToChecklist prefers explicit cci tags over nist reverse, and omits both when absent', () => {

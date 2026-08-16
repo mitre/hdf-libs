@@ -470,3 +470,27 @@ describe('veracode requirement.sourceLocation', () => {
     expect(cve!.sourceLocation!.line).toBeUndefined();
   });
 });
+
+describe('veracode result.message (exploitability note)', () => {
+  it('maps a static flaw result message from the nested exploitability-adjustment note', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    const messages = output.baselines[0]!.requirements
+      .flatMap(r => r.results)
+      .map(res => res.message)
+      .filter(Boolean);
+    expect(messages).toContain(
+      'The source of the tainted data in this web application flaw is not a web request.',
+    );
+  });
+
+  it('omits message on flaws with no exploitability-adjustment note', async () => {
+    const input = loadFixture('veracode.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+    // Not every flaw carries an adjustment note, so at least one result must lack a message.
+    const withoutMessage = output.baselines[0]!.requirements
+      .flatMap(r => r.results)
+      .some(res => res.message === undefined);
+    expect(withoutMessage).toBe(true);
+  });
+});

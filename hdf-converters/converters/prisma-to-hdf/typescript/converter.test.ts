@@ -435,4 +435,45 @@ describe('prisma to HDF converter', () => {
       expect(hdf.baselines[0]!.requirements[0]!.affectedPackages).toBeUndefined();
     });
   });
+
+  describe('raw finding code passthrough', () => {
+    // Byte-pinned so the Go and TS twins stay identical: a fixed field-order
+    // projection of the parsed CSV row keyed by CSV header name.
+    const expectedCveCode = [
+      '{',
+      '  "Hostname": "host-1.example.com",',
+      '  "Distro": "redhat-RHEL7",',
+      '  "CVE ID": "CVE-2021-44142",',
+      '  "Compliance ID": "46",',
+      '  "Type": "image",',
+      '  "Severity": "critical",',
+      '  "Packages": "samba-common",',
+      '  "Source Package": "",',
+      '  "Package Version": "4.10.16-15.el7_9",',
+      '  "CVSS": "9.90",',
+      '  "Fix Status": "fixed in 4.10.16-18.el7_9",',
+      '  "Description": "Samba out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution.",',
+      '  "Cause": "",',
+      '  "Published": "2022-01-31 00:00:00.000",',
+      '  "Vulnerability Link": "http://example.com/security/cve/CVE-2021-44142"',
+      '}',
+    ].join('\n');
+
+    it('sets requirement.code to the projected CSV row for a CVE finding', async () => {
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
+      const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
+      const req = findRequirement(host1!.requirements, '46-CVE-2021-44142');
+      expect(req?.code).toBe(expectedCveCode);
+    });
+
+    it('sets requirement.code for a non-CVE compliance finding with empty projected fields', async () => {
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
+      const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
+      const req = findRequirement(host1!.requirements, '60522-redhat-RHEL7-high');
+      const code = JSON.parse(req!.code!) as Record<string, string>;
+      expect(code['Compliance ID']).toBe('60522');
+      expect(code['CVE ID']).toBe('');
+      expect(code.Cause).toBe('File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ecdsa_key');
+    });
+  });
 });

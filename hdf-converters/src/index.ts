@@ -91,6 +91,9 @@ export { convertHdfToXml } from '../converters/hdf-to-xml/typescript/index.js';
 // GitLab Security Report to HDF converter
 export { convertGitlabToHdf } from '../converters/gitlab-to-hdf/typescript/index.js';
 
+// Trivy to HDF converter (router: native JSON + delegation)
+export { convertTrivyToHdf } from '../converters/trivy-to-hdf/typescript/index.js';
+
 // TruffleHog to HDF converter
 export { convertTrufflehogToHdf } from '../converters/trufflehog-to-hdf/typescript/index.js';
 
@@ -165,6 +168,9 @@ export { convertCsafVexToHdf } from '../converters/csaf-vex-to-hdf/typescript/in
 
 // CycloneDX VEX to HDF Amendments converter
 export { convertCyclonedxVexToHdf } from '../converters/cyclonedx-vex-to-hdf/typescript/index.js';
+
+// SPDX 3.0 security-profile VEX to HDF Amendments converter
+export { convertSpdxVexToHdf } from '../converters/spdx-vex-to-hdf/typescript/index.js';
 
 // HDF Amendments to CSAF VEX converter (export side; partial-fidelity by design)
 export { convertHdfToCsafVex } from '../converters/hdf-to-csaf-vex/typescript/index.js';

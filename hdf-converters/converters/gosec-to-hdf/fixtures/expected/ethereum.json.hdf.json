@@ -1,6 +1,16 @@
 {
   "baselines": [
     {
+      "extensions": {
+        "gosec": {
+          "stats": {
+            "files": 156,
+            "lines": 46219,
+            "nosec": 0,
+            "found": 171
+          }
+        }
+      },
       "requirements": [
         {
           "cwe": [

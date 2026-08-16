@@ -76,6 +76,16 @@ interface NetsparkerVuln {
   'remedy-references'?: string;
   'external-references'?: string;
   'proof-of-concept'?: string;
+  'extra-information'?: NetsparkerExtraInfoBlock;
+}
+
+interface NetsparkerExtraInfoBlock {
+  info?: NetsparkerExtraInfo[];
+}
+
+interface NetsparkerExtraInfo {
+  name?: string;
+  value?: string;
 }
 
 interface NetsparkerClassification {
@@ -162,6 +172,34 @@ function formatMessage(response: NetsparkerHttpResponse | undefined): string {
   return parts.join('\n');
 }
 
+// parseXmlWithArrays runs with processEntities:false (a security default we do
+// not override), so XML entities in attribute values arrive raw. Go's
+// encoding/xml decodes entities inside attributes, so decode here to preserve
+// Go/TS byte parity. &amp; is decoded last to avoid re-expanding its output.
+export function decodeXmlEntities(s: string): string {
+  return s
+    .replace(/&#x([0-9a-fA-F]+);/g, (_m, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_m, d) => String.fromCodePoint(parseInt(d, 10)))
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+
+// Renders the <extra-information> info entries as "name=>value" pairs joined by
+// ", ", mirroring the converter's Classification line style. Returns "" when
+// there are no entries.
+function formatExtraInformation(extra: NetsparkerExtraInfoBlock | undefined): string {
+  const info = extra?.info ?? [];
+  if (info.length === 0) {
+    return '';
+  }
+  return info
+    .map(i => `${decodeXmlEntities(i.name ?? '')}=>${decodeXmlEntities(i.value ?? '')}`)
+    .join(', ');
+}
+
 function formatControlDesc(vuln: NetsparkerVuln): string {
   const parts: string[] = [];
   if (vuln.description) {
@@ -169,6 +207,10 @@ function formatControlDesc(vuln: NetsparkerVuln): string {
   }
   if (vuln['exploitation-skills']) {
     parts.push(`Exploitation-skills: ${vuln['exploitation-skills']}`);
+  }
+  const extra = formatExtraInformation(vuln['extra-information']);
+  if (extra) {
+    parts.push(`Extra-information: ${extra}`);
   }
   const cweVal = vuln.classification?.cwe ?? '';
   const owaspVal = vuln.classification?.owasp ?? '';
@@ -432,7 +474,7 @@ export async function convertNetsparkerToHdf(input: string, converterVersion = '
   const resultsChecksum: Checksum = await inputChecksum(input);
 
   // Parse XML — ensure vulnerability is always treated as array
-  const parsed = parseXmlWithArrays(input, ['vulnerability', 'score']) as unknown as NetsparkerXml;
+  const parsed = parseXmlWithArrays(input, ['vulnerability', 'score', 'info']) as unknown as NetsparkerXml;
 
   // Detect root element
   const isInvicti = !!parsed['invicti-enterprise'];

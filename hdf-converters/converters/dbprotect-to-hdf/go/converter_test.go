@@ -313,6 +313,71 @@ func TestConvertDbprotect_CheckResults_SkippedStatus(t *testing.T) {
 	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
 }
 
+// ---- Backtrace (heimdall2 Failed-check marker) ----
+
+// getBacktrace mirrors heimdall2: only a literal source "Failed" status yields
+// the sentinel marker; every other value (including "Finding", which also maps
+// to HDF failed) yields none.
+func TestGetBacktrace(t *testing.T) {
+	assert.Equal(t, []string{"DB Protect Failed Check"}, getBacktrace("Failed"))
+	assert.Nil(t, getBacktrace("Finding"))
+	assert.Nil(t, getBacktrace("Not A Finding"))
+	assert.Nil(t, getBacktrace(""))
+}
+
+// A source "Failed" result carries the heimdall2 backtrace marker.
+func TestConvertDbprotect_CheckResults_FailedBacktrace(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Check ID 2841 has source "Failed" status.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2841")
+	require.NotEmpty(t, req.Results)
+	assert.Equal(t, []string{"DB Protect Failed Check"}, req.Results[0].Backtrace)
+}
+
+// A source "Finding" result maps to HDF failed but is not a literal "Failed", so
+// heimdall2 emits no backtrace marker — neither do we.
+func TestConvertDbprotect_CheckResults_FindingNoBacktrace(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Check ID 2801 has source "Finding" status.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2801")
+	require.NotEmpty(t, req.Results)
+	for _, res := range req.Results {
+		assert.Nil(t, res.Backtrace, "Finding results must carry no backtrace marker")
+	}
+}
+
+// A passing result carries no backtrace marker.
+func TestConvertDbprotect_CheckResults_PassNoBacktrace(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Check ID 2942 has source "Not A Finding" status.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "2942")
+	require.NotEmpty(t, req.Results)
+	assert.Nil(t, req.Results[0].Backtrace)
+}
+
+// Findings Detail rows are implicitly failed (no Result Status column), so they
+// carry no source "Failed" and get no backtrace marker.
+func TestConvertDbprotect_FindingsDetail_NoBacktrace(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		for _, res := range req.Results {
+			assert.Nil(t, res.Backtrace, "implicit-failed findings must carry no backtrace marker for check %s", req.ID)
+		}
+	}
+}
+
 // ---- CodeDesc and start time ----
 
 func TestConvertDbprotect_CheckResults_CodeDesc(t *testing.T) {

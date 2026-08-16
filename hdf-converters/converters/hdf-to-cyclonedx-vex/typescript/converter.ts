@@ -62,12 +62,18 @@ interface Rating {
   vector?: string;
 }
 
+interface Advisory {
+  title?: string;
+  url: string;
+}
+
 interface Vulnerability {
   id: string;
   source?: { name?: string; url: string };
   references?: { id: string; source: { name?: string; url: string } }[];
   ratings?: Rating[];
   recommendation?: string;
+  advisories?: Advisory[];
   analysis: {
     state: string;
     justification?: string;
@@ -99,6 +105,30 @@ function buildCdxAffectsVersions(pkg?: AffectedPackage): CdxVersion[] | undefine
   return versions;
 }
 
+/**
+ * Map a bare riskAdjustment impact override (0.0–1.0) to a CycloneDX rating
+ * when no structured CVSS block is present. The adjusted impact scales to a
+ * 0–10 score (`other` method, no vector) with a banded severity.
+ */
+function buildImpactRating(o: StandaloneOverride): Rating | undefined {
+  if (o.cvss || !o.impact) return undefined;
+  const value = o.impact.value;
+  const score = Math.round(value * 100) / 10;
+  return { score, severity: impactSeverityBand(value), method: 'other' };
+}
+
+/**
+ * Map an HDF impact score (0.0–1.0) to a CVSS-aligned severity band
+ * (score×10 against the standard CVSS v3 thresholds).
+ */
+function impactSeverityBand(v: number): string {
+  if (v >= 0.9) return 'critical';
+  if (v >= 0.7) return 'high';
+  if (v >= 0.4) return 'medium';
+  if (v > 0) return 'low';
+  return 'none';
+}
+
 /** Map an HDF Cvss block to a CycloneDX rating. */
 function buildCdxRating(cvss: NonNullable<StandaloneOverride['cvss']>): Rating | undefined {
   const rating: Rating = {};
@@ -120,6 +150,8 @@ export async function convertHdfToCyclonedxVex(
 
   const componentRegistry = new Map<string, Component>();
   const vulnerabilities: Vulnerability[] = [];
+  const overrideIdentities: StandaloneOverride['appliedBy'][] = [];
+  const seenIdentity = new Set<string>();
   let earliest: Date | undefined;
 
   for (const o of amendments.overrides ?? []) {
@@ -127,6 +159,13 @@ export async function convertHdfToCyclonedxVex(
     const v = overrideToVulnerability(o, componentRegistry);
     if (!v) continue;
     vulnerabilities.push(v);
+    if (o.appliedBy?.identifier) {
+      const key = `${o.appliedBy.type}\u0000${o.appliedBy.identifier}`;
+      if (!seenIdentity.has(key)) {
+        seenIdentity.add(key);
+        overrideIdentities.push(o.appliedBy);
+      }
+    }
     const t = hdfTime(o.appliedAt);
     if (!t) continue;
     if (!earliest || t < earliest) earliest = t;
@@ -148,7 +187,7 @@ export async function convertHdfToCyclonedxVex(
     specVersion: '1.4',
     serialNumber: await buildSerialNumber(input, amendments),
     version: 1,
-    metadata: buildMetadata(amendments, earliest ?? new Date(), converterVersion),
+    metadata: buildMetadata(amendments, earliest ?? new Date(), converterVersion, overrideIdentities),
     components,
     vulnerabilities,
   };
@@ -209,12 +248,23 @@ function overrideToVulnerability(
     });
   }
 
-  // Emit consumer-supplied CVSS enrichment as a CycloneDX rating.
-  const rating = o.cvss ? buildCdxRating(o.cvss) : undefined;
+  // Emit consumer-supplied CVSS enrichment as a CycloneDX rating. When there is
+  // no CVSS block, a bare riskAdjustment impact override still carries an
+  // adjusted score/severity worth surfacing as an `other`-method rating.
+  const rating = o.cvss ? buildCdxRating(o.cvss) : buildImpactRating(o);
 
   // A fixedInVersion we could not express as a vers range (no ecosystem/purl to
   // key the range) becomes a free-text recommendation instead of an invalid range.
   const unranged = (o.affectedPackages ?? []).find((p) => p.fixedInVersion && !versTypeFor(p));
+
+  // externalReferences (advisory/CTI artifacts behind the override) map to
+  // CycloneDX advisories — the native home for advisory URLs. url is required,
+  // so only href-bearing references qualify; the description becomes the title.
+  const advisories: Advisory[] = [];
+  for (const ref of o.externalReferences ?? []) {
+    if (!ref.href) continue;
+    advisories.push(ref.description ? { title: ref.description, url: ref.href } : { url: ref.href });
+  }
 
   // Key order mirrors the Go BOM structs so both languages emit identical bytes.
   return {
@@ -223,6 +273,7 @@ function overrideToVulnerability(
     ...(references.length > 0 && { references }),
     ...(rating && { ratings: [rating] }),
     ...(unranged && { recommendation: `Upgrade to ${unranged.fixedInVersion}` }),
+    ...(advisories.length > 0 && { advisories }),
     analysis,
     affects: pids.map((pid) => {
       const versions = buildCdxAffectsVersions(pkgById.get(pid));
@@ -302,21 +353,24 @@ function buildMetadata(
   a: HDFAmendments,
   docTime: Date,
   converterVersion: string,
+  overrideIdentities: StandaloneOverride['appliedBy'][],
 ): BOM['metadata'] {
   const metadata: BOM['metadata'] = {
     timestamp: formatTimestampSeconds(docTime),
     tools: [{ vendor: 'mitre', name: 'hdf-to-cyclonedx-vex', version: converterVersion }],
   };
+  // Prefer the document-level identity; when it is absent, provenance lives on
+  // each override's appliedBy — surface the distinct authors so it is not lost.
   if (a.appliedBy?.identifier) {
-    const author: { name?: string; email?: string } = {};
-    if (a.appliedBy.type === IdentityType.Email) {
-      author.email = a.appliedBy.identifier;
-    } else {
-      author.name = a.appliedBy.identifier;
-    }
-    metadata.authors = [author];
+    metadata.authors = [authorFromIdentity(a.appliedBy)];
+  } else if (overrideIdentities.length > 0) {
+    metadata.authors = overrideIdentities.map(authorFromIdentity);
   }
   return metadata;
+}
+
+function authorFromIdentity(id: StandaloneOverride['appliedBy']): { name?: string; email?: string } {
+  return id.type === IdentityType.Email ? { email: id.identifier } : { name: id.identifier };
 }
 
 // The serial number is the first 16 bytes of the input's SHA-256, matching the

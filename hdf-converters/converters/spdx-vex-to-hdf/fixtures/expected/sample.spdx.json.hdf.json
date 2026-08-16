@@ -1,0 +1,84 @@
+{
+  "appliedBy": {
+    "identifier": "sbom-cve-check",
+    "type": "system"
+  },
+  "description": "Imported SPDX 3.0.1 security-profile VEX statements",
+  "generator": {
+    "name": "spdx-vex-to-hdf",
+    "version": "1.0.0"
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "60d73833797767c275b19c41a41c79e56265e89d3b7b2ff04e91e2c2d0130376"
+  },
+  "name": "SPDX VEX statements from sbom-cve-check",
+  "overrides": [
+    {
+      "affectedPackages": [
+        {
+          "cpe": "cpe:2.3:a:examplevendor:example-lib:1.0.0:*:*:*:*:*:*:*"
+        }
+      ],
+      "appliedAt": "2026-08-10T16:39:41Z",
+      "appliedBy": {
+        "identifier": "sbom-cve-check",
+        "type": "system"
+      },
+      "evidence": [
+        {
+          "data": "https://cveawg.mitre.org/api/cve/CVE-2024-30002",
+          "description": "SPDX vulnerability reference",
+          "type": "url"
+        },
+        {
+          "data": "https://www.cve.org/CVERecord?id=CVE-2024-30002",
+          "description": "SPDX vulnerability reference",
+          "type": "url"
+        }
+      ],
+      "expiresAt": "2027-08-10T16:39:41Z",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "reason": "Synthetic vulnerability in example-lib used to demonstrate a not_affected VEX assessment with justification.\nThe vulnerable parsing routine is not reachable in the shipped configuration of example-lib.\nReviewed by examplevendor security team.",
+      "requirementId": "CVE-2024-30002",
+      "status": "passed",
+      "type": "falsePositive"
+    },
+    {
+      "affectedPackages": [
+        {
+          "cpe": "cpe:2.3:a:examplevendor:sample-utils:2.3.1:*:*:*:*:*:*:*"
+        }
+      ],
+      "appliedAt": "2026-08-10T16:39:41Z",
+      "appliedBy": {
+        "identifier": "sbom-cve-check",
+        "type": "system"
+      },
+      "evidence": [
+        {
+          "data": "https://cveawg.mitre.org/api/cve/CVE-2024-30003",
+          "description": "SPDX vulnerability reference",
+          "type": "url"
+        },
+        {
+          "data": "https://www.cve.org/CVERecord?id=CVE-2024-30003",
+          "description": "SPDX vulnerability reference",
+          "type": "url"
+        }
+      ],
+      "expiresAt": "2027-08-10T16:39:41Z",
+      "milestones": [
+        {
+          "description": "vendor reports fix; apply and re-scan to verify",
+          "estimatedCompletion": "2027-08-10T16:39:41Z",
+          "status": "pending"
+        }
+      ],
+      "reason": "Patched in the 2.3.1 build; fix backported from upstream.",
+      "requirementId": "CVE-2024-30003",
+      "status": "failed",
+      "type": "poam"
+    }
+  ]
+}

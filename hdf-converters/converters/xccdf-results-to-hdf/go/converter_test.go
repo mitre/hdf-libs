@@ -624,6 +624,129 @@ func TestBuildCheckCode(t *testing.T) {
 	assert.Contains(t, full, `"checkContent": "logic"`)
 }
 
+// heimdall2 zeros impact for rule-results that were not applicable, not
+// selected, or purely informational — no risk weight applies even to a
+// high-severity rule. Status still records the disposition. No shipped fixture
+// carries these statuses, so pin the behavior against inline XML.
+func TestConvertXccdfResultsToHDF_ImpactZeroedForSkippedStatuses(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_impact">
+  <version>1.0</version>
+  <Rule id="rule_na" selected="true" severity="high"><title>NA</title></Rule>
+  <Rule id="rule_ns" selected="true" severity="high"><title>NS</title></Rule>
+  <Rule id="rule_info" selected="true" severity="high"><title>INFO</title></Rule>
+  <Rule id="rule_fail" selected="true" severity="high"><title>FAIL</title></Rule>
+  <TestResult id="xccdf_test_tr" start-time="2021-01-01T00:00:00">
+    <target>host</target>
+    <rule-result idref="rule_na" time="2021-01-01T00:00:00"><result>notapplicable</result></rule-result>
+    <rule-result idref="rule_ns" time="2021-01-01T00:00:00"><result>notselected</result></rule-result>
+    <rule-result idref="rule_info" time="2021-01-01T00:00:00"><result>informational</result></rule-result>
+    <rule-result idref="rule_fail" time="2021-01-01T00:00:00"><result>fail</result></rule-result>
+  </TestResult>
+</Benchmark>`)
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	byTitle := func(title string) hdf.EvaluatedRequirement {
+		for _, r := range reqs {
+			if r.Title != nil && *r.Title == title {
+				return r
+			}
+		}
+		t.Fatalf("requirement %q not found", title)
+		return hdf.EvaluatedRequirement{}
+	}
+	assert.Equal(t, 0.0, byTitle("NA").Impact, "notapplicable must zero impact")
+	assert.Equal(t, 0.0, byTitle("NS").Impact, "notselected must zero impact")
+	assert.Equal(t, 0.0, byTitle("INFO").Impact, "informational must zero impact")
+	assert.Equal(t, 0.7, byTitle("FAIL").Impact, "a real failed high-severity rule keeps its impact")
+}
+
+// The <reference> element on a STIG rule (Dublin Core publisher/identifier/type)
+// must surface into requirement.refs — heimdall2 emits it and ours formerly
+// dropped it entirely. Pinned against the real stig-rhel7 DPMS reference.
+func TestConvertXccdfResultsToHDF_Refs(t *testing.T) {
+	input := loadFixture(t, "stig-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "SV-204393")
+	require.Len(t, req.Refs, 1, "the DPMS reference must produce one ref")
+	require.NotNil(t, req.Refs[0].Ref, "ref must carry the Dublin Core object")
+	require.Len(t, req.Refs[0].Ref.AnythingMapArray, 1)
+	obj := req.Refs[0].Ref.AnythingMapArray[0]
+	assert.Equal(t, "DISA", obj["publisher"])
+	assert.Equal(t, "2899", obj["identifier"])
+	assert.Equal(t, "DPMS Target", obj["type"])
+	assert.Nil(t, req.Refs[0].URL, "rule-level DPMS references carry no href")
+}
+
+// heimdall2 sources the "check" description from the OVAL/SCE definition name
+// (check-content-ref/@name), which SCAP content populates instead of inline
+// check logic. Ours previously read only the (empty) inline content and emitted
+// no check description. Pin the OVAL-name fallback against stig-rhel7.
+func TestConvertXccdfResultsToHDF_CheckDescriptionFromOvalName(t *testing.T) {
+	input := loadFixture(t, "stig-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "SV-204393")
+	checkDesc := findDescription(req.Descriptions, "check")
+	require.NotNil(t, checkDesc, "check description must be sourced from the OVAL definition name")
+	assert.Equal(t, "oval:mil.disa.stig.rhel7:def:922", checkDesc.Data)
+}
+
+// The baseline path must emit rationale and warning descriptions when the source
+// Rule carries them, and text-body references (SSG/CIS style) with their href as
+// url. Pinned against benchmark-ssg-nested-groups.
+func TestConvertXccdfBenchmarkToHDF_RationaleWarningAndTextRefs(t *testing.T) {
+	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	findReq := func(id string) *hdf.BaselineRequirement {
+		for i := range result.Requirements {
+			if result.Requirements[i].ID == id {
+				return &result.Requirements[i]
+			}
+		}
+		t.Fatalf("requirement %q not found", id)
+		return nil
+	}
+
+	// dnsmasq rule carries a <rationale>.
+	dnsmasq := findReq("xccdf_org.ssgproject.content_rule_package_dnsmasq_removed")
+	rationale := findDescription(dnsmasq.Descriptions, "rationale")
+	require.NotNil(t, rationale, "rationale description must be emitted")
+	assert.Contains(t, rationale.Data, "specifically designated to act as a DNS")
+
+	// dnssec keygen rule carries a <warning>, and a text-body <reference> + href.
+	named := findReq("xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled")
+	require.Len(t, named.Refs, 1)
+	require.NotNil(t, named.Refs[0].Ref)
+	require.NotNil(t, named.Refs[0].Ref.String, "text-body reference must serialize as a string")
+	assert.Equal(t, "2.1.6", *named.Refs[0].Ref.String)
+	require.NotNil(t, named.Refs[0].URL)
+	assert.Equal(t, "https://www.cisecurity.org/benchmark/red_hat_linux/", *named.Refs[0].URL)
+}
+
+// A rule carrying a <warning> must surface it as a warning description.
+func TestConvertXccdfBenchmarkToHDF_WarningDescription(t *testing.T) {
+	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	var found bool
+	for i := range result.Requirements {
+		if w := findDescription(result.Requirements[i].Descriptions, "warning"); w != nil {
+			assert.NotEmpty(t, w.Data)
+			found = true
+		}
+	}
+	assert.True(t, found, "at least one rule carries a <warning> that must become a description")
+}
+
 func TestConvertXccdfResultsToHDF_StigRuleVersionAsID(t *testing.T) {
 	input := loadFixture(t, "stig-rhel7.xml")
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)

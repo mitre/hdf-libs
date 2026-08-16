@@ -313,6 +313,114 @@ func TestConvertHDFToCycloneDXVEX_FixedInVersionFallsBackToRecommendation(t *tes
 	assert.Empty(t, bom.Vulnerabilities[0].Affects[0].Versions)
 }
 
+func TestConvertHDFToCycloneDXVEX_AuthorsFromOverrideAppliedBy(t *testing.T) {
+	t.Parallel()
+	// No document-level appliedBy: provenance lives on each override and must
+	// surface into metadata.authors (distinct, in order).
+	out, err := ConvertHDFToCycloneDXVEX(loadInput(t, "case1-not_affected-amendments.json"), testVersion)
+	require.NoError(t, err)
+	bom := parseBOM(t, out)
+	require.Len(t, bom.Metadata.Authors, 1)
+	assert.Equal(t, "cyclonedx-vex-import", bom.Metadata.Authors[0].Name)
+	assert.Empty(t, bom.Metadata.Authors[0].Email)
+}
+
+func TestConvertHDFToCycloneDXVEX_DistinctOverrideAuthors(t *testing.T) {
+	t.Parallel()
+	now := mustTime(t, "2026-01-01T00:00:00Z")
+	exp := mustTime(t, "2099-12-31T00:00:00Z")
+	passed := hdf.Passed
+	amendments := hdf.HDFAmendments{
+		Name: "Multi-author",
+		Overrides: []hdf.StandaloneOverride{
+			{Type: hdf.FalsePositive, RequirementID: "CVE-2026-0001", Status: &passed, AppliedAt: now, ExpiresAt: exp, AppliedBy: hdf.Identity{Type: hdf.Email, Identifier: "a@example.com"}, Reason: "one"},
+			{Type: hdf.FalsePositive, RequirementID: "CVE-2026-0002", Status: &passed, AppliedAt: now, ExpiresAt: exp, AppliedBy: hdf.Identity{Type: hdf.Simple, Identifier: "team-b"}, Reason: "two"},
+			{Type: hdf.FalsePositive, RequirementID: "CVE-2026-0003", Status: &passed, AppliedAt: now, ExpiresAt: exp, AppliedBy: hdf.Identity{Type: hdf.Email, Identifier: "a@example.com"}, Reason: "dup"},
+		},
+	}
+	body, _ := json.Marshal(amendments)
+	out, err := ConvertHDFToCycloneDXVEX(body, testVersion)
+	require.NoError(t, err)
+	bom := parseBOM(t, out)
+	require.Len(t, bom.Metadata.Authors, 2)
+	assert.Equal(t, "a@example.com", bom.Metadata.Authors[0].Email)
+	assert.Empty(t, bom.Metadata.Authors[0].Name)
+	assert.Equal(t, "team-b", bom.Metadata.Authors[1].Name)
+}
+
+func TestConvertHDFToCycloneDXVEX_ExternalReferencesToAdvisories(t *testing.T) {
+	t.Parallel()
+	now := mustTime(t, "2026-01-01T00:00:00Z")
+	exp := mustTime(t, "2099-12-31T00:00:00Z")
+	passed := hdf.Passed
+	href1 := "https://logging.apache.org/security.html"
+	desc1 := "Apache Log4j Security Advisory"
+	href2 := "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+	extID := "CVE-2021-44228" // externalId with no href: no advisory url, skipped
+	amendments := hdf.HDFAmendments{
+		Name: "Advisories",
+		Overrides: []hdf.StandaloneOverride{{
+			Type: hdf.FalsePositive, RequirementID: "CVE-2021-44228", Status: &passed,
+			AppliedAt: now, ExpiresAt: exp,
+			AppliedBy: hdf.Identity{Type: hdf.Simple, Identifier: "team"},
+			Reason:    "not affected",
+			ExternalReferences: []hdf.ExternalReference{
+				{SourceName: "advisory", Href: &href1, Description: &desc1, Kind: strptr("advisory")},
+				{SourceName: "cve", Href: &href2},
+				{SourceName: "cve", ExternalID: &extID},
+			},
+		}},
+	}
+	body, _ := json.Marshal(amendments)
+	out, err := ConvertHDFToCycloneDXVEX(body, testVersion)
+	require.NoError(t, err)
+	bom := parseBOM(t, out)
+	require.Len(t, bom.Vulnerabilities, 1)
+	adv := bom.Vulnerabilities[0].Advisories
+	require.Len(t, adv, 2)
+	assert.Equal(t, Advisory{Title: "Apache Log4j Security Advisory", URL: href1}, adv[0])
+	assert.Equal(t, Advisory{URL: href2}, adv[1])
+}
+
+func strptr(s string) *string { return &s }
+
+func TestConvertHDFToCycloneDXVEX_ImpactOverrideToRating(t *testing.T) {
+	t.Parallel()
+	now := mustTime(t, "2026-01-01T00:00:00Z")
+	exp := mustTime(t, "2099-12-31T00:00:00Z")
+	failed := hdf.Failed
+	amendments := hdf.HDFAmendments{
+		Name: "Impact",
+		Overrides: []hdf.StandaloneOverride{{
+			Type: hdf.RiskAdjustment, RequirementID: "CVE-2026-4242", Status: &failed,
+			AppliedAt: now, ExpiresAt: exp,
+			AppliedBy: hdf.Identity{Type: hdf.Simple, Identifier: "team"},
+			Reason:    "downgraded impact",
+			Impact:    &hdf.ImpactOverride{Value: 0.5},
+		}},
+	}
+	body, _ := json.Marshal(amendments)
+	out, err := ConvertHDFToCycloneDXVEX(body, testVersion)
+	require.NoError(t, err)
+	bom := parseBOM(t, out)
+	require.Len(t, bom.Vulnerabilities, 1)
+	r := bom.Vulnerabilities[0].Ratings
+	require.Len(t, r, 1)
+	require.NotNil(t, r[0].Score)
+	assert.InDelta(t, 5.0, *r[0].Score, 0.001)
+	assert.Equal(t, "medium", r[0].Severity)
+	assert.Equal(t, "other", r[0].Method)
+}
+
+func TestImpactSeverityBand(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "critical", impactSeverityBand(0.9))
+	assert.Equal(t, "high", impactSeverityBand(0.7))
+	assert.Equal(t, "medium", impactSeverityBand(0.4))
+	assert.Equal(t, "low", impactSeverityBand(0.1))
+	assert.Equal(t, "none", impactSeverityBand(0))
+}
+
 // TestGoldenParity asserts byte-for-byte output against frozen golden files.
 // The TypeScript test asserts against the SAME files, guaranteeing TS↔Go parity.
 func TestGoldenParity(t *testing.T) {

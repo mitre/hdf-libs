@@ -1,8 +1,9 @@
-import { buildXml } from '@mitre/hdf-utilities';
+import { buildXml, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
 import type {
   HDFResults,
   EvaluatedRequirement,
   Description,
+  Tool,
 } from '@mitre/hdf-schema';
 import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 
@@ -87,6 +88,39 @@ function sanitizeXccdfId(id: string): string {
   return id.replace(/[^a-zA-Z0-9_.\-]/g, '_');
 }
 
+/** Read a string-valued tag, or undefined if absent/non-string. */
+function tagString(
+  tags: Record<string, unknown> | undefined,
+  key: string,
+): string | undefined {
+  const v = tags?.[key];
+  return typeof v === 'string' ? v : undefined;
+}
+
+/** Read a string-array tag, dropping non-string members. */
+function tagStrings(
+  tags: Record<string, unknown> | undefined,
+  key: string,
+): string[] {
+  const v = tags?.[key];
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+}
+
+/** Lowercase and strip ':'/space so the value is a safe CPE 2.2 field. */
+function cpeField(s: string): string {
+  return s.toLowerCase().trim().replace(/[: ]/g, '_');
+}
+
+/**
+ * Render the HDF tool identity as the CPE 2.2 URI XCCDF's @test-system carries,
+ * so the reverse importer recovers tool.version from it. Empty when no version.
+ */
+function toolTestSystem(tool: Tool | undefined): string | undefined {
+  if (!tool || !tool.version) return undefined;
+  const name = tool.name ? cpeField(tool.name) : 'tool';
+  return `cpe:/a:${name}:${name}:${cpeField(tool.version)}`;
+}
+
 /** Build the Benchmark XML object from HDF data. */
 function buildBenchmarkObj(hdfData: HDFResults): Record<string, unknown> {
   const empty = !hdfData.baselines || hdfData.baselines.length === 0;
@@ -111,6 +145,10 @@ function buildBenchmarkObj(hdfData: HDFResults): Record<string, unknown> {
   const baseline = hdfData.baselines[0]!;
 
   benchmark.title = wrap(baseline.title ?? baseline.name);
+  // XCCDF benchmarkType orders description after title and before version.
+  if (baseline.summary) {
+    benchmark.description = wrap(baseline.summary);
+  }
   benchmark.version = wrap(baseline.version ?? '1.0');
 
   // Profile
@@ -119,9 +157,39 @@ function buildBenchmarkObj(hdfData: HDFResults): Record<string, unknown> {
     title: wrap(baseline.title ?? baseline.name),
   };
 
-  // Rules
+  // Rules: those carrying a gid tag are nested in their XCCDF Group (dedup by
+  // gid, first-seen order) so the reverse importer rebuilds the hierarchy;
+  // ungrouped rules stay flat under the Benchmark.
+  const groups: Record<string, unknown>[] = [];
+  const groupIndex = new Map<string, number>();
+  const flatRules: Record<string, unknown>[] = [];
   if (baseline.requirements && baseline.requirements.length > 0) {
-    benchmark.Rule = baseline.requirements.map((req: EvaluatedRequirement) => buildRuleObj(req));
+    for (const req of baseline.requirements) {
+      const rule = buildRuleObj(req);
+      const gid = tagString(req.tags, 'gid');
+      if (!gid) {
+        flatRules.push(rule);
+        continue;
+      }
+      let idx = groupIndex.get(gid);
+      if (idx === undefined) {
+        idx = groups.length;
+        groupIndex.set(gid, idx);
+        const group: Record<string, unknown> = { [`${ATTR}id`]: gid };
+        const gtitle = tagString(req.tags, 'gtitle');
+        if (gtitle) group.title = wrap(gtitle);
+        group.Rule = [] as Record<string, unknown>[];
+        groups.push(group);
+      }
+      (groups[idx]!.Rule as Record<string, unknown>[]).push(rule);
+    }
+  }
+  // Order (Profile, Group, Rule, TestResult) mirrors the Go struct and the XSD.
+  if (groups.length > 0) {
+    benchmark.Group = groups;
+  }
+  if (flatRules.length > 0) {
+    benchmark.Rule = flatRules;
   }
 
   // TestResult
@@ -138,8 +206,14 @@ function buildRuleObj(req: EvaluatedRequirement): Record<string, unknown> {
     [`${ATTR}id`]: ruleId,
     [`${ATTR}severity`]: impactToSeverity(req.impact),
     [`${ATTR}selected`]: 'true',
-    title: wrap(req.title ?? req.id),
   };
+
+  // XCCDF ruleType orders version before title; carries the STIG ID.
+  const stigId = tagString(req.tags, 'stig_id');
+  if (stigId) {
+    rule.version = wrap(stigId);
+  }
+  rule.title = wrap(req.title ?? req.id);
 
   const description = findDescription(req.descriptions, 'default');
   if (description) {
@@ -168,17 +242,21 @@ function buildRuleObj(req: EvaluatedRequirement): Record<string, unknown> {
   }
 
   // XCCDF Rule is an ordered sequence: ident precedes fixtext/fix/check.
-  // Idents: CCI and NIST 800-53 controls
+  // Idents: CCI, CCE, legacy DISA IDs, and NIST 800-53 controls. Order matches
+  // the Go twin for byte parity; the reverse importer buckets by @system.
   const idents: Record<string, unknown>[] = [];
-  if (req.tags && Array.isArray(req.tags['cci'])) {
-    for (const cci of req.tags['cci'] as string[]) {
-      idents.push({ [`${ATTR}system`]: 'http://cyber.mil/cci', '#text': cci });
-    }
+  for (const cci of tagStrings(req.tags, 'cci')) {
+    idents.push({ [`${ATTR}system`]: 'http://cyber.mil/cci', '#text': cci });
   }
-  if (req.tags && Array.isArray(req.tags['nist'])) {
-    for (const n of req.tags['nist'] as string[]) {
-      idents.push({ [`${ATTR}system`]: 'https://csrc.nist.gov/projects/risk-management/sp800-53-controls', '#text': n });
-    }
+  const cce = tagString(req.tags, 'cce');
+  if (cce) {
+    idents.push({ [`${ATTR}system`]: 'http://cce.mitre.org', '#text': cce });
+  }
+  for (const legacy of tagStrings(req.tags, 'legacy_id')) {
+    idents.push({ [`${ATTR}system`]: 'http://cyber.mil/legacy', '#text': legacy });
+  }
+  for (const n of tagStrings(req.tags, 'nist')) {
+    idents.push({ [`${ATTR}system`]: 'https://csrc.nist.gov/projects/risk-management/sp800-53-controls', '#text': n });
   }
   if (idents.length > 0) {
     rule.ident = idents;
@@ -221,14 +299,29 @@ function buildTestResultObj(
     title: wrap('HDF Assessment Results'),
   };
 
-  // Timestamps
+  // Timestamps. end-time carries the scan window: start + statistics.duration so
+  // the duration round-trips (the importer derives duration = end − start).
   if (hdfData.timestamp) {
     const ts =
       typeof hdfData.timestamp === 'string'
         ? hdfData.timestamp
         : (hdfData.timestamp as Date).toISOString();
     testResult[`${ATTR}start-time`] = ts;
-    testResult[`${ATTR}end-time`] = ts;
+
+    let endTime = ts;
+    const duration = hdfData.statistics?.duration;
+    const start = parseTimestamp(ts);
+    if (start && typeof duration === 'number' && duration > 0) {
+      endTime = formatTimestamp(new Date(start.getTime() + duration * 1000));
+    }
+    testResult[`${ATTR}end-time`] = endTime;
+  }
+
+  // @test-system names the scanner via a CPE URI so the importer recovers
+  // tool.version from it. Emitted only when the HDF carries a tool identity.
+  const testSystem = toolTestSystem(hdfData.tool);
+  if (testSystem) {
+    testResult[`${ATTR}test-system`] = testSystem;
   }
 
   // Component
@@ -248,9 +341,17 @@ function buildTestResultObj(
   let scorable = 0;
   for (const req of baseline.requirements) {
     const ruleIdRef = sanitizeXccdfId('xccdf_hdf_rule_' + req.id + '_rule');
+    const stigId = tagString(req.tags, 'stig_id');
+
+    // When an override set requirement.effectiveStatus, the emitted result
+    // reflects the governing (post-override) status; otherwise each result's
+    // own raw status carries through.
+    const effective = req.effectiveStatus
+      ? hdfStatusToXccdf(req.effectiveStatus)
+      : undefined;
 
     for (const result of req.results) {
-      const status = hdfStatusToXccdf(result.status);
+      const status = effective ?? hdfStatusToXccdf(result.status);
       if (status === 'pass') {
         passed++;
         scorable++;
@@ -259,7 +360,6 @@ function buildTestResultObj(
       }
       const rr: Record<string, unknown> = {
         [`${ATTR}idref`]: ruleIdRef,
-        result: wrap(status),
       };
 
       const startTime =
@@ -267,6 +367,10 @@ function buildTestResultObj(
           ? result.startTime
           : (result.startTime as Date).toISOString();
       rr[`${ATTR}time`] = startTime;
+      if (stigId) {
+        rr[`${ATTR}version`] = stigId;
+      }
+      rr.result = wrap(status);
 
       if (result.message) {
         rr.message = wrap(result.message);

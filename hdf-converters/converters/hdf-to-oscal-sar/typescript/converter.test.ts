@@ -105,6 +105,154 @@ describe('convertHdfToOscalSar', () => {
     expect(propVal('applicability')).toBe('required');
     expect(propVal('reference')).toBe('Handbook 3');
     expect(finding.links.map((l: { href: string }) => l.href)).toEqual(['https://example.gov/a', 'https://example.gov/b']);
+    // url/uri refs are also emitted as observation relevant-evidence so they
+    // round-trip through the reverse importer (which ignores finding.links).
+    const obs = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0].observations[0];
+    expect(obs['relevant-evidence'].map((e: { href: string }) => e.href)).toEqual([
+      'https://example.gov/a',
+      'https://example.gov/b',
+    ]);
+  });
+
+  // a1: finding state reflects effectiveStatus (post-override posture), not the
+  // raw failing result; disposition + override provenance land in the remarks.
+  it('derives finding state from effectiveStatus and surfaces override provenance', async () => {
+    const input = JSON.stringify({
+      baselines: [{
+        name: 'b', requirements: [{
+          id: 'AC-1', impact: 0.7, tags: { nist: ['AC-1'] },
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+          effectiveStatus: 'passed',
+          disposition: 'falsePositive',
+          statusOverrides: [{
+            type: 'falsePositive', status: 'passed', reason: 'scanner mis-detection',
+            appliedBy: { type: 'simple', identifier: 'jdoe' },
+            appliedAt: '2026-01-02T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+          }],
+        }],
+      }],
+    });
+    const result = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0];
+    const status = result.findings[0].target.status;
+    expect(status.state).toBe('satisfied');
+    expect(status.remarks).toContain('Disposition: falsePositive');
+    expect(status.remarks).toContain('Reason: scanner mis-detection');
+    expect(status.remarks).toContain('Applied by: jdoe');
+    expect(status.remarks).toContain('Expires at: 2099-12-31T00:00:00Z');
+    // Raw failed result preserved in the observation.
+    expect(result.observations[0].description).toContain('[failed]');
+    // Governing override expiry becomes the risk deadline + accepted remediation.
+    expect(result.risks[0].deadline).toBe('2099-12-31T00:00:00Z');
+    const accepted = result.risks[0].remediations.find((r: { lifecycle: string }) => r.lifecycle === 'accepted');
+    expect(accepted.title).toBe('falsePositive');
+    expect(accepted.description).toBe('scanner mis-detection');
+  });
+
+  it('maps effectiveStatus notApplicable to not-satisfied / not-applicable', async () => {
+    const input = JSON.stringify({
+      baselines: [{
+        name: 'b', requirements: [{
+          id: 'AC-1', impact: 0.5, tags: { nist: ['AC-1'] },
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+          effectiveStatus: 'notApplicable',
+        }],
+      }],
+    });
+    const status = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0].findings[0].target.status;
+    expect(status.state).toBe('not-satisfied');
+    expect(status.reason).toBe('not-applicable');
+  });
+
+  // a3: explicit severity drives the risk facet; cwe/epss/kev/cvss become props.
+  it('surfaces severity, cwe, epss, kev, and cvss enrichment', async () => {
+    const input = JSON.stringify({
+      baselines: [{
+        name: 'b', requirements: [{
+          id: 'AC-1', impact: 0.3, tags: { nist: ['AC-1'] },
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+          severity: 'critical',
+          cwe: ['CWE-79', 'CWE-89'],
+          epss: { date: '2026-01-01', score: 0.97532, percentile: 0.999 },
+          kev: { inKev: true, dateAdded: '2025-01-01', dueDate: '2025-02-01' },
+          cvss: [{ version: '3.1', baseScore: 9.8, baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H' }],
+        }],
+      }],
+    });
+    const result = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0];
+    const props = result.findings[0].props as Array<{ name: string; value: string }>;
+    const vals = (name: string) => props.filter((p) => p.name === name).map((p) => p.value);
+    expect(vals('cwe')).toEqual(['CWE-79', 'CWE-89']);
+    expect(vals('epss-score')).toEqual(['0.97532']);
+    expect(vals('kev')).toEqual(['true']);
+    expect(vals('kev-due-date')).toEqual(['2025-02-01']);
+    expect(vals('cvss-base-score')).toEqual(['9.8']);
+    expect(result.risks[0].characterizations[0].facets[0].value).toBe('critical');
+  });
+
+  // a4/a5: refs, evidence, and sourceLocation land in relevant-evidence.
+  it('emits refs, evidence, and source location as relevant-evidence', async () => {
+    const input = JSON.stringify({
+      baselines: [{
+        name: 'b', requirements: [{
+          id: 'AC-1', impact: 0.5, tags: { nist: ['AC-1'] },
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+          refs: [{ url: 'https://example.gov/evidence' }],
+          evidence: [{ type: 'log', data: 'saw the thing', description: 'log excerpt' }],
+          sourceLocation: { ref: 'controls/ac-1.rb', line: 42 },
+        }],
+      }],
+    });
+    const ev = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0].observations[0]['relevant-evidence'] as Array<{ href?: string; description: string }>;
+    expect(ev.filter((e) => e.href).map((e) => e.href)).toEqual(['https://example.gov/evidence']);
+    expect(ev.map((e) => e.description)).toContain('log excerpt');
+    expect(ev.map((e) => e.description)).toContain('Source location: controls/ac-1.rb:42');
+  });
+
+  // a6: fix description becomes a risk remediation.
+  it('emits the fix description as a risk remediation', async () => {
+    const input = JSON.stringify({
+      baselines: [{
+        name: 'b', requirements: [{
+          id: 'AC-1', impact: 0.5, tags: { nist: ['AC-1'] },
+          descriptions: [{ label: 'default', data: 'd' }, { label: 'fix', data: 'apply the patch' }],
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }],
+      }],
+    });
+    const rems = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0].risks[0].remediations;
+    expect(rems[0].lifecycle).toBe('recommendation');
+    expect(rems[0].description).toBe('apply the patch');
+  });
+
+  // a7: externalReferences with an href become finding links.
+  it('emits externalReferences as finding links', async () => {
+    const input = JSON.stringify({
+      baselines: [{
+        name: 'b', requirements: [{
+          id: 'AC-1', impact: 0.5, tags: { nist: ['AC-1'] },
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+          externalReferences: [{ sourceName: 'cve', href: 'https://nvd.nist.gov/vuln/detail/CVE-2021-44228' }],
+        }],
+      }],
+    });
+    const links = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0].findings[0].links as Array<{ href: string }>;
+    expect(links.map((l) => l.href)).toContain('https://nvd.nist.gov/vuln/detail/CVE-2021-44228');
+  });
+
+  // a2/a8: minimal fixture carries a component and baseline version.
+  it('surfaces components as subjects and baseline version as a result prop', async () => {
+    const result = JSON.parse(await convertHdfToOscalSar(results.minimal.read()))['assessment-results'].results[0];
+    const props = result.props as Array<{ name: string; value: string }>;
+    expect(props.find((p) => p.name === 'baseline-version')?.value).toBe('1.0.0');
+    const subj = result.observations[0].subjects[0];
+    expect(subj.title).toBe('web-server-01');
+    expect(subj.type).toBe('host');
+    expect(subj['subject-uuid']).toBeTruthy();
   });
 
   it('should convert minimal passed HDF to valid OSCAL SAR', async () => {

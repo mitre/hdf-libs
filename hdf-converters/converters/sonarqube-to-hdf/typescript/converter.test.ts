@@ -666,6 +666,80 @@ describe('backfilled source metadata tags', async () => {
   });
 });
 
+describe('auxiliary per-issue metadata tags (sonarqube/ namespace)', async () => {
+  const byId = async (fixture: string) => {
+    const input = readFileSync(join(__dirname, `../fixtures/input/${fixture}`), 'utf-8');
+    const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+    return new Map(
+      hdf.baselines[0]!.requirements.map(r => [r.id, r.tags as Record<string, unknown>]),
+    );
+  };
+
+  it('pins hash/key/update_date/quick_fix_available and omits empty flows (mqr.json)', async () => {
+    const tags = (await byId('mqr.json')).get('java:S1186')!;
+    expect(tags['sonarqube/hash']).toBe('4fa436e830f0433a248778dafd40f373');
+    expect(tags['sonarqube/key']).toBe('02e8e9bf-5d42-4729-a087-8b7e56e0e908');
+    expect(tags['sonarqube/update_date']).toBe('2026-03-24T03:20:30+0000');
+    expect(tags['sonarqube/quick_fix_available']).toBe(true);
+    expect(tags).not.toHaveProperty('sonarqube/flows');
+  });
+
+  it('preserves quick_fix_available=false and emits populated flows (mqr.json)', async () => {
+    const tags = (await byId('mqr.json')).get('java:S1192')!;
+    expect(tags['sonarqube/quick_fix_available']).toBe(false);
+    const flows = tags['sonarqube/flows'] as unknown[];
+    expect(Array.isArray(flows)).toBe(true);
+    expect(flows.length).toBe(3);
+  });
+
+  it('carries hash/key/update_date but omits flows and quick_fix_available (minimal.json)', async () => {
+    const map = await byId('minimal.json');
+    for (const [, tags] of map) {
+      expect(tags).toHaveProperty('sonarqube/hash');
+      expect(tags).toHaveProperty('sonarqube/key');
+      expect(tags).toHaveProperty('sonarqube/update_date');
+      expect(tags).not.toHaveProperty('sonarqube/flows');
+      expect(tags).not.toHaveProperty('sonarqube/quick_fix_available');
+    }
+  });
+
+  it('omits every aux tag when the issue carries none', async () => {
+    const input = JSON.stringify({
+      total: 1, p: 1, ps: 100,
+      paging: { pageIndex: 1, pageSize: 100, total: 1 },
+      issues: [{
+        rule: 'java:S100', severity: 'MAJOR',
+        component: 'proj:file', project: 'proj', status: 'OPEN', message: 'msg',
+        type: 'CODE_SMELL', creationDate: '2026-01-01T00:00:00+0000',
+      }],
+      components: [], rules: [],
+    });
+    const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+    const tags = hdf.baselines[0]!.requirements[0]!.tags as Record<string, unknown>;
+    for (const key of ['sonarqube/hash', 'sonarqube/key', 'sonarqube/update_date', 'sonarqube/flows', 'sonarqube/quick_fix_available']) {
+      expect(tags).not.toHaveProperty(key);
+    }
+  });
+
+  it('treats an empty flows array as no flows but still emits quick_fix_available=false', async () => {
+    const input = JSON.stringify({
+      total: 1, p: 1, ps: 100,
+      paging: { pageIndex: 1, pageSize: 100, total: 1 },
+      issues: [{
+        key: 'k1', rule: 'java:S100', severity: 'MAJOR',
+        component: 'proj:file', project: 'proj', status: 'OPEN', message: 'msg',
+        flows: [], quickFixAvailable: false,
+        type: 'CODE_SMELL', creationDate: '2026-01-01T00:00:00+0000',
+      }],
+      components: [], rules: [],
+    });
+    const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+    const tags = hdf.baselines[0]!.requirements[0]!.tags as Record<string, unknown>;
+    expect(tags).not.toHaveProperty('sonarqube/flows');
+    expect(tags['sonarqube/quick_fix_available']).toBe(false);
+  });
+});
+
 describe('selectSeverity', () => {
   // The legacy→MQR relationship is per-rule, not a constant offset: a rule can be
   // legacy MAJOR yet MQR LOW (over-rated) or legacy MAJOR yet MQR HIGH (under-rated).
@@ -700,5 +774,40 @@ describe('selectSeverity', () => {
     expect(got.severity).toBe(wantSeverity);
     expect(got.source).toBe(wantSource);
     expect(got.impact).toBe(wantImpact);
+  });
+});
+
+// Mirrors the Go TestConvertSonarqubeToHDF_OwaspNistFold value-pins. Modern
+// SonarQube carries no owasp-* sysTags; the category lives in the rule
+// description ("Top 10 2017 - Category A#"), so the fold parses it there and
+// maps via @mitre/hdf-mappings getOwaspNistControl.
+describe('OWASP-2017 -> NIST fold', async () => {
+  const input = readFileSync(join(__dirname, '../fixtures/input/sq26-owasp.json'), 'utf-8');
+  const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+
+  function reqById(id: string) {
+    for (const b of hdf.baselines ?? []) {
+      const r = (b.requirements ?? []).find(x => x.id === id);
+      if (r) return r;
+    }
+    throw new Error(`requirement ${id} not found`);
+  }
+
+  it.each([
+    ['secrets:S6706', 'A3', 'SI-11'],
+    ['typescript:S6437', 'A2', 'SC-23'],
+    ['typescript:S7639', 'A2', 'SC-23'],
+    ['javascript:S2486', 'A10', 'AU-12'],
+    ['typescript:S2486', 'A10', 'AU-12'],
+    ['typescript:S7790', 'A1', 'SI-10'],
+  ])('%s folds %s -> %s', (ruleId, owaspId, nistCtrl) => {
+    const tags = reqById(ruleId).tags as { owasp?: string[]; nist?: string[] };
+    expect(tags.owasp).toContain(owaspId);
+    expect(tags.nist).toContain(nistCtrl);
+  });
+
+  it('drops the SA-11 fallback once OWASP contributes a control', () => {
+    const tags = reqById('secrets:S6706').tags as { nist?: string[] };
+    expect(tags.nist).not.toContain('SA-11');
   });
 });

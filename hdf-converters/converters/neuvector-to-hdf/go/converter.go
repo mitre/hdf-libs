@@ -47,6 +47,7 @@ type NeuVectorScanReport struct {
 	Layers          json.RawMessage       `json:"layers"`
 	Vulnerabilities []NeuVectorVuln       `json:"vulnerabilities"`
 	Modules         []NeuVectorScanModule `json:"modules"`
+	Cmds            []string              `json:"cmds"`
 }
 
 // NeuVectorVuln represents a single vulnerability entry from NeuVector scan output.
@@ -72,12 +73,67 @@ type NeuVectorVuln struct {
 	Tags                  []string `json:"tags,omitempty"`
 }
 
-// NeuVectorScanModule represents a module in the NeuVector scan report.
+// NeuVectorScanModule represents a module in the NeuVector scan report. The
+// module carries the package `source` (e.g. "rhel:8.10") and a per-CVE `status`
+// (e.g. "unpatched", "fix exists") that the flat vulnerabilities[] entries omit,
+// so requirement.status/source are recovered by cross-referencing here.
 type NeuVectorScanModule struct {
-	Name    string `json:"name"`
-	File    string `json:"file"`
-	Version string `json:"version"`
-	Source  string `json:"source"`
+	Name    string               `json:"name"`
+	File    string               `json:"file"`
+	Version string               `json:"version"`
+	Source  string               `json:"source"`
+	Cves    []NeuVectorModuleCVE `json:"cves"`
+}
+
+// NeuVectorModuleCVE is a per-module CVE entry carrying the remediation status.
+type NeuVectorModuleCVE struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
+// moduleLookup indexes report.modules so a flat vulnerability can recover its
+// package `source` and per-CVE `status`. First non-empty value per key wins.
+type moduleLookup struct {
+	sourceByName map[string]string
+	statusByKey  map[[2]string]string
+}
+
+// buildModuleLookup builds the source/status index from report.modules. A vuln
+// matches a module by package_name; its status matches the module CVE by name.
+func buildModuleLookup(modules []NeuVectorScanModule) moduleLookup {
+	ml := moduleLookup{
+		sourceByName: map[string]string{},
+		statusByKey:  map[[2]string]string{},
+	}
+	for _, m := range modules {
+		if m.Source != "" {
+			if _, ok := ml.sourceByName[m.Name]; !ok {
+				ml.sourceByName[m.Name] = m.Source
+			}
+		}
+		for _, c := range m.Cves {
+			if c.Status == "" {
+				continue
+			}
+			key := [2]string{m.Name, c.Name}
+			if _, ok := ml.statusByKey[key]; !ok {
+				ml.statusByKey[key] = c.Status
+			}
+		}
+	}
+	return ml
+}
+
+// source returns the package source for a vulnerability, or "" when the report
+// carries no matching module.
+func (ml moduleLookup) source(vuln NeuVectorVuln) string {
+	return ml.sourceByName[vuln.PackageName]
+}
+
+// status returns the remediation status for a vulnerability, or "" when no
+// matching module CVE entry carries one.
+func (ml moduleLookup) status(vuln NeuVectorVuln) string {
+	return ml.statusByKey[[2]string{vuln.PackageName, vuln.Name}]
 }
 
 // extractCWEs parses CWE identifiers from a vulnerability description string.
@@ -150,10 +206,10 @@ func buildCvssEntries(vuln NeuVectorVuln) []hdf.Cvss {
 // Impact is normalized to 0.0-1.0 by dividing by 10.
 func getImpact(vuln NeuVectorVuln) float64 {
 	if vuln.ScoreV3 > 0 {
-		return vuln.ScoreV3 / 10
+		return hdfutil.RoundImpact(vuln.ScoreV3 / 10)
 	}
 	if vuln.Score > 0 {
-		return vuln.Score / 10
+		return hdfutil.RoundImpact(vuln.Score / 10)
 	}
 	return 0.5 // default when no score available
 }
@@ -250,7 +306,9 @@ func buildRefs(vuln NeuVectorVuln) []hdf.Reference {
 }
 
 // buildRequirement converts a NeuVector vulnerability to an EvaluatedRequirement.
-func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequirement {
+// ml recovers status/source from report.modules. The scan-wide report.cmds is
+// baseline-scope metadata and lives on baseline.extensions, not per requirement.
+func buildRequirement(vuln NeuVectorVuln, scanTime time.Time, ml moduleLookup) hdf.EvaluatedRequirement {
 	cweIDs := extractCWEs(vuln.Description)
 	cveIDs := extractCVEs(vuln)
 	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultRemediationNIST)
@@ -262,6 +320,21 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time) hdf.EvaluatedRequi
 	}
 	if vuln.FeedRating != "" {
 		extras["feed_rating"] = vuln.FeedRating
+	}
+	if vuln.Severity != "" {
+		extras["severity"] = vuln.Severity
+	}
+	if status := ml.status(vuln); status != "" {
+		extras["status"] = status
+	}
+	if source := ml.source(vuln); source != "" {
+		extras["source"] = source
+	}
+	if vuln.PublishedTimestamp != 0 {
+		extras["published_timestamp"] = vuln.PublishedTimestamp
+	}
+	if vuln.LastModifiedTimestamp != 0 {
+		extras["last_modified_timestamp"] = vuln.LastModifiedTimestamp
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -341,15 +414,6 @@ func targetName(report NeuVectorScanReport) string {
 		report.Registry, report.Repository, report.Tag)
 }
 
-// digestAlgorithms maps a NeuVector digest's algorithm prefix to the HDF hash
-// algorithm. NeuVector emits `sha256:<hex>`; the others are defensive.
-var digestAlgorithms = map[string]hdf.HashAlgorithm{
-	"sha256": hdf.Sha256,
-	"sha384": hdf.Sha384,
-	"sha512": hdf.Sha512,
-	"blake3": hdf.Blake3,
-}
-
 // splitBaseOS splits NeuVector's base_os "name:version" form (e.g. "alpine:3.12.1")
 // into OS name and version. A value with no ":" is the name with no version; an
 // empty value yields two empty strings.
@@ -361,24 +425,6 @@ func splitBaseOS(baseOS string) (name, version string) {
 		return baseOS[:i], baseOS[i+1:]
 	}
 	return baseOS, ""
-}
-
-// digestIntegrity turns the report digest ("sha256:<hex>") into the component's
-// Integrity checksum, folding the algorithm prefix into Checksum.Algorithm.
-// Returns nil when the report carries no digest.
-func digestIntegrity(digest string) []hdf.Checksum {
-	if digest == "" {
-		return nil
-	}
-	algo := hdf.Sha256
-	value := digest
-	if i := strings.IndexByte(digest, ':'); i >= 0 {
-		if mapped, ok := digestAlgorithms[digest[:i]]; ok {
-			algo = mapped
-			value = digest[i+1:]
-		}
-	}
-	return []hdf.Checksum{{Algorithm: algo, Value: value}}
 }
 
 // buildComponent assembles the scan-wide containerImage component from the
@@ -411,7 +457,7 @@ func buildComponent(report NeuVectorScanReport) hdf.Component {
 	if report.Tag != "" {
 		comp.Tag = hdfutil.Ptr(report.Tag)
 	}
-	if integrity := digestIntegrity(report.Digest); len(integrity) > 0 {
+	if integrity := shared.DigestToChecksums(report.Digest); len(integrity) > 0 {
 		comp.Integrity = integrity
 	}
 	return comp
@@ -442,6 +488,8 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	// time as the single timestamp shared by every result.
 	now := time.Now().UTC()
 
+	ml := buildModuleLookup(scan.Report.Modules)
+
 	// Each vulnerability is unique by name/package_name/package_version,
 	// so no grouping is needed (unlike Snyk which groups by vuln ID).
 	// However, we still deduplicate by the composite ID in case the input
@@ -455,7 +503,7 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			continue
 		}
 		seen[id] = true
-		requirements = append(requirements, buildRequirement(vuln, now))
+		requirements = append(requirements, buildRequirement(vuln, now, ml))
 	}
 
 	target := targetName(scan.Report)
@@ -475,6 +523,14 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Requirements:    requirements,
 		ResultsChecksum: checksum,
 		Title:           &title,
+	}
+
+	// report.cmds is scan-wide image build history — baseline-scope metadata with
+	// no typed HDF home. Emit it once under the tool namespace, only when present.
+	if cmds := hdfutil.StringsToInterfaces(scan.Report.Cmds); len(cmds) > 0 {
+		baseline.Extensions = map[string]interface{}{
+			"neuvector": map[string]interface{}{"cmds": cmds},
+		}
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{

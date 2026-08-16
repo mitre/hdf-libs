@@ -57,6 +57,41 @@ func TestConvertNessusToHDF_ReportItemAnchor(t *testing.T) {
 		"sample.nessus: one requirement per <ReportItem>")
 }
 
+// TestConvertNessusToHDF_ACASFieldsPreserved locks in that ACAS / Tenable.sc-shape
+// fields survive conversion. ACAS emits the same NessusClientData_v2 schema as
+// standalone Nessus and differs only by which optional fields are populated, so
+// sample.nessus (a real scan that happens to carry them) is the standing ACAS
+// regression guard. cvss3_base_score is promoted to a structured tag and cvss[]
+// entry; the IAVM (IAVA/IAVB) xref and stig_severity (STIG CAT) are preserved in
+// the raw code blob — promoting those two to first-class tags is tracked as
+// separate follow-up work.
+func TestConvertNessusToHDF_ACASFieldsPreserved(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	var reqs []hdf.EvaluatedRequirement
+	for _, b := range result.Baselines {
+		reqs = append(reqs, b.Requirements...)
+	}
+
+	// Plugin 156888 (Oracle Java Jan-2022 CPU) is an ACAS-shaped finding: it
+	// carries a CVSS v3 base score, an IAVA xref, and a STIG CAT together.
+	req := shared.MustFindRequirement(t, reqs, "156888")
+
+	// CVSS v3 is promoted to structured HDF (tag + cvss[] entry), not dropped.
+	assert.Equal(t, "5.3", req.Tags["cvss3_base_score"], "ACAS cvss3_base_score must be captured as a tag")
+	require.NotEmpty(t, req.Cvss, "ACAS finding must carry a structured cvss[] entry")
+
+	// IAVM (IAVA/IAVB) and stig_severity are preserved in the raw code blob.
+	require.NotNil(t, req.Code)
+	assert.Contains(t, *req.Code, `"stig_severity": "I"`, "ACAS stig_severity (STIG CAT) must be preserved")
+	assert.Contains(t, *req.Code, "IAVA:2022-A-0031", "ACAS IAVM xref must be preserved")
+}
+
 func TestConvertNessusToHDF_Tool(t *testing.T) {
 	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
 	inputData, err := os.ReadFile(inputPath)

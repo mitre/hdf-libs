@@ -245,6 +245,65 @@ describe('hdf-to-ocsf converter', () => {
     }
   });
 
+  it('routes the fix description to remediation homes (+ fix_available), skipping "n/a"', () => {
+    const objs = lines(convertHdfToOcsf(input('cve.json'), VERSION));
+    // req1: real fix text -> top-level remediation + per-vuln remediation + fix_available
+    expect(obj(objs[0].remediation).desc).toBe('Apply the appropriate patch according to the January 2022 Oracle Critical Patch Update advisory.');
+    const vuln = obj((objs[0].vulnerabilities as unknown[])[0]);
+    expect(obj(vuln.remediation).desc).toBe('Apply the appropriate patch according to the January 2022 Oracle Critical Patch Update advisory.');
+    expect(vuln.fix_available).toBe(true);
+    // req3 (portmapper): fix == "n/a" -> no remediation anywhere
+    const last = objs[2];
+    expect(last.remediation).toBeUndefined();
+    const lastVuln = obj((last.vulnerabilities as unknown[])[0]);
+    expect(lastVuln.remediation).toBeUndefined();
+    expect(lastVuln.fix_available).toBeUndefined();
+    // compliance findings also carry top-level remediation from their fix text
+    const comp = lines(convertHdfToOcsf(input('compliance.json'), VERSION))[0];
+    expect(obj(comp.remediation).desc).toContain('banner-message-enable=true');
+  });
+
+  it('surfaces raw code -> raw_data, message -> message, and codeDesc/message/status -> evidences[]', () => {
+    const o = lines(convertHdfToOcsf(input('cve.json'), VERSION))[0];
+    expect(String(o.raw_data)).toContain('"PluginID": "156888"');
+    expect(String(o.message)).toContain('Installed version : 1.11.0_12');
+    const ev = o.evidences as Record<string, unknown>[];
+    expect(ev).toHaveLength(1);
+    const data = obj(ev[0].data);
+    expect(String(data.code_desc)).toContain('January 2022 CPU advisory');
+    expect(String(data.message)).toContain('Installed version');
+    expect(data.status).toBe('failed');
+  });
+
+  it('emits ALL refs[].url as references[], not just the first', () => {
+    const vuln = obj((lines(convertHdfToOcsf(input('cve.json'), VERSION))[0].vulnerabilities as unknown[])[0]);
+    expect(vuln.references).toEqual([
+      'https://www.oracle.com/a/tech/docs/cpujan2022cvrf.xml',
+      'https://www.oracle.com/security-alerts/cpujan2022.html#AppendixJAVA',
+    ]);
+  });
+
+  it('maps CVSS computed/temporal scores to cvss.overall_score and cvss.metrics[]', () => {
+    const cve = obj(obj((lines(convertHdfToOcsf(input('cve.json'), VERSION))[0].vulnerabilities as unknown[])[0]).cve);
+    const first = obj((cve.cvss as unknown[])[0]);
+    expect(first.overall_score).toBe(4.6);
+    expect(first.metrics).toEqual([
+      { name: 'Threat Score', value: '4.6' },
+      { name: 'Threat Vector', value: 'E:U/RL:O/RC:C' },
+      { name: 'Computed Severity', value: 'medium' },
+    ]);
+  });
+
+  it('preserves the precise HDF status in status_detail (NA/NR/error; effective on override)', () => {
+    const w = lines(convertHdfToOcsf(input('warnings.json'), VERSION));
+    expect(w[0].status_detail).toBe('notApplicable');
+    expect(w[1].status_detail).toBe('notReviewed');
+    expect(w[2].status_detail).toBe('error');
+    const ov = lines(convertHdfToOcsf(input('override.json'), VERSION))[0];
+    expect(ov.status_detail).toBe('passed'); // effective status, while raw stays Fail
+    expect(obj(ov.compliance).status_id).toBe(3);
+  });
+
   it('is byte-identical to the Go golden output (TS<->Go parity)', () => {
     for (const name of ['compliance', 'cve', 'override', 'riskadjust', 'warnings', 'scalartag']) {
       expect(convertHdfToOcsf(input(`${name}.json`), VERSION)).toBe(golden(`${name}.ndjson`));

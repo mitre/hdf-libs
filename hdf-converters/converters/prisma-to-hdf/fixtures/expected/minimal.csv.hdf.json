@@ -29,6 +29,7 @@
               "RA-5"
             ]
           },
+          "code": "{\n  \"Hostname\": \"host-1.example.com\",\n  \"Distro\": \"redhat-RHEL7\",\n  \"CVE ID\": \"\",\n  \"Compliance ID\": \"60522\",\n  \"Type\": \"linux\",\n  \"Severity\": \"high\",\n  \"Packages\": \"\",\n  \"Source Package\": \"\",\n  \"Package Version\": \"\",\n  \"CVSS\": \"0.00\",\n  \"Fix Status\": \"\",\n  \"Description\": \"(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured\",\n  \"Cause\": \"File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ecdsa_key\",\n  \"Published\": \"\",\n  \"Vulnerability Link\": \"\"\n}",
           "title": "host-1.example.com-redhat-RHEL7-linux",
           "verificationMethod": "automated"
         },
@@ -78,6 +79,7 @@
               "RA-5"
             ]
           },
+          "code": "{\n  \"Hostname\": \"host-1.example.com\",\n  \"Distro\": \"redhat-RHEL7\",\n  \"CVE ID\": \"CVE-2021-44142\",\n  \"Compliance ID\": \"46\",\n  \"Type\": \"image\",\n  \"Severity\": \"critical\",\n  \"Packages\": \"samba-common\",\n  \"Source Package\": \"\",\n  \"Package Version\": \"4.10.16-15.el7_9\",\n  \"CVSS\": \"9.90\",\n  \"Fix Status\": \"fixed in 4.10.16-18.el7_9\",\n  \"Description\": \"Samba out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution.\",\n  \"Cause\": \"\",\n  \"Published\": \"2022-01-31 00:00:00.000\",\n  \"Vulnerability Link\": \"http://example.com/security/cve/CVE-2021-44142\"\n}",
           "refs": [
             {
               "url": "http://example.com/security/cve/CVE-2021-44142"
@@ -131,6 +133,7 @@
               "RA-5"
             ]
           },
+          "code": "{\n  \"Hostname\": \"host-1.example.com\",\n  \"Distro\": \"redhat-RHEL7\",\n  \"CVE ID\": \"CVE-2016-2226\",\n  \"Compliance ID\": \"46\",\n  \"Type\": \"image\",\n  \"Severity\": \"low\",\n  \"Packages\": \"gcc\",\n  \"Source Package\": \"\",\n  \"Package Version\": \"4.8.5-44.el7\",\n  \"CVSS\": \"3.30\",\n  \"Fix Status\": \"will not fix\",\n  \"Description\": \"Integer overflow in libiberty allows remote attackers to execute arbitrary code.\",\n  \"Cause\": \"\",\n  \"Published\": \"2017-02-24 20:59:00.000\",\n  \"Vulnerability Link\": \"http://example.com/security/cve/CVE-2016-2226\"\n}",
           "refs": [
             {
               "url": "http://example.com/security/cve/CVE-2016-2226"
@@ -176,6 +179,7 @@
               "RA-5"
             ]
           },
+          "code": "{\n  \"Hostname\": \"host-2.example.com\",\n  \"Distro\": \"redhat-RHEL7\",\n  \"CVE ID\": \"\",\n  \"Compliance ID\": \"6143\",\n  \"Type\": \"linux\",\n  \"Severity\": \"critical\",\n  \"Packages\": \"\",\n  \"Source Package\": \"\",\n  \"Package Version\": \"\",\n  \"CVSS\": \"0.00\",\n  \"Fix Status\": \"\",\n  \"Description\": \"(CIS_Linux_2.0.0 - 1.4.3) Ensure authentication required for single user mode\",\n  \"Cause\": \"Password should be set for user \\\"root\\\". File: /etc/shadow\",\n  \"Published\": \"\",\n  \"Vulnerability Link\": \"\"\n}",
           "title": "host-2.example.com-redhat-RHEL7-linux",
           "verificationMethod": "automated"
         },
@@ -225,6 +229,7 @@
               "RA-5"
             ]
           },
+          "code": "{\n  \"Hostname\": \"host-2.example.com\",\n  \"Distro\": \"redhat-RHEL7\",\n  \"CVE ID\": \"CVE-2021-38297\",\n  \"Compliance ID\": \"411\",\n  \"Type\": \"image\",\n  \"Severity\": \"critical\",\n  \"Packages\": \"go\",\n  \"Source Package\": \"\",\n  \"Package Version\": \"1.17.1\",\n  \"CVSS\": \"9.80\",\n  \"Fix Status\": \"fixed in 1.17.2, 1.16.9\",\n  \"Description\": \"Go vulnerability CVE-2021-38297.\",\n  \"Cause\": \"\",\n  \"Published\": \"2021-10-07 00:00:00.000\",\n  \"Vulnerability Link\": \"http://example.com/detail/CVE-2021-38297\"\n}",
           "refs": [
             {
               "url": "http://example.com/detail/CVE-2021-38297"
@@ -279,6 +284,7 @@
               "RA-5"
             ]
           },
+          "code": "{\n  \"Hostname\": \"host-2.example.com\",\n  \"Distro\": \"redhat-RHEL7\",\n  \"CVE ID\": \"CVE-2021-33197\",\n  \"Compliance ID\": \"411\",\n  \"Type\": \"image\",\n  \"Severity\": \"medium\",\n  \"Packages\": \"go\",\n  \"Source Package\": \"\",\n  \"Package Version\": \"1.14.4\",\n  \"CVSS\": \"5.30\",\n  \"Fix Status\": \"fixed in 1.16.5, 1.15.13\",\n  \"Description\": \"Go net/http/httputil ReverseProxy vulnerability.\",\n  \"Cause\": \"\",\n  \"Published\": \"2021-05-21 00:00:00.000\",\n  \"Vulnerability Link\": \"http://example.com/detail/CVE-2021-33197\"\n}",
           "refs": [
             {
               "url": "http://example.com/detail/CVE-2021-33197"

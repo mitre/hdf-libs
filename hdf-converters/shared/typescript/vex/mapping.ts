@@ -31,6 +31,20 @@ export const VexStatus = {
 export type VexStatus = (typeof VexStatus)[keyof typeof VexStatus];
 
 /**
+ * Normalize a justification token to snake_case lowercase so both the
+ * snake_case vocabularies (OpenVEX / CSAF / CycloneDX) and the SPDX-3
+ * camelCase vocabulary (vulnerableCodeNotInExecutePath) match the same switch
+ * arm. Snake_case input is unchanged (no camelCase boundary to split), so the
+ * transform is a superset — existing callers are unaffected.
+ */
+function canonicalizeJustification(raw: string): string {
+  return raw
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .toLowerCase();
+}
+
+/**
  * Map an ecosystem-specific status string to the canonical VexStatus.
  * Returns undefined for values without a clean mapping — caller should warn
  * and skip, not guess.
@@ -71,9 +85,12 @@ export function normalizeStatus(raw: string): VexStatus | undefined {
  *   - CycloneDX-specific reachability values (requires_*, protected_*)
  *     that describe why a vulnerable code path is unreachable in the
  *     deployed configuration.
+ *
+ * Accepts both snake_case (OpenVEX/CSAF/CycloneDX) and camelCase (SPDX-3
+ * security profile, e.g. vulnerableCodeNotInExecutePath) spellings.
  */
 export function normalizeJustification(raw: string): Justification | undefined {
-  switch (raw.trim().toLowerCase()) {
+  switch (canonicalizeJustification(raw)) {
     case 'component_not_present':
     case 'code_not_present':
       return Justification.ComponentNotPresent;

@@ -456,3 +456,45 @@ describe('enrichStix — recompute relationship/report/existing-override/horizon
     expect(typeof so[0].appliedAt).toBe('string');
   });
 });
+
+// MAX mirrors MAX_STIX_REFS_PER_CONTAINER in enrichStix.ts (not exported).
+const MAX_STIX_REFS = 50;
+
+function bundleCiting(n: number, cve: string): string {
+  const objects = Array.from({ length: n }, (_, i) => ({
+    type: 'vulnerability',
+    id: `vulnerability--${String(i).padStart(8, '0')}-0000-4000-8000-000000000000`,
+    name: 'v',
+    external_references: [{ source_name: 'cve', external_id: cve }],
+  }));
+  return JSON.stringify({ type: 'bundle', id: 'bundle--00000000-0000-4000-8000-000000000000', objects });
+}
+function resultsWithFinding(req: Doc): string {
+  return JSON.stringify({ baselines: [{ requirements: [req] }] });
+}
+
+describe('enrichStix — fan-out cap', () => {
+  const n = MAX_STIX_REFS + 20;
+
+  it('caps STIX refs on a matched finding', () => {
+    const doc = JSON.parse(
+      enrichStix(resultsWithFinding({ id: 'CVE-2021-9999' }), bundleCiting(n, 'CVE-2021-9999')),
+    ) as Doc;
+    expect(reqRefs(requirementById(doc, 'CVE-2021-9999'))).toHaveLength(MAX_STIX_REFS);
+  });
+
+  it('caps STIX refs on the results root', () => {
+    const doc = JSON.parse(
+      enrichStix(resultsWithFinding({ id: 'SV-1' }), bundleCiting(n, 'CVE-2021-0000')),
+    ) as Doc;
+    expect(rootRefs(doc)).toHaveLength(MAX_STIX_REFS);
+  });
+
+  it('preserves pre-existing non-STIX references', () => {
+    const req = { id: 'CVE-2021-9999', externalReferences: [{ sourceName: 'nvd', href: 'https://example.test/x' }] };
+    const doc = JSON.parse(enrichStix(resultsWithFinding(req), bundleCiting(n, 'CVE-2021-9999'))) as Doc;
+    const refs = reqRefs(requirementById(doc, 'CVE-2021-9999'));
+    expect(refs).toHaveLength(MAX_STIX_REFS + 1);
+    expect(refs.filter((r) => (r as Doc).sourceName === 'nvd')).toHaveLength(1);
+  });
+});

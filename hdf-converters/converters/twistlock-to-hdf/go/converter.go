@@ -1,6 +1,7 @@
 package twistlock
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -44,27 +45,30 @@ type TwistlockPackage struct {
 	Version string `json:"version"`
 }
 
-// TwistlockVuln represents a single vulnerability entry.
+// TwistlockVuln represents a single vulnerability entry. The json tags carry
+// omitempty because this struct is re-serialized verbatim into requirement.code
+// (buildVulnCode) — the omission rules must mirror the TS projection for byte
+// parity, and the declaration order fixes the field order of that output.
 type TwistlockVuln struct {
-	ID               string   `json:"id"`
-	CVE              string   `json:"cve"`
-	Status           string   `json:"status"`
-	CVSS             float64  `json:"cvss"`
-	Vector           string   `json:"vector"`
-	Description      string   `json:"description"`
-	Severity         string   `json:"severity"`
-	PackageName      string   `json:"packageName"`
-	PackageVersion   string   `json:"packageVersion"`
-	PackageType      string   `json:"packageType"`
-	CWE              string   `json:"cwe"`
-	Link             string   `json:"link"`
-	FixedBy          string   `json:"fixedBy"`
-	RiskFactors      []string `json:"riskFactors"`
-	ImpactedVersions []string `json:"impactedVersions"`
-	PublishedDate    string   `json:"publishedDate"`
-	DiscoveredDate   string   `json:"discoveredDate"`
-	FixDate          string   `json:"fixDate"`
-	LayerTime        string   `json:"layerTime"`
+	ID               string   `json:"id,omitempty"`
+	CVE              string   `json:"cve,omitempty"`
+	Status           string   `json:"status,omitempty"`
+	CVSS             float64  `json:"cvss,omitempty"`
+	Vector           string   `json:"vector,omitempty"`
+	Description      string   `json:"description,omitempty"`
+	Severity         string   `json:"severity,omitempty"`
+	PackageName      string   `json:"packageName,omitempty"`
+	PackageVersion   string   `json:"packageVersion,omitempty"`
+	PackageType      string   `json:"packageType,omitempty"`
+	CWE              string   `json:"cwe,omitempty"`
+	Link             string   `json:"link,omitempty"`
+	FixedBy          string   `json:"fixedBy,omitempty"`
+	RiskFactors      []string `json:"riskFactors,omitempty"`
+	ImpactedVersions []string `json:"impactedVersions,omitempty"`
+	PublishedDate    string   `json:"publishedDate,omitempty"`
+	DiscoveredDate   string   `json:"discoveredDate,omitempty"`
+	FixDate          string   `json:"fixDate,omitempty"`
+	LayerTime        string   `json:"layerTime,omitempty"`
 }
 
 // TwistlockDistribution holds vulnerability/compliance counts by severity.
@@ -309,6 +313,42 @@ func formatCodeDesc(vuln TwistlockVuln) string {
 		packageName, impactedVersions)
 }
 
+// formatMessage builds the result message for a vulnerability, mirroring
+// heimdall2's twistlock mapper: the package name/version are JSON-quoted when
+// present and rendered as bare "N/A" when absent.
+func formatMessage(vuln TwistlockVuln) string {
+	packageName := "N/A"
+	if vuln.PackageName != "" {
+		packageName = fmt.Sprintf("%q", vuln.PackageName)
+	}
+	packageVersion := "N/A"
+	if vuln.PackageVersion != "" {
+		packageVersion = fmt.Sprintf("%q", vuln.PackageVersion)
+	}
+	return fmt.Sprintf("Expected latest version of %s\nDetected vulnerable version %s of %s",
+		packageName, packageVersion, packageName)
+}
+
+// buildVulnCode re-serializes the parsed vulnerability into indented JSON for
+// requirement.code (the raw-finding passthrough, Heimdall's CODE tab), so
+// fields with no structured HDF home (link, riskFactors, publishedDate,
+// fixDate, layerTime) are not lost. It is byte-identical to the TS projection:
+// json.Encoder with HTML escaping disabled and a two-space indent matches
+// JSON.stringify(obj, null, 2). The encoder appends a trailing newline that
+// JSON.stringify does not, so it is trimmed. Field order and omission follow
+// the TwistlockVuln declaration + omitempty tags — do not reorder without
+// updating the TS projection.
+func buildVulnCode(vuln TwistlockVuln) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(vuln); err != nil {
+		return ""
+	}
+	return strings.TrimRight(buf.String(), "\n")
+}
+
 // buildRequirement converts a single vulnerability into an EvaluatedRequirement.
 // The packageTypes map and distro provide context for resolving the package
 // ecosystem when the per-vulnerability entry doesn't include packageType.
@@ -333,10 +373,12 @@ func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro
 
 	startTime := hdfutil.ParseTimestamp(vuln.DiscoveredDate)
 
+	message := formatMessage(vuln)
 	results := []hdf.RequirementResult{
 		{
 			Status:    hdf.Failed,
 			CodeDesc:  formatCodeDesc(vuln),
+			Message:   &message,
 			StartTime: startTime,
 		},
 	}
@@ -351,6 +393,10 @@ func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro
 		Descriptions:       descriptions,
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+
+	if code := buildVulnCode(vuln); code != "" {
+		req.Code = &code
 	}
 
 	if cv := buildCvss(vuln); cv != nil {

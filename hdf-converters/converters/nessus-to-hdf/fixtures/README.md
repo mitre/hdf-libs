@@ -33,7 +33,22 @@ path. Not real scan output — a structural scaffold only.
 ## ACAS coverage note
 DoD ACAS scans exercise two axes: vulnerability findings (CVSS v3, STIG/IAVM
 xrefs) and DISA STIG compliance audits. Both are covered here — the former by
-`sample.nessus` plus the converter's `cvss3_*` handling, the latter by
-`compliance.nessus`. ACAS emits the same `NessusClientData_v2` schema as
-standalone Nessus, so no structural divergence is expected. No authoritative
-ACAS export is in the corpus yet; adding one is tracked as a follow-up.
+`sample.nessus`, the latter by `compliance.nessus`. ACAS is built on Tenable and
+emits the same `NessusClientData_v2` schema as standalone Nessus, differing only
+in *which optional fields are populated*, so no structural divergence exists.
+
+`sample.nessus` is the standing **ACAS-shape regression guard**: though captured
+from Nessus Home, it happens to carry the ACAS-distinctive fields —
+`cvss3_base_score`/`cvss3_vector`, `stig_severity` (STIG CAT), and IAVM
+`xref`s (IAVA/IAVB). `TestConvertNessusToHDF_ACASFieldsPreserved` (Go + TS) locks
+in that these survive conversion: `cvss3_base_score` is promoted to a structured
+tag and `cvss[]` entry, while the IAVM xref and `stig_severity` are preserved in
+the raw `code` blob. Promoting those last two to first-class tags is tracked as
+separate follow-up work.
+
+No authoritative *dedicated* ACAS export is committed: real DoD ACAS exports are
+DoD-internal and not shareable, Tenable's public docs specify only the
+`NessusClientData_v2` structure (no populated sample), and no provenance-
+documented public ACAS scan was locatable. Rather than pad the corpus with a
+synthetic fixture duplicating fields `sample.nessus` already exercises, ACAS
+coverage is asserted against that real scan.

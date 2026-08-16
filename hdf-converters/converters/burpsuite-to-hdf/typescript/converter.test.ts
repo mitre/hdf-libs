@@ -486,6 +486,41 @@ describe('burpsuite-to-hdf source location', () => {
     const req = findRequirement(bl, '999999')!;
     expect(req.sourceLocation).toBeUndefined();
   });
+
+  // --- Result start_time backfill (sourced from exportTime) ---
+
+  it('backfills every result start_time from the report export time', async () => {
+    const input = loadFixture('input/zero.webappsecurity.com.xml');
+    const parsed = parseOutput(await convertBurpsuiteToHdf(input));
+    const timestamp = parsed.timestamp as string;
+    expect(timestamp).toBe('2020-02-27T14:28:17Z');
+
+    const bl = parsed.baselines as Array<Record<string, unknown>>;
+    let count = 0;
+    for (const req of bl[0]!.requirements as Array<Record<string, unknown>>) {
+      for (const res of req.results as Array<Record<string, unknown>>) {
+        expect(res.startTime).toBe(timestamp);
+        count++;
+      }
+    }
+    expect(count).toBe(60);
+  });
+
+  // --- Raw-issue code passthrough ---
+
+  it('passes the raw issue through requirement.code, preserving unmapped fields', async () => {
+    const input = loadFixture('input/zero.webappsecurity.com.xml');
+    const bl = (parseOutput(await convertBurpsuiteToHdf(input)).baselines) as Array<Record<string, unknown>>;
+    const req = findRequirement(bl, '2098688')!;
+    const code = req.code as string;
+    expect(code).toContain('"serialNumber": "2940178995452886016"');
+    expect(code).toContain('"type": "2098688"');
+    // HTML preserved verbatim (not stripped) so the raw finding survives.
+    expect(code).toContain('<p>An HTML5 cross-origin resource sharing');
+    // Indented JSON, no trailing newline.
+    expect(code.startsWith('{\n  ')).toBe(true);
+    expect(code.endsWith('\n')).toBe(false);
+  });
 });
 
 // Ground-truth anchor (see shared/typescript/anchor.ts). burpsuite groups issues

@@ -724,6 +724,53 @@ func TestSuppressionIntegration_AcceptedFalsePositiveOverride(t *testing.T) {
 	assert.Equal(t, hdf.FalsePositive, *req.Disposition)
 }
 
+// A suppression with NO status property is in force per the SARIF 2.1.0 default
+// (producers like CodeQL and semgrep emit only {"kind": ...}) and becomes a
+// waiver override exactly like an explicit "accepted" one.
+func TestSuppressionIntegration_AbsentStatusIsAccepted(t *testing.T) {
+	input := `{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "Test", "version": "1.0" } },
+			"results": [{
+				"ruleId": "TEST",
+				"level": "error",
+				"message": { "text": "test: suppressed finding" },
+				"locations": [{
+					"physicalLocation": {
+						"artifactLocation": { "uri": "file.go" },
+						"region": { "startLine": 1, "startColumn": 1 }
+					}
+				}],
+				"suppressions": [ { "kind": "inSource" } ]
+			}]
+		}]
+	}`
+
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Failed, req.Results[0].Status)
+
+	require.Len(t, req.StatusOverrides, 1)
+	ov := req.StatusOverrides[0]
+	assert.Equal(t, hdf.OverrideTypeWaiver, ov.Type)
+	assert.Equal(t, defaultSuppressionReason, ov.Reason)
+
+	require.NotNil(t, req.EffectiveStatus)
+	assert.Equal(t, hdf.Passed, *req.EffectiveStatus)
+}
+
+// The requirement-level rollup follows the canonical worst-wins ordering
+// (error worse than failed): a group mixing error and failed rolls to error.
+func TestRollupStatus_CanonicalOrdering(t *testing.T) {
+	assert.Equal(t, hdf.Error, rollupStatus([]hdf.ResultStatus{hdf.Failed, hdf.Error}))
+	assert.Equal(t, hdf.Passed, rollupStatus([]hdf.ResultStatus{hdf.NotReviewed, hdf.Passed}))
+	assert.Equal(t, hdf.NotApplicable, rollupStatus([]hdf.ResultStatus{hdf.NotReviewed, hdf.NotApplicable}))
+}
+
 // underReview and unsuppressed findings get NO override and keep their raw status.
 func TestSuppressionIntegration_UnderReviewNoOverride(t *testing.T) {
 	input := `{

@@ -1,4 +1,4 @@
-import { parseXml, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseXml, parseTimestamp, roundImpact } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
 import {
   buildNoFindingsRequirement,
@@ -418,7 +418,7 @@ function buildRequirement(
   let impact = 0;
   if (vulns.length > 0) {
     const severity = parseFloat(vulns[0]!.InstanceInfo?.InstanceSeverity ?? '0');
-    impact = severity / 5.0;
+    impact = roundImpact(severity / 5.0);
   }
 
   // Build results — one per vulnerability instance

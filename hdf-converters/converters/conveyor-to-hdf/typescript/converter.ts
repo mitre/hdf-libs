@@ -1,4 +1,4 @@
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
 import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   nistToCci,
@@ -56,6 +56,7 @@ interface ConveyorResult {
   sha256: string;
   classification?: string;
   created?: string;
+  expiry_ts?: string;
   response: ConveyorResp;
   result: ConveyorScore;
   size?: number | null;
@@ -207,6 +208,44 @@ function firstServiceVersion(results: Record<string, ConveyorResult>): string | 
 }
 
 /**
+ * Elapsed seconds between a service's start and completion milestones, or
+ * undefined when either is missing/unparseable.
+ */
+function computeRunTime(startedStr?: string, completedStr?: string): number | undefined {
+  const started = startedStr ? parseTimestamp(startedStr) : null;
+  const completed = completedStr ? parseTimestamp(completedStr) : null;
+  if (!started || !completed) return undefined;
+  return (completed.getTime() - started.getTime()) / 1000;
+}
+
+/**
+ * Normalizes a Conveyor timestamp string to HDF's canonical trimmed-UTC RFC3339
+ * form (millisecond precision), matching the Go converter byte-for-byte. Returns
+ * undefined when the source is absent or unparseable so the caller can omit it.
+ */
+function canonicalTimestampTag(s?: string): string | undefined {
+  const t = s ? parseTimestamp(s) : null;
+  return t ? formatTimestamp(t) : undefined;
+}
+
+/**
+ * Collects the tool-specific typed tags Conveyor carries per result
+ * (created/classification/expiry_ts/size/type), omitting any the source leaves
+ * null or empty. Timestamp tags are canonicalized so Go and TS agree.
+ */
+function scannerTagExtras(result: ConveyorResult): Record<string, unknown> {
+  const extras: Record<string, unknown> = {};
+  const created = canonicalTimestampTag(result.created);
+  if (created) extras.created = created;
+  if (result.classification) extras.classification = result.classification;
+  const expiry = canonicalTimestampTag(result.expiry_ts);
+  if (expiry) extras.expiry_ts = expiry;
+  if (result.size != null) extras.size = result.size;
+  if (typeof result.type === 'string' && result.type) extras.type = result.type;
+  return extras;
+}
+
+/**
  * Builds an HDF requirement from a single Conveyor result.
  */
 function buildRequirementFromResult(
@@ -215,7 +254,8 @@ function buildRequirementFromResult(
 ): EvaluatedRequirement {
   const nist = DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
   const cciTags = nistToCci(nist);
-  const tags = buildNistCciTags(nist, cciTags);
+  const extras = scannerTagExtras(result);
+  const tags = buildNistCciTags([...nist], cciTags, Object.keys(extras).length > 0 ? extras : undefined);
 
   // Build description from sections
   let descText = '';
@@ -234,15 +274,17 @@ function buildRequirementFromResult(
   ];
 
   const scannerName = result.response.service_name;
-  // service_completed is the per-scan completion time; fall back to the zero
-  // sentinel when the source omits it (mirrors Go's zero time.Time).
-  const startTimeStr = result.response.milestones?.service_completed ?? '';
+  // start_time is when the scan started (service_started); fall back to the zero
+  // sentinel when the source omits it (mirrors Go's zero time.Time). run_time is
+  // the scan's elapsed seconds (service_completed − service_started).
+  const startTimeStr = result.response.milestones?.service_started ?? '';
   const startTime = (startTimeStr ? parseTimestamp(startTimeStr) : null) ?? new Date('0001-01-01T00:00:00Z');
+  const runTime = computeRunTime(result.response.milestones?.service_started, result.response.milestones?.service_completed);
   const score = result.result.score;
   const status = determineStatus(score);
 
   // Conveyor carries no per-section explanation, so results carry no message key.
-  const toResult = (codeDesc: string): RequirementResult => createResult(status, undefined, { codeDesc, startTime });
+  const toResult = (codeDesc: string): RequirementResult => createResult(status, undefined, { codeDesc, startTime, runTime });
 
   const results = result.result.sections.length > 0
     ? result.result.sections.map(section => toResult(buildCodeDesc(section, scannerName)))

@@ -119,11 +119,11 @@ func TestConvertNeuVector_ImpactFromCVSSv3(t *testing.T) {
 
 	// CVE-2021-36159/apk-tools/2.10.5-r1 has score_v3=9.1 -> impact=0.91
 	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
-	assert.InDelta(t, 0.91, req.Impact, 0.001)
+	assert.Equal(t, 0.91, req.Impact)
 
 	// CVE-2021-36217/avahi/0.8-r0 has score_v3=6.2 -> impact=0.62
 	reqMedium := shared.MustFindRequirement(t, reqs, "CVE-2021-36217/avahi/0.8-r0")
-	assert.InDelta(t, 0.62, reqMedium.Impact, 0.001)
+	assert.Equal(t, 0.62, reqMedium.Impact)
 }
 
 func TestConvertNeuVector_ImpactFallbackToCVSSv2(t *testing.T) {
@@ -168,7 +168,7 @@ func TestConvertNeuVector_ImpactFallbackToCVSSv2(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 	require.Len(t, reqs, 1)
 	// score=7.5 / 10 = 0.75
-	assert.InDelta(t, 0.75, reqs[0].Impact, 0.001)
+	assert.Equal(t, 0.75, reqs[0].Impact)
 }
 
 // ---- CWE extraction from description ----
@@ -336,6 +336,124 @@ func TestExtractCVEs_Dedup(t *testing.T) {
 	out := extractCVEs(NeuVectorVuln{Cves: []string{"CVE-2021-1", "", "CVE-2021-1", "CVE-2021-2"}})
 	assert.Equal(t, []string{"CVE-2021-1", "CVE-2021-2"}, out)
 	assert.Nil(t, extractCVEs(NeuVectorVuln{Cves: nil}), "no cves -> no tag")
+}
+
+// ---- severity / status / source / timestamp tags (h2 parity) ----
+
+// Value-pins vulnerability.severity -> tags["severity"] and the epoch
+// published/last_modified timestamps -> their tags, read from minimal.json which
+// carries no modules or cmds (so status/source are absent there).
+func TestConvertNeuVector_SeverityAndTimestampTags(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	assert.Equal(t, "Critical", req.Tags["severity"])
+	assert.Equal(t, int64(1699328203), req.Tags["published_timestamp"])
+	assert.Equal(t, int64(1699328203), req.Tags["last_modified_timestamp"])
+
+	// minimal.json has no report.modules → those tags are absent.
+	_, hasStatus := req.Tags["status"]
+	assert.False(t, hasStatus, "no modules → no status tag")
+	_, hasSource := req.Tags["source"]
+	assert.False(t, hasSource, "no modules → no source tag")
+}
+
+// Value-pins the module cross-reference: status from report.modules[].cves[].status
+// and source from report.modules[].source, matched by package_name.
+func TestConvertNeuVector_StatusSourceTags(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall2.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := shared.MustFindRequirement(t, reqs, "CVE-2019-12904/libgcrypt/1.8.5-7.el8_6")
+	assert.Equal(t, "unpatched", req.Tags["status"])
+	assert.Equal(t, "rhel:8.10", req.Tags["source"])
+	assert.Equal(t, "Medium", req.Tags["severity"])
+}
+
+// report.cmds is scan-scope image build history → it lives once on
+// baseline.extensions["neuvector"], never duplicated onto requirement tags.
+func TestConvertNeuVector_CmdsOnBaselineExtensions(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall2.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+	ns, ok := baseline.Extensions["neuvector"].(map[string]interface{})
+	require.True(t, ok, "baseline.extensions[neuvector] should be present")
+	cmds := hdfutil.SafeStringSlice(ns["cmds"])
+	require.NotNil(t, cmds, "cmds should be present")
+	assert.Len(t, cmds, 66)
+	assert.Equal(t, `CMD ["/usr/local/bin/cmd.sh"]`, cmds[0])
+
+	// cmds must NOT be duplicated onto any requirement's tags.
+	for _, req := range baseline.Requirements {
+		_, has := req.Tags["cmds"]
+		assert.False(t, has, "cmds must not appear on requirement tags")
+	}
+}
+
+// Absent branch: a report with no report.cmds emits no baseline.extensions.
+func TestConvertNeuVector_CmdsAbsent(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+	assert.Nil(t, baseline.Extensions, "no report.cmds → no baseline.extensions")
+	for _, req := range baseline.Requirements {
+		_, has := req.Tags["cmds"]
+		assert.False(t, has, "cmds must not appear on requirement tags")
+	}
+}
+
+// Absent branch: a vuln with no severity/timestamps and a report with no modules
+// contributes none of the new tags.
+func TestConvertNeuVector_NewTagsAbsent(t *testing.T) {
+	input := []byte(`{
+		"report": {
+			"registry": "reg",
+			"repository": "repo",
+			"tag": "latest",
+			"vulnerabilities": [
+				{"name": "CVE-2020-0001", "package_name": "pkg", "package_version": "1.0"}
+			]
+		}
+	}`)
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-0001/pkg/1.0")
+	for _, k := range []string{"severity", "status", "source", "published_timestamp", "last_modified_timestamp", "cmds"} {
+		_, has := req.Tags[k]
+		assert.Falsef(t, has, "absent source field must not emit tag %q", k)
+	}
+}
+
+// buildModuleLookup unit branches: source first-wins, status matched by
+// (module name, cve name), empty values skipped, and misses returning "".
+func TestBuildModuleLookup(t *testing.T) {
+	ml := buildModuleLookup([]NeuVectorScanModule{
+		{Name: "openssl", Source: "rhel:8.10", Cves: []NeuVectorModuleCVE{
+			{Name: "CVE-2023-1", Status: "unpatched"},
+			{Name: "CVE-2023-2", Status: ""},
+		}},
+		{Name: "openssl", Source: "rhel:9", Cves: []NeuVectorModuleCVE{
+			{Name: "CVE-2023-1", Status: "fix exists"},
+		}},
+		{Name: "empty", Source: ""},
+	})
+
+	assert.Equal(t, "rhel:8.10", ml.source(NeuVectorVuln{PackageName: "openssl"}), "first non-empty source wins")
+	assert.Equal(t, "unpatched", ml.status(NeuVectorVuln{PackageName: "openssl", Name: "CVE-2023-1"}), "first status wins")
+	assert.Empty(t, ml.status(NeuVectorVuln{PackageName: "openssl", Name: "CVE-2023-2"}), "empty status not indexed")
+	assert.Empty(t, ml.source(NeuVectorVuln{PackageName: "empty"}), "empty source not indexed")
+	assert.Empty(t, ml.source(NeuVectorVuln{PackageName: "missing"}), "no module → empty source")
+	assert.Empty(t, ml.status(NeuVectorVuln{PackageName: "missing", Name: "CVE-X"}), "no module → empty status")
 }
 
 // ---- feed_rating tag ----
@@ -570,21 +688,9 @@ func TestComponentHelpers_Branches(t *testing.T) {
 		assert.Empty(t, name)
 		assert.Empty(t, version)
 	})
-	t.Run("digestIntegrity empty", func(t *testing.T) {
-		assert.Nil(t, digestIntegrity(""))
-	})
-	t.Run("digestIntegrity sha512 prefix", func(t *testing.T) {
-		out := digestIntegrity("sha512:deadbeef")
-		require.Len(t, out, 1)
-		assert.Equal(t, hdf.Sha512, out[0].Algorithm)
-		assert.Equal(t, "deadbeef", out[0].Value)
-	})
-	t.Run("digestIntegrity no prefix defaults sha256", func(t *testing.T) {
-		out := digestIntegrity("abc123")
-		require.Len(t, out, 1)
-		assert.Equal(t, hdf.Sha256, out[0].Algorithm)
-		assert.Equal(t, "abc123", out[0].Value)
-	})
+	// Digest→checksum parsing now lives in shared.DigestToChecksums (tested in
+	// shared/go/converterutil_test.go); the report-level integration is covered
+	// by the full-conversion tests above.
 }
 
 // ---- Tags with extras ----

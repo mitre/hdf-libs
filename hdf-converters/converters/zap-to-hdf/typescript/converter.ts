@@ -218,8 +218,9 @@ function siteLabel(site: ZapSite, index: number): string {
 // buildSiteRequirements converts one site's alerts into requirements, applying
 // the per-site pluginid dedup (duplicates within the site get .1, .2, ...).
 // Dedup is scoped to the site so the same pluginid on two different hosts stays
-// intact in each host's baseline.
-function buildSiteRequirements(site: ZapSite): EvaluatedRequirement[] {
+// intact in each host's baseline. startTime is the report's @generated time
+// (ZAP carries no per-finding time), stamped on every result.
+function buildSiteRequirements(site: ZapSite, startTime: Date): EvaluatedRequirement[] {
   const alerts = site.alerts ?? [];
   const pluginIdCount = new Map<string, number>();
   const {items: limitedAlerts, truncated} = limitArray(alerts);
@@ -252,6 +253,9 @@ function buildSiteRequirements(site: ZapSite): EvaluatedRequirement[] {
     if (alert.confidence) {
       extras.confidence = alert.confidence;
     }
+    if (alert.sourceid) {
+      extras.sourceid = alert.sourceid;
+    }
     const tags = buildNistCciTags(nistTags, cciTags, Object.keys(extras).length > 0 ? extras : undefined);
 
     // Build results from instances
@@ -266,7 +270,7 @@ function buildSiteRequirements(site: ZapSite): EvaluatedRequirement[] {
         const result: RequirementResult = {
           status: ResultStatus.Failed,
           codeDesc: buildCodeDesc(instance),
-          startTime: new Date('0001-01-01T00:00:00Z'),
+          startTime,
         };
         if (instance.attack) {
           result.message = instance.attack;
@@ -377,6 +381,12 @@ export async function convertZapToHdf(input: string, converterVersion = '1.0.0')
   const multiSite = sites.length > 1;
   const summary = `ZAP Version ${zapData['@version'] ?? 'unknown'}`;
 
+  // Parse @generated once: it is both the document timestamp and — since ZAP
+  // carries no per-finding time — the start_time stamped on every result. When
+  // absent or unparseable, results fall back to the zero time (matches Go).
+  const reportTimestamp = zapData['@generated'] ? parseZapTimestamp(zapData['@generated']) : undefined;
+  const resultStartTime = reportTimestamp ?? new Date('0001-01-01T00:00:00Z');
+
   const baselines: EvaluatedBaseline[] = [];
   const components: Array<{name: string; type: TargetType; url?: string; labels?: Record<string, string>}> = [];
 
@@ -384,7 +394,7 @@ export async function convertZapToHdf(input: string, converterVersion = '1.0.0')
     const targetName = site['@host'] ?? 'Unknown Host';
     const siteName = site['@name'] ?? '';
 
-    const requirements = buildSiteRequirements(site);
+    const requirements = buildSiteRequirements(site, resultStartTime);
     if (requirements.length === 0) {
       let target = siteName || targetName;
       if (!target || target === 'Unknown Host') {
@@ -455,11 +465,8 @@ export async function convertZapToHdf(input: string, converterVersion = '1.0.0')
     tool,
   };
 
-  if (zapData['@generated']) {
-    const ts = parseZapTimestamp(zapData['@generated']);
-    if (ts) {
-      hdf.timestamp = ts;
-    }
+  if (reportTimestamp) {
+    hdf.timestamp = reportTimestamp;
   }
 
   return serializeHdf(hdf);

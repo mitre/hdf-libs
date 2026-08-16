@@ -179,7 +179,7 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 	// Impact from the representative instance's per-instance severity / 5.
 	impact := 0.0
 	if len(vulns) > 0 {
-		impact = vulns[0].InstanceInfo.InstanceSeverity / 5.0
+		impact = hdfutil.RoundImpact(vulns[0].InstanceInfo.InstanceSeverity / 5.0)
 	}
 
 	// Build results — one per vulnerability instance

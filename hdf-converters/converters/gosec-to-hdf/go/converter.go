@@ -3,6 +3,7 @@ package gosec
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -17,10 +18,10 @@ import (
 
 // GosecReport is the top-level gosec JSON output structure.
 type GosecReport struct {
-	GolangErrors interface{}  `json:"Golang errors"`
-	Issues       []GosecIssue `json:"Issues"`
-	Stats        GosecStats   `json:"Stats"`
-	GosecVersion string       `json:"GosecVersion"`
+	GolangErrors map[string][]GosecGoError `json:"Golang errors"`
+	Issues       []GosecIssue              `json:"Issues"`
+	Stats        *GosecStats               `json:"Stats"`
+	GosecVersion string                    `json:"GosecVersion"`
 }
 
 // GosecStats holds scan statistics from gosec output.
@@ -29,6 +30,23 @@ type GosecStats struct {
 	Lines int `json:"lines"`
 	Nosec int `json:"nosec"`
 	Found int `json:"found"`
+}
+
+// GosecGoError is one Go build/parse error gosec reports under "Golang errors",
+// keyed by file path in the source.
+type GosecGoError struct {
+	Line   int    `json:"line"`
+	Column int    `json:"column"`
+	Err    string `json:"error"`
+}
+
+// gosecFlatGoError is a "Golang errors" entry flattened to carry its own file
+// path, so the scan-level exhaust serializes as one deterministic array.
+type gosecFlatGoError struct {
+	File   string `json:"file"`
+	Line   int    `json:"line"`
+	Column int    `json:"column"`
+	Error  string `json:"error"`
 }
 
 // GosecCWE holds the CWE reference attached to each gosec issue.
@@ -241,6 +259,44 @@ func buildRequirement(ruleID string, issues []GosecIssue, startTime time.Time) h
 	}
 }
 
+// flattenGoErrors flattens gosec's "Golang errors" file→errors map into a single
+// array, tagging each entry with its file and sorting by file for deterministic
+// (Go/TS byte-parity) output. Returns nil when the map is empty.
+func flattenGoErrors(errs map[string][]GosecGoError) []gosecFlatGoError {
+	if len(errs) == 0 {
+		return nil
+	}
+	files := make([]string, 0, len(errs))
+	for f := range errs {
+		files = append(files, f)
+	}
+	sort.Strings(files)
+	var out []gosecFlatGoError
+	for _, f := range files {
+		for _, e := range errs[f] {
+			out = append(out, gosecFlatGoError{File: f, Line: e.Line, Column: e.Column, Error: e.Err})
+		}
+	}
+	return out
+}
+
+// buildGosecExtensions routes gosec's scan-scope exhaust (Stats + Golang build
+// errors) — data with no typed HDF home — into baseline.extensions['gosec'] per
+// the Auxiliary Tool Metadata convention. Returns nil when neither is present.
+func buildGosecExtensions(report GosecReport) map[string]interface{} {
+	gosecExt := map[string]interface{}{}
+	if report.Stats != nil {
+		gosecExt["stats"] = report.Stats
+	}
+	if goErrors := flattenGoErrors(report.GolangErrors); len(goErrors) > 0 {
+		gosecExt["goErrors"] = goErrors
+	}
+	if len(gosecExt) == 0 {
+		return nil
+	}
+	return map[string]interface{}{"gosec": gosecExt}
+}
+
 // ConvertGosecToHDF converts gosec output to HDF format.
 // Accepts both native gosec JSON and SARIF format — SARIF input is detected
 // automatically and delegated to the shared SARIF converter.
@@ -289,6 +345,7 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		Name:            "gosec Scan",
 		Requirements:    requirements,
 		ResultsChecksum: checksum,
+		Extensions:      buildGosecExtensions(report),
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{

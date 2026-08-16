@@ -2,6 +2,21 @@
   "baselines": [
     {
       "description": "Ion Channel analysis verdict: FAILED (risk: medium). Ruleset: strict (ruleset-002).",
+      "extensions": {
+        "ionchannel": {
+          "analysis_id": "analysis-edge-001",
+          "branch": "develop",
+          "description": "Python project with edge case dependencies",
+          "duration": 8000,
+          "id": "edge-case-id-001",
+          "name": "python-mixed-project",
+          "project_id": "project-edge-001",
+          "public": false,
+          "status": "finished",
+          "team_id": "team-edge-001",
+          "type": "git"
+        }
+      },
       "integrity": {
         "algorithm": "sha256",
         "checksum": "a495f3f296614c75bcc73be49f2a3b5184156022c2be61d108a40c0962fe1513"
@@ -25,12 +40,22 @@
           "impact": 0,
           "tags": {
             "file": "requirements.txt",
+            "ionchannel/trigger": "source_commit",
+            "ionchannel/trigger_author": "admin@example.com",
+            "ionchannel/trigger_hash": "def789ghi012",
+            "ionchannel/trigger_text": "fix: update deps",
             "latest_version": "n/a",
             "name": "-e",
             "nist": [
               "CM-8"
             ],
             "org": "n/a",
+            "outdated_version": {
+              "major_behind": 0,
+              "minor_behind": 0,
+              "patch_behind": 0
+            },
+            "package": "egg",
             "passed": false,
             "requirement": "n/a",
             "risk": "medium",
@@ -62,12 +87,22 @@
           "impact": 0,
           "tags": {
             "file": "requirements.txt",
+            "ionchannel/trigger": "source_commit",
+            "ionchannel/trigger_author": "admin@example.com",
+            "ionchannel/trigger_hash": "def789ghi012",
+            "ionchannel/trigger_text": "fix: update deps",
             "latest_version": "3.1.0",
             "name": "requests",
             "nist": [
               "CM-8"
             ],
             "org": "n/a",
+            "outdated_version": {
+              "major_behind": 1,
+              "minor_behind": 0,
+              "patch_behind": 0
+            },
+            "package": "pypi",
             "passed": false,
             "requirement": "n/a",
             "risk": "medium",
@@ -99,12 +134,22 @@
           "impact": 0,
           "tags": {
             "file": "requirements.txt",
+            "ionchannel/trigger": "source_commit",
+            "ionchannel/trigger_author": "admin@example.com",
+            "ionchannel/trigger_hash": "def789ghi012",
+            "ionchannel/trigger_text": "fix: update deps",
             "latest_version": "1.0.0",
             "name": "internal-lib",
             "nist": [
               "CM-8"
             ],
             "org": "example-corp",
+            "outdated_version": {
+              "major_behind": 0,
+              "minor_behind": 0,
+              "patch_behind": 0
+            },
+            "package": "pypi",
             "passed": false,
             "requirement": "\u003e=0.5.0",
             "risk": "medium",
@@ -154,6 +199,10 @@
           "id": "scan-community",
           "impact": 0,
           "tags": {
+            "ionchannel/trigger": "source_commit",
+            "ionchannel/trigger_author": "admin@example.com",
+            "ionchannel/trigger_hash": "def789ghi012",
+            "ionchannel/trigger_text": "fix: update deps",
             "name": "community",
             "passed": false,
             "risk": "medium",

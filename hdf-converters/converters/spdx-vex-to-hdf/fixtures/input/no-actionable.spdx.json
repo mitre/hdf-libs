@@ -1,0 +1,115 @@
+{
+    "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+    "@graph": [
+        {
+            "type": "CreationInfo",
+            "@id": "_:CreationInfo0",
+            "created": "2026-08-10T16:39:32Z",
+            "createdBy": [
+                "http://spdx.org/spdxdocs/65b0820b-2977-5607-9915-58e55658857a/agent/sbom-cve-check"
+            ],
+            "specVersion": "3.0.1"
+        },
+        {
+            "type": "CreationInfo",
+            "@id": "_:CreationInfo1",
+            "created": "2026-08-10T16:39:41Z",
+            "createdBy": [
+                "http://spdx.org/spdxdocs/65b0820b-2977-5607-9915-58e55658857a/agent/sbom-cve-check"
+            ],
+            "specVersion": "3.0.1"
+        },
+        {
+            "type": "software_Package",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/package/example-lib",
+            "software_packageVersion": "1.0.0",
+            "creationInfo": "_:CreationInfo0",
+            "description": "Example generic library component (test fixture).",
+            "externalIdentifier": [
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "cpe23",
+                    "identifier": "cpe:2.3:a:examplevendor:example-lib:1.0.0:*:*:*:*:*:*:*"
+                }
+            ],
+            "name": "example-lib"
+        },
+        {
+            "type": "security_VexAffectedVulnAssessmentRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vex-affected/2a85569af9b04c079daecb2a850a2de9",
+            "security_actionStatement": "Mitigation action unknown",
+            "security_statusNotes": "version-in-range",
+            "security_vexVersion": "1",
+            "from": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vulnerability/CVE-2024-30001",
+            "relationshipType": "affects",
+            "to": [
+                "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/package/example-lib"
+            ],
+            "creationInfo": "_:CreationInfo1"
+        },
+        {
+            "type": "security_Vulnerability",
+            "spdxId": "http://spdx.org/spdxdocs/10f316a6-01f0-513f-860b-9e633fa56d55/vulnerability/CVE-2024-30001",
+            "creationInfo": "_:CreationInfo1",
+            "description": "A heap-based buffer overflow in the input parser of example-lib 1.0.0. This is a synthetic record for test fixtures only.",
+            "externalIdentifier": [
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "cve",
+                    "identifier": "CVE-2024-30001",
+                    "identifierLocator": [
+                        "https://cveawg.mitre.org/api/cve/CVE-2024-30001"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "SoftwareAgent",
+            "spdxId": "http://spdx.org/spdxdocs/65b0820b-2977-5607-9915-58e55658857a/agent/sbom-cve-check",
+            "creationInfo": "_:CreationInfo0",
+            "name": "sbom-cve-check"
+        },
+        {
+            "type": "software_Package",
+            "spdxId": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/package/demo-daemon",
+            "software_packageVersion": "0.9.0",
+            "creationInfo": "_:CreationInfo0",
+            "description": "Example generic daemon component (test fixture).",
+            "externalIdentifier": [
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "cpe23",
+                    "identifier": "cpe:2.3:a:examplevendor:demo-daemon:0.9.0:*:*:*:*:*:*:*"
+                }
+            ],
+            "name": "demo-daemon"
+        },
+        {
+            "type": "security_VexUnderInvestigationVulnAssessmentRelationship",
+            "spdxId": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/vex-under-invest/144f8c23392f71bee29571b615e021e5",
+            "security_statusNotes": "Triage in progress for demo-daemon 0.9.0; exploitability not yet confirmed.",
+            "security_vexVersion": "1",
+            "from": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/vulnerability/CVE-2024-30004",
+            "relationshipType": "underInvestigationFor",
+            "to": [
+                "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/package/demo-daemon"
+            ],
+            "creationInfo": "_:CreationInfo1"
+        },
+        {
+            "type": "security_Vulnerability",
+            "spdxId": "http://spdx.org/spdxdocs/94fe96c3-bdd6-579b-beae-038fcc03f0a5/vulnerability/CVE-2024-30004",
+            "creationInfo": "_:CreationInfo1",
+            "externalIdentifier": [
+                {
+                    "type": "ExternalIdentifier",
+                    "externalIdentifierType": "cve",
+                    "identifier": "CVE-2024-30004",
+                    "identifierLocator": [
+                        "https://cveawg.mitre.org/api/cve/CVE-2024-30004"
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5.1] - 2026-08-11
+
+Patch release: a new SPDX-VEX importer, NIST Rev 4 ↔ Rev 5 revision infrastructure, export-side field fidelity (the override channel now survives export), broad import-converter field backfills, and supply-chain hardening. No schema changes — schema `$id` URLs remain at v3.5.0.
+
+### Added
+
+- **`spdx-vex-to-hdf` converter (Go + TS + CLI).** Ingests SPDX 3.0 security-profile JSON-LD documents (VEX assessment relationships over CVE data) and emits an HDF Amendments document, joining the openvex/csaf-vex/cyclonedx-vex amendment-importer family. Registered in `hdf convert` auto-detection via a new SPDX-3-security fingerprint — such documents previously matched no detector and errored. A follow-up tracks the general "whole SPDX document in one go" case, which can span multiple HDF document types. (#210)
+- **NIST SP 800-53 Rev 4 ↔ Rev 5 control crosswalk in `hdf-mappings`.** A generated `nist-revision-crosswalk.json` derived from NIST's own comparison workbooks (main + Appendix J): per-revision rosters plus explicit moved/incorporated/pointer/withdrawn edges, exposed via `Translate`/`TranslateControls` (Go) and `translateNistControl(s)` (TS). `awsconfig-mappings.json` is now per-revision complete (496 → 790 rows, each with a provenance `source` field). Documented in the new `site/docs/guides/nist-revisions.md`. (#190)
+- **Rev 5 NIST control descriptions; rev-aware description lookups.** The description table was Rev 4-era (missing SR/PT families, carrying withdrawn controls, stale titles). A checked-in generator builds the Rev 5 set from NIST's OSCAL catalog; `getNISTDescription`/`nistExists`/`getNISTFamily`/`getAllNISTIds` take an optional revision parameter defaulting to the selected revision. (#203)
+- **npm supply-chain cooldown.** `minimumReleaseAge: 7 days` in `pnpm-workspace.yaml` — dependency resolution refuses versions published within the last week, so a freshly-compromised release ages out of danger before it can be pulled. CI frozen-lockfile installs are unaffected. (#202)
+- **`hdf validate` accepts requirement-change-event documents.** The 8th HDF document type (shipped in 3.5.0) is now auto-detected by its `eventId` root key and accepted via `--type requirement-change-event`; previously `hdf validate` rejected it as an unknown schema type even though the embedded validator already supported it.
+
+### Fixes
+
+- **Export converters carry the override channel.** All 14 `hdf-to-*` exports previously emitted the raw result status and dropped overrides, misrepresenting waived/false-positive findings in ASFF, ECS, OCSF, Splunk, CKL/CKLB, XCCDF, CSV, VEX, and OSCAL output. Exports now derive status from `effectiveStatus` and carry override provenance, closing ~100 audited field-loss gaps. (#209)
+- **Import-converter field backfills.** Two additive sweeps restoring source fields that were parsed-then-dropped or never read (titles, timestamps, tags, identifiers, structured status overrides from source-native suppression/triage/dismissal data in sarif, cyclonedx, msft-defender-endpoint, and defectdojo). (#201, #211, #204)
+- **Result `start_time` backfills:** zap (report generation time), burpsuite (exportTime), conveyor (`service_started`, was `service_completed`) — instead of the Go zero time. (#211)
+- **Computed-impact float noise eliminated.** fortify, asff, cyclonedx, neuvector, and msft-secure-score route computed impacts through the shared `roundImpact`; `hdf-diff` rounds serialized `matchConfidence` to 4 decimals. (#212)
+- **SARIF suppressions without a `status` property are honored.** SARIF 2.1.0 treats a status-less suppression as in force, and real producers (CodeQL, semgrep) emit exactly that shape; the suppression-to-override importer now treats absent status as accepted instead of silently dropping the suppression. Found in the pre-release review.
+- **SARIF requirement roll-up follows the canonical worst-wins ordering.** The suppression-effectiveness check used a local ordering that ranked `failed` above `error` and `notReviewed` above `passed`; it now delegates to the shared `worstStatus` helper, matching every other component. Found in the pre-release review.
+- **Nessus ACAS-shape regression guard.** A committed Go + TS test locks in that `cvss3_base_score` is promoted to a tag and CVSS entry and that IAVM xrefs and `stig_severity` survive, with fixture provenance documented. (#208)
+- **STIX enrich fan-out is bounded.** `enrich stix` embedded the full raw STIX object into `externalReferences[]` of every finding matching a cited CVE (and of the results root) with no cap — an untrusted threat-intel bundle could amplify quadratically (N objects citing one CVE × M duplicate-id findings that cite it). STIX references are now capped per container via the shared truncation helper, preserving pre-existing references. Found in the pre-release review.
+
+### Notable behavior changes
+
+- **Export output changed for all 14 `hdf-to-*` converters** (#209): consumers pinning exact export bytes will see new fields, and — for findings under a governing override — a *different status value* than before (the effective status, not the raw one). The prior behavior misrepresented waived findings; this correctness fix ships in a patch per project convention.
+- **NIST tags now resolve at the selected revision (default Rev 5)** (#190, #203): the nessus, nikto, scoutsuite, owasp, hipcheck, and CCI lookup tables (all natively Rev 4) pipe results through the crosswalk to the globally selected revision, so emitted NIST tags can differ from v3.5.0 (e.g. nessus `AU-8(1)` → `SC-45(1)`). Select Rev 4 explicitly to reproduce prior output.
+- **`xccdf-results-to-hdf` zeroes impact for `notselected`/`notapplicable`/`informational` rule-results** (#211), changing computed compliance scores; `neuvector-to-hdf` moved scan-command metadata to `baseline.extensions`.
+- **`sarif-to-hdf` emits structured `statusOverrides`** from accepted (or status-less) suppressions with `appliedAt` = conversion time and a one-year expiry, so repeated conversions of the same file differ in those timestamps. cyclonedx (VEX analysis), msft-defender-endpoint (triage), and defectdojo (false-positive dismissals) gained the same structured-override import. (#204)
+- **`hdf-diff` normalizes zone-less timestamps as UTC** (#205) — diff output for zone-less InSpec timestamps no longer varies with the host timezone — and serialized `matchConfidence` is rounded to 4 decimals (#212).
+
+### Internal
+
+- Shared CVSS version detection gained a caller-supplied default; the nessus converters delegate to it (byte-identical output). Timestamp lint guards extended to hdf-diff, hdf-cli, and hdf-utilities. (#205)
+- Suppression review: `postcss` audit-override floor raised to 8.5.23 (GHSA-fxqj-rqcc-2cmp); the aged-out `nanoid@3.3.17` cooldown exemption removed. The remaining vite advisories are dev-only and blocked on the vitepress 2.x migration (tracked).
+- Source-hygiene: literal NUL bytes in two TypeScript converters replaced with `\u0000` escapes so git treats the files as text again.
+- Dependency bumps: Go dependency groups (#200, #207), dev-dependency group (#199), pnpm/action-setup (#206).
+
+### Compatibility
+
+- **No schema changes**; schema `$id` URLs remain at v3.5.0 and v3.5.0 documents validate unchanged. No breaking schema or API removals. Consumers of converter *output* should review the Notable behavior changes above — the export-side effective-status fix (#209) and the Rev 5 default for NIST tags (#190) are the two most visible.
+
 ## [3.5.0] - 2026-08-02
 
 Schema minor: `$id` URLs move from v3.4.0 to v3.5.0 across all seven assessment schemas, and a new eighth document type — the continuous-monitoring change-event stream — joins the family.

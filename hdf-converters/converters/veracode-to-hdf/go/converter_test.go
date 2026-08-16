@@ -469,6 +469,42 @@ func TestConvertVeracodeToHDF_StaticFlawCode(t *testing.T) {
 		"java.lang.String ping(java.lang.String) at com/veracode/verademo/controller/ToolsController.java:53")
 }
 
+// result.message maps from the flaw's nested exploitability adjustments notes
+// (in document order, newline-joined), not the empty note attribute. Absence
+// yields "" (NOT-IN-SOURCE) so message is omitted.
+func TestFormatFlawMessage(t *testing.T) {
+	withNotes := Flaw{
+		ExploitabilityAdjustments: []ExploitabilityAdjustments{{
+			Adjustments: []ExploitabilityAdjustment{
+				{Note: "first note"},
+				{Note: "second note"},
+			},
+		}},
+	}
+	assert.Equal(t, "first note\nsecond note", formatFlawMessage(withNotes))
+	assert.Equal(t, "", formatFlawMessage(Flaw{}), "flaw without adjustments yields no message")
+}
+
+// End-to-end: a static flaw result carries the fixture's exploitability note as
+// its message, sourced from exploitability_adjustments.exploitability_adjustment.note.
+func TestConvertVeracodeToHDF_FlawMessage(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	const wantMsg = "The source of the tainted data in this web application flaw is not a web request."
+	found := false
+	for _, req := range result.Baselines[0].Requirements {
+		for _, res := range req.Results {
+			if res.Message != nil && *res.Message == wantMsg {
+				found = true
+			}
+		}
+	}
+	assert.True(t, found, "expected a flaw result carrying the exploitability note as message")
+}
+
 // A CWE requirement whose flaws carry neither a prototype nor a source locus
 // leaves code unset (NOT-IN-SOURCE), exercising the requirement-level guard.
 func TestBuildCWERequirement_NoCode(t *testing.T) {

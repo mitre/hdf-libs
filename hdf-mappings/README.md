@@ -74,12 +74,17 @@ import {
   getNISTFamily,
 } from '@mitre/hdf-mappings';
 
-// Get control description
-const desc = getNISTDescription('AC-1');
+// Get control description (IDs are zero-padded; defaults to the selected
+// revision — Rev 5 unless overridden)
+const desc = getNISTDescription('AC-01');
+// Returns: "Policy and Procedures"
+
+// Rev 4 text via the explicit revision argument
+const descRev4 = getNISTDescription('AC-01', 4);
 // Returns: "ACCESS CONTROL POLICY AND PROCEDURES"
 
 // Get control family
-const family = getNISTFamily('AC-1');
+const family = getNISTFamily('AC-01');
 // Returns: "AC"
 ```
 
@@ -255,13 +260,14 @@ import {
   awsConfigIdentifierExists,
 } from '@mitre/hdf-mappings';
 
-// By source identifier (uppercase, underscores)
+// By source identifier (uppercase, underscores). Resolved at the selected
+// NIST revision (Rev 5 default; the Rev 4 tags for this rule are 'AC-2(1)|AC-2(j)').
 const nistId = getAwsConfigNistControlByIdentifier('SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK');
-// Returns: 'AC-2(1)|AC-2(j)'
+// Returns: 'AC-2(1)|AC-3(15)'
 
 // By rule name (lowercase, hyphens)
 const nistId2 = getAwsConfigNistControlByName('secretsmanager-scheduled-rotation-success-check');
-// Returns: 'AC-2(1)|AC-2(j)'
+// Returns: 'AC-2(1)|AC-3(15)'
 
 if (awsConfigIdentifierExists('SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK')) { /* ... */ }
 ```
@@ -333,9 +339,9 @@ Each mapping is also available as a Go package:
 hdf-mappings/go/
   cci/        — CCI↔NIST lookups (GetCCINistMappings, NISTToCCI, CCIToNIST)
   cwe/        — CWE→NIST lookups (NISTControls)
-  owasp/      — OWASP→NIST lookups (NISTControls)
+  owasp/      — OWASP→NIST lookups (NISTControl)
   nessus/     — Nessus plugin→NIST lookups (NISTControls, with family+pluginID)
-  nikto/      — Nikto test→NIST lookups (NISTControls)
+  nikto/      — Nikto test→NIST lookups (NISTControl, NISTControlByInt)
   hipcheck/   — Hipcheck analysis→NIST lookups (NISTControls, Exists, AllAnalyses)
   scoutsuite/ — ScoutSuite rule→NIST lookups (NISTControls)
   awsconfig/  — AWS Config→NIST lookups (NISTControls, GetByRuleName, GetByIdentifier)

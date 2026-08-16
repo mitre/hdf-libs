@@ -4,17 +4,21 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, inputChecksum, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildCvss } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
   RequirementResult,
+  Cvss,
+  Epss,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
   createResult,
   TargetType,
   VerificationMethodEnum,
+  Version as CvssVersion,
   createMinimalBaseline,
   createRequirement,
   type Description,
@@ -173,6 +177,75 @@ function getCVEs(vuln: DeptrackVulnerability): string[] {
 }
 
 /**
+ * Extracts the human-readable CWE names from the cwes array, mirroring the
+ * heimdall2 cweNames tag.
+ */
+function getCweNames(cwes: DeptrackCwe[] | undefined): string[] {
+  if (!cwes || cwes.length === 0) {
+    return [];
+  }
+  return cwes.map(cwe => cwe.name);
+}
+
+/**
+ * Returns the CVE identifier a finding is attributed to. When the NVD-sourced
+ * vulnId is itself a CVE it is authoritative; otherwise the first aliased CVE
+ * stands in. Used as the cvss[].source. Returns undefined when no CVE is present.
+ */
+function resolveCVE(vuln: DeptrackVulnerability): string | undefined {
+  if (vuln.vulnId?.startsWith('CVE-')) {
+    return vuln.vulnId;
+  }
+  const cves = getCVEs(vuln);
+  return cves.length > 0 ? cves[0] : undefined;
+}
+
+/**
+ * Assembles structured requirement.cvss[] entries from the score-only CVSS
+ * metrics Dependency-Track carries. The FPF exposes no vector, so each entry is
+ * a bare base score under its major version (v3 → 3.1, the version modern
+ * Dependency-Track computes; v2 → 2.0). The v3 entry leads when both are present.
+ */
+function buildCvssEntries(vuln: DeptrackVulnerability): Cvss[] {
+  const source = resolveCVE(vuln);
+  const entries: Cvss[] = [];
+  if (typeof vuln.cvssV3BaseScore === 'number') {
+    entries.push(buildCvss({ version: CvssVersion.The31, baseScore: vuln.cvssV3BaseScore, source }));
+  }
+  if (typeof vuln.cvssV2BaseScore === 'number') {
+    entries.push(buildCvss({ version: CvssVersion.The20, baseScore: vuln.cvssV2BaseScore, source }));
+  }
+  return entries;
+}
+
+/**
+ * Assembles a structured requirement.epss entry from the EPSS probability and
+ * percentile Dependency-Track carries. The FPF omits the EPSS publication date
+ * the schema requires, so it is sourced from the scan time (meta.timestamp) in
+ * YYYY-MM-DD form. Returns undefined when the finding carries neither EPSS field.
+ */
+function buildEpss(vuln: DeptrackVulnerability, timestamp: string | undefined): Epss | undefined {
+  if (typeof vuln.epssScore !== 'number' && typeof vuln.epssPercentile !== 'number') {
+    return undefined;
+  }
+  return {
+    // format: date (YYYY-MM-DD) string; quicktype types it as Date.
+    date: epssDate(timestamp) as unknown as Date,
+    score: typeof vuln.epssScore === 'number' ? vuln.epssScore : 0,
+    percentile: typeof vuln.epssPercentile === 'number' ? vuln.epssPercentile : 0,
+  };
+}
+
+/**
+ * Renders the scan time as YYYY-MM-DD, falling back to today's date when
+ * meta.timestamp is absent or unparseable.
+ */
+function epssDate(timestamp: string | undefined): string {
+  const parsed = timestamp ? parseTimestamp(timestamp) : null;
+  return (parsed ?? new Date()).toISOString().slice(0, 10);
+}
+
+/**
  * Builds a single EvaluatedRequirement from a Dependency-Track finding.
  */
 function buildRequirement(finding: DeptrackFinding, timestamp: string | undefined): EvaluatedRequirement {
@@ -181,6 +254,7 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
   const nist = mapCWEToNIST(cweIDs, DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
   const cciTags = nistToCci(nist);
 
+  const vuln = finding.vulnerability;
   const tags: Record<string, unknown> = {
     nist,
     cci: cciTags,
@@ -188,6 +262,49 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
 
   if (cveIDs.length > 0) {
     tags['cve'] = cveIDs;
+  }
+  // Typed source attributes heimdall2 surfaces as tags. These also live in
+  // requirement.code (the raw finding), but tagging makes them searchable.
+  if (vuln.uuid) {
+    tags['vulnerabilityUuid'] = vuln.uuid;
+  }
+  if (vuln.source) {
+    tags['vulnerabilitySource'] = vuln.source;
+  }
+  if (vuln.vulnId) {
+    tags['vulnerabilityVulnId'] = vuln.vulnId;
+  }
+  if (vuln.subtitle) {
+    tags['vulnerabilitySubtitle'] = vuln.subtitle;
+  }
+  if (typeof vuln.severityRank === 'number') {
+    tags['vulnerabilitySeverityRank'] = vuln.severityRank;
+  }
+  const cweNames = getCweNames(vuln.cwes);
+  if (cweNames.length > 0) {
+    tags['cweNames'] = cweNames;
+  }
+  const attribution = finding.attribution;
+  if (attribution) {
+    if (attribution.analyzerIdentity) {
+      tags['attributionAnalyzerIdentity'] = attribution.analyzerIdentity;
+    }
+    if (attribution.attributedOn) {
+      tags['attributionAttributedOn'] = attribution.attributedOn;
+    }
+    if (attribution.alternateIdentifier) {
+      tags['attributionAlternateIdentifier'] = attribution.alternateIdentifier;
+    }
+    if (attribution.referenceUrl) {
+      tags['attributionReferenceUrl'] = attribution.referenceUrl;
+    }
+  }
+  const analysis = finding.analysis;
+  if (analysis) {
+    if (analysis.state) {
+      tags['analysisState'] = analysis.state;
+    }
+    tags['analysisIsSuppressed'] = analysis.isSuppressed ?? false;
   }
 
   // Build descriptions: default, check, fix
@@ -235,6 +352,15 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
 
   if (cweIDs.length > 0) {
     req.cwe = cweIDs;
+  }
+
+  const cvss = buildCvssEntries(vuln);
+  if (cvss.length > 0) {
+    req.cvss = cvss;
+  }
+  const epss = buildEpss(vuln, timestamp);
+  if (epss) {
+    req.epss = epss;
   }
 
   const pkg = buildAffectedPackageFromComponent(finding.component);

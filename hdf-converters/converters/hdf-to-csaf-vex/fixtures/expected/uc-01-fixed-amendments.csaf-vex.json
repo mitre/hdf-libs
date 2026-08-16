@@ -66,6 +66,7 @@
         {
           "category": "workaround",
           "details": "vendor reports fix; apply and re-scan to verify",
+          "date": "2023-03-03T11:00:00Z",
           "product_ids": [
             "DEF@1.1"
           ]

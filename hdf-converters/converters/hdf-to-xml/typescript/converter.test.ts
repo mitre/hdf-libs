@@ -49,6 +49,69 @@ describe('hdf-to-xml Converter', () => {
       }
     });
 
+    it('losslessly serializes the post-v3.2 fields the struct mirror dropped', () => {
+      const input = loadFixture('input', 'full.json');
+      // Collapse indentation (and decode escaped apostrophes) so the structural
+      // multi-element assertions are not defeated by pretty-printing.
+      const out = normalizeXmlForGolden(convertHdfToXml(input));
+
+      // Scalar arrays render as repeated unwrapped keys; object arrays keep the
+      // wrapper + singular-child form.
+      expect(out).toContain('<tags><cci>CCI-000012</cci><gtitle>SRG-OS-000480-GPOS-00227</gtitle><nist>AC-2</nist><nist>AC-3</nist><severity>high</severity></tags>');
+
+      // Requirement-level overrides, dispositions, and effective* fields.
+      expect(out).toContain('<statusOverrides><statusOverride><type>riskAdjustment</type>');
+      expect(out).toContain('<reason>Compensating control: host isolated on a management VLAN with no inbound internet exposure.</reason>');
+      expect(out).toContain('<impact><value>0.3</value></impact>');
+      expect(out).toContain('<appliedBy><identifier>jane.doe@example.gov</identifier>');
+      expect(out).toContain('<expiresAt>2099-12-31T00:00:00Z</expiresAt>');
+      expect(out).toContain('<justification>inline_mitigations_already_exist</justification>');
+      expect(out).toContain('<disposition>riskAdjustment</disposition>');
+      expect(out).toContain('<effectiveStatus>passed</effectiveStatus>');
+      expect(out).toContain('<effectiveImpact>0.3</effectiveImpact>');
+      expect(out).toContain('<severity>high</severity>');
+
+      // Vulnerability enrichment. cvss is an object array (wrapped + singular
+      // child); cwe is a scalar array (repeated, unwrapped key).
+      expect(out).toContain('<cvss><cvss><version>3.1</version>');
+      expect(out).toContain('<baseScore>9.8</baseScore>');
+      expect(out).toContain('<cwe>CWE-79</cwe><cwe>CWE-89</cwe>');
+      expect(out).toContain('<epss><score>0.00432</score><percentile>0.7421</percentile>');
+      expect(out).toContain('<kev><inKev>true</inKev>');
+      expect(out).toContain('<poams><poam><type>remediation</type>');
+      expect(out).toContain('<milestones><milestone><description>Vendor patch validated in staging</description>');
+      expect(out).toContain('<affectedPackages><affectedPackage><name>openssl</name>');
+
+      // evidence is an unmapped object array -> wrapper + generic <item> child.
+      expect(out).toContain('<evidence><item><type>log</type>');
+
+      // Result-level diagnostics. backtrace is a scalar (string) array ->
+      // repeated, unwrapped key.
+      expect(out).toContain('<exception>RuntimeError</exception>');
+      expect(out).toContain("<backtrace>controls/SV-100001.rb:12:in `block'</backtrace>");
+      expect(out).toContain('<resource>sshd_config</resource>');
+      expect(out).toContain('<resourceId>/etc/ssh/sshd_config</resourceId>');
+
+      // Baseline- and top-level fields.
+      expect(out).toContain('<maintainer>MITRE</maintainer>');
+      expect(out).toContain('<tool><name>InSpec</name><version>5.22.3</version><format>inspec-json</format></tool>');
+      expect(out).toContain('<signedBy>ci-signer@example.gov</signedBy>');
+      expect(out).toContain('<id>b1e7c0de-1a2b-4c3d-8e4f-5a6b7c8d9e0f</id>');
+      expect(out).toContain('<runner><name>inspec</name>');
+      expect(out).toContain('<macAddress>02:42:ac:11:00:02</macAddress>');
+    });
+
+    it('scalar array renders unwrapped; unmapped object array falls back to <item>', () => {
+      const input = JSON.stringify({
+        baselines: [{ name: 'B', aliases: ['a', 'b', 'c'], widgets: [{ n: 1 }, { n: 2 }], requirements: [] }]
+      });
+      const out = normalizeXmlForGolden(convertHdfToXml(input));
+      // Scalar array -> repeated, unwrapped key.
+      expect(out).toContain('<aliases>a</aliases><aliases>b</aliases><aliases>c</aliases>');
+      // Unmapped object array -> wrapper + <item> children.
+      expect(out).toContain('<widgets><item><n>1</n></item><item><n>2</n></item></widgets>');
+    });
+
     it('should handle empty baselines array', () => {
       const input = JSON.stringify({
         baselines: [],

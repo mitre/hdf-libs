@@ -56,7 +56,7 @@ describe('timestamp parse fallback', () => {
 // assertions pin the exact source-derived values (per the u6j3/timestamp audit)
 // and must stay byte-parity with the Go converter's pinned tests.
 describe('source-derived timestamps and tool.version', async () => {
-  it('pins result startTime to service_completed', async () => {
+  it('pins result startTime to service_started', async () => {
     const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
     const clamav = hdf.baselines.find(b => b.title?.includes('Clamav'));
     expect(clamav).toBeDefined();
@@ -64,8 +64,43 @@ describe('source-derived timestamps and tool.version', async () => {
       r => r.id === '033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602',
     );
     expect(req).toBeDefined();
-    // service_completed = 2023-08-28T12:23:54.179435Z → trimmed-UTC millis.
-    expect(req!.results[0]!.startTime).toBe('2023-08-28T12:23:54.179Z');
+    // service_started = 2023-08-28T12:23:54.164548Z → trimmed-UTC millis.
+    expect(req!.results[0]!.startTime).toBe('2023-08-28T12:23:54.164Z');
+  });
+
+  it('pins result runTime to service_completed − service_started (seconds)', async () => {
+    const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
+    const clamav = hdf.baselines.find(b => b.title?.includes('Clamav'));
+    const req = clamav!.requirements.find(
+      r => r.id === '033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602',
+    );
+    // .164 → .179 (trimmed-UTC millis) = 0.015s.
+    expect(req!.results[0]!.runTime).toBeCloseTo(0.015, 9);
+  });
+
+  it('pins typed scanner tags from the result', async () => {
+    const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
+    const clamav = hdf.baselines.find(b => b.title?.includes('Clamav'));
+    const req = clamav!.requirements.find(
+      r => r.id === '033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602',
+    );
+    // created/expiry_ts canonicalized to trimmed-UTC millis (per repo policy).
+    expect(req!.tags?.['created']).toBe('2023-08-28T12:23:54.184Z');
+    expect(req!.tags?.['classification']).toBe('TLP:C');
+    expect(req!.tags?.['expiry_ts']).toBe('2023-08-31T12:23:54.184Z');
+    expect(req!.tags?.['size']).toBe(351);
+    expect(req!.tags?.['type']).toBe('document/stigma');
+  });
+
+  it('omits typed tags the source leaves null', async () => {
+    const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
+    const moldy = hdf.baselines.find(b => b.title?.includes('Moldy'));
+    const req = moldy!.requirements.find(
+      r => r.id === '60e5941e7c34e77decf4d079ae18b531d35326ae8bd26d1dbca7ce23de548634',
+    );
+    expect(req!.tags?.['created']).toBe('2023-08-28T12:38:41.769Z');
+    expect(req!.tags).not.toHaveProperty('size');
+    expect(req!.tags).not.toHaveProperty('type');
   });
 
   it('pins tool.version to the first sorted service_version', async () => {
@@ -79,12 +114,14 @@ describe('source-derived timestamps and tool.version', async () => {
     expect(hdf.timestamp).toBe('2023-08-28T12:25:24.834Z');
   });
 
-  it('falls back to the zero sentinel startTime when service_completed is absent', async () => {
+  it('falls back to the zero sentinel startTime and omits runTime when milestones are absent', async () => {
     const input = JSON.stringify({
       api_response: { results: { r1: { sha256: 'abc', response: { service_name: 'Moldy' }, result: { score: 0, sections: [] } } } },
     });
     const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
-    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.startTime).toBe('0001-01-01T00:00:00Z');
+    const res = hdf.baselines[0]!.requirements[0]!.results[0]!;
+    expect(res.startTime).toBe('0001-01-01T00:00:00Z');
+    expect(res.runTime).toBeUndefined();
   });
 
   it('falls back to now() for the top-level timestamp when times.completed is absent', async () => {

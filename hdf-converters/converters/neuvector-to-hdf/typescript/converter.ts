@@ -1,9 +1,9 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, roundImpact } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { buildCvss, cvssVersionFromVector, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type {
@@ -15,7 +15,6 @@ import type {
   Reference,
 } from '@mitre/hdf-schema';
 import {
-  HashAlgorithm,
   ResultStatus,
   TargetType,
   VerificationMethodEnum,
@@ -51,6 +50,7 @@ interface NeuVectorScanReport {
   layers: unknown[];
   vulnerabilities: NeuVectorVuln[];
   modules?: NeuVectorScanModule[];
+  cmds?: string[];
 }
 
 interface NeuVectorVuln {
@@ -80,6 +80,48 @@ interface NeuVectorScanModule {
   file: string;
   version: string;
   source: string;
+  cves?: NeuVectorModuleCVE[];
+}
+
+interface NeuVectorModuleCVE {
+  name: string;
+  status: string;
+}
+
+/**
+ * Indexes report.modules so a flat vulnerability can recover its package
+ * `source` and per-CVE `status` (the flat vulnerabilities[] entries omit both).
+ * A vuln matches a module by package_name; its status matches the module CVE by
+ * name. First non-empty value per key wins.
+ */
+class ModuleLookup {
+  private readonly sourceByName = new Map<string, string>();
+  private readonly statusByKey = new Map<string, string>();
+
+  constructor(modules: NeuVectorScanModule[]) {
+    for (const m of modules) {
+      if (m.source && !this.sourceByName.has(m.name)) {
+        this.sourceByName.set(m.name, m.source);
+      }
+      for (const c of m.cves ?? []) {
+        if (!c.status) {
+          continue;
+        }
+        const key = `${m.name}\u0000${c.name}`;
+        if (!this.statusByKey.has(key)) {
+          this.statusByKey.set(key, c.status);
+        }
+      }
+    }
+  }
+
+  source(vuln: NeuVectorVuln): string | undefined {
+    return this.sourceByName.get(vuln.package_name);
+  }
+
+  status(vuln: NeuVectorVuln): string | undefined {
+    return this.statusByKey.get(`${vuln.package_name}\u0000${vuln.name}`);
+  }
 }
 
 /**
@@ -142,10 +184,10 @@ function buildCvssEntries(vuln: NeuVectorVuln): Cvss[] {
  */
 function getImpact(vuln: NeuVectorVuln): number {
   if (vuln.score_v3 > 0) {
-    return vuln.score_v3 / 10;
+    return roundImpact(vuln.score_v3 / 10);
   }
   if (vuln.score > 0) {
-    return vuln.score / 10;
+    return roundImpact(vuln.score / 10);
   }
   return 0.5; // default when no score available
 }
@@ -235,8 +277,10 @@ function buildRefs(vuln: NeuVectorVuln): Reference[] | undefined {
 
 /**
  * Builds a single EvaluatedRequirement from a NeuVector vulnerability.
+ * The scan-wide report.cmds is baseline-scope metadata and lives on
+ * baseline.extensions, not per requirement.
  */
-function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequirement {
+function buildRequirement(vuln: NeuVectorVuln, scanTime: Date, ml: ModuleLookup): EvaluatedRequirement {
   const cweIDs = extractCWEs(vuln.description);
   const cveIDs = extractCVEs(vuln);
   const nist = mapCWEToNIST(cweIDs, DEFAULT_REMEDIATION_NIST_TAGS);
@@ -253,6 +297,28 @@ function buildRequirement(vuln: NeuVectorVuln, scanTime: Date): EvaluatedRequire
 
   if (vuln.feed_rating) {
     tags['feed_rating'] = vuln.feed_rating;
+  }
+
+  if (vuln.severity) {
+    tags['severity'] = vuln.severity;
+  }
+
+  const status = ml.status(vuln);
+  if (status) {
+    tags['status'] = status;
+  }
+
+  const source = ml.source(vuln);
+  if (source) {
+    tags['source'] = source;
+  }
+
+  if (vuln.published_timestamp) {
+    tags['published_timestamp'] = vuln.published_timestamp;
+  }
+
+  if (vuln.last_modified_timestamp) {
+    tags['last_modified_timestamp'] = vuln.last_modified_timestamp;
   }
 
   const descriptions: Description[] = [
@@ -325,15 +391,6 @@ function targetNameFromReport(report: NeuVectorScanReport): string {
   return `${report.registry}/${report.repository}:${report.tag}`;
 }
 
-// Maps a NeuVector digest's algorithm prefix to the HDF hash algorithm.
-// NeuVector emits `sha256:<hex>`; the others are defensive.
-const DIGEST_ALGORITHMS: Record<string, HashAlgorithm> = {
-  sha256: HashAlgorithm.Sha256,
-  sha384: HashAlgorithm.Sha384,
-  sha512: HashAlgorithm.Sha512,
-  blake3: HashAlgorithm.Blake3,
-};
-
 /**
  * Splits NeuVector's base_os "name:version" form (e.g. "alpine:3.12.1") into OS
  * name and version. A value with no ":" is the name with no version; an empty
@@ -348,28 +405,6 @@ function splitBaseOS(baseOS: string): { name: string; version: string } {
     return { name: baseOS.slice(0, i), version: baseOS.slice(i + 1) };
   }
   return { name: baseOS, version: '' };
-}
-
-/**
- * Turns the report digest ("sha256:<hex>") into the component's Integrity
- * checksum, folding the algorithm prefix into Checksum.algorithm. Returns
- * undefined when the report carries no digest.
- */
-function digestIntegrity(digest: string): Checksum[] | undefined {
-  if (!digest) {
-    return undefined;
-  }
-  let algorithm = HashAlgorithm.Sha256;
-  let value = digest;
-  const i = digest.indexOf(':');
-  if (i >= 0) {
-    const mapped = DIGEST_ALGORITHMS[digest.slice(0, i)];
-    if (mapped) {
-      algorithm = mapped;
-      value = digest.slice(i + 1);
-    }
-  }
-  return [{ algorithm, value }];
 }
 
 /**
@@ -405,7 +440,7 @@ function buildComponent(report: NeuVectorScanReport): Component {
   if (report.tag) {
     component.tag = report.tag;
   }
-  const integrity = digestIntegrity(report.digest);
+  const integrity = digestToChecksums(report.digest);
   if (integrity) {
     component.integrity = integrity;
   }
@@ -456,6 +491,8 @@ export async function convertNeuvectorToHdf(input: string, converterVersion = '1
   // time as the single timestamp shared by every result.
   const scanTime = new Date();
 
+  const moduleLookup = new ModuleLookup(scan.report.modules ?? []);
+
   // Deduplicate by composite ID (name/package_name/package_version)
   const seen = new Set<string>();
   const requirements: EvaluatedRequirement[] = [];
@@ -465,7 +502,7 @@ export async function convertNeuvectorToHdf(input: string, converterVersion = '1
       continue;
     }
     seen.add(id);
-    requirements.push(buildRequirement(vuln, scanTime));
+    requirements.push(buildRequirement(vuln, scanTime, moduleLookup));
   }
 
   const target = targetNameFromReport(scan.report);
@@ -487,6 +524,13 @@ export async function convertNeuvectorToHdf(input: string, converterVersion = '1
       title,
     }
   ) as EvaluatedBaseline;
+
+  // report.cmds is scan-wide image build history — baseline-scope metadata with
+  // no typed HDF home. Emit it once under the tool namespace, only when present.
+  const cmds = scan.report.cmds ?? [];
+  if (cmds.length > 0) {
+    baseline.extensions = { neuvector: { cmds } };
+  }
 
   return buildHdfResults({
     generatorName: 'neuvector-to-hdf',

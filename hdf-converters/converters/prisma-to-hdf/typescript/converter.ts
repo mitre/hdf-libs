@@ -144,6 +144,34 @@ function makeTitle(rec: PrismaRecord): string {
 }
 
 /**
+ * Renders the parsed CSV finding as the indented JSON blob carried in the
+ * requirement's code field (the CODE tab), so per-row source fields survive
+ * the conversion (heimdall2 sets code = JSON.stringify(row)). Fixed field-order
+ * projection keyed by CSV header name — byte-identical to the Go twin's
+ * json.Encoder(SetEscapeHTML(false) + 2-space indent).
+ */
+function rawFindingCode(rec: PrismaRecord): string {
+  const projection = {
+    Hostname: rec.Hostname ?? '',
+    Distro: rec.Distro ?? '',
+    'CVE ID': rec['CVE ID'] ?? '',
+    'Compliance ID': rec['Compliance ID'] ?? '',
+    Type: rec.Type ?? '',
+    Severity: rec.Severity ?? '',
+    Packages: rec.Packages ?? '',
+    'Source Package': rec['Source Package'] ?? '',
+    'Package Version': rec['Package Version'] ?? '',
+    CVSS: rec.CVSS ?? '',
+    'Fix Status': rec['Fix Status'] ?? '',
+    Description: rec.Description ?? '',
+    Cause: rec.Cause ?? '',
+    Published: rec.Published ?? '',
+    'Vulnerability Link': rec['Vulnerability Link'] ?? '',
+  };
+  return JSON.stringify(projection, null, 2);
+}
+
+/**
  * Builds a single EvaluatedRequirement from a Prisma record.
  */
 function buildRequirement(rec: PrismaRecord, scanTime: Date): EvaluatedRequirement {
@@ -186,6 +214,7 @@ function buildRequirement(rec: PrismaRecord, scanTime: Date): EvaluatedRequireme
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+  req.code = rawFindingCode(rec);
 
   const cvss = buildCvssEntries(rec);
   if (cvss) {

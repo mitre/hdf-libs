@@ -46,6 +46,20 @@ func NormalizeStatus(raw string) (Status, bool) {
 	return "", false
 }
 
+// camelBoundary matches a lowercase/digit immediately followed by an
+// uppercase letter — the token boundary in a camelCase identifier.
+var camelBoundary = regexp.MustCompile(`([a-z0-9])([A-Z])`)
+
+// canonicalizeJustification normalizes a justification token to snake_case
+// lowercase so both the snake_case vocabularies (OpenVEX / CSAF / CycloneDX)
+// and the SPDX-3 camelCase vocabulary (vulnerableCodeNotInExecutePath) match
+// the same switch arm. Snake_case input is unchanged (no camelCase boundary
+// to split), so the transform is a superset — existing callers are unaffected.
+func canonicalizeJustification(raw string) string {
+	s := camelBoundary.ReplaceAllString(strings.TrimSpace(raw), "${1}_${2}")
+	return strings.ToLower(s)
+}
+
 // NormalizeJustification maps an ecosystem-specific justification string to
 // the canonical HDF Justification enum. Returns ("", false) for unknown
 // values; callers SHOULD log unknown values rather than silently dropping
@@ -58,8 +72,11 @@ func NormalizeStatus(raw string) (Status, bool) {
 //   - CycloneDX-specific reachability values (requires_*, protected_*)
 //     that describe why a vulnerable code path is unreachable in the
 //     deployed configuration.
+//
+// Accepts both snake_case (OpenVEX/CSAF/CycloneDX) and camelCase (SPDX-3
+// security profile, e.g. vulnerableCodeNotInExecutePath) spellings.
 func NormalizeJustification(raw string) (hdf.Justification, bool) {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
+	switch canonicalizeJustification(raw) {
 	case "component_not_present", "code_not_present":
 		return hdf.ComponentNotPresent, true
 	case "vulnerable_code_not_present":

@@ -12,6 +12,7 @@ import {
   detectFormat,
   detectSPDX,
   detectSPDX3,
+  detectSPDX3Security,
   enrichFromPurl,
   parseBom,
   parseCycloneDX,
@@ -513,6 +514,46 @@ describe('detectSPDX3', () => {
     expect(detectSPDX3({ '@context': 'x', '@graph': [{ type: 'software_Package' }] })).toBe(0);
     expect(detectSPDX3({ '@graph': [{ type: 'ai_AIPackage' }] })).toBe(0); // no @context
     expect(detectSPDX3({ '@context': 'x', '@graph': 'nope' })).toBe(0);
+  });
+});
+
+describe('detectSPDX3Security', () => {
+  const vexDoc = {
+    '@context': 'https://spdx.org/rdf/3.0.1/spdx-context.jsonld',
+    '@graph': [
+      { type: 'software_Package', spdxId: 'pkg' },
+      { type: 'security_VexNotAffectedVulnAssessmentRelationship', from: 'cve' },
+    ],
+  };
+
+  it('detects an SPDX-3 security/VEX document as spdx-3-security, disjoint from AI/Dataset', () => {
+    expect(detectSPDX3Security(vexDoc)).toBe(1);
+    expect(detectSPDX3(vexDoc)).toBe(0);
+    expect(detectFormat(vexDoc)).toEqual({ format: 'spdx-3-security', confidence: 1 });
+  });
+
+  it('fires on each of the four VEX assessment subtypes', () => {
+    for (const type of [
+      'security_VexAffectedVulnAssessmentRelationship',
+      'security_VexNotAffectedVulnAssessmentRelationship',
+      'security_VexFixedVulnAssessmentRelationship',
+      'security_VexUnderInvestigationVulnAssessmentRelationship',
+    ]) {
+      expect(detectSPDX3Security({ '@context': 'x', '@graph': [{ type }] })).toBe(1);
+    }
+  });
+
+  it('does not fire on SPDX 2.x, AI/Dataset SPDX-3, CVSS-only graphs, or malformed input', () => {
+    expect(detectSPDX3Security(JSON.parse(SPDX))).toBe(0);
+    expect(detectSPDX3Security(JSON.parse(SPDX3_MODEL1))).toBe(0);
+    expect(
+      detectSPDX3Security({ '@context': 'x', '@graph': [{ type: 'security_CvssV3VulnAssessmentRelationship' }] }),
+    ).toBe(0);
+    expect(
+      detectSPDX3Security({ '@graph': [{ type: 'security_VexFixedVulnAssessmentRelationship' }] }),
+    ).toBe(0); // no @context
+    expect(detectSPDX3Security({ '@context': 'x', '@graph': 'nope' })).toBe(0);
+    expect(detectSPDX3Security(null)).toBe(0);
   });
 });
 

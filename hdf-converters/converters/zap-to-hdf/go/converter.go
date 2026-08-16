@@ -247,11 +247,12 @@ func siteLabel(site *ZapSite, index int) string {
 // buildSiteRequirements converts one site's alerts into requirements, applying
 // the per-site pluginid dedup (duplicates within the site get .1, .2, ...).
 // Dedup is scoped to the site so the same pluginid on two different hosts stays
-// intact in each host's baseline.
-func buildSiteRequirements(site *ZapSite) []hdf.EvaluatedRequirement {
+// intact in each host's baseline. startTime is the report's @generated time
+// (ZAP carries no per-finding time), stamped on every result; it is the zero
+// time when the report has no parseable @generated.
+func buildSiteRequirements(site *ZapSite, startTime time.Time) []hdf.EvaluatedRequirement {
 	pluginIDCount := make(map[string]int)
 	limitedAlerts := shared.LimitSliceWithWarning(site.Alerts, 0, "alert")
-	zeroTime := time.Time{}
 
 	var requirements []hdf.EvaluatedRequirement
 	for _, alert := range limitedAlerts {
@@ -279,6 +280,9 @@ func buildSiteRequirements(site *ZapSite) []hdf.EvaluatedRequirement {
 		if alert.Confidence != "" {
 			extras["confidence"] = alert.Confidence
 		}
+		if alert.SourceID != "" {
+			extras["sourceid"] = alert.SourceID
+		}
 		var tags map[string]interface{}
 		if len(extras) > 0 {
 			tags = shared.BuildNISTCCITagsWithExtras(nistTags, cciTags, extras)
@@ -294,7 +298,7 @@ func buildSiteRequirements(site *ZapSite) []hdf.EvaluatedRequirement {
 				result := hdf.RequirementResult{
 					Status:    hdf.Failed,
 					CodeDesc:  buildCodeDesc(inst),
-					StartTime: zeroTime,
+					StartTime: startTime,
 				}
 				if inst.Attack != "" {
 					result.Message = &inst.Attack
@@ -381,6 +385,10 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 	summary := fmt.Sprintf("ZAP Version %s", zapData.Version)
 	multiSite := len(zapData.Site) > 1
 
+	// Parse @generated once: it is both the document timestamp and — since ZAP
+	// carries no per-finding time — the start_time stamped on every result.
+	reportTime := parseZapTimestamp(zapData.Generated)
+
 	var baselines []hdf.EvaluatedBaseline
 	var components []hdf.Component
 
@@ -393,7 +401,7 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 		}
 		siteName := site.Name
 
-		requirements := buildSiteRequirements(site)
+		requirements := buildSiteRequirements(site, reportTime)
 		if len(requirements) == 0 {
 			target := siteName
 			if target == "" {
@@ -470,13 +478,10 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 		})
 	}
 
-	// Compute timestamp before building results
 	var timestamp *time.Time
-	if zapData.Generated != "" {
-		ts := parseZapTimestamp(zapData.Generated)
-		if !ts.IsZero() {
-			timestamp = &ts
-		}
+	if !reportTime.IsZero() {
+		ts := reportTime
+		timestamp = &ts
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{

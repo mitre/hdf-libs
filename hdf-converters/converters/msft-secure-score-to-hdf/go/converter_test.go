@@ -433,6 +433,73 @@ func TestConvertMsftSecureScore_SourceMetadataTagsAbsentWhenNoProfile(t *testing
 	assert.Equal(t, false, req.Tags["on"])
 }
 
+// ---- category / maxScore tags (heimdall2 parity) ----
+
+func TestConvertMsftSecureScore_CategoryAndMaxScoreTags(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+
+	// dlp_datalossprevention: profile controlCategory "Data", maxScore 5.
+	dlp := shared.MustFindRequirement(t, reqs, "Data:dlp_datalossprevention")
+	assert.Equal(t, "Data", dlp.Tags["category"])
+	assert.EqualValues(t, 5, dlp.Tags["maxScore"])
+
+	// McasFirewallLogUpload: profile controlCategory "Apps", maxScore 1.
+	mcas := shared.MustFindRequirement(t, reqs, "Apps:McasFirewallLogUpload")
+	assert.Equal(t, "Apps", mcas.Tags["category"])
+	assert.EqualValues(t, 1, mcas.Tags["maxScore"])
+}
+
+func TestConvertMsftSecureScore_CategoryAndMaxScoreAbsentWhenNoProfile(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+
+	// spo_idle_session_timeout has no matching profile → both tags omitted.
+	req := shared.MustFindRequirement(t, reqs, "Apps:spo_idle_session_timeout")
+	_, hasCategory := req.Tags["category"]
+	assert.False(t, hasCategory, "category tag should be absent when no profile matches")
+	_, hasMaxScore := req.Tags["maxScore"]
+	assert.False(t, hasMaxScore, "maxScore tag should be absent when no profile matches")
+}
+
+// When more than one profile matches a control name, title / fix / rationale
+// join all matched entries (heimdall2 multi-profile parity). Real MS Graph data
+// has unique profile ids, so this synthetic input exercises the join path.
+func TestConvertMsftSecureScore_MultiProfileJoin(t *testing.T) {
+	input := []byte(`{
+		"secureScore": {"value": [{
+			"id": "run-1",
+			"azureTenantId": "t-1",
+			"createdDateTime": "2024-03-14T09:00:00Z",
+			"controlScores": [
+				{"controlCategory": "Apps", "controlName": "dup", "description": "d", "score": 0, "implementationStatus": "x", "scoreInPercentage": 0, "lastSynced": "2024-03-14T09:00:00Z"}
+			]
+		}]},
+		"profiles": {"value": [
+			{"id": "dup", "controlCategory": "Apps", "title": "Title A", "maxScore": 3, "remediation": "Fix A", "remediationImpact": "Impact A"},
+			{"id": "dup", "controlCategory": "Apps", "title": "Title B", "maxScore": 5, "remediation": "Fix B", "remediationImpact": "Impact B"}
+		]}
+	}`)
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "Apps:dup")
+	require.NotNil(t, req.Title)
+	assert.Equal(t, "Title A\nTitle B", *req.Title)
+
+	fix := findDescription(req.Descriptions, "fix")
+	require.NotNil(t, fix)
+	assert.Equal(t, "Fix A\nFix B", fix.Data)
+
+	rationale := findDescription(req.Descriptions, "rationale")
+	require.NotNil(t, rationale)
+	assert.Equal(t, "Impact A\nImpact B", rationale.Data)
+}
+
 func TestConvertMsftSecureScore_OnTagOmittedWhenNull(t *testing.T) {
 	input := loadFixture(t, "input/combined.json")
 	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)

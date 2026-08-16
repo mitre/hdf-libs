@@ -5,6 +5,7 @@
   "role": "Project Release Bot",
   "timestamp": "2023-01-17T01:07:16Z",
   "version": 1,
+  "tooling": "openvex-to-hdf/dev",
   "statements": [
     {
       "vulnerability": {
@@ -19,6 +20,7 @@
       "status": "not_affected",
       "justification": "vulnerable_code_not_in_execute_path",
       "impact_statement": "Spring Boot users are only affected by this vulnerability if they have switched the default logging system to Log4J2.",
+      "status_notes": "HDF override type: falsePositive\nEvidence (url): OpenVEX document (https://openvex.dev/docs/public/vex-2e67563e128250cbcb3e98930df948dd053e43271d70dc50cfa22d57e03fe96f)",
       "timestamp": "2023-01-17T01:07:16Z"
     }
   ]

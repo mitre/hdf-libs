@@ -161,6 +161,28 @@ describe('Nessus to HDF Converter', async () => {
       expect(req?.tags.cvss_base_score).toBe('6.4');
     });
 
+    it('preserves ACAS / Tenable.sc-shape fields (cvss3, IAVM xref, stig_severity)', async () => {
+      // ACAS emits the same NessusClientData_v2 schema as standalone Nessus and
+      // differs only by which optional fields are populated, so sample.nessus (a
+      // real scan carrying them) is the standing ACAS regression guard. Plugin
+      // 156888 (Oracle Java Jan-2022 CPU) has a CVSS v3 base score, an IAVA xref,
+      // and a STIG CAT together. cvss3 is promoted to a tag + cvss[] entry; the
+      // IAVM xref and stig_severity are preserved in the raw code blob (promoting
+      // those two to first-class tags is tracked as separate follow-up work).
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'sample.nessus'),
+        'utf-8'
+      );
+
+      const result = await convertNessusToHdf(nessusXml);
+      const req = findReqAcrossBaselines(result, '156888');
+
+      expect(req?.tags.cvss3_base_score).toBe('5.3');
+      expect(req?.cvss?.length).toBeGreaterThan(0);
+      expect(req?.code).toContain('"stig_severity": "I"');
+      expect(req?.code).toContain('IAVA:2022-A-0031');
+    });
+
     it('should split whitespace-separated see_also URLs into one ref per URL', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),

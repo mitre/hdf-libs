@@ -74,6 +74,14 @@ describe('ionchannel to HDF converter', async () => {
       const big = '{' + 'x'.repeat(DEFAULT_MAX_INPUT_SIZE + 1) + '}';
       await expect(convertIonchannelToHdf(big)).rejects.toThrow('exceeds maximum');
     });
+
+    it('should throw when scan_summaries is not an array', async () => {
+      // scan_summaries present but the wrong shape (object, not array).
+      const input = JSON.stringify({ source: 'x', scan_summaries: { name: 'dependency' } });
+      await expect(convertIonchannelToHdf(input)).rejects.toThrow(
+        'scan_summaries invalid summary data',
+      );
+    });
   });
 
   describe('minimal fixture', async () => {
@@ -152,6 +160,21 @@ describe('ionchannel to HDF converter', async () => {
       expect(req?.tags?.org).toBe('expressjs');
     });
 
+    it('should surface package and outdated_version in tags', async () => {
+      // heimdall2 spreads the whole dependency object into tags; these two
+      // fields carry data in the fixture (package="npm", patch_behind=1).
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const express = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'dependency-expressjs/express',
+      );
+      expect(express?.tags?.package).toBe('npm');
+      expect(express?.tags?.outdated_version).toEqual({
+        major_behind: 0,
+        minor_behind: 0,
+        patch_behind: 1,
+      });
+    });
+
     it('should track sub-dependencies in tags', async () => {
       const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       const express = hdf.baselines[0]!.requirements.find(
@@ -182,6 +205,16 @@ describe('ionchannel to HDF converter', async () => {
       for (const req of hdf.baselines[0]!.requirements) {
         expect(req.results).toHaveLength(1);
         expect(req.results[0]!.status).toBe('notReviewed');
+      }
+    });
+
+    it('should omit controlType (static-fallback NIST resolves to undefined)', async () => {
+      // CM-8 is a static-fallback bundle → deriveControlTypeFromTags returns
+      // undefined, so no dependency requirement carries a controlType. Mirrors
+      // the Go twin's TestConvertIonChannelToHDF_ControlType.
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        expect(req.controlType).toBeUndefined();
       }
     });
 
@@ -250,6 +283,38 @@ describe('ionchannel to HDF converter', async () => {
       expect(dep.labels?.risk).toBe('medium');
       expect(dep.labels?.ruleset_name).toBe('strict');
       expect(dep.labels?.ruleset_id).toBe('ruleset-002');
+    });
+  });
+
+  // Fallback-default branches: scans and verdicts whose optional source fields
+  // are absent. Exercises the `||`/`??`/`if` fallback sides the fixtures don't.
+  describe('fallback defaults', async () => {
+    it('falls back scan title/desc/type/code and empty dependency data', async () => {
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        passed: true,
+        ruleset_name: 'foo', // present, but ruleset_id absent (verdictDescription inner branch)
+        scan_summaries: [
+          // dependency scan with no `dependencies` key → allDeps falls back to []
+          { name: 'dependency', results: { type: 'dependency', data: {} } },
+          // license scan with no description/summary and results lacking type/data
+          { name: 'license', results: {} },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+
+      const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis')!;
+      expect(dep.requirements).toHaveLength(0);
+      // verdictDescription: ruleset_name present, ruleset_id absent → no "(id)" suffix.
+      expect(dep.description).toBe('Ion Channel analysis verdict: PASSED. Ruleset: foo.');
+
+      const license = hdf.baselines.find((b) => b.name === 'Ion Channel license Scan')!;
+      const req = license.requirements[0]!;
+      expect(req.title).toBe('License scan');
+      expect(req.descriptions?.[0]?.data).toBe('License scan summary');
+      expect(req.tags?.type).toBe('');
+      expect(req.code).toBe('{}');
     });
   });
 
@@ -376,6 +441,107 @@ describe('ionchannel to HDF converter', async () => {
       expect(req.tags && 'risk' in req.tags).toBe(false);
       expect(req.tags && 'ruleset_name' in req.tags).toBe(false);
       expect(req.tags && 'ruleset_id' in req.tags).toBe(false);
+    });
+  });
+
+  describe('auxiliary tool metadata (extensions + namespaced tags)', async () => {
+    it('surfaces run-scope metadata in baseline.extensions.ionchannel', async () => {
+      // All fields below carry data in minimal.json; text is "" so it is omitted.
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis')!;
+      const ion = dep.extensions?.ionchannel as Record<string, unknown>;
+      expect(ion).toEqual({
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        analysis_id: 'analysis-001-abcdef',
+        team_id: 'team-001-ghijkl',
+        project_id: 'project-001-mnopqr',
+        name: 'example-project',
+        type: 'git',
+        branch: 'main',
+        description: 'Example project for dependency analysis',
+        status: 'finished',
+        duration: 12345,
+        public: false,
+      });
+    });
+
+    it('emits run-scope metadata once, only on the primary baseline', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
+      const community = hdf.baselines.find((b) => b.name === 'Ion Channel community Scan')!;
+      expect(community.extensions).toBeUndefined();
+    });
+
+    it('omits absent run-metadata fields and the extensions block entirely', async () => {
+      // No homeless run metadata → extensions omitted.
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        passed: true,
+        scan_summaries: [
+          { name: 'dependency', summary: '', results: { type: 'dependency', data: { dependencies: [] } } },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+      const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis')!;
+      expect(dep.extensions).toBeUndefined();
+    });
+
+    it('emits public:false but omits absent sibling fields', async () => {
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        passed: true,
+        name: 'proj',
+        public: false,
+        scan_summaries: [
+          { name: 'dependency', summary: '', results: { type: 'dependency', data: { dependencies: [] } } },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+      const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis')!;
+      const ion = dep.extensions?.ionchannel as Record<string, unknown>;
+      expect(ion).toEqual({ name: 'proj', public: false });
+    });
+
+    it('tags dependency requirements with namespaced trigger fields', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'dependency-expressjs/express')!;
+      expect(req.tags?.['ionchannel/trigger_hash']).toBe('abc123def456');
+      expect(req.tags?.['ionchannel/trigger_text']).toBe('feat: add new feature');
+      expect(req.tags?.['ionchannel/trigger_author']).toBe('developer@example.com');
+      expect(req.tags?.['ionchannel/trigger']).toBe('source_commit');
+    });
+
+    it('tags non-dependency scan requirements with namespaced trigger fields', async () => {
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
+      const community = hdf.baselines.find((b) => b.name === 'Ion Channel community Scan')!;
+      const req = community.requirements[0]!;
+      expect(req.tags?.['ionchannel/trigger_hash']).toBe('def789ghi012');
+      expect(req.tags?.['ionchannel/trigger_text']).toBe('fix: update deps');
+      expect(req.tags?.['ionchannel/trigger_author']).toBe('admin@example.com');
+      expect(req.tags?.['ionchannel/trigger']).toBe('source_commit');
+    });
+
+    it('omits namespaced trigger tags when the analysis carries no triggers', async () => {
+      const input = JSON.stringify({
+        source: 'https://example.com/repo.git',
+        summary: '',
+        passed: true,
+        scan_summaries: [
+          {
+            name: 'dependency',
+            summary: '',
+            results: {
+              type: 'dependency',
+              data: { dependencies: [{ org: 'acme', name: 'widget', type: 'npm', version: '1.0.0', dependencies: [] }] },
+            },
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'dependency-acme/widget')!;
+      const triggerKeys = Object.keys(req.tags ?? {}).filter((k) => k.startsWith('ionchannel/'));
+      expect(triggerKeys).toEqual([]);
     });
   });
 });

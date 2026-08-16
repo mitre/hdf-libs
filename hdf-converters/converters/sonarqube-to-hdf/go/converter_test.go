@@ -16,6 +16,15 @@ import (
 
 const testConverterVersion = "test-version"
 
+func TestHasFlows(t *testing.T) {
+	assert.True(t, hasFlows(json.RawMessage(`[{"x":1}]`)))
+	assert.False(t, hasFlows(json.RawMessage(`[]`)))
+	assert.False(t, hasFlows(json.RawMessage(`[ ]`)))
+	assert.False(t, hasFlows(json.RawMessage("[\n  ]")))
+	assert.False(t, hasFlows(json.RawMessage(`null`)))
+	assert.False(t, hasFlows(json.RawMessage(``)))
+}
+
 func loadMinimalFixture(t *testing.T) []byte {
 	t.Helper()
 	fixturePath := filepath.Join(shared.GetConvertersDir(), "sonarqube-to-hdf", "fixtures", "input", "minimal.json")
@@ -257,10 +266,10 @@ func TestExtractTags_KeyValueParsing(t *testing.T) {
 		SysTags: []string{},
 	}
 
-	cweIds, owaspTags, allTags := extractTags(rule, true, []Issue{})
+	cweIds, owaspIDs, allTags := extractTags(rule, true, []Issue{})
 
 	assert.NotEmpty(t, cweIds, "expected at least one CWE ID extracted")
-	assert.NotEmpty(t, owaspTags, "expected at least one OWASP tag extracted")
+	assert.Equal(t, []string{"A1"}, owaspIDs, "owasp:a01 tag normalizes to A1")
 
 	_, ok := allTags["category"]
 	assert.True(t, ok, "expected 'category' key in allTags")
@@ -724,6 +733,96 @@ func TestConvertSonarqubeToHDF_LangOmittedWithoutRule(t *testing.T) {
 	assert.Equal(t, "3min", req.Tags["effort"], "effort still resolves from the issue")
 }
 
+// Auxiliary per-issue metadata is emitted under the tool-named namespace
+// (sonarqube/hash, /key, /update_date, /flows, /quick_fix_available). Values
+// pinned against mqr.json, which carries every field.
+func TestConvertSonarqubeToHDF_AuxMetadataTags(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMQRFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	reqByID := func(id string) *hdf.EvaluatedRequirement {
+		for i := range result.Baselines[0].Requirements {
+			if result.Baselines[0].Requirements[i].ID == id {
+				return &result.Baselines[0].Requirements[i]
+			}
+		}
+		return nil
+	}
+
+	// java:S1186: hash/key/update_date present, quick_fix_available true, no flows.
+	s1186 := reqByID("java:S1186")
+	require.NotNil(t, s1186, "java:S1186 requirement not found")
+	assert.Equal(t, "4fa436e830f0433a248778dafd40f373", s1186.Tags["sonarqube/hash"])
+	assert.Equal(t, "02e8e9bf-5d42-4729-a087-8b7e56e0e908", s1186.Tags["sonarqube/key"])
+	assert.Equal(t, "2026-03-24T03:20:30+0000", s1186.Tags["sonarqube/update_date"])
+	assert.Equal(t, true, s1186.Tags["sonarqube/quick_fix_available"])
+	assert.NotContains(t, s1186.Tags, "sonarqube/flows",
+		"java:S1186 first issue has empty flows, so the tag is omitted")
+
+	// java:S1192: quick_fix_available false, and flows carries secondary locations.
+	s1192 := reqByID("java:S1192")
+	require.NotNil(t, s1192, "java:S1192 requirement not found")
+	assert.Equal(t, false, s1192.Tags["sonarqube/quick_fix_available"],
+		"explicit false must be preserved (pointer distinguishes it from absent)")
+	require.Contains(t, s1192.Tags, "sonarqube/flows")
+	var flows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(s1192.Tags["sonarqube/flows"].(json.RawMessage), &flows))
+	assert.Len(t, flows, 3, "java:S1192 first issue carries three flow entries")
+}
+
+// The absent branches: minimal.json carries hash/key/update_date but no flows
+// and no quickFixAvailable, so those two tags must be omitted on every rule.
+func TestConvertSonarqubeToHDF_AuxMetadataTags_AbsentBranches(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		assert.Contains(t, req.Tags, "sonarqube/hash",
+			"minimal.json carries hash for %q", req.ID)
+		assert.Contains(t, req.Tags, "sonarqube/key", "minimal.json carries key for %q", req.ID)
+		assert.Contains(t, req.Tags, "sonarqube/update_date",
+			"minimal.json carries updateDate for %q", req.ID)
+		assert.NotContains(t, req.Tags, "sonarqube/flows",
+			"minimal.json carries no flows for %q", req.ID)
+		assert.NotContains(t, req.Tags, "sonarqube/quick_fix_available",
+			"minimal.json carries no quickFixAvailable for %q", req.ID)
+	}
+}
+
+// An issue carrying none of the auxiliary fields must emit none of the tags.
+func TestConvertSonarqubeToHDF_AuxMetadataTags_AllAbsent(t *testing.T) {
+	input := []byte(`{
+		"total": 1, "p": 1, "ps": 100,
+		"paging": {"pageIndex": 1, "pageSize": 100, "total": 1},
+		"issues": [{"rule":"java:S100","severity":"MAJOR","component":"proj:file","project":"proj","status":"OPEN","message":"msg","creationDate":"2026-01-01T00:00:00+0000","type":"CODE_SMELL"}],
+		"components": [], "rules": []
+	}`)
+
+	result, err := ConvertSonarqubeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	for _, key := range []string{"sonarqube/hash", "sonarqube/key", "sonarqube/update_date", "sonarqube/flows", "sonarqube/quick_fix_available"} {
+		assert.NotContains(t, req.Tags, key, "%s must be omitted when the issue carries no aux metadata", key)
+	}
+}
+
+// An explicit empty flows array is treated as "no flows" and the tag stays off.
+func TestConvertSonarqubeToHDF_AuxMetadataTags_EmptyFlows(t *testing.T) {
+	input := []byte(`{
+		"total": 1, "p": 1, "ps": 100,
+		"paging": {"pageIndex": 1, "pageSize": 100, "total": 1},
+		"issues": [{"key":"k1","rule":"java:S100","severity":"MAJOR","component":"proj:file","project":"proj","status":"OPEN","message":"msg","flows":[],"quickFixAvailable":false,"creationDate":"2026-01-01T00:00:00+0000","type":"CODE_SMELL"}],
+		"components": [], "rules": []
+	}`)
+
+	result, err := ConvertSonarqubeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.NotContains(t, req.Tags, "sonarqube/flows", "empty flows array must not emit the tag")
+	assert.Equal(t, false, req.Tags["sonarqube/quick_fix_available"],
+		"explicit false quickFixAvailable is still emitted")
+}
+
 func TestSnapshots(t *testing.T) {
 	// SonarQube issues carry no scan time; conversion-time fallback.
 	shared.RunSnapshotTests(t, "sonarqube-to-hdf", func(input []byte) (interface{}, error) {
@@ -1002,4 +1101,71 @@ func TestSelectSeverity_DivergentAxes(t *testing.T) {
 			assert.Equal(t, tt.wantImpact, severityToImpactScore(severity, source))
 		})
 	}
+}
+
+func loadOwaspFixture(t *testing.T) []byte {
+	t.Helper()
+	fixturePath := filepath.Join(shared.GetConvertersDir(), "sonarqube-to-hdf", "fixtures", "input", "sq26-owasp.json")
+	data, err := os.ReadFile(fixturePath)
+	require.NoError(t, err)
+	return data
+}
+
+func findReqByID(t *testing.T, result *hdf.HDFResults, id string) hdf.EvaluatedRequirement {
+	t.Helper()
+	for _, b := range result.Baselines {
+		for _, r := range b.Requirements {
+			if r.ID == id {
+				return r
+			}
+		}
+	}
+	t.Fatalf("requirement %q not found", id)
+	return hdf.EvaluatedRequirement{}
+}
+
+func stringSliceTag(t *testing.T, req hdf.EvaluatedRequirement, key string) []string {
+	t.Helper()
+	v, ok := req.Tags[key]
+	require.True(t, ok, "tag %q present on %s", key, req.ID)
+	s, ok := v.([]string)
+	require.True(t, ok, "tag %q is []string on %s (got %T)", key, req.ID, v)
+	return s
+}
+
+// TestConvertSonarqubeToHDF_OwaspNistFold pins the OWASP-2017 -> NIST fold on a
+// real OWASP Juice Shop scan (SonarQube 26.1). Modern SonarQube carries no
+// owasp-* sysTags; the category lives in the rule's description ("Top 10 2017 -
+// Category A#"), so the fold parses it there and maps via hdf-mappings/owasp.
+func TestConvertSonarqubeToHDF_OwaspNistFold(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadOwaspFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	cases := []struct {
+		ruleID   string
+		owaspID  string
+		nistCtrl string
+	}{
+		{"secrets:S6706", "A3", "SI-11"},
+		{"typescript:S6437", "A2", "SC-23"},
+		{"typescript:S7639", "A2", "SC-23"},
+		{"javascript:S2486", "A10", "AU-12"},
+		{"typescript:S2486", "A10", "AU-12"},
+		{"typescript:S7790", "A1", "SI-10"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.ruleID, func(t *testing.T) {
+			req := findReqByID(t, result, tc.ruleID)
+			assert.Contains(t, stringSliceTag(t, req, "owasp"), tc.owaspID,
+				"owasp tag should contain %s", tc.owaspID)
+			assert.Contains(t, stringSliceTag(t, req, "nist"), tc.nistCtrl,
+				"nist should include OWASP-derived %s", tc.nistCtrl)
+		})
+	}
+
+	// The SA-11 fallback exists only for findings with no control mapping. Once
+	// OWASP contributes a real control, the fallback must drop.
+	req := findReqByID(t, result, "secrets:S6706")
+	assert.NotContains(t, stringSliceTag(t, req, "nist"), defaultNistTag,
+		"SA-11 fallback should be removed when OWASP provides a mapping")
 }

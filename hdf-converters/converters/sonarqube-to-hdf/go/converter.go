@@ -1,17 +1,64 @@
 package sonarqube
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/owasp"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
+
+// SonarQube 26+ carries no owasp-* sysTags; the OWASP Top 10 category lives in
+// the rule's description "resources" section. owaspTagPattern matches the legacy
+// owasp-a<N> tag form (heimdall2-shaped inputs); owasp2017Pattern matches the
+// modern description reference "Top 10 2017 - Category A<N>". Only the 2017
+// taxonomy is folded, because the shared owasp->NIST table is keyed on 2017 IDs
+// (the 2021 renumbering would map wrong).
+var (
+	owaspTagPattern  = regexp.MustCompile(`(?i)owasp[-:]?a0*(\d{1,2})`)
+	owasp2017Pattern = regexp.MustCompile(`(?is)top 10 2017.{0,30}?category\s*a0*(\d{1,2})`)
+)
+
+// addOwaspID records a normalized OWASP-2017 category (A1..A10) when n is in range.
+func addOwaspID(set map[string]bool, n string) {
+	if v, err := strconv.Atoi(n); err == nil && v >= 1 && v <= 10 {
+		set[fmt.Sprintf("A%d", v)] = true
+	}
+}
+
+// foldNistControls combines CWE-derived and OWASP-derived NIST controls. The
+// SA-11 default applies only when neither source yields a mapping.
+func foldNistControls(cweIDs, owaspIDs []string) []string {
+	set := make(map[string]bool)
+	for _, c := range shared.MapCWEToNIST(cweIDs, nil) {
+		set[c] = true
+	}
+	for _, id := range owaspIDs {
+		if ctrl := owasp.NISTControl(id); ctrl != "" {
+			for _, c := range strings.Split(ctrl, "|") {
+				set[c] = true
+			}
+		}
+	}
+	if len(set) == 0 {
+		return []string{defaultNistTag}
+	}
+	out := make([]string, 0, len(set))
+	for c := range set {
+		out = append(out, c)
+	}
+	sort.Strings(out)
+	return out
+}
 
 // IssuesResponse is the SonarQube /api/issues/search response structure.
 // ServerVersion is populated by the fetcher from /api/server/version and
@@ -42,13 +89,20 @@ type Issue struct {
 	Line      *int       `json:"line,omitempty"`
 	Hash      string     `json:"hash,omitempty"`
 	TextRange *TextRange `json:"textRange,omitempty"`
-	Flows     []Flow     `json:"flows,omitempty"`
-	Status    string     `json:"status"`
-	Message   string     `json:"message"`
-	Effort    string     `json:"effort,omitempty"`
-	Debt      string     `json:"debt,omitempty"`
-	Author    string     `json:"author,omitempty"`
-	Tags      []string   `json:"tags,omitempty"`
+	// Flows is kept as raw JSON so the secondary-location structure round-trips
+	// byte-for-byte to the sonarqube/flows tag. Re-marshalling through typed
+	// structs would drop source-only keys (e.g. msgFormattings) and diverge from
+	// the TypeScript twin, which passes the parsed value through unchanged.
+	Flows json.RawMessage `json:"flows,omitempty"`
+	// QuickFixAvailable is a pointer so an absent field (nil) is distinguishable
+	// from an explicit false.
+	QuickFixAvailable *bool    `json:"quickFixAvailable,omitempty"`
+	Status            string   `json:"status"`
+	Message           string   `json:"message"`
+	Effort            string   `json:"effort,omitempty"`
+	Debt              string   `json:"debt,omitempty"`
+	Author            string   `json:"author,omitempty"`
+	Tags              []string `json:"tags,omitempty"`
 	// Impacts carries the Multi-Quality-Rule (Clean Code) software-quality
 	// severities. Present only when the server is in MQR mode, where SonarQube
 	// treats these — not the deprecated top-level Severity — as authoritative.
@@ -72,16 +126,6 @@ type TextRange struct {
 	EndLine     int `json:"endLine"`
 	StartOffset int `json:"startOffset"`
 	EndOffset   int `json:"endOffset"`
-}
-
-type Flow struct {
-	Locations []Location `json:"locations"`
-}
-
-type Location struct {
-	Component string     `json:"component"`
-	TextRange *TextRange `json:"textRange,omitempty"`
-	Msg       string     `json:"msg,omitempty"`
 }
 
 type Component struct {
@@ -183,6 +227,21 @@ func severityToImpactScore(severity, source string) float64 {
 		return hdfutil.SeverityToImpactWithAliases(severity, mqrAliases, 0.5)
 	}
 	return hdfutil.SeverityToImpactWithAliases(severity, sonarqubeAliases, 0.5)
+}
+
+// hasFlows reports whether the raw flows value carries any secondary locations.
+// An absent field (nil), an explicit null, or an empty array are all treated as
+// "no flows" so the sonarqube/flows tag stays off rather than pinning "[]".
+func hasFlows(raw json.RawMessage) bool {
+	// Parse the array rather than string-compare: json.RawMessage preserves the
+	// source formatting, so an empty array written as "[ ]" or pretty-printed
+	// would slip past a literal "[]" check and emit an empty flows tag.
+	var arr []json.RawMessage
+	if err := json.Unmarshal(raw, &arr); err == nil {
+		return len(arr) > 0
+	}
+	trimmed := bytes.TrimSpace(raw)
+	return len(trimmed) > 0 && string(trimmed) != "null"
 }
 
 // defaultNistTag is the fallback NIST control for SonarQube findings without
@@ -358,8 +417,8 @@ func convertRuleToRequirement(
 	impact := severityToImpactScore(severity, severitySource)
 
 	// Extract tags and mappings
-	cweIds, owaspTags, allTags := extractTags(&rule, hasRule, issues)
-	nistControls := shared.MapCWEToNIST(cweIds, []string{defaultNistTag})
+	cweIds, owaspIDs, allTags := extractTags(&rule, hasRule, issues)
+	nistControls := foldNistControls(cweIds, owaspIDs)
 	cciControls := cci.NISTToCCI(nistControls)
 
 	// Create results for each issue
@@ -392,7 +451,7 @@ func convertRuleToRequirement(
 	tags["severitySource"] = severitySource
 	tags["type"] = strings.ToLower(firstIssue.Type)
 	tags["cwe"] = cweIds
-	tags["owasp"] = owaspTags
+	tags["owasp"] = owaspIDs
 	tags["nist"] = nistControls
 	tags["cci"] = cciControls
 	// Per-issue metadata SonarQube carries on every mode. Omitted when empty so
@@ -405,6 +464,24 @@ func convertRuleToRequirement(
 	}
 	if firstIssue.Author != "" {
 		tags["author"] = firstIssue.Author
+	}
+	// Auxiliary per-issue metadata that has no typed HDF home, namespaced under
+	// the tool name per the convention (developer-guide.md, Auxiliary Tool
+	// Metadata). Each is emitted only when the source issue carries it.
+	if firstIssue.Hash != "" {
+		tags["sonarqube/hash"] = firstIssue.Hash
+	}
+	if firstIssue.Key != "" {
+		tags["sonarqube/key"] = firstIssue.Key
+	}
+	if firstIssue.UpdateDate != "" {
+		tags["sonarqube/update_date"] = firstIssue.UpdateDate
+	}
+	if hasFlows(firstIssue.Flows) {
+		tags["sonarqube/flows"] = firstIssue.Flows
+	}
+	if firstIssue.QuickFixAvailable != nil {
+		tags["sonarqube/quick_fix_available"] = *firstIssue.QuickFixAvailable
 	}
 	// Language is a property of the rule, not the issue.
 	if hasRule {
@@ -509,9 +586,9 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 				}
 			}
 
-			// Check for OWASP tags
-			if strings.Contains(lowerTag, "owasp") {
-				owaspSet[tag] = true
+			// Check for legacy owasp-a<N> tags (heimdall2-shaped inputs)
+			if m := owaspTagPattern.FindStringSubmatch(tag); m != nil {
+				addOwaspID(owaspSet, m[1])
 			}
 
 			// Collect other tags by category
@@ -538,8 +615,8 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 				}
 			}
 
-			if strings.Contains(lowerTag, "owasp") {
-				owaspSet[tag] = true
+			if m := owaspTagPattern.FindStringSubmatch(tag); m != nil {
+				addOwaspID(owaspSet, m[1])
 			}
 		}
 	}
@@ -563,6 +640,20 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 		}
 	}
 
+	// Parse OWASP Top 10 2017 categories from rule descriptions (SonarQube 26+
+	// exposes them only as reference text, not as sysTags).
+	if hasRule && rule != nil {
+		texts := []string{rule.HTMLDesc, rule.MDDesc}
+		for _, section := range rule.DescriptionSections {
+			texts = append(texts, section.Content)
+		}
+		for _, text := range texts {
+			for _, m := range owasp2017Pattern.FindAllStringSubmatch(text, -1) {
+				addOwaspID(owaspSet, m[1])
+			}
+		}
+	}
+
 	// Convert sets to sorted slices
 	cweIds := make([]string, 0, len(cweSet))
 	for cweID := range cweSet {
@@ -570,11 +661,15 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 	}
 	sort.Strings(cweIds)
 
-	owaspTags := make([]string, 0, len(owaspSet))
-	for owasp := range owaspSet {
-		owaspTags = append(owaspTags, owasp)
+	owaspIDs := make([]string, 0, len(owaspSet))
+	for id := range owaspSet {
+		owaspIDs = append(owaspIDs, id)
 	}
-	sort.Strings(owaspTags)
+	sort.Slice(owaspIDs, func(i, j int) bool {
+		a, _ := strconv.Atoi(owaspIDs[i][1:])
+		b, _ := strconv.Atoi(owaspIDs[j][1:])
+		return a < b
+	})
 
 	allTags := make(map[string][]string)
 	for category, values := range allTagsMap {
@@ -586,7 +681,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 		allTags[category] = valueSlice
 	}
 
-	return cweIds, owaspTags, allTags
+	return cweIds, owaspIDs, allTags
 }
 
 func createResultFromIssue(issue Issue, componentMap map[string]Component) hdf.RequirementResult {

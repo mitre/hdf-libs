@@ -275,6 +275,24 @@ Full rationale documented in CHANGELOG.md.
 8. Add subpath export to `package.json`
 9. Add to `src/create-index.ts` for barrel exports
 
+### Adding or Changing a Field — Propagate to Every Output Converter
+
+A new HDF field is invisible to consumers until the converters emit it. When you
+add a field to a schema, before release confirm it reaches the whole pipeline:
+
+1. **Importers** (`*-to-hdf`) — populate the field wherever a source carries the data.
+2. **Every output converter** (`hdf-to-*`) — map the field into the target format's
+   home, or record a documented reason it can't (NOT-IN-SOURCE / no target home).
+   `hdf-to-xml` is a generic serializer and renders any field automatically — **no
+   change needed there** — but the other exporters (asff, ckl, cklb, oscal-poam,
+   oscal-sar, xccdf, csv, ocsf, ecs, csaf-vex, openvex, cyclonedx-vex, splunk) each
+   need the field mapped by hand.
+3. **New plural/array field?** Add its `plural→singular` entry to `hdf-to-xml`'s
+   container map so its XML child element is named (unmapped array keys fall back to
+   `<item>` — lossless but generically named).
+4. Tool-specific metadata with no typed home goes to `extensions`/namespaced `tags`,
+   not a new field — see "Auxiliary Tool Metadata" above.
+
 ### Naming Conventions
 
 - Schema `$defs`: `Snake_Case` (e.g., `Evaluated_Requirement`, `Authorization_Status`)
@@ -363,6 +381,41 @@ diff primitives. Also `packageurl-go` for PURL matching.
 `packageurl-js` for PURLs. Build custom format-agnostic parser (~100-200 lines)
 normalizing CycloneDX `components[]` and SPDX `packages[]` into a common model.
 The diff algorithm is format-agnostic once components are extracted.
+
+---
+
+## Auxiliary Tool Metadata (`extensions` + namespaced `tags`)
+
+Some source tools carry metadata that has no typed HDF home — scanner run
+statistics, per-finding hashes/keys, raw analysis flags. HDF does **not** need a
+new field for these: the schema already provides two open sinks. Route auxiliary
+data there under a **reserved tool-named namespace** rather than dropping it or
+inventing schema.
+
+### Two homes, by scope
+
+- **Scan / baseline scope** → `baseline.extensions['<tool>']` (an object). The
+  `extensions` map (`additionalProperties: true`, present on the document root and
+  `Evaluated_Baseline`) is documented as *"reserved for tool-specific data not
+  defined in the HDF standard."* Use it for whole-scan exhaust: gosec `Stats`
+  (files/lines/nosec counts) + Go build errors, NeuVector `report.cmds`, IonChannel
+  run-verdict metadata.
+- **Requirement scope** → `tags['<tool>/<key>']`. `tags` is an open string map, so
+  a namespaced key absorbs per-finding extras: SonarQube `hash`/`key`/`flows`,
+  IonChannel `trigger_*`.
+
+### Rules
+
+- **Namespace under the tool name.** `baseline.extensions['gosec']`,
+  `tags['sonarqube/hash']` — never a bare top-level key, so two converters never
+  collide and consumers can filter by tool.
+- **Only genuinely-homeless data.** Anything with a typed field (cvss, cwe, refs,
+  severity, status) goes to the typed field. `extensions`/namespaced-`tags` are the
+  last resort for data the typed model can't express, not a shortcut around it.
+- **Scan-level data goes once, at baseline scope** — do not duplicate a whole-scan
+  array onto every requirement's tags.
+- Populate conditionally (only when the source carries the field); Go+TS byte-parity
+  as always.
 
 ---
 

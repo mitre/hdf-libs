@@ -19,7 +19,7 @@
           ],
           "descriptions": [
             {
-              "data": "Invicti Enterprise detected that weak ciphers are enabled during secure communication (SSL). You should allow only strong ciphers on your web server to protect secure communication with your visitors.\nClassification: cwe=\u003e327, owasp=\u003eA6\nImpact: Attackers might decrypt SSL traffic between your server and your visitors.\nFirstSeenDate: 02/20/2023 05:03 PM\nLastSeenDate: 05/05/2023 05:07 PM\nCertainty: 100\nType: WeakCiphersDetected\nConfirmed: True",
+              "data": "Invicti Enterprise detected that weak ciphers are enabled during secure communication (SSL). You should allow only strong ciphers on your web server to protect secure communication with your visitors.\nExtra-information: List of Supported Weak Ciphers=\u003eTLS_RSA_WITH_AES_128_CBC_SHA256 (0x003C), TLS_RSA_WITH_AES_256_CBC_SHA256 (0x003D), TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256 (0xC027), TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384 (0xC028), TLS_RSA_WITH_AES_128_GCM_SHA256 (0x009C), TLS_RSA_WITH_AES_256_GCM_SHA384 (0x009D)\nClassification: cwe=\u003e327, owasp=\u003eA6\nImpact: Attackers might decrypt SSL traffic between your server and your visitors.\nFirstSeenDate: 02/20/2023 05:03 PM\nLastSeenDate: 05/05/2023 05:07 PM\nCertainty: 100\nType: WeakCiphersDetected\nConfirmed: True",
               "label": "default"
             },
             {

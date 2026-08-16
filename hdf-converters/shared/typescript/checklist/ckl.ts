@@ -114,9 +114,10 @@ function cklVulnToModel(v: VulnEl): Vuln {
   const attr = (name: string): string =>
     str(data.find((sd) => sd.VULN_ATTRIBUTE === name)?.ATTRIBUTE_DATA);
   const ccis: string[] = [];
+  const legacyIDs: string[] = [];
   const extra: Record<string, string> = {};
   const promoted = new Set([
-    'CCI_REF', 'Vuln_Num', 'Severity', 'Group_Title', 'Rule_ID', 'Rule_Ver',
+    'CCI_REF', 'LEGACY_ID', 'Vuln_Num', 'Severity', 'Group_Title', 'Rule_ID', 'Rule_Ver',
     'Rule_Title', 'Vuln_Discuss', 'Check_Content', 'Fix_Text', 'Weight', 'Class',
   ]);
   for (const sd of data) {
@@ -124,6 +125,8 @@ function cklVulnToModel(v: VulnEl): Vuln {
     const val = str(sd.ATTRIBUTE_DATA);
     if (name === 'CCI_REF') {
       if (val) ccis.push(val);
+    } else if (name === 'LEGACY_ID') {
+      if (val) legacyIDs.push(val);
     } else if (!promoted.has(name) && val) {
       extra[name] = val;
     }
@@ -141,6 +144,7 @@ function cklVulnToModel(v: VulnEl): Vuln {
     weight: attr('Weight'),
     classification: attr('Class'),
     ccis,
+    legacyIDs,
     status: parseStatus(v.STATUS),
     findingDetails: str(v.FINDING_DETAILS),
     comments: str(v.COMMENTS),
@@ -219,6 +223,10 @@ function modelVulnToCkl(v: Vuln): {
     const val = typed[name] ?? v.extra?.[name] ?? '';
     if (!val && !CORE_VULN_ATTR.has(name)) continue;
     stigData.push({ VULN_ATTRIBUTE: name, ATTRIBUTE_DATA: val });
+  }
+  // LEGACY_ID entries (one per id) precede CCI_REF, matching STIG Viewer.
+  for (const lid of v.legacyIDs ?? []) {
+    if (lid) stigData.push({ VULN_ATTRIBUTE: 'LEGACY_ID', ATTRIBUTE_DATA: lid });
   }
   for (const cci of v.ccis) {
     stigData.push({ VULN_ATTRIBUTE: 'CCI_REF', ATTRIBUTE_DATA: cci });
