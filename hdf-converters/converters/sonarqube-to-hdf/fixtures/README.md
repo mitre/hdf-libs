@@ -18,9 +18,13 @@ fold (rules whose descriptions reference `OWASP Top 10 2017 - Category A#`).
   BLOCKER/MAJOR/MINOR severities — covering every OWASP-2017 category the scan
   produced (A1, A2, A3, A10), each also carrying CWE refs so the fold demonstrably
   adds controls beyond CWE→NIST.
-- **Sanitization:** per-finding `author`/`assignee` fields stripped. Component keys
-  are the public Juice Shop source paths. No local host, port, token, or
-  environment detail is present.
+- **Sanitization:** per-finding `author`/`assignee` fields stripped. The
+  `secrets:S6706` rule ships an **example** PEM private key in its documentation
+  (`how_to_fix` section) — a rule-doc sample, not a live credential — replaced
+  with `[EXAMPLE PRIVATE KEY REDACTED FROM FIXTURE]` so secret scanners don't trip
+  on it (this section is not read for CWE/OWASP mapping, so the fold is
+  unaffected). Component keys are the public Juice Shop source paths. No local
+  host, port, token, or environment detail is present.
 
 ## Other fixtures (hand-curated, path-coverage)
 
