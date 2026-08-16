@@ -391,6 +391,9 @@ func RegisterAll(s *sdkmcp.Server) {
 			}, handleEnum)
 		}
 	}
+
+	// Per-session tool-call transcript (middleware recorder + read-only resource).
+	RegisterTranscript(s)
 }
 
 func handleSchemaSlice(_ context.Context, req *sdkmcp.ReadResourceRequest) (*sdkmcp.ReadResourceResult, error) {
