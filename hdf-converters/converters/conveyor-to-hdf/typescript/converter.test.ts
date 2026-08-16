@@ -470,3 +470,37 @@ describe('conveyor to HDF converter', async () => {
     });
   });
 });
+
+describe('absent-score handling', () => {
+  it('maps a scoreless result to notReviewed @ 0.0 and keeps genuine 0/positive verdicts', async () => {
+    const input = JSON.stringify({
+      api_error_message: '',
+      api_response: {
+        file_tree: {
+          'sha-absent': { name: ['absent.bin'], sha256: 'sha-absent' },
+          'sha-zero': { name: ['zero.bin'], sha256: 'sha-zero' },
+          'sha-scored': { name: ['scored.bin'], sha256: 'sha-scored' },
+        },
+        results: {
+          'sha-absent.SvcA.v1.k1': { sha256: 'sha-absent', response: { service_name: 'SvcA', milestones: {} }, result: { sections: [{ title_text: 't', body: null, body_format: 'TEXT', classification: 'TLP:C', depth: 0 }] } },
+          'sha-zero.SvcA.v1.k2': { sha256: 'sha-zero', response: { service_name: 'SvcA', milestones: {} }, result: { score: 0, sections: [] } },
+          'sha-scored.SvcA.v1.k3': { sha256: 'sha-scored', response: { service_name: 'SvcA', milestones: {} }, result: { score: 500, sections: [] } },
+        },
+        times: {},
+      },
+    });
+    const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
+    const all = hdf.baselines.flatMap((b) => b.requirements);
+    const byId = (id: string) => all.find((r) => r.id === id);
+
+    const absent = byId('sha-absent');
+    expect(absent?.results[0].status).toBe('notReviewed');
+    expect(absent?.impact).toBe(0);
+    expect(absent?.results[0].message).toContain('no score');
+
+    expect(byId('sha-zero')?.results[0].status).toBe('passed');
+    expect(byId('sha-zero')?.impact).toBe(0);
+    expect(byId('sha-scored')?.results[0].status).toBe('failed');
+    expect(byId('sha-scored')?.impact).toBe(0.5);
+  });
+});

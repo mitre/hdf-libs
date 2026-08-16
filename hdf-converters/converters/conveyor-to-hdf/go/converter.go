@@ -78,8 +78,10 @@ type ConveyorMilestone struct {
 }
 
 // ConveyorScore is the result block containing the score and sections.
+// Score is a pointer so an absent field (no verdict) stays distinguishable
+// from a genuine 0 (service ran clean).
 type ConveyorScore struct {
-	Score    float64           `json:"score"`
+	Score    *float64          `json:"score"`
 	Sections []ConveyorSection `json:"sections"`
 }
 
@@ -300,8 +302,21 @@ func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequi
 	scannerName := result.Response.ServiceName
 	startTime := hdfutil.ParseTimestamp(result.Response.Milestones.ServiceStarted)
 	runTime := computeRunTime(result.Response.Milestones.ServiceStarted, result.Response.Milestones.ServiceCompleted)
-	score := result.Result.Score
-	status := determineStatus(score)
+	// An absent score carries no verdict: the service entry exists but nothing
+	// was adjudicated — notReviewed with the reason in the message, never a
+	// silent pass. A genuine 0 stays a clean pass.
+	var (
+		status  hdf.ResultStatus
+		impact  float64
+		message *string
+	)
+	if result.Result.Score == nil {
+		status = hdf.NotReviewed
+		message = hdfutil.Ptr("Conveyor result carries no score; verdict not evaluated.")
+	} else {
+		status = determineStatus(*result.Result.Score)
+		impact = scoreToImpact(*result.Result.Score)
+	}
 
 	var results []hdf.RequirementResult
 	if len(result.Result.Sections) > 0 {
@@ -310,6 +325,7 @@ func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequi
 			r := hdf.RequirementResult{
 				Status:    status,
 				CodeDesc:  codeDesc,
+				Message:   message,
 				StartTime: startTime,
 				RunTime:   runTime,
 			}
@@ -321,6 +337,7 @@ func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequi
 			{
 				Status:    status,
 				CodeDesc:  fmt.Sprintf("No sections reported by %s", scannerName),
+				Message:   message,
 				StartTime: startTime,
 				RunTime:   runTime,
 			},
@@ -331,7 +348,7 @@ func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequi
 	return hdf.EvaluatedRequirement{
 		ID:                 result.SHA256,
 		Title:              &title,
-		Impact:             scoreToImpact(score),
+		Impact:             impact,
 		Tags:               tags,
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		Descriptions:       descriptions,
