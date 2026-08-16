@@ -57,6 +57,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | SonarQube | `convertSonarqubeToHdf` | JSON |
 | SPDX VEX (SPDX 3.0 security profile → HDF Amendments) | `convertSpdxVexToHdf` | JSON |
 | Splunk | `convertSplunkToHdf` | JSON |
+| Trivy | `convertTrivyToHdf` | JSON (native; SARIF/CycloneDX/ASFF/GitLab auto-routed) |
 | TruffleHog | `convertTrufflehogToHdf` | JSON |
 | Twistlock | `convertTwistlockToHdf` | JSON |
 | Veracode | `convertVeracodeToHdf` | JSON |

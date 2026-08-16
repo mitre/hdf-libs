@@ -24,6 +24,7 @@ import {
   convertHdfToCsv,
   convertHdfToXml,
   convertGitlabToHdf,
+  convertTrivyToHdf,
   convertTrufflehogToHdf,
   convertHipcheckToHdf,
   convertBurpsuiteToHdf,
@@ -198,6 +199,11 @@ describe('Main exports', () => {
   it('should export convertGitlabToHdf from main index', () => {
     expect(convertGitlabToHdf).toBeDefined();
     expect(typeof convertGitlabToHdf).toBe('function');
+  });
+
+  it('should export convertTrivyToHdf from main index', () => {
+    expect(convertTrivyToHdf).toBeDefined();
+    expect(typeof convertTrivyToHdf).toBe('function');
   });
 
   it('should export convertTrufflehogToHdf from main index', () => {
