@@ -246,7 +246,7 @@ function convertVuln(v: TrivyVuln, res: TrivyResult, startTime: Date): Evaluated
         status: ResultStatus.Failed,
         codeDesc: buildVulnCodeDesc(v, res),
         startTime,
-        message: `Severity: ${v.Severity ?? 'UNKNOWN'}`,
+        message: `Severity: ${firstNonEmpty(v.Severity, 'UNKNOWN')}`,
       } as RequirementResult,
     ],
   };
