@@ -1,4 +1,4 @@
-package cmd
+package convert
 
 import trivy "github.com/mitre/hdf-libs/hdf-converters/v3/converters/trivy-to-hdf/go"
 
