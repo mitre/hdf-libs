@@ -190,10 +190,11 @@ These edits are uniform across the workspace and safe to script. Use a small Pyt
 
 | File pattern | What to change |
 |---|---|
-| Workspace `package.json` (9 files: `hdf-cli`, `hdf-converters`, `hdf-diff`, `hdf-extension-graph`, `hdf-generators`, `hdf-mappings`, `hdf-parsers`, `hdf-utilities`, `hdf-validators`) | `"version": "OLD"` → `"version": "NEW"` |
+| Workspace `package.json` (10 files: `hdf-cli`, `hdf-converters`, `hdf-diff`, `hdf-engine`, `hdf-extension-graph`, `hdf-generators`, `hdf-mappings`, `hdf-parsers`, `hdf-utilities`, `hdf-validators`) | `"version": "OLD"` → `"version": "NEW"` |
 | `hdf-schema/package.json` | Same |
+| `hdf-engine/go/engine.go` — the `Version()` constant | `return "OLD"` → `return "NEW"`. TestVersion asserts this equals `hdf-engine/package.json`, so a missed bump fails CI (bead 4908.19). It is NOT an ldflags stamp — the engine is consumed as a library where no linker flags are set. |
 | `hdf-schema/src/schemas/*.schema.json` (7 root schemas) | `"$id"` URLs ending in `/vOLD` → `/vNEW`. Also any `$ref` URLs in primitives that quote a version path. |
-| Cross-module `go.mod` requires (`hdf-converters/go.mod`, `hdf-cli/go.mod`, `hdf-diff/go/go.mod`, `hdf-parsers/go/go.mod`, `hdf-generators/go/go.mod`) | Lines matching `github.com/mitre/hdf-libs/<x>/v3 vOLD` → `vNEW`. Regex: `s/(hdf-libs/[^ ]+) vOLD/$1 vNEW/g` |
+| Cross-module `go.mod` requires (`hdf-converters/go.mod`, `hdf-cli/go.mod`, `hdf-diff/go/go.mod`, `hdf-engine/go/go.mod`, `hdf-parsers/go/go.mod`, `hdf-generators/go/go.mod`) | Lines matching `github.com/mitre/hdf-libs/<x>/v3 vOLD` → `vNEW`. Regex: `s/(hdf-libs/[^ ]+) vOLD/$1 vNEW/g` |
 
 Use `git status` after the script run to spot-check no `node_modules`, `dist/`, or `.git/` paths got touched.
 

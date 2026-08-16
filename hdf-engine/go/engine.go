@@ -7,7 +7,12 @@
 // This file is the scaffold placeholder; the engines land via later cards.
 package hdfengine
 
-// Version reports the library version, kept on the workspace lockstep.
+// Version reports the library version. The monorepo bumps every package in
+// lockstep, so this must match hdf-engine/package.json — the single source of
+// truth. It cannot be an ldflags stamp: the engine is consumed as a library
+// (handle EngineSchemaVersion, converter generator provenance) where no linker
+// flags are set. TestVersion enforces the match against package.json, so a
+// workspace bump that forgets this constant fails CI instead of drifting.
 func Version() string {
 	return "3.5.0"
 }
