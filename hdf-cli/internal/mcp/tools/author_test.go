@@ -167,6 +167,12 @@ func TestHdfAuthor_RefusesSchemaInvalid(t *testing.T) {
 	if res == nil || !res.IsError || !strings.Contains(payloadText(t, res), "SCHEMA_INVALID") {
 		t.Fatalf("invalid content must be refused with SCHEMA_INVALID: %s", payloadTextOrEmpty(res))
 	}
+	// The recovery hint must steer to the cheap per-$def schema slice, not the
+	// expensive whole-schema resource (jobi.2 / D5).
+	tr := toolResultPayload(t, res)
+	if !strings.Contains(tr.NextCall, "slice") || !strings.Contains(tr.NextCall, "hdf://schema/hdf-system/") {
+		t.Errorf("SchemaInvalid nextCall should point at the per-def slice, got %q", tr.NextCall)
+	}
 	if _, err := os.Stat(filepath.Join(os.Getenv("HDF_MCP_ROOT"), "out.json")); !os.IsNotExist(err) {
 		t.Fatal("refused document must not be written")
 	}

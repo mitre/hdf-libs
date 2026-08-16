@@ -35,7 +35,7 @@ import (
 type authorInput struct {
 	DocType   string           `json:"docType" jsonschema:"document to author: system, plan, evidence, or amendments"`
 	Name      string           `json:"name" jsonschema:"the document name"`
-	Content   []map[string]any `json:"content,omitempty" jsonschema:"content array: components/assessments/contents, or overrides (amendments judgment path). Shape is in hdf://schema/hdf-<docType>; the server validates and refuses invalid content."`
+	Content   []map[string]any `json:"content,omitempty" jsonschema:"content array: components/assessments/contents, or overrides (amendments judgment path). Per-item shape: the hdf://schema/{docType}/{def} slice (e.g. hdf://schema/hdf-amendments/Standalone_Override), not the whole schema. The server validates and refuses invalid content."`
 	Source    *handle.Source   `json:"source,omitempty" jsonschema:"amendments from_vex only: a VEX document as {path}; overrides are derived and stamped appliedBy.type=system"`
 	ExpiresAt string           `json:"expiresAt,omitempty" jsonschema:"amendments from_vex only: RFC3339 expiry applied to every derived override"`
 	Output    string           `json:"output,omitempty" jsonschema:"path under HDF_MCP_ROOT to write the document"`
@@ -62,7 +62,7 @@ type authorOutput struct {
 func RegisterAuthor(s *sdkmcp.Server) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
 		Name:        "hdf_author",
-		Description: "Author an HDF document from model-supplied structured content and return a summary plus a reusable handle — never the document body. docType is system (components), plan (assessments), evidence (contents), or amendments (overrides). For amendments the server holds field authority: the judgment path (content[] of overrides) stamps appliedBy.type=agent + appliedAt and requires expiresAt on each; the from_vex path (source = a VEX document + expiresAt) derives overrides and stamps appliedBy.type=system. Per-type shapes are in the hdf://schema/hdf-<docType> resources; output that does not validate is refused. Writes under the shared write model (dry_run previews; a writes-disabled deployment returns a preview).",
+		Description: "Author an HDF document from model-supplied structured content and return a summary plus a reusable handle — never the document body. docType is system (components), plan (assessments), evidence (contents), or amendments (overrides). For amendments the server holds field authority: the judgment path (content[] of overrides) stamps appliedBy.type=agent + appliedAt and requires expiresAt on each; the from_vex path (source = a VEX document + expiresAt) derives overrides and stamps appliedBy.type=system. Per-item shapes: the compact hdf://schema/{docType}/{def} slices, not the whole schema. Output that does not validate is refused. Writes under the shared write model (dry_run previews; a writes-disabled deployment returns a preview).",
 		Annotations: appmcp.Writing(false, true),
 	}, hdfAuthor())
 }
@@ -91,7 +91,7 @@ func hdfAuthor() sdkmcp.ToolHandlerFor[authorInput, authorOutput] {
 		if !vr.Valid {
 			return toolError(mcperr.New(mcperr.SchemaInvalid,
 				fmt.Sprintf("the authored %s document does not validate: %s", in.DocType, vr.Error()), nil).
-				WithNextCall("fix the content; consult the hdf://schema/hdf-" + resourceSlug(in.DocType) + " resource for the required shape")), authorOutput{}, nil
+				WithNextCall("fix the content; consult the hdf://schema/hdf-" + resourceSlug(in.DocType) + "/{def} slice resources for the required per-item shape")), authorOutput{}, nil
 		}
 		sum := sha256.Sum256(docBytes)
 		out.Sha256 = hex.EncodeToString(sum[:])
