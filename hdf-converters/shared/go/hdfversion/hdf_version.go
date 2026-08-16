@@ -81,8 +81,7 @@ func TransformHDF(input []byte, fromVersion, toVersion string) ([]byte, []string
 
 // upgradeV2ToV3 converts the legacy Heimdall HDF schema (v2, the InSpec
 // exec-json profiles/platform shape) to modern HDF (v3). Delegates to the
-// existing legacyhdf converter (whose type/function names still use the older
-// "V1"/"V2" spelling — see the package NOTE above).
+// legacyhdf converter (IsLegacyHDF / ConvertLegacyHDF).
 func upgradeV2ToV3(input []byte) ([]byte, []string, error) {
 	if !legacyhdf.IsLegacyHDF(input) {
 		return nil, nil, fmt.Errorf("input is not the legacy HDF (v2) shape")
@@ -177,7 +176,7 @@ func downgradeVersion(v3 *hdf.HDFResults) string {
 	return "0.0.0"
 }
 
-// convertBaselineToV2Profile maps an EvaluatedBaseline back to a V1Profile,
+// convertBaselineToV2Profile maps an EvaluatedBaseline back to a LegacyProfile,
 // returning warnings for any non-representable amendments on its requirements.
 func convertBaselineToV2Profile(b hdf.EvaluatedBaseline) (legacyhdf.LegacyProfile, []string) {
 	p := legacyhdf.LegacyProfile{
@@ -249,7 +248,7 @@ func convertBaselineToV2Profile(b hdf.EvaluatedBaseline) (legacyhdf.LegacyProfil
 	return p, warnings
 }
 
-// convertDependencyToV2 maps a Dependency to V1Dependency.
+// convertDependencyToV2 maps a Dependency to LegacyDependency.
 func convertDependencyToV2(d hdf.Dependency) legacyhdf.LegacyDependency {
 	return legacyhdf.LegacyDependency{
 		Name: d.Name,
@@ -259,7 +258,7 @@ func convertDependencyToV2(d hdf.Dependency) legacyhdf.LegacyDependency {
 	}
 }
 
-// convertRequirementToV2Control maps an EvaluatedRequirement to a V1Control,
+// convertRequirementToV2Control maps an EvaluatedRequirement to a LegacyControl,
 // flattening status-changing amendments into the control status + waiver_data
 // and returning warnings for amendments with no v2 equivalent.
 func convertRequirementToV2Control(r hdf.EvaluatedRequirement) (legacyhdf.LegacyControl, []string) {
@@ -438,7 +437,7 @@ func nonRepresentableWarnings(r hdf.EvaluatedRequirement) []string {
 	return w
 }
 
-// convertResultToV2 maps a RequirementResult to a V1Result.
+// convertResultToV2 maps a RequirementResult to a LegacyResult.
 func convertResultToV2(r hdf.RequirementResult) legacyhdf.LegacyResult {
 	v1r := legacyhdf.LegacyResult{
 		Status:  v2StatusString(r.Status),

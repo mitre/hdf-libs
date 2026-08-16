@@ -12,6 +12,37 @@ import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 // Deprecated: use LegacyHDFResults.
 type HDFV1Results = LegacyHDFResults
 
+// Deprecated input-type aliases. The legacyhdf package is importable via `go get`,
+// so these exported struct names are public API even without a barrel; the aliases
+// keep external Go consumers building across the rename.
+
+// Deprecated: use LegacyResult.
+type V1Result = LegacyResult
+
+// Deprecated: use LegacySourceLocation.
+type V1SourceLocation = LegacySourceLocation
+
+// Deprecated: use LegacyDescription.
+type V1Description = LegacyDescription
+
+// Deprecated: use LegacyControl.
+type V1Control = LegacyControl
+
+// Deprecated: use LegacyGroup.
+type V1Group = LegacyGroup
+
+// Deprecated: use LegacyDependency.
+type V1Dependency = LegacyDependency
+
+// Deprecated: use LegacyProfile.
+type V1Profile = LegacyProfile
+
+// Deprecated: use LegacyPlatform.
+type V1Platform = LegacyPlatform
+
+// Deprecated: use LegacyStatistics.
+type V1Statistics = LegacyStatistics
+
 // Deprecated: use ConvertLegacyHDF.
 func ConvertV1ToV2(v1 *LegacyHDFResults, converterVersion string) *hdf.HDFResults {
 	return ConvertLegacyHDF(v1, converterVersion)
