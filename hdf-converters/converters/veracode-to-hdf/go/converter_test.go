@@ -518,7 +518,7 @@ func TestBuildCWERequirement_NoCode(t *testing.T) {
 			}},
 		}},
 	}
-	req := buildCWERequirement(cat, 0.9, "")
+	req := buildCWERequirement(cat, "5", 0.9, "")
 	assert.Nil(t, req.Code, "requirement with no source-carrying flaw must leave code unset")
 }
 
@@ -795,7 +795,7 @@ func TestBuildCWERequirement_NoRemediationStatus(t *testing.T) {
 			StaticFlaws: StaticFlaws{Flaws: []Flaw{{IssueID: "1", Severity: "5"}}},
 		}},
 	}
-	req := buildCWERequirement(cat, 0.9, "")
+	req := buildCWERequirement(cat, "5", 0.9, "")
 	for _, d := range req.Descriptions {
 		assert.NotEqual(t, "remediation_status", d.Label,
 			"requirement with no remediation_status flaw must not emit the description")
@@ -880,4 +880,58 @@ func TestConvertVeracodeToHDF_VerificationMethod(t *testing.T) {
 		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
 			"requirement %q expected verificationMethod=automated", req.ID)
 	}
+}
+
+// Unrated-severity marker (CWE path): a severity element with no level
+// attribute carries the shared severity_rating tag on its category
+// requirements; rated levels — including "0", the genuine informational tier —
+// omit it.
+func TestConvertVeracodeToHDF_UnratedSeverityMarker(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="ISO-8859-1"?>
+<detailedreport xmlns="https://www.veracode.com/schema/reports/export/1.0" app_name="Unrated" first_build_submitted_date="2021-12-29 22:16:36 UTC">
+  <severity>
+    <category categoryid="90" categoryname="No Level" pcirelated="false">
+      <cwe cweid="78" cwename="OS Command Injection" pcirelated="false">
+        <staticflaws>
+          <flaw severity="" categoryname="No Level" count="1" issueid="1" module="app.war" type="exec" description="d" cweid="78" sourcefile="A.java" line="1" sourcefilepath="com/x/"/>
+        </staticflaws>
+      </cwe>
+    </category>
+  </severity>
+  <severity level="3">
+    <category categoryid="91" categoryname="Rated" pcirelated="false">
+      <cwe cweid="89" cwename="SQL Injection" pcirelated="false">
+        <staticflaws>
+          <flaw severity="3" categoryname="Rated" count="1" issueid="2" module="app.war" type="sql" description="d" cweid="89" sourcefile="B.java" line="2" sourcefilepath="com/x/"/>
+        </staticflaws>
+      </cwe>
+    </category>
+  </severity>
+  <severity level="0">
+    <category categoryid="92" categoryname="Informational" pcirelated="false">
+      <cwe cweid="94" cwename="Code Injection" pcirelated="false">
+        <staticflaws>
+          <flaw severity="0" categoryname="Informational" count="1" issueid="3" module="app.war" type="info" description="d" cweid="94" sourcefile="C.java" line="3" sourcefilepath="com/x/"/>
+        </staticflaws>
+      </cwe>
+    </category>
+  </severity>
+</detailedreport>`)
+
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	reqs := result.Baselines[0].Requirements
+
+	unrated := shared.MustFindRequirement(t, reqs, "90")
+	assert.Equal(t, shared.UnratedSeverityValue, unrated.Tags[shared.UnratedSeverityTag],
+		"absent severity level must carry the unrated marker")
+
+	rated := shared.MustFindRequirement(t, reqs, "91")
+	_, present := rated.Tags[shared.UnratedSeverityTag]
+	assert.False(t, present, "level 3 is rated and must not carry the marker")
+
+	info := shared.MustFindRequirement(t, reqs, "92")
+	_, present = info.Tags[shared.UnratedSeverityTag]
+	assert.False(t, present, "level 0 is the rated informational tier and must not carry the marker")
 }

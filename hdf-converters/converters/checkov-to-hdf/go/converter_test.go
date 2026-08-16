@@ -408,6 +408,55 @@ func TestConvertCheckovToHDF_ImpactFromSeverity(t *testing.T) {
 	}
 }
 
+func TestConvertCheckovToHDF_UnratedSeverityMarker(t *testing.T) {
+	// severity: null (open-source checkov) → severity_rating: unrated; a rated
+	// severity must not carry the marker.
+	input := []byte(`{
+		"check_type": "terraform",
+		"results": {
+			"passed_checks": [],
+			"failed_checks": [{
+				"check_id": "CKV_UNRATED_1",
+				"check_name": "Check without severity",
+				"check_result": {"result": "FAILED"},
+				"severity": null,
+				"file_path": "/main.tf",
+				"file_line_range": [1, 5],
+				"resource": "aws_s3_bucket.test",
+				"guideline": null,
+				"code_block": null,
+				"check_class": "checkov.terraform.checks.resource.Test"
+			}, {
+				"check_id": "CKV_RATED_1",
+				"check_name": "Check with severity",
+				"check_result": {"result": "FAILED"},
+				"severity": "HIGH",
+				"file_path": "/main.tf",
+				"file_line_range": [6, 10],
+				"resource": "aws_s3_bucket.test2",
+				"guideline": null,
+				"code_block": null,
+				"check_class": "checkov.terraform.checks.resource.Test"
+			}],
+			"skipped_checks": [],
+			"parsing_errors": []
+		},
+		"summary": {"passed": 0, "failed": 2, "skipped": 0, "parsing_errors": 0, "resource_count": 2, "checkov_version": "3.2.524"}
+	}`)
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	byID := map[string]map[string]interface{}{}
+	for _, req := range result.Baselines[0].Requirements {
+		byID[req.ID] = req.Tags
+	}
+	require.Contains(t, byID, "CKV_UNRATED_1")
+	require.Contains(t, byID, "CKV_RATED_1")
+	assert.Equal(t, "unrated", byID["CKV_UNRATED_1"]["severity_rating"], "null severity must carry severity_rating: unrated")
+	_, has := byID["CKV_RATED_1"]["severity_rating"]
+	assert.False(t, has, "rated severity must not carry the severity_rating tag")
+}
+
 // ---- Descriptions ----
 
 func TestConvertCheckovToHDF_DescriptionDefault(t *testing.T) {

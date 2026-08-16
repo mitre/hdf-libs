@@ -232,6 +232,7 @@ func buildRequirement(ruleID string, issues []GosecIssue, startTime time.Time) h
 	if rep.Confidence != "" {
 		tags["confidence"] = rep.Confidence
 	}
+	shared.MarkUnratedSeverity(tags, rep.Severity)
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: rep.Details},

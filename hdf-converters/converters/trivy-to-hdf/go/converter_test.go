@@ -170,6 +170,36 @@ func TestConvert_VulnWithoutPurlOmitsAffectedPackages(t *testing.T) {
 	assertSchemaValid(t, res)
 }
 
+func TestConvertMisconf_OmitsMisconfigTypeTagWhenTypeIsEmpty(t *testing.T) {
+	// Tags are presence-based: an absent or empty Type must omit the key
+	// entirely (the TS peer's behavior), never emit "misconfig_type": "".
+	input := []byte(`{"SchemaVersion":2,"ArtifactName":"x","ArtifactType":"filesystem","Results":[{"Target":"Dockerfile","Class":"config","Misconfigurations":[{"ID":"M-TYPE-ABSENT","Title":"t","Severity":"LOW","Status":"FAIL"},{"ID":"M-TYPE-EMPTY","Title":"t","Severity":"LOW","Status":"FAIL","Type":""},{"ID":"M-TYPE-SET","Title":"t","Severity":"LOW","Status":"FAIL","Type":"Dockerfile Security Check"}]}]}`)
+	res, err := ConvertTrivyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	for _, id := range []string{"Trivy/M-TYPE-ABSENT", "Trivy/M-TYPE-EMPTY"} {
+		req := findReq(res, id)
+		require.NotNil(t, req)
+		assert.NotContains(t, req.Tags, "misconfig_type", "%s must omit the tag, not emit an empty string", id)
+	}
+	set := findReq(res, "Trivy/M-TYPE-SET")
+	require.NotNil(t, set)
+	assert.Equal(t, "Dockerfile Security Check", set.Tags["misconfig_type"])
+}
+
+func TestConvertVuln_EmptySeverityMessageFallsBackToUnknown(t *testing.T) {
+	// Absent, empty-string, and null Severity all render as UNKNOWN in the
+	// result message; the TS peer must agree on all three.
+	input := []byte(`{"SchemaVersion":2,"ArtifactName":"x","ArtifactType":"filesystem","Results":[{"Class":"os-pkgs","Vulnerabilities":[{"VulnerabilityID":"CVE-SEV-ABSENT","PkgName":"p","InstalledVersion":"1"},{"VulnerabilityID":"CVE-SEV-EMPTY","PkgName":"p","InstalledVersion":"1","Severity":""},{"VulnerabilityID":"CVE-SEV-NULL","PkgName":"p","InstalledVersion":"1","Severity":null}]}]}`)
+	res, err := ConvertTrivyToHDF(input, converterVersion)
+	require.NoError(t, err)
+	for _, id := range []string{"Trivy/CVE-SEV-ABSENT", "Trivy/CVE-SEV-EMPTY", "Trivy/CVE-SEV-NULL"} {
+		req := findReq(res, id)
+		require.NotNil(t, req)
+		require.NotNil(t, req.Results[0].Message)
+		assert.Equal(t, "Severity: UNKNOWN", *req.Results[0].Message, id)
+	}
+}
+
 func TestConvert_InvalidInput(t *testing.T) {
 	_, err := ConvertTrivyToHDF([]byte("not json"), converterVersion)
 	assert.Error(t, err)
@@ -248,11 +278,44 @@ func TestMisconfStatus(t *testing.T) {
 func TestHelperEdges(t *testing.T) {
 	assert.Equal(t, hdf.Maven, ecosystemFromPURL("pkg:maven/g/a@1"))
 	assert.Equal(t, hdf.Ecosystem(""), ecosystemFromPURL("pkg:unknown/x"))
-	assert.Equal(t, "abc", sha256Digest("img@sha256:abc"))
-	assert.Equal(t, "", sha256Digest("no-digest-here"))
+	assert.Equal(t, "sha256:abc", digestPart("img@sha256:abc"))
+	assert.Equal(t, "bare", digestPart("bare"))
 	assert.Equal(t, "n", pkgLabel("n", ""))
 	assert.Equal(t, "n@1", pkgLabel("n", "1"))
 	assert.Equal(t, "amd64", architecture(json.RawMessage(`{"architecture":"amd64"}`)))
 	assert.Equal(t, "", architecture(json.RawMessage(``)))
 	assert.Equal(t, "", architecture(json.RawMessage(`not json`)))
+}
+
+func TestUnratedSeverityMarker(t *testing.T) {
+	// Unrated severities (UNKNOWN/absent) carry the shared severity_rating
+	// marker on every finding class; rated severities never do.
+	input := []byte(`{"SchemaVersion":2,"ArtifactName":"x","ArtifactType":"filesystem","Results":[
+		{"Class":"os-pkgs","Vulnerabilities":[
+			{"VulnerabilityID":"CVE-UNRATED","PkgName":"p","InstalledVersion":"1","Severity":"UNKNOWN"},
+			{"VulnerabilityID":"CVE-RATED","PkgName":"p","InstalledVersion":"1","Severity":"LOW"}]},
+		{"Target":"Dockerfile","Class":"config","Misconfigurations":[
+			{"ID":"M-UNRATED","Title":"t","Status":"FAIL"},
+			{"ID":"M-RATED","Title":"t","Severity":"LOW","Status":"FAIL"}]},
+		{"Target":"f","Class":"secret","Secrets":[
+			{"RuleID":"unrated-secret","StartLine":1},
+			{"RuleID":"rated-secret","Severity":"HIGH","StartLine":2}]},
+		{"Target":"L","Class":"license","Licenses":[
+			{"PkgName":"pk","Name":"MIT"},
+			{"PkgName":"pk2","Name":"MIT","Severity":"LOW"}]}]}`)
+	res, err := ConvertTrivyToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	unrated := []string{"Trivy/CVE-UNRATED", "Trivy/M-UNRATED", "Trivy/secret/unrated-secret@f:1", "Trivy/license/pk/MIT"}
+	rated := []string{"Trivy/CVE-RATED", "Trivy/M-RATED", "Trivy/secret/rated-secret@f:2", "Trivy/license/pk2/MIT"}
+	for _, id := range unrated {
+		req := findReq(res, id)
+		require.NotNil(t, req, id)
+		assert.Equal(t, "unrated", req.Tags["severity_rating"], id)
+	}
+	for _, id := range rated {
+		req := findReq(res, id)
+		require.NotNil(t, req, id)
+		assert.NotContains(t, req.Tags, "severity_rating", id)
+	}
 }

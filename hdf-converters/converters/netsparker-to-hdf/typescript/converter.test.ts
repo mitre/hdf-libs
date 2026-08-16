@@ -217,6 +217,37 @@ describe('Netsparker to HDF converter', () => {
     expect(req?.tags?.cci).toBeDefined();
   });
 
+  it('tags unrated severities with severity_rating: unrated', async () => {
+    // Absent <severity> → unrated marker; rated severities — including
+    // Information — must not carry the tag.
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise generated="03/07/2023 03:15 PM">
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>vuln-unrated</LookupId>
+			<name>No Severity Vuln</name>
+		</vulnerability>
+		<vulnerability>
+			<LookupId>vuln-high</LookupId>
+			<name>High Severity Vuln</name>
+			<severity>High</severity>
+		</vulnerability>
+		<vulnerability>
+			<LookupId>vuln-info</LookupId>
+			<name>Information Severity Vuln</name>
+			<severity>Information</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    expect(findRequirement(hdf, 'vuln-unrated')?.tags?.['severity_rating']).toBe('unrated');
+    expect(findRequirement(hdf, 'vuln-high')?.tags?.['severity_rating']).toBeUndefined();
+    expect(findRequirement(hdf, 'vuln-info')?.tags?.['severity_rating']).toBeUndefined();
+  });
+
   // ---- Classification tags (capec / wasc / iso27001 / pci32) ----
 
   it('maps classification fields to tags with the source values', async () => {

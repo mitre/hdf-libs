@@ -688,21 +688,9 @@ func TestComponentHelpers_Branches(t *testing.T) {
 		assert.Empty(t, name)
 		assert.Empty(t, version)
 	})
-	t.Run("digestIntegrity empty", func(t *testing.T) {
-		assert.Nil(t, digestIntegrity(""))
-	})
-	t.Run("digestIntegrity sha512 prefix", func(t *testing.T) {
-		out := digestIntegrity("sha512:deadbeef")
-		require.Len(t, out, 1)
-		assert.Equal(t, hdf.Sha512, out[0].Algorithm)
-		assert.Equal(t, "deadbeef", out[0].Value)
-	})
-	t.Run("digestIntegrity no prefix defaults sha256", func(t *testing.T) {
-		out := digestIntegrity("abc123")
-		require.Len(t, out, 1)
-		assert.Equal(t, hdf.Sha256, out[0].Algorithm)
-		assert.Equal(t, "abc123", out[0].Value)
-	})
+	// Digest→checksum parsing now lives in shared.DigestToChecksums (tested in
+	// shared/go/converterutil_test.go); the report-level integration is covered
+	// by the full-conversion tests above.
 }
 
 // ---- Tags with extras ----

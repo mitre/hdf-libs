@@ -725,3 +725,83 @@ func TestConvertGrypeToHDF_ArtifactFallbackComponent(t *testing.T) {
 		t.Errorf("artifact fallback must carry no image identity, got %+v", c)
 	}
 }
+
+func TestConvertGrypeToHDF_Sha512ManifestDigest(t *testing.T) {
+	// Regression (fpx5): a sha512 manifest digest must be labeled sha512 with the
+	// prefix stripped, not mislabeled as sha256 with the "sha512:" prefix retained.
+	report := `{"matches":[],"source":{"target":{"userInput":"img","manifestDigest":"sha512:deadbeef"}},"descriptor":{"name":"grype","version":"0.1.0"}}`
+	res, err := ConvertGrypeToHDF([]byte(report), testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+	if len(res.Components) != 1 {
+		t.Fatalf("expected 1 component, got %d", len(res.Components))
+	}
+	ck := res.Components[0].Integrity
+	if len(ck) != 1 {
+		t.Fatalf("expected 1 integrity checksum, got %d", len(ck))
+	}
+	if ck[0].Algorithm != hdf.Sha512 {
+		t.Errorf("expected sha512 algorithm, got %q", ck[0].Algorithm)
+	}
+	if ck[0].Value != "deadbeef" {
+		t.Errorf("expected value 'deadbeef' (prefix stripped), got %q", ck[0].Value)
+	}
+}
+
+func TestUnknownSeverity_UsesAgreedRepresentation(t *testing.T) {
+	// The agreed rule (hdf-libs unknown-severity convention): severity never
+	// changes status — a detected vuln stays failed. Unrated severities
+	// (Unknown/absent) default to impact 0.5 and carry the shared
+	// severity_rating=unrated tag; negligible is the LOWEST RATING (0.0),
+	// failed and untagged. The manual-review message is preserved.
+	report := `{
+		"descriptor": {"name": "grype", "version": "0.79.3"},
+		"source": {"target": {"userInput": "test-image"}},
+		"matches": [
+			{"vulnerability": {"id": "CVE-UNKNOWN", "severity": "Unknown"}, "artifact": {"name": "a", "version": "1"}},
+			{"vulnerability": {"id": "CVE-ABSENT"}, "artifact": {"name": "b", "version": "1"}},
+			{"vulnerability": {"id": "CVE-NEGLIGIBLE", "severity": "Negligible"}, "artifact": {"name": "c", "version": "1"}},
+			{"vulnerability": {"id": "CVE-HIGH", "severity": "High"}, "artifact": {"name": "d", "version": "1"}}
+		]
+	}`
+	res, err := ConvertGrypeToHDF([]byte(report), testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+	reqs := res.Baselines[0].Requirements
+
+	for _, tc := range []struct {
+		id      string
+		impact  float64
+		unrated bool
+	}{
+		{"Grype/CVE-UNKNOWN", 0.5, true},
+		{"Grype/CVE-ABSENT", 0.5, true},
+		{"Grype/CVE-NEGLIGIBLE", 0.0, false},
+		{"Grype/CVE-HIGH", 0.7, false},
+	} {
+		req := shared.MustFindRequirement(t, reqs, tc.id)
+		if req.Results[0].Status != hdf.Failed {
+			t.Errorf("%s: expected status failed, got %s", tc.id, req.Results[0].Status)
+		}
+		if req.Impact != tc.impact {
+			t.Errorf("%s: expected impact %v, got %v", tc.id, tc.impact, req.Impact)
+		}
+		if tc.unrated {
+			if req.Tags[shared.UnratedSeverityTag] != shared.UnratedSeverityValue {
+				t.Errorf("%s: expected tags.%s=%q, got %v", tc.id, shared.UnratedSeverityTag, shared.UnratedSeverityValue, req.Tags[shared.UnratedSeverityTag])
+			}
+		} else if _, ok := req.Tags[shared.UnratedSeverityTag]; ok {
+			t.Errorf("%s: rated severity must not carry the unrated tag", tc.id)
+		}
+	}
+
+	// The manual-review sentence survives for negligible/unknown.
+	for _, id := range []string{"Grype/CVE-UNKNOWN", "Grype/CVE-ABSENT", "Grype/CVE-NEGLIGIBLE"} {
+		req := shared.MustFindRequirement(t, reqs, id)
+		if req.Results[0].Message == nil || !strings.Contains(*req.Results[0].Message, "Manual review required") {
+			t.Errorf("%s: expected the manual-review message to be preserved", id)
+		}
+	}
+}

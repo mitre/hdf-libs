@@ -6,7 +6,7 @@
  * - Re-exports of shared constants and utilities
  */
 
-import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp } from '@mitre/hdf-utilities';
+import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp, isUnratedSeverity } from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
@@ -27,6 +27,33 @@ export async function inputChecksum(input: string): Promise<Checksum> {
     algorithm: HashAlgorithm.Sha256,
     value: await sha256(input),
   };
+}
+
+// Maps a digest's algorithm prefix to the HDF hash algorithm. Only algorithms
+// the closed Hash_Algorithm enum can represent are listed.
+const DIGEST_HASH_ALGORITHMS: Record<string, HashAlgorithm> = {
+  sha256: HashAlgorithm.Sha256,
+  sha384: HashAlgorithm.Sha384,
+  sha512: HashAlgorithm.Sha512,
+  blake3: HashAlgorithm.Blake3,
+};
+
+/**
+ * Convert a "<algo>:<hex>" digest into a Component.integrity checksum, folding
+ * the algorithm prefix into Checksum.algorithm. Returns undefined for an empty
+ * digest, one with no algorithm prefix, or one whose algorithm the closed
+ * Hash_Algorithm enum cannot represent (e.g. sha1/md5) — it never mislabels a
+ * digest under a wrong algorithm. Callers whose digest is embedded in a larger
+ * reference ("name@sha256:hex") must extract the "<algo>:<hex>" portion first.
+ * Go peer: DigestToChecksums.
+ */
+export function digestToChecksums(digest: string | undefined): Checksum[] | undefined {
+  if (!digest) return undefined;
+  const i = digest.indexOf(':');
+  if (i < 0) return undefined;
+  const algorithm = DIGEST_HASH_ALGORITHMS[digest.slice(0, i)];
+  if (!algorithm) return undefined;
+  return [{ algorithm, value: digest.slice(i + 1) }];
 }
 
 /**
@@ -560,4 +587,16 @@ export function buildNoFindingsRequirement(
     ],
     tags: {},
   };
+}
+
+/**
+ * Shared marker converters emit when a source severity is unrated
+ * (isUnratedSeverity), so a defaulted impact stays distinguishable from a
+ * genuine rated medium. TS peer of MarkUnratedSeverity in converterutil.go.
+ */
+export const UNRATED_SEVERITY_TAG = 'severity_rating';
+export const UNRATED_SEVERITY_VALUE = 'unrated';
+
+export function markUnratedSeverity(tags: Record<string, unknown>, severity?: string | null): void {
+  if (isUnratedSeverity(severity)) tags[UNRATED_SEVERITY_TAG] = UNRATED_SEVERITY_VALUE;
 }

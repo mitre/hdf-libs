@@ -3,6 +3,7 @@ import {
   severityToImpact,
   impactToSeverity,
   cvssScoreToSeverity,
+  isUnratedSeverity,
   roundImpact,
 } from '../src/severity/index.js';
 
@@ -304,6 +305,20 @@ describe('Severity Utilities', () => {
 
     it('clamps values > 10 to "critical"', () => {
       expect(cvssScoreToSeverity(15)).toBe('critical');
+    });
+  });
+
+  describe('isUnratedSeverity', () => {
+    it('is true for absence and explicit no-rating tokens', () => {
+      for (const s of [undefined, null, '', '  ', 'unknown', 'UNKNOWN', 'Unassigned', 'unSpecified']) {
+        expect(isUnratedSeverity(s), String(s)).toBe(true);
+      }
+    });
+
+    it('is false for rated values, including the zero-impact tier and negligible', () => {
+      for (const s of ['critical', 'high', 'medium', 'low', 'info', 'none', 'informational', 'negligible', 'best_practice', 'wibble']) {
+        expect(isUnratedSeverity(s), s).toBe(false);
+      }
     });
   });
 

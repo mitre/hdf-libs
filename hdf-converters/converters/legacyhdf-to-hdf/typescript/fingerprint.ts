@@ -5,7 +5,7 @@
  * V1 files have a profiles[] array at root, a platform object, and a
  * version string. They do NOT have baselines[] (that is v2).
  *
- * The isHDFV1() function in the converter checks:
+ * The isLegacyHdf() function in the converter checks:
  *   typeof obj.version === 'string' && Array.isArray(obj.profiles) &&
  *   typeof obj.platform === 'object' && obj.platform !== null
  *

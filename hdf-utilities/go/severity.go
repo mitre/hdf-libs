@@ -119,3 +119,25 @@ func ImpactToSeverity(impact float64) string {
 		return "informational"
 	}
 }
+
+// unratedSeverityTokens are the severity vocabulary values that assert "no
+// rating was made" (grype Unknown, Dependency-Track UNASSIGNED, Microsoft
+// Graph unSpecified). Distinct from the zero-impact RATED tier
+// (info/none/informational) and from grype's negligible, which is the lowest
+// rating, not an absent one.
+var unratedSeverityTokens = map[string]bool{
+	"unknown":     true,
+	"unassigned":  true,
+	"unspecified": true,
+}
+
+// IsUnratedSeverity reports whether a source severity carries no rating at
+// all: the field is absent/blank, or the token is an explicit no-rating value.
+// Tokens the vocabulary simply doesn't recognize are NOT unrated — an unknown
+// word is not an assertion of unratedness. Converters use this to emit the
+// shared unrated marker so a defaulted impact stays distinguishable from a
+// genuine medium.
+func IsUnratedSeverity(severity string) bool {
+	s := strings.TrimSpace(strings.ToLower(severity))
+	return s == "" || unratedSeverityTokens[s]
+}

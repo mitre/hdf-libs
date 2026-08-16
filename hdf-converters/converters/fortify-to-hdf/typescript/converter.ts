@@ -7,6 +7,7 @@ import {
   buildNistCciTags,
   mapCWEToNIST,
   limitArray,
+  markUnratedSeverity,
   stripHTML,
   ensureArray,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -415,10 +416,12 @@ function buildRequirement(
   }
 
   // Impact from the representative instance's per-instance severity / 5.
-  let impact = 0;
-  if (vulns.length > 0) {
-    const severity = parseFloat(vulns[0]!.InstanceInfo?.InstanceSeverity ?? '0');
-    impact = roundImpact(severity / 5.0);
+  // Fortify's InstanceSeverity is numeric on a 1.0-5.0 scale; zero means the
+  // attribute was absent, i.e. the finding carries no rating at all.
+  const instanceSeverity = parseFloat(vulns[0]?.InstanceInfo?.InstanceSeverity ?? '0');
+  const impact = vulns.length > 0 ? roundImpact(instanceSeverity / 5.0) : 0;
+  if (!(instanceSeverity > 0)) {
+    markUnratedSeverity(tags, '');
   }
 
   // Build results — one per vulnerability instance

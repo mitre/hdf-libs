@@ -1,6 +1,7 @@
 import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   nistToCci,
+  getOwaspNistControl,
 } from '@mitre/hdf-mappings';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
@@ -211,6 +212,49 @@ export function selectSeverity(issue: Pick<SonarQubeIssue, 'severity' | 'impacts
  */
 const DEFAULT_NIST_TAGS = ['SA-11'];
 
+// SonarQube 26+ carries no owasp-* sysTags; the OWASP Top 10 category lives in
+// the rule's description "resources" section. OWASP_TAG_PATTERN matches the
+// legacy owasp-a<N> tag form (heimdall2-shaped inputs); OWASP_2017_PATTERN
+// matches the modern description reference "Top 10 2017 - Category A<N>". Only
+// the 2017 taxonomy is folded, because the shared owasp->NIST table is keyed on
+// 2017 IDs (the 2021 renumbering would map wrong).
+const OWASP_TAG_PATTERN = /owasp[-:]?a0*(\d{1,2})/gi;
+const OWASP_2017_PATTERN = /top 10 2017[\s\S]{0,30}?category\s*a0*(\d{1,2})/gi;
+
+/** Records a normalized OWASP-2017 category (A1..A10) when n is in range. */
+function addOwaspId(set: Set<string>, n: string | undefined): void {
+  if (n === undefined) {
+    return;
+  }
+  const v = parseInt(n, 10);
+  if (v >= 1 && v <= 10) {
+    set.add(`A${v}`);
+  }
+}
+
+/**
+ * Combines CWE-derived and OWASP-derived NIST controls. The SA-11 default
+ * applies only when neither source yields a mapping.
+ */
+function foldNistControls(cweIds: string[], owaspIds: string[]): string[] {
+  const set = new Set<string>();
+  for (const c of mapCWEToNIST(cweIds, [])) {
+    set.add(c);
+  }
+  for (const id of owaspIds) {
+    const ctrl = getOwaspNistControl(id);
+    if (ctrl) {
+      for (const c of ctrl.split('|')) {
+        set.add(c);
+      }
+    }
+  }
+  if (set.size === 0) {
+    return [...DEFAULT_NIST_TAGS];
+  }
+  return Array.from(set).sort();
+}
+
 /**
  * Convert SonarQube issues JSON to HDF format
  *
@@ -372,8 +416,8 @@ function convertRuleToRequirement(
   const { severity, source: severitySource, impact } = selectSeverity(firstIssue);
 
   // Extract tags and mappings
-  const { cweIds, owaspTags, allTags } = extractTags(rule, issues);
-  const nistControls = mapCWEToNIST(cweIds, DEFAULT_NIST_TAGS);
+  const { cweIds, owaspIds, allTags } = extractTags(rule, issues);
+  const nistControls = foldNistControls(cweIds, owaspIds);
   const cciControls = nistToCci(nistControls);
 
   // Create results for each issue
@@ -396,7 +440,7 @@ function convertRuleToRequirement(
       severitySource,
       type: firstIssue.type.toLowerCase(),
       cwe: cweIds,
-      owasp: owaspTags,
+      owasp: owaspIds,
       nist: nistControls,
       cci: cciControls,
       // Per-issue metadata SonarQube carries on every mode. Omitted when empty so
@@ -500,7 +544,7 @@ function extractTags(
   issues: SonarQubeIssue[]
 ): {
   cweIds: string[];
-  owaspTags: string[];
+  owaspIds: string[];
   allTags: Record<string, string[]>;
 } {
   const cweSet = new Set<string>();
@@ -521,9 +565,9 @@ function extractTags(
         }
       }
 
-      // Check for OWASP tags
-      if (lowerTag.includes('owasp')) {
-        owaspSet.add(tag);
+      // Check for legacy owasp-a<N> tags (heimdall2-shaped inputs)
+      for (const m of tag.matchAll(OWASP_TAG_PATTERN)) {
+        addOwaspId(owaspSet, m[1]);
       }
 
       // Collect other tags by category
@@ -550,8 +594,8 @@ function extractTags(
           }
         }
 
-        if (lowerTag.includes('owasp')) {
-          owaspSet.add(tag);
+        for (const m of tag.matchAll(OWASP_TAG_PATTERN)) {
+          addOwaspId(owaspSet, m[1]);
         }
       }
     }
@@ -574,6 +618,20 @@ function extractTags(
     }
   }
 
+  // Parse OWASP Top 10 2017 categories from rule descriptions (SonarQube 26+
+  // exposes them only as reference text, not as sysTags).
+  if (rule) {
+    const texts = [rule.htmlDesc || '', rule.mdDesc || ''];
+    for (const section of rule.descriptionSections ?? []) {
+      texts.push(section.content);
+    }
+    for (const text of texts) {
+      for (const m of text.matchAll(OWASP_2017_PATTERN)) {
+        addOwaspId(owaspSet, m[1]);
+      }
+    }
+  }
+
   const allTags: Record<string, string[]> = {};
   for (const [category, values] of allTagsMap) {
     allTags[category] = Array.from(values);
@@ -581,7 +639,7 @@ function extractTags(
 
   return {
     cweIds: Array.from(cweSet),
-    owaspTags: Array.from(owaspSet),
+    owaspIds: Array.from(owaspSet).sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10)),
     allTags,
   };
 }

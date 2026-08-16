@@ -65,7 +65,8 @@ These are the traps this skill exists to prevent. Real failure modes from the 3.
    - Empty → patch (next `3.x.y`). Recommend patch; the mechanical sweep / archive / doc / spec phases will be skipped.
    - **Never recommend a major bump.** Per project rule, major bumps happen only when the user explicitly says "this is a major." If the user picks major without saying so, ask them to confirm.
 3. Ask the user for the target version, presenting the schema-diff-derived recommendation as the default. Capture it as `NEW_VERSION`. A consumer-visible behavior change with no schema change is still a patch by default — confirm the user wants to escalate before treating it as a minor.
-4. Record `BASE=$(git describe --tags --abbrev=0)` (last release tag) — Phase 1 reviews everything from `BASE` to `HEAD`.
+4. **Sweep pending breaking changes.** Run `bd list --label breaking-change`. These are deprecations/aliases parked awaiting a break (e.g. removing version-baked API aliases). For each, ask the user whether *this* release removes it — a major is the natural home, but the project has also shipped breaking changes as a patch with a loud CHANGELOG call-out, so it's the user's call, not automatic. Anything removed this release gets closed here and documented under CHANGELOG "Removed" in Phase 5; anything deferred simply carries forward (the label keeps it visible next time). This is the recurring reminder that a deprecation added in an earlier release doesn't get forgotten.
+5. Record `BASE=$(git describe --tags --abbrev=0)` (last release tag) — Phase 1 reviews everything from `BASE` to `HEAD`.
 
 ### Phase 1 — Pre-release swarm review (release gate)
 

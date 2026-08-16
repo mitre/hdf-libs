@@ -1,0 +1,679 @@
+{
+  "total": 11,
+  "p": 1,
+  "ps": 100,
+  "paging": {
+    "pageIndex": 1,
+    "pageSize": 100,
+    "total": 11
+  },
+  "issues": [
+    {
+      "key": "f69bb2ff-2981-4cbd-adcc-bc002b4e69c4",
+      "rule": "typescript:S7790",
+      "severity": "MAJOR",
+      "component": "juice-shop:routes/errorHandler.ts",
+      "project": "juice-shop",
+      "line": 27,
+      "hash": "39cf65b2f3dfa28585ebc87e697b677a",
+      "textRange": {
+        "startLine": 27,
+        "endLine": 27,
+        "startOffset": 15,
+        "endOffset": 26
+      },
+      "status": "OPEN",
+      "message": "Make sure this dynamically formatted template is safe here.",
+      "effort": "20min",
+      "debt": "20min",
+      "tags": [
+        "cwe"
+      ],
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "LOW"
+        },
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "cleanCodeAttribute": "COMPLETE",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "creationDate": "2026-08-16T00:08:33+0000",
+      "updateDate": "2026-08-16T00:08:33+0000",
+      "type": "VULNERABILITY"
+    },
+    {
+      "key": "ab19f6d4-9a97-4bab-b027-9f593d7ffbc0",
+      "rule": "typescript:S7639",
+      "severity": "BLOCKER",
+      "component": "juice-shop:routes/checkKeys.ts",
+      "project": "juice-shop",
+      "line": 10,
+      "hash": "de73c3ec5f8e587d9b46be21a6a07cfa",
+      "textRange": {
+        "startLine": 10,
+        "endLine": 10,
+        "startOffset": 23,
+        "endOffset": 105
+      },
+      "status": "OPEN",
+      "message": "Revoke and change this seed phrase, as it is compromised.",
+      "effort": "1h",
+      "debt": "1h",
+      "tags": [
+        "cwe"
+      ],
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "BLOCKER"
+        }
+      ],
+      "cleanCodeAttribute": "CONVENTIONAL",
+      "cleanCodeAttributeCategory": "CONSISTENT",
+      "creationDate": "2026-08-16T00:08:33+0000",
+      "updateDate": "2026-08-16T00:08:33+0000",
+      "type": "VULNERABILITY"
+    },
+    {
+      "key": "b3623cfc-cda7-43c7-88f9-b67053c5f8bf",
+      "rule": "javascript:S2486",
+      "severity": "MINOR",
+      "component": "juice-shop:frontend/src/assets/private/three.js",
+      "project": "juice-shop",
+      "line": 17098,
+      "hash": "72c888ed5890cd47c4dd0fc6068bd8ca",
+      "textRange": {
+        "startLine": 17098,
+        "endLine": 17102,
+        "startOffset": 7,
+        "endOffset": 6
+      },
+      "status": "OPEN",
+      "message": "Handle this exception or don't catch it at all.",
+      "effort": "1h",
+      "debt": "1h",
+      "tags": [
+        "cwe",
+        "error-handling",
+        "suspicious"
+      ],
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "LOW"
+        }
+      ],
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "creationDate": "2026-08-16T00:08:33+0000",
+      "updateDate": "2026-08-16T00:08:33+0000",
+      "type": "CODE_SMELL"
+    },
+    {
+      "key": "ed6e3c25-0be8-4715-a5db-db40765f38b7",
+      "rule": "typescript:S6437",
+      "severity": "BLOCKER",
+      "component": "juice-shop:lib/insecurity.ts",
+      "project": "juice-shop",
+      "line": 44,
+      "hash": "f0812a9968209c58008afba7878097b7",
+      "textRange": {
+        "startLine": 44,
+        "endLine": 44,
+        "startOffset": 38,
+        "endOffset": 55
+      },
+      "status": "OPEN",
+      "message": "Revoke and change this password, as it is compromised.",
+      "effort": "1h",
+      "debt": "1h",
+      "tags": [
+        "cwe"
+      ],
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "BLOCKER"
+        }
+      ],
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "cleanCodeAttributeCategory": "RESPONSIBLE",
+      "creationDate": "2026-08-16T00:08:33+0000",
+      "updateDate": "2026-08-16T00:08:33+0000",
+      "type": "VULNERABILITY"
+    },
+    {
+      "key": "19945c09-f129-4980-9dcd-b861e805c343",
+      "rule": "typescript:S2486",
+      "severity": "MINOR",
+      "component": "juice-shop:lib/codingChallenges.ts",
+      "project": "juice-shop",
+      "line": 37,
+      "hash": "550051ee6b000602ffe414172dfff76d",
+      "textRange": {
+        "startLine": 37,
+        "endLine": 39,
+        "startOffset": 8,
+        "endOffset": 7
+      },
+      "status": "OPEN",
+      "message": "Handle this exception or don't catch it at all.",
+      "effort": "1h",
+      "debt": "1h",
+      "tags": [
+        "cwe",
+        "error-handling",
+        "suspicious"
+      ],
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "LOW"
+        }
+      ],
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "creationDate": "2026-08-16T00:08:33+0000",
+      "updateDate": "2026-08-16T00:08:33+0000",
+      "type": "CODE_SMELL"
+    },
+    {
+      "key": "9454d236-7c52-4576-8fee-af01411fa1aa",
+      "rule": "secrets:S6706",
+      "severity": "BLOCKER",
+      "component": "juice-shop:lib/insecurity.ts",
+      "project": "juice-shop",
+      "line": 23,
+      "hash": "648b1c2b0817f9c92f0cadebbe3e4bdf",
+      "textRange": {
+        "startLine": 23,
+        "endLine": 23,
+        "startOffset": 20,
+        "endOffset": 51
+      },
+      "status": "OPEN",
+      "message": "Make sure this private key gets revoked, changed, and removed from the code.",
+      "effort": "30min",
+      "debt": "30min",
+      "tags": [
+        "cwe"
+      ],
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "BLOCKER"
+        }
+      ],
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "cleanCodeAttributeCategory": "RESPONSIBLE",
+      "creationDate": "2026-08-16T00:08:33+0000",
+      "updateDate": "2026-08-16T00:08:33+0000",
+      "type": "VULNERABILITY"
+    },
+    {
+      "key": "21c2932f-8a01-4e24-b050-52a25f905e28",
+      "rule": "typescript:S125",
+      "severity": "MAJOR",
+      "component": "juice-shop:frontend/src/app/two-factor-auth-enter/two-factor-auth-enter.component.ts",
+      "project": "juice-shop",
+      "line": 59,
+      "hash": "88f77d0f711a5e094066adcf0795571c",
+      "textRange": {
+        "startLine": 59,
+        "endLine": 59,
+        "startOffset": 8,
+        "endOffset": 49
+      },
+      "status": "OPEN",
+      "message": "Remove this commented out code.",
+      "effort": "5min",
+      "debt": "5min",
+      "tags": [
+        "unused"
+      ],
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "creationDate": "2026-08-16T00:08:33+0000",
+      "updateDate": "2026-08-16T00:08:33+0000",
+      "type": "CODE_SMELL"
+    },
+    {
+      "key": "47f05b0f-861f-4002-9968-b2527403e890",
+      "rule": "Web:AvoidCommentedOutCodeCheck",
+      "severity": "MAJOR",
+      "component": "juice-shop:frontend/src/app/user-details/user-details.component.html",
+      "project": "juice-shop",
+      "line": 18,
+      "hash": "2c3a9fc08d6fec2c8357ad825abd7dfd",
+      "textRange": {
+        "startLine": 18,
+        "endLine": 18,
+        "startOffset": 0,
+        "endOffset": 15
+      },
+      "status": "OPEN",
+      "message": "Remove this commented out code.",
+      "effort": "5min",
+      "debt": "5min",
+      "tags": [
+        "unused"
+      ],
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "creationDate": "2026-08-16T00:08:33+0000",
+      "updateDate": "2026-08-16T00:08:33+0000",
+      "type": "CODE_SMELL"
+    },
+    {
+      "key": "01a09748-67af-4048-b4a1-7008be409b68",
+      "rule": "javascript:S125",
+      "severity": "MAJOR",
+      "component": "juice-shop:frontend/src/assets/private/three.js",
+      "project": "juice-shop",
+      "line": 124,
+      "hash": "ecff699dd5edd5c5ebbf4c3d25e8afc1",
+      "textRange": {
+        "startLine": 124,
+        "endLine": 129,
+        "startOffset": 0,
+        "endOffset": 37
+      },
+      "status": "OPEN",
+      "message": "Remove this commented out code.",
+      "effort": "5min",
+      "debt": "5min",
+      "tags": [
+        "unused"
+      ],
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "creationDate": "2026-08-16T00:08:33+0000",
+      "updateDate": "2026-08-16T00:08:33+0000",
+      "type": "CODE_SMELL"
+    },
+    {
+      "key": "5caca857-08cc-4a2b-b72b-6f6bcb5a0acf",
+      "rule": "css:S4656",
+      "severity": "MAJOR",
+      "component": "juice-shop:frontend/src/app/score-board/components/challenge-card/challenge-card.component.scss",
+      "project": "juice-shop",
+      "line": 142,
+      "hash": "8f9cae35b6843b69f6a86b8b0667e9eb",
+      "textRange": {
+        "startLine": 142,
+        "endLine": 142,
+        "startOffset": 0,
+        "endOffset": 38
+      },
+      "status": "OPEN",
+      "message": "Unexpected duplicate \"color\"",
+      "effort": "1min",
+      "debt": "1min",
+      "impacts": [
+        {
+          "softwareQuality": "RELIABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "cleanCodeAttribute": "LOGICAL",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "creationDate": "2026-08-16T00:08:33+0000",
+      "updateDate": "2026-08-16T00:08:33+0000",
+      "type": "BUG"
+    },
+    {
+      "key": "1371af82-b2b3-4e54-9f1b-ead3147b1cc8",
+      "rule": "javascript:S3923",
+      "severity": "MAJOR",
+      "component": "juice-shop:frontend/src/assets/private/three.js",
+      "project": "juice-shop",
+      "line": 25348,
+      "hash": "b63a7642d038bfac526f204fdccd2c1a",
+      "textRange": {
+        "startLine": 25348,
+        "endLine": 25357,
+        "startOffset": 2,
+        "endOffset": 3
+      },
+      "status": "OPEN",
+      "message": "Remove this conditional structure or edit its code blocks so that they're not all the same.",
+      "effort": "15min",
+      "debt": "15min",
+      "impacts": [
+        {
+          "softwareQuality": "RELIABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "creationDate": "2026-08-16T00:08:33+0000",
+      "updateDate": "2026-08-16T00:08:33+0000",
+      "type": "BUG"
+    }
+  ],
+  "components": [
+    {
+      "key": "juice-shop:lib/insecurity.ts",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "insecurity.ts",
+      "longName": "lib/insecurity.ts",
+      "path": "lib/insecurity.ts"
+    },
+    {
+      "key": "juice-shop",
+      "enabled": true,
+      "qualifier": "TRK",
+      "name": "OWASP Juice Shop",
+      "longName": "OWASP Juice Shop"
+    },
+    {
+      "key": "juice-shop:routes/errorHandler.ts",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "errorHandler.ts",
+      "longName": "routes/errorHandler.ts",
+      "path": "routes/errorHandler.ts"
+    },
+    {
+      "key": "juice-shop:routes/checkKeys.ts",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "checkKeys.ts",
+      "longName": "routes/checkKeys.ts",
+      "path": "routes/checkKeys.ts"
+    },
+    {
+      "key": "juice-shop:frontend/src/app/score-board/components/challenge-card/challenge-card.component.scss",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "challenge-card.component.scss",
+      "longName": "frontend/src/app/score-board/components/challenge-card/challenge-card.component.scss",
+      "path": "frontend/src/app/score-board/components/challenge-card/challenge-card.component.scss"
+    },
+    {
+      "key": "juice-shop:frontend/src/app/two-factor-auth-enter/two-factor-auth-enter.component.ts",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "two-factor-auth-enter.component.ts",
+      "longName": "frontend/src/app/two-factor-auth-enter/two-factor-auth-enter.component.ts",
+      "path": "frontend/src/app/two-factor-auth-enter/two-factor-auth-enter.component.ts"
+    },
+    {
+      "key": "juice-shop:frontend/src/app/user-details/user-details.component.html",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "user-details.component.html",
+      "longName": "frontend/src/app/user-details/user-details.component.html",
+      "path": "frontend/src/app/user-details/user-details.component.html"
+    },
+    {
+      "key": "juice-shop:lib/codingChallenges.ts",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "codingChallenges.ts",
+      "longName": "lib/codingChallenges.ts",
+      "path": "lib/codingChallenges.ts"
+    },
+    {
+      "key": "juice-shop:frontend/src/assets/private/three.js",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "three.js",
+      "longName": "frontend/src/assets/private/three.js",
+      "path": "frontend/src/assets/private/three.js"
+    }
+  ],
+  "rules": [
+    {
+      "key": "typescript:S7790",
+      "name": "Templates should not be constructed dynamically",
+      "status": "READY",
+      "lang": "ts",
+      "langName": "TypeScript",
+      "sysTags": [
+        "cwe"
+      ],
+      "descriptionSections": [
+        {
+          "key": "root_cause",
+          "content": "<p>Constructing templates by dynamically inserting strings coming from third-party sources is an anti-pattern which creates code that is brittle,\ndifficult to read, and challenging to debug.</p>\n<p>Moreover, in the long run, this practice progressively increases the likelihood of introducing <strong>Server-Side Template Injections\n(SSTI)</strong>, sometimes in complex ways that are hard to detect.<br> An SSTI is the insertion of third-party data (like user data) within\ntemplates, which enables attackers to execute arbitrary commands on the underlying operating system.</p>"
+        },
+        {
+          "key": "how_to_fix",
+          "content": "<p>It is recommended to standardize on safe template-building practices.<br> Separate logic from presentation by passing dynamic data to templates\nthrough a secure context or data-binding mechanism, rather than building the template string itself.</p>\n\n<h4>Noncompliant code example</h4>\n<pre data-diff-id=\"1\" data-diff-type=\"noncompliant\">\nconst pug = require('pug');\n\nconst pugTemplate = `\ndoctype html\nhtml\n  head\n    title=${pageTitle}\n  body\n    ${userInput}\n`;\n\nconst compiledFunction = pug.compile(pugTemplate); // Sensitive\n\ncompiledFunction();\n</pre>\n<h2>Compliant Solution</h2>\n<pre data-diff-id=\"1\" data-diff-type=\"compliant\">\nconst pug = require('pug');\n\nconst pugTemplate = `\ndoctype html\nhtml\n  head\n    title= pageTitle\n  body\n    h1= mainHeading\n    p.message= message\n`;\n\nconst compiledFunction = pug.compile(pugTemplate);\n\nconst templateData = {\n  pageTitle: 'Safe Template Example',\n  mainHeading: 'Welcome!',\n  message: 'This content is passed securely as data to the template.'\n};\ncompiledFunction(templateData);\n</pre>"
+        },
+        {
+          "key": "resources",
+          "content": "<h3>Standards</h3>\n<ul>\n  <li> OWASP - <a href=\"https://owasp.org/Top10/A03_2021-Injection/\">Top 10 2021 Category A3 - Injection</a> </li>\n  <li> OWASP - <a href=\"https://owasp.org/www-project-top-ten/2017/A1_2017-Injection\">Top 10 2017 Category A1 - Injection</a> </li>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/20\">CWE-20 - Improper Input Validation</a> </li>\n</ul>"
+        }
+      ]
+    },
+    {
+      "key": "typescript:S7639",
+      "name": "Wallet phrases should not be hard-coded",
+      "status": "READY",
+      "lang": "ts",
+      "langName": "TypeScript",
+      "sysTags": [
+        "cwe"
+      ],
+      "descriptionSections": [
+        {
+          "key": "root_cause",
+          "content": "<p>In most cases, trust boundaries are violated when a secret is exposed in a source code repository or an uncontrolled deployment environment.\nUnintended people who don\u2019t need to know the secret might get access to it. They might then be able to use it to gain unwanted access to associated\nservices or resources.</p>\n<p>The trust issue can be more or less severe depending on the people\u2019s role and entitlement.</p>\n<p>In that case, the wallet seed phrase, also known as a recovery phrase or mnemonic seed, is arguably the most critical element in managing\ncryptocurrency.<br> Its importance cannot be overstated, as it serves as the master key to entire crypto portfolios.</p>\n<h3>What is the potential impact?</h3>\n<p>The consequences vary greatly by situation and by audience.<br> Below is the critical impact of an attacker accessing the wallet phrase.</p>\n<h4>Cryptocurrency theft</h4>\n<p>Access to your seed phrase means complete control over your wallet. An attacker can import your wallet on their own device and drain all your\nassets to their own address.<br> Due to the irreversible nature of blockchain transactions, there is no way to undo the theft.</p>"
+        },
+        {
+          "key": "introduction",
+          "content": "<p>Secret leaks often occur when a sensitive piece of authentication data is stored with the source code of an application. Considering the source\ncode is intended to be deployed across multiple assets, including source code repositories or application hosting servers, the secrets might get\nexposed to an unintended audience.</p>"
+        },
+        {
+          "key": "how_to_fix",
+          "content": "<h3>Immediately generate a new wallet</h3>\n<p>You cannot change the seed phrase for an existing wallet. A seed phrase is the master key from which all your wallet\u2019s private keys are\nmathematically derived.<br> Therefore, the correct procedure is not to \"change\" the phrase, but to move your funds to a new wallet with a new seed\nphrase.</p>\n<p>Then, transfer the assets from the old wallet to the new one.</p>\n<h3>Store the phrase in a secure location</h3>\n<p>Store this new backup in an extremely secure, offline location. Do not take a photo of it or store it on any internet-connected device.</p>\n<p>If you need to store it digitally, consider using a hardware wallet or a dedicated secret vault.</p>\n\n<h4>Noncompliant code example</h4>\n<pre data-diff-id=\"1\" data-diff-type=\"noncompliant\">\nimport { HDNodeWallet } from 'ethers'\n\nconst mnemonic = 'donate clutch sport betray purpose monitor lift blame slide spin crunch marriage'\nconst mnemonicWallet = HDNodeWallet.fromPhrase(mnemonic) // Noncompliant\n</pre>\n<h4>Compliant solution</h4>\n<pre data-diff-id=\"1\" data-diff-type=\"compliant\">\nimport { HDNodeWallet } from 'ethers'\n\nconst mnemonic = process.env.SECRET\nconst mnemonicWallet = HDNodeWallet.fromPhrase(mnemonic)\n</pre>\n<h3>How does this work?</h3>\n<p>While the noncompliant code example contains a hard-coded seed phrase, the compliant solution retrieves the secret\u2019s value from its\nenvironment.<br> This allows it to have an environment-dependent secret value and avoids storing the phrase in the source code itself.</p>"
+        },
+        {
+          "key": "resources",
+          "content": "<h3>Documentation</h3>\n<ul>\n  <li> AWS Documentation - <a href=\"https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html\">What is AWS Secrets Manager</a> </li>\n  <li> Azure Documentation - <a href=\"https://learn.microsoft.com/en-us/azure/key-vault/\">Azure Key Vault</a> </li>\n  <li> Google Cloud - <a href=\"https://cloud.google.com/secret-manager/docs\">Secret Manager documentation</a> </li>\n  <li> HashiCorp Developer - <a href=\"https://developer.hashicorp.com/vault/docs\">Vault Documentation</a> </li>\n</ul>\n<h3>Standards</h3>\n<ul>\n  <li> OWASP - <a href=\"https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/\">Top 10 2021 - Category A7 - Identification and\n  Authentication Failures</a> </li>\n  <li> OWASP - <a href=\"https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication\">Top 10 2017 - Category A2 - Broken\n  Authentication</a> </li>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/798\">CWE-798 - Use of Hard-coded Credentials</a> </li>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/259\">CWE-259 - Use of Hard-coded Password</a> </li>\n</ul>"
+        }
+      ]
+    },
+    {
+      "key": "javascript:S2486",
+      "name": "Exceptions should not be ignored",
+      "status": "READY",
+      "lang": "js",
+      "langName": "JavaScript",
+      "sysTags": [
+        "cwe",
+        "error-handling",
+        "suspicious"
+      ],
+      "descriptionSections": [
+        {
+          "key": "resources",
+          "content": "<ul>\n  <li> OWASP - <a href=\"https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/\">Top 10 2021 Category A9 - Security Logging and\n  Monitoring Failures</a> </li>\n  <li> OWASP - <a href=\"https://owasp.org/www-project-top-ten/2017/A10_2017-Insufficient_Logging%2526Monitoring\">Top 10 2017 Category A10 -\n  Insufficient Logging &amp; Monitoring</a> </li>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/390\">CWE-390 - Detection of Error Condition Without Action</a> </li>\n</ul>"
+        },
+        {
+          "key": "root_cause",
+          "content": "<p>When exceptions occur, it is usually a bad idea to simply ignore them. Instead, it is better to handle them properly, or at least to log them.</p>\n<h3>Noncompliant code example</h3>\n<pre>\nfunction f() {\n  try {\n    doSomething();\n  } catch (err) {\n  }\n}\n</pre>\n<h3>Compliant solution</h3>\n<pre>\nfunction f() {\n  try {\n    doSomething();\n  } catch (err) {\n    console.log(`Exception while doing something: ${err}`);\n  }\n}\n</pre>"
+        }
+      ]
+    },
+    {
+      "key": "typescript:S6437",
+      "name": "Credentials should not be hard-coded",
+      "status": "READY",
+      "lang": "ts",
+      "langName": "TypeScript",
+      "sysTags": [
+        "cwe"
+      ],
+      "descriptionSections": [
+        {
+          "key": "root_cause",
+          "content": "<p>In most cases, trust boundaries are violated when a secret is exposed in a source code repository or an uncontrolled deployment environment.\nUnintended people who don\u2019t need to know the secret might get access to it. They might then be able to use it to gain unwanted access to associated\nservices or resources.</p>\n<p>The trust issue can be more or less severe depending on the people\u2019s role and entitlement.</p>\n<h3>What is the potential impact?</h3>\n<p>The consequences vary greatly depending on the situation and the secret-exposed audience. Still, two main scenarios should be considered.</p>\n<h4>Financial loss</h4>\n<p>Financial losses can occur when a secret is used to access a paid third-party-provided service and is disclosed as part of the source code of\nclient applications. Having the secret, each user of the application will be able to use it without limit to use the third party service to their own\nneed, including in a way that was not expected.</p>\n<p>This additional use of the secret will lead to added costs with the service provider.</p>\n<p>Moreover, when rate or volume limiting is set up on the provider side, this additional use can prevent the regular operation of the affected\napplication. This might result in a partial denial of service for all the application\u2019s users.</p>\n<h4>Application\u2019s security downgrade</h4>\n<p>A downgrade can happen when the disclosed secret is used to protect security-sensitive assets or features of the application. Depending on the\naffected asset or feature, the practical impact can range from a sensitive information leak to a complete takeover of the application, its hosting\nserver or another linked component.</p>\n<p>For example, an application that would disclose a secret used to sign user authentication tokens would be at risk of user identity impersonation.\nAn attacker accessing the leaked secret could sign session tokens for arbitrary users and take over their privileges and entitlements.</p>"
+        },
+        {
+          "key": "introduction",
+          "content": "<p>Secret leaks often occur when a sensitive piece of authentication data is stored with the source code of an application. Considering the source\ncode is intended to be deployed across multiple assets, including source code repositories or application hosting servers, the secrets might get\nexposed to an unintended audience.</p>"
+        },
+        {
+          "key": "how_to_fix",
+          "content": "<p><strong>Revoke the secret</strong></p>\n<p>Revoke any leaked secrets and remove them from the application source code.</p>\n<p>Before revoking the secret, ensure that no other applications or processes are using it. Other usages of the secret will also be impacted when the\nsecret is revoked.</p>\n<p><strong>Analyze recent secret use</strong></p>\n<p>When available, analyze authentication logs to identify any unintended or malicious use of the secret since its disclosure date. Doing this will\nallow determining if an attacker took advantage of the leaked secret and to what extent.</p>\n<p>This operation should be part of a global incident response process.</p>\n<p><strong>Use a secret vault</strong></p>\n<p>A secret vault should be used to generate and store the new secret. This will ensure the secret\u2019s security and prevent any further unexpected\ndisclosure.</p>\n<p>Depending on the development platform and the leaked secret type, multiple solutions are currently available.</p>\n\n<p>The following code example is noncompliant because it uses a hardcoded secret value.</p>\n<h4>Noncompliant code example</h4>\n<pre data-diff-id=\"1\" data-diff-type=\"noncompliant\">\nconst express = require('express');\nconst cookieParser = require('cookie-parser');\n\nconst app = express();\napp.use(cookieParser('s3cr37')); // Noncompliant\n</pre>\n<h4>Compliant solution</h4>\n<pre data-diff-id=\"1\" data-diff-type=\"compliant\">\nconst express = require('express');\nconst cookieParser = require('cookie-parser');\n\nconst app = express();\nconst cookieSecret = process.env.SECRET;\napp.use(cookieParser(cookieSecret));\n</pre>\n<h3>How does this work?</h3>\n<p>While the noncompliant code example contains a hard-coded password, the compliant solution retrieves the secret\u2019s value from its environment. This\nallows to have an environment-dependent secret value and avoids storing the password in the source code itself.</p>\n<p>Depending on the application and its underlying infrastructure, how the secret gets added to the environment might change.</p>"
+        },
+        {
+          "key": "resources",
+          "content": "<h3>Documentation</h3>\n<ul>\n  <li> AWS Documentation - <a href=\"https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html\">What is AWS Secrets Manager</a> </li>\n  <li> Azure Documentation - <a href=\"https://learn.microsoft.com/en-us/azure/key-vault/\">Azure Key Vault</a> </li>\n  <li> Google Cloud - <a href=\"https://cloud.google.com/secret-manager/docs\">Secret Manager documentation</a> </li>\n  <li> HashiCorp Developer - <a href=\"https://developer.hashicorp.com/vault/docs\">Vault Documentation</a> </li>\n</ul>\n<h3>Standards</h3>\n<ul>\n  <li> OWASP - <a href=\"https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/\">Top 10 2021 - Category A7 - Identification and\n  Authentication Failures</a> </li>\n  <li> OWASP - <a href=\"https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication\">Top 10 2017 - Category A2 - Broken\n  Authentication</a> </li>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/798\">CWE-798 - Use of Hard-coded Credentials</a> </li>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/259\">CWE-259 - Use of Hard-coded Password</a> </li>\n</ul>"
+        }
+      ]
+    },
+    {
+      "key": "typescript:S2486",
+      "name": "Exceptions should not be ignored",
+      "status": "READY",
+      "lang": "ts",
+      "langName": "TypeScript",
+      "sysTags": [
+        "cwe",
+        "error-handling",
+        "suspicious"
+      ],
+      "descriptionSections": [
+        {
+          "key": "resources",
+          "content": "<ul>\n  <li> OWASP - <a href=\"https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/\">Top 10 2021 Category A9 - Security Logging and\n  Monitoring Failures</a> </li>\n  <li> OWASP - <a href=\"https://owasp.org/www-project-top-ten/2017/A10_2017-Insufficient_Logging%2526Monitoring\">Top 10 2017 Category A10 -\n  Insufficient Logging &amp; Monitoring</a> </li>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/390\">CWE-390 - Detection of Error Condition Without Action</a> </li>\n</ul>"
+        },
+        {
+          "key": "root_cause",
+          "content": "<p>When exceptions occur, it is usually a bad idea to simply ignore them. Instead, it is better to handle them properly, or at least to log them.</p>\n<h3>Noncompliant code example</h3>\n<pre>\nfunction f() {\n  try {\n    doSomething();\n  } catch (err) {\n  }\n}\n</pre>\n<h3>Compliant solution</h3>\n<pre>\nfunction f() {\n  try {\n    doSomething();\n  } catch (err) {\n    console.log(`Exception while doing something: ${err}`);\n  }\n}\n</pre>"
+        }
+      ]
+    },
+    {
+      "key": "secrets:S6706",
+      "name": "Cryptographic private keys should not be disclosed",
+      "status": "READY",
+      "lang": "secrets",
+      "langName": "Secrets",
+      "sysTags": [
+        "cwe"
+      ],
+      "descriptionSections": [
+        {
+          "key": "resources",
+          "content": "<h3>Standards</h3>\n<ul>\n  <li> OWASP - <a href=\"https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/\">Top 10 2021 Category A7 - Identification and\n  Authentication Failures</a> </li>\n  <li> OWASP - <a href=\"https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure\">Top 10 2017 Category A3 - Sensitive Data\n  Exposure</a> </li>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/798\">CWE-798 - Use of Hard-coded Credentials</a> </li>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/259\">CWE-259 - Use of Hard-coded Password</a> </li>\n  <li> STIG Viewer - <a href=\"https://stigviewer.com/stigs/application_security_and_development/2024-12-06/finding/V-222642\">Application Security and\n  Development: V-222642</a> - The application must not contain embedded authentication data. </li>\n  <li> OWASP - <a href=\"https://owasp.org/www-project-mobile-top-10/2023-risks/m1-improper-credential-usage\">Mobile Top 10 2024 Category M1 - Improper\n  Credential Usage</a> </li>\n  <li> OWASP - <a href=\"https://owasp.org/www-project-mobile-top-10/2023-risks/m10-insufficient-cryptography\">Mobile Top 10 2024 Category M10 -\n  Insufficient Cryptography</a> </li>\n</ul>"
+        },
+        {
+          "key": "root_cause",
+          "content": "<p>In most cases, trust boundaries are violated when a secret is exposed in a source code repository or an uncontrolled deployment environment.\nUnintended people who don\u2019t need to know the secret might get access to it. They might then be able to use it to gain unwanted access to associated\nservices or resources.</p>\n<p>The trust issue can be more or less severe depending on the people\u2019s role and entitlement.</p>\n<h3>What is the potential impact?</h3>\n<p>In most cases, trust boundaries are violated when a secret is exposed in a source code repository or an uncontrolled deployment environment.\nUnintended people who don\u2019t need to know the secret might get access to it. They might then be able to use it to gain unwanted access to associated\nservices or resources.</p>\n<p>The trust issue can be more or less severe depending on the people\u2019s role and entitlement.</p>"
+        },
+        {
+          "key": "introduction",
+          "content": "<p>Secret leaks often occur when a sensitive piece of authentication data is stored with the source code of an application. Considering the source\ncode is intended to be deployed across multiple assets, including source code repositories or application hosting servers, the secrets might get\nexposed to an unintended audience.</p>"
+        },
+        {
+          "key": "how_to_fix",
+          "content": "<p><strong>Revoke the secret</strong></p>\n<p>Revoke any leaked secrets and remove them from the application source code.</p>\n<p>Before revoking the secret, ensure that no other applications or processes are using it. Other usages of the secret will also be impacted when the\nsecret is revoked.</p>\n<p>In most cases, if the key is used as part of a larger trust model (X509, PGP, etc), it is necessary to issue and publish a revocation certificate.\nDoing so will ensure that all people and assets that rely on this key for security operations are aware of its compromise and stop trusting it.</p>\n<p><strong>Analyze recent secret use</strong></p>\n<p>When available, analyze authentication logs to identify any unintended or malicious use of the secret since its disclosure date. Doing this will\nallow determining if an attacker took advantage of the leaked secret and to what extent.</p>\n<p>This operation should be part of a global incident response process.</p>\n<p><strong>Use a secret vault</strong></p>\n<p>A secret vault should be used to generate and store the new secret. This will ensure the secret\u2019s security and prevent any further unexpected\ndisclosure.</p>\n<p>Depending on the development platform and the leaked secret type, multiple solutions are currently available.</p>\n\n<h4>Noncompliant code example</h4>\n<pre data-diff-id=\"1\" data-diff-type=\"noncompliant\">\nprivate_key = \"[EXAMPLE PRIVATE KEY REDACTED FROM FIXTURE]\"\n</pre>\n<h4>Compliant solution</h4>\n<pre data-diff-id=\"1\" data-diff-type=\"compliant\">\nwith open(\"/path/to/private.key\",\"r\") as key_file:\n    private_key = key_file.read()\n</pre>"
+        }
+      ]
+    },
+    {
+      "key": "typescript:S125",
+      "name": "Sections of code should not be commented out",
+      "status": "READY",
+      "lang": "ts",
+      "langName": "TypeScript",
+      "sysTags": [
+        "unused"
+      ],
+      "descriptionSections": [
+        {
+          "key": "root_cause",
+          "content": "<p>Commented-out code distracts the focus from the actual executed code. It creates a noise that increases maintenance code. And because it is never\nexecuted, it quickly becomes out of date and invalid.</p>\n<p>Commented-out code should be deleted and can be retrieved from source control history if required.</p>"
+        }
+      ]
+    },
+    {
+      "key": "Web:AvoidCommentedOutCodeCheck",
+      "name": "Sections of code should not be commented out",
+      "status": "READY",
+      "lang": "web",
+      "langName": "HTML",
+      "sysTags": [
+        "unused"
+      ],
+      "descriptionSections": [
+        {
+          "key": "root_cause",
+          "content": "<p>Commented-out code distracts the focus from the actual executed code. It creates a noise that increases maintenance code. And because it is never\nexecuted, it quickly becomes out of date and invalid.</p>\n<p>Commented-out code should be deleted and can be retrieved from source control history if required.</p>"
+        }
+      ]
+    },
+    {
+      "key": "javascript:S125",
+      "name": "Sections of code should not be commented out",
+      "status": "READY",
+      "lang": "js",
+      "langName": "JavaScript",
+      "sysTags": [
+        "unused"
+      ],
+      "descriptionSections": [
+        {
+          "key": "root_cause",
+          "content": "<p>Commented-out code distracts the focus from the actual executed code. It creates a noise that increases maintenance code. And because it is never\nexecuted, it quickly becomes out of date and invalid.</p>\n<p>Commented-out code should be deleted and can be retrieved from source control history if required.</p>"
+        }
+      ]
+    },
+    {
+      "key": "css:S4656",
+      "name": "Properties should not be duplicated",
+      "status": "READY",
+      "lang": "css",
+      "langName": "CSS",
+      "descriptionSections": [
+        {
+          "key": "root_cause",
+          "content": "<p>CSS allows duplicate property names but only the last instance of a duplicated name determines the actual value that will be used for it.\nTherefore, changing values of other occurrences of a duplicated name will have no effect and may cause misunderstandings and bugs.</p>\n<p>This rule ignores <code>$sass</code>, <code>@less</code>, and <code>var(--custom-property)</code> variable syntaxes.</p>\n<h3>Noncompliant code example</h3>\n<pre>\na {\n  color: pink;\n  background: orange;\n  color: orange\n}\n</pre>\n<h3>Compliant solution</h3>\n<pre>\na {\n  color: pink;\n  background: orange\n}\n</pre>"
+        }
+      ]
+    },
+    {
+      "key": "javascript:S3923",
+      "name": "All branches in a conditional structure should not have exactly the same implementation",
+      "status": "READY",
+      "lang": "js",
+      "langName": "JavaScript",
+      "descriptionSections": [
+        {
+          "key": "root_cause",
+          "content": "<p>Having all branches of a <code>switch</code> or <code>if</code> chain with the same implementation indicates a problem.</p>\n<p>In the following code:</p>\n<pre>\nif (b == 0) {  // Noncompliant\n  doOneMoreThing();\n}\nelse {\n  doOneMoreThing();\n}\n\nlet a = (b == 0) ? getValue() : getValue();   // Noncompliant\n\nswitch (i) {  // Noncompliant\n  case 1:\n    doSomething();\n    break;\n  case 2:\n    doSomething();\n    break;\n  case 3:\n    doSomething();\n    break;\n  default:\n    doSomething();\n}\n</pre>\n<p>Either there is a copy-paste error that needs fixing or an unnecessary <code>switch</code> or <code>if</code> chain that should be removed.</p>\n<h3>Exceptions</h3>\n<p>This rule does not apply to <code>if</code> chains without <code>else</code>, nor to <code>switch</code> without a <code>default</code> clause.</p>\n<pre>\nif(b == 0) {    //no issue, this could have been done on purpose to make the code more readable\n  doSomething();\n} else if(b == 1) {\n  doSomething();\n}\n</pre>"
+        }
+      ]
+    }
+  ],
+  "serverVersion": "26.1.0.118079"
+}

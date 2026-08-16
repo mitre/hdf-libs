@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { buildCvss, cvssVersionFromVector, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type {
@@ -15,7 +15,6 @@ import type {
   Reference,
 } from '@mitre/hdf-schema';
 import {
-  HashAlgorithm,
   ResultStatus,
   TargetType,
   VerificationMethodEnum,
@@ -392,15 +391,6 @@ function targetNameFromReport(report: NeuVectorScanReport): string {
   return `${report.registry}/${report.repository}:${report.tag}`;
 }
 
-// Maps a NeuVector digest's algorithm prefix to the HDF hash algorithm.
-// NeuVector emits `sha256:<hex>`; the others are defensive.
-const DIGEST_ALGORITHMS: Record<string, HashAlgorithm> = {
-  sha256: HashAlgorithm.Sha256,
-  sha384: HashAlgorithm.Sha384,
-  sha512: HashAlgorithm.Sha512,
-  blake3: HashAlgorithm.Blake3,
-};
-
 /**
  * Splits NeuVector's base_os "name:version" form (e.g. "alpine:3.12.1") into OS
  * name and version. A value with no ":" is the name with no version; an empty
@@ -415,28 +405,6 @@ function splitBaseOS(baseOS: string): { name: string; version: string } {
     return { name: baseOS.slice(0, i), version: baseOS.slice(i + 1) };
   }
   return { name: baseOS, version: '' };
-}
-
-/**
- * Turns the report digest ("sha256:<hex>") into the component's Integrity
- * checksum, folding the algorithm prefix into Checksum.algorithm. Returns
- * undefined when the report carries no digest.
- */
-function digestIntegrity(digest: string): Checksum[] | undefined {
-  if (!digest) {
-    return undefined;
-  }
-  let algorithm = HashAlgorithm.Sha256;
-  let value = digest;
-  const i = digest.indexOf(':');
-  if (i >= 0) {
-    const mapped = DIGEST_ALGORITHMS[digest.slice(0, i)];
-    if (mapped) {
-      algorithm = mapped;
-      value = digest.slice(i + 1);
-    }
-  }
-  return [{ algorithm, value }];
 }
 
 /**
@@ -472,7 +440,7 @@ function buildComponent(report: NeuVectorScanReport): Component {
   if (report.tag) {
     component.tag = report.tag;
   }
-  const integrity = digestIntegrity(report.digest);
+  const integrity = digestToChecksums(report.digest);
   if (integrity) {
     component.integrity = integrity;
   }

@@ -211,7 +211,7 @@
               "codeDesc": "Package: binutils@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils/copyright | Match Type: exact-direct-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2022-48064",
@@ -282,7 +282,7 @@
               "codeDesc": "Package: binutils@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils/copyright | Match Type: exact-direct-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2018-20657",
@@ -527,7 +527,7 @@
               "codeDesc": "Package: binutils-common@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils-common/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2022-48064",
@@ -598,7 +598,7 @@
               "codeDesc": "Package: binutils-common@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils-common/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2018-20657",
@@ -843,7 +843,7 @@
               "codeDesc": "Package: binutils-x86-64-linux-gnu@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils-common/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2022-48064",
@@ -914,7 +914,7 @@
               "codeDesc": "Package: binutils-x86-64-linux-gnu@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils-common/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2018-20657",
@@ -1236,7 +1236,7 @@
               "codeDesc": "Package: cpp@4:11.2.0-1ubuntu1 | Type: deb | Location: /usr/share/doc/cpp/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2019-15847",
@@ -1949,7 +1949,7 @@
               "codeDesc": "Package: g++@4:11.2.0-1ubuntu1 | Type: deb | Location: /usr/share/doc/cpp/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2019-15847",
@@ -2460,7 +2460,7 @@
               "codeDesc": "Package: gcc@4:11.2.0-1ubuntu1 | Type: deb | Location: /usr/share/doc/cpp/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2019-15847",
@@ -4587,7 +4587,7 @@
               "codeDesc": "Package: libbinutils@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils-common/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2022-48064",
@@ -4658,7 +4658,7 @@
               "codeDesc": "Package: libbinutils@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils-common/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2018-20657",
@@ -4723,7 +4723,7 @@
               "codeDesc": "Package: libc-bin@2.35-0ubuntu3.8 | Type: deb | Location: /usr/share/doc/libc-bin/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2016-20013",
@@ -4785,7 +4785,7 @@
               "codeDesc": "Package: libc-dev-bin@2.35-0ubuntu3.8 | Type: deb | Location: /usr/share/doc/libc-dev-bin/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2016-20013",
@@ -4847,7 +4847,7 @@
               "codeDesc": "Package: libc6@2.35-0ubuntu3.8 | Type: deb | Location: /usr/share/doc/libc6/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2016-20013",
@@ -4909,7 +4909,7 @@
               "codeDesc": "Package: libc6-dev@2.35-0ubuntu3.8 | Type: deb | Location: /usr/share/doc/libc6-dev/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2016-20013",
@@ -5272,7 +5272,7 @@
               "codeDesc": "Package: libctf-nobfd0@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/libctf-nobfd0/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2022-48064",
@@ -5343,7 +5343,7 @@
               "codeDesc": "Package: libctf-nobfd0@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/libctf-nobfd0/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2018-20657",
@@ -5588,7 +5588,7 @@
               "codeDesc": "Package: libctf0@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils-common/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2022-48064",
@@ -5659,7 +5659,7 @@
               "codeDesc": "Package: libctf0@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils-common/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2018-20657",
@@ -6838,7 +6838,7 @@
               "codeDesc": "Package: libgssapi-krb5-2@1.19.2-2ubuntu0.3 | Type: deb | Location: /usr/share/doc/libgssapi-krb5-2/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2024-26458",
@@ -7312,7 +7312,7 @@
               "codeDesc": "Package: libk5crypto3@1.19.2-2ubuntu0.3 | Type: deb | Location: /usr/share/doc/libk5crypto3/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2024-26458",
@@ -7609,7 +7609,7 @@
               "codeDesc": "Package: libkrb5-3@1.19.2-2ubuntu0.3 | Type: deb | Location: /usr/share/doc/libkrb5-3/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2024-26458",
@@ -7906,7 +7906,7 @@
               "codeDesc": "Package: libkrb5support0@1.19.2-2ubuntu0.3 | Type: deb | Location: /usr/share/doc/libkrb5support0/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2024-26458",
@@ -8588,7 +8588,7 @@
               "codeDesc": "Package: libpcre3@2:8.39-13ubuntu0.22.04.1 | Type: deb | Location: /usr/share/doc/libpcre3/copyright | Match Type: exact-indirect-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2017-11164",
@@ -17371,7 +17371,7 @@
               "codeDesc": "Package: patch@2.7.6-7build2 | Type: deb | Location: /usr/share/doc/patch/copyright | Match Type: exact-direct-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2021-45261",
@@ -17427,7 +17427,7 @@
               "codeDesc": "Package: patch@2.7.6-7build2 | Type: deb | Location: /usr/share/doc/patch/copyright | Match Type: exact-direct-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2019-20633",
@@ -17483,7 +17483,7 @@
               "codeDesc": "Package: patch@2.7.6-7build2 | Type: deb | Location: /usr/share/doc/patch/copyright | Match Type: exact-direct-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notApplicable"
+              "status": "failed"
             }
           ],
           "id": "Grype/CVE-2018-6952",

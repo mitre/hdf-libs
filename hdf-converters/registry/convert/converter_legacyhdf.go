@@ -24,16 +24,16 @@ func (c *legacyHDFConverter) Convert(input []byte) ([]byte, error) {
 		return nil, fmt.Errorf("legacyhdf input validation: %w", err)
 	}
 
-	if !legacyhdf.IsHDFV1(input) {
+	if !legacyhdf.IsLegacyHDF(input) {
 		return nil, fmt.Errorf("input is not valid InSpec exec-json format")
 	}
 
-	var v1 legacyhdf.HDFV1Results
+	var v1 legacyhdf.LegacyHDFResults
 	if err := json.Unmarshal(input, &v1); err != nil {
 		return nil, fmt.Errorf("failed to parse InSpec input: %w", err)
 	}
 
-	v2 := legacyhdf.ConvertV1ToV2(&v1, version)
+	v2 := legacyhdf.ConvertLegacyHDF(&v1, version)
 
 	output, err := json.MarshalIndent(v2, "", "  ")
 	if err != nil {

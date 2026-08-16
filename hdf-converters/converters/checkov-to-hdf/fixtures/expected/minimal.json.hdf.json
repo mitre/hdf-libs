@@ -16,12 +16,12 @@
           "results": [
             {
               "codeDesc": "Resource: vpc\nFile: /main.tf (lines [26,49])",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-16T05:17:20.502775Z",
               "status": "passed"
             },
             {
               "codeDesc": "Resource: eks\nFile: /main.tf (lines [51,96])",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-16T05:17:20.502775Z",
               "status": "passed"
             }
           ],
@@ -39,7 +39,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "26 module \"vpc\" {\n27   source  = \"terraform-aws-modules/vpc/aws\"\n28   version = \"5.8.1\"\n29 \n30   name = \"education-vpc\"",
           "title": "Ensure Terraform module sources use a tag with a version number",
@@ -59,17 +60,17 @@
           "results": [
             {
               "codeDesc": "Resource: vpc\nFile: /main.tf (lines [26,49])",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-16T05:17:20.502775Z",
               "status": "failed"
             },
             {
               "codeDesc": "Resource: eks\nFile: /main.tf (lines [51,96])",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-16T05:17:20.502775Z",
               "status": "failed"
             },
             {
               "codeDesc": "Resource: irsa-ebs-csi\nFile: /main.tf (lines [104,113])",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-16T05:17:20.502775Z",
               "status": "failed"
             }
           ],
@@ -87,7 +88,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "26 module \"vpc\" {\n27   source  = \"terraform-aws-modules/vpc/aws\"\n28   version = \"5.8.1\"\n29 \n30   name = \"education-vpc\"",
           "title": "Ensure Terraform module sources use a commit hash",
@@ -108,7 +110,7 @@
             {
               "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115,119])",
               "message": "Skipping public access block for demo",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-16T05:17:20.502775Z",
               "status": "notReviewed"
             }
           ],
@@ -126,7 +128,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
           "title": "Ensure that S3 bucket has a Public Access block",
@@ -147,7 +150,7 @@
             {
               "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115,119])",
               "message": "Skipping access logging for demo bucket",
-              "startTime": "2026-07-12T23:25:21.463728Z",
+              "startTime": "2026-08-16T05:17:20.502775Z",
               "status": "notReviewed"
             }
           ],
@@ -165,7 +168,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
           "title": "Ensure the S3 bucket has access logging enabled",
@@ -183,7 +187,7 @@
     "name": "checkov-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:25:21.463728Z",
+  "timestamp": "2026-08-16T05:17:20.502775Z",
   "tool": {
     "name": "Checkov",
     "version": "3.2.524"

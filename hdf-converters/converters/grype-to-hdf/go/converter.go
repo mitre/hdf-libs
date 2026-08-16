@@ -506,14 +506,13 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 	cvssInfo := getCVSSInfo(vuln, match.RelatedVulnerabilities)
 	refs := getReferences(vuln, match.RelatedVulnerabilities)
 
-	// Determine status
+	// Determine status. Severity never changes it (unknown-severity
+	// convention): a detected vulnerability is failed regardless of rating
+	// confidence; only the ignore-rules triage axis differs.
 	var status hdf.ResultStatus
-	switch {
-	case isIgnored:
+	if isIgnored {
 		status = hdf.NotReviewed // Ignored by configured rules
-	case isNegligibleOrUnknown(severity):
-		status = hdf.NotApplicable
-	default:
+	} else {
 		status = hdf.Failed
 	}
 
@@ -545,6 +544,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 
 	// Build tags - only include cci if not empty
 	tags := shared.BuildNISTCCITags(shared.DefaultStaticAnalysisNIST, cciTags)
+	shared.MarkUnratedSeverity(tags, severity)
 
 	// Build requirement ID
 	var requirementID string
@@ -635,11 +635,8 @@ func buildComponent(report GrypeReport, targetName string) hdf.Component {
 			component.OSVersion = hdfutil.Ptr(report.Distro.Version)
 		}
 	}
-	if t.ManifestDigest != "" {
-		component.Integrity = []hdf.Checksum{{
-			Algorithm: hdf.Sha256,
-			Value:     strings.TrimPrefix(t.ManifestDigest, "sha256:"),
-		}}
+	if integrity := shared.DigestToChecksums(t.ManifestDigest); len(integrity) > 0 {
+		component.Integrity = integrity
 	}
 	if t.Architecture != "" {
 		component.Labels = map[string]string{"architecture": t.Architecture}

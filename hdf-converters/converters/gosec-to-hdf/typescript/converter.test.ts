@@ -200,6 +200,35 @@ describe('gosec to HDF converter', async () => {
       expect(hdf.baselines[0]!.requirements[0]!.tags?.['confidence']).toBeUndefined();
     });
 
+    it('tags unrated severities with severity_rating: unrated', async () => {
+      // Empty string, not an absent field: the converter uppercases severity
+      // and an absent field would throw before reaching the tag builder.
+      const input = JSON.stringify({
+        'Golang errors': {},
+        Issues: [{
+          severity: '', confidence: 'HIGH',
+          cwe: { id: '22', url: 'https://cwe.mitre.org/data/definitions/22.html' },
+          rule_id: 'G304', details: 'File inclusion',
+          file: '/app/main.go', code: 'f, _ := os.Open(x)\n',
+          line: '5', column: '2', nosec: false, suppressions: null,
+        }, {
+          severity: 'HIGH', confidence: 'HIGH',
+          cwe: { id: '338', url: 'https://cwe.mitre.org/data/definitions/338.html' },
+          rule_id: 'G404', details: 'Weak random number generator',
+          file: '/app/rand.go', code: 'rand.Intn(10)\n',
+          line: '8', column: '2', nosec: false, suppressions: null,
+        }],
+        Stats: { files: 2, lines: 20, nosec: 0, found: 2 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      const reqs = hdf.baselines[0]!.requirements;
+      const unrated = reqs.find(r => r.id === 'G304');
+      const rated = reqs.find(r => r.id === 'G404');
+      expect(unrated?.tags?.['severity_rating']).toBe('unrated');
+      expect(rated?.tags?.['severity_rating']).toBeUndefined();
+    });
+
     it('should promote the finding locus into structured sourceLocation (G304 → bloom.go:86)', async () => {
       const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
       const g304 = hdf.baselines[0]!.requirements.find(r => r.id === 'G304');

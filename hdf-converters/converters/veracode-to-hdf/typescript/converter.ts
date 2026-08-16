@@ -13,7 +13,7 @@
 
 import { parseXml, parseTimestamp } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, markUnratedSeverity, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { buildCvss, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
@@ -350,7 +350,7 @@ function buildCWERequirements(severities: Record<string, unknown>[], firstBuildD
     const categories = ensureArray(sev.category as Record<string, unknown> | Record<string, unknown>[]);
 
     for (const cat of categories) {
-      requirements.push(buildCWERequirement(cat, impact, firstBuildDate));
+      requirements.push(buildCWERequirement(cat, attr(sev, 'level'), impact, firstBuildDate));
     }
   }
 
@@ -358,7 +358,7 @@ function buildCWERequirements(severities: Record<string, unknown>[], firstBuildD
 }
 
 /** Build a single CWE-based requirement from a category. */
-function buildCWERequirement(cat: Record<string, unknown>, impact: number, firstBuildDate: string): EvaluatedRequirement {
+function buildCWERequirement(cat: Record<string, unknown>, sevLevel: string, impact: number, firstBuildDate: string): EvaluatedRequirement {
   const cwes = ensureArray(cat.cwe as Record<string, unknown> | Record<string, unknown>[]);
 
   // Collect CWE IDs for NIST mapping
@@ -381,6 +381,7 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
   }
 
   const tags = buildNistCciTags(nist, cciTags, extras);
+  markUnratedSeverity(tags, sevLevel);
 
   // First-class CWE identifiers ("CWE-NN"). The category cweid attributes are
   // bare numbers; prefix them to match the schema's CWE-N convention.
@@ -551,6 +552,7 @@ function buildCVERequirement(
   }
   const cciTags = nistToCci(nist);
   const tags = buildNistCciTags(nist, cciTags, {});
+  markUnratedSeverity(tags, attr(vuln, 'severity'));
 
   // One result per affected component
   const startTime = parseVeracodeTimestamp(firstBuildDate) ?? new Date();

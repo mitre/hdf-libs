@@ -266,10 +266,10 @@ func TestExtractTags_KeyValueParsing(t *testing.T) {
 		SysTags: []string{},
 	}
 
-	cweIds, owaspTags, allTags := extractTags(rule, true, []Issue{})
+	cweIds, owaspIDs, allTags := extractTags(rule, true, []Issue{})
 
 	assert.NotEmpty(t, cweIds, "expected at least one CWE ID extracted")
-	assert.NotEmpty(t, owaspTags, "expected at least one OWASP tag extracted")
+	assert.Equal(t, []string{"A1"}, owaspIDs, "owasp:a01 tag normalizes to A1")
 
 	_, ok := allTags["category"]
 	assert.True(t, ok, "expected 'category' key in allTags")
@@ -1101,4 +1101,71 @@ func TestSelectSeverity_DivergentAxes(t *testing.T) {
 			assert.Equal(t, tt.wantImpact, severityToImpactScore(severity, source))
 		})
 	}
+}
+
+func loadOwaspFixture(t *testing.T) []byte {
+	t.Helper()
+	fixturePath := filepath.Join(shared.GetConvertersDir(), "sonarqube-to-hdf", "fixtures", "input", "sq26-owasp.json")
+	data, err := os.ReadFile(fixturePath)
+	require.NoError(t, err)
+	return data
+}
+
+func findReqByID(t *testing.T, result *hdf.HDFResults, id string) hdf.EvaluatedRequirement {
+	t.Helper()
+	for _, b := range result.Baselines {
+		for _, r := range b.Requirements {
+			if r.ID == id {
+				return r
+			}
+		}
+	}
+	t.Fatalf("requirement %q not found", id)
+	return hdf.EvaluatedRequirement{}
+}
+
+func stringSliceTag(t *testing.T, req hdf.EvaluatedRequirement, key string) []string {
+	t.Helper()
+	v, ok := req.Tags[key]
+	require.True(t, ok, "tag %q present on %s", key, req.ID)
+	s, ok := v.([]string)
+	require.True(t, ok, "tag %q is []string on %s (got %T)", key, req.ID, v)
+	return s
+}
+
+// TestConvertSonarqubeToHDF_OwaspNistFold pins the OWASP-2017 -> NIST fold on a
+// real OWASP Juice Shop scan (SonarQube 26.1). Modern SonarQube carries no
+// owasp-* sysTags; the category lives in the rule's description ("Top 10 2017 -
+// Category A#"), so the fold parses it there and maps via hdf-mappings/owasp.
+func TestConvertSonarqubeToHDF_OwaspNistFold(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadOwaspFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	cases := []struct {
+		ruleID   string
+		owaspID  string
+		nistCtrl string
+	}{
+		{"secrets:S6706", "A3", "SI-11"},
+		{"typescript:S6437", "A2", "SC-23"},
+		{"typescript:S7639", "A2", "SC-23"},
+		{"javascript:S2486", "A10", "AU-12"},
+		{"typescript:S2486", "A10", "AU-12"},
+		{"typescript:S7790", "A1", "SI-10"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.ruleID, func(t *testing.T) {
+			req := findReqByID(t, result, tc.ruleID)
+			assert.Contains(t, stringSliceTag(t, req, "owasp"), tc.owaspID,
+				"owasp tag should contain %s", tc.owaspID)
+			assert.Contains(t, stringSliceTag(t, req, "nist"), tc.nistCtrl,
+				"nist should include OWASP-derived %s", tc.nistCtrl)
+		})
+	}
+
+	// The SA-11 fallback exists only for findings with no control mapping. Once
+	// OWASP contributes a real control, the fallback must drop.
+	req := findReqByID(t, result, "secrets:S6706")
+	assert.NotContains(t, stringSliceTag(t, req, "nist"), defaultNistTag,
+		"SA-11 fallback should be removed when OWASP provides a mapping")
 }

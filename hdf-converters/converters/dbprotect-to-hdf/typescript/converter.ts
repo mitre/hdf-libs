@@ -3,7 +3,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -292,6 +292,7 @@ function buildRequirement(
   if (checkCategory) {
     tags.check_category = checkCategory;
   }
+  markUnratedSeverity(tags, rep['Risk DV']);
 
   const descriptions: Description[] = [
     { label: 'default', data: formatDesc(rep) },

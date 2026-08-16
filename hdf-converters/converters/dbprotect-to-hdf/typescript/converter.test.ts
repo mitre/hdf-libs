@@ -458,6 +458,18 @@ describe('dbprotect to HDF converter', () => {
       expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
     });
 
+    it('should tag severity_rating unrated for an empty Risk DV and omit it for rated values', async () => {
+      const unrated = JSON.parse(await convertDbprotectToHdf(makeXml(true, 'Failed', ''))) as HDFResults;
+      expect(unrated.baselines[0]!.requirements[0]!.tags!['severity_rating']).toBe('unrated');
+
+      const rated = JSON.parse(await convertDbprotectToHdf(makeXml(true, 'Failed', 'High'))) as HDFResults;
+      expect(rated.baselines[0]!.requirements[0]!.tags!['severity_rating']).toBeUndefined();
+
+      // Informational is a rated tier, not unrated.
+      const info = JSON.parse(await convertDbprotectToHdf(makeXml(true, 'Failed', 'Informational'))) as HDFResults;
+      expect(info.baselines[0]!.requirements[0]!.tags!['severity_rating']).toBeUndefined();
+    });
+
     it('should handle empty date gracefully', async () => {
       const xml = `<?xml version="1.0"?><dataset><metadata><item><name>Check ID</name><type>xs:string</type></item><item><name>Check</name><type>xs:string</type></item><item><name>Risk DV</name><type>xs:string</type></item><item><name>Details</name><type>xs:string</type></item><item><name>Date</name><type>xs:string</type></item><item><name>Task</name><type>xs:string</type></item><item><name>Check Category</name><type>xs:string</type></item><item><name>Organization</name><type>xs:string</type></item><item><name>Asset</name><type>xs:string</type></item><item><name>Asset Type</name><type>xs:string</type></item><item><name>IP Address, Port, Instance</name><type>xs:string</type></item><item><name>Job Name</name><type>xs:string</type></item></metadata><data><row><value>CK1</value><value>Check</value><value>Low</value><value>Details</value><value></value><value>Task</value><value>Cat</value><value>Org</value><value>Asset</value><value>DB</value><value>10.0.0.1</value><value>Job</value></row></data></dataset>`;
       const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;

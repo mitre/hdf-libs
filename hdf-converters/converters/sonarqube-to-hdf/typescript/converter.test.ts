@@ -776,3 +776,38 @@ describe('selectSeverity', () => {
     expect(got.impact).toBe(wantImpact);
   });
 });
+
+// Mirrors the Go TestConvertSonarqubeToHDF_OwaspNistFold value-pins. Modern
+// SonarQube carries no owasp-* sysTags; the category lives in the rule
+// description ("Top 10 2017 - Category A#"), so the fold parses it there and
+// maps via @mitre/hdf-mappings getOwaspNistControl.
+describe('OWASP-2017 -> NIST fold', async () => {
+  const input = readFileSync(join(__dirname, '../fixtures/input/sq26-owasp.json'), 'utf-8');
+  const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
+
+  function reqById(id: string) {
+    for (const b of hdf.baselines ?? []) {
+      const r = (b.requirements ?? []).find(x => x.id === id);
+      if (r) return r;
+    }
+    throw new Error(`requirement ${id} not found`);
+  }
+
+  it.each([
+    ['secrets:S6706', 'A3', 'SI-11'],
+    ['typescript:S6437', 'A2', 'SC-23'],
+    ['typescript:S7639', 'A2', 'SC-23'],
+    ['javascript:S2486', 'A10', 'AU-12'],
+    ['typescript:S2486', 'A10', 'AU-12'],
+    ['typescript:S7790', 'A1', 'SI-10'],
+  ])('%s folds %s -> %s', (ruleId, owaspId, nistCtrl) => {
+    const tags = reqById(ruleId).tags as { owasp?: string[]; nist?: string[] };
+    expect(tags.owasp).toContain(owaspId);
+    expect(tags.nist).toContain(nistCtrl);
+  });
+
+  it('drops the SA-11 fallback once OWASP contributes a control', () => {
+    const tags = reqById('secrets:S6706').tags as { nist?: string[] };
+    expect(tags.nist).not.toContain('SA-11');
+  });
+});

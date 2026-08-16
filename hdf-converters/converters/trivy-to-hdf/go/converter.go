@@ -280,6 +280,7 @@ func convertVuln(raw json.RawMessage, res trivyResult, startTime time.Time) (hdf
 		extras["vendor_severity"] = v.VendorSeverity
 	}
 	tags := buildTags(extras)
+	shared.MarkUnratedSeverity(tags, v.Severity)
 
 	req := hdf.EvaluatedRequirement{
 		ID:                 "Trivy/" + v.VulnerabilityID,
@@ -324,7 +325,10 @@ func convertMisconf(raw json.RawMessage, res trivyResult, startTime time.Time) (
 		descriptions = append(descriptions, hdf.Description{Label: "fix", Data: m.Resolution})
 	}
 
-	tags := buildTags(withClass(res.Class, map[string]interface{}{"misconfig_type": m.Type}))
+	extras := map[string]interface{}{}
+	putIf(extras, "misconfig_type", m.Type)
+	tags := buildTags(withClass(res.Class, extras))
+	shared.MarkUnratedSeverity(tags, m.Severity)
 	req := hdf.EvaluatedRequirement{
 		ID:                 "Trivy/" + firstNonEmpty(m.ID, m.AVDID),
 		Title:              hdfutil.Ptr(m.Title),
@@ -358,6 +362,7 @@ func convertSecret(raw json.RawMessage, res trivyResult, startTime time.Time) (h
 		return hdf.EvaluatedRequirement{}, false
 	}
 	tags := buildTags(withClass(res.Class, map[string]interface{}{"secret_category": s.Category}))
+	shared.MarkUnratedSeverity(tags, s.Severity)
 	req := hdf.EvaluatedRequirement{
 		ID:                 fmt.Sprintf("Trivy/secret/%s@%s:%d", s.RuleID, res.Target, s.StartLine),
 		Title:              hdfutil.Ptr(s.Title),
@@ -396,6 +401,7 @@ func convertLicense(raw json.RawMessage, res trivyResult, startTime time.Time) (
 		extras["confidence"] = l.Confidence
 	}
 	tags := buildTags(extras)
+	shared.MarkUnratedSeverity(tags, l.Severity)
 
 	// No affectedPackages: a license finding carries only the package name, and
 	// AffectedPackage requires name+version+ecosystem, a purl, or a cpe. The
@@ -450,9 +456,7 @@ func buildComponent(report trivyReport) (hdf.Component, bool) {
 	}
 	if len(md.RepoDigests) > 0 {
 		c.Image = hdfutil.Ptr(md.RepoDigests[0])
-		if dig := sha256Digest(md.RepoDigests[0]); dig != "" {
-			c.Integrity = []hdf.Checksum{{Algorithm: hdf.Sha256, Value: dig}}
-		}
+		c.Integrity = shared.DigestToChecksums(digestPart(md.RepoDigests[0]))
 	}
 	if arch := architecture(md.ImageConfig); arch != "" {
 		c.Labels = map[string]string{"architecture": arch}
@@ -604,11 +608,14 @@ func indentRaw(raw json.RawMessage) string {
 	return buf.String()
 }
 
-func sha256Digest(ref string) string {
-	if i := strings.Index(ref, "sha256:"); i >= 0 {
-		return ref[i+len("sha256:"):]
+// digestPart returns the "<algo>:<hex>" digest portion of a repo digest
+// reference ("name@<algo>:<hex>"), or the input unchanged when it carries no
+// "@". The algorithm labeling is then handled by shared.DigestToChecksums.
+func digestPart(ref string) string {
+	if at := strings.LastIndexByte(ref, '@'); at >= 0 {
+		return ref[at+1:]
 	}
-	return ""
+	return ref
 }
 
 func architecture(imageConfig json.RawMessage) string {
