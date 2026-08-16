@@ -324,7 +324,9 @@ func convertMisconf(raw json.RawMessage, res trivyResult, startTime time.Time) (
 		descriptions = append(descriptions, hdf.Description{Label: "fix", Data: m.Resolution})
 	}
 
-	tags := buildTags(withClass(res.Class, map[string]interface{}{"misconfig_type": m.Type}))
+	extras := map[string]interface{}{}
+	putIf(extras, "misconfig_type", m.Type)
+	tags := buildTags(withClass(res.Class, extras))
 	req := hdf.EvaluatedRequirement{
 		ID:                 "Trivy/" + firstNonEmpty(m.ID, m.AVDID),
 		Title:              hdfutil.Ptr(m.Title),

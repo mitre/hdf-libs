@@ -156,6 +156,59 @@ describe('trivy-to-hdf native conversion', () => {
     expect(findReq(hdf, 'Trivy/')?.affectedPackages).toBeUndefined();
   });
 
+  it('omits misconfig_type when Type is absent or empty', async () => {
+    // Tags are presence-based: an absent or empty Type must omit the key
+    // entirely, never emit "misconfig_type": "". Pins the direction the Go
+    // peer must match.
+    const synthetic = JSON.stringify({
+      SchemaVersion: 2,
+      ArtifactName: 'x',
+      ArtifactType: 'filesystem',
+      Results: [
+        {
+          Target: 'Dockerfile',
+          Class: 'config',
+          Misconfigurations: [
+            {ID: 'M-TYPE-ABSENT', Title: 't', Severity: 'LOW', Status: 'FAIL'},
+            {ID: 'M-TYPE-EMPTY', Title: 't', Severity: 'LOW', Status: 'FAIL', Type: ''},
+            {ID: 'M-TYPE-SET', Title: 't', Severity: 'LOW', Status: 'FAIL', Type: 'Dockerfile Security Check'},
+          ],
+        },
+      ],
+    });
+    const hdf = JSON.parse(await convertTrivyToHdf(synthetic, '0.1.0')) as HDFResults;
+    for (const id of ['Trivy/M-TYPE-ABSENT', 'Trivy/M-TYPE-EMPTY']) {
+      const req = findReq(hdf, id);
+      expect(req, id).toBeDefined();
+      expect(req?.tags).not.toHaveProperty('misconfig_type');
+    }
+    expect(findReq(hdf, 'Trivy/M-TYPE-SET')?.tags).toMatchObject({misconfig_type: 'Dockerfile Security Check'});
+  });
+
+  it('renders Severity: UNKNOWN for absent, empty-string, and null Severity', async () => {
+    // The Go peer uses firstNonEmpty(v.Severity, "UNKNOWN"), which catches
+    // the explicit empty string; all three sparse shapes must agree.
+    const synthetic = JSON.stringify({
+      SchemaVersion: 2,
+      ArtifactName: 'x',
+      ArtifactType: 'filesystem',
+      Results: [
+        {
+          Class: 'os-pkgs',
+          Vulnerabilities: [
+            {VulnerabilityID: 'CVE-SEV-ABSENT', PkgName: 'p', InstalledVersion: '1'},
+            {VulnerabilityID: 'CVE-SEV-EMPTY', PkgName: 'p', InstalledVersion: '1', Severity: ''},
+            {VulnerabilityID: 'CVE-SEV-NULL', PkgName: 'p', InstalledVersion: '1', Severity: null},
+          ],
+        },
+      ],
+    });
+    const hdf = JSON.parse(await convertTrivyToHdf(synthetic, '0.1.0')) as HDFResults;
+    for (const id of ['Trivy/CVE-SEV-ABSENT', 'Trivy/CVE-SEV-EMPTY', 'Trivy/CVE-SEV-NULL']) {
+      expect(findReq(hdf, id)?.results[0].message, id).toBe('Severity: UNKNOWN');
+    }
+  });
+
   it('throws on invalid, empty, and unrecognized input', async () => {
     await expect(convertTrivyToHdf('not json')).rejects.toThrow();
     await expect(convertTrivyToHdf('')).rejects.toThrow();
