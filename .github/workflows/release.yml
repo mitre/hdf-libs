@@ -242,6 +242,7 @@ jobs:
             "hdf-generators/go"
             "hdf-utilities/go"
             "hdf-diff/go"
+            "hdf-extension-graph/go"
             "hdf-cli"
           )
 
