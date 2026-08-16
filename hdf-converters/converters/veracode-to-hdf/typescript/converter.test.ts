@@ -290,6 +290,30 @@ describe('Veracode to HDF converter', () => {
     const sev0 = baseline.requirements.find(r => r.id === '17');
     expect(sev0!.impact).toBe(0.0);
   });
+
+  it('maps a word severity through the shared standard map after the numeric aliases (Go parity)', async () => {
+    const xml = `<?xml version="1.0"?>
+<detailedreport app_name="t" first_build_submitted_date="2021-12-29 22:16:36 UTC">
+  <severity level="low">
+    <category categoryid="42" categoryname="Word Severity Category">
+      <desc><para text="d"/></desc>
+      <recommendations><para text="r"/></recommendations>
+    </category>
+  </severity>
+  <severity level="0">
+    <category categoryid="43" categoryname="Zero Severity Category">
+      <desc><para text="d"/></desc>
+      <recommendations><para text="r"/></recommendations>
+    </category>
+  </severity>
+</detailedreport>`;
+    const output: HDFResults = JSON.parse(await convert(xml));
+    const reqs = output.baselines[0]!.requirements;
+    // "low" misses the numeric 0-5 aliases and falls through to the shared
+    // standard map (0.3), matching Go's SeverityToImpactWithAliases.
+    expect(reqs.find(r => r.id === '42')!.impact).toBe(0.3);
+    expect(reqs.find(r => r.id === '43')!.impact).toBe(0.0);
+  });
 });
 
 describe('veracode structured scoring (CVSS / CWE)', () => {

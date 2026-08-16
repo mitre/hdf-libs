@@ -404,6 +404,22 @@ describe('Grype Converter', async () => {
       expect(req?.kev?.dateAdded).toBeUndefined();
     });
 
+    it('maps a None severity to 0.0 impact via the shared standard map (Go parity)', async () => {
+      const input = JSON.stringify({
+        descriptor: {name: 'grype', version: '0.85.0'},
+        source: {target: {userInput: 'img'}},
+        matches: [{
+          vulnerability: {id: 'CVE-2024-2222', severity: 'None'},
+          matchDetails: [{type: 'exact-direct-match', matcher: 'rpm-matcher'}],
+          artifact: {name: 'pkg', version: '1.0.0', type: 'rpm'},
+        }],
+      });
+      const hdf = parseJSON<HDFResults>(await convertGrypeToHdf(input));
+      const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-2222');
+      expect(req).toBeDefined();
+      expect(req!.impact).toBe(0.0);
+    });
+
     it('anchors result start_time to the scan timestamp, falling back to Go zero time when absent', async () => {
       const input = loadFixture('amazon.json');
       const hdf = parseJSON<HDFResults>(await convertGrypeToHdf(input));

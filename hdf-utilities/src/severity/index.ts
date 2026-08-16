@@ -31,12 +31,34 @@ const severityMap: Record<string, number> = {
  * @returns Impact score between 0.0 and 1.0; null when input is null; defaults to 0.5 for unrecognized values
  */
 export function severityToImpact(severity: null): null;
-export function severityToImpact(severity: string): number;
-export function severityToImpact(severity: string | null): number | null;
-export function severityToImpact(severity: string | null): number | null {
+export function severityToImpact(severity: string | undefined): number;
+export function severityToImpact(severity: string | null | undefined): number | null;
+export function severityToImpact(severity: string | null | undefined): number | null {
   if (severity === null) return null;
-  const normalized = severity.toLowerCase();
+  // Absent field: match Go's zero-value semantics ("" → the 0.5 default)
+  // rather than throwing on .toLowerCase() of undefined.
+  const normalized = (severity ?? '').toLowerCase();
   return severityMap[normalized] ?? 0.5;
+}
+
+/**
+ * Map severity to impact, checking custom aliases first, then the shared
+ * standard map, then the caller default. Case-insensitive. Use for tools with
+ * non-standard severity labels (sonarqube BLOCKER, veracode numeric levels,
+ * grype critical=0.9). Absent (undefined/null) values take the default —
+ * matching the Go peer's zero-value "" behavior. TS mirror of Go's
+ * SeverityToImpactWithAliases; converters must not hand-roll local severity
+ * maps around it (that fork is how Go/TS impact divergence happens).
+ */
+export function severityToImpactWithAliases(
+  severity: string | null | undefined,
+  aliases: Record<string, number>,
+  defaultVal: number,
+): number {
+  const lower = (severity ?? '').toLowerCase();
+  const aliased = aliases[lower];
+  if (aliased !== undefined) return aliased;
+  return severityMap[lower] ?? defaultVal;
 }
 
 /**

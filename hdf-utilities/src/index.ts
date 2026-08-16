@@ -51,7 +51,7 @@ export { findValuesByKey, extractColumn, findRows } from './object/index.js';
 export { stripHtml, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps } from './string/index.js';
 
 // Severity/impact mapping
-export { severityToImpact, impactToSeverity, cvssScoreToSeverity, isUnratedSeverity, roundImpact } from './severity/index.js';
+export { severityToImpact, severityToImpactWithAliases, impactToSeverity, cvssScoreToSeverity, isUnratedSeverity, roundImpact } from './severity/index.js';
 
 // Canonical status ordering + effective-status computation
 export {

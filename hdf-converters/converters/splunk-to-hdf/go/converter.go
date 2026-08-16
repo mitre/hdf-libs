@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -432,8 +433,11 @@ func convertSplunkResult(r SplunkResult) hdf.RequirementResult {
 }
 
 // mapStatus converts a Splunk status string to an HDF ResultStatus.
+// Case-insensitive (matching the TS peer): stored statuses are canonically
+// lowercase, but a case-variant document maps by meaning rather than
+// collapsing to notReviewed.
 func mapStatus(s string) hdf.ResultStatus {
-	switch s {
+	switch strings.ToLower(s) {
 	case "passed":
 		return hdf.Passed
 	case "failed":

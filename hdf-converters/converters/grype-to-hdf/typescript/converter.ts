@@ -15,7 +15,7 @@ import {
   VerificationMethodEnum,
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
-import {parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
+import {parseJSON, parseTimestamp, severityToImpactWithAliases} from '@mitre/hdf-utilities';
 import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 import {buildCvss as buildSharedCvss, cvssVersionFromString} from '../../../shared/typescript/cvss.js';
 
@@ -155,22 +155,15 @@ interface GrypeLocation {
   layerID?: string;
 }
 
-// Severity to impact mapping
-const IMPACT_MAPPING: Map<string, number> = new Map([
-  ['critical', 0.9],
-  ['high', 0.7],
-  ['medium', 0.5],
-  ['low', 0.3],
-  ['negligible', 0.0],
-  ['unknown', 0.5],
-]);
-
+// Severity to impact mapping.
+// Grype maps "critical" to 0.9 (not the standard 1.0) and adds "negligible"=0.0.
+const GRYPE_ALIASES: Record<string, number> = {
+  critical: 0.9,
+  negligible: 0.0,
+};
 
 function getImpact(severity?: string): number {
-  if (!severity) {
-    return 0.5; // default for unknown
-  }
-  return IMPACT_MAPPING.get(severity.toLowerCase()) ?? 0.5;
+  return severityToImpactWithAliases(severity, GRYPE_ALIASES, 0.5);
 }
 
 function isNegligibleOrUnknown(severity?: string): boolean {

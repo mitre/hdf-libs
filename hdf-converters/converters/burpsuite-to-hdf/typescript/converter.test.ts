@@ -523,6 +523,31 @@ describe('burpsuite-to-hdf source location', () => {
   });
 });
 
+describe('severity to impact (Go parity)', () => {
+  const issueXml = (type: string, severity: string) => `  <issue>
+    <serialNumber>${type}001</serialNumber>
+    <type>${type}</type>
+    <name>Test issue ${type}</name>
+    <host ip="10.0.0.1">http://example.test</host>
+    <path>/</path>
+    <location>/</location>
+    <severity>${severity}</severity>
+    <confidence>Certain</confidence>
+  </issue>`;
+  const wrap = (issues: string) =>
+    `<?xml version="1.0"?>\n<issues burpVersion="2020.1" exportTime="Thu Feb 27 09:28:17 EST 2020">\n${issues}\n</issues>`;
+
+  it('maps Critical to 0.9 via the shared standard map and keeps information at 0.3', async () => {
+    const xml = wrap(issueXml('111', 'Critical') + '\n' + issueXml('222', 'Information'));
+    const out = parseOutput(await convertBurpsuiteToHdf(xml));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    // Critical falls through the aliases to the shared standard map (Go parity).
+    expect(findRequirement(bl, '111')!.impact).toBe(0.9);
+    // information is BurpSuite's deliberate non-standard 0.3 alias.
+    expect(findRequirement(bl, '222')!.impact).toBe(0.3);
+  });
+});
+
 // Ground-truth anchor (see shared/typescript/anchor.ts). burpsuite groups issues
 // by <type> — one requirement per distinct issue type — counted independently.
 describe('burpsuite-to-hdf ground-truth anchor', () => {

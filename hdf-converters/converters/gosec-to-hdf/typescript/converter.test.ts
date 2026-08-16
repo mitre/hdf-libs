@@ -115,6 +115,42 @@ describe('gosec to HDF converter', async () => {
       expect(g104?.impact).toBe(0.3);
     });
 
+    it('should map INFO severity to 0.0 like the Go twin (shared standard map)', async () => {
+      const input = JSON.stringify({
+        'Golang errors': {},
+        Issues: [{
+          severity: 'INFO', confidence: 'HIGH',
+          cwe: { id: '22', url: 'https://cwe.mitre.org/data/definitions/22.html' },
+          rule_id: 'G304', details: 'File inclusion',
+          file: '/app/main.go', code: 'f, _ := os.Open(x)\n',
+          line: '5', column: '2', nosec: false, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 10, nosec: 0, found: 1 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
+    });
+
+    it('defaults an absent severity field to 0.5 without throwing (Go zero-value parity)', async () => {
+      const input = JSON.stringify({
+        'Golang errors': {},
+        Issues: [{
+          confidence: 'HIGH',
+          cwe: { id: '22', url: 'https://cwe.mitre.org/data/definitions/22.html' },
+          rule_id: 'G304', details: 'File inclusion',
+          file: '/app/main.go', code: 'f, _ := os.Open(x)\n',
+          line: '5', column: '2', nosec: false, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 10, nosec: 0, found: 1 },
+        GosecVersion: '2.18.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.impact).toBe(0.5);
+      expect(req.tags?.['severity_rating']).toBe('unrated');
+    });
+
     it('should mark non-suppressed issues as failed', async () => {
       const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
       const g304 = hdf.baselines[0]!.requirements.find(r => r.id === 'G304');
@@ -201,8 +237,7 @@ describe('gosec to HDF converter', async () => {
     });
 
     it('tags unrated severities with severity_rating: unrated', async () => {
-      // Empty string, not an absent field: the converter uppercases severity
-      // and an absent field would throw before reaching the tag builder.
+      // Empty string variant; the absent-field variant is covered above.
       const input = JSON.stringify({
         'Golang errors': {},
         Issues: [{

@@ -1,4 +1,4 @@
-import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, parseTimestamp, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -123,18 +123,15 @@ interface NetsparkerHttpResponse {
 }
 
 // --- Severity to impact mapping ---
+// Mirrors the Go twin: "best_practice" is the only Netsparker-specific alias;
+// standard levels + "information" come from the shared standard map.
 
-const IMPACT_MAPPING: Record<string, number> = {
-  'critical': 1.0,
-  'high': 0.7,
-  'medium': 0.5,
-  'low': 0.3,
-  'best_practice': 0.0,
-  'information': 0.0,
+const NETSPARKER_ALIASES: Record<string, number> = {
+  best_practice: 0.0,
 };
 
 function getImpact(severity: string): number {
-  return IMPACT_MAPPING[severity.toLowerCase()] ?? 0.5;
+  return severityToImpactWithAliases(severity, NETSPARKER_ALIASES, 0.5);
 }
 
 // Netsparker <initiated> uses the US format "MM/DD/YYYY hh:mm AM/PM"

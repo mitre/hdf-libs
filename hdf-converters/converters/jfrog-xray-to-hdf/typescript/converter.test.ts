@@ -151,6 +151,17 @@ describe('jfrog-xray to HDF converter', async () => {
       const hasLow = reqs.some(r => r.impact === 0.3);
       expect(hasLow).toBe(true);
     });
+
+    // Go parity: an entry with no severity field converts without throwing and
+    // takes the shared 0.5 default (Go: hdfutil.SeverityToImpact("", 0.5)).
+    it('should default impact to 0.5 without throwing when severity is absent (Go parity)', async () => {
+      const input = JSON.stringify({
+        total_count: 1,
+        data: [{ id: 'XRAY-NOSEV', summary: 'entry with no severity field' }],
+      });
+      const hdf = JSON.parse(await convertJfrogXrayToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
   });
 
   describe('ID generation', async () => {

@@ -1,4 +1,4 @@
-import { parseJSON, parsePurl, worstStatus } from '@mitre/hdf-utilities';
+import { parseJSON, parsePurl, severityToImpactWithAliases, worstStatus } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -154,8 +154,10 @@ interface SarifLocation {
 }
 
 // --- Impact mapping ---
-
-const IMPACT_MAPPING: Record<string, number> = {
+// SARIF "error"/"warning"/"note" levels are aliases; unknown levels fall
+// through the shared standard map to 0.0, then get bumped to a 0.1 floor at
+// the call site. Mirrors Go's sarifAliases + getImpact.
+const SARIF_ALIASES: Record<string, number> = {
   error: 0.7,
   warning: 0.5,
   note: 0.3,
@@ -281,7 +283,7 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
 
   // Determine requirement-level impact from the rule's inherent severity
   const ruleLevel = resolveRuleLevel(rule, sarifResults);
-  const impact = IMPACT_MAPPING[ruleLevel] || 0.1;
+  const impact = severityToImpactWithAliases(ruleLevel, SARIF_ALIASES, 0.0) || 0.1;
 
   // Source location from first result's first location
   const sourceLocation = firstResult.locations && firstResult.locations.length > 0

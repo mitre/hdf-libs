@@ -175,6 +175,26 @@ describe('twistlock to HDF converter', async () => {
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44832');
       expect(req?.impact).toBe(0.5);
     });
+
+    it('should map info to 0.0 like the Go twin (shared standard map)', async () => {
+      const input = JSON.stringify({
+        results: [{
+          vulnerabilities: [{ id: 'CVE-INFO', severity: 'info', description: 'desc' }],
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
+    });
+
+    it('defaults an absent severity field to 0.5 without throwing (Go zero-value parity)', async () => {
+      const input = JSON.stringify({
+        results: [{
+          vulnerabilities: [{ id: 'CVE-NOSEV', description: 'desc' }],
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
   });
 
   describe('tags', async () => {

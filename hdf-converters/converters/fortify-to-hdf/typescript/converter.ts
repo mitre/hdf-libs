@@ -418,8 +418,11 @@ function buildRequirement(
   // Impact from the representative instance's per-instance severity / 5.
   // Fortify's InstanceSeverity is numeric on a 1.0-5.0 scale; zero means the
   // attribute was absent, i.e. the finding carries no rating at all.
+  // A non-numeric value parses to NaN (where Go hard-errors during unmarshal);
+  // guard so impact stays schema-valid: anything not a positive number is 0.0
+  // and lands in the unrated branch below.
   const instanceSeverity = parseFloat(vulns[0]?.InstanceInfo?.InstanceSeverity ?? '0');
-  const impact = vulns.length > 0 ? roundImpact(instanceSeverity / 5.0) : 0;
+  const impact = instanceSeverity > 0 ? roundImpact(instanceSeverity / 5.0) : 0;
   if (!(instanceSeverity > 0)) {
     markUnratedSeverity(tags, '');
   }

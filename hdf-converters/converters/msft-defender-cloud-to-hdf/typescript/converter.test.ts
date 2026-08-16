@@ -134,6 +134,51 @@ describe('Microsoft Defender for Cloud to HDF converter', async () => {
       const req4 = hdf.baselines[0]!.requirements[4]!;
       expect(req4.impact).toBe(0.3);
     });
+
+    it('should map Informational severity to 0.0 like the Go twin (shared standard map)', async () => {
+      const input = JSON.stringify({
+        value: [
+          {
+            id: '/subscriptions/sub1/providers/Microsoft.Security/assessments/infosev',
+            name: 'infosev',
+            properties: {
+              displayName: 'Informational finding',
+              status: { code: 'Unhealthy' },
+              metadata: {
+                description: 'desc',
+                severity: 'Informational',
+                categories: [], tactics: [], techniques: [], threats: [],
+              },
+              resourceDetails: { id: '/subscriptions/sub1/res' },
+            },
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
+    });
+
+    it('defaults an absent severity field to 0.5 without throwing (Go zero-value parity)', async () => {
+      const input = JSON.stringify({
+        value: [
+          {
+            id: '/subscriptions/sub1/providers/Microsoft.Security/assessments/nosev',
+            name: 'nosev',
+            properties: {
+              displayName: 'No severity',
+              status: { code: 'Unhealthy' },
+              metadata: {
+                description: 'desc',
+                categories: [], tactics: [], techniques: [], threats: [],
+              },
+              resourceDetails: { id: '/subscriptions/sub1/res' },
+            },
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
   });
 
   describe('target', async () => {

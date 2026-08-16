@@ -275,6 +275,24 @@ describe('msft-defender-endpoint to HDF converter', async () => {
       const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('sample.json'))) as HDFResults;
       expect(hdf.baselines[0]!.requirements[2]!.impact).toBe(0.0);
     });
+
+    it('should map "critical" severity to 0.9 like the Go twin (shared standard map)', async () => {
+      const doc = { value: [{ id: 'a', status: 'new', severity: 'critical', category: 'Execution', title: 't', description: 'd' }] };
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(JSON.stringify(doc))) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.9);
+    });
+
+    it('should default Graph "unSpecified" severity to 0.5', async () => {
+      const doc = { value: [{ id: 'a', status: 'new', severity: 'unSpecified', category: 'Execution', title: 't', description: 'd' }] };
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(JSON.stringify(doc))) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
+
+    it('defaults an absent severity field to 0.5 without throwing (Go zero-value parity)', async () => {
+      const doc = { value: [{ id: 'a', status: 'new', category: 'Execution', title: 't', description: 'd' }] };
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(JSON.stringify(doc))) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
   });
 
   describe('targets', async () => {

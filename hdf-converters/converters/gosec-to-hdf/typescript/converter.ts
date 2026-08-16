@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, severityToImpact } from '@mitre/hdf-utilities';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
@@ -62,7 +62,7 @@ interface GosecSuppression {
 }
 
 interface GosecIssue {
-  severity: string;
+  severity?: string;
   confidence: string;
   cwe: GosecCWE;
   rule_id: string;
@@ -74,16 +74,6 @@ interface GosecIssue {
   nosec: boolean;
   suppressions: GosecSuppression[] | null;
 }
-
-/**
- * Severity to HDF impact mapping for gosec.
- */
-const IMPACT_MAPPING: Record<string, number> = {
-  HIGH: 0.7,
-  MEDIUM: 0.5,
-  LOW: 0.3,
-};
-
 
 /**
  * Returns the first-class CWE identifiers for an issue in "CWE-N" form,
@@ -171,7 +161,8 @@ function issueToResult(issue: GosecIssue, scanTime: Date): RequirementResult {
  */
 function buildRequirement(ruleId: string, issues: GosecIssue[], scanTime: Date): EvaluatedRequirement {
   const rep = issues[0]!;
-  const impact = IMPACT_MAPPING[rep.severity.toUpperCase()] ?? 0.5;
+  // Shared standard map, default 0.5 — mirrors the Go twin's SeverityToImpact.
+  const impact = severityToImpact(rep.severity);
   const nist = mapCWEToNIST([rep.cwe.id], DEFAULT_REMEDIATION_NIST_TAGS);
 
   const tags: Record<string, unknown> = {

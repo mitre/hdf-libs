@@ -128,6 +128,25 @@ describe('Nessus to HDF Converter', async () => {
       expect(req3?.impact).toBe(0.7);
     });
 
+    // Go parity: calculateImpact routes severity through the shared standard
+    // map after the numeric/CAT aliases (hdfutil.SeverityToImpactWithAliases),
+    // so a word severity like "medium" maps to 0.5 rather than the 0.0 default.
+    it('should map a word severity through the shared standard map (Go parity)', async () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Test Policy</policyName></Policy>
+  <Report name="Word Severity Scan">
+    <ReportHost name="host1">
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="medium" pluginID="99999" pluginName="Word Severity Plugin" pluginFamily="Misc">
+        <description>plugin with a word severity</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+      const result = await convertNessusToHdf(xml);
+      expect(findReqAcrossBaselines(result, '99999')?.impact).toBe(0.5);
+    });
+
     it('should map Nessus plugin family to NIST tags using hdf-mappings', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),

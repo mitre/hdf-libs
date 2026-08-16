@@ -187,6 +187,50 @@ describe('dbprotect to HDF converter', () => {
       const req = hdf.baselines[0]!.requirements.find(r => r.id === '2801');
       expect(req?.impact).toBe(0.0);
     });
+
+    it('should map Critical risk to 0.9 via the shared standard map (Go parity)', async () => {
+      const xml = `<?xml version="1.0" encoding="utf-8"?>
+<dataset xmlns="http://developer.cognos.com/schemas/xmldata/1/" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
+    <metadata>
+          <item name="Organization" type="xs:string" length="202"/>
+          <item name="Task" type="xs:string" length="802"/>
+          <item name="Asset Type" type="xs:string" length="66"/>
+          <item name="Asset" type="xs:string" length="1026"/>
+          <item name="IP Address, Port, Instance" type="xs:string" length="532"/>
+          <item name="Job Name" type="xs:string" length="258"/>
+          <item name="Policy" type="xs:string" length="130"/>
+          <item name="Result Status" type="xs:string" length="802"/>
+          <item name="Check Category" type="xs:string" length="802"/>
+          <item name="Risk DV" type="xs:string" length="802"/>
+          <item name="Check ID" type="xs:int" precision="1"/>
+          <item name="Check" type="xs:string" length="1026"/>
+          <item name="Details" type="xs:string" length="8002"/>
+          <item name="Date" type="xs:string" length="54"/>
+    </metadata>
+    <data>
+        <row>
+            <value>TEST ORGANIZATION (Local DBP server)</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>CONDS181</value>
+            <value>10.0.10.204, 1433, MSSQLSERVER</value>
+            <value>Critical risk scan</value>
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Failed</value>
+            <value>Improper Access Controls</value>
+            <value>Critical</value>
+            <value>9999</value>
+            <value>Synthetic critical check</value>
+            <value>Detail text</value>
+            <value>2020-01-01</value>
+        </row>
+    </data>
+</dataset>`;
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === '9999');
+      expect(req).toBeDefined();
+      expect(req!.impact).toBe(0.9);
+    });
   });
 
   describe('status mapping', () => {

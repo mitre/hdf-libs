@@ -1,4 +1,4 @@
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   getOwaspNistControl,
@@ -131,33 +131,33 @@ interface SonarQubeRule {
 }
 
 /**
- * Deprecated legacy severity to impact mapping.
+ * Deprecated legacy severity aliases to impact scores.
  * Canonical reference: heimdall2 sonarqube-mapper.ts IMPACT_MAPPING.
+ * Note: SonarQube "CRITICAL" maps to 0.7, not the standard 1.0; INFO resolves
+ * to 0.0 via the shared standard map.
  */
-const SEVERITY_IMPACT_MAPPING: Record<string, number> = {
-  BLOCKER: 1.0,
-  CRITICAL: 0.7,
-  MAJOR: 0.5,
-  MINOR: 0.3,
-  INFO: 0.0,
+const SONARQUBE_ALIASES: Record<string, number> = {
+  blocker: 1.0,
+  critical: 0.7,
+  major: 0.5,
+  minor: 0.3,
 };
 
-/** MQR software-quality severity to impact mapping. */
-const MQR_IMPACT_MAPPING: Record<MqrSeverity, number> = {
-  BLOCKER: 1.0,
-  HIGH: 0.7,
-  MEDIUM: 0.5,
-  LOW: 0.3,
-  INFO: 0.0,
+/**
+ * The one MQR severity the standard map lacks; HIGH/MEDIUM/LOW/INFO already
+ * resolve to 0.7/0.5/0.3/0.0 via severityToImpactWithAliases.
+ */
+const MQR_ALIASES: Record<string, number> = {
+  blocker: 1.0,
 };
 
-/** MQR severities ordered weakest to strongest. */
-const MQR_SEVERITY_RANK: Record<MqrSeverity, number> = {
-  INFO: 0,
-  LOW: 1,
-  MEDIUM: 2,
-  HIGH: 3,
-  BLOCKER: 4,
+/** MQR severities ordered weakest to strongest (lowercase keys; Go parity). */
+const MQR_SEVERITY_RANK: Record<string, number> = {
+  info: 0,
+  low: 1,
+  medium: 2,
+  high: 3,
+  blocker: 4,
 };
 
 /**
@@ -182,26 +182,29 @@ const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0
  * SonarQube UI buckets it. The legacy→MQR relationship is per-rule, not a
  * constant offset, so the legacy value can never be relabelled after the fact.
  */
-export function selectSeverity(issue: Pick<SonarQubeIssue, 'severity' | 'impacts'>): {
+// The parameter is structural (plain strings) rather than the wire-model
+// unions: the mapping is case-insensitive at runtime, so the boundary accepts
+// any casing while SonarQubeIssue/SonarQubeImpact keep documenting the API.
+export function selectSeverity(issue: { severity?: string; impacts?: { severity: string }[] }): {
   severity: string;
   source: string;
   impact: number;
 } {
   const impacts = issue.impacts ?? [];
   if (impacts.length > 0) {
-    const worst = impacts.reduce((a, b) =>
-      MQR_SEVERITY_RANK[b.severity] > MQR_SEVERITY_RANK[a.severity] ? b : a
-    );
+    // Lowercase rank lookup with a 0 fallback mirrors Go's map zero value.
+    const rank = (s: string): number => MQR_SEVERITY_RANK[s.toLowerCase()] ?? 0;
+    const worst = impacts.reduce((a, b) => (rank(b.severity) > rank(a.severity) ? b : a));
     return {
       severity: worst.severity,
       source: SEVERITY_SOURCE_MQR,
-      impact: MQR_IMPACT_MAPPING[worst.severity] ?? 0.5,
+      impact: severityToImpactWithAliases(worst.severity, MQR_ALIASES, 0.5),
     };
   }
   return {
-    severity: issue.severity,
+    severity: issue.severity ?? '',
     source: SEVERITY_SOURCE_LEGACY,
-    impact: SEVERITY_IMPACT_MAPPING[issue.severity] ?? 0.5,
+    impact: severityToImpactWithAliases(issue.severity, SONARQUBE_ALIASES, 0.5),
   };
 }
 

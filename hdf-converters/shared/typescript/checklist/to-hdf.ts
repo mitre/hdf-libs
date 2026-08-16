@@ -21,6 +21,8 @@ import { statusToHdf } from './status.js';
 
 const CONVERTER_VERSION = '1.0.0';
 
+const VALID_SEVERITIES = new Set(['critical', 'high', 'medium', 'low', 'informational']);
+
 /**
  * Map the format-neutral Checklist model to an HDF Results object.
  * controlType is derived per-Vuln from CCI->NIST; verificationMethod and
@@ -106,7 +108,10 @@ function vulnToRequirement(v: Vuln, scanTime: Date): EvaluatedRequirement {
     [result],
     { tags }
   ) as EvaluatedRequirement;
-  if (severity) req.severity = severity as Severity;
+  // Gate the typed field on the schema enum: an off-vocabulary CKL severity
+  // must not be cast raw (schema-invalid output); it stays discoverable via
+  // tags.severity. Same sanitization stance as the xccdf converter.
+  if (VALID_SEVERITIES.has(severity)) req.severity = severity as Severity;
 
   const controlType = deriveControlTypeFromTags(nistTags);
   if (controlType !== undefined) req.controlType = controlType;

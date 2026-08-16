@@ -11,7 +11,7 @@
  * `<component>`).
  */
 
-import { parseXml, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseXml, parseTimestamp, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, markUnratedSeverity, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { buildCvss, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
@@ -36,18 +36,18 @@ import {
 const A = '@_';
 
 
-/** Veracode severity level (0-5) to HDF impact mapping. */
-const IMPACT_MAPPING: Map<string, number> = new Map([
-  ['5', 0.9],
-  ['4', 0.7],
-  ['3', 0.5],
-  ['2', 0.3],
-  ['1', 0.1],
-  ['0', 0.0],
-]);
+/** Veracode severity level (0-5) aliases; mirrors Go's veracodeAliases. */
+const VERACODE_ALIASES: Record<string, number> = {
+  '5': 0.9,
+  '4': 0.7,
+  '3': 0.5,
+  '2': 0.3,
+  '1': 0.1,
+  '0': 0.0,
+};
 
 function veracodeSeverityToImpact(severity: string): number {
-  return IMPACT_MAPPING.get(severity) ?? 0.1;
+  return severityToImpactWithAliases(severity, VERACODE_ALIASES, 0.1);
 }
 
 // ---- Utility functions ----

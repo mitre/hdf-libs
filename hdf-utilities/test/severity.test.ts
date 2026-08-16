@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   severityToImpact,
+  severityToImpactWithAliases,
   impactToSeverity,
   cvssScoreToSeverity,
   isUnratedSeverity,
@@ -305,6 +306,37 @@ describe('Severity Utilities', () => {
 
     it('clamps values > 10 to "critical"', () => {
       expect(cvssScoreToSeverity(15)).toBe('critical');
+    });
+  });
+
+
+  describe('severityToImpactWithAliases', () => {
+    // Mirrors Go's SeverityToImpactWithAliases: aliases first, then the shared
+    // standard map, then the caller default — all case-insensitive.
+    const aliases = { critical: 0.9, negligible: 0.0 };
+
+    it('checks aliases before the standard map', () => {
+      expect(severityToImpactWithAliases('critical', aliases, 0.5)).toBe(0.9);
+      expect(severityToImpactWithAliases('CRITICAL', aliases, 0.5)).toBe(0.9);
+      expect(severityToImpactWithAliases('Negligible', aliases, 0.5)).toBe(0.0);
+    });
+
+    it('falls through to the standard map for unaliased tokens', () => {
+      expect(severityToImpactWithAliases('high', aliases, 0.5)).toBe(0.7);
+      expect(severityToImpactWithAliases('info', aliases, 0.5)).toBe(0.0);
+      expect(severityToImpactWithAliases('none', aliases, 0.5)).toBe(0.0);
+    });
+
+    it('returns the caller default for unrecognized and absent values', () => {
+      expect(severityToImpactWithAliases('wibble', aliases, 0.5)).toBe(0.5);
+      expect(severityToImpactWithAliases('', aliases, 0.3)).toBe(0.3);
+      expect(severityToImpactWithAliases(undefined, aliases, 0.1)).toBe(0.1);
+      expect(severityToImpactWithAliases(null, aliases, 0.0)).toBe(0.0);
+    });
+
+    it('works with an empty alias map', () => {
+      expect(severityToImpactWithAliases('medium', {}, 0.5)).toBe(0.5);
+      expect(severityToImpactWithAliases('unknown', {}, 0.5)).toBe(0.5);
     });
   });
 

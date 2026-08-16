@@ -378,3 +378,17 @@ describe('Splunk to HDF Converter', () => {
     });
   });
 });
+
+describe('splunk parity on absent/degenerate stored fields', () => {
+  it('defaults a control with no impact field to 0.0 like the Go zero value', async () => {
+    const events = JSON.parse(loadFixture('splunk-minimal.json')) as Record<string, unknown>[];
+    for (const e of events) {
+      if ((e.meta as Record<string, unknown> | undefined)?.subtype === 'control') delete e.impact;
+    }
+    const hdf = JSON.parse(await convertSplunkToHdf(JSON.stringify(events))) as HDFResults;
+    expect(hdf.baselines[0].requirements.length).toBeGreaterThan(0);
+    for (const req of hdf.baselines[0].requirements) {
+      expect(req.impact).toBe(0);
+    }
+  });
+});

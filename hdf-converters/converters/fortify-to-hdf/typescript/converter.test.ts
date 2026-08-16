@@ -796,4 +796,18 @@ describe('fortify unrated severity marker', () => {
       .requirements as Array<Record<string, unknown>>;
     expect((ratedReqs[0]!.tags as Record<string, unknown>).severity_rating).toBeUndefined();
   });
+
+  it('treats a non-numeric InstanceSeverity as unrated at impact 0, never NaN', async () => {
+    // Go hard-errors on a non-numeric float during unmarshal; TS is lenient
+    // but must stay schema-valid: impact 0.0 + the unrated marker.
+    const out = parseOutput(
+      await convertFortifyToHdf(
+        buildFvdl('<InstanceInfo><InstanceID>I</InstanceID><InstanceSeverity>abc</InstanceSeverity></InstanceInfo>'),
+      ),
+    );
+    const reqs = (out.baselines as Array<Record<string, unknown>>)[0]!
+      .requirements as Array<Record<string, unknown>>;
+    expect(reqs[0]!.impact).toBe(0);
+    expect((reqs[0]!.tags as Record<string, unknown>).severity_rating).toBe('unrated');
+  });
 });

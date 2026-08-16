@@ -248,6 +248,30 @@ describe('Netsparker to HDF converter', () => {
     expect(findRequirement(hdf, 'vuln-info')?.tags?.['severity_rating']).toBeUndefined();
   });
 
+  it('maps Critical to 0.9 like the Go twin (shared standard map, not 1.0)', async () => {
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise generated="03/07/2023 03:15 PM">
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>vuln-critical</LookupId>
+			<name>Critical Severity Vuln</name>
+			<severity>Critical</severity>
+		</vulnerability>
+		<vulnerability>
+			<LookupId>vuln-bp</LookupId>
+			<name>Best Practice Vuln</name>
+			<severity>Best_Practice</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    expect(findRequirement(hdf, 'vuln-critical')?.impact).toBe(0.9);
+    expect(findRequirement(hdf, 'vuln-bp')?.impact).toBe(0.0);
+  });
+
   // ---- Classification tags (capec / wasc / iso27001 / pci32) ----
 
   it('maps classification fields to tags with the source values', async () => {
@@ -521,7 +545,8 @@ describe('Netsparker to HDF converter', () => {
     const req = findRequirement(hdf, 'no-class-1');
     expect(req).toBeDefined();
     // With no CWE/OWASP, should fall back to default NIST tags
-    expect(req!.impact).toBe(1.0);
+    // Critical maps to 0.9 via the shared standard map (Go parity).
+    expect(req!.impact).toBe(0.9);
     // Should have check description from exploitation-skills + proof-of-concept
     const check = findDescription(req!.descriptions!, 'check');
     expect(check).toBeDefined();

@@ -1,4 +1,4 @@
-import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, parseTimestamp, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   nistToCci,
@@ -19,14 +19,6 @@ import {
   createMinimalBaseline,
   createRequirement,
 } from '@mitre/hdf-schema';
-
-/** Impact mapping from heimdall2 DBProtect mapper */
-const IMPACT_MAPPING: Record<string, number> = {
-  high: 0.7,
-  medium: 0.5,
-  low: 0.3,
-  informational: 0.0,
-};
 
 /** Parsed DBProtect XML dataset structure */
 interface DatasetXml {
@@ -134,10 +126,9 @@ function getBacktrace(resultStatus: string): string[] | undefined {
   return resultStatus === 'Failed' ? ['DB Protect Failed Check'] : undefined;
 }
 
-/** Maps DBProtect risk level to HDF impact value */
+/** Maps DBProtect risk level to HDF impact via the shared standard map (Go parity). */
 function getImpact(riskDV: string): number {
-  const impact = IMPACT_MAPPING[riskDV.toLowerCase()];
-  return impact !== undefined ? impact : 0.5;
+  return severityToImpactWithAliases(riskDV, {}, 0.5);
 }
 
 /** Creates a description string from a finding's task and check category */

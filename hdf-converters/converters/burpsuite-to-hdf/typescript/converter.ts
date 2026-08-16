@@ -1,4 +1,4 @@
-import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, parseTimestamp, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -65,16 +65,14 @@ interface BurpHostXml {
 }
 
 // --- Impact mapping ---
+// BurpSuite maps "information" to 0.3 (not the standard 0.0) and defaults to 0.3.
 
-const IMPACT_MAPPING: Record<string, number> = {
-  'high': 0.7,
-  'medium': 0.5,
-  'low': 0.3,
-  'information': 0.3,
+const BURPSUITE_ALIASES: Record<string, number> = {
+  information: 0.3,
 };
 
 function getImpact(severity: string): number {
-  return IMPACT_MAPPING[severity.toLowerCase()] ?? 0.3;
+  return severityToImpactWithAliases(severity, BURPSUITE_ALIASES, 0.3);
 }
 
 // --- CWE parsing ---
