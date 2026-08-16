@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -304,7 +305,7 @@ func enumerateBatchPaths(in convertInput) ([]string, *mcperr.Error) {
 					continue
 				}
 			}
-			add(filepath.Join(in.Directory, e.Name()))
+			add(path.Join(in.Directory, e.Name()))
 		}
 	}
 
@@ -379,10 +380,13 @@ func failEntry(entry fileConvertSummary, terr *mcperr.Error) fileConvertSummary 
 
 // batchOutputPath derives an output path deterministically from the input, using
 // the CLI's <stem>.hdf.json bulk-convert convention (bead g4b3 owns any change).
+// Paths are forward-slash on the wire (like agent-supplied paths and URLs) so
+// the MCP surface is identical across host OSes; SafePath converts to the native
+// separator at the filesystem boundary.
 func batchOutputPath(outputDir, inputPath string) string {
-	base := filepath.Base(inputPath)
-	stem := strings.TrimSuffix(base, filepath.Ext(base))
-	return filepath.Join(outputDir, stem+".hdf.json")
+	base := path.Base(inputPath)
+	stem := strings.TrimSuffix(base, path.Ext(base))
+	return path.Join(outputDir, stem+".hdf.json")
 }
 
 // boundBatchResponse token-bounds the per-file array to the concise budget,
