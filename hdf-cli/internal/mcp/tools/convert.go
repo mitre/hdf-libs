@@ -152,7 +152,7 @@ func rawInput(src *handle.Source, content string) ([]byte, *mcperr.Error) {
 		if err != nil {
 			return nil, mcperr.New(mcperr.PathDenied, "path resolves outside HDF_MCP_ROOT", map[string]any{"path": src.Path})
 		}
-		return readFile(confined, src.Path)
+		return readFile(confined, src.Path, "source")
 	default:
 		return nil, mcperr.New(mcperr.DocumentNotFound, "no source or content provided", nil).
 			WithNextCall("pass source.path or inline content")

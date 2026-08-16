@@ -86,11 +86,11 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 			return argError(fmt.Sprintf("unknown mode %q", mode), "use mode = temporal or system-drift"), errorDiffOutput(), nil
 		}
 
-		from, terr := resolveSource(in.From, ldr)
+		from, terr := resolveSource(in.From, ldr, "from")
 		if terr != nil {
 			return toolError(terr), errorDiffOutput(), nil
 		}
-		to, terr := resolveSource(in.To, ldr)
+		to, terr := resolveSource(in.To, ldr, "to")
 		if terr != nil {
 			return toolError(terr), errorDiffOutput(), nil
 		}

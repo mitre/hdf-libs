@@ -396,3 +396,28 @@ func firstRequirement(t *testing.T, path string) map[string]any {
 	bl := doc["baselines"].([]any)[0].(map[string]any)
 	return bl["requirements"].([]any)[0].(map[string]any)
 }
+
+// TestApplyAmendment_ErrorNextCallNamesOwnInputs — a document-not-found error
+// from apply_amendment must name the slot the caller actually passed (results /
+// amendments), never `source`, which this tool has no input for (jobi.4 / D3).
+func TestApplyAmendment_ErrorNextCallNamesOwnInputs(t *testing.T) {
+	_, results, amend := applyEnv(t)
+
+	res, _ := callApply(t, applyInput(results, "nonexistent.json", "", false))
+	tr := toolResultPayload(t, res)
+	if !strings.Contains(tr.NextCall, "amendments") {
+		t.Errorf("amendments-not-found nextCall must name `amendments`, got %q", tr.NextCall)
+	}
+	if strings.Contains(tr.NextCall, "source") {
+		t.Errorf("nextCall leaked `source` — apply_amendment has no source input: %q", tr.NextCall)
+	}
+
+	res2, _ := callApply(t, applyInput("nonexistent.json", amend, "", false))
+	tr2 := toolResultPayload(t, res2)
+	if !strings.Contains(tr2.NextCall, "results") {
+		t.Errorf("results-not-found nextCall must name `results`, got %q", tr2.NextCall)
+	}
+	if strings.Contains(tr2.NextCall, "source") {
+		t.Errorf("nextCall leaked `source`: %q", tr2.NextCall)
+	}
+}

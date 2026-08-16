@@ -97,7 +97,7 @@ func RegisterCompliance(s *sdkmcp.Server, ldr *loader.Loader) {
 
 func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, complianceOutput] {
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in complianceInput) (*sdkmcp.CallToolResult, complianceOutput, error) {
-		resolved, terr := resolveSource(in.Source, ldr)
+		resolved, terr := resolveSource(in.Source, ldr, "source")
 		if terr != nil {
 			return toolError(terr), errorComplianceOutput(), nil
 		}

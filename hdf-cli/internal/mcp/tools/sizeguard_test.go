@@ -15,13 +15,13 @@ func TestGuardFileSize(t *testing.T) {
 	if err := os.WriteFile(p, make([]byte, 300), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if terr := guardFileSize(p, "doc.json", 100); terr == nil || terr.Code != mcperr.TooLarge {
+	if terr := guardFileSize(p, "doc.json", "source", 100); terr == nil || terr.Code != mcperr.TooLarge {
 		t.Fatalf("300-byte file over a 100 limit must be TOO_LARGE, got %v", terr)
 	}
-	if terr := guardFileSize(p, "doc.json", 1000); terr != nil {
+	if terr := guardFileSize(p, "doc.json", "source", 1000); terr != nil {
 		t.Fatalf("300-byte file under a 1000 limit must pass, got %v", terr)
 	}
-	if terr := guardFileSize(filepath.Join(root, "nope.json"), "nope.json", 1000); terr == nil || terr.Code != mcperr.DocumentNotFound {
+	if terr := guardFileSize(filepath.Join(root, "nope.json"), "nope.json", "source", 1000); terr == nil || terr.Code != mcperr.DocumentNotFound {
 		t.Fatalf("missing file must be DOCUMENT_NOT_FOUND, got %v", terr)
 	}
 }
@@ -51,7 +51,7 @@ func TestReadFile_RejectsOversizeBeforeRead(t *testing.T) {
 	if err := os.WriteFile(p, []byte(`{"generator":{"name":"x","version":"1"},"baselines":[]}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	_, terr := readFile(p, "big.json")
+	_, terr := readFile(p, "big.json", "source")
 	if terr == nil || terr.Code != mcperr.TooLarge {
 		t.Fatalf("a file over HDF_MCP_MAX_SIZE must return TOO_LARGE, got %v", terr)
 	}

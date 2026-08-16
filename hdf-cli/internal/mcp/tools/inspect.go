@@ -48,7 +48,7 @@ func RegisterInspect(s *sdkmcp.Server, ldr *loader.Loader) {
 
 func hdfInspect(ldr *loader.Loader) sdkmcp.ToolHandlerFor[inspectInput, inspectOutput] {
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in inspectInput) (*sdkmcp.CallToolResult, inspectOutput, error) {
-		resolved, terr := resolveSource(in.Source, ldr)
+		resolved, terr := resolveSource(in.Source, ldr, "source")
 		if terr != nil {
 			return toolError(terr), inspectOutput{}, nil
 		}

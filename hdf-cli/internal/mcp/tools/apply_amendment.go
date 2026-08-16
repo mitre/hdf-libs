@@ -124,7 +124,7 @@ func applyMerge(results, amendments []byte) ([]byte, *mcperr.Error) {
 
 // resolveTyped resolves a source and enforces the expected document type.
 func resolveTyped(src handle.Source, want string, ldr *loader.Loader) (*Resolved, *mcperr.Error) {
-	res, terr := resolveSource(src, ldr)
+	res, terr := resolveSource(src, ldr, want)
 	if terr != nil {
 		return nil, terr
 	}

@@ -58,7 +58,7 @@ func RegisterOpen(s *sdkmcp.Server, ldr *loader.Loader) {
 // token-bounds the response.
 func hdfOpen(ldr *loader.Loader) sdkmcp.ToolHandlerFor[openInput, openOutput] {
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in openInput) (*sdkmcp.CallToolResult, openOutput, error) {
-		resolved, terr := resolveSource(in.Source, ldr)
+		resolved, terr := resolveSource(in.Source, ldr, "source")
 		if terr != nil {
 			return toolError(terr), openOutput{}, nil
 		}

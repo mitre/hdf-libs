@@ -52,12 +52,12 @@ var Codes = []Code{
 // default. Every code has an entry; a code without guidance is a defect the
 // tests catch.
 var defaultNextCall = map[Code]string{
-	DocumentNotFound: "verify the path exists, then retry with a valid `source` (or call hdf_open)",
+	DocumentNotFound: "verify the path exists and points at a readable document under HDF_MCP_ROOT",
 	PathDenied:       "use a path inside the configured HDF_MCP_ROOT",
 	TooLarge:         "reduce the input size, or ask the deployer to raise the size limit",
 	WrongDocType:     "call hdf_inspect for this document type (hdf_query is results/baseline only)",
 	SchemaInvalid:    "call hdf_validate to see the specific line-numbered schema errors",
-	HandleStale:      "the content changed — re-open the source with hdf_open to mint a fresh handle",
+	HandleStale:      "the content changed — re-open the document with hdf_open to mint a fresh handle",
 	NoConverter:      "check the hdf://catalog/converters resource for a supported `from` format",
 	Truncated:        "narrow the result with filters, or fetch the next page with `page`",
 	AmbiguousFormat:  "specify `from` explicitly to disambiguate the source format",

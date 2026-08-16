@@ -132,7 +132,7 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 			return argError(fmt.Sprintf("invalid impact filter %q", in.Impact),
 				"use a comparison like >0.5, >=0.7, <0.5, or =0"), errorQueryOutput(), nil
 		}
-		resolved, terr := resolveSource(in.Source, ldr)
+		resolved, terr := resolveSource(in.Source, ldr, "source")
 		if terr != nil {
 			return toolError(terr), errorQueryOutput(), nil
 		}

@@ -465,3 +465,17 @@ func TestHdfDiff_RefusesOverwritingInput(t *testing.T) {
 		t.Fatal("writing the comparison over an input document must be refused, even with overwrite:true")
 	}
 }
+
+// TestDiff_ErrorNextCallNamesOwnInputs — a document-not-found error from hdf_diff
+// must name the slot the caller passed (from / to), never `source` (jobi.4 / D3).
+func TestDiff_ErrorNextCallNamesOwnInputs(t *testing.T) {
+	writeRootFiles(t, map[string][]byte{"to.json": readToolsFixture(t, "diff-to.json")})
+	res, _ := callDiff(t, diffInput{From: handle.Source{Path: "nonexistent.json"}, To: handle.Source{Path: "to.json"}, Mode: "temporal"})
+	tr := toolResultPayload(t, res)
+	if !strings.Contains(tr.NextCall, "from") {
+		t.Errorf("from-not-found nextCall must name `from`, got %q", tr.NextCall)
+	}
+	if strings.Contains(tr.NextCall, "source") {
+		t.Errorf("nextCall leaked `source` — hdf_diff has no source input: %q", tr.NextCall)
+	}
+}

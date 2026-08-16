@@ -117,7 +117,7 @@ func resolveForValidate(in validateInput, ldr *loader.Loader) ([]byte, string, *
 		}
 		return []byte(in.Content), mcpRoot(), res, nil
 	case hasSource:
-		resolved, e := resolveSource(*in.Source, ldr)
+		resolved, e := resolveSource(*in.Source, ldr, "source")
 		if e != nil {
 			return nil, "", nil, e
 		}
