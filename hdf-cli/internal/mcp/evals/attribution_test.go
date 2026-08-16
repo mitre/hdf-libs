@@ -78,3 +78,47 @@ func TestAttribution_ApplyReportsComplianceDelta(t *testing.T) {
 		t.Fatalf("applying the VEX amendment must improve compliance: before=%v after=%v", before, after)
 	}
 }
+
+// TestAttribution_EndToEndAgentCount closes the author→apply→compliance loop on
+// the real in-process server. The disjoint halves are already covered
+// (TestAttribution_AuthorStampsAgent proves author stamps appliedBy.type=agent;
+// TestAttribution_ComplianceReportsAgentCount proves compliance counts a
+// hand-labeled fixture). This proves the WHOLE pipeline agrees: an agent-authored
+// override (judgment path) applied to results survives onto the applied artifact
+// and is counted by hdf_compliance's agentOverrides.count — none of it a
+// hand-labeled fixture (bead 4908.17). It would catch a merge that preserved the
+// override identifier but flipped .type away from "agent" (count would drop to 0).
+func TestAttribution_EndToEndAgentCount(t *testing.T) {
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+	stageRoot(t, [2]string{fxVexResults, "results.json"})
+
+	// 1. Author ONE agent override (content/judgment path) targeting a real
+	//    failed requirement in the results doc.
+	driveCalls(t, []call{{"hdf_author", map[string]any{
+		"docType": "amendments", "name": "A",
+		"content": []any{map[string]any{
+			"type": "riskAdjustment", "requirementId": "CVE-2024-1000", "status": "notApplicable",
+			"reason": "compensating control in place", "expiresAt": "2099-12-31T00:00:00Z",
+		}},
+		"output": "amendments.json",
+	}}})
+
+	// 2. Apply it, producing a NEW applied results artifact.
+	driveCalls(t, []call{{"hdf_apply_amendment", map[string]any{
+		"results":    map[string]any{"path": "results.json"},
+		"amendments": map[string]any{"path": "amendments.json"},
+		"output":     "applied.json",
+	}}})
+
+	// 3. Compliance on the applied artifact must count exactly the one agent override.
+	sc := structured(t, driveCalls(t, []call{{"hdf_compliance", map[string]any{
+		"source": map[string]any{"path": "applied.json"},
+	}}})[0])
+	ao, ok := sc["agentOverrides"].(map[string]any)
+	if !ok {
+		t.Fatalf("hdf_compliance must report an agentOverrides block: %v", sc)
+	}
+	if cnt, _ := ao["count"].(float64); cnt != 1 {
+		t.Fatalf("post-apply agentOverrides.count = %v, want 1 (the one agent-authored override)", ao["count"])
+	}
+}
