@@ -205,6 +205,104 @@ func TestAdvertisesBothSpecRevisions(t *testing.T) {
 	}
 }
 
+// modernRequestFrame builds a SEP-2575 stateless request: the protocol version
+// travels in per-request `_meta` (not a prior initialize), so the server treats
+// it as new-protocol and skips the initialization gate.
+func modernRequestFrame(id float64, method, protocolVersion string) string {
+	req := map[string]any{
+		"jsonrpc": "2.0",
+		"id":      id,
+		"method":  method,
+		"params": map[string]any{
+			"_meta": map[string]any{
+				"io.modelcontextprotocol/protocolVersion":    protocolVersion,
+				"io.modelcontextprotocol/clientCapabilities": map[string]any{},
+				"io.modelcontextprotocol/clientInfo":         map[string]any{"name": "test-client", "version": "1.0.0"},
+			},
+		},
+	}
+	b, _ := json.Marshal(req)
+	return string(b) + "\n"
+}
+
+// findError scans JSON-RPC output for the response with the given id and returns
+// its error object, failing if that response is a success result instead.
+func findError(t *testing.T, out string, id float64) map[string]any {
+	t.Helper()
+	sc := bufio.NewScanner(strings.NewReader(out))
+	sc.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" {
+			continue
+		}
+		var msg map[string]any
+		if json.Unmarshal([]byte(line), &msg) != nil {
+			continue
+		}
+		if msg["id"] == id {
+			errObj, isErr := msg["error"].(map[string]any)
+			if !isErr {
+				t.Fatalf("response id=%v is not an error: %v", id, msg)
+			}
+			return errObj
+		}
+	}
+	t.Fatalf("no response with id=%v in output:\n%s", id, out)
+	return nil
+}
+
+// TestUnsupportedProtocolVersion drives a SEP-2575 stateless request whose
+// per-request `_meta` protocol version is one the server does not support, and
+// asserts the negative path: JSON-RPC error -32022 (UnsupportedProtocolVersion)
+// whose data advertises the supported versions so the client can renegotiate.
+// The behavior is SDK-owned; this closes the conformance test-coverage gap.
+func TestUnsupportedProtocolVersion(t *testing.T) {
+	// A far-future version: lexically newer than 2026-07-28, so the SDK classifies
+	// the request as new-protocol, yet not in the supported set — the -32022 path.
+	// (An older unknown version is treated as legacy and never reaches this check.)
+	out := serveOverPipes(t, modernRequestFrame(4, "server/discover", "2099-12-31"), 4)
+	errObj := findError(t, out, 4)
+
+	if code, _ := errObj["code"].(float64); code != -32022 {
+		t.Errorf("error code = %v, want -32022 (UnsupportedProtocolVersion)", errObj["code"])
+	}
+	data, ok := errObj["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("error missing data payload with supported versions: %v", errObj)
+	}
+	supported := toStringSet(data["supported"])
+	for _, want := range []string{"2026-07-28", "2025-11-25"} {
+		if !supported[want] {
+			t.Errorf("error data supported=%v does not advertise %q", data["supported"], want)
+		}
+	}
+}
+
+// TestServerInfoInModernMeta covers the modern per-request identification path
+// (SEP-2575): every new-protocol result carries the server implementation in its
+// `_meta` under io.modelcontextprotocol/serverInfo. TestServerInfoCarriesVersion
+// only checks the legacy initialize body; this asserts the modern path.
+func TestServerInfoInModernMeta(t *testing.T) {
+	out := serveOverPipes(t, modernRequestFrame(5, "tools/list", latestNegotiated), 5)
+	res := findResult(t, out, 5)
+
+	meta, ok := res["_meta"].(map[string]any)
+	if !ok {
+		t.Fatalf("modern result missing _meta: %v", res)
+	}
+	info, ok := meta["io.modelcontextprotocol/serverInfo"].(map[string]any)
+	if !ok {
+		t.Fatalf("modern result _meta missing io.modelcontextprotocol/serverInfo: %v", meta)
+	}
+	if info["name"] != ServerName {
+		t.Errorf("serverInfo.name = %v, want %s", info["name"], ServerName)
+	}
+	if info["version"] != "test-version" {
+		t.Errorf("serverInfo.version = %v, want test-version (the real CLI version)", info["version"])
+	}
+}
+
 func toStringSet(v any) map[string]bool {
 	set := map[string]bool{}
 	if arr, ok := v.([]any); ok {
