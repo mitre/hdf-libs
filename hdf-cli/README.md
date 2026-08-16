@@ -977,6 +977,7 @@ These flags apply to all commands.
 | `sonarqube` | | SonarQube issues export (JSON) |
 | `spdx-vex` | | SPDX 3.0 security-profile VEX (JSON-LD) → HDF Amendments |
 | `splunk` | | Splunk HDF events (JSON) |
+| `trivy` | | Trivy scanner — native JSON (vuln/misconfig/secret/license); SARIF, CycloneDX, ASFF, and GitLab output are auto-routed to their converters |
 | `trufflehog` | | TruffleHog secret scanner (JSON, NDJSON, or single object) |
 | `twistlock` | | Palo Alto Twistlock container scan (JSON) |
 | `veracode` | | Veracode SAST/DAST results (XML) |

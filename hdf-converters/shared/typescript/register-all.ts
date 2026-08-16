@@ -32,6 +32,7 @@ import { snykFingerprint } from '../../converters/snyk-to-hdf/typescript/fingerp
 import { spdxVexFingerprint } from '../../converters/spdx-vex-to-hdf/typescript/fingerprint.js';
 import { sonarqubeFingerprint } from '../../converters/sonarqube-to-hdf/typescript/fingerprint.js';
 import { splunkFingerprint } from '../../converters/splunk-to-hdf/typescript/fingerprint.js';
+import { trivyFingerprint } from '../../converters/trivy-to-hdf/typescript/fingerprint.js';
 import { trufflehogFingerprint } from '../../converters/trufflehog-to-hdf/typescript/fingerprint.js';
 import { twistlockFingerprint } from '../../converters/twistlock-to-hdf/typescript/fingerprint.js';
 
@@ -94,6 +95,7 @@ const allFingerprints: ConverterFingerprint[] = [
   spdxVexFingerprint,
   sonarqubeFingerprint,
   splunkFingerprint,
+  trivyFingerprint,
   trufflehogFingerprint,
   twistlockFingerprint,
   // JSON ingest (input is JSON despite tool names)
