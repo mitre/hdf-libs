@@ -139,6 +139,78 @@ should work with, and leave `HDF_MCP_ENABLE_WRITES` unset for a read-only
 trial — the write tools still work, returning previews, so you can see
 exactly what they would produce before granting write access.
 
+## Budget guidance for agent hosts
+
+The HDF tools are analysis-heavy and naturally loopable
+(`open` → `query` → `compliance` → `diff`), so an agent host can run long,
+expensive tool-call sequences against this server. The server bounds the
+size of each individual response, but it **cannot** bound how many times a
+host calls it. The two budgets below are complementary: the server owns
+per-response sizing; the host owns loop control.
+
+### What the server enforces (per-response token ceilings)
+
+Every response is a compact summary plus a handle — never a document body —
+and each collection-returning tool bounds its response against a
+serialized-size token budget (estimated at roughly four bytes per token).
+The ceilings are fixed constants, not configuration:
+
+| Tool | Response ceiling |
+|------|------------------|
+| `hdf_open` | 1,000 tokens |
+| `hdf_inspect` | 2,000 (concise) / 10,000 (full) |
+| `hdf_query` | 2,000 (concise) / 10,000 (full) |
+| `hdf_diff` | 2,000 (concise) / 10,000 (full) |
+| `hdf_compliance` | 2,000 tokens |
+| `hdf_validate` | 2,000 tokens |
+
+`concise` is the default verbosity; request `full` only when you need raw
+content, and expect a larger response.
+
+Separately, the one-time `tools/list` handshake at session start costs
+about 4,200 tokens for all nine tool schemas (a per-tool ceiling of 600
+keeps any single schema in check). That is a fixed startup cost, paid once
+per server session, not per call.
+
+### Pagination and truncation
+
+When a result set does not fit the ceiling, the tool does **not** fail and
+does not silently drop data. It returns a successful response with the rows
+that fit plus explicit bounding metadata:
+
+```json
+{ "total": 412, "returned": 37, "truncated": true, "nextPage": 1,
+  "notice": "returned 37 of 412; narrow with verbosity=concise or fetch page=N" }
+```
+
+- `total` vs. `returned` tells you how much was withheld.
+- `truncated: true` with `nextPage` means more pages exist; pass `page: N`
+  to fetch them.
+- `notice` always names the remedy — the narrowing parameter to use next
+  (a filter, `verbosity=concise`, or `page=N`). Prefer narrowing with
+  filters (`hdf_query` accepts status, severity, ID, tag, and free-text
+  filters) over paging blindly through a large set.
+
+### What the host must enforce (loop ceilings)
+
+The server is stateless with respect to an agent's loop: each request is
+handled independently, so it has no notion of "calls this turn" and
+**cannot** enforce a per-turn tool-call or token ceiling. That control
+belongs to the host wiring the agent onto the server. Recommended
+practice, mirroring the per-endpoint budget profiles MITRE's
+[Caldera MCP plugin](https://github.com/mitre/mcp) documents
+(`max_tool_calls` / `max_tokens`):
+
+- **Cap tool calls per turn.** The open → query → compliance → diff loop
+  can iterate indefinitely; set a ceiling appropriate to the task so a
+  runaway agent cannot spin unbounded.
+- **Cap tokens per turn.** Bound the cumulative response tokens the host
+  will spend before it must stop and summarize, independent of the
+  per-response ceilings above.
+- **Treat these as host policy, not server guarantees.** The server will
+  keep answering well-formed calls; only the host can decide when enough
+  is enough.
+
 ## Workflow guidance
 
 The generative workflows an agent runs against this server — drafting
