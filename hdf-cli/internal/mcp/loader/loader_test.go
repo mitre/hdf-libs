@@ -107,8 +107,44 @@ func TestLoad_UnknownType_DegradedWithGenericError(t *testing.T) {
 	if res.Valid || res.DocType != "" {
 		t.Errorf("unknown type should be invalid with empty docType, got valid=%v type=%q", res.Valid, res.DocType)
 	}
-	if len(res.Errors) != 1 || !strings.Contains(res.Errors[0].Description, "unrecognized") {
-		t.Errorf("expected one 'unrecognized' error, got %+v", res.Errors)
+	if len(res.Errors) != 1 {
+		t.Fatalf("expected one error, got %+v", res.Errors)
+	}
+	// Valid JSON with no matching root keys is a RECOGNIZED-TYPE problem, not a
+	// parse problem: the message must say so and must NOT claim the input is
+	// non-JSON (jobi.3 / D6). It also hints the recognized types.
+	msg := res.Errors[0].Description
+	if !strings.Contains(msg, "not a recognized HDF document type") {
+		t.Errorf("valid-JSON-unknown-type message should name a recognized-type problem, got %q", msg)
+	}
+	if strings.Contains(msg, "non-JSON") || strings.Contains(msg, "not valid JSON") {
+		t.Errorf("valid JSON must not be reported as a parse problem, got %q", msg)
+	}
+	if !strings.Contains(msg, "results") || !strings.Contains(msg, "amendments") {
+		t.Errorf("message should hint the recognized types, got %q", msg)
+	}
+}
+
+func TestLoad_NotJSON_ParseMessage(t *testing.T) {
+	l := New(0, 0, 0)
+	res, err := l.Load([]byte(`{ this is not: json `))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Valid || res.DocType != "" {
+		t.Errorf("malformed JSON should be invalid with empty docType, got valid=%v type=%q", res.Valid, res.DocType)
+	}
+	if len(res.Errors) != 1 {
+		t.Fatalf("expected one error, got %+v", res.Errors)
+	}
+	// Genuinely malformed JSON must get a parse-oriented message, distinct from
+	// the valid-JSON-wrong-type case, so an agent does not chase a phantom type.
+	msg := res.Errors[0].Description
+	if !strings.Contains(msg, "not valid JSON") {
+		t.Errorf("malformed JSON should get a parse-oriented message, got %q", msg)
+	}
+	if strings.Contains(msg, "recognized HDF document type") {
+		t.Errorf("a parse failure must not be reported as a wrong-type problem, got %q", msg)
 	}
 }
 

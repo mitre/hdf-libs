@@ -15,8 +15,10 @@ package loader
 import (
 	"container/list"
 	"crypto/sha256"
+	"encoding/json"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
@@ -103,6 +105,19 @@ func cacheBytesFromEnv() int64 {
 	return DefaultCacheBytes
 }
 
+// UnrecognizedMessage is the diagnostic for input that resolved to no HDF
+// document type. It distinguishes the two causes an agent must tell apart: a
+// genuine parse failure (not valid JSON) versus valid JSON whose root keys match
+// no HDF type (a recognized-type problem), which it answers by naming the
+// recognized types. Shared so the loader and the validate tool never drift.
+func UnrecognizedMessage(data []byte) string {
+	if !json.Valid(data) {
+		return "the input is not valid JSON"
+	}
+	return "valid JSON, but not a recognized HDF document type (expected one of: " +
+		strings.Join(hdfengine.KnownTypes(), ", ") + ")"
+}
+
 // Load runs the engine core over data and applies the MCP concerns: it serves a
 // cached parse when the same bytes were seen before, and produces the degraded
 // envelope for invalid documents instead of failing. It only returns a non-nil
@@ -147,9 +162,11 @@ func (l *Loader) buildResult(engineRes *hdfengine.LoadResult, data []byte, cache
 		r.Valid = true
 		return r
 	}
-	// Non-JSON or unrecognized: no schema to validate against.
+	// No type detected: distinguish a genuine parse failure from valid JSON that
+	// simply is not an HDF document type, so an agent does not chase a phantom
+	// parse error (jobi.3 / D6). Neither has a schema to validate against.
 	if engineRes.DocType == "" {
-		r.Errors = []ValidationError{{Description: "unrecognized or non-JSON HDF document"}}
+		r.Errors = []ValidationError{{Description: UnrecognizedMessage(data)}}
 		return r
 	}
 

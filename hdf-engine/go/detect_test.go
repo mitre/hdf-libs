@@ -112,6 +112,27 @@ func TestDetect_UnrecognizedAndInvalid(t *testing.T) {
 	assert.Equal(t, "", Detect([]byte(`{"foo":"bar"}`)), "unknown shape is unrecognized")
 }
 
+// TestKnownTypes_MatchesDetect guards that KnownTypes() enumerates exactly the
+// set Detect can return — so an "unrecognized document" diagnostic that lists
+// KnownTypes() names every type the detector actually accepts, and a future
+// detect addition cannot silently drift the two apart.
+func TestKnownTypes_MatchesDetect(t *testing.T) {
+	want := map[string]bool{
+		string(validators.TypeResults): true, string(validators.TypeBaseline): true,
+		string(validators.TypeSystem): true, string(validators.TypePlan): true,
+		string(validators.TypeAmendments): true, string(validators.TypeEvidencePackage): true,
+		string(validators.TypeComparison): true, string(validators.TypeRequirementChangeEvent): true,
+	}
+	got := KnownTypes()
+	assert.Len(t, got, len(want), "KnownTypes count drifted from the detectable set")
+	seen := map[string]bool{}
+	for _, ty := range got {
+		assert.Truef(t, want[ty], "KnownTypes lists %q, which is not a detectable type", ty)
+		assert.Falsef(t, seen[ty], "KnownTypes lists %q twice", ty)
+		seen[ty] = true
+	}
+}
+
 // TestDetect_NoCobraDependency asserts the package's transitive build-import
 // graph contains no cobra — hdf-engine is a cobra-free library both the CLI and
 // the MCP import. Test-only imports are excluded from `go list -deps .`.

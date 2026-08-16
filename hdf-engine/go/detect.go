@@ -43,6 +43,23 @@ func Detect(data []byte) string {
 	return ""
 }
 
+// KnownTypes returns the HDF document types Detect can recognize, in schema-id
+// order — the recognized-type set an "unrecognized document" diagnostic should
+// name. Kept beside Detect so the two move together; TestKnownTypes_MatchesDetect
+// guards that every entry here is actually detectable.
+func KnownTypes() []string {
+	return []string{
+		string(validators.TypeResults),
+		string(validators.TypeBaseline),
+		string(validators.TypeSystem),
+		string(validators.TypePlan),
+		string(validators.TypeAmendments),
+		string(validators.TypeEvidencePackage),
+		string(validators.TypeComparison),
+		string(validators.TypeRequirementChangeEvent),
+	}
+}
+
 // hasKeys reports whether every named key is present at the document root.
 func hasKeys(doc map[string]json.RawMessage, keys ...string) bool {
 	for _, k := range keys {

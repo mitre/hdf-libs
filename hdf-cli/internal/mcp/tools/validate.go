@@ -141,7 +141,10 @@ func validateSchema(out *validateOutput, requestedDocType string, content []byte
 		out.Valid = load.Valid
 		out.Errors = fromLoaderErrors(load.Errors)
 		if load.DocType == "" && len(out.Errors) == 0 {
-			out.Errors = []validateError{{Message: "unrecognized or non-JSON HDF document"}}
+			// Defensive: the loader already populates a distinguished message for
+			// this case, so this rarely fires — share the same helper so the two
+			// never drift (jobi.3 / D6).
+			out.Errors = []validateError{{Message: loader.UnrecognizedMessage(content)}}
 		}
 		return
 	}
