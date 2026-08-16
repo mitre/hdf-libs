@@ -15,6 +15,7 @@ package loader
 import (
 	"container/list"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"strconv"
@@ -73,6 +74,7 @@ type cacheEntry struct {
 	key    string
 	size   int64
 	result *hdfengine.LoadResult
+	bytes  []byte // the raw document, retained so a content-addressed handle resolves
 }
 
 // New builds a Loader. cacheBytes <= 0 uses HDF_MCP_CACHE_BYTES, then
@@ -140,8 +142,34 @@ func (l *Loader) Load(data []byte) (*Result, error) {
 		return nil, err // e.g. size guard — a real load failure, not a degraded doc
 	}
 
-	l.put(key, size, engineRes)
+	l.put(key, size, engineRes, data)
 	return l.buildResult(engineRes, data, false), nil
+}
+
+// LoadByHash returns the cached raw bytes and parsed result for a document whose
+// content SHA-256 (hex) matches a document seen by a prior Load and still
+// resident in the cache. It backs content-addressed handle resolution (jobi.1):
+// an authored/derived document registered via Load is retrievable by its
+// handle's contentSha256 with no file on disk. ok is false on a cache miss
+// (evicted or never seen) or a malformed hex digest — the caller maps that to
+// the cache-miss taxonomy code, never a path error.
+func (l *Loader) LoadByHash(contentSha256Hex string) (data []byte, res *Result, ok bool) {
+	raw, err := hex.DecodeString(contentSha256Hex)
+	if err != nil {
+		return nil, nil, false
+	}
+	l.mu.Lock()
+	el, hit := l.cache[string(raw)]
+	if !hit {
+		l.mu.Unlock()
+		return nil, nil, false
+	}
+	l.lru.MoveToFront(el)
+	ent := el.Value.(*cacheEntry)
+	engineRes, bytes := ent.result, ent.bytes
+	l.mu.Unlock()
+
+	return bytes, l.buildResult(engineRes, bytes, true), true
 }
 
 // buildResult assembles the MCP Result and determines validity for ALL detected
@@ -222,7 +250,7 @@ func (l *Loader) get(key string) (*hdfengine.LoadResult, bool) {
 // put inserts an entry, evicting least-recently-used entries until the budget is
 // satisfied. A single document larger than the whole budget bypasses the cache
 // (loaded uncached) rather than thrashing every other entry out.
-func (l *Loader) put(key string, size int64, result *hdfengine.LoadResult) {
+func (l *Loader) put(key string, size int64, result *hdfengine.LoadResult, data []byte) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -237,7 +265,11 @@ func (l *Loader) put(key string, size int64, result *hdfengine.LoadResult) {
 		l.evictOldest()
 	}
 
-	el := l.lru.PushFront(&cacheEntry{key: key, size: size, result: result})
+	// Retain a private copy of the bytes so a later mutation of the caller's
+	// slice cannot corrupt a content-addressed resolution.
+	buf := make([]byte, len(data))
+	copy(buf, data)
+	el := l.lru.PushFront(&cacheEntry{key: key, size: size, result: result, bytes: buf})
 	l.cache[key] = el
 	l.curSize += size
 }

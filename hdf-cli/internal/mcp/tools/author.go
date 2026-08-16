@@ -12,6 +12,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -59,15 +60,15 @@ type authorOutput struct {
 }
 
 // RegisterAuthor registers the hdf_author tool on the server.
-func RegisterAuthor(s *sdkmcp.Server) {
+func RegisterAuthor(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
 		Name:        "hdf_author",
 		Description: "Author an HDF document from model-supplied structured content and return a summary plus a reusable handle — never the document body. docType is system (components), plan (assessments), evidence (contents), or amendments (overrides). For amendments the server holds field authority: the judgment path (content[] of overrides) stamps appliedBy.type=agent + appliedAt and requires expiresAt on each; the from_vex path (source = a VEX document + expiresAt) derives overrides and stamps appliedBy.type=system. Per-item shapes: the compact hdf://schema/{docType}/{def} slices, not the whole schema. Output that does not validate is refused. Writes under the shared write model (dry_run previews; a writes-disabled deployment returns a preview).",
 		Annotations: appmcp.Writing(false, true),
-	}, hdfAuthor())
+	}, hdfAuthor(ldr))
 }
 
-func hdfAuthor() sdkmcp.ToolHandlerFor[authorInput, authorOutput] {
+func hdfAuthor(ldr *loader.Loader) sdkmcp.ToolHandlerFor[authorInput, authorOutput] {
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in authorInput) (*sdkmcp.CallToolResult, authorOutput, error) {
 		switch in.DocType {
 		case "system", "plan", "evidence", "amendments":
@@ -106,7 +107,12 @@ func hdfAuthor() sdkmcp.ToolHandlerFor[authorInput, authorOutput] {
 			out.WritesDisabled = strings.Contains(notice, "WRITES_DISABLED")
 		}
 
-		encoded, herr := handle.Encode(handle.Compute(in.Output, docBytes, string(st), hdfengine.Version()))
+		// Register the produced document in the content cache and mint the handle
+		// against the ACTUAL written path — empty when nothing was written, which
+		// routes resolution to the in-memory cache so author→apply→compliance
+		// composes with writes disabled (jobi.1 / D1).
+		_, _ = ldr.Load(docBytes)
+		encoded, herr := handle.Encode(handle.Compute(writtenPath, docBytes, string(st), hdfengine.Version()))
 		if herr != nil {
 			return nil, authorOutput{}, fmt.Errorf("encoding handle: %w", herr)
 		}

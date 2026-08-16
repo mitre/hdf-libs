@@ -10,12 +10,13 @@ import (
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func callAuthor(t *testing.T, in authorInput) (*sdkmcp.CallToolResult, authorOutput) {
 	t.Helper()
-	res, out, err := hdfAuthor()(context.Background(), nil, in)
+	res, out, err := hdfAuthor(loader.New(0, 0, 0))(context.Background(), nil, in)
 	if err != nil {
 		t.Fatalf("hdfAuthor returned a Go error (should use taxonomy paths): %v", err)
 	}

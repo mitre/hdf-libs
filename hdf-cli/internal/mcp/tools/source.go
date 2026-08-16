@@ -131,6 +131,15 @@ func resolveHandle(encoded string, ldr *loader.Loader, slot string) (*Resolved, 
 		return nil, mcperr.Arg(fmt.Sprintf("%s.handle is not a valid hdf_open handle", slot),
 			fmt.Sprintf("pass a handle from a prior hdf_open response, or use %s.path", slot))
 	}
+	// An empty path marks a handle for a document that was authored/derived but
+	// never written to disk (the default writes-disabled posture). It resolves
+	// from the in-memory content cache by contentSha256, so author→apply→
+	// compliance composes with zero writes (jobi.1 / D1). A miss is a clear
+	// cache-miss, never a path error (this also dissolves the D2 empty-path
+	// PATH_DENIED misdiagnosis).
+	if h.Path == "" {
+		return resolveCachedHandle(h, ldr)
+	}
 	confined, serr := hdfutil.SafePath(mcpRoot(), h.Path)
 	if serr != nil {
 		return nil, mcperr.New(mcperr.PathDenied, "handle path resolves outside HDF_MCP_ROOT", map[string]any{"path": h.Path})
@@ -148,6 +157,24 @@ func resolveHandle(encoded string, ldr *loader.Loader, slot string) (*Resolved, 
 		return nil, sizeOrLoadError(lerr)
 	}
 	return &Resolved{Content: content, Load: res, Handle: h}, nil
+}
+
+// resolveCachedHandle resolves a content-addressed (empty-path) handle from the
+// loader's in-memory cache. A cache-backed handle is valid only for the entry's
+// bounded lifetime (until LRU eviction), so a miss returns CACHE_MISS with
+// re-author/persist guidance — not a path error. The content is re-verified
+// against the handle's contentSha256 on resolve (never resolve stale bytes).
+func resolveCachedHandle(h handle.Handle, ldr *loader.Loader) (*Resolved, *mcperr.Error) {
+	data, res, ok := ldr.LoadByHash(h.ContentSHA256)
+	if !ok {
+		return nil, mcperr.New(mcperr.CacheMiss, "the authored document is no longer in the in-memory cache",
+			map[string]any{"contentSha256": h.ContentSHA256})
+	}
+	if verr := handle.Verify(h, data); verr != nil {
+		return nil, mcperr.New(mcperr.CacheMiss, "the cached document does not match the handle",
+			map[string]any{"contentSha256": h.ContentSHA256})
+	}
+	return &Resolved{Content: data, Load: res, Handle: h}, nil
 }
 
 // readFile reads a confined path, mapping filesystem errors to taxonomy codes.

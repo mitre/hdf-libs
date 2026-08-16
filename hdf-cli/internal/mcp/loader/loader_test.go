@@ -1,6 +1,8 @@
 package loader
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -276,5 +278,32 @@ func TestLoad_WritesNothingToStdout(t *testing.T) {
 	n, _ := rp.Read(buf)
 	if n > 0 {
 		t.Fatalf("loader wrote %d bytes to stdout (must be silent): %q", n, buf[:n])
+	}
+}
+
+func TestLoadByHash_RoundTrip(t *testing.T) {
+	l := New(0, 0, 0)
+	data := validResults()
+	if _, err := l.Load(data); err != nil {
+		t.Fatalf("seed load: %v", err)
+	}
+	hexSha := fmt.Sprintf("%x", sha256.Sum256(data))
+
+	bytes, res, ok := l.LoadByHash(hexSha)
+	if !ok {
+		t.Fatal("a document registered via Load must be retrievable by its content sha256")
+	}
+	if string(bytes) != string(data) {
+		t.Error("LoadByHash must return the exact registered bytes")
+	}
+	if res == nil || !res.Valid || res.DocType != "results" {
+		t.Errorf("LoadByHash result = %+v, want valid results", res)
+	}
+
+	if _, _, ok := l.LoadByHash("00" + hexSha[2:]); ok {
+		t.Error("an unknown content sha256 must miss")
+	}
+	if _, _, ok := l.LoadByHash("not-hex"); ok {
+		t.Error("a non-hex sha must miss, not panic")
 	}
 }

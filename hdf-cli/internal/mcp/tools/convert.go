@@ -11,6 +11,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/registry/all" // register fingerprints for auto-detect
@@ -57,15 +58,15 @@ type convertOutput struct {
 }
 
 // RegisterConvert registers the hdf_convert tool on the server.
-func RegisterConvert(s *sdkmcp.Server) {
+func RegisterConvert(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
 		Name:        "hdf_convert",
 		Description: "Convert source security-tool output into an HDF results document and return a compact SUMMARY (counts, hash, validity) plus a reusable handle — never the converted body, which is routinely megabytes. Conversion goes through the shared converter registry; from is auto-detected (including NDJSON) when omitted. With output set it writes under the shared write model (dry_run previews; a writes-disabled deployment returns a preview). Output that does not validate as hdf-results is refused.",
 		Annotations: appmcp.Writing(false, true),
-	}, hdfConvert())
+	}, hdfConvert(ldr))
 }
 
-func hdfConvert() sdkmcp.ToolHandlerFor[convertInput, convertOutput] {
+func hdfConvert(ldr *loader.Loader) sdkmcp.ToolHandlerFor[convertInput, convertOutput] {
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in convertInput) (*sdkmcp.CallToolResult, convertOutput, error) {
 		data, terr := rawInput(in.Source, in.Content)
 		if terr != nil {
@@ -106,7 +107,12 @@ func hdfConvert() sdkmcp.ToolHandlerFor[convertInput, convertOutput] {
 			out.WritesDisabled = strings.Contains(notice, "WRITES_DISABLED")
 		}
 
-		encoded, herr := handle.Encode(handle.Compute(in.Output, hdfBytes, "results", hdfengine.Version()))
+		// Register the converted document in the content cache and mint the handle
+		// against the ACTUAL written path — empty when nothing was written, which
+		// routes resolution to the in-memory cache so the handle is consumable
+		// even with writes disabled (jobi.1 / D1).
+		_, _ = ldr.Load(hdfBytes)
+		encoded, herr := handle.Encode(handle.Compute(writtenPath, hdfBytes, "results", hdfengine.Version()))
 		if herr != nil {
 			return nil, convertOutput{}, fmt.Errorf("encoding handle: %w", herr)
 		}

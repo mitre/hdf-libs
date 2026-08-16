@@ -30,6 +30,7 @@ const (
 	AmbiguousFormat  Code = "AMBIGUOUS_FORMAT"
 	OutputExists     Code = "OUTPUT_EXISTS"
 	WriteFailed      Code = "WRITE_FAILED"
+	CacheMiss        Code = "CACHE_MISS"
 )
 
 // Codes is the exhaustive, closed taxonomy. Every member appears here exactly
@@ -46,6 +47,7 @@ var Codes = []Code{
 	AmbiguousFormat,
 	OutputExists,
 	WriteFailed,
+	CacheMiss,
 }
 
 // defaultNextCall maps each code to the concrete recovery it recommends by
@@ -63,6 +65,7 @@ var defaultNextCall = map[Code]string{
 	AmbiguousFormat:  "specify `from` explicitly to disambiguate the source format",
 	OutputExists:     "the output path already exists; pass `overwrite: true` to replace it, or choose a different `output` path",
 	WriteFailed:      "the write failed (e.g. permission denied, no space, or a missing parent directory); check the destination is writable or choose a different `output` path",
+	CacheMiss:        "the authored document expired from the in-memory cache — re-author it, or set `output` to persist it to disk",
 }
 
 // Error is a taxonomy error. It implements the error interface and is recoverable

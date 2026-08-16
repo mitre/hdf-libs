@@ -9,13 +9,14 @@ import (
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func callConvert(t *testing.T, in convertInput) (*sdkmcp.CallToolResult, convertOutput) {
 	t.Helper()
-	res, out, err := hdfConvert()(context.Background(), nil, in)
+	res, out, err := hdfConvert(loader.New(0, 0, 0))(context.Background(), nil, in)
 	if err != nil {
 		t.Fatalf("hdfConvert returned a Go error (should use taxonomy paths): %v", err)
 	}

@@ -101,7 +101,12 @@ func hdfApplyAmendment(ldr *loader.Loader) sdkmcp.ToolHandlerFor[applyAmendmentI
 			out.WritesDisabled = strings.Contains(notice, "WRITES_DISABLED")
 		}
 
-		encoded, herr := handle.Encode(handle.Compute(in.Output, merged, "results", hdfengine.Version()))
+		// Register the merged document in the content cache and mint the handle
+		// against the ACTUAL written path — empty when nothing was written, which
+		// routes resolution to the in-memory cache so apply's output chains into
+		// compliance/inspect with writes disabled (jobi.1 / D1).
+		_, _ = ldr.Load(merged)
+		encoded, herr := handle.Encode(handle.Compute(writtenPath, merged, "results", hdfengine.Version()))
 		if herr != nil {
 			return nil, applyAmendmentOutput{}, fmt.Errorf("encoding handle: %w", herr)
 		}
