@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -105,5 +106,64 @@ func TestGolden_ToolResponses(t *testing.T) {
 	}
 	if !bytes.Equal(bytes.TrimSpace(golden), bytes.TrimSpace(buf.Bytes())) {
 		t.Errorf("tool responses differ from the golden — update intentionally with REGEN_GOLDEN=1 when the surface changes.\nlive:\n%s", buf.String())
+	}
+}
+
+// TestGolden_AmendmentsRoundTrip pins the FULL authored override bytes on the
+// judgment path, field-for-field. The response golden (TestGolden_ToolResponses)
+// strips handle+sha256, and for author/apply those are the only content-derived
+// values — so without this the authored amendment bytes are unpinned and an
+// optional/semantic field silently dropped or altered while STILL schema-valid
+// (e.g. reason, status) would slip through (bead 4908.16). appliedAt is the one
+// deliberately-volatile field — the judgment path's real action timestamp
+// (ADR-0007 §12) — so it is asserted present, then normalized out before the
+// byte-for-byte comparison of everything else.
+func TestGolden_AmendmentsRoundTrip(t *testing.T) {
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+	root := stageRoot(t)
+	driveCalls(t, []call{{"hdf_author", map[string]any{
+		"docType": "amendments", "name": "A",
+		"content": []any{map[string]any{
+			"type": "riskAdjustment", "requirementId": "CVE-2024-1000", "status": "notApplicable",
+			"reason": "compensating control in place", "expiresAt": "2099-12-31T00:00:00Z",
+		}},
+		"output": "amendments.json",
+	}}})
+
+	b, err := os.ReadFile(filepath.Join(root, "amendments.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(b, &doc); err != nil {
+		t.Fatal(err)
+	}
+	overrides, ok := doc["overrides"].([]any)
+	if !ok || len(overrides) != 1 {
+		t.Fatalf("expected exactly one authored override, got %v", doc["overrides"])
+	}
+	got, ok := overrides[0].(map[string]any)
+	if !ok {
+		t.Fatalf("override is not an object: %v", overrides[0])
+	}
+
+	if ts, _ := got["appliedAt"].(string); ts == "" {
+		t.Fatal("authored override must carry a non-empty appliedAt (judgment-path action timestamp)")
+	}
+	delete(got, "appliedAt")
+
+	want := map[string]any{
+		"type":          "riskAdjustment",
+		"requirementId": "CVE-2024-1000",
+		"status":        "notApplicable",
+		"reason":        "compensating control in place",
+		"expiresAt":     "2099-12-31T00:00:00Z",
+		"appliedBy": map[string]any{
+			"identifier": "hdf-mcp",
+			"type":       "agent",
+		},
+	}
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("authored override bytes drifted from the pinned round-trip:\n want %#v\n  got %#v", want, got)
 	}
 }
