@@ -415,9 +415,21 @@
       "acceptsEmpty": false
     },
     {
+      "source": "spdx-vex",
+      "dest": "hdf",
+      "name": "SPDX VEX to HDF Amendments",
+      "acceptsEmpty": false
+    },
+    {
       "source": "splunk",
       "dest": "hdf",
       "name": "Splunk to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "trivy",
+      "dest": "hdf",
+      "name": "Trivy to HDF",
       "acceptsEmpty": false
     },
     {
