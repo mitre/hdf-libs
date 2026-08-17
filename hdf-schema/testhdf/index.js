@@ -1,11 +1,11 @@
 /**
  * Test-only builders for minimal, schema-valid HDF Results documents.
  *
- * The TS peer of hdf-schema/testhdf/go — same defaults, same shape. Lives
- * outside dist/ so it is never published (package.json files: ["dist"]);
- * imported in-workspace via '@mitre/hdf-schema/testhdf'. Use results(req(...))
- * for the common single-requirement case; reach for doc/baseline for multiple
- * baselines.
+ * The TS peer of hdf-schema/testhdf/go — same defaults, same shape. Shipped as
+ * the '@mitre/hdf-schema/testhdf' subpath export (a package export must be in
+ * the published tarball, so it ships alongside the create* helpers; it is
+ * intended for tests but harmless to consumers). Use results(req(...)) for the
+ * common single-requirement case; reach for doc/baseline for multiple baselines.
  */
 
 const DEFAULT_START_TIME = '2020-01-01T00:00:00Z';
