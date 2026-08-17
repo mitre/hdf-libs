@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -145,10 +146,7 @@ func TestFilter_StatusCaseInsensitive(t *testing.T) {
 // severity when present (impact 0 would otherwise derive to none), matching
 // deriveSeverity / hdf_compliance. src/query.test.ts mirrors this.
 func TestFilter_SeverityHonorsExplicitTag(t *testing.T) {
-	sev := hdf.SeverityHigh
-	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Name: "b", Requirements: []hdf.EvaluatedRequirement{
-		{ID: "X", Impact: 0.0, Severity: &sev, Descriptions: []hdf.Description{{Label: "default", Data: "x"}}, Results: []hdf.RequirementResult{{Status: hdf.NotReviewed}}},
-	}}}}
+	results := testhdf.Results(testhdf.Req("X", testhdf.Severity("high")))
 	// The explicit "high" tag wins over the impact-0 derivation ("none").
 	assert.Equal(t, []string{"X"}, ids(Filter(context.Background(), results, Options{Severity: []string{"high"}, StatusOf: testStatusOf})))
 	assert.Empty(t, Filter(context.Background(), results, Options{Severity: []string{"none"}, StatusOf: testStatusOf}))

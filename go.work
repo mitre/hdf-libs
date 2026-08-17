@@ -11,6 +11,7 @@ use (
 	./hdf-mappings/go
 	./hdf-parsers/go
 	./hdf-schema/dist/go
+	./hdf-schema/testhdf/go
 	./hdf-utilities/go
 	./hdf-validators/go
 )
