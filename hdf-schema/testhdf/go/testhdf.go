@@ -92,6 +92,22 @@ func Code(code string) ReqOption {
 	return func(r *hdf.EvaluatedRequirement) { r.Code = &code }
 }
 
+// Title sets the requirement title.
+func Title(title string) ReqOption {
+	return func(r *hdf.EvaluatedRequirement) { r.Title = &title }
+}
+
+// CodeDesc sets the codeDesc of the requirement's first result (creating a
+// default result when there are none).
+func CodeDesc(codeDesc string) ReqOption {
+	return func(r *hdf.EvaluatedRequirement) {
+		if len(r.Results) == 0 {
+			r.Results = []hdf.RequirementResult{defaultResult(r.ID)}
+		}
+		r.Results[0].CodeDesc = codeDesc
+	}
+}
+
 // CWE sets the requirement's CWE identifiers.
 func CWE(cwes ...string) ReqOption {
 	return func(r *hdf.EvaluatedRequirement) { r.Cwe = cwes }

@@ -15,6 +15,9 @@ export interface ReqOptions {
   tags?: Record<string, unknown>;
   code?: string;
   cwe?: string[];
+  title?: string;
+  /** codeDesc of the (default) result. */
+  codeDesc?: string;
   /** Data for the default description. */
   desc?: string;
   /** Extra [label, data] descriptions appended after the default. */

@@ -40,6 +40,8 @@ export function req(id, opts = {}) {
   if (opts.severity !== undefined) r.severity = opts.severity;
   if (opts.code !== undefined) r.code = opts.code;
   if (opts.cwe !== undefined) r.cwe = opts.cwe;
+  if (opts.title !== undefined) r.title = opts.title;
+  if (opts.codeDesc !== undefined && r.results[0]) r.results[0].codeDesc = opts.codeDesc;
   for (const [label, data] of opts.addDesc ?? []) {
     r.descriptions.push({ label, data });
   }
