@@ -9,6 +9,7 @@ import (
 	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go"
 )
 
 // ---------------------------------------------------------------------------
@@ -34,17 +35,13 @@ const (
 func strPtr(s string) *string { return &s }
 
 func makeRequirement(id string, status hdf.ResultStatus, impact float64) hdf.EvaluatedRequirement {
-	return hdf.EvaluatedRequirement{
-		ID:           id,
-		Impact:       impact,
-		Tags:         map[string]any{},
-		Descriptions: []hdf.Description{{Label: "default", Data: "test"}},
-		Results: []hdf.RequirementResult{{
-			Status:    status,
-			CodeDesc:  "test",
-			StartTime: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		}},
-	}
+	return testhdf.Req(id,
+		testhdf.Impact(impact),
+		testhdf.Status(status),
+		testhdf.Desc("test"),
+		testhdf.CodeDesc("test"),
+		testhdf.StartTime(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+	)
 }
 
 func makeRequirementWithTitle(id, title string, status hdf.ResultStatus, impact float64) hdf.EvaluatedRequirement {

@@ -18,6 +18,8 @@ export interface ReqOptions {
   title?: string;
   /** codeDesc of the (default) result. */
   codeDesc?: string;
+  /** startTime (ISO string) of the (default) result. */
+  startTime?: string;
   /** Data for the default description. */
   desc?: string;
   /** Extra [label, data] descriptions appended after the default. */

@@ -42,6 +42,7 @@ export function req(id, opts = {}) {
   if (opts.cwe !== undefined) r.cwe = opts.cwe;
   if (opts.title !== undefined) r.title = opts.title;
   if (opts.codeDesc !== undefined && r.results[0]) r.results[0].codeDesc = opts.codeDesc;
+  if (opts.startTime !== undefined && r.results[0]) r.results[0].startTime = opts.startTime;
   for (const [label, data] of opts.addDesc ?? []) {
     r.descriptions.push({ label, data });
   }

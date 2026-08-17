@@ -108,6 +108,17 @@ func CodeDesc(codeDesc string) ReqOption {
 	}
 }
 
+// StartTime sets the startTime of the requirement's first result (creating a
+// default result when there are none).
+func StartTime(t time.Time) ReqOption {
+	return func(r *hdf.EvaluatedRequirement) {
+		if len(r.Results) == 0 {
+			r.Results = []hdf.RequirementResult{defaultResult(r.ID)}
+		}
+		r.Results[0].StartTime = t
+	}
+}
+
 // CWE sets the requirement's CWE identifiers.
 func CWE(cwes ...string) ReqOption {
 	return func(r *hdf.EvaluatedRequirement) { r.Cwe = cwes }
