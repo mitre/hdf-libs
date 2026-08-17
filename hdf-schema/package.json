@@ -17,6 +17,10 @@
       "types": "./dist/helpers.d.ts",
       "import": "./dist/helpers.js"
     },
+    "./testhdf": {
+      "types": "./testhdf/index.d.ts",
+      "import": "./testhdf/index.js"
+    },
     "./hdf-results": {
       "types": "./dist/ts/hdf.d.ts",
       "import": "./dist/ts/hdf.js"
