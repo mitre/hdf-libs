@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
+import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { convertHdfToEcs } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -137,21 +138,8 @@ describe('hdf-to-ecs converter', () => {
   it('escapes U+2028/U+2029 for Go parity', () => {
     const LS = String.fromCharCode(0x2028);
     const PS = String.fromCharCode(0x2029);
-    const doc = JSON.stringify({
-      baselines: [
-        {
-          name: 'b',
-          requirements: [
-            {
-              id: 'X',
-              title: `a${LS}b${PS}c`,
-              tags: {},
-              results: [{ status: 'passed', codeDesc: 'c', startTime: '2024-01-01T00:00:00Z' }],
-            },
-          ],
-        },
-      ],
-    });
+    const doc = JSON.stringify(testhdf.doc(testhdf.baseline('b',
+      testhdf.req('X', { title: `a${LS}b${PS}c`, status: 'passed', codeDesc: 'c' }))));
     const line = convertHdfToEcs(doc, VERSION).trimEnd();
     expect(line).toContain('\\u2028');
     expect(line).toContain('\\u2029');
@@ -161,21 +149,11 @@ describe('hdf-to-ecs converter', () => {
   });
 
   it('projects ATT&CK tags to threat.* (array and scalar tag forms)', () => {
-    const doc = JSON.stringify({
-      baselines: [
-        {
-          name: 'b',
-          requirements: [
-            {
-              id: 'X',
-              title: 't',
-              tags: { mitre_attack: ['T1059', 'T1078'], attack: 'T1110' },
-              results: [{ status: 'failed', codeDesc: 'c', startTime: '2024-01-01T00:00:00Z' }],
-            },
-          ],
-        },
-      ],
-    });
+    const doc = JSON.stringify(testhdf.doc(testhdf.baseline('b',
+      testhdf.req('X', {
+        title: 't', tags: { mitre_attack: ['T1059', 'T1078'], attack: 'T1110' },
+        status: 'failed', codeDesc: 'c',
+      }))));
     const o = lines(convertHdfToEcs(doc, VERSION))[0];
     const threat = obj(o.threat);
     expect(threat.framework).toBe('MITRE ATT&CK');
@@ -185,19 +163,8 @@ describe('hdf-to-ecs converter', () => {
 
   it('falls back to generator for observer.* when tool is absent', () => {
     const doc = JSON.stringify({
+      ...testhdf.doc(testhdf.baseline('b', testhdf.req('X', { status: 'passed', codeDesc: 'c' }))),
       generator: { name: 'grype-to-hdf', version: '1.2.3' },
-      baselines: [
-        {
-          name: 'b',
-          requirements: [
-            {
-              id: 'X',
-              tags: {},
-              results: [{ status: 'passed', codeDesc: 'c', startTime: '2024-01-01T00:00:00Z' }],
-            },
-          ],
-        },
-      ],
     });
     const observer = obj(lines(convertHdfToEcs(doc, VERSION))[0].observer);
     expect(observer.name).toBe('grype-to-hdf');
@@ -226,20 +193,8 @@ describe('hdf-to-ecs converter', () => {
       error: 'unknown',
     };
     for (const [status, outcome] of Object.entries(cases)) {
-      const doc = JSON.stringify({
-        baselines: [
-          {
-            name: 'b',
-            requirements: [
-              {
-                id: 'X',
-                tags: {},
-                results: [{ status, codeDesc: 'c', startTime: '2024-01-01T00:00:00Z' }],
-              },
-            ],
-          },
-        ],
-      });
+      const doc = JSON.stringify(testhdf.doc(testhdf.baseline('b',
+        testhdf.req('X', { status, codeDesc: 'c' }))));
       const o = lines(convertHdfToEcs(doc, VERSION))[0];
       expect(obj(o.event).outcome).toBe(outcome);
       expect(obj(o.hdf).status).toBe(status); // lossless five-value status

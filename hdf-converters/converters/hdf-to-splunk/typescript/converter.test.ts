@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
+import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { convertHdfToSplunk } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -90,33 +91,18 @@ describe('hdf-to-splunk converter', () => {
   });
 
   it('sets category from the first cwe id', () => {
-    const doc = JSON.stringify({
-      baselines: [
-        {
-          name: 'b',
-          requirements: [
-            {
-              id: 'X',
-              title: 't',
-              impact: 0.5,
-              cwe: ['CWE-79', 'CWE-89'],
-              results: [{ status: 'failed', codeDesc: 'c', startTime: '2024-01-01T00:00:00Z' }],
-            },
-          ],
-        },
-      ],
-    });
+    const doc = JSON.stringify(testhdf.doc(testhdf.baseline('b',
+      testhdf.req('X', {
+        title: 't', impact: 0.5, cwe: ['CWE-79', 'CWE-89'], status: 'failed', codeDesc: 'c',
+      }))));
     const o = lines(convertHdfToSplunk(doc, VERSION))[0];
     expect(obj(o.event).category).toBe('CWE-79');
   });
 
   it('maps impact to the CIM severity enum across all bands', () => {
     const sevForImpact = (impact: number) => {
-      const doc = JSON.stringify({
-        baselines: [
-          { name: 'b', requirements: [{ id: 'X', impact, results: [{ status: 'failed', codeDesc: 'c', startTime: '2024-01-01T00:00:00Z' }] }] },
-        ],
-      });
+      const doc = JSON.stringify(testhdf.doc(testhdf.baseline('b',
+        testhdf.req('X', { impact, status: 'failed', codeDesc: 'c' }))));
       return obj(lines(convertHdfToSplunk(doc, VERSION))[0].event).severity;
     };
     expect(sevForImpact(0.95)).toBe('critical');

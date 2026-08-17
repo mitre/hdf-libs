@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { convertHdfToCsv } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -105,50 +106,16 @@ describe('hdfcsv Converter', () => {
 
   describe('Multiple baselines and targets', () => {
     it('should handle multiple baselines', () => {
-      const input = JSON.stringify({
-        baselines: [
-          {
-            name: 'Baseline 1',
-            version: '1.0.0',
-            title: 'First Baseline',
-            maintainer: 'Test',
-            supports: [],
-            attributes: [],
-            groups: [],
-            checksum: { algorithm: 'sha256', value: 'abc' },
-            requirements: [{
-              id: 'REQ-001',
-              title: 'Test Requirement',
-              descriptions: [{ label: 'default', data: 'Test description' }],
-              impact: 0.5,
-              tags: { severity: 'medium' },
-              sourceLocation: { ref: 'REQ-001', line: 1 },
-              results: [{ status: 'passed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
-            }]
-          },
-          {
-            name: 'Baseline 2',
-            version: '2.0.0',
-            title: 'Second Baseline',
-            maintainer: 'Test',
-            supports: [],
-            attributes: [],
-            groups: [],
-            checksum: { algorithm: 'sha256', value: 'def' },
-            requirements: [{
-              id: 'REQ-002',
-              title: 'Another Requirement',
-              descriptions: [{ label: 'default', data: 'Another description' }],
-              impact: 0.7,
-              tags: { severity: 'high' },
-              sourceLocation: { ref: 'REQ-002', line: 1 },
-              results: [{ status: 'failed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
-            }]
-          }
-        ],
-        components: [],
-        statistics: { duration: 0 }
-      });
+      const input = JSON.stringify(testhdf.doc(
+        testhdf.baseline('Baseline 1', testhdf.req('REQ-001', {
+          title: 'Test Requirement', desc: 'Test description', impact: 0.5,
+          tags: { severity: 'medium' }, status: 'passed',
+        })),
+        testhdf.baseline('Baseline 2', testhdf.req('REQ-002', {
+          title: 'Another Requirement', desc: 'Another description', impact: 0.7,
+          tags: { severity: 'high' }, status: 'failed',
+        })),
+      ));
 
       const result = convertHdfToCsv(input);
       const lines = result.split('\n').filter(l => l.trim());
@@ -197,32 +164,11 @@ describe('hdfcsv Converter', () => {
 
   describe('Field extraction', () => {
     it('should extract NIST controls from tags', () => {
-      const input = JSON.stringify({
-        baselines: [{
-          name: 'Test',
-          version: '1.0.0',
-          title: 'Test',
-          maintainer: 'Test',
-          supports: [],
-          attributes: [],
-          groups: [],
-          checksum: { algorithm: 'sha256', value: 'abc' },
-          requirements: [{
-            id: 'REQ-001',
-            title: 'Test',
-            descriptions: [{ label: 'default', data: 'Test' }],
-            impact: 0.5,
-            tags: {
-              nist: ['AC-2', 'AC-3', 'IA-5 (1)'],
-              severity: 'medium'
-            },
-            sourceLocation: { ref: 'REQ-001', line: 1 },
-            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
-          }]
-        }],
-        components: [],
-        statistics: { duration: 0 }
-      });
+      const input = JSON.stringify(testhdf.doc(testhdf.baseline('Test',
+        testhdf.req('REQ-001', {
+          title: 'Test', desc: 'Test', impact: 0.5,
+          tags: { nist: ['AC-2', 'AC-3', 'IA-5 (1)'], severity: 'medium' }, status: 'passed',
+        }))));
 
       const result = convertHdfToCsv(input);
 
@@ -230,32 +176,11 @@ describe('hdfcsv Converter', () => {
     });
 
     it('should extract CCI controls from tags', () => {
-      const input = JSON.stringify({
-        baselines: [{
-          name: 'Test',
-          version: '1.0.0',
-          title: 'Test',
-          maintainer: 'Test',
-          supports: [],
-          attributes: [],
-          groups: [],
-          checksum: { algorithm: 'sha256', value: 'abc' },
-          requirements: [{
-            id: 'REQ-001',
-            title: 'Test',
-            descriptions: [{ label: 'default', data: 'Test' }],
-            impact: 0.5,
-            tags: {
-              cci: ['CCI-000001', 'CCI-000002'],
-              severity: 'medium'
-            },
-            sourceLocation: { ref: 'REQ-001', line: 1 },
-            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
-          }]
-        }],
-        components: [],
-        statistics: { duration: 0 }
-      });
+      const input = JSON.stringify(testhdf.doc(testhdf.baseline('Test',
+        testhdf.req('REQ-001', {
+          title: 'Test', desc: 'Test', impact: 0.5,
+          tags: { cci: ['CCI-000001', 'CCI-000002'], severity: 'medium' }, status: 'passed',
+        }))));
 
       const result = convertHdfToCsv(input);
 
@@ -335,29 +260,11 @@ describe('hdfcsv Converter', () => {
 
   describe('CSV injection protection', () => {
     it('should sanitize formulas in descriptions', () => {
-      const input = JSON.stringify({
-        baselines: [{
-          name: 'Test',
-          version: '1.0.0',
-          title: 'Test',
-          maintainer: 'Test',
-          supports: [],
-          attributes: [],
-          groups: [],
-          checksum: { algorithm: 'sha256', value: 'abc' },
-          requirements: [{
-            id: 'REQ-001',
-            title: '=1+1',
-            descriptions: [{ label: 'default', data: '=SUM(A1:A10)' }],
-            impact: 0.5,
-            tags: { severity: 'medium' },
-            sourceLocation: { ref: 'REQ-001', line: 1 },
-            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
-          }]
-        }],
-        components: [],
-        statistics: { duration: 0 }
-      });
+      const input = JSON.stringify(testhdf.doc(testhdf.baseline('Test',
+        testhdf.req('REQ-001', {
+          title: '=1+1', desc: '=SUM(A1:A10)', impact: 0.5,
+          tags: { severity: 'medium' }, status: 'passed',
+        }))));
 
       const result = convertHdfToCsv(input);
 
@@ -367,49 +274,15 @@ describe('hdfcsv Converter', () => {
     });
 
     it('should sanitize all formula trigger characters', () => {
-      const input = JSON.stringify({
-        baselines: [{
-          name: 'Test',
-          version: '1.0.0',
-          title: 'Test',
-          maintainer: 'Test',
-          supports: [],
-          attributes: [],
-          groups: [],
-          checksum: { algorithm: 'sha256', value: 'abc' },
-          requirements: [
-            {
-              id: 'REQ-001',
-              title: '+dangerous',
-              descriptions: [{ label: 'default', data: 'test' }],
-              impact: 0.5,
-              tags: { severity: 'medium' },
-              sourceLocation: { ref: 'REQ-001', line: 1 },
-              results: [{ status: 'passed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
-            },
-            {
-              id: 'REQ-002',
-              title: '-dangerous',
-              descriptions: [{ label: 'default', data: 'test' }],
-              impact: 0.5,
-              tags: { severity: 'medium' },
-              sourceLocation: { ref: 'REQ-002', line: 1 },
-              results: [{ status: 'passed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
-            },
-            {
-              id: 'REQ-003',
-              title: '@dangerous',
-              descriptions: [{ label: 'default', data: 'test' }],
-              impact: 0.5,
-              tags: { severity: 'medium' },
-              sourceLocation: { ref: 'REQ-003', line: 1 },
-              results: [{ status: 'passed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
-            }
-          ]
-        }],
-        components: [],
-        statistics: { duration: 0 }
-      });
+      const dangerous = (id: string, title: string) =>
+        testhdf.req(id, {
+          title, desc: 'test', impact: 0.5, tags: { severity: 'medium' }, status: 'passed',
+        });
+      const input = JSON.stringify(testhdf.doc(testhdf.baseline('Test',
+        dangerous('REQ-001', '+dangerous'),
+        dangerous('REQ-002', '-dangerous'),
+        dangerous('REQ-003', '@dangerous'),
+      )));
 
       const result = convertHdfToCsv(input);
 

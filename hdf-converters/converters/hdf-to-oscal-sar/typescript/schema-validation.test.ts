@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { results } from '@mitre/hdf-fixtures';
+import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { convertHdfToOscalSar } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -43,22 +44,13 @@ const WORST_CASE = JSON.stringify({
 });
 
 const minimal = (status: string): string =>
-  JSON.stringify({
-    baselines: [
-      {
-        name: 'test-baseline',
-        requirements: [
-          {
-            id: 'AC-1',
-            impact: 0.5,
-            tags: { nist: ['AC-1'] },
-            descriptions: [{ label: 'default', data: 'Test requirement description' }],
-            results: [{ status, codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
-          },
-        ],
-      },
-    ],
-  });
+  JSON.stringify(testhdf.doc(testhdf.baseline('test-baseline',
+    testhdf.req('AC-1', {
+      impact: 0.5,
+      tags: { nist: ['AC-1'] },
+      desc: 'Test requirement description',
+      status,
+    }))));
 
 describe('hdf-to-oscal-sar output validates against NIST OSCAL v1.1.2 AR schema', () => {
   const cases: Array<[string, string]> = [

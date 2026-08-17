@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { convertHdfToXccdf } from './converter.js';
 import { normalizeXmlForGolden } from '../../../shared/typescript/xml-golden.js';
 
@@ -110,23 +111,8 @@ describe('hdf-to-xccdf Converter', () => {
 
     for (const [hdfStatus, xccdfResult] of statuses) {
       it(`should map ${hdfStatus} to ${xccdfResult}`, () => {
-        const input = JSON.stringify({
-          baselines: [{
-            name: 'test',
-            requirements: [{
-              id: 'REQ-001',
-              descriptions: [{ label: 'default', data: 'test' }],
-              impact: 0.5,
-              tags: {},
-              results: [{
-                codeDesc: 'Test',
-                startTime: '2025-01-01T00:00:00Z',
-                status: hdfStatus,
-              }],
-            }],
-          }],
-          statistics: {},
-        });
+        const input = JSON.stringify(testhdf.doc(testhdf.baseline('test',
+          testhdf.req('REQ-001', { desc: 'test', impact: 0.5, status: hdfStatus }))));
 
         const result = convertHdfToXccdf(input);
         expect(result).toContain(`<result>${xccdfResult}</result>`);
@@ -147,23 +133,8 @@ describe('hdf-to-xccdf Converter', () => {
 
     for (const [impact, severity] of mappings) {
       it(`should map impact ${impact} to severity ${severity}`, () => {
-        const input = JSON.stringify({
-          baselines: [{
-            name: 'test',
-            requirements: [{
-              id: 'REQ-001',
-              descriptions: [{ label: 'default', data: 'test' }],
-              impact,
-              tags: {},
-              results: [{
-                codeDesc: 'Test',
-                startTime: '2025-01-01T00:00:00Z',
-                status: 'passed',
-              }],
-            }],
-          }],
-          statistics: {},
-        });
+        const input = JSON.stringify(testhdf.doc(testhdf.baseline('test',
+          testhdf.req('REQ-001', { desc: 'test', impact, status: 'passed' }))));
 
         const result = convertHdfToXccdf(input);
         expect(result).toContain(`severity="${severity}"`);
@@ -202,24 +173,10 @@ describe('hdf-to-xccdf Converter', () => {
     });
 
     it('should escape special characters', () => {
-      const input = JSON.stringify({
-        baselines: [{
-          name: 'Test',
-          requirements: [{
-            id: 'REQ-001',
-            title: 'Rule with <angle> & "quotes"',
-            descriptions: [{ label: 'default', data: 'Data & <more>' }],
-            impact: 0.5,
-            tags: {},
-            results: [{
-              codeDesc: 'Test',
-              startTime: '2025-01-01T00:00:00Z',
-              status: 'passed',
-            }],
-          }],
-        }],
-        statistics: {},
-      });
+      const input = JSON.stringify(testhdf.doc(testhdf.baseline('Test',
+        testhdf.req('REQ-001', {
+          title: 'Rule with <angle> & "quotes"', desc: 'Data & <more>', impact: 0.5, status: 'passed',
+        }))));
 
       const result = convertHdfToXccdf(input);
       expect(result).toContain('&amp;');
@@ -293,13 +250,8 @@ describe('hdf-to-xccdf Converter', () => {
     });
 
     it('keeps raw status when no override is present', () => {
-      const input = JSON.stringify({
-        baselines: [{ name: 'b', requirements: [{
-          id: 'SV-1', impact: 0.5, title: 'req', tags: {},
-          descriptions: [{ label: 'default', data: 'd' }],
-          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
-        }] }],
-      });
+      const input = JSON.stringify(testhdf.doc(testhdf.baseline('b',
+        testhdf.req('SV-1', { impact: 0.5, title: 'req', desc: 'd', status: 'failed', codeDesc: 'c' }))));
       const result = convertHdfToXccdf(input);
       expect(result).toContain('<result>fail</result>');
     });
