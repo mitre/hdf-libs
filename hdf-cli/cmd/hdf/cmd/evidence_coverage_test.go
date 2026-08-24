@@ -740,8 +740,13 @@ func TestEvidenceExportCommand(t *testing.T) {
 		tmpDir := t.TempDir()
 		outDir := filepath.Join(tmpDir, "out")
 
-		// Create a real results file so the read succeeds
-		resultsDoc := noTargetsJSON
+		// A convertible results document: hdf-to-oscal-sar rejects an assessment
+		// with no evaluated baselines, because OSCAL requires results with
+		// minItems 1. noTargetsJSON ({"baselines": []}) would exercise the
+		// skip path instead of the export path this subtest is named for.
+		resultsDoc := `{"baselines":[{"name":"b","requirements":[{"id":"AC-1",` +
+			`"impact":0.5,"tags":{},"descriptions":[{"label":"default","data":"d"}],` +
+			`"results":[{"status":"failed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}]}]}`
 		resultsPath := filepath.Join(tmpDir, "results.json")
 		require.NoError(t, os.WriteFile(resultsPath, []byte(resultsDoc), 0o600))
 

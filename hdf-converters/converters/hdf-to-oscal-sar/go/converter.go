@@ -20,20 +20,26 @@ import (
 // Results JSON bytes. The converterVersion parameter is unused but present
 // to conform to the RawConvertFn signature.
 func ConvertHDFToOSCALSAR(input []byte, _ string) ([]byte, error) {
-	if err := shared.ValidateJSONSize(input, "hdf-to-oscal-sar", 0); err != nil {
+	var hdfResults hdf.HDFResults
+	if err := shared.RequireHDFResults(input, "hdf-to-oscal-sar", &hdfResults); err != nil {
 		return nil, err
 	}
-	if len(input) == 0 {
-		return nil, fmt.Errorf("hdf-to-oscal-sar: empty input")
-	}
 
-	var hdfResults hdf.HDFResults
-	if err := shared.DecodeHDF(input, &hdfResults); err != nil {
-		return nil, fmt.Errorf("hdf-to-oscal-sar: failed to parse HDF JSON: %w", err)
-	}
-
-	if hdfResults.Baselines == nil {
-		return nil, fmt.Errorf("hdf-to-oscal-sar: invalid HDF structure: missing baselines field")
+	// A converter-specific constraint the shared guard cannot express: the guard
+	// checks top-level shape, not the full HDF schema, and it accepts an empty
+	// baselines array because hdf-results puts no minItems on it. OSCAL Assessment
+	// Results, by contrast, requires results with minItems 1, and one result is
+	// emitted per baseline — so an assessment that evaluated nothing has no valid
+	// OSCAL representation. Emitting "results": [] would exit 0 with a document
+	// the target schema rejects.
+	//
+	// hdf-libs-wq3u decides whether hdf-results should carry minItems 1 on
+	// baselines, as every sibling document schema except hdf-comparison does on
+	// its required collections. If
+	// it does, RequireHDFResults should switch from its nil check to the len == 0
+	// check RequireHDFAmendments already uses, and this check becomes redundant.
+	if len(hdfResults.Baselines) == 0 {
+		return nil, fmt.Errorf("hdf-to-oscal-sar: cannot represent an assessment with no evaluated baselines as OSCAL Assessment Results, which requires at least one result")
 	}
 
 	doc := buildOSCALDocument(&hdfResults)

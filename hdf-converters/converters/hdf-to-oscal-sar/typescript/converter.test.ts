@@ -389,12 +389,14 @@ describe('convertHdfToOscalSar', () => {
     expect(raw).toHaveProperty('assessment-results');
   });
 
-  it('should handle empty baselines array', async () => {
+  // This test previously asserted that an empty baselines array converted
+  // successfully to a document with no results. That was the defect: OSCAL
+  // Assessment Results puts minItems 1 on results, so the emitted document
+  // failed the schema the converter declares conformance to, while resolving
+  // successfully.
+  it('rejects an empty baselines array', async () => {
     const input = JSON.stringify({ baselines: [] });
-    const output = await convertHdfToOscalSar(input);
-    const doc = JSON.parse(output);
-
-    expect(doc['assessment-results'].results).toHaveLength(0);
+    await expect(convertHdfToOscalSar(input)).rejects.toThrow(/at least one result/);
   });
 
   it('should handle multiple requirements', async () => {
@@ -456,7 +458,9 @@ describe('convertHdfToOscalSar', () => {
     const output = await convertHdfToOscalSar(input);
     const doc = JSON.parse(output);
 
-    expect(doc['assessment-results'].results[0].risks).toHaveLength(0);
+    // risks is omitted rather than emitted empty, matching Go's omitempty:
+    // OSCAL puts minItems 1 on it, so [] would be invalid where absence is fine.
+    expect(doc['assessment-results'].results[0].risks).toBeUndefined();
     expect(doc['assessment-results'].results[0].findings[0]['related-risks']).toBeUndefined();
   });
 });

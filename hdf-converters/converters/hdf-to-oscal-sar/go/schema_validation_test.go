@@ -10,6 +10,7 @@ import (
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go"
 	"github.com/stretchr/testify/require"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -152,4 +153,59 @@ func TestConvertHDFToOSCALSAR_OriginActorsResolve(t *testing.T) {
 				"expected one consistent tool party across the document, got %d distinct actor-uuids", len(actorUUIDs))
 		})
 	}
+}
+
+// TestConvertHDFToOSCALSAR_RejectsZeroBaselines pins the converter-specific
+// constraint the shared guard cannot express: the guard checks top-level shape,
+// not the full HDF schema, and it accepts an empty baselines array because
+// hdf-results puts no minItems on it. OSCAL requires at least one result, so
+// emitting "results": [] would exit 0 with a document the target schema rejects
+// — the silent failure this epic exists to remove.
+func TestConvertHDFToOSCALSAR_RejectsZeroBaselines(t *testing.T) {
+	_, err := ConvertHDFToOSCALSAR([]byte(`{"baselines":[]}`), "1.0.0")
+	require.Error(t, err, "OSCAL requires results with minItems 1; an empty assessment has none")
+	require.Contains(t, err.Error(), "hdf-to-oscal-sar: ")
+}
+
+// TestConvertHDFToOSCALSAR_ResultWithoutRisksIsValid pins the omitempty
+// alignment between the two languages. OSCAL puts minItems 1 on a result's
+// findings, observations and risks, so an empty array is invalid where absence
+// is fine. TypeScript emitted [] for all three where Go omits them, which made a
+// baseline whose requirements produce no risks fail the schema on one side only.
+func TestConvertHDFToOSCALSAR_ResultWithoutRisksIsValid(t *testing.T) {
+	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
+		"hdf-to-oscal-sar", "schemas", "oscal_assessment-results_schema-v1.1.2.json"))
+
+	// impact 0 produces a finding but no risk.
+	input, err := json.Marshal(testhdf.Results(testhdf.Req("AC-1",
+		testhdf.Impact(0), testhdf.Status(hdf.Passed))))
+	require.NoError(t, err)
+
+	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	require.NoError(t, v.Validate(out), "a result with no risks must still satisfy the schema")
+	require.NotContains(t, string(out), `"risks": []`, "an empty risks array violates minItems 1")
+}
+
+// TestConvertHDFToOSCALSAR_ResultWithoutObservationsIsValid covers the second
+// field of the same omitempty alignment. Unlike the risks case this is NOT
+// reachable from schema-valid HDF — Evaluated_Requirement requires results with
+// minItems 1 — so the input below is deliberately schema-invalid and the branch
+// is defence-in-depth: the shared guard checks top-level shape only, so an
+// upstream producer that skips validation can still reach it. Pinned separately
+// from the risks case because an empty observations array is a distinct code
+// path that a risks-only test leaves uncovered.
+func TestConvertHDFToOSCALSAR_ResultWithoutObservationsIsValid(t *testing.T) {
+	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
+		"hdf-to-oscal-sar", "schemas", "oscal_assessment-results_schema-v1.1.2.json"))
+
+	req := testhdf.Req("AC-1", testhdf.Impact(0))
+	req.Results = nil
+	input, err := json.Marshal(testhdf.Results(req))
+	require.NoError(t, err)
+
+	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	require.NoError(t, v.Validate(out), "a result with no observations must still satisfy the schema")
+	require.NotContains(t, string(out), `"observations": []`, "an empty observations array violates minItems 1")
 }

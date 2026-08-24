@@ -595,19 +595,19 @@ func TestConvertHDFToOSCALSAR_NistTagToControlID(t *testing.T) {
 	}
 }
 
+// This test previously asserted that an empty baselines array converted
+// successfully to a document with no results. That was the defect: OSCAL
+// Assessment Results puts minItems 1 on results, so the emitted document failed
+// the schema the converter declares conformance to, while exiting 0.
 func TestConvertHDFToOSCALSAR_EmptyBaselines(t *testing.T) {
 	results := hdf.HDFResults{
 		Baselines: []hdf.EvaluatedBaseline{},
 	}
 	data, _ := json.Marshal(results)
 
-	output, err := ConvertHDFToOSCALSAR(data, "1.0.0")
-	require.NoError(t, err)
-
-	var doc oscalSARDocument
-	require.NoError(t, json.Unmarshal(output, &doc))
-
-	assert.Empty(t, doc.AssessmentResults.Results)
+	_, err := ConvertHDFToOSCALSAR(data, "1.0.0")
+	require.Error(t, err, "an assessment with no baselines has no valid OSCAL representation")
+	assert.Contains(t, err.Error(), "at least one result")
 }
 
 func TestConvertHDFToOSCALSAR_MultipleRequirements(t *testing.T) {

@@ -130,3 +130,47 @@ describe('hdf-to-oscal-sar origin actors resolve to a defined party', () => {
     expect(actorUuids.size).toBe(1);
   });
 });
+
+describe('hdf-to-oscal-sar empty-assessment handling', () => {
+  // The converter-specific constraint the shared guard cannot express: the guard
+  // checks top-level shape, not the full HDF schema, and it accepts an empty
+  // baselines array because hdf-results puts no minItems on it. OSCAL requires
+  // results with minItems 1. hdf-libs-wq3u decides whether the HDF schema should
+  // carry that constraint too.
+  it('rejects an assessment with no evaluated baselines', async () => {
+    await expect(convertHdfToOscalSar('{"baselines":[]}')).rejects.toThrow(/at least one result/);
+  });
+
+  // Pins the omitempty alignment between the two languages. OSCAL puts minItems 1
+  // on a result's findings, observations and risks, so an empty array is invalid
+  // where absence is fine. TypeScript emitted [] for all three where Go omits
+  // them, which made a baseline whose requirements produce no risks fail the
+  // schema on one side only.
+  // Unlike the risks case this is NOT reachable from schema-valid HDF —
+  // Evaluated_Requirement requires results with minItems 1 — so the input below
+  // is deliberately schema-invalid and the branch is defence-in-depth: the shared
+  // guard checks top-level shape only, so an upstream producer that skips
+  // validation can still reach it. Pinned here because TypeScript is the side
+  // that emitted [] for all three fields, and a risks-only test left this path
+  // uncovered.
+  it('omits observations rather than emitting an empty array', async () => {
+    const req = testhdf.req('AC-1', { impact: 0 });
+    delete (req as { results?: unknown }).results;
+    const out = await convertHdfToOscalSar(JSON.stringify(testhdf.results(req)));
+
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
+    expect(out).not.toContain('"observations": []');
+  });
+
+  it('omits risks rather than emitting an empty array', async () => {
+    // impact 0 produces a finding but no risk.
+    const input = JSON.stringify(
+      testhdf.results(testhdf.req('AC-1', { impact: 0, status: 'passed' })),
+    );
+    const out = await convertHdfToOscalSar(input);
+
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
+    expect(out).not.toContain('"risks": []');
+  });
+});
+
