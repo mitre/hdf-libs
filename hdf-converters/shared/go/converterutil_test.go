@@ -543,6 +543,140 @@ func TestOrEmpty(t *testing.T) {
 	})
 }
 
+func TestRequireHDFResults_MissingFieldMessageIsCanonical(t *testing.T) {
+	// Pinned because exportmap and hdf-to-oscal-sar already emit exactly this and
+	// consumers may match on it; adopting the shared guard must not churn it.
+	var out hdf.HDFResults
+	err := RequireHDFResults([]byte(`{}`), "hdf-to-oscal-sar", &out)
+	require.EqualError(t, err, "hdf-to-oscal-sar: invalid HDF structure: missing baselines field")
+}
+
+func TestRequireHDFAmendments_RejectsMalformedInput(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		input string
+	}{
+		{"empty input", ``},
+		{"not json", `not json`},
+		{"top-level array", `[]`},
+		{"top-level null", `null`},
+		{"missing overrides", `{"name":"a"}`},
+		{"wrong-typed overrides", `{"name":"a","overrides":"nope"}`},
+		{"null overrides", `{"name":"a","overrides":null}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var out hdf.HDFAmendments
+			err := RequireHDFAmendments([]byte(tc.input), "probe", &out)
+			require.Error(t, err, "structurally invalid HDF must be rejected, not zero-filled")
+		})
+	}
+}
+
+// TestRequireHDFAmendments_RejectsEmptyOverrides pins the asymmetry between the
+// two document types, which is easy to mistake for an inconsistency: the results
+// schema puts no minItems on baselines, so an assessment that evaluated nothing
+// is legal HDF, while the amendments schema puts minItems 1 on overrides — a
+// document that amends nothing is not a valid amendments document and must not
+// be silently converted into an empty one.
+func TestRequireHDFAmendments_RejectsEmptyOverrides(t *testing.T) {
+	var out hdf.HDFAmendments
+	err := RequireHDFAmendments([]byte(`{"name":"a","overrides":[]}`), "probe", &out)
+	require.Error(t, err, "overrides has minItems 1; an empty array is not a convertible document")
+}
+
+// TestRequireHDFAmendments_MatchesCorpusContracts ties the guard to the shared
+// adversarial corpus. The guard checks top-level shape, so it is responsible for
+// exactly the MustReject cases; a MustNotCorrupt case would be nested-invalid and
+// deliberately outside its remit, and the amendments corpus has none today.
+func TestRequireHDFAmendments_MatchesCorpusContracts(t *testing.T) {
+	for _, c := range AmendmentsCorpus() {
+		var out hdf.HDFAmendments
+		err := RequireHDFAmendments(c.Input, "probe", &out)
+		switch c.Contract {
+		case MustConvert:
+			require.NoError(t, err, "%s is valid HDF; the guard must not reject it", c.Name)
+		case MustReject:
+			require.Error(t, err, "%s is invalid at the top level and must be rejected", c.Name)
+		case MustNotCorrupt:
+			t.Skipf("%s is nested-invalid, which the top-level guard deliberately does not check", c.Name)
+		}
+	}
+}
+
+func TestRequireHDFAmendments_MissingFieldMessageIsCanonical(t *testing.T) {
+	var out hdf.HDFAmendments
+	err := RequireHDFAmendments([]byte(`{"name":"a"}`), "hdf-to-oscal-poam", &out)
+	require.EqualError(t, err, "hdf-to-oscal-poam: invalid HDF structure: missing overrides field")
+}
+
+// TestRequireHDFResultsDoc_MatchesTypedGuard pins that the generic-map variant
+// (what exportmap needs, since it maps fields dynamically) applies the same
+// contract as the typed one. Two decode targets are legitimate; two different
+// contracts would not be.
+func TestRequireHDFResultsDoc_MatchesTypedGuard(t *testing.T) {
+	for _, input := range []string{
+		``, `not json`, `[]`, `null`, `{}`, `{"baselines":"x"}`, `{"baselines":null}`,
+	} {
+		var typed hdf.HDFResults
+		typedErr := RequireHDFResults([]byte(input), "probe", &typed)
+		_, _, docErr := RequireHDFResultsDoc([]byte(input), "probe")
+		require.Equal(t, typedErr != nil, docErr != nil,
+			"typed and map guards disagree on %q", input)
+	}
+
+	doc, baselines, err := RequireHDFResultsDoc([]byte(`{"baselines":[],"timestamp":"t"}`), "probe")
+	require.NoError(t, err)
+	require.Equal(t, "t", doc["timestamp"])
+	require.Empty(t, baselines)
+}
+
+// TestRequireHDFResults_DiagnosticsDifferOnWrongTypedField makes a real
+// divergence visible rather than leaving it hidden behind a prefix-only
+// assertion. A wrong-typed baselines is rejected by every guard, but the typed
+// form fails during decode and reports a parse error, while the map form and the
+// TypeScript peer report a missing field. Both reject; only the diagnostic
+// differs, and pinning it here means a future change to either message is a
+// deliberate edit rather than a silent drift.
+func TestRequireHDFResults_DiagnosticsDifferOnWrongTypedField(t *testing.T) {
+	input := []byte(`{"baselines":"not-an-array"}`)
+
+	var typed hdf.HDFResults
+	typedErr := RequireHDFResults(input, "probe", &typed)
+	require.ErrorContains(t, typedErr, "probe: failed to parse HDF JSON")
+
+	_, _, docErr := RequireHDFResultsDoc(input, "probe")
+	require.EqualError(t, docErr, "probe: invalid HDF structure: missing baselines field")
+}
+
+// TestRequireHDFResults_RejectsCorpusTopLevelShapes ties the guard to the shared
+// adversarial corpus: every corpus case whose defect is top-level shape must be
+// rejected here. Cases whose defect is nested (an empty requirements array, a
+// requirement missing id) must NOT be — this guard is deliberately top-level
+// only, and silently widening it would mask where validation actually belongs.
+func TestRequireHDFResults_RejectsCorpusTopLevelShapes(t *testing.T) {
+	topLevel := map[string]bool{
+		"baselines-missing": true, "baselines-null": true,
+		"baselines-wrong-type": true, "top-level-array": true,
+	}
+	for _, c := range ResultsCorpus() {
+		var out hdf.HDFResults
+		err := RequireHDFResults(c.Input, "probe", &out)
+		if topLevel[c.Name] {
+			require.Error(t, err, "%s is a top-level shape defect and must be rejected", c.Name)
+			continue
+		}
+		require.NoError(t, err, "%s is not a top-level shape defect; the guard must not reject it", c.Name)
+	}
+}
+
+// --- Nil-slice normalization --------------------------------------------------
+
+// TestOrEmpty_NilSliceMarshalsAsEmptyArray is the assertion that matters: the
+// helper exists because encoding/json renders a nil slice as null, and a target
+// schema that requires an array rejects null. Asserting on the marshaled BYTES
+// rather than the returned slice is deliberate — len() cannot tell nil from
+// empty, so a struct-level assertion would pass against the very bug this
+// prevents.
 func TestOrEmpty_NilSliceMarshalsAsEmptyArray(t *testing.T) {
 	type doc struct {
 		Items []string `json:"items"`

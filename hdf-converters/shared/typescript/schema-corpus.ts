@@ -3,7 +3,7 @@
  *
  * The TS peer of shared/go/schemacorpus.go. The two corpora are asserted
  * byte-equal (after canonicalization) against a Go-generated golden, so a case
- * added, renamed, retiered, or altered on one side alone fails the build rather
+ * added, renamed, reclassified, or altered on one side alone fails the build rather
  * than silently going uncovered on the other.
  */
 import * as testhdf from '@mitre/hdf-schema/testhdf';
@@ -12,25 +12,42 @@ import type { ValidateFunction } from 'ajv';
 import { schemaErrors } from './schema-validation.js';
 
 /**
- * One adversarial exporter input.
+ * The obligation an exporter owes for one corpus input.
  *
- * `hdfValid` splits the corpus into the two contracts an exporter owes, which
- * are opposites and were previously conflated: a sparse-but-legal document must
- * convert into schema-valid output, while a document HDF itself rejects must
- * produce an error — never a crash, and never a success carrying an invalid
- * document. Every shipped defect this corpus exists to catch sat in one bucket
- * or the other, and a suite that only feeds fully-populated fixtures exercises
- * neither.
+ * A single "HDF-invalid input must be rejected" rule conflated two different
+ * obligations. A document whose TOP-LEVEL shape is wrong is not the document
+ * type it claims to be, and refusing it is the only honest outcome. A document
+ * that is merely wrong in NESTED content is something no converter validates —
+ * the shared structural guard is deliberately top-level only — so demanding
+ * rejection there asserted something no converter satisfies, which forced
+ * per-converter exemptions. Exemptions that accumulate quietly are how a corpus
+ * stops meaning anything, so the distinction belongs to the case.
+ *
+ * - `MustConvert`: sparse but schema-valid HDF. Must convert, and the output
+ *   must satisfy the target schema. Refusing legal input is as much a defect as
+ *   emitting an invalid document for it.
+ * - `MustReject`: the top-level shape is wrong. The exporter must throw.
+ * - `MustNotCorrupt`: only nested content is invalid. Converting or refusing are
+ *   both acceptable, but if it converts, the output must still satisfy the
+ *   target schema.
+ */
+export type CorpusContract = 'MustConvert' | 'MustReject' | 'MustNotCorrupt';
+
+/**
+ * One adversarial exporter input. Every shipped defect this corpus exists to
+ * catch sat in one of the three contracts above, and a suite that only feeds
+ * fully-populated fixtures exercises none of them.
  */
 export interface CorpusCase {
   name: string;
   input: string;
   /**
-   * Whether `input` satisfies the HDF source schema, and so which contract
-   * applies. Asserted against the real schema by the corpus tests, so it cannot
-   * drift from reality.
+   * The obligation the exporter owes for this input. Derived observably rather
+   * than asserted: the Go peer checks each case against the real HDF schema AND
+   * the shared top-level guard, and the Go-owned golden pins the result here, so
+   * a case cannot be quietly reclassified to make a converter pass.
    */
-  hdfValid: boolean;
+  contract: CorpusContract;
   /** What the case is probing, surfaced in failure output. */
   why: string;
 }
@@ -56,22 +73,22 @@ function withTimestamp(d: HDFResults): Record<string, unknown> {
 
 /**
  * Adversarial HDF Results inputs every exporter consuming HDF Results should
- * survive. Every tier-A case is built with the testhdf builder, including
+ * survive. Every MustConvert case is built with the testhdf builder, including
  * `zero-baselines` — a JS rest parameter yields [], so `doc()` emits
  * `"baselines": []`. (Go's peer cannot do this: a variadic leaves the slice nil
  * and HDFResults.Baselines has no omitempty, so it marshals to null. That one
  * case is a typed struct literal there. The asymmetry is real, not an oversight.)
  *
- * Each tier-A case isolates exactly one absent field, so a failure names the
+ * Each MustConvert case isolates exactly one absent field, so a failure names the
  * cause rather than leaving two candidates.
  */
 export function resultsCorpus(): CorpusCase[] {
   return [
-    // --- Tier A: sparse but schema-valid HDF. Output must satisfy the target schema.
+    // --- MustConvert: sparse but schema-valid HDF.
     {
       name: 'zero-baselines',
       input: JSON.stringify(testhdf.doc()),
-      hdfValid: true,
+      contract: 'MustConvert',
       why: 'baselines has no minItems, so an assessment that evaluated nothing is legal HDF',
     },
     {
@@ -80,7 +97,7 @@ export function resultsCorpus(): CorpusCase[] {
       input: JSON.stringify(
         testhdf.results(testhdf.req('V-1', { title: 't', severity: 'medium', code: 'c' })),
       ),
-      hdfValid: true,
+      contract: 'MustConvert',
       why: 'timestamp is optional in HDF but feeds target fields that are required (XCCDF end-time)',
     },
     {
@@ -88,7 +105,7 @@ export function resultsCorpus(): CorpusCase[] {
       input: JSON.stringify(
         withTimestamp(testhdf.results(testhdf.req('V-1', { severity: 'medium', code: 'c' }))),
       ),
-      hdfValid: true,
+      contract: 'MustConvert',
       why: 'title is optional in HDF but backs target title fields that are often minLength-constrained',
     },
     {
@@ -96,7 +113,7 @@ export function resultsCorpus(): CorpusCase[] {
       input: JSON.stringify(
         withTimestamp(testhdf.results(testhdf.req('V-1', { title: 't', severity: 'medium' }))),
       ),
-      hdfValid: true,
+      contract: 'MustConvert',
       why: 'absent code must omit the check element entirely, not emit an empty one',
     },
     {
@@ -104,53 +121,55 @@ export function resultsCorpus(): CorpusCase[] {
       input: JSON.stringify(
         withTimestamp(testhdf.results(testhdf.req('V-1', { title: 't', code: 'c' }))),
       ),
-      hdfValid: true,
+      contract: 'MustConvert',
       why: 'severity is optional in HDF but target formats constrain it to a fixed vocabulary',
     },
 
-    // --- Tier B: HDF rejects these. The exporter must error, not crash or fabricate.
+    // --- MustReject: the top-level shape is wrong, so this is not a results
+    // document at all. MustNotCorrupt: the top level is fine and only nested
+    // content is invalid, which no converter validates.
     {
       name: 'baselines-missing',
       input: '{"generator":{"name":"t","version":"0.0.0"}}',
-      hdfValid: false,
+      contract: 'MustReject',
       why: 'baselines is the one required top-level field',
     },
     {
       name: 'baselines-null',
       input: '{"baselines":null}',
-      hdfValid: false,
+      contract: 'MustReject',
       why: 'a nil slice marshals to null, so an upstream producer with this bug must be rejected',
     },
     {
       name: 'baselines-wrong-type',
       input: '{"baselines":"not-an-array"}',
-      hdfValid: false,
+      contract: 'MustReject',
       why: 'a typed decode can coerce or zero-fill where a structural guard must reject',
     },
     {
       name: 'baseline-empty-requirements',
       input: '{"baselines":[{"name":"b","requirements":[]}]}',
-      hdfValid: false,
+      contract: 'MustNotCorrupt',
       why: 'requirements has minItems 1; exporters that map it unguarded emit empty container elements',
     },
     {
       name: 'requirement-empty-results',
       input:
         '{"baselines":[{"name":"b","requirements":[{"id":"V-1","impact":0,"tags":{},"descriptions":[{"label":"default","data":"d"}],"results":[]}]}]}',
-      hdfValid: false,
+      contract: 'MustNotCorrupt',
       why: 'results has minItems 1; exporters that index results[0] unguarded crash',
     },
     {
       name: 'requirement-missing-id',
       input:
         '{"baselines":[{"name":"b","requirements":[{"impact":0,"tags":{},"descriptions":[{"label":"default","data":"d"}],"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}]}]}',
-      hdfValid: false,
+      contract: 'MustNotCorrupt',
       why: 'id is required; absent it, exporters emit empty-string identifiers into required target fields',
     },
     {
       name: 'top-level-array',
       input: '[]',
-      hdfValid: false,
+      contract: 'MustReject',
       why: 'the one degenerate shape most exporters already reject — pins that they keep doing so',
     },
   ];
@@ -158,18 +177,18 @@ export function resultsCorpus(): CorpusCase[] {
 
 /**
  * Adversarial HDF Amendments inputs every exporter consuming HDF Amendments
- * should survive. Every tier-A override carries a status because the amendments
+ * should survive. Every MustConvert override carries a status because the amendments
  * schema requires an override to declare either `status` or `impact`.
  */
 export function amendmentsCorpus(): CorpusCase[] {
   return [
-    // --- Tier A: sparse but schema-valid HDF Amendments.
+    // --- MustConvert: sparse but schema-valid HDF Amendments.
     {
       name: 'override-empty-reason',
       input: JSON.stringify(
         testhdf.amendments('a', testhdf.override('waiver', CVE, { status: 'failed', reason: '' })),
       ),
-      hdfValid: true,
+      contract: 'MustConvert',
       why: 'reason carries no minLength, but backs target fields that require non-empty text',
     },
     {
@@ -180,33 +199,33 @@ export function amendmentsCorpus(): CorpusCase[] {
           testhdf.override('waiver', CVE, { status: 'failed', reason: 'accepted' }),
         ),
       ),
-      hdfValid: true,
+      contract: 'MustConvert',
       why: 'milestones are optional; without them remediation text must still be derivable',
     },
     {
       name: 'evidence-without-description',
       input: amendmentsWithBareEvidence(),
-      hdfValid: true,
+      contract: 'MustConvert',
       why: 'evidence description is optional but backs CSAF references[].summary, which is minLength 1',
     },
 
-    // --- Tier B: HDF rejects these.
+    // --- MustReject: the top-level shape is wrong.
     {
       name: 'overrides-missing',
       input: '{"name":"a"}',
-      hdfValid: false,
+      contract: 'MustReject',
       why: 'overrides is required alongside name',
     },
     {
       name: 'overrides-empty',
       input: '{"name":"a","overrides":[]}',
-      hdfValid: false,
+      contract: 'MustReject',
       why: 'overrides has minItems 1, so an amendments document that amends nothing is not convertible',
     },
     {
       name: 'top-level-array',
       input: '[]',
-      hdfValid: false,
+      contract: 'MustReject',
       why: 'pins that the structural guard rejects a non-object document',
     },
   ];
@@ -233,15 +252,15 @@ export type CorpusConvertFn = (input: string) => Promise<unknown> | unknown;
  *
  * The contract is a pure function, not assertions inside a test closure, so the
  * runner's own logic is testable — an untested branch is what let the Go peer
- * ship a bug where a crash silently satisfied the tier-B contract.
+ * ship a bug where a crash silently satisfied the MustReject contract.
  *
- * A crash fails BOTH tiers and is checked before the tier split. JS has no
+ * A crash fails EVERY contract and is checked before the contract switch. JS has no
  * panic/error distinction, so a crash is identified by what was thrown: any
  * built-in runtime fault (an unguarded index or property access, a bad argument,
  * an escaped JSON.parse failure) or a thrown non-Error, which gives a caller
  * nothing to act on. A deliberate rejection is a plain Error or a converter's own
- * subclass. Letting a runtime fault satisfy tier B would green-light exactly the
- * defect that tier exists to catch.
+ * subclass. Letting a runtime fault satisfy MustReject would green-light exactly the
+ * defect those contracts exist to catch.
  */
 export async function checkCase(
   validate: ValidateFunction,
@@ -262,31 +281,50 @@ export async function checkCase(
     return `${c.name}: converter crashed with ${describeThrown(threw)} — a crash is never an acceptable rejection (${c.why})`;
   }
 
-  if (c.hdfValid) {
-    if (didThrow) {
-      return `${c.name}: schema-valid HDF must convert (${c.why}): ${String(threw)}`;
-    }
+  // Shared by MustConvert and MustNotCorrupt: whenever the exporter produced a
+  // document, that document has to satisfy the target schema.
+  const outputViolation = (): string | null => {
     let parsed: unknown;
     try {
       parsed = parseIfString(out);
     } catch (e) {
       return `${c.name}: output is not parseable JSON (${c.why}): ${String(e)}`;
     }
-    const errors = schemaErrors(validate, parsed);
-    if (errors !== null) {
-      return `${c.name}: output does not satisfy the target schema (${c.why}):\n${errors}`;
+    return schemaErrors(validate, parsed);
+  };
+
+  switch (c.contract) {
+    case 'MustConvert': {
+      if (didThrow) {
+        return `${c.name}: schema-valid HDF must convert (${c.why}): ${String(threw)}`;
+      }
+      const errors = outputViolation();
+      return errors === null
+        ? null
+        : `${c.name}: output does not satisfy the target schema (${c.why}):\n${errors}`;
     }
-    return null;
+
+    case 'MustReject':
+      return didThrow
+        ? null
+        : `${c.name}: input whose top-level shape HDF rejects must not be converted (${c.why})`;
+
+    case 'MustNotCorrupt': {
+      // Rejecting is fine: no converter validates nested content, so tolerance
+      // and strictness are both defensible. What is never acceptable is
+      // converting it into a document the target schema rejects.
+      if (didThrow) return null;
+      const errors = outputViolation();
+      return errors === null
+        ? null
+        : `${c.name}: converted nested-invalid HDF into output the target schema rejects (${c.why}):\n${errors}`;
+    }
   }
-  if (!didThrow) {
-    return `${c.name}: HDF-invalid input must be rejected, not converted (${c.why})`;
-  }
-  return null;
 }
 
 /**
- * Assert both corpus contracts against one exporter: tier-A cases must convert
- * and satisfy the schema, tier-B cases must be rejected.
+ * Assert every corpus contract against one exporter; see CorpusContract for what
+ * each obliges.
  *
  * Converters opt in with a single call, so the corpus has one definition rather
  * than a copy per converter. Every failing case is collected and reported in one
@@ -380,12 +418,12 @@ function sortValue(v: unknown): unknown {
 /** One case as recorded in the cross-language golden. */
 export interface CorpusGoldenEntry {
   name: string;
-  hdfValid: boolean;
+  contract: CorpusContract;
   input: string;
 }
 
 /** Renders a corpus in golden form for comparison against the checked-in file. */
 export function toGoldenEntries(cases: CorpusCase[]): CorpusGoldenEntry[] {
-  return cases.map((c) => ({ name: c.name, hdfValid: c.hdfValid, input: canonicalJSON(c.input) }));
+  return cases.map((c) => ({ name: c.name, contract: c.contract, input: canonicalJSON(c.input) }));
 }
 

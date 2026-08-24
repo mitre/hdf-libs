@@ -7,11 +7,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/require"
 )
 
-// hdfSchema resolves a vendored HDF source schema, which the corpus tiers are
-// asserted against so a case's HDFValid label can never drift from reality.
+// hdfSchema resolves a vendored HDF source schema, which the corpus contracts are
+// asserted against so a case's contract can never drift from reality.
 func hdfSchema(name string) string {
 	return filepath.Join(getSharedDir(), "..", "..", "..", "hdf-validators", "go", "schemas", name)
 }
@@ -49,53 +50,33 @@ func TestAdversarialCorpus_CoversDocumentedCases(t *testing.T) {
 		"AmendmentsCorpus cases changed — update the documented list deliberately")
 }
 
-// TestAdversarialCorpus_TierLabelsMatchTheHDFSchema is the assertion that makes
-// the two-tier split trustworthy: a case claiming to be schema-valid HDF is
-// validated against the real HDF schema, and a case claiming to be degenerate
-// must actually fail it. Without this, a mislabeled case would quietly assert
-// the wrong contract on every converter that runs the corpus.
-func TestAdversarialCorpus_TierLabelsMatchTheHDFSchema(t *testing.T) {
-	for _, tc := range []struct {
-		schema string
-		cases  []CorpusCase
-	}{
-		{"hdf-results.schema.json", ResultsCorpus()},
-		{"hdf-amendments.schema.json", AmendmentsCorpus()},
-	} {
-		v := NewSchemaValidator(t, hdfSchema(tc.schema))
-		for _, c := range tc.cases {
-			t.Run(tc.schema+"/"+c.Name, func(t *testing.T) {
-				err := v.Validate(c.Input)
-				if c.HDFValid {
-					require.NoError(t, err,
-						"%s is labeled schema-valid HDF but does not satisfy %s", c.Name, tc.schema)
-					return
-				}
-				require.Error(t, err,
-					"%s is labeled degenerate but satisfies %s — it proves nothing about error handling", c.Name, tc.schema)
-			})
-		}
-	}
-}
-
-// TestAdversarialCorpus_BothTiersPopulated guards against a refactor that leaves
-// one tier empty, which would make the corpus pass vacuously.
-func TestAdversarialCorpus_BothTiersPopulated(t *testing.T) {
+// TestAdversarialCorpus_ContractsPopulated guards against a refactor that leaves
+// a contract unrepresented, which would make that obligation pass vacuously for
+// every converter.
+func TestAdversarialCorpus_ContractsPopulated(t *testing.T) {
 	for name, cases := range map[string][]CorpusCase{
 		"results":    ResultsCorpus(),
 		"amendments": AmendmentsCorpus(),
 	} {
-		var valid, degenerate int
+		counts := map[CorpusContract]int{}
 		for _, c := range cases {
-			if c.HDFValid {
-				valid++
-			} else {
-				degenerate++
-			}
+			counts[c.Contract]++
 		}
-		require.Positive(t, valid, "%s corpus has no schema-valid cases — tier A would pass vacuously", name)
-		require.Positive(t, degenerate, "%s corpus has no degenerate cases — tier B would pass vacuously", name)
+		require.Positive(t, counts[MustConvert], "%s corpus has no MustConvert cases", name)
+		require.Positive(t, counts[MustReject], "%s corpus has no MustReject cases", name)
 	}
+
+	// Only the results corpus carries nested cases today: every amendments
+	// defect the schema can express is top-level (a missing or empty overrides
+	// array). Asserted rather than left implicit so adding a nested amendments
+	// case is a deliberate act.
+	var nested int
+	for _, c := range ResultsCorpus() {
+		if c.Contract == MustNotCorrupt {
+			nested++
+		}
+	}
+	require.Positive(t, nested, "results corpus has no MustNotCorrupt cases")
 }
 
 func corpusNames(cases []CorpusCase) []string {
@@ -114,24 +95,24 @@ func corpusNames(cases []CorpusCase) []string {
 // directly — the outcomes that matter most and that a subtest-based harness
 // cannot express without failing itself.
 
-func TestCheckCase_PanicFailsBothTiers(t *testing.T) {
+func TestCheckCase_PanicFailsEveryContract(t *testing.T) {
 	v := NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
 	panics := func([]byte) ([]byte, error) { panic("boom") }
 
-	// A panic is a crash, not a rejection. Tier B is satisfied by an error, so
+	// A panic is a crash, not a rejection. MustReject is satisfied by an error, so
 	// without an explicit panic check a crashing converter would PASS the very
-	// tier that exists to catch it. That branch shipped broken once; this pins it.
-	for _, valid := range []bool{true, false} {
-		c := CorpusCase{Name: "panicker", Input: []byte(`{"baselines":[]}`), HDFValid: valid, Why: "probe"}
+	// contract that exists to catch it. That branch shipped broken once; this pins it.
+	for _, contract := range []CorpusContract{MustConvert, MustReject, MustNotCorrupt} {
+		c := CorpusCase{Name: "panicker", Input: []byte(`{"baselines":[]}`), Contract: contract, Why: "probe"}
 		msg := CheckCase(v, c, panics)
 		require.Contains(t, msg, "panicked",
-			"a panicking converter must fail the case (HDFValid=%v)", valid)
+			"a panicking converter must fail the case (contract=%v)", contract)
 	}
 }
 
-func TestCheckCase_TierAContract(t *testing.T) {
+func TestCheckCase_MustConvertContract(t *testing.T) {
 	v := NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
-	c := CorpusCase{Name: "a", Input: []byte(`{}`), HDFValid: true, Why: "probe"}
+	c := CorpusCase{Name: "a", Input: []byte(`{}`), Contract: MustConvert, Why: "probe"}
 
 	t.Run("passes when output satisfies the schema", func(t *testing.T) {
 		emitValid := func([]byte) ([]byte, error) { return []byte(`{"baselines":[]}`), nil }
@@ -150,9 +131,9 @@ func TestCheckCase_TierAContract(t *testing.T) {
 	})
 }
 
-func TestCheckCase_TierBContract(t *testing.T) {
+func TestCheckCase_MustRejectContract(t *testing.T) {
 	v := NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
-	c := CorpusCase{Name: "b", Input: []byte(`[]`), HDFValid: false, Why: "probe"}
+	c := CorpusCase{Name: "b", Input: []byte(`[]`), Contract: MustReject, Why: "probe"}
 
 	t.Run("passes when the converter returns an error", func(t *testing.T) {
 		refuse := func([]byte) ([]byte, error) { return nil, errors.New("rejected") }
@@ -161,14 +142,45 @@ func TestCheckCase_TierBContract(t *testing.T) {
 
 	t.Run("fails when the converter accepts invalid HDF", func(t *testing.T) {
 		accept := func([]byte) ([]byte, error) { return []byte(`{"baselines":[]}`), nil }
-		require.Contains(t, CheckCase(v, c, accept), "must be rejected, not converted",
+		require.Contains(t, CheckCase(v, c, accept), "must not be converted",
 			"silently converting HDF-invalid input must fail")
 	})
 
 	t.Run("does not validate output for a rejected case", func(t *testing.T) {
-		// Tier B says nothing about output shape; only that conversion is refused.
+		// MustReject says nothing about output shape; only that conversion is refused.
 		refuse := func([]byte) ([]byte, error) { return []byte("not even json"), errors.New("rejected") }
 		require.Empty(t, CheckCase(v, c, refuse))
+	})
+}
+
+// TestCheckCase_MustNotCorruptContract pins the contract that exists precisely
+// because no converter validates nested content: either outcome is acceptable,
+// but converting nested-invalid input into an invalid document is not. This is
+// the obligation that catches a converter emitting an out-of-pattern identifier
+// from a requirement with no id.
+func TestCheckCase_MustNotCorruptContract(t *testing.T) {
+	v := NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
+	c := CorpusCase{
+		Name:     "nested",
+		Input:    []byte(`{"baselines":[{"name":"b","requirements":[]}]}`),
+		Contract: MustNotCorrupt,
+		Why:      "probe",
+	}
+
+	t.Run("passes when the converter rejects", func(t *testing.T) {
+		refuse := func([]byte) ([]byte, error) { return nil, errors.New("strict") }
+		require.Empty(t, CheckCase(v, c, refuse), "refusing nested-invalid input is defensible")
+	})
+
+	t.Run("passes when the converter tolerates it and emits valid output", func(t *testing.T) {
+		tolerant := func([]byte) ([]byte, error) { return []byte(`{"baselines":[]}`), nil }
+		require.Empty(t, CheckCase(v, c, tolerant), "tolerating nested-invalid input is also defensible")
+	})
+
+	t.Run("fails when the converter emits an invalid document", func(t *testing.T) {
+		corrupt := func([]byte) ([]byte, error) { return []byte(`{"baselines":"nope"}`), nil }
+		require.Contains(t, CheckCase(v, c, corrupt), "target schema rejects",
+			"converting nested-invalid input into an invalid document is never acceptable")
 	})
 }
 
@@ -183,7 +195,7 @@ func TestValidateCorpus_RejectsEmptyCorpus(t *testing.T) {
 // TestCorpusGolden pins the corpus in a canonical, cross-language form.
 //
 // The golden is the contract the TypeScript corpus is verified against, so a
-// case added, renamed, retiered, or altered on one side alone fails here or
+// case added, renamed, reclassified, or altered on one side alone fails here or
 // there. Go owns regeneration (go test ./shared/go/ -update) and TypeScript only
 // verifies, so neither side can quietly redefine the shared corpus to match
 // itself.
@@ -245,4 +257,112 @@ func TestCanonicalJSON_RemovesLanguageArtifacts(t *testing.T) {
 		_, err := CanonicalJSON([]byte(`{not json`))
 		require.Error(t, err)
 	})
+}
+
+// --- Contract classification --------------------------------------------------
+
+// TestCorpusContracts_AreExplicitAndCorrectlyAssigned pins the three-way split.
+// A single "HDF-invalid must be rejected" rule conflated two different
+// obligations: a document whose TOP-LEVEL shape is wrong is not the type it
+// claims and must be refused, while a document that is merely wrong in nested
+// content is something no converter validates — the shared guard is deliberately
+// top-level only — so demanding rejection there asserted something no converter
+// satisfies, which forced per-converter exemptions. This table pins the current
+// names; the derivation test below is what stops a NEW case being mislabelled.
+func TestCorpusContracts_AreExplicitAndCorrectlyAssigned(t *testing.T) {
+	want := map[string]CorpusContract{
+		// Sparse but schema-valid HDF.
+		"zero-baselines":               MustConvert,
+		"no-timestamp":                 MustConvert,
+		"requirement-without-title":    MustConvert,
+		"requirement-without-code":     MustConvert,
+		"requirement-without-severity": MustConvert,
+		// Top-level shape is wrong: the document is not HDF Results at all.
+		"baselines-missing":    MustReject,
+		"baselines-null":       MustReject,
+		"baselines-wrong-type": MustReject,
+		"top-level-array":      MustReject,
+		// Nested content is wrong, but the top level is a well-formed results doc.
+		"baseline-empty-requirements": MustNotCorrupt,
+		"requirement-empty-results":   MustNotCorrupt,
+		"requirement-missing-id":      MustNotCorrupt,
+	}
+
+	wantAmendments := map[string]CorpusContract{
+		"override-empty-reason":        MustConvert,
+		"override-no-milestones":       MustConvert,
+		"evidence-without-description": MustConvert,
+		"overrides-missing":            MustReject,
+		"overrides-empty":              MustReject,
+		"top-level-array":              MustReject,
+	}
+
+	for _, tc := range []struct {
+		label string
+		want  map[string]CorpusContract
+		cases []CorpusCase
+	}{
+		{"results", want, ResultsCorpus()},
+		{"amendments", wantAmendments, AmendmentsCorpus()},
+	} {
+		for _, c := range tc.cases {
+			got, ok := tc.want[c.Name]
+			require.True(t, ok, "%s/%s has no documented contract — classify it deliberately", tc.label, c.Name)
+			require.Equal(t, got, c.Contract, "%s/%s carries the wrong contract", tc.label, c.Name)
+		}
+		require.Len(t, tc.cases, len(tc.want), "%s corpus size changed", tc.label)
+	}
+}
+
+// TestCorpusContracts_AreDerivableFromTheSchemaAndGuard makes the classification
+// mechanically checkable rather than a matter of assertion, which is what the
+// hardcoded table above alone could not do: that table pins the current names,
+// but nothing stopped a NEW case being mislabelled.
+//
+// Each contract has an observable definition:
+//
+//	MustConvert    — the HDF schema accepts it.
+//	MustReject     — the schema rejects it AND the shared top-level guard
+//	                 rejects it, which is what "top-level shape is wrong" means.
+//	MustNotCorrupt — the schema rejects it but the guard ACCEPTS it, i.e. the
+//	                 defect is nested, below what any converter validates.
+//
+// Downgrading MustReject to MustNotCorrupt to make a converter pass therefore
+// fails here, because the guard still rejects the input.
+func TestCorpusContracts_AreDerivableFromTheSchemaAndGuard(t *testing.T) {
+	for _, tc := range []struct {
+		schema string
+		cases  []CorpusCase
+		guard  func([]byte) error
+	}{
+		{"hdf-results.schema.json", ResultsCorpus(), func(in []byte) error {
+			var out hdf.HDFResults
+			return RequireHDFResults(in, "probe", &out)
+		}},
+		{"hdf-amendments.schema.json", AmendmentsCorpus(), func(in []byte) error {
+			var out hdf.HDFAmendments
+			return RequireHDFAmendments(in, "probe", &out)
+		}},
+	} {
+		v := NewSchemaValidator(t, hdfSchema(tc.schema))
+		for _, c := range tc.cases {
+			t.Run(tc.schema+"/"+c.Name, func(t *testing.T) {
+				schemaErr := v.Validate(c.Input)
+				guardErr := tc.guard(c.Input)
+
+				switch c.Contract {
+				case MustConvert:
+					require.NoError(t, schemaErr, "%s is MustConvert but is not schema-valid HDF", c.Name)
+				case MustReject:
+					require.Error(t, schemaErr, "%s is MustReject but satisfies the HDF schema", c.Name)
+					require.Error(t, guardErr,
+						"%s is MustReject but the top-level guard accepts it — its defect is nested, so it is MustNotCorrupt", c.Name)
+				case MustNotCorrupt:
+					require.Error(t, schemaErr, "%s is MustNotCorrupt but satisfies the HDF schema", c.Name)
+					require.NoError(t, guardErr,
+						"%s is MustNotCorrupt but the top-level guard rejects it — its defect is structural, so it is MustReject", c.Name)
+				}
+			})
+		}
+	}
 }

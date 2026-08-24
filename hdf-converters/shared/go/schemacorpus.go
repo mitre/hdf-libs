@@ -13,23 +13,64 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// CorpusCase is one adversarial exporter input.
+// CorpusContract is the obligation an exporter owes for one corpus input.
 //
-// HDFValid splits the corpus into the two contracts an exporter owes, which are
-// opposites and were previously conflated: a sparse-but-legal document must
-// convert into schema-valid output, while a document HDF itself rejects must
-// produce an error — never a panic, and never a success exit carrying an invalid
-// document. Every shipped defect this corpus exists to catch sat in one bucket
-// or the other, and a test suite that only feeds fully-populated fixtures
-// exercises neither.
+// A single "HDF-invalid input must be rejected" rule conflated two different
+// obligations. A document whose TOP-LEVEL shape is wrong is not the document
+// type it claims to be, and refusing it is the only honest outcome. A document
+// that is merely wrong in NESTED content is something no converter validates —
+// the shared structural guard is deliberately top-level only, and full
+// per-conversion schema validation was never the design — so demanding rejection
+// there asserted something no converter satisfies, which forced per-converter
+// exemptions. Exemptions that accumulate quietly are how a corpus stops meaning
+// anything, so the distinction belongs to the case, not to each converter.
+type CorpusContract int
+
+const (
+	// MustConvert marks sparse but schema-valid HDF: the exporter must convert
+	// it, and the output must satisfy the target schema. Refusing legal input is
+	// as much a defect as emitting an invalid document for it.
+	MustConvert CorpusContract = iota
+
+	// MustReject marks input whose top-level shape the HDF schema rejects — a
+	// missing, null, or wrong-typed required collection, or a document that is
+	// not an object at all. The exporter must return an error.
+	MustReject
+
+	// MustNotCorrupt marks input the HDF schema rejects only in nested content.
+	// Either outcome is acceptable — converting it is tolerant, refusing it is
+	// strict — but if the exporter does convert, the output must still satisfy
+	// the target schema. This is the weaker contract that nested cases can
+	// actually be held to, and it still catches the two real defects this class
+	// has found: a converter that panics, and one that emits an invalid document.
+	MustNotCorrupt
+)
+
+// String renders the contract for failure output.
+func (c CorpusContract) String() string {
+	switch c {
+	case MustConvert:
+		return "MustConvert"
+	case MustReject:
+		return "MustReject"
+	case MustNotCorrupt:
+		return "MustNotCorrupt"
+	}
+	return "unknown"
+}
+
+// CorpusCase is one adversarial exporter input. Every shipped defect this corpus
+// exists to catch sat in one of the three contracts above, and a test suite that
+// only feeds fully-populated fixtures exercises none of them.
 type CorpusCase struct {
 	Name string
 	// Input is the raw exporter input.
 	Input []byte
-	// HDFValid reports whether Input satisfies the HDF source schema, and so
-	// which contract applies. Asserted against the real schema by
-	// TestAdversarialCorpus_TierLabelsMatchTheHDFSchema, so it cannot drift.
-	HDFValid bool
+	// Contract is the obligation the exporter owes for this input. Derived
+	// observably rather than asserted: TestCorpusContracts_AreDerivableFromTheSchemaAndGuard
+	// checks each case against the real HDF schema AND the shared top-level
+	// guard, so a case cannot be quietly reclassified to make a converter pass.
+	Contract CorpusContract
 	// Why records what the case is probing, surfaced in failure output.
 	Why string
 }
@@ -57,7 +98,8 @@ func withTimestamp(d hdf.HDFResults) hdf.HDFResults {
 // ResultsCorpus returns the adversarial HDF Results inputs every exporter that
 // consumes HDF Results should survive.
 //
-// Tier A is built with the testhdf builder wherever it can express the case. The
+// MustConvert cases are built with the testhdf builder wherever it can express
+// the case. The
 // one exception is zero-baselines: Go's variadic testhdf.Doc() leaves Baselines
 // nil, and HDFResults.Baselines carries no omitempty, so it marshals to null
 // rather than []. It is therefore stated as a typed struct literal — never hand
@@ -65,18 +107,18 @@ func withTimestamp(d hdf.HDFResults) hdf.HDFResults {
 // so schema-corpus.ts uses testhdf.doc() directly. The asymmetry is real, not an
 // oversight on either side.)
 //
-// Each tier-A case isolates exactly one absent field, so a failure names the
+// Each MustConvert case isolates exactly one absent field, so a failure names the
 // cause. Two cases differing only in a field neither exercises would double the
 // runtime and halve the signal.
 func ResultsCorpus() []CorpusCase {
 	gen := &hdf.Generator{Name: "testhdf", Version: "0.0.0"}
 
 	return []CorpusCase{
-		// --- Tier A: sparse but schema-valid HDF. Output must satisfy the target schema.
+		// --- MustConvert: sparse but schema-valid HDF.
 		{
 			Name:     "zero-baselines",
 			Input:    mustJSON(hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{}, Generator: gen}),
-			HDFValid: true,
+			Contract: MustConvert,
 			Why:      "baselines has no minItems, so an assessment that evaluated nothing is legal HDF",
 		},
 		{
@@ -84,72 +126,74 @@ func ResultsCorpus() []CorpusCase {
 			// Everything else populated, so a failure here is unambiguously the timestamp.
 			Input: mustJSON(testhdf.Results(testhdf.Req("V-1",
 				testhdf.Title("t"), testhdf.Severity("medium"), testhdf.Code("c")))),
-			HDFValid: true,
+			Contract: MustConvert,
 			Why:      "timestamp is optional in HDF but feeds target fields that are required (XCCDF end-time)",
 		},
 		{
 			Name: "requirement-without-title",
 			Input: mustJSON(withTimestamp(testhdf.Results(testhdf.Req("V-1",
 				testhdf.Severity("medium"), testhdf.Code("c"))))),
-			HDFValid: true,
+			Contract: MustConvert,
 			Why:      "title is optional in HDF but backs target title fields that are often minLength-constrained",
 		},
 		{
 			Name: "requirement-without-code",
 			Input: mustJSON(withTimestamp(testhdf.Results(testhdf.Req("V-1",
 				testhdf.Title("t"), testhdf.Severity("medium"))))),
-			HDFValid: true,
+			Contract: MustConvert,
 			Why:      "absent code must omit the check element entirely, not emit an empty one",
 		},
 		{
 			Name: "requirement-without-severity",
 			Input: mustJSON(withTimestamp(testhdf.Results(testhdf.Req("V-1",
 				testhdf.Title("t"), testhdf.Code("c"))))),
-			HDFValid: true,
+			Contract: MustConvert,
 			Why:      "severity is optional in HDF but target formats constrain it to a fixed vocabulary",
 		},
 
-		// --- Tier B: HDF rejects these. The exporter must error, not panic or fabricate.
+		// --- MustReject: the top-level shape is wrong, so this is not a results
+		// document at all. MustNotCorrupt: the top level is fine and only nested
+		// content is invalid, which no converter validates.
 		{
 			Name:     "baselines-missing",
 			Input:    []byte(`{"generator":{"name":"t","version":"0.0.0"}}`),
-			HDFValid: false,
+			Contract: MustReject,
 			Why:      "baselines is the one required top-level field",
 		},
 		{
 			Name:     "baselines-null",
 			Input:    []byte(`{"baselines":null}`),
-			HDFValid: false,
+			Contract: MustReject,
 			Why:      "a nil slice marshals to null, so an upstream producer with this bug must be rejected",
 		},
 		{
 			Name:     "baselines-wrong-type",
 			Input:    []byte(`{"baselines":"not-an-array"}`),
-			HDFValid: false,
+			Contract: MustReject,
 			Why:      "a typed decode can coerce or zero-fill where a structural guard must reject",
 		},
 		{
 			Name:     "baseline-empty-requirements",
 			Input:    []byte(`{"baselines":[{"name":"b","requirements":[]}]}`),
-			HDFValid: false,
+			Contract: MustNotCorrupt,
 			Why:      "requirements has minItems 1; exporters that map it unguarded emit empty container elements",
 		},
 		{
 			Name:     "requirement-empty-results",
 			Input:    []byte(`{"baselines":[{"name":"b","requirements":[{"id":"V-1","impact":0,"tags":{},"descriptions":[{"label":"default","data":"d"}],"results":[]}]}]}`),
-			HDFValid: false,
+			Contract: MustNotCorrupt,
 			Why:      "results has minItems 1; exporters that index results[0] unguarded panic",
 		},
 		{
 			Name:     "requirement-missing-id",
 			Input:    []byte(`{"baselines":[{"name":"b","requirements":[{"impact":0,"tags":{},"descriptions":[{"label":"default","data":"d"}],"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}]}]}`),
-			HDFValid: false,
+			Contract: MustNotCorrupt,
 			Why:      "id is required; absent it, exporters emit empty-string identifiers into required target fields",
 		},
 		{
 			Name:     "top-level-array",
 			Input:    []byte(`[]`),
-			HDFValid: false,
+			Contract: MustReject,
 			Why:      "the one degenerate shape most exporters already reject — pins that they keep doing so",
 		},
 	}
@@ -161,13 +205,13 @@ func AmendmentsCorpus() []CorpusCase {
 	const cve = "CVE-2021-44228"
 
 	return []CorpusCase{
-		// --- Tier A: sparse but schema-valid HDF Amendments.
+		// --- MustConvert: sparse but schema-valid HDF Amendments.
 		{
 			Name: "override-empty-reason",
 			Input: mustJSON(testhdf.Amendments("a",
 				testhdf.Override(hdf.OverrideTypeWaiver, cve,
 					testhdf.OverrideStatus(hdf.Failed), testhdf.OverrideReason("")))),
-			HDFValid: true,
+			Contract: MustConvert,
 			Why:      "reason carries no minLength, but backs target fields that require non-empty text",
 		},
 		{
@@ -175,33 +219,33 @@ func AmendmentsCorpus() []CorpusCase {
 			Input: mustJSON(testhdf.Amendments("a",
 				testhdf.Override(hdf.OverrideTypeWaiver, cve,
 					testhdf.OverrideStatus(hdf.Failed), testhdf.OverrideReason("accepted")))),
-			HDFValid: true,
+			Contract: MustConvert,
 			Why:      "milestones are optional; without them remediation text must still be derivable",
 		},
 		{
 			Name:     "evidence-without-description",
 			Input:    amendmentsWithBareEvidence(cve),
-			HDFValid: true,
+			Contract: MustConvert,
 			Why:      "evidence description is optional but backs CSAF references[].summary, which is minLength 1",
 		},
 
-		// --- Tier B: HDF rejects these.
+		// --- MustReject: the top-level shape is wrong.
 		{
 			Name:     "overrides-missing",
 			Input:    []byte(`{"name":"a"}`),
-			HDFValid: false,
+			Contract: MustReject,
 			Why:      "overrides is required alongside name",
 		},
 		{
 			Name:     "overrides-empty",
 			Input:    []byte(`{"name":"a","overrides":[]}`),
-			HDFValid: false,
+			Contract: MustReject,
 			Why:      "overrides has minItems 1, so an amendments document that amends nothing is not convertible",
 		},
 		{
 			Name:     "top-level-array",
 			Input:    []byte(`[]`),
-			HDFValid: false,
+			Contract: MustReject,
 			Why:      "pins that the structural guard rejects a non-object document",
 		},
 	}
@@ -233,12 +277,13 @@ type CorpusConvertFn func(input []byte) ([]byte, error)
 // The contract lives here, as a pure function, rather than inline in the
 // t.Run loop: assertions buried in a subtest closure cannot be exercised without
 // a real *testing.T, so the runner's own logic would go untested — and it was
-// exactly an untested branch (a panic satisfying tier B) that shipped broken.
+// exactly an untested branch (a panic satisfying a rejection contract) that
+// shipped broken.
 //
-// A panic fails BOTH tiers and is checked before the tier split. A panic is a
-// crash, not a rejection, so letting it satisfy tier B would green-light the
-// precise defect that tier exists to catch (an unguarded results[0] index is the
-// live example).
+// A panic fails EVERY contract and is checked before the contract switch. A
+// panic is a crash, not a rejection, so letting it satisfy MustReject or
+// MustNotCorrupt would green-light the precise defect those contracts exist to
+// catch (an unguarded results[0] index is the live example).
 func CheckCase(v *SchemaValidator, c CorpusCase, convert CorpusConvertFn) string {
 	out, err := convertNoPanic(convert, c.Input)
 
@@ -247,7 +292,8 @@ func CheckCase(v *SchemaValidator, c CorpusCase, convert CorpusConvertFn) string
 		return fmt.Sprintf("%s: %v (%s)", c.Name, panicked, c.Why)
 	}
 
-	if c.HDFValid {
+	switch c.Contract {
+	case MustConvert:
 		if err != nil {
 			return fmt.Sprintf("%s: schema-valid HDF must convert (%s): %v", c.Name, c.Why, err)
 		}
@@ -255,11 +301,26 @@ func CheckCase(v *SchemaValidator, c CorpusCase, convert CorpusConvertFn) string
 			return fmt.Sprintf("%s: output does not satisfy the target schema (%s):\n%v", c.Name, c.Why, verr)
 		}
 		return ""
+
+	case MustReject:
+		if err == nil {
+			return fmt.Sprintf("%s: input whose top-level shape HDF rejects must not be converted (%s)", c.Name, c.Why)
+		}
+		return ""
+
+	case MustNotCorrupt:
+		// Rejecting is fine: no converter validates nested content, so tolerance
+		// and strictness are both defensible. What is never acceptable is
+		// converting it into a document the target schema rejects.
+		if err != nil {
+			return ""
+		}
+		if verr := v.Validate(out); verr != nil {
+			return fmt.Sprintf("%s: converted nested-invalid HDF into output the target schema rejects (%s):\n%v", c.Name, c.Why, verr)
+		}
+		return ""
 	}
-	if err == nil {
-		return fmt.Sprintf("%s: HDF-invalid input must be rejected, not converted (%s)", c.Name, c.Why)
-	}
-	return ""
+	return fmt.Sprintf("%s: unknown contract %v", c.Name, c.Contract)
 }
 
 // ValidateCorpus reports why a corpus cannot be meaningfully run, or nil when it
@@ -273,10 +334,9 @@ func ValidateCorpus(cases []CorpusCase) error {
 	return nil
 }
 
-// RunSchemaCorpus asserts both corpus contracts against one exporter: tier-A
-// cases must convert and satisfy schema, tier-B cases must be rejected with an
-// error. Converters opt in with a single call, so the corpus has one definition
-// rather than a copy per converter.
+// RunSchemaCorpus asserts every corpus contract against one exporter: see
+// CorpusContract for what each obliges. Converters opt in with a single call, so
+// the corpus has one definition rather than a copy per converter.
 func RunSchemaCorpus(t *testing.T, v *SchemaValidator, cases []CorpusCase, convert CorpusConvertFn) {
 	t.Helper()
 	require.NoError(t, ValidateCorpus(cases))
@@ -304,8 +364,8 @@ func convertNoPanic(convert CorpusConvertFn, input []byte) (out []byte, err erro
 
 // PanicError reports that a converter panicked. It is a distinct type, not a
 // plain error, so CheckCase can tell a crash apart from a deliberate rejection:
-// tier B is satisfied by an error, and without this distinction a panicking
-// converter would pass the very tier meant to catch it.
+// a rejection contract is satisfied by an error, and without this distinction a
+// panicking converter would pass the very contract meant to catch it.
 type PanicError struct{ Value any }
 
 func (e *PanicError) Error() string {
@@ -387,9 +447,11 @@ func normalizeNegativeZero(v any) any {
 // CorpusGoldenEntry is one case as recorded in the cross-language golden.
 type CorpusGoldenEntry struct {
 	Name string `json:"name"`
-	// HDFValid is recorded so a tier label flipping on one side alone is caught,
-	// not just a renamed or reordered case.
-	HDFValid bool `json:"hdfValid"`
+	// Contract is recorded so a reclassification on one side alone is caught,
+	// not just a renamed or reordered case. Stored as its name rather than its
+	// ordinal so the golden stays readable and reordering the constants cannot
+	// silently change what it asserts.
+	Contract string `json:"contract"`
 	// Input is the canonicalized case input.
 	Input string `json:"input"`
 }
@@ -424,7 +486,7 @@ func goldenEntries(t *testing.T, cases []CorpusCase) []CorpusGoldenEntry {
 	for _, c := range cases {
 		canon, err := CanonicalJSON(c.Input)
 		require.NoError(t, err, "canonicalize corpus case %s", c.Name)
-		out = append(out, CorpusGoldenEntry{Name: c.Name, HDFValid: c.HDFValid, Input: string(canon)})
+		out = append(out, CorpusGoldenEntry{Name: c.Name, Contract: c.Contract.String(), Input: string(canon)})
 	}
 	return out
 }

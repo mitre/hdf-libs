@@ -101,7 +101,7 @@ describe('hdf-to-oscal-poam required risk text', () => {
 describe('hdf-to-oscal-poam corpus golden parity (TS↔Go)', () => {
   const POAM_VOLATILE = ['last-modified'];
 
-  it.each(amendmentsCorpus().filter((c) => c.hdfValid).map((c) => [c.name, c] as const))(
+  it.each(amendmentsCorpus().filter((c) => c.contract === 'MustConvert').map((c) => [c.name, c] as const))(
     '%s matches the Go-frozen golden',
     async (_name, c) => {
       const out = await convertHdfToOscalPoam(c.input);
