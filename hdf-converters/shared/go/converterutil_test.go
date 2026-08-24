@@ -2,6 +2,8 @@ package shared
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -693,4 +695,45 @@ func TestOrEmpty_IsGenericOverElementType(t *testing.T) {
 	require.JSONEq(t, `{"n":[]}`, string(raw))
 
 	require.Equal(t, []rule{{ID: "V-1"}}, OrEmpty([]rule{{ID: "V-1"}}))
+}
+
+// --- Non-empty text fallback --------------------------------------------------
+
+// firstNonEmptyCase is one row of the table the TypeScript peer also reads, so the two
+// implementations are asserted against ONE definition rather than two literals
+// that can drift apart.
+type firstNonEmptyCase struct {
+	Name       string   `json:"name"`
+	Candidates []string `json:"candidates"`
+	Want       string   `json:"want"`
+}
+
+func loadFirstNonEmptyCases(t *testing.T) []firstNonEmptyCase {
+	t.Helper()
+	path := filepath.Join(getSharedDir(), "..", "first-non-empty-cases.json")
+	raw, err := os.ReadFile(path)
+	require.NoError(t, err)
+	var doc struct {
+		Cases []firstNonEmptyCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.Cases, "shared table is empty — the run would pass vacuously")
+	return doc.Cases
+}
+
+func TestFirstNonEmpty_MatchesSharedTable(t *testing.T) {
+	for _, c := range loadFirstNonEmptyCases(t) {
+		t.Run(c.Name, func(t *testing.T) {
+			require.Equal(t, c.Want, FirstNonEmpty(c.Candidates...))
+		})
+	}
+}
+
+// TestFirstNonEmpty_DoesNotOmit pins the boundary the card draws: this helper
+// substitutes, it never decides to omit. A caller whose correct behaviour is to
+// leave the field out entirely must do that itself — folding omission in here
+// would make the helper silently responsible for schema shape.
+func TestFirstNonEmpty_DoesNotOmit(t *testing.T) {
+	require.Equal(t, "", FirstNonEmpty("", " "),
+		"all-empty input yields empty, so the caller can still choose to omit")
 }

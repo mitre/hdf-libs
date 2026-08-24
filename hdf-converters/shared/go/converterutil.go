@@ -716,3 +716,32 @@ func OrEmpty[T any](v []T) []T {
 	}
 	return v
 }
+
+// FirstNonEmpty returns the first candidate that carries actual text, or "" when
+// none does.
+//
+// Exporters repeatedly need "use the title, else the id, else something stated"
+// when filling a target field the schema requires to be non-empty. Written
+// inline that becomes a chain of ternaries per call site, each free to disagree
+// about whether a whitespace-only value counts.
+//
+// Whitespace-only candidates are skipped: a " " title satisfies no schema's
+// intent, and several CSAF and OSCAL fields carry minLength 1, which " " passes
+// while meaning nothing. The returned value is NOT trimmed — only the emptiness
+// test ignores surrounding whitespace, so a caller's real content survives
+// untouched.
+//
+// The caller supplies its own final fallback as the last candidate, so the
+// substituted text is meaningful for that field rather than a generic
+// placeholder. This helper substitutes; it never decides to omit. Where the
+// correct behaviour is to leave the field out entirely, that stays the caller's
+// decision — an all-empty input returns "" precisely so the caller can still
+// make it.
+func FirstNonEmpty(candidates ...string) string {
+	for _, c := range candidates {
+		if strings.TrimSpace(c) != "" {
+			return c
+		}
+	}
+	return ""
+}

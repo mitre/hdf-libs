@@ -683,3 +683,35 @@ export function requireHdfResults<T>(input: string, converterName: string): T {
 export function requireHdfAmendments<T>(input: string, converterName: string): T {
   return requireHdfDocument<T>(input, converterName, 'overrides', true);
 }
+
+/**
+ * Return the first candidate that carries actual text, or '' when none does.
+ *
+ * Exporters repeatedly need "use the title, else the id, else something stated"
+ * when filling a target field the schema requires to be non-empty. Written
+ * inline that becomes a chain of ternaries per call site, each free to disagree
+ * about whether a whitespace-only value counts.
+ *
+ * Whitespace-only candidates are skipped: a ' ' title satisfies no schema's
+ * intent, and several CSAF and OSCAL fields carry minLength 1, which ' ' passes
+ * while meaning nothing. The returned value is NOT trimmed — only the emptiness
+ * test ignores surrounding whitespace, so a caller's real content survives
+ * untouched.
+ *
+ * The caller supplies its own final fallback as the last candidate, so the
+ * substituted text is meaningful for that field rather than a generic
+ * placeholder. This helper substitutes; it never decides to omit. Where the
+ * correct behaviour is to leave the field out entirely, that stays the caller's
+ * decision — an all-empty input returns '' precisely so the caller can still
+ * make it.
+ *
+ * Absent values are accepted directly (unlike the Go peer, where an optional
+ * field is dereferenced to '' before the call), since an optional HDF field
+ * reaches TypeScript as undefined or null far more often than as ''.
+ */
+export function firstNonEmpty(...candidates: Array<string | undefined | null>): string {
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim() !== '') return c;
+  }
+  return '';
+}

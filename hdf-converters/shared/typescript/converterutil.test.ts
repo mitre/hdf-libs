@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { requireHdfResults, requireHdfAmendments, buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity } from './converterutil.js';
+import { firstNonEmpty, requireHdfResults, requireHdfAmendments, buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -552,3 +555,39 @@ describe('requireHdfAmendments', () => {
   });
 });
 
+// --- Non-empty text fallback --------------------------------------------------
+
+describe('firstNonEmpty', () => {
+  // The same table the Go peer reads, so the two implementations are asserted
+  // against ONE definition rather than two literals that can drift apart.
+  const tablePath = join(
+    dirname(fileURLToPath(import.meta.url)),
+    '..',
+    'first-non-empty-cases.json',
+  );
+  const table = JSON.parse(readFileSync(tablePath, 'utf-8')) as {
+    cases: Array<{ name: string; candidates: string[]; want: string }>;
+  };
+
+  it('the shared table is populated', () => {
+    expect(table.cases.length).toBeGreaterThan(0);
+  });
+
+  it.each(table.cases.map((c) => [c.name, c] as const))('%s', (_name, c) => {
+    expect(firstNonEmpty(...c.candidates)).toBe(c.want);
+  });
+
+  it('accepts absent values, which Go expresses as empty strings', () => {
+    // An optional HDF field reaches TypeScript as undefined or null far more
+    // often than as '', so the TS peer takes them directly rather than making
+    // every call site coalesce first.
+    expect(firstNonEmpty(undefined, null, 'b')).toBe('b');
+    expect(firstNonEmpty(undefined, null)).toBe('');
+  });
+
+  it('substitutes but never omits', () => {
+    // Pins the boundary the card draws: an all-empty input yields '', so the
+    // caller can still choose to omit the field rather than emit a placeholder.
+    expect(firstNonEmpty('', ' ')).toBe('');
+  });
+});
