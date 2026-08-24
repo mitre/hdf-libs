@@ -7,7 +7,7 @@
 
 import { formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
-import { validateInputSize, parseHdf, hdfTime } from '../../../shared/typescript/converterutil.js';
+import { validateInputSize, parseHdf, hdfTime, requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
@@ -43,21 +43,30 @@ interface OscalSARDocument {
  * @returns OSCAL SAR JSON string
  */
 export async function convertHdfToOscalSar(input: string): Promise<string> {
-  validateInputSize(input, 'hdf-to-oscal-sar');
+  // Main's guard returns the decoded document and its top-level array rather than
+  // a typed value, matching the Go reconciliation: the shared names keep their
+  // contracts and the typed shape is taken here at the call site.
+  const { doc: hdfResultsDoc } = requireHdfResults(input, 'hdf-to-oscal-sar');
+  const hdfResults = hdfResultsDoc as unknown as HDFResults;
 
-  if (!input || input.trim().length === 0) {
-    throw new Error('hdf-to-oscal-sar: empty input');
-  }
-
-  let hdfResults: HDFResults;
-  try {
-    hdfResults = parseHdf<HDFResults>(input);
-  } catch {
-    throw new Error('hdf-to-oscal-sar: failed to parse HDF JSON');
-  }
-
-  if (!hdfResults || typeof hdfResults !== 'object' || !('baselines' in hdfResults)) {
-    throw new Error('hdf-to-oscal-sar: invalid HDF structure: missing baselines field');
+  // A converter-specific constraint the shared guard cannot express: the guard
+  // checks top-level shape, not the full HDF schema, and it accepts an empty
+  // baselines array because hdf-results puts no minItems on it. OSCAL Assessment
+  // Results, by contrast, requires results with minItems 1, and one result is
+  // emitted per baseline — so an assessment that evaluated nothing has no valid
+  // OSCAL representation. Emitting `results: []` would resolve successfully with
+  // a document the target schema rejects.
+  //
+  // hdf-libs-wq3u decides whether hdf-results should carry minItems 1 on
+  // baselines, as every sibling document schema except hdf-comparison does on
+  // its required collections. If
+  // it does, requireHdfResults should reject an empty array the way
+  // requireHdfAmendments already rejects empty overrides, and this check becomes
+  // redundant.
+  if (hdfResults.baselines.length === 0) {
+    throw new Error(
+      'hdf-to-oscal-sar: cannot represent an assessment with no evaluated baselines as OSCAL Assessment Results, which requires at least one result',
+    );
   }
 
   const doc = buildOSCALDocument(hdfResults);
@@ -264,9 +273,13 @@ function baselineToResult(
     // Match Go's omitempty: an empty props list is omitted entirely.
     ...(resultProps.length > 0 ? { props: resultProps } : {}),
     'reviewed-controls': { 'control-selections': [controlSelection] },
-    findings,
-    observations,
-    risks,
+    // Match Go's omitempty on all three: OSCAL puts minItems 1 on each, so an
+    // empty array is invalid where absence is fine. Emitting [] here made a
+    // baseline whose requirements produced no risks fail the schema, while Go
+    // omitted the key and passed — a divergence the adversarial corpus caught.
+    ...(findings.length > 0 ? { findings } : {}),
+    ...(observations.length > 0 ? { observations } : {}),
+    ...(risks.length > 0 ? { risks } : {}),
   } as unknown as AssessmentResult;
 
   return { result, resources };
