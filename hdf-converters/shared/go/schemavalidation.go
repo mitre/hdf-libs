@@ -3,6 +3,8 @@ package shared
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -144,26 +146,38 @@ func schemaIsModern(raw []byte) bool {
 	return strings.Contains(head.Schema, "2019-09") || strings.Contains(head.Schema, "2020-12")
 }
 
+// Validate reports whether doc satisfies the schema, returning the violations
+// rather than failing a test. Callers that need to assert a document is
+// *invalid* — the corpus tier-B contract — cannot use RequireValid, which fails
+// the test on exactly the outcome they are asserting.
+func (v *SchemaValidator) Validate(doc []byte) error {
+	if v.modern != nil {
+		inst, err := tekuri.UnmarshalJSON(bytes.NewReader(doc))
+		if err != nil {
+			return fmt.Errorf("parse document: %w", err)
+		}
+		return v.modern.Validate(inst)
+	}
+
+	result, err := v.draft07.Validate(gojsonschema.NewBytesLoader(doc))
+	if err != nil {
+		return fmt.Errorf("schema validation errored: %w", err)
+	}
+	if result.Valid() {
+		return nil
+	}
+	msgs := make([]string, 0, len(result.Errors()))
+	for _, e := range result.Errors() {
+		msgs = append(msgs, fmt.Sprintf("%s: %s", e.Field(), e.Description()))
+	}
+	return errors.New(strings.Join(msgs, "\n"))
+}
+
 // RequireValid asserts doc satisfies the schema, reporting every violation on
 // failure so a red run pinpoints exactly what is wrong.
 func (v *SchemaValidator) RequireValid(t *testing.T, label string, doc []byte) {
 	t.Helper()
-	if v.modern != nil {
-		inst, err := tekuri.UnmarshalJSON(bytes.NewReader(doc))
-		require.NoError(t, err, "%s: parse document", label)
-		if err := v.modern.Validate(inst); err != nil {
-			t.Fatalf("%s: document does not satisfy the schema:\n%v", label, err)
-		}
-		return
+	if err := v.Validate(doc); err != nil {
+		t.Fatalf("%s: document does not satisfy the schema:\n%v", label, err)
 	}
-
-	result, err := v.draft07.Validate(gojsonschema.NewBytesLoader(doc))
-	require.NoError(t, err, "%s: schema validation errored", label)
-	if result.Valid() {
-		return
-	}
-	for _, e := range result.Errors() {
-		t.Errorf("%s: %s: %s", label, e.Field(), e.Description())
-	}
-	t.Fatalf("%s: document does not satisfy the schema", label)
 }
