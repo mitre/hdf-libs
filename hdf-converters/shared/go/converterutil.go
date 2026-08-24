@@ -696,3 +696,23 @@ func RequireHDFResultsDoc(input []byte, converterName string) (map[string]interf
 	}
 	return doc, baselines, nil
 }
+
+// OrEmpty returns a non-nil slice, so a schema-required JSON array never
+// marshals as null.
+//
+// encoding/json renders a nil slice as null rather than [], and a nil slice is
+// exactly what a struct field left unset by a zero-iteration append loop holds.
+// A target schema that requires an array then rejects the document, which is a
+// silent defect: the converter exits successfully and the output only fails
+// later, at the consumer.
+//
+// Use it only where the target schema requires the array to be present. When the
+// field is genuinely optional the correct fix is `omitempty` on the struct tag —
+// emitting an empty array claims "this collection exists and has no members",
+// which is a different assertion from "this collection was not reported".
+func OrEmpty[T any](v []T) []T {
+	if v == nil {
+		return []T{}
+	}
+	return v
+}

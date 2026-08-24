@@ -3,6 +3,8 @@ package checklist
 import (
 	"encoding/json"
 	"fmt"
+
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 )
 
 // ---------------------------------------------------------------------------
@@ -180,14 +182,6 @@ func ParseCKLB(input []byte) (*Checklist, error) {
 // Serialize
 // ---------------------------------------------------------------------------
 
-// orEmpty returns a non-nil slice so a required JSON array never marshals to null.
-func orEmpty(v []string) []string {
-	if v == nil {
-		return []string{}
-	}
-	return v
-}
-
 // SerializeCKLB renders the Checklist model as CKLB JSON bytes.
 func SerializeCKLB(cl *Checklist) ([]byte, error) {
 	doc := cklbDoc{
@@ -239,7 +233,7 @@ func SerializeCKLB(cl *Checklist) ([]byte, error) {
 				Classification: v.Classification,
 				// ccis is a required CKLB array: a nil slice would marshal to null,
 				// which STIG Viewer (and the TS serializer) do not emit.
-				CCIs:            orEmpty(v.CCIs),
+				CCIs:            shared.OrEmpty(v.CCIs),
 				LegacyIDs:       v.LegacyIDs,
 				Status:          v.Status.CKLBString(),
 				Overrides:       buildCklbOverrides(v),

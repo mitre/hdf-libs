@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -644,4 +645,52 @@ func TestRequireHDFResults_RejectsCorpusTopLevelShapes(t *testing.T) {
 		}
 		require.NoError(t, err, "%s is not a top-level shape defect; the guard must not reject it", c.Name)
 	}
+}
+
+// --- Nil-slice normalization --------------------------------------------------
+
+// TestOrEmpty_NilSliceMarshalsAsEmptyArray is the assertion that matters: the
+// helper exists because encoding/json renders a nil slice as null, and a target
+// schema that requires an array rejects null. Asserting on the marshaled BYTES
+// rather than the returned slice is deliberate — len() cannot tell nil from
+// empty, so a struct-level assertion would pass against the very bug this
+// prevents.
+func TestOrEmpty_NilSliceMarshalsAsEmptyArray(t *testing.T) {
+	type doc struct {
+		Items []string `json:"items"`
+	}
+
+	raw, err := json.Marshal(doc{Items: nil})
+	require.NoError(t, err)
+	require.JSONEq(t, `{"items":null}`, string(raw),
+		"precondition: a nil slice marshals to null, which is why OrEmpty exists")
+
+	raw, err = json.Marshal(doc{Items: OrEmpty[string](nil)})
+	require.NoError(t, err)
+	require.JSONEq(t, `{"items":[]}`, string(raw))
+}
+
+func TestOrEmpty_PreservesEmptyAndPopulated(t *testing.T) {
+	require.Equal(t, []string{}, OrEmpty([]string{}))
+	require.Equal(t, []string{"a", "b"}, OrEmpty([]string{"a", "b"}))
+}
+
+// TestOrEmpty_IsGenericOverElementType pins that this is one generic helper
+// rather than a string-only copy: the nil-slice-to-null defect is a property of
+// encoding/json, not of []string, and the exporter sites that need it carry
+// structs (cklb rules, OSCAL poam-items) as often as strings.
+func TestOrEmpty_IsGenericOverElementType(t *testing.T) {
+	type rule struct {
+		ID string `json:"id"`
+	}
+
+	raw, err := json.Marshal(map[string]any{"rules": OrEmpty[rule](nil)})
+	require.NoError(t, err)
+	require.JSONEq(t, `{"rules":[]}`, string(raw))
+
+	raw, err = json.Marshal(map[string]any{"n": OrEmpty[int](nil)})
+	require.NoError(t, err)
+	require.JSONEq(t, `{"n":[]}`, string(raw))
+
+	require.Equal(t, []rule{{ID: "V-1"}}, OrEmpty([]rule{{ID: "V-1"}}))
 }
