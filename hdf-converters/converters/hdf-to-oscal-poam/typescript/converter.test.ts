@@ -19,7 +19,7 @@ describe('convertHdfToOscalPoam', () => {
   });
 
   it('should reject invalid JSON', async () => {
-    await expect(convertHdfToOscalPoam('{not json')).rejects.toThrow('failed to parse JSON');
+    await expect(convertHdfToOscalPoam('{not json')).rejects.toThrow('failed to parse HDF JSON');
   });
 
   it('should convert minimal amendments', async () => {
