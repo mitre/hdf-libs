@@ -188,7 +188,7 @@ func TestPOAMTitleFallback(t *testing.T) {
 	}
 }
 
-// TestCorpusGoldenParity freezes this converter's output for every Tier-A corpus
+// TestCorpusGoldenParity freezes this converter's output for every MustConvert corpus
 // case, and the TypeScript suite asserts against the SAME files. That is what
 // makes the cross-language claim checkable: the corpus exercises the sparse
 // inputs (empty reason, no milestones, undescribed evidence) where the two
@@ -197,8 +197,8 @@ func TestPOAMTitleFallback(t *testing.T) {
 // reference graph survives masking, so wiring differences still fail.
 func TestCorpusGoldenParity(t *testing.T) {
 	for _, c := range shared.AmendmentsCorpus() {
-		if !c.HDFValid {
-			continue // tier B is rejected, so there is no output to freeze
+		if c.Contract != shared.MustConvert {
+			continue // anything else may be rejected, so there is no output to freeze
 		}
 		t.Run(c.Name, func(t *testing.T) {
 			out, err := ConvertHDFToOSCALPOAM(c.Input, "1.0.0")

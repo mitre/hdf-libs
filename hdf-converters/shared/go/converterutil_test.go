@@ -568,18 +568,22 @@ func TestRequireHDFAmendments_RejectsEmptyOverrides(t *testing.T) {
 	require.Error(t, err, "overrides has minItems 1; an empty array is not a convertible document")
 }
 
-// TestRequireHDFAmendments_MatchesCorpusTiers ties the guard to the shared
-// adversarial corpus: every amendments case the corpus labels HDF-invalid at the
-// top level must be rejected, and every valid one accepted.
-func TestRequireHDFAmendments_MatchesCorpusTiers(t *testing.T) {
+// TestRequireHDFAmendments_MatchesCorpusContracts ties the guard to the shared
+// adversarial corpus. The guard checks top-level shape, so it is responsible for
+// exactly the MustReject cases; a MustNotCorrupt case would be nested-invalid and
+// deliberately outside its remit, and the amendments corpus has none today.
+func TestRequireHDFAmendments_MatchesCorpusContracts(t *testing.T) {
 	for _, c := range AmendmentsCorpus() {
 		var out hdf.HDFAmendments
 		err := RequireHDFAmendments(c.Input, "probe", &out)
-		if c.HDFValid {
+		switch c.Contract {
+		case MustConvert:
 			require.NoError(t, err, "%s is valid HDF; the guard must not reject it", c.Name)
-			continue
+		case MustReject:
+			require.Error(t, err, "%s is invalid at the top level and must be rejected", c.Name)
+		case MustNotCorrupt:
+			t.Skipf("%s is nested-invalid, which the top-level guard deliberately does not check", c.Name)
 		}
-		require.Error(t, err, "%s is HDF-invalid and must be rejected", c.Name)
 	}
 }
 

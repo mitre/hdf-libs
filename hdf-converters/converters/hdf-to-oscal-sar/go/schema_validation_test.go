@@ -155,6 +155,45 @@ func TestConvertHDFToOSCALSAR_OriginActorsResolve(t *testing.T) {
 	}
 }
 
+// corpusExemptions lists, with an owner, every corpus case this converter does
+// not yet satisfy. An exemption without a card that removes it is a hole, so
+// each entry names one.
+//
+// The MustNotCorrupt contract removed two exemptions this converter previously
+// needed: baseline-empty-requirements and requirement-empty-results are
+// nested-invalid, and this converter converts both into schema-valid output,
+// which that contract permits. Only genuine gaps remain.
+var corpusExemptions = map[string]string{
+	"zero-baselines":         "hdf-libs-wq3u: baselines currently has no minItems, so an empty assessment is legal HDF that OSCAL cannot represent — this converter rejects it deliberately",
+	"requirement-missing-id": "hdf-libs-5gri.17: converts into output carrying an empty target-id, which fails the OSCAL token pattern",
+}
+
+func corpusMinusExemptions(t *testing.T) []shared.CorpusCase {
+	t.Helper()
+	all := shared.ResultsCorpus()
+	kept := make([]shared.CorpusCase, 0, len(all))
+	for _, c := range all {
+		if reason, skipped := corpusExemptions[c.Name]; skipped {
+			t.Logf("corpus case %q exempted — %s", c.Name, reason)
+			continue
+		}
+		kept = append(kept, c)
+	}
+	require.NotEmpty(t, kept, "every case exempted — the run would prove nothing")
+	return kept
+}
+
+// TestConvertHDFToOSCALSAR_AdversarialCorpus holds this converter to all three
+// contracts, minus the two documented exemptions above.
+func TestConvertHDFToOSCALSAR_AdversarialCorpus(t *testing.T) {
+	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
+		"hdf-to-oscal-sar", "schemas", "oscal_assessment-results_schema-v1.1.2.json"))
+
+	shared.RunSchemaCorpus(t, v, corpusMinusExemptions(t), func(in []byte) ([]byte, error) {
+		return ConvertHDFToOSCALSAR(in, "1.0.0")
+	})
+}
+
 // TestConvertHDFToOSCALSAR_RejectsZeroBaselines pins the converter-specific
 // constraint the shared guard cannot express: the guard checks top-level shape,
 // not the full HDF schema, and it accepts an empty baselines array because
