@@ -1,0 +1,88 @@
+{
+  "plan-of-action-and-milestones": {
+    "uuid": "9acabde0-6e76-4799-aec4-aea8e27360fe",
+    "metadata": {
+      "title": "a",
+      "last-modified": "2020-01-01T00:00:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2",
+      "parties": [
+        {
+          "uuid": "ca3401c4-c7a2-4ed0-9e9c-e038a4c8ce5b",
+          "type": "person",
+          "name": "test"
+        }
+      ]
+    },
+    "import-ssp": {
+      "href": "#"
+    },
+    "observations": [
+      {
+        "uuid": "42b07233-c99a-49fb-bd8d-681436ac6d34",
+        "description": "supporting evidence",
+        "methods": [
+          "EXAMINE"
+        ],
+        "types": [
+          "url"
+        ],
+        "collected": "2020-01-01T00:00:00Z",
+        "relevant-evidence": [
+          {
+            "href": "https://example.com/advisory",
+            "description": "supporting evidence"
+          }
+        ]
+      }
+    ],
+    "risks": [
+      {
+        "uuid": "1df5ec3b-c09a-409f-b0c2-881a081b390a",
+        "title": "CVE-2021-44228",
+        "description": "accepted",
+        "statement": "accepted",
+        "props": [
+          {
+            "name": "impacted-control-id",
+            "value": "cve-2021-44228"
+          },
+          {
+            "name": "override-type",
+            "value": "waiver"
+          }
+        ],
+        "status": "open",
+        "deadline": "2099-12-31T00:00:00Z",
+        "risk-log": {
+          "entries": [
+            {
+              "uuid": "aad17938-58e9-45fa-89ba-d0076c35f5fe",
+              "title": "Scheduled review",
+              "description": "Amendment expiration date",
+              "start": "2099-12-31T00:00:00Z",
+              "status-change": "open"
+            }
+          ]
+        }
+      }
+    ],
+    "poam-items": [
+      {
+        "uuid": "4253328f-62ab-44e0-a680-1c39af213b67",
+        "title": "CVE-2021-44228",
+        "description": "accepted",
+        "related-observations": [
+          {
+            "observation-uuid": "42b07233-c99a-49fb-bd8d-681436ac6d34"
+          }
+        ],
+        "related-risks": [
+          {
+            "risk-uuid": "1df5ec3b-c09a-409f-b0c2-881a081b390a"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -18,16 +18,15 @@ import (
 // ConvertHDFToOSCALPOAM converts HDF Amendments JSON to OSCAL POA&M JSON.
 // This is a RawConvertFn — it takes raw bytes and returns raw bytes.
 func ConvertHDFToOSCALPOAM(input []byte, converterVersion string) ([]byte, error) {
-	if err := shared.ValidateJSONSize(input, "hdf-to-oscal-poam", 0); err != nil {
-		return nil, err
-	}
-	if len(input) == 0 {
-		return nil, fmt.Errorf("hdf-to-oscal-poam: empty input")
-	}
-
+	// The guard rejects a document that cannot be faithfully converted rather
+	// than zero-filling it: the amendments schema puts minItems 1 on overrides,
+	// so a document that amends nothing is invalid input, not a request for an
+	// empty POA&M. It also keeps poam-items and risks non-empty, which the OSCAL
+	// schema requires (both carry minItems 1, so an empty array would be as
+	// invalid as the null a nil slice used to produce).
 	var amendments hdf.HDFAmendments
-	if err := shared.DecodeHDF(input, &amendments); err != nil {
-		return nil, fmt.Errorf("hdf-to-oscal-poam: failed to parse JSON: %w", err)
+	if err := shared.RequireHDFAmendments(input, "hdf-to-oscal-poam", &amendments); err != nil {
+		return nil, err
 	}
 
 	poam, err := amendmentsToPOAM(&amendments, converterVersion)
@@ -115,8 +114,17 @@ func amendmentsToPOAM(amendments *hdf.HDFAmendments, _ string) (*oscal.PlanOfAct
 	}
 
 	// Convert overrides to poam-items, risks and evidence observations.
-	var poamItems []oscal.POAMItem
-	var risks []oscal.Risk
+	//
+	// poamItems is pre-allocated rather than declared nil because POAMItems has
+	// no omitempty: a nil slice would marshal as null, which the schema rejects
+	// for a required array. Risks does carry omitempty, so a nil there would be
+	// omitted rather than nulled — legal, since the schema requires only that
+	// risks be non-empty WHEN present. Both are pre-allocated for symmetry.
+	//
+	// The guard already rules out zero overrides, so neither is a live path; this
+	// is defence against a future refactor moving that guard.
+	poamItems := make([]oscal.POAMItem, 0, len(amendments.Overrides))
+	risks := make([]oscal.Risk, 0, len(amendments.Overrides))
 	var observations []oscal.Observation
 
 	for i := range amendments.Overrides {
@@ -128,7 +136,7 @@ func amendmentsToPOAM(amendments *hdf.HDFAmendments, _ string) (*oscal.PlanOfAct
 	}
 
 	meta := oscal.Metadata{
-		Title:              amendments.Name,
+		Title:              poamTitle(amendments),
 		LastModified:       latestAppliedAt(amendments.Overrides),
 		Version:            amendmentsVersion(amendments),
 		OscalVersion:       oscal.OscalVersion,
@@ -275,12 +283,17 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride, parties *partyRegistry
 		relatedObs = append(relatedObs, oscal.RelatedRef{ObservationUUID: obsUUID})
 	}
 
+	// OSCAL lists title, description, statement and status as required on a risk,
+	// and Statement carries omitempty, so an empty HDF reason used to drop the
+	// field entirely. HDF does not constrain reason, so this is reachable from a
+	// schema-valid document.
+	rationale := riskRationale(override)
+
 	risk := oscal.Risk{
-		UUID:  riskUUID,
-		Title: override.RequirementID,
-		// OSCAL requires both description and statement on a risk.
-		Description:       override.Reason,
-		Statement:         override.Reason,
+		UUID:              riskUUID,
+		Title:             override.RequirementID,
+		Description:       rationale,
+		Statement:         rationale,
 		Status:            riskStatus,
 		Deadline:          deadline,
 		Props:             riskProps,
@@ -300,6 +313,23 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride, parties *partyRegistry
 	}
 
 	return item, []oscal.Risk{risk}, observations
+}
+
+// poamTitle picks the document title, which OSCAL requires on metadata. The HDF
+// name is schema-required, so the fallbacks only matter for a document that
+// slipped through some other producer's validation.
+func poamTitle(a *hdf.HDFAmendments) string {
+	return shared.FirstNonEmpty(a.Name, derefString(a.AmendmentID), "HDF Amendments")
+}
+
+// riskRationale supplies the text OSCAL requires for a risk's description and
+// statement. HDF puts no minLength on reason, so an override can legitimately
+// carry none; the fallback states that absence rather than inventing an impact
+// assessment the source never made.
+func riskRationale(override *hdf.StandaloneOverride) string {
+	return shared.FirstNonEmpty(override.Reason,
+		fmt.Sprintf("No rationale was recorded for the %s override applied to %s.",
+			override.Type, override.RequirementID))
 }
 
 func derefString(s *string) string {

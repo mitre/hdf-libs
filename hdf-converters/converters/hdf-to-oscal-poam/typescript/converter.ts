@@ -5,7 +5,7 @@
  */
 
 import { parseTimestamp, formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
+import { requireHdfAmendments, firstNonEmpty } from '../../../shared/typescript/converterutil.js';
 import type { HDFAmendments, StandaloneOverride, Evidence, Cvss, ExternalReference, Milestone, Identity } from '@mitre/hdf-schema';
 import type {
   Oscal,
@@ -40,18 +40,12 @@ import {
  * @returns OSCAL POA&M JSON string
  */
 export async function convertHdfToOscalPoam(input: string): Promise<string> {
-  validateInputSize(input, 'hdf-to-oscal-poam');
-
-  if (!input || input.trim().length === 0) {
-    throw new Error('hdf-to-oscal-poam: empty input');
-  }
-
-  let amendments: HDFAmendments;
-  try {
-    amendments = parseHdf<HDFAmendments>(input);
-  } catch {
-    throw new Error('hdf-to-oscal-poam: failed to parse JSON');
-  }
+  // The guard rejects a document that cannot be faithfully converted rather than
+  // letting a missing overrides array surface later as a TypeError. The
+  // amendments schema puts minItems 1 on overrides, so a document that amends
+  // nothing is invalid input, not a request for an empty POA&M — and it keeps
+  // poam-items and risks non-empty, which the OSCAL schema requires of both.
+  const amendments = requireHdfAmendments<HDFAmendments>(input, 'hdf-to-oscal-poam');
 
   const poam = amendmentsToPOAM(amendments);
 
@@ -60,6 +54,28 @@ export async function convertHdfToOscalPoam(input: string): Promise<string> {
   };
 
   return JSON.stringify(doc, null, 2);
+}
+
+/**
+ * Picks the document title, which OSCAL requires on metadata. The HDF name is
+ * schema-required, so the fallbacks only matter for a document that slipped
+ * through some other producer's validation.
+ */
+function poamTitle(a: HDFAmendments): string {
+  return firstNonEmpty(a.name, a.amendmentId, 'HDF Amendments');
+}
+
+/**
+ * Supplies the text OSCAL requires for a risk's description and statement. HDF
+ * puts no minLength on reason, so an override can legitimately carry none; the
+ * fallback states that absence rather than inventing an impact assessment the
+ * source never made.
+ */
+function riskRationale(override: StandaloneOverride): string {
+  return firstNonEmpty(
+    override.reason,
+    `No rationale was recorded for the ${String(override.type)} override applied to ${override.requirementId}.`,
+  );
 }
 
 /** HDF dates arrive as strings from JSON.parse but are typed as Date. */
@@ -144,7 +160,7 @@ function amendmentsToPOAM(amendments: HDFAmendments): PlanOfActionAndMilestonesP
   }
 
   const metadata = {
-    title: amendments.name,
+    title: poamTitle(amendments),
     'last-modified': latestAppliedAt(amendments.overrides),
     version: amendmentsVersion(amendments),
     'oscal-version': OSCAL_VERSION,
@@ -170,9 +186,15 @@ function amendmentsToPOAM(amendments: HDFAmendments): PlanOfActionAndMilestonesP
     uuid: crypto.randomUUID(),
     metadata,
     'import-ssp': importSSP,
-    risks,
     'poam-items': poamItems,
   };
+  // Emitted only when non-empty, matching the Go peer's omitempty: the schema
+  // puts minItems 1 on risks, so an empty array would be invalid where absence
+  // is fine. The guard makes zero risks unreachable today; this keeps the two
+  // languages from diverging if that ever changes.
+  if (risks.length > 0) {
+    poam.risks = risks;
+  }
   if (observations.length > 0) {
     poam.observations = observations;
   }
@@ -305,11 +327,15 @@ function overrideToPOAMItem(
     }
   }
 
+  // OSCAL lists title, description, statement and status as required on a risk.
+  // HDF puts no minLength on reason, so an override can legitimately carry none.
+  const rationale = riskRationale(override);
+
   const risk = {
     uuid: riskUUID,
     title: override.requirementId,
-    description: override.reason,
-    statement: override.reason,
+    description: rationale,
+    statement: rationale,
     status: riskStatus,
     deadline,
     props: riskProps,

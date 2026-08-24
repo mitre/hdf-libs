@@ -1,0 +1,64 @@
+{
+  "plan-of-action-and-milestones": {
+    "uuid": "28bba4b0-488c-4580-80c2-6ef3f822588d",
+    "metadata": {
+      "title": "a",
+      "last-modified": "2020-01-01T00:00:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2",
+      "parties": [
+        {
+          "uuid": "ae4f1a39-36bb-40b4-ae5f-6ee14b890075",
+          "type": "person",
+          "name": "test"
+        }
+      ]
+    },
+    "import-ssp": {
+      "href": "#"
+    },
+    "risks": [
+      {
+        "uuid": "067b67e4-bd58-46da-b347-30111dcd0d63",
+        "title": "CVE-2021-44228",
+        "description": "No rationale was recorded for the waiver override applied to CVE-2021-44228.",
+        "statement": "No rationale was recorded for the waiver override applied to CVE-2021-44228.",
+        "props": [
+          {
+            "name": "impacted-control-id",
+            "value": "cve-2021-44228"
+          },
+          {
+            "name": "override-type",
+            "value": "waiver"
+          }
+        ],
+        "status": "open",
+        "deadline": "2099-12-31T00:00:00Z",
+        "risk-log": {
+          "entries": [
+            {
+              "uuid": "44c888fd-6ae4-4a78-927c-9cc557599145",
+              "title": "Scheduled review",
+              "description": "Amendment expiration date",
+              "start": "2099-12-31T00:00:00Z",
+              "status-change": "open"
+            }
+          ]
+        }
+      }
+    ],
+    "poam-items": [
+      {
+        "uuid": "45a18680-b74d-44c3-a4e1-a9f0f179f219",
+        "title": "CVE-2021-44228",
+        "description": "",
+        "related-risks": [
+          {
+            "risk-uuid": "067b67e4-bd58-46da-b347-30111dcd0d63"
+          }
+        ]
+      }
+    ]
+  }
+}
