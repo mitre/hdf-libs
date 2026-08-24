@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity } from './converterutil.js';
+import { requireHdfResults, requireHdfAmendments, buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -467,3 +467,88 @@ describe('markUnratedSeverity', () => {
     }
   });
 });
+
+// --- Structural input guard ---------------------------------------------------
+//
+// Every HDF exporter owes the same prologue before it converts anything: reject
+// empty input, reject oversized input, parse, then reject a document missing the
+// one top-level field that makes it the document type it claims to be. Four
+// exporters hand-rolled this and one skipped it entirely, zero-filling arbitrary
+// JSON into a typed shape. These pin the shared version.
+describe('requireHdfResults', () => {
+  it.each([
+    ['empty input', ''],
+    ['not json', 'not json'],
+    ['top-level array', '[]'],
+    ['top-level null', 'null'],
+    ['missing baselines', '{"generator":{"name":"t","version":"0.0.0"}}'],
+    ['wrong-typed baselines', '{"baselines":"not-an-array"}'],
+    ['null baselines', '{"baselines":null}'],
+  ])('rejects %s', (_label, input) => {
+    expect(() => requireHdfResults(input, 'probe')).toThrow(/^probe: /);
+  });
+
+  it('does not throw a TypeError on parsed null', () => {
+    // Go's json.Unmarshal is a no-op on null and reports a missing field; TS
+    // must reject it the same way rather than dereferencing null.
+    try {
+      requireHdfResults('null', 'probe');
+      throw new Error('expected a rejection');
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+      expect(e).not.toBeInstanceOf(TypeError);
+    }
+  });
+
+  it('accepts a sparse but valid document', () => {
+    // An assessment that evaluated nothing is legal HDF: baselines has no
+    // minItems. A guard that rejected it would break a real use case.
+    const doc = requireHdfResults<{ baselines: unknown[] }>('{"baselines":[]}', 'probe');
+    expect(doc.baselines).toEqual([]);
+  });
+
+  it('emits the canonical missing-field message', () => {
+    // Pinned because exportmap and hdf-to-oscal-sar already emit exactly this
+    // and consumers may match on it; adopting the shared guard must not churn it.
+    expect(() => requireHdfResults('{}', 'hdf-to-oscal-sar')).toThrow(
+      'hdf-to-oscal-sar: invalid HDF structure: missing baselines field',
+    );
+  });
+
+  it('reports a wrong-typed baselines as a missing field', () => {
+    // Pinned to make a real Go/TS divergence visible rather than hiding it
+    // behind a prefix-only assertion: Go's typed decode fails first and reports
+    // a parse error here. Both reject the document; only the diagnostic differs.
+    expect(() => requireHdfResults('{"baselines":"not-an-array"}', 'probe')).toThrow(
+      'probe: invalid HDF structure: missing baselines field',
+    );
+  });
+});
+
+describe('requireHdfAmendments', () => {
+  it.each([
+    ['empty input', ''],
+    ['not json', 'not json'],
+    ['top-level array', '[]'],
+    ['top-level null', 'null'],
+    ['missing overrides', '{"name":"a"}'],
+    ['wrong-typed overrides', '{"name":"a","overrides":"nope"}'],
+    ['null overrides', '{"name":"a","overrides":null}'],
+  ])('rejects %s', (_label, input) => {
+    expect(() => requireHdfAmendments(input, 'probe')).toThrow(/^probe: /);
+  });
+
+  it('emits the canonical missing-field message', () => {
+    expect(() => requireHdfAmendments('{"name":"a"}', 'hdf-to-oscal-poam')).toThrow(
+      'hdf-to-oscal-poam: invalid HDF structure: missing overrides field',
+    );
+  });
+
+  it('rejects an empty overrides array', () => {
+    // The asymmetry with baselines is the schemas': baselines carries no
+    // minItems, overrides carries minItems 1. A document that amends nothing is
+    // not a valid amendments document.
+    expect(() => requireHdfAmendments('{"name":"a","overrides":[]}', 'probe')).toThrow(/^probe: /);
+  });
+});
+

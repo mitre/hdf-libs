@@ -11,7 +11,7 @@
  */
 
 import { parseTimestamp, worstStatus } from '@mitre/hdf-utilities';
-import { validateInputSize, parseHdf } from './converterutil.js';
+import { requireHdfResults } from './converterutil.js';
 
 export type Obj = Record<string, unknown>;
 
@@ -294,13 +294,11 @@ export type EventBuilder = (
  * the missing-baselines error and drives validateInputSize.
  */
 export function runExport(input: string, converterName: string, build: EventBuilder): string {
-  validateInputSize(input, converterName);
-  const doc = parseHdf<Obj>(input);
-
-  const baselines = asArr(doc.baselines);
-  if (!baselines) {
-    throw new Error(`${converterName}: invalid HDF structure: missing baselines field`);
-  }
+  // The guard has already verified baselines is an array, so this narrowing
+  // never actually falls through; asArr is used rather than a cast to keep the
+  // file free of type assertions.
+  const doc = requireHdfResults<Obj>(input, converterName);
+  const baselines = asArr(doc.baselines) ?? [];
 
   const docTimestamp = getStr(doc, 'timestamp');
   const tool = asMap(doc.tool);

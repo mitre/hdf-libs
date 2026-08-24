@@ -600,3 +600,86 @@ export const UNRATED_SEVERITY_VALUE = 'unrated';
 export function markUnratedSeverity(tags: Record<string, unknown>, severity?: string | null): void {
   if (isUnratedSeverity(severity)) tags[UNRATED_SEVERITY_TAG] = UNRATED_SEVERITY_VALUE;
 }
+
+// --- Structural input guard ---------------------------------------------------
+
+/**
+ * The single definition of the missing-required-field message. exportmap and
+ * hdf-to-oscal-sar already emit exactly this wording and consumers may match on
+ * it, so it lives in one place rather than being retyped at each call site.
+ */
+function missingFieldError(converterName: string, field: string): Error {
+  return new Error(`${converterName}: invalid HDF structure: missing ${field} field`);
+}
+
+/**
+ * Runs the prologue every HDF exporter shares before it looks at any content,
+ * then returns the parsed document with its required top-level array verified.
+ *
+ * Scope: top-level shape only. Nested content (an empty requirements array, a
+ * requirement missing id) is schema validation's job, and widening this guard
+ * would hide where that check really lives. Note the Go peer decodes into the
+ * generated structs and so additionally rejects deep type mismatches; both
+ * languages agree on top-level accept/reject, which is the contract.
+ *
+ * Without this check a converter silently zero-fills — an arbitrary JSON object
+ * becomes a results document with no baselines, and the converter emits a
+ * confident, empty, and usually schema-invalid document instead of an error.
+ *
+ * The empty-input guard mirrors Go's, which TypeScript previously lacked: a bare
+ * JSON parse error names neither the converter nor the real problem.
+ */
+function requireHdfDocument<T>(
+  input: string,
+  converterName: string,
+  field: string,
+  requireNonEmpty = false,
+): T {
+  if (input.trim().length === 0) {
+    throw new Error(`${converterName}: empty input`);
+  }
+  validateInputSize(input, converterName);
+
+  let doc: unknown;
+  try {
+    doc = parseHdf<unknown>(input);
+  } catch (e) {
+    throw new Error(`${converterName}: failed to parse HDF JSON: ${String(e)}`);
+  }
+
+  // A parsed null or array is not a document. Checked before any property
+  // access so this reports a rejection rather than throwing a TypeError, which
+  // is how Go behaves (json.Unmarshal is a no-op on null).
+  if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
+    throw missingFieldError(converterName, field);
+  }
+  const value = (doc as Record<string, unknown>)[field];
+  if (!Array.isArray(value)) {
+    throw missingFieldError(converterName, field);
+  }
+  if (requireNonEmpty && value.length === 0) {
+    throw missingFieldError(converterName, field);
+  }
+  return doc as T;
+}
+
+/**
+ * Verify input is a structurally valid HDF Results document and return it:
+ * non-empty, within the size limit, parseable, and carrying a baselines array.
+ */
+export function requireHdfResults<T>(input: string, converterName: string): T {
+  return requireHdfDocument<T>(input, converterName, 'baselines');
+}
+
+/**
+ * requireHdfResults for HDF Amendments documents, keyed on the overrides array.
+ *
+ * Unlike baselines, an empty overrides array is rejected. The asymmetry is the
+ * schemas': baselines carries no minItems, so an assessment that evaluated
+ * nothing is legal HDF, while overrides carries minItems 1 — a document that
+ * amends nothing is not a valid amendments document, and converting it yields an
+ * empty output the target schema then rejects.
+ */
+export function requireHdfAmendments<T>(input: string, converterName: string): T {
+  return requireHdfDocument<T>(input, converterName, 'overrides', true);
+}
