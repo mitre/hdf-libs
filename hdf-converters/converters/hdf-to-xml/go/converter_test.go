@@ -337,7 +337,7 @@ func TestConvertHDFToXML(t *testing.T) {
 // that are not Names — sonarqube-to-hdf emits "sonarqube/hash" and
 // ionchannel-to-hdf emits "ionchannel/trigger" — and Go's encoder writes them
 // through without error, so the serializer silently produced XML no parser can
-// read. Each shape here is taken from this repo's real fixtures.
+// read. Each shape here is taken from this package's converter fixtures.
 func TestConvertHDFToXMLTagKeysAreValidElementNames(t *testing.T) {
 	for _, key := range []string{
 		"sonarqube/hash",

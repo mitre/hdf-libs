@@ -227,7 +227,7 @@ func TestCorpusGoldenParity(t *testing.T) {
 
 // OSCAL types prop/@name as TokenDatatype, while HDF puts no constraint on
 // amendments.labels keys, so an arbitrary key copied through produced a POA&M
-// the schema rejects from valid HDF. Every label key in this repo's fixtures
+// the schema rejects from valid HDF. Every label key in this package's converter fixtures
 // happens to be token-shaped today, so this is a latent defect rather than one
 // real data currently triggers — but the shapes below are standard label
 // conventions (Kubernetes and OCI keys are namespaced with '/') that HDF

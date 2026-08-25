@@ -51,8 +51,8 @@ function singularFor(key: string): string {
  *
  * The kept set is ASCII — [A-Za-z0-9._-] — not the far wider set XML Name
  * allows, so the two languages agree by construction rather than by way of two
- * Unicode tables that can drift apart. It costs nothing here: none of the 155
- * tag keys in this repo's fixtures is non-ASCII. ':' is deliberately not kept —
+ * Unicode tables that can drift apart. It costs nothing here: no tag key in this
+ * package's converter fixtures is non-ASCII. ':' is deliberately not kept —
  * it is a legal Name character but would invent an undeclared namespace prefix.
  *
  * Mirrored by xmlElementName in the Go converter and pinned to a shared table.
