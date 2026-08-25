@@ -57,3 +57,11 @@ func (v *Validator) RequireValid(t *testing.T, label string, doc []byte) {
 		t.Fatalf("%s: XML does not satisfy the XSD:\n%v", label, err)
 	}
 }
+
+// Validate reports whether doc satisfies the XSD, returning the violation
+// rather than failing a test. It is what lets an XSD-backed converter reuse the
+// shared adversarial corpus, whose contracts need to inspect the outcome of a
+// case rather than abort on it.
+func (v *Validator) Validate(doc []byte) error {
+	return v.handler.ValidateMem(doc, xsd.ValidErrDefault)
+}

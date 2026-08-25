@@ -428,3 +428,10 @@ func visitTags(node interface{}, fn func(map[string]interface{})) {
 		}
 	}
 }
+
+// UpdateSnapshots reports whether `go test -update` was passed, so a converter
+// package can regenerate its own goldens through the same flag the shared
+// snapshots use rather than declaring a competing one.
+func UpdateSnapshots() bool {
+	return updateSnapshots
+}

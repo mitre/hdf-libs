@@ -147,8 +147,8 @@ func ResultsCorpus() []CorpusCase {
 			Name: "requirement-with-non-token-id",
 			// Every other MustConvert case uses an id that happens to satisfy
 			// OSCAL's token pattern, which is why an exporter copying ids into a
-			// token-typed field passed the corpus while failing on 46% of this
-			// repo's real fixture ids. A package-style id is the commonest
+			// token-typed field passed the corpus while failing on 46% of the
+			// converters' fixture ids. A package-style id is the commonest
 			// non-token shape in real data.
 			Input: mustJSON(withTimestamp(testhdf.Results(testhdf.Req("CVE-2018-25032/ruby:nokogiri/1.10.9",
 				testhdf.Title("t"), testhdf.Severity("medium"), testhdf.Code("c"))))),
@@ -283,6 +283,14 @@ func amendmentsWithBareEvidence(reqID string) []byte {
 // its rendered output.
 type CorpusConvertFn func(input []byte) ([]byte, error)
 
+// DocumentValidator is the contract the corpus needs from a target-format
+// validator: report a document's violations without failing a test. Both the
+// JSON Schema validator and the XSD one satisfy it, so a converter whose target
+// is an XSD (XCCDF) reuses the same corpus as the JSON-schema converters.
+type DocumentValidator interface {
+	Validate(doc []byte) error
+}
+
 // CheckCase applies the corpus contract to a single case and returns the reason
 // it failed, or "" when it passes.
 //
@@ -296,7 +304,7 @@ type CorpusConvertFn func(input []byte) ([]byte, error)
 // panic is a crash, not a rejection, so letting it satisfy MustReject or
 // MustNotCorrupt would green-light the precise defect those contracts exist to
 // catch (an unguarded results[0] index is the live example).
-func CheckCase(v *SchemaValidator, c CorpusCase, convert CorpusConvertFn) string {
+func CheckCase(v DocumentValidator, c CorpusCase, convert CorpusConvertFn) string {
 	out, err := convertNoPanic(convert, c.Input)
 
 	var panicked *PanicError
@@ -349,7 +357,7 @@ func ValidateCorpus(cases []CorpusCase) error {
 // RunSchemaCorpus asserts every corpus contract against one exporter: see
 // CorpusContract for what each obliges. Converters opt in with a single call, so
 // the corpus has one definition rather than a copy per converter.
-func RunSchemaCorpus(t *testing.T, v *SchemaValidator, cases []CorpusCase, convert CorpusConvertFn) {
+func RunSchemaCorpus(t *testing.T, v DocumentValidator, cases []CorpusCase, convert CorpusConvertFn) {
 	t.Helper()
 	require.NoError(t, ValidateCorpus(cases))
 

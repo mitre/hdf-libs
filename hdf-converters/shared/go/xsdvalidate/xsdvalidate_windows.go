@@ -25,3 +25,9 @@ func (v *Validator) RequireValid(t *testing.T, label string, doc []byte) {
 	t.Helper()
 	t.Skip("XSD validation unavailable on Windows")
 }
+
+// Validate is unreachable in practice (New skips first) but present so the
+// package API matches the real build.
+func (v *Validator) Validate(doc []byte) error {
+	return nil
+}

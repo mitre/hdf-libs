@@ -98,3 +98,78 @@ describe('hdf-to-xccdf empty baseline name', () => {
     expect(out).toMatch(/id="xccdf_[^_"]+_benchmark_[^"]+"/);
   });
 });
+
+// Every timestamp this converter emits is HDF's canonical form: RFC3339 in UTC
+// with trailing fractional zeros trimmed. This side used to pass the source
+// string through, so a result time of ".500Z" emitted ".500Z" here and ".5Z" in
+// Go — a divergence no fixture happened to carry. Asserts the exact strings the
+// Go peer asserts.
+describe('hdf-to-xccdf timestamps', () => {
+  it('emits canonical trimmed-fraction times', () => {
+    const out = convertHdfToXccdf(
+      JSON.stringify({
+        baselines: [
+          {
+            name: 'b',
+            requirements: [
+              {
+                id: 'r',
+                impact: 0,
+                tags: {},
+                descriptions: [{ label: 'default', data: 'd' }],
+                results: [
+                  { status: 'passed', codeDesc: 'c', startTime: '2020-01-02T09:00:00.500Z' },
+                  { status: 'failed', codeDesc: 'c2', startTime: '2020-01-02T03:04:05.120Z' },
+                  { status: 'passed', codeDesc: 'c3', startTime: '2020-01-02T07:30:00.000Z' },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(out).toContain('start-time="2020-01-02T03:04:05.12Z"');
+    expect(out).toContain('end-time="2020-01-02T09:00:00.5Z"');
+    expect(out).toContain('time="2020-01-02T07:30:00Z"');
+    expect(out).not.toContain('.500Z');
+    expect(out).not.toContain('.120Z');
+    expect(out).not.toContain('.000Z');
+  });
+});
+
+// The two languages guarded the InSpec <check> differently: Go emitted one
+// whenever code was non-nil, so an empty string produced an empty check element,
+// while this side's truthy test skipped it. Both now use the shared
+// non-empty-text helper. Mirrors the Go peer case for case.
+describe('hdf-to-xccdf InSpec check', () => {
+  const INSPEC = 'system="http://inspec.io/"';
+
+  it.each([
+    ['absent', undefined, false],
+    ['empty', '', false],
+    ['whitespace only', '   ', false],
+    ['real code', "describe file('/etc/passwd') do\n end", true],
+  ])('emits a check for %s: %s', (_label, code, want) => {
+    const out = convertHdfToXccdf(
+      JSON.stringify({
+        baselines: [
+          {
+            name: 'b',
+            requirements: [
+              {
+                id: 'r',
+                impact: 0,
+                tags: {},
+                ...(code === undefined ? {} : { code }),
+                descriptions: [{ label: 'default', data: 'd' }],
+                results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(out.includes(INSPEC), 'a check is emitted only for code that carries text').toBe(want);
+  });
+});

@@ -292,8 +292,8 @@ export function toKebabCase(title: string, fallback: string): string {
  * `^(\p{L}|_)(\p{L}|\p{N}|[.\-_])*$`
  *
  * HDF requirement ids come from whatever the source tool numbers its rules with,
- * and only some of those shapes are already tokens. Measured across this repo's
- * real fixtures, 46% are not (57% of the distinct ids): package-style ids
+ * and only some of those shapes are already tokens. Measured across this
+ * package's converter fixtures, 46% are not (57% of the distinct ids): package-style ids
  * carrying '/', CIS control numbers starting with a digit, advisory ids carrying
  * ':'. Copying one of those into a token-typed OSCAL field produces a document
  * the target schema rejects while the converter resolves successfully.
@@ -304,8 +304,8 @@ export function toKebabCase(title: string, fallback: string): string {
  * built from different Unicode versions, and comparing the two implementations
  * across the whole code-point range turned up 4657 characters they disagree on.
  * An explicit ASCII set has no such dependency and is identical in both languages
- * by construction. It costs nothing on real data: none of the 5665 requirement
- * ids in this repo's fixtures contains a non-ASCII character, and a non-ASCII one
+ * by construction. It costs nothing on real data: no requirement id in this
+ * package's converter fixtures is non-ASCII, and a non-ASCII one
  * is preserved in full by the caller's source-id prop regardless.
  *
  * Every character outside that set becomes '_', and a leading '_' is prepended

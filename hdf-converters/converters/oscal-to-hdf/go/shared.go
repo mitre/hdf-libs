@@ -272,8 +272,8 @@ const OscalVersion = "1.1.2"
 // ^(\p{L}|_)(\p{L}|\p{N}|[.\-_])*$
 //
 // HDF requirement ids come from whatever the source tool numbers its rules with,
-// and only some of those shapes are already tokens. Measured across this repo's
-// real fixtures, 46% are not (57% of the distinct ids): package-style ids
+// and only some of those shapes are already tokens. Measured across this
+// package's converter fixtures, 46% are not (57% of the distinct ids): package-style ids
 // carrying '/', CIS control numbers starting with a digit, advisory ids carrying
 // ':'. Copying one of those into a token-typed OSCAL field produces a document
 // the target schema rejects while the converter exits successfully.
@@ -286,8 +286,8 @@ const OscalVersion = "1.1.2"
 // Go would emit one of those and an ajv-based OSCAL validator would reject it —
 // the very defect this function exists to prevent. An explicit ASCII set has no
 // such dependency and is identical in both languages by construction. It costs
-// nothing on real data: none of the 5665 requirement ids in this repo's fixtures
-// contains a non-ASCII character, and a non-ASCII one is preserved in full by the
+// nothing on real data: no requirement id in this package's converter fixtures
+// is non-ASCII, and a non-ASCII one is preserved in full by the
 // caller's source-id prop regardless.
 //
 // Every character outside that set becomes '_', and a leading '_' is prepended
@@ -298,8 +298,8 @@ const OscalVersion = "1.1.2"
 // Two different ids can encode to the same token ("a/b" and "a:b" both yield
 // "a_b"), which is why callers must also record the source id in the emitted
 // document — for SAR that is a prop on the finding, trimmed because OSCAL's
-// StringDatatype forbids a padded value. No collision occurs across
-// the 3750 distinct requirement ids in this repo's fixtures, which
+// StringDatatype forbids a padded value. No collision occurs across the distinct
+// requirement ids in this package's converter fixtures, which
 // TestOSCALToken_NoCollisionsAcrossRealFixtureIDs pins against the same
 // composition the converter uses.
 func OSCALToken(s string) string {

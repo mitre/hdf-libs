@@ -267,8 +267,8 @@ func writeValue(enc *xml.Encoder, name string, val interface{}) error {
 // The kept set is ASCII — [A-Za-z0-9._-] — not the far wider set XML Name
 // allows. Matching the spec's Unicode ranges would reintroduce the divergence
 // card .19 hit, where Go's tables and V8's disagreed; ASCII is identical in both
-// languages by construction. It costs nothing here: none of the 155 tag keys in
-// this repo's fixtures is non-ASCII. ':' is deliberately not kept — it is a
+// languages by construction. It costs nothing here: no tag key in this package's
+// converter fixtures is non-ASCII. ':' is deliberately not kept — it is a
 // legal Name character but would invent an undeclared namespace prefix.
 func xmlStart(key string) xml.StartElement {
 	name, rewritten := xmlElementName(key)
@@ -282,8 +282,8 @@ func xmlStart(key string) xml.StartElement {
 // xmlElementName encodes a key to an XML Name, reporting whether it had to
 // change. Two keys can encode to the same name ("a/b" and "a.b" do not, but
 // "a/b" and "a b" do), which yields repeated sibling elements the name
-// attribute still tells apart; no collision occurs across this repo's fixture
-// tag keys, which TestXMLElementNameNoCollisionsAcrossRealFixtureKeys pins.
+// attribute still tells apart; no collision occurs across this package's
+// converter fixture tag keys, which TestXMLElementNameNoCollisionsAcrossRealFixtureKeys pins.
 func xmlElementName(key string) (string, bool) {
 	keep := func(r rune) bool {
 		switch {

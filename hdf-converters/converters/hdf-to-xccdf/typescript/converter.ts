@@ -5,7 +5,7 @@ import type {
   Description,
   Tool,
 } from '@mitre/hdf-schema';
-import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
+import { validateInputSize, parseHdf, firstNonEmpty } from '../../../shared/typescript/converterutil.js';
 
 /** Attribute prefix used by fast-xml-parser to distinguish attrs from elements. */
 const ATTR = '@_';
@@ -104,7 +104,7 @@ function xccdfNamePart(name: string): string {
  * Render an HDF tags.gid as a groupIdType: an NCName that must also match
  * xccdf_[^_]+_group_.+ (xccdf_1.2.xsd:821). HDF constrains gid not at all, and
  * most real data does not satisfy it — 783 of the 1216 distinct gid values in
- * this repo's fixtures are bare STIG ids like "V-257777" — so copying one
+ * this package's converter fixtures are bare STIG ids like "V-257777" — so copying one
  * through produced XSD-invalid output from valid HDF.
  *
  * A gid that already conforms is a genuine XCCDF group id (STIG content carries
@@ -162,6 +162,17 @@ function toolTestSystem(tool: Tool | undefined): string | undefined {
   if (!tool || !tool.version) return undefined;
   const name = tool.name ? cpeField(tool.name) : 'tool';
   return `cpe:/a:${name}:${name}:${cpeField(tool.version)}`;
+}
+
+/**
+ * The requirement id as text for id construction. HDF makes id required, but
+ * nested-invalid input reaches the converter and concatenating an absent id
+ * wrote the literal string "undefined" into the emitted identifier — where Go,
+ * concatenating a zero-value string, wrote nothing. Both satisfied the XCCDF
+ * pattern, so no schema gate caught the divergence.
+ */
+function requirementIdText(id: string | undefined): string {
+  return typeof id === 'string' ? id : '';
 }
 
 /** Build the Benchmark XML object from HDF data. */
@@ -235,15 +246,19 @@ function buildBenchmarkObj(hdfData: HDFResults): Record<string, unknown> {
     benchmark.Rule = flatRules;
   }
 
-  // TestResult
-  benchmark.TestResult = buildTestResultObj(hdfData, baseline);
+  // TestResult — omitted entirely when no time can be derived, matching the Go
+  // peer's nil return; assigning undefined would still emit an empty element.
+  const testResult = buildTestResultObj(hdfData, baseline);
+  if (testResult) {
+    benchmark.TestResult = testResult;
+  }
 
   return benchmark;
 }
 
 /** Build an XCCDF Rule object from an HDF EvaluatedRequirement. */
 function buildRuleObj(req: EvaluatedRequirement): Record<string, unknown> {
-  const ruleId = sanitizeXccdfId('xccdf_hdf_rule_' + req.id + '_rule');
+  const ruleId = sanitizeXccdfId('xccdf_hdf_rule_' + requirementIdText(req.id) + '_rule');
 
   const rule: Record<string, unknown> = {
     [`${ATTR}id`]: ruleId,
@@ -319,10 +334,13 @@ function buildRuleObj(req: EvaluatedRequirement): Record<string, unknown> {
       'check-content': wrap(checkContent),
     });
   }
-  if (req.code) {
+  // The shared helper, not a truthy test: it trims, so whitespace-only code is
+  // skipped here exactly as it is in the Go peer.
+  const code = firstNonEmpty(req.code);
+  if (code !== '') {
     checks.push({
       [`${ATTR}system`]: 'http://inspec.io/',
-      'check-content': wrap(req.code),
+      'check-content': wrap(code),
     });
   }
   if (checks.length > 0) {
@@ -332,11 +350,49 @@ function buildRuleObj(req: EvaluatedRequirement): Record<string, unknown> {
   return rule;
 }
 
-/** Build the XCCDF TestResult object. */
+/**
+ * The earliest and latest result time in a baseline.
+ *
+ * XCCDF makes TestResult/@end-time required while HDF's top-level timestamp is
+ * optional, so a document without one still has to carry a scan window. It is
+ * derived from the results rather than the wall clock, which would break both
+ * determinism and the golden comparison. A TestResult is only built when a
+ * baseline exists, and the HDF schema puts minItems 1 on both requirements and
+ * results with startTime required on each, so a window is always available
+ * here; undefined is returned anyway rather than assuming it.
+ *
+ * Times are emitted through formatTimestamp, HDF's canonical form, which is
+ * documented as byte-identical to the RFC3339Nano string the Go converter
+ * emits for the same instant.
+ *
+ * Mirrored by resultTimeWindow in the Go converter.
+ */
+function resultTimeWindow(
+  baseline: HDFResults['baselines'][0],
+): { first: string; last: string } | undefined {
+  let first: { at: number; text: string } | undefined;
+  let last: { at: number; text: string } | undefined;
+
+  for (const req of baseline.requirements) {
+    for (const res of req.results) {
+      const text =
+        typeof res.startTime === 'string' ? res.startTime : (res.startTime as Date).toISOString();
+      const parsed = parseTimestamp(text);
+      if (!parsed) continue;
+      const at = parsed.getTime();
+      const canonical = formatTimestamp(parsed);
+      if (!first || at < first.at) first = { at, text: canonical };
+      if (!last || at > last.at) last = { at, text: canonical };
+    }
+  }
+  return first && last ? { first: first.text, last: last.text } : undefined;
+}
+
+/** Build the XCCDF TestResult object, or undefined when it cannot carry a time. */
 function buildTestResultObj(
   hdfData: HDFResults,
   baseline: HDFResults['baselines'][0],
-): Record<string, unknown> {
+): Record<string, unknown> | undefined {
   const testResult: Record<string, unknown> = {
     [`${ATTR}id`]: 'xccdf_hdf_testresult_1',
     title: wrap('HDF Assessment Results'),
@@ -345,10 +401,14 @@ function buildTestResultObj(
   // Timestamps. end-time carries the scan window: start + statistics.duration so
   // the duration round-trips (the importer derives duration = end − start).
   if (hdfData.timestamp) {
-    const ts =
+    const raw =
       typeof hdfData.timestamp === 'string'
         ? hdfData.timestamp
         : (hdfData.timestamp as Date).toISOString();
+    // Canonicalized, not passed through: Go formats as RFC3339Nano, which trims
+    // trailing fractional zeros, so a raw ".500Z" would diverge from Go's ".5Z".
+    const parsedTs = parseTimestamp(raw);
+    const ts = parsedTs ? formatTimestamp(parsedTs) : raw;
     testResult[`${ATTR}start-time`] = ts;
 
     let endTime = ts;
@@ -358,6 +418,17 @@ function buildTestResultObj(
       endTime = formatTimestamp(new Date(start.getTime() + duration * 1000));
     }
     testResult[`${ATTR}end-time`] = endTime;
+  } else {
+    const window = resultTimeWindow(baseline);
+    if (!window) {
+      // No timestamp and no result to derive one from — nested-invalid HDF whose
+      // requirements or results are empty. end-time is required, so a TestResult
+      // cannot be represented at all; omitting it keeps the document valid, as
+      // the no-baselines path already does.
+      return undefined;
+    }
+    testResult[`${ATTR}start-time`] = window.first;
+    testResult[`${ATTR}end-time`] = window.last;
   }
 
   // @test-system names the scanner via a CPE URI so the importer recovers
@@ -383,7 +454,7 @@ function buildTestResultObj(
   let passed = 0;
   let scorable = 0;
   for (const req of baseline.requirements) {
-    const ruleIdRef = sanitizeXccdfId('xccdf_hdf_rule_' + req.id + '_rule');
+    const ruleIdRef = sanitizeXccdfId('xccdf_hdf_rule_' + requirementIdText(req.id) + '_rule');
     const stigId = tagString(req.tags, 'stig_id');
 
     // When an override set requirement.effectiveStatus, the emitted result
@@ -405,11 +476,12 @@ function buildTestResultObj(
         [`${ATTR}idref`]: ruleIdRef,
       };
 
-      const startTime =
+      const rawStart =
         typeof result.startTime === 'string'
           ? result.startTime
           : (result.startTime as Date).toISOString();
-      rr[`${ATTR}time`] = startTime;
+      const parsedStart = parseTimestamp(rawStart);
+      rr[`${ATTR}time`] = parsedStart ? formatTimestamp(parsedStart) : rawStart;
       if (stigId) {
         rr[`${ATTR}version`] = stigId;
       }

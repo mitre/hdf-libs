@@ -117,10 +117,11 @@ type XCCDFCheck struct {
 
 // XCCDFTestResult represents an XCCDF TestResult element.
 type XCCDFTestResult struct {
-	XMLName       xml.Name          `xml:"TestResult"`
-	ID            string            `xml:"id,attr"`
-	StartTime     string            `xml:"start-time,attr,omitempty"`
-	EndTime       string            `xml:"end-time,attr,omitempty"`
+	XMLName   xml.Name `xml:"TestResult"`
+	ID        string   `xml:"id,attr"`
+	StartTime string   `xml:"start-time,attr,omitempty"`
+	// end-time is use="required" in the XSD, so it must never be dropped.
+	EndTime       string            `xml:"end-time,attr"`
 	TestSystem    string            `xml:"test-system,attr,omitempty"`
 	Title         string            `xml:"title"`
 	Target        string            `xml:"target"`
@@ -307,10 +308,14 @@ func buildRule(req hdf.EvaluatedRequirement) XCCDFRule {
 			CheckContent: checkContent,
 		})
 	}
+	var rawCode string
 	if req.Code != nil {
+		rawCode = *req.Code
+	}
+	if code := shared.FirstNonEmpty(rawCode); code != "" {
 		rule.Checks = append(rule.Checks, XCCDFCheck{
 			System:       "http://inspec.io/",
-			CheckContent: *req.Code,
+			CheckContent: code,
 		})
 	}
 
@@ -352,6 +357,15 @@ func buildTestResult(hdfData *hdf.HDFResults, baseline hdf.EvaluatedBaseline) *X
 			end = start.Add(time.Duration(*hdfData.Statistics.Duration * float64(time.Second)))
 		}
 		testResult.EndTime = end.Format(time.RFC3339Nano)
+	} else if first, last, ok := resultTimeWindow(baseline); ok {
+		testResult.StartTime = first.Format(time.RFC3339Nano)
+		testResult.EndTime = last.Format(time.RFC3339Nano)
+	} else {
+		// No timestamp and no result to derive one from — nested-invalid HDF whose
+		// requirements or results are empty. end-time is required, so a TestResult
+		// cannot be represented at all; omitting it keeps the document valid, as
+		// the no-baselines path already does.
+		return nil
 	}
 
 	// @test-system names the scanner via a CPE URI so the importer recovers
@@ -465,6 +479,38 @@ func cpeField(s string) string {
 	}, s)
 }
 
+// resultTimeWindow reports the earliest and latest result time in a baseline.
+//
+// XCCDF makes TestResult/@end-time required while HDF's top-level timestamp is
+// optional, so a document without one still has to carry a scan window. It is
+// derived from the results rather than the wall clock, which would break both
+// determinism and the golden comparison. A TestResult is only built when a
+// baseline exists, and the HDF schema puts minItems 1 on both requirements and
+// results with startTime required on each, so a window is always available
+// here; ok is reported anyway rather than assuming it.
+//
+// The window is the span of recorded check times, so end-time is the start of
+// the last check rather than a synthesized completion instant — the latest
+// moment the document actually attests to.
+func resultTimeWindow(baseline hdf.EvaluatedBaseline) (first, last time.Time, ok bool) {
+	for _, req := range baseline.Requirements {
+		for _, res := range req.Results {
+			t := res.StartTime.UTC()
+			if !ok {
+				first, last, ok = t, t, true
+				continue
+			}
+			if t.Before(first) {
+				first = t
+			}
+			if t.After(last) {
+				last = t
+			}
+		}
+	}
+	return first, last, ok
+}
+
 // xccdfNamePart supplies the trailing name segment that benchmarkIdType and
 // profileIdType require via their .+ — a baseline with an empty name is valid
 // HDF but produced "xccdf_hdf_benchmark_", which the XSD rejects.
@@ -478,7 +524,7 @@ func xccdfNamePart(name string) string {
 // xccdfGroupID renders an HDF tags.gid as a groupIdType: an NCName that must
 // also match xccdf_[^_]+_group_.+ (xccdf_1.2.xsd:821). HDF constrains gid not at
 // all, and most real data does not satisfy it — 783 of the 1216 distinct gid
-// values in this repo's fixtures are bare STIG ids like "V-257777" — so copying
+// values in this package's converter fixtures are bare STIG ids like "V-257777" — so copying
 // one through produced XSD-invalid output from valid HDF.
 //
 // A gid that already conforms is a genuine XCCDF group id (STIG content carries

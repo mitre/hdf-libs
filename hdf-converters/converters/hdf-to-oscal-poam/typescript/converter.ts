@@ -400,7 +400,7 @@ function metadataProps(a: HDFAmendments): Property[] {
  * Render one amendments label as a property. OSCAL types prop/@name as
  * TokenDatatype while HDF puts no constraint on label keys, so the key is
  * encoded and the source key kept in remarks when it had to change. Every label
- * key in this repo's fixtures is token-shaped today, so this guards a shape real
+ * key in this package's converter fixtures is token-shaped today, so this guards a shape real
  * data has not yet produced — but Kubernetes and OCI label keys are namespaced
  * with '/', which HDF permits and OSCAL rejects.
  *

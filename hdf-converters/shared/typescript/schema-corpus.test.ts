@@ -8,6 +8,7 @@ import {
   amendmentsCorpus,
   checkCase,
   runSchemaCorpus,
+  jsonDocumentValidator,
   canonicalJSON,
   toGoldenEntries,
   type CorpusCase,
@@ -129,7 +130,9 @@ describe('adversarial corpus', () => {
 // directly — the outcomes that matter most, and that assertions buried in a test
 // closure cannot express without failing the test itself.
 describe('corpus contract', () => {
-  const validate = loadSchemaValidator(hdfSchema('hdf-results.schema.json'));
+  // Wrapped: the corpus takes a DocumentValidator over raw converter output, so
+  // parsing belongs to the validator rather than to the harness.
+  const validate = jsonDocumentValidator(loadSchemaValidator(hdfSchema('hdf-results.schema.json')));
   const mustConvert: CorpusCase = { name: 'a', input: '{}', contract: 'MustConvert', why: 'probe' };
   const mustReject: CorpusCase = { name: 'b', input: '[]', contract: 'MustReject', why: 'probe' };
   const mustNotCorrupt: CorpusCase = {

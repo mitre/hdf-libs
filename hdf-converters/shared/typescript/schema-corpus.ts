@@ -120,7 +120,7 @@ export function resultsCorpus(): CorpusCase[] {
       name: 'requirement-with-non-token-id',
       // Every other MustConvert case uses an id that happens to satisfy OSCAL's
       // token pattern, which is why an exporter copying ids into a token-typed
-      // field passed the corpus while failing on 46% of this repo's real
+      // field passed the corpus while failing on 46% of the converters'
       // fixture ids. A package-style id is the commonest non-token shape.
       input: JSON.stringify(
         withTimestamp(
@@ -267,6 +267,34 @@ function amendmentsWithBareEvidence(): string {
 export type CorpusConvertFn = (input: string) => Promise<unknown> | unknown;
 
 /**
+ * What the corpus needs from a target-format validator: report a document's
+ * violations, or null when it satisfies the schema. Keeping this a function of
+ * the raw converter output — rather than an ajv ValidateFunction — is what lets
+ * an exporter whose target is an XSD (XCCDF) reuse the same corpus as the
+ * JSON-schema exporters, since parsing is the validator's concern, not the
+ * corpus's.
+ *
+ * Mirrors the DocumentValidator interface in the Go peer.
+ */
+export type DocumentValidator = (doc: unknown) => string | null | Promise<string | null>;
+
+/**
+ * Adapt an ajv validator to a DocumentValidator: parse a string output as JSON,
+ * then report schema violations.
+ */
+export function jsonDocumentValidator(validate: ValidateFunction): DocumentValidator {
+  return (doc: unknown) => {
+    let parsed: unknown;
+    try {
+      parsed = parseIfString(doc);
+    } catch (e) {
+      return `output is not parseable JSON: ${String(e)}`;
+    }
+    return schemaErrors(validate, parsed);
+  };
+}
+
+/**
  * Apply the corpus contract to a single case, returning why it failed or null
  * when it passes.
  *
@@ -283,7 +311,7 @@ export type CorpusConvertFn = (input: string) => Promise<unknown> | unknown;
  * defect those contracts exist to catch.
  */
 export async function checkCase(
-  validate: ValidateFunction,
+  validate: DocumentValidator,
   c: CorpusCase,
   convert: CorpusConvertFn,
 ): Promise<string | null> {
@@ -303,22 +331,14 @@ export async function checkCase(
 
   // Shared by MustConvert and MustNotCorrupt: whenever the exporter produced a
   // document, that document has to satisfy the target schema.
-  const outputViolation = (): string | null => {
-    let parsed: unknown;
-    try {
-      parsed = parseIfString(out);
-    } catch (e) {
-      return `${c.name}: output is not parseable JSON (${c.why}): ${String(e)}`;
-    }
-    return schemaErrors(validate, parsed);
-  };
+  const outputViolation = async (): Promise<string | null> => validate(out);
 
   switch (c.contract) {
     case 'MustConvert': {
       if (didThrow) {
         return `${c.name}: schema-valid HDF must convert (${c.why}): ${String(threw)}`;
       }
-      const errors = outputViolation();
+      const errors = await outputViolation();
       return errors === null
         ? null
         : `${c.name}: output does not satisfy the target schema (${c.why}):\n${errors}`;
@@ -334,7 +354,7 @@ export async function checkCase(
       // and strictness are both defensible. What is never acceptable is
       // converting it into a document the target schema rejects.
       if (didThrow) return null;
-      const errors = outputViolation();
+      const errors = await outputViolation();
       return errors === null
         ? null
         : `${c.name}: converted nested-invalid HDF into output the target schema rejects (${c.why}):\n${errors}`;
@@ -353,7 +373,7 @@ export async function checkCase(
  * independently.)
  */
 export async function runSchemaCorpus(
-  validate: ValidateFunction,
+  validate: DocumentValidator,
   cases: CorpusCase[],
   convert: CorpusConvertFn,
 ): Promise<void> {

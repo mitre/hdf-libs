@@ -6,7 +6,7 @@ import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { results } from '@mitre/hdf-fixtures';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
-import { resultsCorpus, runSchemaCorpus } from '../../../shared/typescript/schema-corpus.js';
+import { resultsCorpus, runSchemaCorpus, jsonDocumentValidator } from '../../../shared/typescript/schema-corpus.js';
 import { convertHdfToOscalSar } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -230,7 +230,7 @@ describe('hdf-to-oscal-sar against the adversarial corpus', () => {
   it('satisfies every contract for every non-exempt case', async () => {
     const cases = resultsCorpus().filter((c) => !(c.name in CORPUS_EXEMPTIONS));
     expect(cases.length, 'every case exempted — the run would prove nothing').toBeGreaterThan(0);
-    await runSchemaCorpus(validateAR, cases, (input) => convertHdfToOscalSar(input));
+    await runSchemaCorpus(jsonDocumentValidator(validateAR), cases, (input) => convertHdfToOscalSar(input));
   });
 });
 

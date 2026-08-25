@@ -2,7 +2,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import { loadSchemaValidator, assertSchemaValid } from '../../../shared/typescript/schema-validation.js';
-import { amendmentsCorpus, runSchemaCorpus } from '../../../shared/typescript/schema-corpus.js';
+import { amendmentsCorpus, runSchemaCorpus, jsonDocumentValidator } from '../../../shared/typescript/schema-corpus.js';
 import { maskVolatileJson } from '../../../shared/typescript/golden-mask.js';
 import { readFileSync } from 'node:fs';
 import { convertHdfToOscalPoam } from './converter.js';
@@ -42,7 +42,7 @@ describe('hdf-to-oscal-poam output validates against NIST OSCAL v1.1.2 POA&M sch
 // issue #236 ship.
 describe('hdf-to-oscal-poam against the adversarial corpus', () => {
   it('satisfies both corpus contracts', async () => {
-    await runSchemaCorpus(validate, amendmentsCorpus(), (input) =>
+    await runSchemaCorpus(jsonDocumentValidator(validate), amendmentsCorpus(), (input) =>
       convertHdfToOscalPoam(input),
     );
   });
@@ -124,7 +124,7 @@ describe('hdf-to-oscal-poam corpus golden parity (TS↔Go)', () => {
 
 // OSCAL types prop/@name as TokenDatatype, while HDF puts no constraint on
 // amendments.labels keys. Mirrors the Go peer case for case. Every label key in
-// this repo's fixtures is token-shaped today, so these are shapes real data has
+// this package's converter fixtures is token-shaped today, so these are shapes real data has
 // not yet produced — but Kubernetes and OCI label keys are namespaced with '/',
 // which HDF permits and OSCAL rejects.
 describe('hdf-to-oscal-poam label keys', () => {

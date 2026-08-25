@@ -295,7 +295,7 @@ func TestConvertHDFToOSCALSAR_OmitsFindingWithoutControlID(t *testing.T) {
 // TestConvertHDFToOSCALSAR_NonTokenRequirementIDs is the general case card .17
 // left open. OSCAL types target-id as a token, and a requirement id only happens
 // to satisfy that pattern when the source tool numbers its rules the way NIST
-// does. Measured across this repo's real fixtures, 46% of requirement ids do
+// does. Measured across this package's converter fixtures, 46% of requirement ids do
 // not (57% of the distinct ids): package-style ids carrying '/', CIS control numbers starting with a
 // digit, advisory ids carrying ':'. Each produced a document the target schema
 // rejects, from perfectly valid HDF, at exit 0.
