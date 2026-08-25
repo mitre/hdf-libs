@@ -305,7 +305,7 @@ type DocumentValidator interface {
 // MustNotCorrupt would green-light the precise defect those contracts exist to
 // catch (an unguarded results[0] index is the live example).
 func CheckCase(v DocumentValidator, c CorpusCase, convert CorpusConvertFn) string {
-	out, err := convertNoPanic(convert, c.Input)
+	out, err := ConvertNoPanic(convert, c.Input)
 
 	var panicked *PanicError
 	if errors.As(err, &panicked) {
@@ -370,9 +370,9 @@ func RunSchemaCorpus(t *testing.T, v DocumentValidator, cases []CorpusCase, conv
 	}
 }
 
-// convertNoPanic turns a converter panic into an error so a crash is reported as
+// ConvertNoPanic turns a converter panic into an error so a crash is reported as
 // a failing case rather than aborting the suite.
-func convertNoPanic(convert CorpusConvertFn, input []byte) (out []byte, err error) {
+func ConvertNoPanic(convert CorpusConvertFn, input []byte) (out []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = &PanicError{Value: r}

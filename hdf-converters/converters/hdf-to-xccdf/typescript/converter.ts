@@ -339,7 +339,9 @@ function buildRuleObj(req: EvaluatedRequirement): Record<string, unknown> {
   }
   // The shared helper, not a truthy test: it trims, so whitespace-only code is
   // skipped here exactly as it is in the Go peer.
-  const code = firstNonEmpty(req.code);
+  // req.code is optional in HDF; main's firstNonEmpty takes strings, so the
+  // absent case is coerced here rather than widening the shared helper.
+  const code = firstNonEmpty(req.code ?? '');
   if (code !== '') {
     checks.push({
       [`${ATTR}system`]: 'http://inspec.io/',
