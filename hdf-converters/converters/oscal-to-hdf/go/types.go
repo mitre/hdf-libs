@@ -91,11 +91,13 @@ type ResponsibleParty struct {
 
 // Property is a name-value pair with optional namespace and class.
 type Property struct {
-	Name    string `json:"name"`
-	Value   string `json:"value"`
-	Ns      string `json:"ns,omitempty"`
-	Class   string `json:"class,omitempty"`
-	UUID    string `json:"uuid,omitempty"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
+	Ns    string `json:"ns,omitempty"`
+	Class string `json:"class,omitempty"`
+	UUID  string `json:"uuid,omitempty"`
+	// Remarks carries the source identifier when Name had to be encoded to a
+	// TokenDatatype, so the mapping back to the HDF value is not lost.
 	Remarks string `json:"remarks,omitempty"`
 }
 

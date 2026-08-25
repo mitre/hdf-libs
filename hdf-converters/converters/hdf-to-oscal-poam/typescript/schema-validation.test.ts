@@ -10,6 +10,10 @@ import { convertHdfToOscalPoam } from './converter.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // NIST OSCAL v1.1.2 POA&M schema (draft-07). See ../schemas/PROVENANCE.md.
 const validate = loadSchemaValidator(join(__dirname, '..', 'schemas', 'oscal_poam_schema-v1.1.2.json'));
+/** The HDF schema the converter's inputs must themselves satisfy. */
+const validateHdfAmendments = loadSchemaValidator(
+  join(__dirname, '..', '..', '..', '..', 'hdf-validators', 'go', 'schemas', 'hdf-amendments.schema.json'),
+);
 
 const amendments = JSON.stringify({
   name: 'test-poam',
@@ -117,3 +121,53 @@ describe('hdf-to-oscal-poam corpus golden parity (TS↔Go)', () => {
   );
 });
 
+
+// OSCAL types prop/@name as TokenDatatype, while HDF puts no constraint on
+// amendments.labels keys. Mirrors the Go peer case for case. Every label key in
+// this repo's fixtures is token-shaped today, so these are shapes real data has
+// not yet produced — but Kubernetes and OCI label keys are namespaced with '/',
+// which HDF permits and OSCAL rejects.
+describe('hdf-to-oscal-poam label keys', () => {
+  it.each([
+    ['app.kubernetes.io/name', 'app.kubernetes.io_name'],
+    ['env:prod', 'env_prod'],
+    ['2024-audit', '_2024-audit'],
+    ['com.redhat.component', 'com.redhat.component'],
+    ['', '_'],
+  ])('encodes %s to a token', async (key, want) => {
+    const input = JSON.stringify({
+      name: 'a',
+      overrides: [
+        {
+          requirementId: 'r',
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'accepted risk',
+          appliedAt: '2020-01-01T00:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
+          appliedBy: { identifier: 'analyst', type: 'username' },
+        },
+      ],
+      labels: { [key]: 'x' },
+    });
+
+    // Asserted, not asserted-about: a converter fed input its own schema rejects
+    // proves nothing about what it does with real documents.
+    assertSchemaValid(validateHdfAmendments, 'test input', JSON.parse(input));
+
+    const out = await convertHdfToOscalPoam(input);
+    assertSchemaValid(validate, key, JSON.parse(out));
+
+    const doc = JSON.parse(out) as {
+      'plan-of-action-and-milestones': {
+        metadata: { props?: Array<{ name: string; value: string; remarks?: string }> };
+      };
+    };
+    const prop = doc['plan-of-action-and-milestones'].metadata.props?.find((p) => p.name === want);
+    expect(prop, `no metadata prop named ${want}`).toBeDefined();
+    expect(prop?.value).toBe('x');
+    // A rewritten name must keep the source key, or the label is lost; an empty
+    // key has no source text to preserve.
+    expect(prop?.remarks).toBe(key === '' || want === key ? undefined : key);
+  });
+});
