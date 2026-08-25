@@ -13,26 +13,15 @@ import (
 
 // ConvertHDFToCSV converts HDF JSON to CSV format
 func ConvertHDFToCSV(input []byte) ([]byte, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("hdf-to-csv: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "hdf-to-csv", 0); err != nil {
-		return nil, fmt.Errorf("hdf-to-csv: %w", err)
-	}
-
-	// Parse HDF JSON
 	var hdfData hdf.HDFResults
-	if err := shared.DecodeHDF(input, &hdfData); err != nil {
-		return nil, fmt.Errorf("invalid HDF JSON: %w", err)
+	if err := shared.RequireHDFResults(input, "hdf-to-csv", &hdfData); err != nil {
+		return nil, err
 	}
 
-	// Validate structure
-	if hdfData.Baselines == nil {
-		return nil, fmt.Errorf("invalid HDF structure: missing baselines field")
+	rows, err := buildCSVRows(&hdfData)
+	if err != nil {
+		return nil, err
 	}
-
-	// Build CSV rows
-	rows := buildCSVRows(&hdfData)
 
 	// If no rows, return empty string
 	if len(rows) == 0 {
@@ -52,7 +41,7 @@ func ConvertHDFToCSV(input []byte) ([]byte, error) {
 }
 
 // buildCSVRows constructs CSV rows from HDF data
-func buildCSVRows(hdfData *hdf.HDFResults) [][]string {
+func buildCSVRows(hdfData *hdf.HDFResults) ([][]string, error) {
 	var rows [][]string
 
 	// Add header row
@@ -112,7 +101,10 @@ func buildCSVRows(hdfData *hdf.HDFResults) [][]string {
 		for _, requirement := range baseline.Requirements {
 			// Create row for each target
 			for _, target := range targets {
-				row := createRow(&baseline, &requirement, &target)
+				row, err := createRow(&baseline, &requirement, &target)
+				if err != nil {
+					return nil, err
+				}
 				rows = append(rows, row)
 			}
 		}
@@ -120,14 +112,14 @@ func buildCSVRows(hdfData *hdf.HDFResults) [][]string {
 
 	// If only header row, return empty (no data rows)
 	if len(rows) == 1 {
-		return [][]string{}
+		return [][]string{}, nil
 	}
 
-	return rows
+	return rows, nil
 }
 
 // createRow creates a single CSV row
-func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequirement, target *hdf.Component) []string {
+func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequirement, target *hdf.Component) ([]string, error) {
 	// Get default description
 	description := ""
 	for _, desc := range requirement.Descriptions {
@@ -150,7 +142,13 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 	// Get severity
 	severity := getSeverity(requirement)
 
-	// Get status from first result (required, minItems: 1)
+	// results carries minItems 1, and "not evaluated" is expressed as a result with
+	// status notReviewed — so an empty one is malformed input with no legitimate
+	// producer, not a row with an unknown status. Indexing it unchecked panicked,
+	// and there is no recover() in the CLI call path.
+	if len(requirement.Results) == 0 {
+		return nil, fmt.Errorf("hdf-to-csv: requirement %q has no results", requirement.ID)
+	}
 	firstResult := requirement.Results[0]
 	status := string(firstResult.Status)
 	message := ""
@@ -276,7 +274,7 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 		sanitizeCSV(kev),
 		sanitizeCSV(fqdn),
 		sanitizeCSV(ipAddress),
-	}
+	}, nil
 }
 
 // joinOverrides applies pick to every status override and joins non-empty

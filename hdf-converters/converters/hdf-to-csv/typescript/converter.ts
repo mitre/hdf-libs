@@ -1,6 +1,6 @@
 import { buildCsv, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Component, Description, StatusOverride, Cvss } from '@mitre/hdf-schema';
-import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
+import { requireHdfResults } from '../../../shared/typescript/converterutil.js';
 
 /**
  * Row structure for CSV export
@@ -55,16 +55,7 @@ interface TargetIdentity {
  * @returns CSV string with sanitized output
  */
 export function convertHdfToCsv(input: string): string {
-  validateInputSize(input, 'hdf-to-csv');
-  const hdf = parseHdf<HDFResults>(input);
-
-  if (!hdf || typeof hdf !== 'object' || !('baselines' in hdf)) {
-    throw new Error('Invalid HDF structure: missing baselines field');
-  }
-
-  if (!Array.isArray(hdf.baselines)) {
-    throw new Error('Invalid HDF structure: baselines must be an array');
-  }
+  const hdf = requireHdfResults<HDFResults>(input, 'hdf-to-csv');
 
   const rows: CsvRow[] = [];
 
@@ -97,6 +88,17 @@ export function convertHdfToCsv(input: string): string {
 }
 
 /**
+ * The requirement id as text. HDF makes id required, but nested-invalid input
+ * reaches the converter, and an absent id reached sanitizeCsvValue's String()
+ * as the literal "undefined" — where Go, formatting a zero-value string, wrote
+ * nothing. Used for the Requirement ID column and for the no-results message,
+ * which would otherwise name the requirement "undefined".
+ */
+function requirementIdText(id: string | undefined): string {
+  return typeof id === 'string' ? id : '';
+}
+
+/**
  * Create a CSV row from baseline, requirement, and target data
  */
 function createRow(
@@ -118,10 +120,19 @@ function createRow(
   // Get severity from tags or derive from impact
   const severity = getSeverity(requirement);
 
-  // Get status from first result (results is required, minItems: 1 per schema)
-  const firstResult = requirement.results[0];
-  const status = firstResult?.status || '';
-  const message = firstResult?.message || '';
+  // results carries minItems 1, and "not evaluated" is expressed as a result with
+  // status notReviewed — so an absent one is malformed input with no legitimate
+  // producer, not a row with an unknown status. Checked at the index rather than
+  // in the caller so the type checker sees the narrowing too. Array.isArray also
+  // covers a null results, which reaches here as a non-array and would otherwise
+  // throw a TypeError from the destructure before the guard could report it.
+  const results = Array.isArray(requirement.results) ? requirement.results : [];
+  const [firstResult] = results;
+  if (!firstResult) {
+    throw new Error(`hdf-to-csv: requirement "${requirementIdText(requirement.id)}" has no results`);
+  }
+  const status = firstResult.status;
+  const message = firstResult.message ?? '';
 
   // Extract NIST and CCI controls from tags
   const nistControls = extractArrayFromTags(requirement.tags, 'nist');
@@ -139,7 +150,7 @@ function createRow(
     'Baseline Title': baseline.title || '',
     'Target ID': target.name,
     'Target Type': target.type,
-    'Requirement ID': requirement.id,
+    'Requirement ID': requirementIdText(requirement.id),
     'Requirement Title': requirement.title || '',
     'Description': description,
     'Check': check,

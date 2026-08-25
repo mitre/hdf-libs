@@ -55,3 +55,21 @@ func TestHDFToCSVConverter_Convert_EmptyBaselines(t *testing.T) {
 	require.NoError(t, err, "Should succeed with empty baselines")
 	assert.Empty(t, output, "Output should be empty")
 }
+
+// Asserts the registered converter returns an error rather than panicking. The
+// unit test covers the same input; this one covers the registry path the CLI
+// actually resolves, where there is no recover() — so a panic here would kill
+// the process instead of reporting a bad file.
+func TestHDFToCSVConverter_Convert_EmptyResultsSurfacesErrorNotPanic(t *testing.T) {
+	converter, err := GetConverter("hdf", "csv")
+	require.NoError(t, err, "Failed to get HDF-to-CSV converter")
+
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"V-1","impact":0,"tags":{},` +
+		`"descriptions":[{"label":"default","data":"d"}],"results":[]}]}]}`)
+
+	require.NotPanics(t, func() {
+		_, err := converter.Convert(input)
+		require.Error(t, err, "a requirement with no results must be reported, not rendered")
+		assert.EqualError(t, err, `hdf-to-csv: requirement "V-1" has no results`)
+	})
+}

@@ -1,8 +1,10 @@
 package hdftocsv
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -341,4 +343,125 @@ func TestGoldenParity(t *testing.T) {
 	golden, err := os.ReadFile(goldenPath)
 	require.NoError(t, err, "read golden %s", goldenPath)
 	assert.Equal(t, string(golden), string(out), "golden mismatch")
+}
+
+// A requirement with no results is malformed: hdf-results puts minItems 1 on
+// results, no requirement in this repo's HDF fixtures carries an empty one, and
+// "not evaluated" already has its own representation as a result with status
+// notReviewed. So there is no legitimate producer, and the converter rejects
+// rather than emitting a row whose blank Status cell is indistinguishable from a
+// genuinely blank one.
+//
+// Go previously indexed Results[0] unchecked and panicked, taking the process
+// down — there is no recover() in the CLI call path.
+func TestConvertHDFToCSV_EmptyResultsIsRejected(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"V-1","impact":0,"tags":{},` +
+		`"descriptions":[{"label":"default","data":"d"}],"results":[]}]}]}`)
+
+	require.NotPanics(t, func() {
+		_, err := ConvertHDFToCSV(input)
+		require.Error(t, err, "a requirement with no results must be rejected, not rendered")
+		assert.EqualError(t, err, `hdf-to-csv: requirement "V-1" has no results`,
+			"the message names the offending requirement so the input can be found")
+	})
+}
+
+// The guard owns this wording so the two languages cannot drift; before, Go said
+// "invalid" and TypeScript "Invalid", and neither carried the converter prefix.
+func TestConvertHDFToCSV_MissingBaselinesMessage(t *testing.T) {
+	_, err := ConvertHDFToCSV([]byte(`{}`))
+	require.Error(t, err)
+	assert.EqualError(t, err, "hdf-to-csv: invalid HDF structure: missing baselines field")
+}
+
+// csvStructureValidator is this converter's stand-in for a target schema: CSV
+// has no published schema, but a document that does not parse, or whose rows
+// disagree on column count, is malformed in the way a schema would catch. A
+// no-op validator would make every MustConvert contract pass vacuously.
+type csvStructureValidator struct{}
+
+func (csvStructureValidator) Validate(doc []byte) error {
+	if len(doc) == 0 {
+		return nil // the converter's zero-row output
+	}
+	r := csv.NewReader(bytes.NewReader(doc))
+	r.FieldsPerRecord = 0 // first record fixes the count; later mismatches error
+	if _, err := r.ReadAll(); err != nil {
+		return fmt.Errorf("output is not well-formed CSV: %w", err)
+	}
+	return nil
+}
+
+// TestConvertHDFToCSV_AdversarialCorpus holds this converter to the shared
+// corpus contracts. Strictness makes the empty-results case a rejection, which
+// the MustNotCorrupt contract permits.
+func TestConvertHDFToCSV_AdversarialCorpus(t *testing.T) {
+	shared.RunSchemaCorpus(t, csvStructureValidator{}, shared.ResultsCorpus(), ConvertHDFToCSV)
+}
+
+// corpusRejected marks a corpus case the converter refuses; the two languages
+// phrase the error differently, so only the fact of refusing is compared.
+const corpusRejected = "REJECTED"
+
+// TestConvertHDFToCSV_CorpusOutputGolden pins what this converter emits for every
+// corpus input so the two languages are compared against one another rather than
+// each against its own expectations. Go owns regeneration
+// (go test ./converters/hdf-to-csv/go/ -update); TypeScript only verifies.
+func TestConvertHDFToCSV_CorpusOutputGolden(t *testing.T) {
+	outputs := make(map[string]string, len(shared.ResultsCorpus()))
+	for _, c := range shared.ResultsCorpus() {
+		// A panic here would abort the whole package run rather than failing this
+		// one test. It is folded into the same marker as a clean rejection, so this
+		// golden pins output parity only — crash-versus-rejection is the corpus
+		// contract's job, which type-switches on PanicError.
+		out, err := shared.ConvertNoPanic(ConvertHDFToCSV, c.Input)
+		if err != nil {
+			outputs[c.Name] = corpusRejected
+			continue
+		}
+		outputs[c.Name] = string(out)
+	}
+
+	actual, err := json.MarshalIndent(outputs, "", "  ")
+	require.NoError(t, err)
+	actual = append(actual, '\n')
+
+	path := filepath.Join("..", "fixtures", "expected", "corpus-outputs.json")
+	if shared.UpdateSnapshots() {
+		require.NoError(t, os.WriteFile(path, actual, 0o600))
+		t.Logf("updated %s", path)
+		return
+	}
+	expected, err := os.ReadFile(path)
+	require.NoError(t, err, "missing corpus output golden; regenerate with -update")
+	require.JSONEq(t, string(expected), string(actual),
+		"corpus output changed; if intentional regenerate with: go test ./converters/hdf-to-csv/go/ -update")
+}
+
+// Both shapes reach the same guard: an absent id must be named as empty rather
+// than rendered from a zero value that reads like a real id, and a nil results
+// (what "results": null decodes to) must report the same error as an empty one.
+// These pin that Go agrees with the TypeScript peer on both.
+func TestConvertHDFToCSV_MalformedResultsShapes(t *testing.T) {
+	for _, tc := range []struct{ name, requirement, want string }{
+		{
+			"absent id",
+			`{"impact":0,"tags":{},"descriptions":[{"label":"default","data":"d"}],"results":[]}`,
+			`hdf-to-csv: requirement "" has no results`,
+		},
+		{
+			"null results",
+			`{"id":"V-1","impact":0,"tags":{},"descriptions":[{"label":"default","data":"d"}],"results":null}`,
+			`hdf-to-csv: requirement "V-1" has no results`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			input := []byte(`{"baselines":[{"name":"b","requirements":[` + tc.requirement + `]}]}`)
+			require.NotPanics(t, func() {
+				_, err := ConvertHDFToCSV(input)
+				require.Error(t, err)
+				assert.EqualError(t, err, tc.want)
+			})
+		})
+	}
 }

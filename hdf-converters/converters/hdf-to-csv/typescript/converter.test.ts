@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
+import { resultsCorpus } from '../../../shared/typescript/schema-corpus.js';
 import { convertHdfToCsv } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -432,5 +433,99 @@ describe('hdfcsv Converter', () => {
       const result = convertHdfToCsv(input);
       expect(result).toContain('AC-1');
     });
+  });
+});
+
+// A requirement with no results is malformed: hdf-results puts minItems 1 on
+// results, no requirement in this repo's HDF fixtures carries an empty one, and
+// "not evaluated" already has its own representation as a result with status
+// notReviewed. So there is no legitimate producer, and the converter rejects
+// rather than emitting a row whose blank Status cell is indistinguishable from a
+// genuinely blank one. Mirrors the Go peer.
+describe('hdf-to-csv malformed input', () => {
+  const emptyResults = JSON.stringify({
+    baselines: [
+      {
+        name: 'b',
+        requirements: [
+          {
+            id: 'V-1',
+            impact: 0,
+            tags: {},
+            descriptions: [{ label: 'default', data: 'd' }],
+            results: [],
+          },
+        ],
+      },
+    ],
+  });
+
+  it('rejects a requirement with no results', () => {
+    expect(() => convertHdfToCsv(emptyResults)).toThrow(
+      'hdf-to-csv: requirement "V-1" has no results',
+    );
+  });
+
+  // The shared guard owns this wording so the two languages cannot drift; before,
+  // Go said "invalid" and this side "Invalid", and neither carried the prefix.
+  it('reports the canonical missing-baselines message', () => {
+    expect(() => convertHdfToCsv('{}')).toThrow(
+      'hdf-to-csv: invalid HDF structure: missing baselines field',
+    );
+  });
+});
+
+// The two languages are compared against one another rather than each against
+// its own expectations. Go owns the golden
+// (go test ./converters/hdf-to-csv/go/ -update); this side only verifies, so
+// neither language can quietly redefine parity to match itself.
+describe('hdf-to-csv corpus output parity', () => {
+  const golden = JSON.parse(
+    readFileSync(join(fixturesDir, 'expected', 'corpus-outputs.json'), 'utf-8'),
+  ) as Record<string, string>;
+
+  it('covers every corpus case', () => {
+    expect(Object.keys(golden).sort()).toEqual(resultsCorpus().map((c) => c.name).sort());
+  });
+
+  it.each(resultsCorpus().map((c) => [c.name, c] as const))(
+    'emits what the Go peer emits for %s',
+    (name, c) => {
+      let actual: string;
+      try {
+        actual = convertHdfToCsv(c.input);
+      } catch {
+        actual = 'REJECTED';
+      }
+      expect(actual, `TypeScript and Go diverged on corpus case ${name}`).toBe(golden[name]);
+    },
+  );
+});
+
+// Both shapes reach the same guard: an absent id must not be named "undefined"
+// in the message (the column coercion was added for exactly that, and the
+// message needed it too), and a null results must not throw a TypeError from
+// the destructure before the guard can report it. Go reaches both by way of a
+// zero-value string and a nil slice; these pin that TypeScript agrees.
+describe('hdf-to-csv malformed results shapes', () => {
+  const doc = (requirement: Record<string, unknown>) =>
+    JSON.stringify({ baselines: [{ name: 'b', requirements: [requirement] }] });
+
+  const base = {
+    impact: 0,
+    tags: {},
+    descriptions: [{ label: 'default', data: 'd' }],
+  };
+
+  it('names an absent id as empty, never "undefined"', () => {
+    expect(() => convertHdfToCsv(doc({ ...base, results: [] }))).toThrow(
+      'hdf-to-csv: requirement "" has no results',
+    );
+  });
+
+  it('reports a null results rather than throwing a TypeError', () => {
+    expect(() => convertHdfToCsv(doc({ ...base, id: 'V-1', results: null }))).toThrow(
+      'hdf-to-csv: requirement "V-1" has no results',
+    );
   });
 });
