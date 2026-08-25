@@ -199,6 +199,19 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 
 	for i := range baseline.Requirements {
 		req := &baseline.Requirements[i]
+
+		// A finding is a claim about a specific control, and OSCAL types
+		// target-id as a token — an empty one fails the pattern outright. HDF
+		// requires an id on a requirement, so reaching this is already invalid
+		// input, but emitting the finding anyway would produce a document the
+		// target schema rejects. The finding is dropped rather than carrying a
+		// fabricated identifier, which would manufacture traceability the source
+		// never had. The control-selections guard below skips the same requirement
+		// for the same reason, though it guards only a control selection.
+		if oscal.NistTagToControlID(req.ID) == "" {
+			continue
+		}
+
 		f, obs, rsk := requirementToFindingSet(req, timestamp, toolActorUUID, subjects)
 		findings = append(findings, f)
 		if obs != nil {

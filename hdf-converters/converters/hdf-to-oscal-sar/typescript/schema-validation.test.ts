@@ -6,6 +6,7 @@ import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { results } from '@mitre/hdf-fixtures';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
+import { resultsCorpus, runSchemaCorpus } from '../../../shared/typescript/schema-corpus.js';
 import { convertHdfToOscalSar } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -171,6 +172,65 @@ describe('hdf-to-oscal-sar empty-assessment handling', () => {
 
     expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
     expect(out).not.toContain('"risks": []');
+  });
+});
+
+describe('hdf-to-oscal-sar findings without a control id', () => {
+  // OSCAL types finding-target.target-id as a token, so an empty one fails the
+  // pattern and the whole document with it. The finding is dropped rather than
+  // given a derived identifier: an index or a UUID would satisfy the pattern
+  // while manufacturing traceability the source never had.
+  it('omits the finding and keeps the identified ones', async () => {
+    const input = JSON.stringify({
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            {
+              impact: 0,
+              tags: {},
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+            },
+            {
+              id: 'AC-1',
+              impact: 0,
+              tags: {},
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+    });
+
+    const out = await convertHdfToOscalSar(input);
+    const doc = JSON.parse(out) as {
+      'assessment-results': {
+        results: Array<{ findings?: Array<{ target: { 'target-id': string } }> }>;
+      };
+    };
+
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
+    const findings = doc['assessment-results'].results[0].findings ?? [];
+    expect(findings).toHaveLength(1);
+    expect(findings[0].target['target-id']).toBe('ac-1');
+  });
+});
+
+// Mirrors the Go corpus run, including the same single exemption. Adding this
+// caught a crash Go never saw: req.id arrives undefined here where Go's zero
+// value is the empty string.
+describe('hdf-to-oscal-sar against the adversarial corpus', () => {
+  const CORPUS_EXEMPTIONS: Record<string, string> = {
+    'zero-baselines':
+      'hdf-libs-wq3u: baselines currently has no minItems, so an empty assessment is legal HDF that OSCAL cannot represent — this converter rejects it deliberately',
+  };
+
+  it('satisfies every contract for every non-exempt case', async () => {
+    const cases = resultsCorpus().filter((c) => !(c.name in CORPUS_EXEMPTIONS));
+    expect(cases.length, 'every case exempted — the run would prove nothing').toBeGreaterThan(0);
+    await runSchemaCorpus(validateAR, cases, (input) => convertHdfToOscalSar(input));
   });
 });
 

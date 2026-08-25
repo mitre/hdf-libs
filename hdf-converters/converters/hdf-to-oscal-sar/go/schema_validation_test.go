@@ -159,13 +159,12 @@ func TestConvertHDFToOSCALSAR_OriginActorsResolve(t *testing.T) {
 // not yet satisfy. An exemption without a card that removes it is a hole, so
 // each entry names one.
 //
-// The MustNotCorrupt contract removed two exemptions this converter previously
-// needed: baseline-empty-requirements and requirement-empty-results are
-// nested-invalid, and this converter converts both into schema-valid output,
-// which that contract permits. Only genuine gaps remain.
+// The MustNotCorrupt contract removed the exemptions this converter previously
+// needed for nested-invalid input: it converts those into schema-valid output,
+// which that contract permits. The one remaining exemption is a genuine gap in
+// what OSCAL can express, not a converter defect.
 var corpusExemptions = map[string]string{
-	"zero-baselines":         "hdf-libs-wq3u: baselines currently has no minItems, so an empty assessment is legal HDF that OSCAL cannot represent — this converter rejects it deliberately",
-	"requirement-missing-id": "hdf-libs-5gri.17: converts into output carrying an empty target-id, which fails the OSCAL token pattern",
+	"zero-baselines": "hdf-libs-wq3u: baselines currently has no minItems, so an empty assessment is legal HDF that OSCAL cannot represent — this converter rejects it deliberately",
 }
 
 func corpusMinusExemptions(t *testing.T) []shared.CorpusCase {
@@ -247,4 +246,47 @@ func TestConvertHDFToOSCALSAR_ResultWithoutObservationsIsValid(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, v.Validate(out), "a result with no observations must still satisfy the schema")
 	require.NotContains(t, string(out), `"observations": []`, "an empty observations array violates minItems 1")
+}
+
+// TestConvertHDFToOSCALSAR_OmitsFindingWithoutControlID pins the choice made for
+// a requirement carrying no id. OSCAL types finding-target.target-id as a token,
+// so an empty one fails the pattern and the whole document with it.
+//
+// The finding is dropped rather than given a derived identifier: an index or a
+// UUID would satisfy the pattern while manufacturing traceability the source
+// never had, and a title is prose, not an identifier. Dropping loses a finding
+// the source reported, which is the honest cost — HDF requires an id, so this
+// input is already invalid and the loss is attributable to the producer.
+func TestConvertHDFToOSCALSAR_OmitsFindingWithoutControlID(t *testing.T) {
+	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
+		"hdf-to-oscal-sar", "schemas", "oscal_assessment-results_schema-v1.1.2.json"))
+
+	// One requirement with an id, one without: the identified finding survives
+	// and the anonymous one is dropped, so this proves omission is targeted
+	// rather than the whole baseline being discarded.
+	input := []byte(`{"baselines":[{"name":"b","requirements":[` +
+		`{"impact":0,"tags":{},"descriptions":[{"label":"default","data":"d"}],` +
+		`"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]},` +
+		`{"id":"AC-1","impact":0,"tags":{},"descriptions":[{"label":"default","data":"d"}],` +
+		`"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}` +
+		`]}]}`)
+
+	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	require.NoError(t, v.Validate(out), "an empty target-id fails the OSCAL token pattern")
+
+	var doc struct {
+		AR struct {
+			Results []struct {
+				Findings []struct {
+					Target struct {
+						TargetID string `json:"target-id"`
+					} `json:"target"`
+				} `json:"findings"`
+			} `json:"results"`
+		} `json:"assessment-results"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.AR.Results[0].Findings, 1, "only the identified requirement yields a finding")
+	require.Equal(t, "ac-1", doc.AR.Results[0].Findings[0].Target.TargetID)
 }

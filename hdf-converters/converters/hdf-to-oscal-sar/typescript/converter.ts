@@ -213,6 +213,19 @@ function baselineToResult(
   const seenControl = new Set<string>();
 
   for (const req of baseline.requirements) {
+    // A finding is a claim about a specific control, and OSCAL types target-id
+    // as a token — an empty one fails the pattern outright. HDF requires an id
+    // on a requirement, so reaching this is already invalid input, but emitting
+    // the finding anyway would produce a document the target schema rejects. The
+    // finding is dropped rather than carrying a fabricated identifier, which
+    // would manufacture traceability the source never had. The control-selections
+    // guard below skips the same requirement for the same reason, though it
+    // guards only a control selection.
+    // req.id is typed string, but this input is HDF-invalid precisely because
+    // the key is absent, so it arrives undefined and nistTagToControlId would
+    // throw on it. Go sees "" instead, which is why only TypeScript crashed.
+    if (!req.id || nistTagToControlId(req.id) === '') continue;
+
     const { finding, observation, risk } = requirementToFindingSet(req, timestamp, toolActorUuid, subjects);
     findings.push(finding);
     if (observation) {
