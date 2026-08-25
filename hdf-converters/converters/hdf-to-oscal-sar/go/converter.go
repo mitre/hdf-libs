@@ -220,7 +220,10 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		if rsk != nil {
 			risks = append(risks, *rsk)
 		}
-		if cid := oscal.NistTagToControlID(req.ID); cid != "" && !seenControl[cid] {
+		// Encoded identically to the finding's target-id below: a finding that
+		// referenced a control absent from this list would validate while
+		// claiming to assess something the result never declares reviewing.
+		if cid := oscal.OSCALToken(oscal.NistTagToControlID(req.ID)); cid != "" && !seenControl[cid] {
 			seenControl[cid] = true
 			includeControls = append(includeControls, oscal.SelectControl{ControlID: cid})
 		}
@@ -288,7 +291,11 @@ func descriptionByLabel(descriptions []hdf.Description, label string) string {
 }
 
 func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, toolActorUUID string, subjects []oscal.SubjectRef) (oscal.Finding, *oscal.Observation, *oscal.Risk) {
-	controlID := oscal.NistTagToControlID(req.ID)
+	// OSCAL types target-id as a token, and a requirement id is only token-shaped
+	// when the source tool happens to number its rules that way. The source id is
+	// recorded in a prop below (trimmed, because OSCAL forbids a padded string
+	// value), so the encoding does not lose which requirement this came from.
+	controlID := oscal.OSCALToken(oscal.NistTagToControlID(req.ID))
 
 	// Determine the finding state from the effective (post-override) status when
 	// present, falling back to the raw worst-wins result aggregation. This makes
@@ -300,9 +307,16 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	// Build finding description from requirement descriptions
 	findingDesc := extractDefaultDescription(req.Descriptions)
 
-	// Build props from control mappings (nist/cci), code, non-default
-	// descriptions (check/fix/rationale), and v3.2 classification fields.
-	var props []oscal.Property
+	// The source requirement id. target-id carries an encoded form, because OSCAL
+	// constrains it to a token, so without this the identifier the source tool
+	// reported would be unrecoverable — and the encoding is not injective in
+	// principle. Trimmed because OSCAL's StringDatatype is ^\S(.*\S)?$, so a
+	// padded value would itself be schema-invalid; NistTagToControlID trims for
+	// target-id too, so the two stay consistent.
+	props := []oscal.Property{{Name: "hdf-requirement-id", Value: strings.TrimSpace(req.ID)}}
+
+	// Then control mappings (nist/cci), code, non-default descriptions
+	// (check/fix/rationale), and v3.2 classification fields.
 	// OSCAL prop values must be non-empty strings, so skip any empty value
 	// (e.g. an empty source `code`) rather than emitting a schema-invalid value: "".
 	addProp := func(name, value string) {

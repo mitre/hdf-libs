@@ -234,3 +234,48 @@ describe('hdf-to-oscal-sar against the adversarial corpus', () => {
   });
 });
 
+// Mirrors the Go peer. Asserts the PROP specifically: a bare substring check on
+// the whole document passes via the risk title, which also carries the id, so it
+// would stay green with the prop deleted.
+describe('hdf-to-oscal-sar non-token requirement ids', () => {
+  it.each([
+    ['AC-1', 'AC-1'],
+    ['V-38497', 'V-38497'],
+    ['1.1', '1.1'],
+    ['10180', '10180'],
+    ['CVE-2018-25032/ruby:nokogiri/1.10.9', 'CVE-2018-25032/ruby:nokogiri/1.10.9'],
+    ['RHSA-2023:7205/nodejs/1:18.20.4-1', 'RHSA-2023:7205/nodejs/1:18.20.4-1'],
+    ['CM-2 (1)', 'CM-2 (1)'],
+    ['  AC-2  ', 'AC-2'],
+    ['café-1', 'café-1'],
+  ])('converts %s and preserves the source id', async (id, wantProp) => {
+    const input = JSON.stringify({
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            {
+              id,
+              impact: 0,
+              tags: {},
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+    });
+
+    const out = await convertHdfToOscalSar(input);
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
+
+    const doc = JSON.parse(out) as {
+      'assessment-results': {
+        results: Array<{ findings: Array<{ props?: Array<{ name: string; value: string }> }> }>;
+      };
+    };
+    const props = doc['assessment-results'].results[0].findings[0].props ?? [];
+    expect(props.find((p) => p.name === 'hdf-requirement-id')?.value).toBe(wantProp);
+  });
+});
+

@@ -26,6 +26,7 @@ func TestAdversarialCorpus_CoversDocumentedCases(t *testing.T) {
 		"no-timestamp",
 		"requirement-without-title",
 		"requirement-without-code",
+		"requirement-with-non-token-id",
 		"requirement-without-severity",
 		"baselines-missing",
 		"baselines-null",
@@ -272,11 +273,12 @@ func TestCanonicalJSON_RemovesLanguageArtifacts(t *testing.T) {
 func TestCorpusContracts_AreExplicitAndCorrectlyAssigned(t *testing.T) {
 	want := map[string]CorpusContract{
 		// Sparse but schema-valid HDF.
-		"zero-baselines":               MustConvert,
-		"no-timestamp":                 MustConvert,
-		"requirement-without-title":    MustConvert,
-		"requirement-without-code":     MustConvert,
-		"requirement-without-severity": MustConvert,
+		"zero-baselines":                MustConvert,
+		"no-timestamp":                  MustConvert,
+		"requirement-without-title":     MustConvert,
+		"requirement-without-code":      MustConvert,
+		"requirement-with-non-token-id": MustConvert,
+		"requirement-without-severity":  MustConvert,
 		// Top-level shape is wrong: the document is not HDF Results at all.
 		"baselines-missing":    MustReject,
 		"baselines-null":       MustReject,

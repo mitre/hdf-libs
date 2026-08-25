@@ -117,6 +117,26 @@ export function resultsCorpus(): CorpusCase[] {
       why: 'absent code must omit the check element entirely, not emit an empty one',
     },
     {
+      name: 'requirement-with-non-token-id',
+      // Every other MustConvert case uses an id that happens to satisfy OSCAL's
+      // token pattern, which is why an exporter copying ids into a token-typed
+      // field passed the corpus while failing on 46% of this repo's real
+      // fixture ids. A package-style id is the commonest non-token shape.
+      input: JSON.stringify(
+        withTimestamp(
+          testhdf.results(
+            testhdf.req('CVE-2018-25032/ruby:nokogiri/1.10.9', {
+              title: 't',
+              severity: 'medium',
+              code: 'c',
+            }),
+          ),
+        ),
+      ),
+      contract: 'MustConvert',
+      why: 'requirement ids are whatever the source tool numbers rules with; target formats often constrain them lexically',
+    },
+    {
       name: 'requirement-without-severity',
       input: JSON.stringify(
         withTimestamp(testhdf.results(testhdf.req('V-1', { title: 't', code: 'c' }))),

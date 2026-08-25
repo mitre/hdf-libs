@@ -21,6 +21,11 @@
       "input": "{\"baselines\":[{\"name\":\"test\",\"requirements\":[{\"descriptions\":[{\"data\":\"V-1\",\"label\":\"default\"}],\"id\":\"V-1\",\"impact\":0,\"results\":[{\"codeDesc\":\"V-1\",\"startTime\":\"2020-01-01T00:00:00Z\",\"status\":\"notReviewed\"}],\"severity\":\"medium\",\"tags\":{},\"title\":\"t\"}]}],\"generator\":{\"name\":\"testhdf\",\"version\":\"0.0.0\"},\"timestamp\":\"2020-01-01T00:00:00Z\"}"
     },
     {
+      "name": "requirement-with-non-token-id",
+      "contract": "MustConvert",
+      "input": "{\"baselines\":[{\"name\":\"test\",\"requirements\":[{\"code\":\"c\",\"descriptions\":[{\"data\":\"CVE-2018-25032/ruby:nokogiri/1.10.9\",\"label\":\"default\"}],\"id\":\"CVE-2018-25032/ruby:nokogiri/1.10.9\",\"impact\":0,\"results\":[{\"codeDesc\":\"CVE-2018-25032/ruby:nokogiri/1.10.9\",\"startTime\":\"2020-01-01T00:00:00Z\",\"status\":\"notReviewed\"}],\"severity\":\"medium\",\"tags\":{},\"title\":\"t\"}]}],\"generator\":{\"name\":\"testhdf\",\"version\":\"0.0.0\"},\"timestamp\":\"2020-01-01T00:00:00Z\"}"
+    },
+    {
       "name": "requirement-without-severity",
       "contract": "MustConvert",
       "input": "{\"baselines\":[{\"name\":\"test\",\"requirements\":[{\"code\":\"c\",\"descriptions\":[{\"data\":\"V-1\",\"label\":\"default\"}],\"id\":\"V-1\",\"impact\":0,\"results\":[{\"codeDesc\":\"V-1\",\"startTime\":\"2020-01-01T00:00:00Z\",\"status\":\"notReviewed\"}],\"tags\":{},\"title\":\"t\"}]}],\"generator\":{\"name\":\"testhdf\",\"version\":\"0.0.0\"},\"timestamp\":\"2020-01-01T00:00:00Z\"}"
