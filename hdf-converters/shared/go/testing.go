@@ -5,6 +5,7 @@ package shared
 import (
 	"encoding/json"
 	"flag"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -373,4 +374,57 @@ func CompareJSON(t *testing.T, expected, actual interface{}, msgAndArgs ...inter
 	require.NoError(t, err, "Failed to marshal actual")
 
 	require.JSONEq(t, string(expectedJSON), string(actualJSON), msgAndArgs...)
+}
+
+// ForEachFixtureTags walks every converter fixture and calls fn with each HDF
+// tags map it finds. Tag keys and values are the one part of an HDF document
+// the schema leaves entirely open, so exporters that project them into a
+// constrained target field need to be checked against the shapes real
+// converters actually emit rather than shapes chosen to pass.
+func ForEachFixtureTags(fn func(tags map[string]interface{})) error {
+	var paths []string
+	err := filepath.WalkDir(GetConvertersDir(), func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && filepath.Ext(path) == ".json" &&
+			strings.Contains(filepath.ToSlash(path), "/fixtures/") {
+			paths = append(paths, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, path := range paths {
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		var doc interface{}
+		if json.Unmarshal(raw, &doc) != nil {
+			continue
+		}
+		visitTags(doc, fn)
+	}
+	return nil
+}
+
+func visitTags(node interface{}, fn func(map[string]interface{})) {
+	switch v := node.(type) {
+	case map[string]interface{}:
+		for key, child := range v {
+			if key == "tags" {
+				if tags, ok := child.(map[string]interface{}); ok {
+					fn(tags)
+				}
+			}
+			visitTags(child, fn)
+		}
+	case []interface{}:
+		for _, child := range v {
+			visitTags(child, fn)
+		}
+	}
 }

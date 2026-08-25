@@ -380,10 +380,33 @@ func metadataProps(a *hdf.HDFAmendments) []oscal.Property {
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			props = append(props, oscal.Property{Name: k, Value: a.Labels[k], Class: "amendment-label"})
+			props = append(props, labelProp(k, a.Labels[k]))
 		}
 	}
 	return props
+}
+
+// labelProp renders one amendments label as a property. OSCAL types prop/@name
+// as TokenDatatype while HDF puts no constraint on label keys, so the key is
+// encoded and the source key kept in remarks when it had to change. Every label
+// key in this repo's fixtures is token-shaped today, so this guards a shape real
+// data has not yet produced — but Kubernetes and OCI label keys are namespaced
+// with '/', which HDF permits and OSCAL rejects.
+func labelProp(key, value string) oscal.Property {
+	name := oscal.OSCALToken(key)
+	if name == "" {
+		// TokenDatatype requires at least one character, and an empty label key
+		// is valid HDF — labels constrains its values, not its property names.
+		name = "_"
+	}
+	prop := oscal.Property{Name: name, Value: value, Class: "amendment-label"}
+	// Recorded only when the name was encoded away from a non-empty key: an
+	// unchanged name has nothing to recover, and an empty key carries no text
+	// worth recovering.
+	if key != "" && name != key {
+		prop.Remarks = key
+	}
+	return prop
 }
 
 // observationCollected picks the collection timestamp for evidence observations,

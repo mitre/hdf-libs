@@ -85,7 +85,50 @@ function findDescription(
 
 /** Replace characters not valid in XCCDF IDs with underscores. */
 function sanitizeXccdfId(id: string): string {
-  return id.replace(/[^a-zA-Z0-9_.\-]/g, '_');
+  // The u flag makes this iterate code points, matching Go's strings.Map. Without
+  // it an astral character is two code units and collapses to two underscores
+  // where Go emits one.
+  return id.replace(/[^a-zA-Z0-9_.\-]/gu, '_');
+}
+
+/**
+ * Supply the trailing name segment that benchmarkIdType and profileIdType
+ * require via their .+ — a baseline with an empty name is valid HDF but
+ * produced "xccdf_hdf_benchmark_", which the XSD rejects.
+ */
+function xccdfNamePart(name: string): string {
+  return name === '' ? 'unnamed' : name;
+}
+
+/**
+ * Render an HDF tags.gid as a groupIdType: an NCName that must also match
+ * xccdf_[^_]+_group_.+ (xccdf_1.2.xsd:821). HDF constrains gid not at all, and
+ * most real data does not satisfy it — 783 of the 1216 distinct gid values in
+ * this repo's fixtures are bare STIG ids like "V-257777" — so copying one
+ * through produced XSD-invalid output from valid HDF.
+ *
+ * A gid that already conforms is a genuine XCCDF group id (STIG content carries
+ * "xccdf_mil.disa.stig_group_V-204393") and is passed through; anything else is
+ * sanitized and namespaced under this converter, matching what the benchmark,
+ * profile, and rule ids already do.
+ *
+ * Mirrored by xccdfGroupID in the Go converter.
+ */
+function xccdfGroupId(gid: string): string {
+  if (isXccdfGroupId(gid)) return gid;
+  // The trailing name is required by the pattern's .+, so an empty gid needs a
+  // placeholder. The caller skips empty gids; this keeps the encoder total.
+  return sanitizeXccdfId('xccdf_hdf_group_' + (gid === '' ? 'unnamed' : gid));
+}
+
+/**
+ * Whether a value already satisfies groupIdType. The character test is
+ * ASCII-only, deliberately narrower than NCName: a conforming non-ASCII id is
+ * re-encoded rather than trusted, which errs toward valid output and keeps the
+ * check identical to the Go peer's.
+ */
+function isXccdfGroupId(id: string): boolean {
+  return /^xccdf_[^_]+_group_.+$/.test(id) && /^[A-Za-z0-9._-]+$/.test(id);
 }
 
 /** Read a string-valued tag, or undefined if absent/non-string. */
@@ -131,7 +174,7 @@ function buildBenchmarkObj(hdfData: HDFResults): Record<string, unknown> {
     [`${ATTR}xmlns`]: 'http://checklists.nist.gov/xccdf/1.2',
     [`${ATTR}id`]: empty
       ? 'xccdf_hdf_benchmark_exported'
-      : sanitizeXccdfId('xccdf_hdf_benchmark_' + hdfData.baselines[0]!.name),
+      : sanitizeXccdfId('xccdf_hdf_benchmark_' + xccdfNamePart(hdfData.baselines[0]!.name)),
     [`${ATTR}resolved`]: '1',
     status: wrap('incomplete'),
   };
@@ -153,7 +196,7 @@ function buildBenchmarkObj(hdfData: HDFResults): Record<string, unknown> {
 
   // Profile
   benchmark.Profile = {
-    [`${ATTR}id`]: sanitizeXccdfId('xccdf_hdf_profile_' + baseline.name),
+    [`${ATTR}id`]: sanitizeXccdfId('xccdf_hdf_profile_' + xccdfNamePart(baseline.name)),
     title: wrap(baseline.title ?? baseline.name),
   };
 
@@ -175,7 +218,7 @@ function buildBenchmarkObj(hdfData: HDFResults): Record<string, unknown> {
       if (idx === undefined) {
         idx = groups.length;
         groupIndex.set(gid, idx);
-        const group: Record<string, unknown> = { [`${ATTR}id`]: gid };
+        const group: Record<string, unknown> = { [`${ATTR}id`]: xccdfGroupId(gid) };
         const gtitle = tagString(req.tags, 'gtitle');
         if (gtitle) group.title = wrap(gtitle);
         group.Rule = [] as Record<string, unknown>[];

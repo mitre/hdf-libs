@@ -1,0 +1,21 @@
+{
+  "$comment": "Shared table for the hdf-to-xml element-name encoder. Go (xmlElementName) and TypeScript (xmlElementName) both read it, so neither language can drift. 'rewritten' is false when the key is already a legal XML Name and must be emitted unchanged.",
+  "cases": [
+    { "key": "nist", "name": "nist", "rewritten": false, "why": "an ordinary tag key is untouched" },
+    { "key": "check-text", "name": "check-text", "rewritten": false, "why": "'-' is a legal Name character" },
+    { "key": "cci.v4", "name": "cci.v4", "rewritten": false, "why": "'.' is a legal Name character" },
+    { "key": "_private", "name": "_private", "rewritten": false, "why": "'_' is a legal Name start character" },
+    { "key": "sonarqube/hash", "name": "sonarqube_hash", "rewritten": true, "why": "real sonarqube-to-hdf key: '/' is not a Name character" },
+    { "key": "sonarqube/quick_fix_available", "name": "sonarqube_quick_fix_available", "rewritten": true, "why": "real sonarqube-to-hdf key" },
+    { "key": "ionchannel/trigger_author", "name": "ionchannel_trigger_author", "rewritten": true, "why": "real ionchannel-to-hdf key" },
+    { "key": "800-53", "name": "_800-53", "rewritten": true, "why": "a Name may not start with a digit" },
+    { "key": "my tag", "name": "my_tag", "rewritten": true, "why": "a space is not a Name character" },
+    { "key": "a<b", "name": "a_b", "rewritten": true, "why": "'<' would corrupt the document, not merely invalidate it" },
+    { "key": "env:prod", "name": "env_prod", "rewritten": true, "why": "':' is a legal Name character but would invent an undeclared namespace prefix" },
+    { "key": "-leading", "name": "_-leading", "rewritten": true, "why": "'-' is legal within a Name but not at the start" },
+    { "key": ".leading", "name": "_.leading", "rewritten": true, "why": "'.' is legal within a Name but not at the start" },
+    { "key": "", "name": "_", "rewritten": true, "why": "an empty key has no Name to emit" },
+    { "key": "café", "name": "caf_", "rewritten": true, "why": "outside the ASCII kept set, which is deliberately narrower than XML Name" },
+    { "key": "日本", "name": "__", "rewritten": true, "why": "ditto — no fixture key is non-ASCII, so this costs nothing on real data" }
+  ]
+}

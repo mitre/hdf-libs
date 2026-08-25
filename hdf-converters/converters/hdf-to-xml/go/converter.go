@@ -2,6 +2,8 @@
 //
 // The serializer is generic, lossless, and order-preserving: it walks the
 // parsed HDF JSON tree and emits one element per key in source-JSON order,
+// encoding any key outside the ASCII set legal in an element name and
+// preserving the original in a name attribute (see xmlStart),
 // with no hand-maintained struct mirror. Every field the input carries appears
 // in the output, so the XML never silently lags a schema addition (the previous
 // struct-mirror approach dropped ~30 post-v3.2 fields). The TypeScript converter
@@ -15,6 +17,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"strconv"
+	"strings"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -189,7 +192,7 @@ func decodeValue(dec *json.Decoder) (interface{}, error) {
 //   - empty array: an empty wrapper element <name></name>.
 //   - scalar: <name>text</name>.
 func writeValue(enc *xml.Encoder, name string, val interface{}) error {
-	start := xml.StartElement{Name: xml.Name{Local: name}}
+	start := xmlStart(name)
 	switch v := val.(type) {
 	case *orderedMap:
 		if err := enc.EncodeToken(start); err != nil {
@@ -248,6 +251,67 @@ func writeValue(enc *xml.Encoder, name string, val interface{}) error {
 		}
 		return enc.EncodeToken(start.End())
 	}
+}
+
+// xmlStart builds the start element for a key. HDF leaves object keys
+// unconstrained — tags carry vendor-namespaced keys like "sonarqube/hash", and
+// additionalProperties lets a converter park native fields anywhere — while XML
+// constrains element names to Name. Go's encoder writes an invalid name through
+// without error, so an unencoded key produced a document no parser could read.
+//
+// The key is encoded to a Name and the original is preserved verbatim in a
+// name attribute, so the mapping survives; a key that is already a Name is
+// emitted unchanged and carries no attribute, which leaves every existing
+// document byte-for-byte as it was.
+//
+// The kept set is ASCII — [A-Za-z0-9._-] — not the far wider set XML Name
+// allows. Matching the spec's Unicode ranges would reintroduce the divergence
+// card .19 hit, where Go's tables and V8's disagreed; ASCII is identical in both
+// languages by construction. It costs nothing here: none of the 155 tag keys in
+// this repo's fixtures is non-ASCII. ':' is deliberately not kept — it is a
+// legal Name character but would invent an undeclared namespace prefix.
+func xmlStart(key string) xml.StartElement {
+	name, rewritten := xmlElementName(key)
+	start := xml.StartElement{Name: xml.Name{Local: name}}
+	if rewritten {
+		start.Attr = []xml.Attr{{Name: xml.Name{Local: "name"}, Value: key}}
+	}
+	return start
+}
+
+// xmlElementName encodes a key to an XML Name, reporting whether it had to
+// change. Two keys can encode to the same name ("a/b" and "a.b" do not, but
+// "a/b" and "a b" do), which yields repeated sibling elements the name
+// attribute still tells apart; no collision occurs across this repo's fixture
+// tag keys, which TestXMLElementNameNoCollisionsAcrossRealFixtureKeys pins.
+func xmlElementName(key string) (string, bool) {
+	keep := func(r rune) bool {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+			return true
+		case r == '.', r == '-', r == '_':
+			return true
+		}
+		return false
+	}
+	leads := func(r rune) bool {
+		return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '_'
+	}
+
+	var b strings.Builder
+	b.Grow(len(key) + 1)
+	for _, r := range key {
+		if keep(r) {
+			b.WriteRune(r)
+		} else {
+			b.WriteRune('_')
+		}
+	}
+	out := b.String()
+	if out == "" || !leads([]rune(out)[0]) {
+		out = "_" + out
+	}
+	return out, out != key
 }
 
 // allScalar reports whether every item in an array is a JSON scalar (string,

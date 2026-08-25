@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -329,4 +330,37 @@ func TestConvertHDFToXML(t *testing.T) {
 			require.NoError(t, terr)
 		}
 	})
+}
+
+// Element names come from HDF tag keys, which the schema leaves unconstrained,
+// while XML constrains them to Name. Real converter output already carries keys
+// that are not Names — sonarqube-to-hdf emits "sonarqube/hash" and
+// ionchannel-to-hdf emits "ionchannel/trigger" — and Go's encoder writes them
+// through without error, so the serializer silently produced XML no parser can
+// read. Each shape here is taken from this repo's real fixtures.
+func TestConvertHDFToXMLTagKeysAreValidElementNames(t *testing.T) {
+	for _, key := range []string{
+		"sonarqube/hash",
+		"sonarqube/quick_fix_available",
+		"ionchannel/trigger_author",
+	} {
+		t.Run(key, func(t *testing.T) {
+			input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"r","impact":0,` +
+				`"tags":{` + strconv.Quote(key) + `:"v"},` +
+				`"descriptions":[{"label":"default","data":"d"}],` +
+				`"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}]}]}`)
+
+			out, err := ConvertHDFToXML(input)
+			require.NoError(t, err)
+
+			require.NoError(t, xmlWellFormed(out),
+				"a tag key must not produce XML that fails to parse")
+
+			// The exact element the TypeScript peer must also emit, byte for byte.
+			name, _ := xmlElementName(key)
+			assert.Contains(t, string(out),
+				"<"+name+` name="`+key+`">v</`+name+">",
+				"the encoded element must carry the source key")
+		})
+	}
 }

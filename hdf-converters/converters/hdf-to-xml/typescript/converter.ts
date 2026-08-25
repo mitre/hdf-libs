@@ -43,6 +43,35 @@ function singularFor(key: string): string {
 }
 
 /**
+ * Encode a JSON key to a legal XML element name, reporting whether it had to
+ * change. HDF leaves object keys unconstrained — tags carry vendor-namespaced
+ * keys like "sonarqube/hash", and additionalProperties lets a converter park
+ * native fields anywhere — while XML constrains element names to Name, so an
+ * unencoded key produced a document no parser could read.
+ *
+ * The kept set is ASCII — [A-Za-z0-9._-] — not the far wider set XML Name
+ * allows, so the two languages agree by construction rather than by way of two
+ * Unicode tables that can drift apart. It costs nothing here: none of the 155
+ * tag keys in this repo's fixtures is non-ASCII. ':' is deliberately not kept —
+ * it is a legal Name character but would invent an undeclared namespace prefix.
+ *
+ * Mirrored by xmlElementName in the Go converter and pinned to a shared table.
+ */
+export function xmlElementName(key: string): [string, boolean] {
+  const out = [...key].map((ch) => (/[A-Za-z0-9.\-_]/.test(ch) ? ch : '_')).join('');
+  const [first = ''] = [...out];
+  const name = /[A-Za-z_]/.test(first) ? out : `_${out}`;
+  return [name, name !== key];
+}
+
+/**
+ * The attribute holding the original key of a rewritten element. The prefix is
+ * what separates an attribute from a child element in the builder; it cannot
+ * collide with a child, because any key spelled this way is itself rewritten.
+ */
+const NAME_ATTR = '@_name';
+
+/**
  * Wrap a primitive so fast-xml-parser renders it as element text rather than an
  * attribute.
  */
@@ -90,21 +119,26 @@ function buildObject(obj: Record<string, unknown>): Record<string, unknown> {
     if (value === null || value === undefined) {
       continue;
     }
+    const [name, rewritten] = xmlElementName(key);
+    // A rewritten element carries the source key, so the encoding stays lossless.
+    const withKey = (node: Record<string, unknown>): Record<string, unknown> =>
+      rewritten ? { ...node, [NAME_ATTR]: key } : node;
+
     if (Array.isArray(value)) {
       const items = value.filter(v => v !== null && v !== undefined);
       if (value.length === 0) {
-        out[key] = {}; // empty array -> empty wrapper <key></key>
+        out[name] = withKey({}); // empty array -> empty wrapper <key></key>
       } else if (value.every(isScalar)) {
         // Scalar array -> repeated, unwrapped key element.
-        out[key] = items.map(v => wrapScalar(v as string | number | boolean));
+        out[name] = items.map(v => withKey(wrapScalar(v as string | number | boolean)));
       } else {
         // Object array -> wrapper element with one singular-named child per item.
-        out[key] = { [singularFor(key)]: items.map(toXmlValue) };
+        out[name] = withKey({ [singularFor(key)]: items.map(toXmlValue) });
       }
     } else if (typeof value === 'object') {
-      out[key] = buildObject(value as Record<string, unknown>);
+      out[name] = withKey(buildObject(value as Record<string, unknown>));
     } else {
-      out[key] = wrapScalar(value as string | number | boolean);
+      out[name] = withKey(wrapScalar(value as string | number | boolean));
     }
   }
   return out;
@@ -130,5 +164,5 @@ export function convertHdfToXml(input: string): string {
     throw new Error('Invalid HDF structure: baselines must be an array');
   }
 
-  return buildXml({ HdfResults: buildObject(hdf) });
+  return buildXml({ HdfResults: buildObject(hdf) }, { attributeNamePrefix: '@_' });
 }

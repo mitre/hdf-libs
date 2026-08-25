@@ -211,7 +211,7 @@ func buildBenchmark(hdfData *hdf.HDFResults) *XCCDFBenchmark {
 	baseline := hdfData.Baselines[0]
 
 	// Set benchmark metadata from baseline
-	benchmark.ID = sanitizeXCCDFID("xccdf_hdf_benchmark_" + baseline.Name)
+	benchmark.ID = sanitizeXCCDFID("xccdf_hdf_benchmark_" + xccdfNamePart(baseline.Name))
 	if baseline.Title != nil && *baseline.Title != "" {
 		benchmark.Title = *baseline.Title
 	} else {
@@ -230,7 +230,7 @@ func buildBenchmark(hdfData *hdf.HDFResults) *XCCDFBenchmark {
 	// Add profile
 	benchmark.Profiles = []XCCDFProfile{
 		{
-			ID:    sanitizeXCCDFID("xccdf_hdf_profile_" + baseline.Name),
+			ID:    sanitizeXCCDFID("xccdf_hdf_profile_" + xccdfNamePart(baseline.Name)),
 			Title: benchmark.Title,
 		},
 	}
@@ -250,7 +250,7 @@ func buildBenchmark(hdfData *hdf.HDFResults) *XCCDFBenchmark {
 			idx = len(benchmark.Groups)
 			groupIndex[gid] = idx
 			benchmark.Groups = append(benchmark.Groups, XCCDFGroup{
-				ID:    gid,
+				ID:    xccdfGroupID(gid),
 				Title: hdfutil.SafeString(req.Tags["gtitle"]),
 			})
 		}
@@ -463,6 +463,63 @@ func cpeField(s string) string {
 		}
 		return r
 	}, s)
+}
+
+// xccdfNamePart supplies the trailing name segment that benchmarkIdType and
+// profileIdType require via their .+ — a baseline with an empty name is valid
+// HDF but produced "xccdf_hdf_benchmark_", which the XSD rejects.
+func xccdfNamePart(name string) string {
+	if name == "" {
+		return "unnamed"
+	}
+	return name
+}
+
+// xccdfGroupID renders an HDF tags.gid as a groupIdType: an NCName that must
+// also match xccdf_[^_]+_group_.+ (xccdf_1.2.xsd:821). HDF constrains gid not at
+// all, and most real data does not satisfy it — 783 of the 1216 distinct gid
+// values in this repo's fixtures are bare STIG ids like "V-257777" — so copying
+// one through produced XSD-invalid output from valid HDF.
+//
+// A gid that already conforms is a genuine XCCDF group id (STIG content carries
+// "xccdf_mil.disa.stig_group_V-204393") and is passed through, which is both
+// better data and why the existing goldens are unchanged. Anything else is
+// sanitized and namespaced under this converter, matching what the benchmark,
+// profile, and rule ids already do.
+func xccdfGroupID(gid string) string {
+	if isXCCDFGroupID(gid) {
+		return gid
+	}
+	// The trailing name is required by the pattern's .+, so an empty gid needs a
+	// placeholder. The caller skips empty gids; this keeps the encoder total.
+	if gid == "" {
+		gid = "unnamed"
+	}
+	return sanitizeXCCDFID("xccdf_hdf_group_" + gid)
+}
+
+// isXCCDFGroupID reports whether a value already satisfies groupIdType. The
+// character test is ASCII-only, deliberately narrower than NCName: a conforming
+// non-ASCII id is re-encoded rather than trusted, which errs toward valid
+// output and keeps the check identical to the TypeScript peer's.
+func isXCCDFGroupID(id string) bool {
+	rest, ok := strings.CutPrefix(id, "xccdf_")
+	if !ok {
+		return false
+	}
+	owner, name, ok := strings.Cut(rest, "_group_")
+	if !ok || owner == "" || name == "" || strings.Contains(owner, "_") {
+		return false
+	}
+	for _, r := range id {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+		case r == '.', r == '-', r == '_':
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 // sanitizeXCCDFID replaces characters not valid in XCCDF IDs with underscores.

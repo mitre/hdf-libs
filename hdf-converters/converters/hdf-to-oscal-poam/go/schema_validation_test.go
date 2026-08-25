@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
+	oscal "github.com/mitre/hdf-libs/hdf-converters/v3/converters/oscal-to-hdf/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/require"
@@ -221,4 +223,86 @@ func TestCorpusGoldenParity(t *testing.T) {
 			require.Equal(t, maskedGolden, maskedOut, "golden mismatch for %s", c.Name)
 		})
 	}
+}
+
+// OSCAL types prop/@name as TokenDatatype, while HDF puts no constraint on
+// amendments.labels keys, so an arbitrary key copied through produced a POA&M
+// the schema rejects from valid HDF. Every label key in this repo's fixtures
+// happens to be token-shaped today, so this is a latent defect rather than one
+// real data currently triggers — but the shapes below are standard label
+// conventions (Kubernetes and OCI keys are namespaced with '/') that HDF
+// permits and OSCAL does not.
+func TestConvertHDFToOSCALPOAM_LabelKeysAreTokens(t *testing.T) {
+	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
+		"hdf-to-oscal-poam", "schemas", "oscal_poam_schema-v1.1.2.json"))
+	hdfV := shared.NewSchemaValidator(t, filepath.Join("..", "..", "..", "..",
+		"hdf-validators", "go", "schemas", "hdf-amendments.schema.json"))
+
+	for _, tc := range []struct {
+		key  string
+		want string
+	}{
+		{"app.kubernetes.io/name", "app.kubernetes.io_name"},
+		{"env:prod", "env_prod"},
+		{"2024-audit", "_2024-audit"},
+		{"com.redhat.component", "com.redhat.component"},
+		{"", "_"},
+	} {
+		t.Run(tc.key, func(t *testing.T) {
+			input := []byte(`{"name":"a","overrides":[{"requirementId":"r","type":"waiver",` +
+				`"status":"notApplicable","reason":"accepted risk",` +
+				`"appliedAt":"2020-01-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z",` +
+				`"appliedBy":{"identifier":"analyst","type":"username"}}],` +
+				`"labels":{` + strconv.Quote(tc.key) + `:"x"}}`)
+
+			// Asserted, not asserted-about: a converter fed input its own schema
+			// rejects proves nothing about what it does with real documents.
+			require.NoError(t, hdfV.Validate(input), "the test input is not valid HDF")
+
+			out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+			require.NoError(t, err)
+			require.NoError(t, v.Validate(out),
+				"a label key that is not a token must not produce an invalid document")
+
+			prop := metadataPropNamed(t, out, tc.want)
+			require.Equal(t, "x", prop.Value)
+			switch {
+			case tc.key == "":
+				require.Empty(t, prop.Remarks, "an empty key has no source text to preserve")
+			case tc.want != tc.key:
+				require.Equal(t, tc.key, prop.Remarks,
+					"a rewritten name must keep the source key, or the label is lost")
+			default:
+				require.Empty(t, prop.Remarks, "an unchanged name needs no remarks")
+			}
+		})
+	}
+}
+
+// metadataPropNamed returns the metadata property with the given name, failing
+// the test if it is absent. Asserting the property specifically keeps this from
+// passing on a substring match elsewhere in the document.
+func metadataPropNamed(t *testing.T, out []byte, name string) oscal.Property {
+	t.Helper()
+
+	var doc struct {
+		POAM struct {
+			Metadata struct {
+				Props []oscal.Property `json:"props"`
+			} `json:"metadata"`
+		} `json:"plan-of-action-and-milestones"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+
+	for _, p := range doc.POAM.Metadata.Props {
+		if p.Name == name {
+			return p
+		}
+	}
+	names := make([]string, 0, len(doc.POAM.Metadata.Props))
+	for _, p := range doc.POAM.Metadata.Props {
+		names = append(names, p.Name)
+	}
+	t.Fatalf("no metadata prop named %q; got %v", name, names)
+	return oscal.Property{}
 }

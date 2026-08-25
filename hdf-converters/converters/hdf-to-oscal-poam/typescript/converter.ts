@@ -30,6 +30,7 @@ import type {
 import {
   nistTagToControlId,
   hdfStatusToOscalRiskStatus,
+  oscalToken,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
 
@@ -388,11 +389,35 @@ function metadataProps(a: HDFAmendments): Property[] {
     props.push({ name: 'amendment-id', value: a.amendmentId });
   }
   if (a.labels) {
-    for (const k of Object.keys(a.labels).sort()) {
-      props.push({ name: k, value: a.labels[k], class: 'amendment-label' } as unknown as Property);
+    for (const [key, value] of Object.entries(a.labels).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0))) {
+      props.push(labelProp(key, value));
     }
   }
   return props;
+}
+
+/**
+ * Render one amendments label as a property. OSCAL types prop/@name as
+ * TokenDatatype while HDF puts no constraint on label keys, so the key is
+ * encoded and the source key kept in remarks when it had to change. Every label
+ * key in this repo's fixtures is token-shaped today, so this guards a shape real
+ * data has not yet produced — but Kubernetes and OCI label keys are namespaced
+ * with '/', which HDF permits and OSCAL rejects.
+ *
+ * Mirrored by labelProp in the Go converter.
+ */
+function labelProp(key: string, value: string): Property {
+  // TokenDatatype requires at least one character, and an empty label key is
+  // valid HDF — labels constrains its values, not its property names.
+  const name = oscalToken(key) === '' ? '_' : oscalToken(key);
+  const prop: Property = { name, value, class: 'amendment-label' };
+  // Recorded only when the name was encoded away from a non-empty key: an
+  // unchanged name has nothing to recover, and an empty key carries no text
+  // worth recovering.
+  if (key !== '' && name !== key) {
+    prop.remarks = key;
+  }
+  return prop;
 }
 
 /** Picks the collection timestamp for evidence observations. */

@@ -96,6 +96,9 @@ type Property struct {
 	Ns    string `json:"ns,omitempty"`
 	Class string `json:"class,omitempty"`
 	UUID  string `json:"uuid,omitempty"`
+	// Remarks carries the source identifier when Name had to be encoded to a
+	// TokenDatatype, so the mapping back to the HDF value is not lost.
+	Remarks string `json:"remarks,omitempty"`
 }
 
 // Link is a reference to an external resource.
