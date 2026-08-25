@@ -229,9 +229,15 @@ project (a sibling to `hdf-conmon-demo`; it drives the shipped `hdf` binary,
 importing nothing private to this repo).
 
 It also measures *why* the bounded, normalized surface is cheaper for an
-agent than reading raw scans into context. Across six real scan formats
+agent than reading raw scans into context. Across five real scan formats
 (SAST, DAST, vulnerability, SBOM inventory, and CCE compliance) it compares
-the tokens of the HDF MCP responses against the raw files — model-free and
-reproducible offline. The comparison honestly includes the counter-example
-where HDF *loses* (a tool-specific field that normalization drops, forcing a
-fall-back to the raw scan). See the repo for the current measured figures.
+the tokens an HDF MCP response costs against the raw files — model-free and
+reproducible offline — and then puts the same questions to a real model, so
+the ideal saving can be checked against what an agent actually spends.
+
+It reports the cases where HDF *loses*, including questions the bounded read
+surface cannot answer at all. Conversion is not lossy here: the scanner's
+original finding is preserved verbatim in the requirement's `code`. But no
+read tool projects `code`, so an agent asking for a tool-specific field must
+fall back to the raw scan and the normalized surface buys it nothing. See
+the repo for the current measured figures.
