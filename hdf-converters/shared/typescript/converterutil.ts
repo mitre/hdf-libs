@@ -10,6 +10,7 @@ import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimest
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
+import { validateResults, validateAmendments } from '@mitre/hdf-validators';
 
 export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS };
 

@@ -19,6 +19,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cwe"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	hdfvalidators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
 // InputChecksum computes the SHA-256 checksum of raw input bytes and returns

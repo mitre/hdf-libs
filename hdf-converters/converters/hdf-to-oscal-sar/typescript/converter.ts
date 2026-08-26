@@ -28,8 +28,6 @@ import {
   oscalString,
   oscalToken,
   impactToSeverity,
-  oscalToken,
-  oscalString,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
 
