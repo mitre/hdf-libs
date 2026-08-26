@@ -484,3 +484,28 @@ func TestMarkUnratedSeverity(t *testing.T) {
 		assert.NotPanics(t, func() { MarkUnratedSeverity(nil, "unknown") })
 	})
 }
+
+// firstNonEmptyCases is the shared Go/TS parity table for FirstNonEmpty — the TS
+// converterutil.test.ts mirror asserts the identical cases (AC4).
+var firstNonEmptyCases = []struct {
+	name string
+	in   []string
+	want string
+}{
+	{"first candidate is non-empty", []string{"a", "b"}, "a"},
+	{"skips a leading empty string", []string{"", "b"}, "b"},
+	{"skips whitespace-only candidates", []string{"   ", "\t", "\n", "b"}, "b"},
+	{"returns the first non-empty candidate as-is (no trimming of content)", []string{"", "  real title  "}, "  real title  "},
+	{"all empty or whitespace yields empty string", []string{"", "  ", "\t\n"}, ""},
+	{"no candidates yields empty string", nil, ""},
+	{"single non-empty candidate", []string{"x"}, "x"},
+	{"returns the final fallback when earlier candidates are empty", []string{"", " ", "fallback"}, "fallback"},
+}
+
+func TestFirstNonEmpty_SkipsEmptyAndWhitespace(t *testing.T) {
+	for _, tc := range firstNonEmptyCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, FirstNonEmpty(tc.in...))
+		})
+	}
+}

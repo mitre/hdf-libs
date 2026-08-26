@@ -142,6 +142,24 @@ func MapCWEToNIST(cweIDs []string, fallback []string) []string {
 	return result
 }
 
+// FirstNonEmpty returns the first candidate whose content is not empty or
+// whitespace-only, as-is (the emptiness test trims, the returned value does
+// not). Returns "" when every candidate is empty or whitespace. The caller
+// supplies its own documented fallback as the last candidate so the substituted
+// value is meaningful per field — this helper never invents a placeholder like
+// "N/A". Use it where a target schema requires a non-empty (often minLength:1)
+// string and a source value may be absent; it is a selection helper, not a
+// normalizer, and never decides to OMIT a field (that stays the caller's call).
+// Go/TS parity: firstNonEmpty.
+func FirstNonEmpty(candidates ...string) string {
+	for _, c := range candidates {
+		if strings.TrimSpace(c) != "" {
+			return c
+		}
+	}
+	return ""
+}
+
 // nistTagPattern matches a NIST 800-53 control identifier and captures the
 // family (two letters) and the base sub-control number, ignoring enhancement
 // suffixes like "(1)" or ".1". Used by DeriveControlType to classify a tag.
