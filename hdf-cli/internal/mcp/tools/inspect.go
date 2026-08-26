@@ -142,12 +142,18 @@ func resultsStructure(r *hdf.HDFResults) map[string]any {
 	for i := range r.Components {
 		byType[string(r.Components[i].Type)]++
 	}
-	return map[string]any{
+	out := map[string]any{
 		"baselines":  baselines,
 		"components": map[string]any{"count": len(r.Components), "byType": byType},
-		"statistics": map[string]any{"duration": r.Statistics.Duration},
 		"metadata":   docMetadata(r.ID, r.SystemRef, r.PlanRef),
 	}
+	// Statistics is an optional pointer — converters like gosec omit it. Only
+	// surface the key when present, so a client never reads a synthesized zero
+	// as a real measurement (and we never nil-deref, hdf-libs-l3kf).
+	if r.Statistics != nil {
+		out["statistics"] = map[string]any{"duration": r.Statistics.Duration}
+	}
+	return out
 }
 
 func baselineStructure(b *hdf.HDFBaseline) map[string]any {

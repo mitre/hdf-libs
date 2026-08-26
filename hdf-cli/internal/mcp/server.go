@@ -10,8 +10,10 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -35,7 +37,7 @@ func NewServer(version string, logger *slog.Logger) *mcp.Server {
 	// diagnostics (e.g. redacted filesystem-error causes) never reach stdout,
 	// which carries the JSON-RPC stream.
 	slog.SetDefault(logger)
-	return mcp.NewServer(&mcp.Implementation{
+	srv := mcp.NewServer(&mcp.Implementation{
 		Name:    ServerName,
 		Title:   ServerTitle,
 		Version: version,
@@ -43,6 +45,30 @@ func NewServer(version string, logger *slog.Logger) *mcp.Server {
 		Logger:       logger,
 		Instructions: "HDF MCP server: read, analyze, and author Heimdall Data Format documents.",
 	})
+	// Contain handler panics. The stdio session is long-lived, so an unrecovered
+	// panic in one tool call would tear down the transport for every subsequent
+	// call by that client (hdf-libs-l3kf). Convert a panic into a JSON-RPC error
+	// so the offending call fails but the session survives.
+	srv.AddReceivingMiddleware(recoverMiddleware(logger))
+	return srv
+}
+
+// recoverMiddleware wraps every incoming method call so a panic in any handler
+// becomes an error response instead of crashing the process (and the session).
+func recoverMiddleware(logger *slog.Logger) mcp.Middleware {
+	return func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (result mcp.Result, err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error("recovered panic in MCP handler",
+						"method", method, "panic", fmt.Sprint(r), "stack", string(debug.Stack()))
+					result = nil
+					err = fmt.Errorf("internal error handling %q", method)
+				}
+			}()
+			return next(ctx, method, req)
+		}
+	}
 }
 
 // Run connects the server to the stdio transport and serves until the context
