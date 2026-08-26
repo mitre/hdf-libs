@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty } from './converterutil.js';
+import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty, requireHdfResults, requireHdfAmendments } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -487,4 +487,37 @@ describe('firstNonEmpty — shared non-empty-text fallback', () => {
       expect(firstNonEmpty(...tc.in)).toBe(tc.want);
     });
   }
+});
+
+describe('requireHdfResults / requireHdfAmendments — structural input guard', () => {
+  it('rejects empty, non-JSON, top-level array, null, and missing/wrong-typed baselines', () => {
+    expect(() => requireHdfResults('', 'test-conv')).toThrow('test-conv: empty input');
+    expect(() => requireHdfResults('not json', 'test-conv')).toThrow();
+    // A parsed null must NOT throw a TypeError — it falls through to the
+    // canonical missing-field error, matching Go's nil-map no-op behavior.
+    for (const input of ['[1,2]', 'null', '{}', '{"foo":1}', '{"baselines":"x"}']) {
+      expect(() => requireHdfResults(input, 'test-conv')).toThrow(
+        'test-conv: invalid HDF structure: missing baselines field',
+      );
+    }
+  });
+
+  it('accepts a valid results doc and returns the doc plus its baselines', () => {
+    const { doc, items } = requireHdfResults(
+      '{"baselines":[{"name":"b"}],"timestamp":"2020-01-01T00:00:00Z"}',
+      'test-conv',
+    );
+    expect(items).toHaveLength(1);
+    expect(doc.timestamp).toBe('2020-01-01T00:00:00Z');
+  });
+
+  it('amendments variant is keyed on overrides', () => {
+    for (const input of ['{}', 'null', '{"overrides":5}']) {
+      expect(() => requireHdfAmendments(input, 'test-conv')).toThrow(
+        'test-conv: invalid HDF structure: missing overrides field',
+      );
+    }
+    const { items } = requireHdfAmendments('{"overrides":[{"type":"waiver"}]}', 'test-conv');
+    expect(items).toHaveLength(1);
+  });
 });

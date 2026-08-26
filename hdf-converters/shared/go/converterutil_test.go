@@ -556,3 +556,49 @@ func TestOrEmpty_NilSliceMarshalsAsEmptyArray(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"items":[]}`, string(raw))
 }
+
+func TestRequireHDFResults_RejectsMalformed(t *testing.T) {
+	cases := []struct{ name, input string }{
+		{"empty", ""},
+		{"non-json", "not json"},
+		{"top-level array", "[1,2]"},
+		{"top-level null", "null"},
+		{"empty object", "{}"},
+		{"wrong-typed key", `{"foo":1}`},
+		{"baselines not array", `{"baselines":"x"}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := RequireHDFResults([]byte(tc.input), "test-conv")
+			require.Error(t, err)
+		})
+	}
+
+	// The structural-miss cases (incl. a parsed null, which must NOT panic) carry
+	// the canonical wording shared with exportmap and hdf-to-oscal-sar.
+	for _, input := range []string{"{}", "null", `{"foo":1}`, `{"baselines":"x"}`} {
+		_, _, err := RequireHDFResults([]byte(input), "test-conv")
+		require.Error(t, err)
+		assert.Equal(t, "test-conv: invalid HDF structure: missing baselines field", err.Error(), "input %q", input)
+	}
+}
+
+func TestRequireHDFResults_AcceptsValid(t *testing.T) {
+	doc, baselines, err := RequireHDFResults([]byte(`{"baselines":[{"name":"b"}],"timestamp":"2020-01-01T00:00:00Z"}`), "test-conv")
+	require.NoError(t, err)
+	require.Len(t, baselines, 1)
+	assert.Equal(t, "2020-01-01T00:00:00Z", doc["timestamp"])
+}
+
+func TestRequireHDFAmendments_KeyedOnOverrides(t *testing.T) {
+	for _, input := range []string{"{}", "null", `{"overrides":5}`} {
+		_, _, err := RequireHDFAmendments([]byte(input), "test-conv")
+		require.Error(t, err)
+		assert.Equal(t, "test-conv: invalid HDF structure: missing overrides field", err.Error(), "input %q", input)
+	}
+
+	doc, overrides, err := RequireHDFAmendments([]byte(`{"overrides":[{"type":"waiver"}]}`), "test-conv")
+	require.NoError(t, err)
+	require.Len(t, overrides, 1)
+	require.NotNil(t, doc)
+}

@@ -340,19 +340,9 @@ type EventBuilder func(req, baseline map[string]interface{}, docTimestamp string
 // lines (byte-identical with the TypeScript side via EncodeLine). converterName
 // prefixes every error and drives ValidateJSONSize's limit lookup.
 func Export(input []byte, converterName string, build EventBuilder) ([]byte, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("%s: empty input", converterName)
-	}
-	if err := shared.ValidateJSONSize(input, converterName, 0); err != nil {
-		return nil, fmt.Errorf("%s: %w", converterName, err)
-	}
-	var doc map[string]interface{}
-	if err := shared.DecodeHDF(input, &doc); err != nil {
-		return nil, fmt.Errorf("%s: invalid HDF JSON: %w", converterName, err)
-	}
-	baselines, ok := AsSlice(doc["baselines"])
-	if !ok {
-		return nil, fmt.Errorf("%s: invalid HDF structure: missing baselines field", converterName)
+	doc, baselines, err := shared.RequireHDFResults(input, converterName)
+	if err != nil {
+		return nil, err
 	}
 
 	docTimestamp := GetStr(doc, "timestamp")
