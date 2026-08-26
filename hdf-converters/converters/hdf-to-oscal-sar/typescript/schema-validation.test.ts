@@ -279,3 +279,66 @@ describe('hdf-to-oscal-sar non-token requirement ids', () => {
   });
 });
 
+
+// A component with no type cannot come from valid HDF — Base_Component requires
+// type and every Component variant is an allOf over it, so a typeless component
+// matches none of the oneOf branches. Converters do not schema-validate their
+// input, though, so a caller can still hand one over. This one produced
+// `"type": "undefined"` — the JavaScript string, from stringifying an absent
+// value — which is a VALID OSCAL token and therefore invisible to a schema
+// check, while asserting a component type the source never stated. That is
+// fabricated data in a security artifact. Since OSCAL requires both
+// subject-uuid and type on a subject-reference, and hdf-results defines no
+// default component type, the subject is omitted; the Go peer, which emitted an
+// empty token here, omits the same subject.
+describe('typeless component', () => {
+  const withComponents = (components: unknown[]) =>
+    JSON.stringify({
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            {
+              id: 'AC-1',
+              impact: 0,
+              tags: {},
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+      components,
+    });
+
+  it('omits the subject and fabricates nothing', async () => {
+    const out = await convertHdfToOscalSar(
+      withComponents([{ name: 'web01' }, { name: 'db01', type: 'host' }]),
+    );
+
+    // Asserted on the raw text: "undefined" is a valid OSCAL token, so a schema
+    // check alone cannot see this defect.
+    expect(out, 'nothing may be fabricated for an absent value').not.toContain('"undefined"');
+    expect(out, 'no empty token may reach the output').not.toContain('"type": ""');
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
+
+    const subjects = (
+      JSON.parse(out) as {
+        'assessment-results': {
+          results: Array<{ observations: Array<{ subjects?: Array<Record<string, string>> }> }>;
+        };
+      }
+    )['assessment-results'].results[0]!.observations[0]!.subjects;
+
+    expect(subjects, 'the typed component keeps its subject; the typeless one is dropped').toHaveLength(1);
+    expect(subjects![0]!.type).toBe('host');
+    expect(subjects![0]!.title).toBe('db01');
+  });
+
+  it('omits the subjects key entirely when every component is typeless', async () => {
+    const out = await convertHdfToOscalSar(withComponents([{ name: 'web01' }]));
+    expect(out).not.toContain('"undefined"');
+    expect(out, 'an empty subjects array is not valid OSCAL').not.toContain('"subjects": []');
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
+  });
+});

@@ -246,6 +246,11 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 // subjects. Each component's UUID (componentId when present, otherwise a fresh
 // one) identifies the subject; the HDF component type is a valid OSCAL subject
 // type token and its name becomes the subject title.
+//
+// A component with no type is skipped rather than given one. OSCAL requires both
+// subject-uuid and type on a subject-reference, so the type cannot simply be
+// omitted, and hdf-results defines no default component type to fall back on —
+// inventing one would assert a component type the source never stated.
 func buildSubjects(components []hdf.Component) []oscal.SubjectRef {
 	if len(components) == 0 {
 		return nil
@@ -253,6 +258,9 @@ func buildSubjects(components []hdf.Component) []oscal.SubjectRef {
 	subjects := make([]oscal.SubjectRef, 0, len(components))
 	for i := range components {
 		c := &components[i]
+		if oscal.OSCALString(string(c.Type)) == "" {
+			continue
+		}
 		uid := oscal.GenerateUUID()
 		if c.ComponentID != nil && *c.ComponentID != "" {
 			uid = *c.ComponentID
@@ -313,7 +321,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	// principle. Trimmed because OSCAL's StringDatatype is ^\S(.*\S)?$, so a
 	// padded value would itself be schema-invalid; NistTagToControlID trims for
 	// target-id too, so the two stay consistent.
-	props := []oscal.Property{{Name: "hdf-requirement-id", Value: strings.TrimSpace(req.ID)}}
+	props := []oscal.Property{{Name: "hdf-requirement-id", Value: oscal.OSCALString(req.ID)}}
 
 	// Then control mappings (nist/cci), code, non-default descriptions
 	// (check/fix/rationale), and v3.2 classification fields.

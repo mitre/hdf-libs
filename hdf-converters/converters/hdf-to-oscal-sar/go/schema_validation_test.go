@@ -12,6 +12,7 @@ import (
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -411,4 +412,68 @@ func findingProp(t *testing.T, out []byte, name string) string {
 	}
 	t.Fatalf("finding carries no %q prop", name)
 	return ""
+}
+
+// A component with no type cannot come from valid HDF — Base_Component requires
+// type and every Component variant is an allOf over it, so a typeless component
+// matches none of the oneOf branches. Converters do not schema-validate their
+// input, though, so a caller can still hand one over, and what came back was a
+// subject-reference whose type violated the OSCAL token pattern. Since OSCAL
+// requires BOTH subject-uuid and type on a subject-reference, and hdf-results
+// defines no default component type, the subject is omitted: nothing is invented
+// and no invalid token is emitted. The TypeScript peer, which fabricated the
+// string "undefined" here, now omits the same subject.
+func TestConvertHDFToOSCALSAR_OmitsSubjectForTypelessComponent(t *testing.T) {
+	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
+		"hdf-to-oscal-sar", "schemas", "oscal_assessment-results_schema-v1.1.2.json"))
+
+	// One typed component and one typeless: the typed subject survives, proving
+	// omission is targeted rather than the subject list being discarded.
+	input := []byte(`{"baselines":[{"name":"b","requirements":[` +
+		`{"id":"AC-1","impact":0,"tags":{},"descriptions":[{"label":"default","data":"d"}],` +
+		`"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}` +
+		`]}],"components":[{"name":"web01"},{"name":"db01","type":"host"}]}`)
+
+	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	require.NoError(t, v.Validate(out), "an empty subject type fails the OSCAL token pattern")
+
+	assert.NotContains(t, string(out), `"type": ""`, "no empty token may reach the output")
+	assert.NotContains(t, string(out), `"undefined"`, "nothing may be fabricated for an absent value")
+
+	var doc struct {
+		AR struct {
+			Results []struct {
+				Observations []struct {
+					Subjects []struct {
+						Type  string `json:"type"`
+						Title string `json:"title"`
+					} `json:"subjects"`
+				} `json:"observations"`
+			} `json:"results"`
+		} `json:"assessment-results"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.NotEmpty(t, doc.AR.Results[0].Observations)
+	subjects := doc.AR.Results[0].Observations[0].Subjects
+	require.Len(t, subjects, 1, "the typed component keeps its subject; the typeless one is dropped")
+	assert.Equal(t, "host", subjects[0].Type)
+	assert.Equal(t, "db01", subjects[0].Title)
+}
+
+// When every component is typeless there is no subject to attach, and an empty
+// subjects array is not a valid observation — the key must be absent entirely.
+func TestConvertHDFToOSCALSAR_OmitsSubjectsKeyWhenAllComponentsTypeless(t *testing.T) {
+	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
+		"hdf-to-oscal-sar", "schemas", "oscal_assessment-results_schema-v1.1.2.json"))
+
+	input := []byte(`{"baselines":[{"name":"b","requirements":[` +
+		`{"id":"AC-1","impact":0,"tags":{},"descriptions":[{"label":"default","data":"d"}],` +
+		`"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}` +
+		`]}],"components":[{"name":"web01"}]}`)
+
+	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	require.NoError(t, v.Validate(out))
+	assert.NotContains(t, string(out), `"subjects": []`, "an empty subjects array is not valid OSCAL")
 }

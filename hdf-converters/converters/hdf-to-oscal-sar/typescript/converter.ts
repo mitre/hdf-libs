@@ -23,6 +23,7 @@ import type {
 } from '../../oscal-to-hdf/typescript/types.js';
 import {
   nistTagToControlId,
+  oscalString,
   oscalToken,
   impactToSeverity,
   OSCAL_VERSION,
@@ -280,14 +281,23 @@ interface SubjectRef {
  * component's UUID (componentId when present, otherwise a fresh one) identifies
  * the subject; the HDF component type is a valid OSCAL subject type token and
  * its name becomes the subject title.
+ *
+ * A component with no type is skipped rather than given one. OSCAL requires both
+ * subject-uuid and type on a subject-reference, so the type cannot simply be
+ * omitted, and hdf-results defines no default component type to fall back on.
+ * String(c.type) turned an absent type into the literal "undefined" — a valid
+ * OSCAL token, so a schema check could not see it, asserting a component type
+ * the source never stated. Mirrors the Go peer.
  */
 function buildSubjects(components: HDFResults['components']): SubjectRef[] {
   if (!Array.isArray(components) || components.length === 0) return [];
-  return components.map((c) => ({
-    'subject-uuid': c.componentId && c.componentId !== '' ? c.componentId : crypto.randomUUID(),
-    type: String(c.type),
-    title: c.name,
-  }));
+  return components
+    .filter((c) => oscalString(c.type ?? '') !== '')
+    .map((c) => ({
+      'subject-uuid': c.componentId && c.componentId !== '' ? c.componentId : crypto.randomUUID(),
+      type: String(c.type),
+      title: c.name,
+    }));
 }
 
 /**
@@ -325,7 +335,7 @@ function requirementToFindingSet(
   // principle. Trimmed because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded
   // value would itself be schema-invalid; nistTagToControlId trims for target-id
   // too, so the two stay consistent.
-  const props: Property[] = [{ name: 'hdf-requirement-id', value: req.id.trim() }];
+  const props: Property[] = [{ name: 'hdf-requirement-id', value: oscalString(req.id) }];
   const addProp = (name: string, value: string): void => {
     if (value !== '') props.push({ name, value });
   };
