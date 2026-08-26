@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -508,4 +509,50 @@ func TestFirstNonEmpty_SkipsEmptyAndWhitespace(t *testing.T) {
 			assert.Equal(t, tc.want, FirstNonEmpty(tc.in...))
 		})
 	}
+}
+
+func TestOrEmpty(t *testing.T) {
+	t.Run("nil slice becomes a non-nil empty slice", func(t *testing.T) {
+		var nilStrings []string
+		got := OrEmpty(nilStrings)
+		require.NotNil(t, got)
+		assert.Empty(t, got)
+	})
+
+	t.Run("empty slice stays empty and non-nil", func(t *testing.T) {
+		got := OrEmpty([]string{})
+		require.NotNil(t, got)
+		assert.Empty(t, got)
+	})
+
+	t.Run("populated slice is returned unchanged", func(t *testing.T) {
+		in := []string{"a", "b"}
+		assert.Equal(t, []string{"a", "b"}, OrEmpty(in))
+	})
+
+	t.Run("generic over element type — not string-only", func(t *testing.T) {
+		var nilInts []int
+		assert.Equal(t, []int{}, OrEmpty(nilInts))
+		assert.Equal(t, []int{1, 2}, OrEmpty([]int{1, 2}))
+
+		type rule struct{ ID string }
+		var nilRules []rule
+		assert.Equal(t, []rule{}, OrEmpty(nilRules))
+	})
+}
+
+func TestOrEmpty_NilSliceMarshalsAsEmptyArray(t *testing.T) {
+	type doc struct {
+		Items []string `json:"items"`
+	}
+
+	// Baseline: a nil slice on a non-omitempty field marshals to null (the bug).
+	raw, err := json.Marshal(doc{Items: nil})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"items":null}`, string(raw))
+
+	// OrEmpty-wrapped, the same nil marshals to [] — a schema-valid empty array.
+	raw, err = json.Marshal(doc{Items: OrEmpty[string](nil)})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"items":[]}`, string(raw))
 }

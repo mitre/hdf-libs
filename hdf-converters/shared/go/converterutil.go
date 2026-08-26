@@ -160,6 +160,19 @@ func FirstNonEmpty(candidates ...string) string {
 	return ""
 }
 
+// OrEmpty returns a non-nil slice so a schema-required (non-omitempty) JSON
+// array never marshals to null: Go marshals a nil slice as `null`, but an empty
+// slice as `[]`. Generic over element type — use it at every export site where a
+// nil slice can reach an array the target schema requires. When the field is
+// genuinely optional, prefer an `omitempty` struct tag over emitting an empty
+// array. TS needs no counterpart: `[].map(...)` already yields `[]`.
+func OrEmpty[T any](s []T) []T {
+	if s == nil {
+		return []T{}
+	}
+	return s
+}
+
 // nistTagPattern matches a NIST 800-53 control identifier and captures the
 // family (two letters) and the base sub-control number, ignoring enhancement
 // suffixes like "(1)" or ".1". Used by DeriveControlType to classify a tag.
