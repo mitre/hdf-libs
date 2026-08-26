@@ -6,6 +6,7 @@
  */
 
 import { dsvFormat } from 'd3-dsv';
+import type { DSV } from 'd3-dsv';
 
 export {
   extractColumn as extractCsvColumn,
@@ -221,6 +222,7 @@ export function buildCsv<T = Record<string, unknown>>(
     result = dsv.format(processedData as Record<string, unknown>[]);
   }
 
+  result = quoteLeadingWhitespace(result, dsv, opts.delimiter ?? ',');
   result = terminateFinalRecord(result);
 
   if (opts.newline && opts.newline !== '\n') {
@@ -228,6 +230,56 @@ export function buildCsv<T = Record<string, unknown>>(
   }
 
   return result;
+}
+
+/**
+ * Quote any field Go's encoding/csv would quote and d3-dsv would not.
+ *
+ * d3-dsv quotes only for the delimiter, a quote, or a newline. Go additionally
+ * quotes when the field's FIRST rune is Unicode whitespace — so "  padded  "
+ * round-trips through a parser that trims — and quotes the literal field `\.`,
+ * which some dialects treat as end-of-data. Trailing whitespace alone triggers
+ * neither language. Without this a TS CSV differs from its Go twin on any such
+ * value: the same class of split terminateFinalRecord exists to close.
+ *
+ * ONE predicate decides, and it is the same one Go uses. An earlier version
+ * tested [ \t] to skip the re-parse cheaply and \s to decide, so a field led by
+ * U+00A0 or U+2003 exited before the decision ever ran.
+ *
+ * Re-parses rather than intercepting the writer because d3-dsv exposes no
+ * per-field hook on format(); the parse is over output this function just
+ * produced, so it cannot fail on unbalanced quotes.
+ */
+function quoteLeadingWhitespace(csv: string, dsv: DSV, delimiter: string): string {
+  return dsv
+    .parseRows(csv)
+    .map((row) => row.map((field) => requote(field, dsv)).join(delimiter))
+    .join('\n');
+}
+
+/**
+ * Go's encoding/csv fieldNeedsQuotes, minus the conditions d3-dsv already
+ * covers: a leading Unicode space, or the literal `\.`.
+ *
+ * The class is Go's unicode.IsSpace, spelled out rather than borrowed from
+ * JavaScript's \s, which is not the same set: \s omits U+0085 (NEL) and adds
+ * U+FEFF, which Unicode 4.0.1 removed from White_Space. Borrowing \s left a
+ * field led by U+0085 unquoted here but quoted in Go, and the reverse for
+ * U+FEFF.
+ */
+const GO_LEADING_SPACE = /^[\t\n\v\f\r \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]/;
+
+function goWouldQuote(field: string): boolean {
+  return field === '\\.' || GO_LEADING_SPACE.test(field);
+}
+
+/** One field, formatted by d3-dsv, then quoted if Go would quote it and d3-dsv did not. */
+function requote(field: string, dsv: DSV): string {
+  const formatted = dsv.formatValue(field);
+  if (formatted.startsWith('"') || !goWouldQuote(field)) {
+    return formatted;
+  }
+  return `"${field.replace(/"/g, '""')}"`;
 }
 
 /**

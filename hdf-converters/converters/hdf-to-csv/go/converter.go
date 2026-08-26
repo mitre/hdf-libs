@@ -93,9 +93,12 @@ func buildCSVRows(hdfData *hdf.HDFResults) ([][]string, error) {
 
 	// Iterate through baselines
 	for _, baseline := range hdfData.Baselines {
-		// Skip baselines with no requirements
+		// requirements carries minItems 1 on top of being required, so an absent or
+		// empty one is malformed input, not a baseline that evaluated nothing.
+		// Top-level baselines is the opposite case — no minItems — so an empty
+		// assessment stays valid and simply produces an empty report.
 		if len(baseline.Requirements) == 0 {
-			continue
+			return nil, fmt.Errorf("hdf-to-csv: baseline %q has no requirements", baseline.Name)
 		}
 
 		// Iterate through requirements
@@ -121,6 +124,17 @@ func buildCSVRows(hdfData *hdf.HDFResults) ([][]string, error) {
 
 // createRow creates a single CSV row
 func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequirement, target *hdf.Component) ([]string, error) {
+	// results and descriptions both carry minItems 1 on top of being required, so
+	// an absent or empty one is malformed input, not a row with unknown values.
+	// Checked before any field access, mirroring the TypeScript peer where a
+	// later guard reported a TypeError from the descriptions read instead.
+	if len(requirement.Results) == 0 {
+		return nil, fmt.Errorf("hdf-to-csv: requirement %q has no results", requirement.ID)
+	}
+	if len(requirement.Descriptions) == 0 {
+		return nil, fmt.Errorf("hdf-to-csv: requirement %q has no descriptions", requirement.ID)
+	}
+
 	// Get default description
 	description := ""
 	for _, desc := range requirement.Descriptions {
@@ -143,13 +157,6 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 	// Get severity
 	severity := getSeverity(requirement)
 
-	// results carries minItems 1, and "not evaluated" is expressed as a result with
-	// status notReviewed — so an empty one is malformed input with no legitimate
-	// producer, not a row with an unknown status. Indexing it unchecked panicked,
-	// and there is no recover() in the CLI call path.
-	if len(requirement.Results) == 0 {
-		return nil, fmt.Errorf("hdf-to-csv: requirement %q has no results", requirement.ID)
-	}
 	firstResult := requirement.Results[0]
 	status := string(firstResult.Status)
 	message := ""
@@ -208,6 +215,13 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 	overrideReason := joinOverrides(requirement.StatusOverrides, func(o hdf.StatusOverride) string { return o.Reason })
 	appliedBy := joinOverrides(requirement.StatusOverrides, func(o hdf.StatusOverride) string { return o.AppliedBy.Identifier })
 	expiresAt := joinOverrides(requirement.StatusOverrides, func(o hdf.StatusOverride) string {
+		// expiresAt is optional, and an absent one decodes to the zero time. Go
+		// formats that as 0001-01-01T00:00:00Z, which reads like a real expiry and
+		// pushed every later value in the three joined override columns out of
+		// alignment with its own row; TypeScript emitted nothing.
+		if o.ExpiresAt.IsZero() {
+			return ""
+		}
 		return o.ExpiresAt.UTC().Format(time.RFC3339Nano)
 	})
 
@@ -216,7 +230,7 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 	cwe := strings.Join(requirement.Cwe, "; ")
 	epss := ""
 	if requirement.Epss != nil {
-		epss = fmt.Sprintf("%.5f", requirement.Epss.Score)
+		epss = hdfutil.FormatFixed(requirement.Epss.Score, 5)
 	}
 	kev := ""
 	if requirement.Kev != nil {
@@ -253,7 +267,7 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 		sanitizeCSV(code),
 		sanitizeCSV(references),
 		sanitizeCSV(severity),
-		fmt.Sprintf("%.1f", requirement.Impact),
+		hdfutil.FormatFixed(requirement.Impact, 2),
 		sanitizeCSV(status),
 		sanitizeCSV(nistControls),
 		sanitizeCSV(cciControls),
@@ -262,7 +276,7 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 		sanitizeCSV(applicability),
 		sanitizeCSV(message),
 		sanitizeCSV(effStatus),
-		fmt.Sprintf("%.1f", effImpact),
+		hdfutil.FormatFixed(effImpact, 2),
 		sanitizeCSV(disposition),
 		sanitizeCSV(overrideReason),
 		sanitizeCSV(appliedBy),
@@ -289,15 +303,17 @@ func joinOverrides(overrides []hdf.StatusOverride, pick func(hdf.StatusOverride)
 }
 
 // cvssScores renders each CVSS entry's score (computed when present, else base)
-// to one decimal, joined with "; " to preserve multi-CVE findings.
+// to one decimal — the precision the CVSS spec defines and the source carries —
+// joined with "; " to preserve multi-CVE findings. Rounded through the shared
+// helper so a .x5 score renders the same digits here and in TypeScript.
 func cvssScores(entries []hdf.Cvss) string {
 	var out []string
 	for _, c := range entries {
 		switch {
 		case c.ComputedScore != nil:
-			out = append(out, fmt.Sprintf("%.1f", *c.ComputedScore))
+			out = append(out, hdfutil.FormatFixed(*c.ComputedScore, 1))
 		case c.BaseScore != nil:
-			out = append(out, fmt.Sprintf("%.1f", *c.BaseScore))
+			out = append(out, hdfutil.FormatFixed(*c.BaseScore, 1))
 		}
 	}
 	return strings.Join(out, "; ")
@@ -314,8 +330,10 @@ func descriptionByLabel(requirement *hdf.EvaluatedRequirement, label string) str
 }
 
 // flattenRefs renders a requirement's refs to one string: each Reference as its
-// url/uri (or a string ref); array-form refs are skipped. Joined with "; " to
-// match the NIST/CCI column convention.
+// url/uri (or a string ref). A document carrying an array-form ref never
+// reaches here: the typed decode rejects it, where TypeScript skips the entry
+// and converts — a reject-versus-degrade split tracked on its own card.
+// Joined with "; " to match the NIST/CCI column convention.
 func flattenRefs(refs []hdf.Reference) string {
 	var out []string
 	for _, r := range refs {
