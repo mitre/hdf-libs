@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   parseCsv,
   parseCsvArray,
@@ -708,5 +711,29 @@ describe('buildCsv quoting matches Go encoding/csv', () => {
     const values = [' x', ' x', 'x ', 'a,b', 'a"b', 'a\nb', ' a,b', '\\.'];
     const csv = buildCsv(values.map((v) => ({ a: v })));
     expect(parseCsv(csv).map((r) => (r as { a: string }).a)).toEqual(values);
+  });
+});
+
+// The trigger set is a security policy, so it lives in one table both languages
+// read rather than in two hand-kept copies: adding a character to one side alone
+// leaves the other exporting CSVs a spreadsheet will execute. The Go peer
+// (hdfutil.SanitizeCSVValue) asserts against this same file.
+describe('sanitizeCsvValue matches the shared cross-language table', () => {
+  const table = JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'csv-sanitize-cases.json'), 'utf-8'),
+  ) as { triggers: string[]; cases: Array<{ value: string; sanitized: string; why: string }> };
+
+  it('has a populated table', () => {
+    expect(table.cases.length, 'an empty table would pass vacuously').toBeGreaterThan(0);
+  });
+
+  it.each(table.cases.map((c) => [c.value, c] as const))('sanitizes %j', (_v, c) => {
+    expect(sanitizeCsvValue(c.value), c.why).toBe(c.sanitized);
+  });
+
+  // Guards the table itself: a character added to the list without being handled
+  // fails here rather than silently widening the declared policy.
+  it.each(table.triggers)('neutralises the declared trigger %s', (trigger) => {
+    expect(sanitizeCsvValue(`${trigger}payload`)).toBe(`'${trigger}payload`);
   });
 });
