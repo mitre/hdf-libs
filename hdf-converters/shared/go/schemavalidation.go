@@ -75,6 +75,13 @@ func NewSchemaValidatorWithResources(t *testing.T, schemaPath string, companions
 			}
 		}
 		c := tekuri.NewCompiler()
+		// 2020-12 makes format an annotation unless the compiler opts in, so
+		// without this a uuid, date-time or uri violation validates clean here
+		// while the ajv-backed TypeScript peer rejects it. Tests that assert
+		// "this input is valid HDF" before converting depend on the difference.
+		// The vocabularies both sides implement are pinned by the shared table
+		// in shared/testdata/format-assertion-cases.json.
+		c.AssertFormat()
 		for refURL, path := range companions {
 			cabs, err := filepath.Abs(path)
 			require.NoError(t, err, "resolve companion %s", path)

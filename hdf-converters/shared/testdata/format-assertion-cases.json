@@ -1,0 +1,65 @@
+{
+  "$comment": "Pins the Go and TypeScript schema validators to one another on JSON Schema `format`. Both harnesses read this file, build the same one-property schema per case in each dialect, and must produce the recorded verdict. Only the formats the HDF schemas actually assert are listed — see formats[] — because those are the ones a converter test's input-validity guard depends on. Adding a format here is a deliberate act: it changes what every existing test accepts. A case states `valid` when the two libraries agree, or `go` and `ts` when they do not; see divergences[] for why any case does the latter.",
+  "formats": ["uuid", "date-time", "date", "uri", "uri-reference", "hostname", "ipv4", "ipv6"],
+  "divergences": [
+    {
+      "format": "uri-reference",
+      "summary": "Go's libraries accept characters RFC 3986 excludes; ajv rejects them.",
+      "detail": "santhosh-tekuri (2020-12) and gojsonschema (draft-07) both accept a space, '<', '|', '^' and backtick inside a uri-reference. ajv-formats rejects all five. Neither side is RFC 3986-exact: ajv accepts a double quote, which the RFC also excludes, and rejects malformed percent-encoding that a character-level check would pass. Matching one library to the other would import its idiosyncrasies rather than make either correct, so the divergence is recorded and tested instead — if a library upgrade changes either verdict, these cases fail and the next contributor sees this note. The seven other formats agree exactly, including uuid and date-time, the two that actually produced a false-green test."
+    },
+    {
+      "format": "uuid",
+      "dialect": "draft-07 only",
+      "summary": "gojsonschema rejects an uppercase uuid; ajv and the 2020-12 Go library accept it.",
+      "detail": "RFC 4122 §3 requires generators to emit lowercase but readers to accept either case, so gojsonschema is wrong and the other two are right. It is recorded rather than fixed because it is unreachable in practice: every HDF schema is 2020-12, and no vendored draft-07 target schema asserts uuid. If one ever does, this row is the note explaining why its uppercase uuids fail."
+    }
+  ],
+  "cases": [
+    { "format": "uuid", "valid": true, "value": "3f2504e0-4f89-11d3-9a0c-0305e82c3301" },
+    { "format": "uuid", "valid": true, "goDraft07": false, "value": "3F2504E0-4F89-11D3-9A0C-0305E82C3301" },
+    { "format": "uuid", "valid": false, "value": "  3f2504e0-4f89-11d3-9a0c-0305e82c3301  ", "why": "the padded-uuid case that exposed the divergence: accepted by Go, rejected by ajv" },
+    { "format": "uuid", "valid": false, "value": "not-a-uuid" },
+    { "format": "uuid", "valid": false, "value": "" },
+
+    { "format": "date-time", "valid": true, "value": "2020-01-01T00:00:00Z" },
+    { "format": "date-time", "valid": true, "value": "2026-08-26T12:30:00.123-04:00" },
+    { "format": "date-time", "valid": false, "value": "2020-01-01 00:00:00Z", "why": "RFC 3339 permits a space separator only by mutual agreement; HDF's canonical form requires T, so ajv is tightened to match Go" },
+    { "format": "date-time", "valid": false, "value": "2020-13-01T00:00:00Z", "why": "month 13" },
+    { "format": "date-time", "valid": false, "value": "2020-01-01T00:00:00", "why": "no offset" },
+    { "format": "date-time", "valid": false, "value": "  2020-01-01T00:00:00Z  " },
+
+    { "format": "date", "valid": true, "value": "2020-02-29" },
+    { "format": "date", "valid": false, "value": "2021-02-29", "why": "2021 is not a leap year" },
+    { "format": "date", "valid": false, "value": "2020-13-01" },
+    { "format": "date", "valid": false, "value": "2020-01-01T00:00:00Z", "why": "a date-time is not a date" },
+
+    { "format": "uri", "valid": true, "value": "https://example.com/a?b=c#d" },
+    { "format": "uri", "valid": true, "value": "urn:uuid:3f2504e0-4f89-11d3-9a0c-0305e82c3301" },
+    { "format": "uri", "valid": false, "value": "not a uri" },
+    { "format": "uri", "valid": false, "value": "/relative/only", "why": "uri requires a scheme; uri-reference does not" },
+
+    { "format": "uri-reference", "valid": true, "value": "/relative/only" },
+    { "format": "uri-reference", "valid": true, "value": "../sibling/doc.json" },
+    { "format": "uri-reference", "valid": true, "value": "https://example.com/a" },
+    { "format": "uri-reference", "valid": true, "value": "a%20b", "why": "a percent-encoded space is the correct spelling of the divergent case below" },
+    { "format": "uri-reference", "go": true, "ts": false, "value": "has space" },
+    { "format": "uri-reference", "go": true, "ts": false, "value": "<tag>" },
+    { "format": "uri-reference", "go": true, "ts": false, "value": "a|b" },
+    { "format": "uri-reference", "go": true, "ts": false, "value": "a^b" },
+    { "format": "uri-reference", "go": true, "ts": false, "value": "a`b" },
+    { "format": "uri-reference", "valid": true, "value": "x\"y", "why": "both accept a double quote, which RFC 3986 excludes — recorded so the shared lenience is visible, not just the divergent one" },
+
+    { "format": "hostname", "valid": true, "value": "host.example.com" },
+    { "format": "hostname", "valid": false, "value": "-leading-hyphen.example.com" },
+    { "format": "hostname", "valid": false, "value": "has space" },
+
+    { "format": "ipv4", "valid": true, "value": "192.0.2.1" },
+    { "format": "ipv4", "valid": false, "value": "999.0.2.1" },
+    { "format": "ipv4", "valid": false, "value": "192.0.2" },
+
+    { "format": "ipv6", "valid": true, "value": "2001:db8::1" },
+    { "format": "ipv6", "valid": true, "value": "::ffff:192.0.2.1" },
+    { "format": "ipv6", "valid": false, "value": "2001:db8:::1" },
+    { "format": "ipv6", "valid": false, "value": "192.0.2.1" }
+  ]
+}

@@ -41,6 +41,16 @@ export function loadSchemaValidatorWithResources(
     ? new Ajv2020({ allErrors: true, strict: false })
     : new Ajv({ allErrors: true, strict: false });
   addFormats(ajv);
+  // ajv-formats follows the RFC 3339 note allowing a space where the T belongs;
+  // HDF's canonical timestamp does not, and the Go peer rejects it. Requiring
+  // the separator keeps the two validators on one answer — the vocabularies they
+  // share, and the two places they still differ, are pinned by
+  // ../testdata/format-assertion-cases.json.
+  const registered = ajv.formats['date-time'] as { validate: (v: string) => boolean };
+  ajv.addFormat('date-time', {
+    type: 'string',
+    validate: (v: string) => /^\d{4}-\d{2}-\d{2}[Tt]/.test(v) && registered.validate(v),
+  });
   for (const [url, path] of Object.entries(companions)) {
     ajv.addSchema(JSON.parse(readFileSync(path, 'utf-8')) as object, url);
   }
