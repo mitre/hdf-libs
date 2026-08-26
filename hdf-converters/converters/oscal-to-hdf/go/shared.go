@@ -336,3 +336,17 @@ func OSCALToken(s string) string {
 	}
 	return out
 }
+
+// OSCALString renders a value for a field OSCAL types as StringDatatype, whose
+// pattern ^\S(.*\S)?$ forbids an empty value and any leading or trailing
+// whitespace. HDF constrains none of the strings that feed those fields — no
+// minLength anywhere in hdf-amendments — so a padded or empty value is valid HDF
+// that would otherwise produce a document the target schema rejects at exit 0.
+//
+// Returns "" when nothing survives trimming, which callers treat as "omit this
+// field" rather than substituting a placeholder: OSCAL marks most of these
+// fields optional, so leaving one out says exactly as much as the source did.
+// The companion for token-typed fields is OSCALToken.
+func OSCALString(s string) string {
+	return strings.TrimSpace(s)
+}

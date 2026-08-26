@@ -32,6 +32,7 @@ import {
   hdfStatusToOscalRiskStatus,
   oscalToken,
   OSCAL_VERSION,
+  oscalString,
 } from '../../oscal-to-hdf/typescript/shared.js';
 
 /**
@@ -96,14 +97,19 @@ class PartyRegistry {
   private byId = new Map<string, Party>();
 
   getOrAdd(id: Identity): string {
-    const existing = this.byId.get(id.identifier);
+    // name is omitted, not emptied, when the source identity carries none:
+    // OSCAL requires only uuid and type on a party, and Property/Party name is
+    // StringDatatype, which an empty string violates. Mirrors Go's omitempty.
+    // Keying on the emitted name keeps two spellings that trim alike one party.
+    const name = oscalString(id.identifier);
+    const existing = this.byId.get(name);
     if (existing) return existing.uuid as string;
     const party = {
       uuid: crypto.randomUUID(),
       type: 'person',
-      name: id.identifier,
+      ...(name === '' ? {} : { name }),
     } as unknown as Party;
-    this.byId.set(id.identifier, party);
+    this.byId.set(name, party);
     return party.uuid as string;
   }
 
@@ -227,12 +233,8 @@ function overrideToPOAMItem(
 
   // Build risk props: impacted control, override type (disposition), impact
   // override, controlled-vocabulary justification, and disambiguating scope.
-  const riskProps: Property[] = [
-    {
-      name: 'impacted-control-id',
-      value: controlID,
-    },
-  ];
+  const riskProps: Property[] = [];
+  pushStringProp(riskProps, 'impacted-control-id', controlID);
   if (override.type) {
     riskProps.push({ name: 'override-type', value: String(override.type) });
   }
@@ -240,13 +242,13 @@ function overrideToPOAMItem(
     riskProps.push({ name: 'impact-override', value: String(override.impact.value) });
   }
   if (override.justification) {
-    riskProps.push({ name: 'justification', value: String(override.justification) });
+    pushStringProp(riskProps, 'justification', String(override.justification));
   }
   if (override.baselineRef) {
-    riskProps.push({ name: 'baseline-ref', value: override.baselineRef });
+    pushStringProp(riskProps, 'baseline-ref', override.baselineRef);
   }
   if (override.componentRef) {
-    riskProps.push({ name: 'component-ref', value: override.componentRef });
+    pushStringProp(riskProps, 'component-ref', override.componentRef);
   }
 
   // Build remediations from milestones. Each milestone becomes a planned
@@ -374,9 +376,22 @@ function latestAppliedAt(overrides: StandaloneOverride[]): string {
   return formatTimestampSeconds(latest ?? new Date());
 }
 
+/**
+ * Add a property whose value OSCAL types as StringDatatype, trimming it and
+ * omitting the property entirely when nothing survives. A prop with an empty
+ * value carries no more than an absent one and is schema-invalid. Mirrors
+ * appendStringProp in the Go peer.
+ */
+function pushStringProp(props: Property[], name: string, value: string | undefined | null): void {
+  const trimmed = oscalString(value ?? '');
+  if (trimmed !== '') {
+    props.push({ name, value: trimmed });
+  }
+}
+
 /** Sources metadata.version from the amendments document, defaulting when omitted. */
 function amendmentsVersion(a: HDFAmendments): string {
-  return a.version && a.version !== '' ? a.version : '1.0.0';
+  return oscalString(a.version ?? '') || '1.0.0';
 }
 
 /**
@@ -386,11 +401,16 @@ function amendmentsVersion(a: HDFAmendments): string {
 function metadataProps(a: HDFAmendments): Property[] {
   const props: Property[] = [];
   if (a.amendmentId) {
-    props.push({ name: 'amendment-id', value: a.amendmentId });
+    pushStringProp(props, 'amendment-id', a.amendmentId);
   }
   if (a.labels) {
     for (const [key, value] of Object.entries(a.labels).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0))) {
-      props.push(labelProp(key, value));
+      // A label whose value is empty after trimming says nothing the absent label
+      // would not, and Property.value is StringDatatype, which cannot hold it.
+      const prop = labelProp(key, value);
+      if (prop.value !== '') {
+        props.push(prop);
+      }
     }
   }
   return props;
@@ -410,7 +430,7 @@ function labelProp(key: string, value: string): Property {
   // TokenDatatype requires at least one character, and an empty label key is
   // valid HDF — labels constrains its values, not its property names.
   const name = oscalToken(key) === '' ? '_' : oscalToken(key);
-  const prop: Property = { name, value, class: 'amendment-label' };
+  const prop: Property = { name, value: oscalString(value), class: 'amendment-label' };
   // Recorded only when the name was encoded away from a non-empty key: an
   // unchanged name has nothing to recover, and an empty key carries no text
   // worth recovering.
@@ -442,10 +462,10 @@ function evidenceObservation(ev: Evidence, uuid: string, defaultCollected: strin
 
   const props: Property[] = [];
   if (ev.mimeType) {
-    props.push({ name: 'mime-type', value: ev.mimeType });
+    pushStringProp(props, 'mime-type', ev.mimeType);
   }
   if (ev.capturedBy && ev.capturedBy.identifier) {
-    props.push({ name: 'captured-by', value: ev.capturedBy.identifier });
+    pushStringProp(props, 'captured-by', ev.capturedBy.identifier);
   }
 
   return {

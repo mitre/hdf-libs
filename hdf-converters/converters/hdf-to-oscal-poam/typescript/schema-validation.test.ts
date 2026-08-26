@@ -171,3 +171,100 @@ describe('hdf-to-oscal-poam label keys', () => {
     expect(prop?.remarks).toBe(key === '' || want === key ? undefined : key);
   });
 });
+
+// componentRef and amendmentId are deliberately absent from this table: both are
+// format:uuid in hdf-amendments, so a padded value is not valid HDF and testing
+// it would prove nothing about real documents. baselineRef carries no format,
+// which is why its padded form IS a real case here.
+//
+// OSCAL types many fields StringDatatype (^\S(.*\S)?$ — non-empty, no leading or
+// trailing whitespace), while hdf-amendments puts no minLength on the strings
+// that feed them. So an empty or padded value is valid HDF that yields a POA&M
+// the schema rejects, at exit 0. Six sinks were affected. Mirrors the Go peer
+// case for case, and asserts each input is valid HDF first so a test cannot
+// silently prove nothing by feeding input the schema rejects.
+describe('hdf-to-oscal-poam StringDatatype sinks', () => {
+  const doc = (o: {
+    root?: Record<string, unknown>;
+    reqId?: string;
+    override?: Record<string, unknown>;
+    identifier?: string;
+  }) =>
+    JSON.stringify({
+      name: 'a',
+      ...(o.root ?? {}),
+      overrides: [
+        {
+          requirementId: o.reqId ?? 'AC-2',
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'r',
+          ...(o.override ?? {}),
+          appliedAt: '2020-01-01T00:00:00Z',
+          expiresAt: '2099-12-31T00:00:00Z',
+          appliedBy: { identifier: o.identifier ?? 'analyst', type: 'username' },
+        },
+      ],
+    });
+
+  it.each([
+    ['empty identifier', { identifier: '' }],
+    ['padded identifier', { identifier: '  analyst  ' }],
+    ['empty requirementId', { reqId: '' }],
+    ['padded baselineRef', { override: { baselineRef: '  b  ' } }],
+    ['empty label value', { root: { labels: { env: '' } } }],
+    ['padded label value', { root: { labels: { env: '  p  ' } } }],
+    ['padded version', { root: { version: '  1.0  ' } }],
+  ])('%s produces a schema-valid POA&M', async (_label, opts) => {
+    const input = doc(opts);
+    assertSchemaValid(validateHdfAmendments, 'test input', JSON.parse(input));
+    const out = await convertHdfToOscalPoam(input);
+    assertSchemaValid(validate, 'output', JSON.parse(out));
+  });
+
+  // The empty case omits the field rather than inventing a placeholder: OSCAL
+  // requires only uuid and type on a party, so the party survives and the
+  // responsible-party reference that points at it stays valid.
+  it('omits the party name for an empty identifier', async () => {
+    const input = doc({ identifier: '' });
+    assertSchemaValid(validateHdfAmendments, 'test input', JSON.parse(input));
+    const out = await convertHdfToOscalPoam(input);
+    const parties = (
+      JSON.parse(out) as {
+        'plan-of-action-and-milestones': { metadata: { parties: Array<Record<string, unknown>> } };
+      }
+    )['plan-of-action-and-milestones'].metadata.parties;
+
+    expect(parties).toHaveLength(1);
+    expect(parties[0]).not.toHaveProperty('name');
+    expect(parties[0]!.uuid, 'the party itself survives').toBeTruthy();
+  });
+
+  // Two spellings of one identifier that trim alike are one person, and the
+  // emitted document must say so: keying the registry on the raw identifier
+  // would mint two parties bearing an identical name.
+  it('dedupes a padded identifier against its trimmed spelling', async () => {
+    const input = JSON.stringify({
+      name: 'a',
+      overrides: ['analyst', '  analyst  '].map((identifier, i) => ({
+        requirementId: `AC-${i + 2}`,
+        type: 'waiver',
+        status: 'notApplicable',
+        reason: 'r',
+        appliedAt: '2020-01-01T00:00:00Z',
+        expiresAt: '2099-12-31T00:00:00Z',
+        appliedBy: { identifier, type: 'username' },
+      })),
+    });
+    assertSchemaValid(validateHdfAmendments, 'test input', JSON.parse(input));
+    const out = await convertHdfToOscalPoam(input);
+    const parties = (
+      JSON.parse(out) as {
+        'plan-of-action-and-milestones': { metadata: { parties: Array<Record<string, unknown>> } };
+      }
+    )['plan-of-action-and-milestones'].metadata.parties;
+
+    expect(parties, 'one identity, one party').toHaveLength(1);
+    expect(parties[0]!.name).toBe('analyst');
+  });
+});

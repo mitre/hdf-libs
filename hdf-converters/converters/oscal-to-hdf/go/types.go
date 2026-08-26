@@ -80,7 +80,9 @@ type Role struct {
 type Party struct {
 	UUID string `json:"uuid"`
 	Type string `json:"type"`
-	Name string `json:"name"`
+	// Name is omitted when the source identity carries none: OSCAL requires only
+	// uuid and type on a party, so omitting says exactly what the source did.
+	Name string `json:"name,omitempty"`
 }
 
 // ResponsibleParty maps a role to party UUIDs.
