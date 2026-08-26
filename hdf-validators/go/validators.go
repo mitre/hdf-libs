@@ -91,6 +91,12 @@ type ValidationError struct {
 	Field       string `json:"field"`
 	Description string `json:"description"`
 	Value       any    `json:"value,omitempty"`
+	// Keyword names the kind of violation ("invalid_type", "required",
+	// "format", ...). Surfaced so a caller can act on the KIND: the converters
+	// reject a wrongly-typed field without rejecting a merely sparse document.
+	Keyword string `json:"keyword,omitempty"`
+	// Format is the expected format when Keyword is "format".
+	Format string `json:"format,omitempty"`
 }
 
 // ValidationResult contains the result of schema validation. It implements
@@ -303,6 +309,8 @@ func Validate(data []byte, schemaType SchemaType) ValidationResult {
 		errors = append(errors, ValidationError{
 			Field:       desc.Field(),
 			Description: desc.Description(),
+			Keyword:     desc.Type(),
+			Format:      formatName(desc),
 			Value:       desc.Value(),
 		})
 	}
@@ -352,4 +360,17 @@ func ValidateAmendments(data []byte) ValidationResult {
 // ValidateEvidencePackage validates JSON data against the HDF evidence-package schema.
 func ValidateEvidencePackage(data []byte) ValidationResult {
 	return Validate(data, TypeEvidencePackage)
+}
+
+// formatName reports the expected format for a failed "format" assertion, and
+// empty for every other violation. gojsonschema carries it in the error details
+// rather than on the error type.
+func formatName(desc gojsonschema.ResultError) string {
+	if desc.Type() != "format" {
+		return ""
+	}
+	if f, ok := desc.Details()["format"]; ok {
+		return fmt.Sprintf("%v", f)
+	}
+	return ""
 }

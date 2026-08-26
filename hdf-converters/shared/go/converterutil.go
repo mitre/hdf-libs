@@ -19,6 +19,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cwe"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	hdfvalidators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
 // InputChecksum computes the SHA-256 checksum of raw input bytes and returns
@@ -653,6 +654,41 @@ func RequireHDFResults(input []byte, converterName string, v *hdf.HDFResults) er
 	return nil
 }
 
+// rejectWronglyTypedFields refuses the violations a typed decode would have
+// refused, and only those.
+//
+// The typed guards need no such call: encoding/json already rejects a value whose
+// JSON type does not fit the generated struct field. Decoding into a map cannot
+// fail that way, so this path was the one place a wrongly-typed field reached a
+// converter in Go — and the TypeScript peer, whose runtime cast checks nothing,
+// let it through everywhere until it grew the same check.
+//
+// Deliberately narrow: required, enum and minItems violations decode cleanly into
+// the generated structs, so rejecting them here would make this path stricter than
+// the typed one and put the two languages back out of step in the other direction.
+// null is exempt for the same reason — encoding/json unmarshals it as nil or as a
+// no-op, never as an error, and several parity goldens pin a null reaching the
+// converter.
+func rejectWronglyTypedFields(input []byte, converterName string) error {
+	res := hdfvalidators.ValidateResults(hdfutil.NormalizeHDFTimestamps(input))
+	if res.Valid {
+		return nil
+	}
+	var msgs []string
+	for _, e := range res.Errors {
+		if e.Value == nil {
+			continue
+		}
+		if e.Keyword == "invalid_type" || (e.Keyword == "format" && e.Format == "date-time") {
+			msgs = append(msgs, fmt.Sprintf("%s: %s", e.Field, e.Description))
+		}
+	}
+	if len(msgs) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%s: input is not valid HDF: %s", converterName, strings.Join(msgs, "; "))
+}
+
 // RequireHDFAmendments is RequireHDFResults for HDF Amendments documents, keyed
 // on the overrides array.
 //
@@ -693,6 +729,9 @@ func RequireHDFResultsDoc(input []byte, converterName string) (map[string]interf
 	baselines, ok := doc["baselines"].([]interface{})
 	if !ok {
 		return nil, nil, missingFieldError(converterName, "baselines")
+	}
+	if err := rejectWronglyTypedFields(input, converterName); err != nil {
+		return nil, nil, err
 	}
 	return doc, baselines, nil
 }

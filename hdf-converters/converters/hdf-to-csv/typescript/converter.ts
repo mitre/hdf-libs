@@ -94,29 +94,6 @@ export function convertHdfToCsv(input: string): string {
 }
 
 /**
- * The CWE cell. Unlike tags — an untyped map where Go filters non-string entries,
- * so this side filters too — cwe is typed string[] in HDF, and a non-string entry
- * fails Go's typed decode and rejects the whole document. Rejecting here keeps
- * the two languages agreeing on WHETHER a document converts; the message text
- * differs by construction, since Go's comes from encoding/json.
- */
-function cweCell(requirement: EvaluatedRequirement): string {
-  const cwe = requirement.cwe;
-  if (cwe === undefined || cwe === null) return '';
-  if (!Array.isArray(cwe)) {
-    throw new Error(
-      `hdf-to-csv: requirement "${requirementIdText(requirement.id)}" has a non-array cwe`,
-    );
-  }
-  if (!cwe.every((v) => typeof v === 'string')) {
-    throw new Error(
-      `hdf-to-csv: requirement "${requirementIdText(requirement.id)}" has a non-string cwe entry`,
-    );
-  }
-  return cwe.join('; ');
-}
-
-/**
  * A schema-required number as a number. Go decodes an absent one to the zero
  * value and cannot tell it apart from a real zero — impact 0 legitimately means
  * Not Applicable — so distinguishing them would need a schema validation pass
@@ -229,7 +206,7 @@ function createRow(
     'Applied By': joinOverrides(requirement.statusOverrides, o => o.appliedBy?.identifier ?? ''),
     'Expires At': joinOverrides(requirement.statusOverrides, o => formatExpires(o.expiresAt)),
     'CVSS': cvssScores(requirement.cvss),
-    'CWE': cweCell(requirement),
+    'CWE': (requirement.cwe ?? []).join('; '),
     'EPSS': requirement.epss ? numeric(requirement.epss.score).toFixed(5) : '',
     'KEV': requirement.kev ? (requirement.kev.inKev ? 'true' : 'false') : '',
     'Target FQDN': target.fqdn,

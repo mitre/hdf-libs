@@ -600,6 +600,11 @@ func TestRequireHDFAmendments_MissingFieldMessageIsCanonical(t *testing.T) {
 func TestRequireHDFResultsDoc_MatchesTypedGuard(t *testing.T) {
 	for _, input := range []string{
 		``, `not json`, `[]`, `null`, `{}`, `{"baselines":"x"}`, `{"baselines":null}`,
+		// Wrongly-typed nested content, which the map decode cannot fail on by
+		// itself. These are the cases the two guards used to disagree about.
+		`{"baselines":[],"timestamp":"t"}`,
+		`{"baselines":[{"name":42,"requirements":[]}]}`,
+		`{"baselines":[],"components":[{"name":42,"type":"host"}]}`,
 	} {
 		var typed hdf.HDFResults
 		typedErr := RequireHDFResults([]byte(input), "probe", &typed)
@@ -608,9 +613,9 @@ func TestRequireHDFResultsDoc_MatchesTypedGuard(t *testing.T) {
 			"typed and map guards disagree on %q", input)
 	}
 
-	doc, baselines, err := RequireHDFResultsDoc([]byte(`{"baselines":[],"timestamp":"t"}`), "probe")
+	doc, baselines, err := RequireHDFResultsDoc([]byte(`{"baselines":[],"timestamp":"2020-01-01T00:00:00Z"}`), "probe")
 	require.NoError(t, err)
-	require.Equal(t, "t", doc["timestamp"])
+	require.Equal(t, "2020-01-01T00:00:00Z", doc["timestamp"])
 	require.Empty(t, baselines)
 }
 

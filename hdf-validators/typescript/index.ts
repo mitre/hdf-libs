@@ -43,6 +43,14 @@ export interface ValidationError {
   field: string;
   message: string;
   value?: unknown;
+  /**
+   * The JSON Schema keyword that failed ('type', 'required', 'format', ...).
+   * Surfaced so a caller can act on the KIND of violation — the converters
+   * reject a wrongly-typed field without rejecting a merely sparse document.
+   */
+  keyword?: string;
+  /** For a failed `format`, which format was expected. */
+  format?: string;
 }
 
 /**
@@ -222,6 +230,10 @@ function formatErrors(errors: ErrorObject[] | null | undefined): ValidationError
 
     return {
       field: field || '(root)',
+      keyword: err.keyword,
+      ...(err.keyword === 'format' && err.params && 'format' in err.params
+        ? { format: String((err.params as { format: unknown }).format) }
+        : {}),
       message,
       value: err.data
     };

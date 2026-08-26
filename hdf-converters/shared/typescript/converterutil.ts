@@ -10,6 +10,7 @@ import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimest
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
+import { validateResults, validateAmendments } from '@mitre/hdf-validators';
 
 export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS };
 
@@ -633,6 +634,16 @@ function requireHdfDocument<T>(
   input: string,
   converterName: string,
   field: string,
+  validate: (doc: unknown) => {
+    valid: boolean;
+    errors?: Array<{
+      field?: string;
+      message?: string;
+      keyword?: string;
+      format?: string;
+      value?: unknown;
+    }>;
+  },
   requireNonEmpty = false,
 ): T {
   if (input.trim().length === 0) {
@@ -660,7 +671,57 @@ function requireHdfDocument<T>(
   if (requireNonEmpty && value.length === 0) {
     throw missingFieldError(converterName, field);
   }
+
+  // `as T` is erased at runtime, so nothing above this line has checked a single
+  // field's type. Go decodes into the generated structs, where encoding/json
+  // rejects a wrongly-typed field outright; without an equivalent here the same
+  // bytes converted and the bad value reached the output — a numeric title
+  // written verbatim, an impact given as a string silently becoming 0.00 beside
+  // a severity still reading medium.
+  //
+  // Only type violations are rejected, which is exactly what Go's typed decode
+  // rejects: a sparse document missing a required field, or one carrying an
+  // out-of-enum value, still decodes there and must still convert here. Widening
+  // this to full schema validation would make TypeScript stricter than its peer
+  // and would reject the deliberately-sparse documents the corpus is built from.
+  const violations = typeViolations(validate(doc));
+  if (violations.length > 0) {
+    throw new Error(
+      `${converterName}: input is not valid HDF: ${violations.slice(0, 5).join('; ')}`,
+    );
+  }
   return doc as T;
+}
+
+/**
+ * The schema violations Go's typed decode would also reject.
+ *
+ * encoding/json refuses exactly two things: a JSON value whose type does not fit
+ * the target field, and a string that will not parse into a time.Time. Every
+ * other schema rule — required, enum, minItems, uuid and uri formats — decodes
+ * cleanly into the generated structs, so rejecting it here would put the two
+ * languages back out of step in the opposite direction.
+ *
+ * null is exempt for the same reason. Go unmarshals a JSON null into a slice,
+ * map or pointer as nil and into anything else as a no-op, never as an error, so
+ * a null cvss entry or a null results array reaches the converter there and must
+ * reach it here too — several parity goldens pin exactly that.
+ */
+function typeViolations(result: {
+  valid: boolean;
+  errors?: Array<{
+    field?: string;
+    message?: string;
+    keyword?: string;
+    format?: string;
+    value?: unknown;
+  }>;
+}): string[] {
+  if (result.valid) return [];
+  return (result.errors ?? [])
+    .filter((e) => e.value !== null)
+    .filter((e) => e.keyword === 'type' || (e.keyword === 'format' && e.format === 'date-time'))
+    .map((e) => `${e.field ?? ''} ${e.message ?? ''}`.trim());
 }
 
 /**
@@ -668,7 +729,7 @@ function requireHdfDocument<T>(
  * non-empty, within the size limit, parseable, and carrying a baselines array.
  */
 export function requireHdfResults<T>(input: string, converterName: string): T {
-  return requireHdfDocument<T>(input, converterName, 'baselines');
+  return requireHdfDocument<T>(input, converterName, 'baselines', validateResults);
 }
 
 /**
@@ -681,7 +742,7 @@ export function requireHdfResults<T>(input: string, converterName: string): T {
  * empty output the target schema then rejects.
  */
 export function requireHdfAmendments<T>(input: string, converterName: string): T {
-  return requireHdfDocument<T>(input, converterName, 'overrides', true);
+  return requireHdfDocument<T>(input, converterName, 'overrides', validateAmendments, true);
 }
 
 /**
