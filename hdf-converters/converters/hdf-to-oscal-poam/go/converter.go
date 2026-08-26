@@ -60,14 +60,17 @@ func newPartyRegistry() *partyRegistry {
 }
 
 // getOrAdd returns the party UUID for an identity, minting a new party the first
-// time an identifier is seen.
+// time an identifier is seen. Identities are keyed by the name actually emitted,
+// so two spellings of one identifier that trim alike stay one party rather than
+// two parties bearing the same name.
 func (r *partyRegistry) getOrAdd(id hdf.Identity) string {
-	if p, ok := r.byID[id.Identifier]; ok {
+	name := oscal.OSCALString(id.Identifier)
+	if p, ok := r.byID[name]; ok {
 		return p.UUID
 	}
-	party := oscal.Party{UUID: oscal.GenerateUUID(), Type: "person", Name: id.Identifier}
-	r.byID[id.Identifier] = party
-	r.order = append(r.order, id.Identifier)
+	party := oscal.Party{UUID: oscal.GenerateUUID(), Type: "person", Name: name}
+	r.byID[name] = party
+	r.order = append(r.order, name)
 	return party.UUID
 }
 
@@ -182,12 +185,7 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride, parties *partyRegistry
 
 	// Build risk props: impacted control, override type (disposition), impact
 	// override, controlled-vocabulary justification, and disambiguating scope.
-	riskProps := []oscal.Property{
-		{
-			Name:  "impacted-control-id",
-			Value: controlID,
-		},
-	}
+	riskProps := appendStringProp(nil, "impacted-control-id", controlID)
 	if override.Type != "" {
 		riskProps = append(riskProps, oscal.Property{Name: "override-type", Value: string(override.Type)})
 	}
@@ -195,13 +193,13 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride, parties *partyRegistry
 		riskProps = append(riskProps, oscal.Property{Name: "impact-override", Value: strconv.FormatFloat(override.Impact.Value, 'f', -1, 64)})
 	}
 	if override.Justification != nil && *override.Justification != "" {
-		riskProps = append(riskProps, oscal.Property{Name: "justification", Value: string(*override.Justification)})
+		riskProps = appendStringProp(riskProps, "justification", string(*override.Justification))
 	}
 	if override.BaselineRef != nil && *override.BaselineRef != "" {
-		riskProps = append(riskProps, oscal.Property{Name: "baseline-ref", Value: *override.BaselineRef})
+		riskProps = appendStringProp(riskProps, "baseline-ref", *override.BaselineRef)
 	}
 	if override.ComponentRef != nil && *override.ComponentRef != "" {
-		riskProps = append(riskProps, oscal.Property{Name: "component-ref", Value: *override.ComponentRef})
+		riskProps = appendStringProp(riskProps, "component-ref", *override.ComponentRef)
 	}
 
 	// Build remediations from milestones. Each milestone becomes a planned
@@ -360,10 +358,23 @@ func latestAppliedAt(overrides []hdf.StandaloneOverride) string {
 // amendmentsVersion sources metadata.version from the amendments document,
 // defaulting only when the source omits it.
 func amendmentsVersion(a *hdf.HDFAmendments) string {
-	if a.Version != nil && *a.Version != "" {
-		return *a.Version
+	if a.Version != nil {
+		if v := oscal.OSCALString(*a.Version); v != "" {
+			return v
+		}
 	}
 	return "1.0.0"
+}
+
+// appendStringProp adds a property whose value OSCAL types as StringDatatype,
+// trimming it and omitting the property entirely when nothing survives. A prop
+// with an empty value carries no more than an absent one and is schema-invalid.
+func appendStringProp(props []oscal.Property, name, value string) []oscal.Property {
+	trimmed := oscal.OSCALString(value)
+	if trimmed == "" {
+		return props
+	}
+	return append(props, oscal.Property{Name: name, Value: trimmed})
 }
 
 // metadataProps carries document identifiers and labels that have no first-class
@@ -371,7 +382,7 @@ func amendmentsVersion(a *hdf.HDFAmendments) string {
 func metadataProps(a *hdf.HDFAmendments) []oscal.Property {
 	var props []oscal.Property
 	if a.AmendmentID != nil && *a.AmendmentID != "" {
-		props = append(props, oscal.Property{Name: "amendment-id", Value: *a.AmendmentID})
+		props = appendStringProp(props, "amendment-id", *a.AmendmentID)
 	}
 	if len(a.Labels) > 0 {
 		keys := make([]string, 0, len(a.Labels))
@@ -380,7 +391,11 @@ func metadataProps(a *hdf.HDFAmendments) []oscal.Property {
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			props = append(props, labelProp(k, a.Labels[k]))
+			// A label whose value is empty after trimming says nothing the absent
+			// label would not; Property.Value is StringDatatype and cannot hold it.
+			if p := labelProp(k, a.Labels[k]); p.Value != "" {
+				props = append(props, p)
+			}
 		}
 	}
 	return props
@@ -399,7 +414,7 @@ func labelProp(key, value string) oscal.Property {
 		// is valid HDF — labels constrains its values, not its property names.
 		name = "_"
 	}
-	prop := oscal.Property{Name: name, Value: value, Class: "amendment-label"}
+	prop := oscal.Property{Name: name, Value: oscal.OSCALString(value), Class: "amendment-label"}
 	// Recorded only when the name was encoded away from a non-empty key: an
 	// unchanged name has nothing to recover, and an empty key carries no text
 	// worth recovering.
@@ -439,10 +454,10 @@ func evidenceObservation(ev hdf.Evidence, uuid, defaultCollected string) oscal.O
 
 	var props []oscal.Property
 	if ev.MIMEType != nil && *ev.MIMEType != "" {
-		props = append(props, oscal.Property{Name: "mime-type", Value: *ev.MIMEType})
+		props = appendStringProp(props, "mime-type", *ev.MIMEType)
 	}
 	if ev.CapturedBy != nil && ev.CapturedBy.Identifier != "" {
-		props = append(props, oscal.Property{Name: "captured-by", Value: ev.CapturedBy.Identifier})
+		props = appendStringProp(props, "captured-by", ev.CapturedBy.Identifier)
 	}
 
 	return oscal.Observation{

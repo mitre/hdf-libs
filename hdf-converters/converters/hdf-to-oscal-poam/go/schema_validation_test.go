@@ -2,6 +2,7 @@ package hdftooscalpoam
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	oscal "github.com/mitre/hdf-libs/hdf-converters/v3/converters/oscal-to-hdf/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -235,8 +237,7 @@ func TestCorpusGoldenParity(t *testing.T) {
 func TestConvertHDFToOSCALPOAM_LabelKeysAreTokens(t *testing.T) {
 	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
 		"hdf-to-oscal-poam", "schemas", "oscal_poam_schema-v1.1.2.json"))
-	hdfV := shared.NewSchemaValidator(t, filepath.Join("..", "..", "..", "..",
-		"hdf-validators", "go", "schemas", "hdf-amendments.schema.json"))
+	hdfV := amendmentsValidator(t)
 
 	for _, tc := range []struct {
 		key  string
@@ -305,4 +306,127 @@ func metadataPropNamed(t *testing.T, out []byte, name string) oscal.Property {
 	}
 	t.Fatalf("no metadata prop named %q; got %v", name, names)
 	return oscal.Property{}
+}
+
+// amendmentsValidator guards the rule that makes these tests mean anything: a
+// converter fed input its own schema rejects proves nothing about real documents.
+func amendmentsValidator(t *testing.T) *shared.SchemaValidator {
+	t.Helper()
+	return shared.NewSchemaValidator(t, filepath.Join("..", "..", "..", "..",
+		"hdf-validators", "go", "schemas", "hdf-amendments.schema.json"))
+}
+
+// componentRef and amendmentId are deliberately absent from this table: both are
+// format:uuid in hdf-amendments, so a padded value is not valid HDF and testing
+// it would prove nothing about real documents. baselineRef carries no format,
+// which is why its padded form IS a real case here.
+//
+// OSCAL types many fields StringDatatype (^\S(.*\S)?$ — non-empty, no leading or
+// trailing whitespace), while hdf-amendments puts no minLength on the strings
+// that feed them. So an empty or padded value is valid HDF that yields a POA&M
+// the schema rejects, at exit 0. Six sinks were affected, not the two the sweep
+// first found; every free-text string now goes through one helper that trims and
+// drops what is left empty.
+//
+// Each input is asserted valid HDF first: a converter fed input its own schema
+// rejects proves nothing about what it does with real documents.
+func TestConvertHDFToOSCALPOAM_StringDatatypeSinks(t *testing.T) {
+	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
+		"hdf-to-oscal-poam", "schemas", "oscal_poam_schema-v1.1.2.json"))
+	hdfV := shared.NewSchemaValidator(t, filepath.Join("..", "..", "..", "..",
+		"hdf-validators", "go", "schemas", "hdf-amendments.schema.json"))
+
+	const doc = `{"name":"a"%s,"overrides":[{"requirementId":%s,"type":"waiver",` +
+		`"status":"notApplicable","reason":"r"%s,"appliedAt":"2020-01-01T00:00:00Z",` +
+		`"expiresAt":"2099-12-31T00:00:00Z","appliedBy":{"identifier":%s,"type":"username"}}]}`
+
+	for _, tc := range []struct{ name, root, reqID, override, ident string }{
+		{"empty identifier", "", `"AC-2"`, "", `""`},
+		{"padded identifier", "", `"AC-2"`, "", `"  analyst  "`},
+		{"empty requirementId", "", `""`, "", `"analyst"`},
+		{"padded baselineRef", "", `"AC-2"`, `,"baselineRef":"  b  "`, `"analyst"`},
+		{"empty label value", `,"labels":{"env":""}`, `"AC-2"`, "", `"analyst"`},
+		{"padded label value", `,"labels":{"env":"  p  "}`, `"AC-2"`, "", `"analyst"`},
+		{"padded version", `,"version":"  1.0  "`, `"AC-2"`, "", `"analyst"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			input := []byte(fmt.Sprintf(doc, tc.root, tc.reqID, tc.override, tc.ident))
+			require.NoError(t, hdfV.Validate(input), "the test input is not valid HDF")
+
+			out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+			require.NoError(t, err)
+			require.NoError(t, v.Validate(out),
+				"an empty or padded HDF string must not produce a document the schema rejects")
+		})
+	}
+}
+
+// The empty case omits the field rather than inventing a placeholder: OSCAL
+// requires only uuid and type on a party, so the party survives and the
+// responsible-party reference that points at it stays valid.
+func TestConvertHDFToOSCALPOAM_EmptyIdentifierOmitsPartyName(t *testing.T) {
+	input := []byte(`{"name":"a","overrides":[{"requirementId":"AC-2","type":"waiver",` +
+		`"status":"notApplicable","reason":"r","appliedAt":"2020-01-01T00:00:00Z",` +
+		`"expiresAt":"2099-12-31T00:00:00Z","appliedBy":{"identifier":"","type":"username"}}]}`)
+
+	require.NoError(t, amendmentsValidator(t).Validate(input), "the test input is not valid HDF")
+
+	out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+	require.NoError(t, err)
+
+	var doc struct {
+		POAM struct {
+			Metadata struct {
+				Parties []struct {
+					UUID string  `json:"uuid"`
+					Type string  `json:"type"`
+					Name *string `json:"name"`
+				} `json:"parties"`
+				ResponsibleParties []struct {
+					PartyUUIDs []string `json:"party-uuids"`
+				} `json:"responsible-parties"`
+			} `json:"metadata"`
+		} `json:"plan-of-action-and-milestones"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.POAM.Metadata.Parties, 1)
+	assert.Nil(t, doc.POAM.Metadata.Parties[0].Name, "an empty identifier omits the name")
+	assert.NotEmpty(t, doc.POAM.Metadata.Parties[0].UUID, "the party itself survives")
+
+	// and nothing references a party that is no longer there
+	for _, rp := range doc.POAM.Metadata.ResponsibleParties {
+		for _, u := range rp.PartyUUIDs {
+			assert.Equal(t, doc.POAM.Metadata.Parties[0].UUID, u,
+				"a responsible-party must not reference a dropped party")
+		}
+	}
+}
+
+// Two spellings of one identifier that trim alike are one person, and the
+// emitted document must say so: keying the registry on the raw identifier would
+// mint two parties bearing an identical name.
+func TestConvertHDFToOSCALPOAM_PaddedIdentifierDedupes(t *testing.T) {
+	override := func(reqID, ident string) string {
+		return `{"requirementId":"` + reqID + `","type":"waiver","status":"notApplicable",` +
+			`"reason":"r","appliedAt":"2020-01-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z",` +
+			`"appliedBy":{"identifier":"` + ident + `","type":"username"}}`
+	}
+	input := []byte(`{"name":"a","overrides":[` +
+		override("AC-2", "analyst") + `,` + override("AC-3", "  analyst  ") + `]}`)
+
+	require.NoError(t, amendmentsValidator(t).Validate(input), "the test input is not valid HDF")
+
+	out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+	require.NoError(t, err)
+
+	var doc struct {
+		POAM struct {
+			Metadata struct {
+				Parties []struct{ Name string } `json:"parties"`
+			} `json:"metadata"`
+		} `json:"plan-of-action-and-milestones"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.POAM.Metadata.Parties, 1, "one identity, one party")
+	assert.Equal(t, "analyst", doc.POAM.Metadata.Parties[0].Name)
 }
