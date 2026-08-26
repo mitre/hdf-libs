@@ -1,0 +1,83 @@
+{
+  "$comment": "Pins the shipped Go and TypeScript HDF validators to one another on JSON Schema `format`. Both read this file and validate the same documents, so the two halves of this repo cannot disagree about whether a document is valid HDF. Each case names the RFC clause that settles it, because a validator disagreeing with its peer is only half the problem — one of them is also wrong.",
+  "$knownDivergence": "uri-reference is deliberately absent. gojsonschema accepts a space, '<', '|', '^' and backtick inside one where ajv rejects them, so the shipped pair still disagrees there. It is left recorded rather than closed because neither library is RFC 3986-exact — ajv accepts a double quote the RFC excludes — so matching either would import its idiosyncrasies rather than make one correct. That behaviour is already pinned for both libraries in hdf-converters/shared/testdata/format-assertion-cases.json, which uses the same two libraries; re-asserting it here would duplicate a pin, not add one.",
+  "cases": [
+    {
+      "name": "uppercase uuid",
+      "field": "componentId",
+      "value": "3F2504E0-4F89-11D3-9A0C-0305E82C3301",
+      "valid": true,
+      "why": "RFC 4122 §3: generators emit lowercase, but all input is accepted case-insensitively"
+    },
+    {
+      "name": "lowercase uuid",
+      "field": "componentId",
+      "value": "3f2504e0-4f89-11d3-9a0c-0305e82c3301",
+      "valid": true,
+      "why": "the canonical spelling"
+    },
+    {
+      "name": "uuid with a padded value",
+      "field": "componentId",
+      "value": "  3f2504e0-4f89-11d3-9a0c-0305e82c3301  ",
+      "valid": false,
+      "why": "surrounding whitespace is not part of the UUID grammar"
+    },
+    {
+      "name": "not a uuid at all",
+      "field": "componentId",
+      "value": "host-01",
+      "valid": false,
+      "why": "a name is not a UUID"
+    },
+    {
+      "name": "lowercase t and z in a date-time",
+      "field": "startTime",
+      "value": "2020-01-01t00:00:00z",
+      "valid": true,
+      "why": "RFC 3339 §5.6 NOTE: lowercase t and z are permitted"
+    },
+    {
+      "name": "leap second in a date-time",
+      "field": "startTime",
+      "value": "2020-01-01T23:59:60Z",
+      "valid": true,
+      "why": "RFC 3339 §5.7: second 60 is a leap second and is legal"
+    },
+    {
+      "name": "bare date where a date-time belongs",
+      "field": "startTime",
+      "value": "2020-01-01",
+      "valid": false,
+      "why": "RFC 3339 date-time requires full-date T full-time; a bare date is not one"
+    },
+    {
+      "name": "date-time with an offset",
+      "field": "startTime",
+      "value": "2026-08-26T12:30:00.123-04:00",
+      "valid": true,
+      "why": "a numeric offset is as valid as Z"
+    },
+    {
+      "name": "date-time with no offset at all",
+      "field": "startTime",
+      "value": "2020-01-01T00:00:00",
+      "valid": false,
+      "why": "RFC 3339 requires an offset"
+    },
+    {
+      "name": "space where the T separator belongs",
+      "field": "startTime",
+      "value": "2020-01-01 00:00:00Z",
+      "valid": false,
+      "why": "RFC 3339 §5.6 permits a space only by mutual agreement; HDF's canonical timestamp requires the T, so every validator in this repo requires it — ajv is tightened to match Go rather than the reverse"
+    },
+    {
+      "name": "urn:uuid: prefixed identifier",
+      "field": "componentId",
+      "value": "urn:uuid:3f2504e0-4f89-11d3-9a0c-0305e82c3301",
+      "valid": true,
+      "why": "ajv accepts the urn:uuid: form, so the Go peer must too"
+    }
+  ]
+}

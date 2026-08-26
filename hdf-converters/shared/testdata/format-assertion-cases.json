@@ -6,17 +6,12 @@
       "format": "uri-reference",
       "summary": "Go's libraries accept characters RFC 3986 excludes; ajv rejects them.",
       "detail": "santhosh-tekuri (2020-12) and gojsonschema (draft-07) both accept a space, '<', '|', '^' and backtick inside a uri-reference. ajv-formats rejects all five. Neither side is RFC 3986-exact: ajv accepts a double quote, which the RFC also excludes, and rejects malformed percent-encoding that a character-level check would pass. Matching one library to the other would import its idiosyncrasies rather than make either correct, so the divergence is recorded and tested instead — if a library upgrade changes either verdict, these cases fail and the next contributor sees this note. The seven other formats agree exactly, including uuid and date-time, the two that actually produced a false-green test."
-    },
-    {
-      "format": "uuid",
-      "dialect": "draft-07 only",
-      "summary": "gojsonschema rejects an uppercase uuid; ajv and the 2020-12 Go library accept it.",
-      "detail": "RFC 4122 §3 requires generators to emit lowercase but readers to accept either case, so gojsonschema is wrong and the other two are right. It is recorded rather than fixed because it is unreachable in practice: every HDF schema is 2020-12, and no vendored draft-07 target schema asserts uuid. If one ever does, this row is the note explaining why its uppercase uuids fail."
     }
   ],
+  "$resolved": "gojsonschema's built-in uuid and date-time checkers were wrong four ways — rejecting an uppercase uuid and a lowercase RFC 3339 t, rejecting a legal leap second, and accepting a bare date as a date-time. hdf-validators now replaces both at gojsonschema's process-global registry, so this harness's draft-07 path inherits the corrected behaviour whenever hdf-validators is linked (its own test binary imports it). The `goDraft07` field remains supported for a future case that needs it.",
   "cases": [
     { "format": "uuid", "valid": true, "value": "3f2504e0-4f89-11d3-9a0c-0305e82c3301" },
-    { "format": "uuid", "valid": true, "goDraft07": false, "value": "3F2504E0-4F89-11D3-9A0C-0305E82C3301" },
+    { "format": "uuid", "valid": true, "value": "3F2504E0-4F89-11D3-9A0C-0305E82C3301", "why": "RFC 4122 §3: readers accept either case. gojsonschema's built-in checker rejected this until hdf-validators replaced it" },
     { "format": "uuid", "valid": false, "value": "  3f2504e0-4f89-11d3-9a0c-0305e82c3301  ", "why": "the padded-uuid case that exposed the divergence: accepted by Go, rejected by ajv" },
     { "format": "uuid", "valid": false, "value": "not-a-uuid" },
     { "format": "uuid", "valid": false, "value": "" },

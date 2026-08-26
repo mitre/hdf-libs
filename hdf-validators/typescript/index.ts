@@ -68,6 +68,15 @@ function createValidator(): Ajv {
 
   // Add format validators (date-time, uri, etc.)
   addFormats(ajv);
+  // ajv-formats follows the RFC 3339 note allowing a space where the T belongs;
+  // HDF's canonical timestamp does not, and the Go peer rejects it. Requiring the
+  // separator keeps the shipped validators on one answer — both languages' verdicts
+  // are pinned by ../testdata/shipped-format-cases.json.
+  const registeredDateTime = ajv.formats['date-time'] as { validate: (v: string) => boolean };
+  ajv.addFormat('date-time', {
+    type: 'string',
+    validate: (v: string) => /^\d{4}-\d{2}-\d{2}[Tt]/.test(v) && registeredDateTime.validate(v),
+  });
 
   // Add all primitive schemas so they can be referenced via $ref
   ajv.addSchema(commonSchema);

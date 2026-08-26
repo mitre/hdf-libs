@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	hdfvalidators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	tekuri "github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/stretchr/testify/require"
 	"github.com/xeipuuv/gojsonschema"
@@ -37,6 +38,13 @@ type SchemaValidator struct {
 	draft07 *gojsonschema.Schema // draft-07 and earlier
 	modern  *tekuri.Schema       // draft 2019-09 / 2020-12
 }
+
+// gojsonschema's built-in uuid and date-time checkers disagree with the RFCs and
+// with every other validator here; hdf-validators replaces them in gojsonschema's
+// process-global registry. Calling it explicitly means this harness's draft-07
+// path gets the corrected behaviour because it asked for it, not because some
+// other file in the test binary happened to import hdf-validators.
+func init() { hdfvalidators.RegisterRFCFormatCheckers() }
 
 // NewSchemaValidator compiles a self-contained JSON Schema from a file path.
 // For schemas that $ref external schemas by URL, use
