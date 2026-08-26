@@ -1,0 +1,123 @@
+{
+  "$comment": "Shared table for CSV formula-injection sanitizing. hdfutil.SanitizeCSVValue (Go) and sanitizeCsvValue (TypeScript) both read it, so the trigger set cannot drift on one side. The control prepends a single quote to any value whose first character would make a spreadsheet evaluate it as a formula.",
+  "triggers": [
+    "=",
+    "+",
+    "-",
+    "@",
+    "|",
+    "%"
+  ],
+  "cases": [
+    {
+      "value": "=cmd",
+      "sanitized": "'=cmd",
+      "why": "leading '=' is a spreadsheet formula trigger"
+    },
+    {
+      "value": "+cmd",
+      "sanitized": "'+cmd",
+      "why": "leading '+' is a spreadsheet formula trigger"
+    },
+    {
+      "value": "-cmd",
+      "sanitized": "'-cmd",
+      "why": "leading '-' is a spreadsheet formula trigger"
+    },
+    {
+      "value": "@cmd",
+      "sanitized": "'@cmd",
+      "why": "leading '@' is a spreadsheet formula trigger"
+    },
+    {
+      "value": "|cmd",
+      "sanitized": "'|cmd",
+      "why": "leading '|' is a spreadsheet formula trigger"
+    },
+    {
+      "value": "%cmd",
+      "sanitized": "'%cmd",
+      "why": "leading '%' is a spreadsheet formula trigger"
+    },
+    {
+      "value": "=cmd|' /C calc'!A0",
+      "sanitized": "'=cmd|' /C calc'!A0",
+      "why": "the DDE payload this control exists to neutralise"
+    },
+    {
+      "value": "+SUM(1)",
+      "sanitized": "'+SUM(1)",
+      "why": "a formula that does not start with ="
+    },
+    {
+      "value": "-1+1",
+      "sanitized": "'-1+1",
+      "why": "a negative-looking value Excel still evaluates"
+    },
+    {
+      "value": "@SUM(1)",
+      "sanitized": "'@SUM(1)",
+      "why": "Lotus-style leading @"
+    },
+    {
+      "value": "a=b",
+      "sanitized": "a=b",
+      "why": "a trigger that is not leading is not a formula"
+    },
+    {
+      "value": "x-1",
+      "sanitized": "x-1",
+      "why": "ditto for -"
+    },
+    {
+      "value": "",
+      "sanitized": "",
+      "why": "an empty value has no leading character"
+    },
+    {
+      "value": "plain text",
+      "sanitized": "plain text",
+      "why": "ordinary text is untouched"
+    },
+    {
+      "value": "'=cmd",
+      "sanitized": "'=cmd",
+      "why": "already neutralised; the quote is not a trigger, so it is not doubled"
+    },
+    {
+      "value": "==cmd",
+      "sanitized": "'==cmd",
+      "why": "only one quote is prepended regardless of trigger count"
+    },
+    {
+      "value": " =cmd",
+      "sanitized": " =cmd",
+      "why": "a leading space means the trigger is not first; Excel does not evaluate it"
+    },
+    {
+      "value": "0.5",
+      "sanitized": "0.5",
+      "why": "a formatted number is untouched"
+    },
+    {
+      "value": "-0.3",
+      "sanitized": "'-0.3",
+      "why": "a NEGATIVE number does trigger, which is why numeric columns must not be sanitised"
+    },
+    {
+      "value": "é=x",
+      "sanitized": "é=x",
+      "why": "non-ASCII first character: Go compares the first BYTE, which is never a trigger for multi-byte UTF-8"
+    },
+    {
+      "value": "🎉=x",
+      "sanitized": "🎉=x",
+      "why": "astral first character, same reason"
+    },
+    {
+      "value": "日=x",
+      "sanitized": "日=x",
+      "why": "CJK first character, same reason"
+    }
+  ]
+}

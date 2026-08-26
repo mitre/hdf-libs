@@ -255,40 +255,40 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 
 	// Build row with sanitization
 	return []string{
-		sanitizeCSV(baseline.Name),
-		sanitizeCSV(version),
-		sanitizeCSV(title),
-		sanitizeCSV(target.Name),
-		sanitizeCSV(string(target.Type)),
-		sanitizeCSV(requirement.ID),
-		sanitizeCSV(reqTitle),
-		sanitizeCSV(description),
-		sanitizeCSV(check),
-		sanitizeCSV(fix),
-		sanitizeCSV(rationale),
-		sanitizeCSV(code),
-		sanitizeCSV(references),
-		sanitizeCSV(severity),
+		hdfutil.SanitizeCSVValue(baseline.Name),
+		hdfutil.SanitizeCSVValue(version),
+		hdfutil.SanitizeCSVValue(title),
+		hdfutil.SanitizeCSVValue(target.Name),
+		hdfutil.SanitizeCSVValue(string(target.Type)),
+		hdfutil.SanitizeCSVValue(requirement.ID),
+		hdfutil.SanitizeCSVValue(reqTitle),
+		hdfutil.SanitizeCSVValue(description),
+		hdfutil.SanitizeCSVValue(check),
+		hdfutil.SanitizeCSVValue(fix),
+		hdfutil.SanitizeCSVValue(rationale),
+		hdfutil.SanitizeCSVValue(code),
+		hdfutil.SanitizeCSVValue(references),
+		hdfutil.SanitizeCSVValue(severity),
 		hdfutil.FormatFixed(requirement.Impact, 2),
-		sanitizeCSV(status),
-		sanitizeCSV(nistControls),
-		sanitizeCSV(cciControls),
-		sanitizeCSV(controlType),
-		sanitizeCSV(verificationMethod),
-		sanitizeCSV(applicability),
-		sanitizeCSV(message),
-		sanitizeCSV(effStatus),
+		hdfutil.SanitizeCSVValue(status),
+		hdfutil.SanitizeCSVValue(nistControls),
+		hdfutil.SanitizeCSVValue(cciControls),
+		hdfutil.SanitizeCSVValue(controlType),
+		hdfutil.SanitizeCSVValue(verificationMethod),
+		hdfutil.SanitizeCSVValue(applicability),
+		hdfutil.SanitizeCSVValue(message),
+		hdfutil.SanitizeCSVValue(effStatus),
 		hdfutil.FormatFixed(effImpact, 2),
-		sanitizeCSV(disposition),
-		sanitizeCSV(overrideReason),
-		sanitizeCSV(appliedBy),
-		sanitizeCSV(expiresAt),
-		sanitizeCSV(cvss),
-		sanitizeCSV(cwe),
-		sanitizeCSV(epss),
-		sanitizeCSV(kev),
-		sanitizeCSV(fqdn),
-		sanitizeCSV(ipAddress),
+		hdfutil.SanitizeCSVValue(disposition),
+		hdfutil.SanitizeCSVValue(overrideReason),
+		hdfutil.SanitizeCSVValue(appliedBy),
+		hdfutil.SanitizeCSVValue(expiresAt),
+		hdfutil.SanitizeCSVValue(cvss),
+		hdfutil.SanitizeCSVValue(cwe),
+		hdfutil.SanitizeCSVValue(epss),
+		hdfutil.SanitizeCSVValue(kev),
+		hdfutil.SanitizeCSVValue(fqdn),
+		hdfutil.SanitizeCSVValue(ipAddress),
 	}, nil
 }
 
@@ -404,19 +404,4 @@ func extractArrayFromTags(tags map[string]interface{}, key string) string {
 	}
 
 	return strings.Join(items, "; ")
-}
-
-// sanitizeCSV prevents CSV injection attacks
-func sanitizeCSV(value string) string {
-	if len(value) == 0 {
-		return value
-	}
-
-	// Check if first character is a formula trigger
-	firstChar := value[0]
-	if firstChar == '=' || firstChar == '+' || firstChar == '-' || firstChar == '@' || firstChar == '|' || firstChar == '%' {
-		return "'" + value
-	}
-
-	return value
 }

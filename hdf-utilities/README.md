@@ -15,6 +15,37 @@ Generic utility functions for working with common data formats (JSON, XML, CSV) 
 - Parse HDF-specific structures (use `@mitre/hdf-parsers` for HDF traversal)
 - Convert between security tool formats (use `@mitre/hdf-converters`)
 
+### Why the Go and TypeScript surfaces differ
+
+The two languages do not export the same modules, and that is deliberate. This
+package holds cross-language **policy** — decisions both implementations must
+agree on — while each language uses its own serializer.
+
+`hash` and `json` have no Go counterpart because Go's standard library already
+provides them: `crypto/sha256`, `encoding/json`. Wrapping those in Go would add a
+layer with no decision in it. The TypeScript side needs wrappers because
+JavaScript ships no equivalent, and the wrapper is where safe defaults get
+centralised.
+
+`csv` exists in both, but the two surfaces are deliberately different sizes: the
+TypeScript module parses and builds CSV, while the Go one carries only the
+formula-injection policy and leaves writing to `encoding/csv`.
+
+XML shows the pattern most clearly. Go's `xml.go` exports only
+`ContainsXMLEntityDeclarations` and `ExtractXMLRootElement` — an XXE-safety
+policy and a domain helper — and leaves parsing to `encoding/xml`. The
+TypeScript `xml/` module wraps fast-xml-parser and carries the same policy in its
+defaults.
+
+So the test for whether something belongs in both languages is not "does the
+other one have it" but "is it a decision, or is it plumbing". Formula-injection
+sanitizing (`SanitizeCSVValue` / `sanitizeCsvValue`) is a decision: which leading
+characters a spreadsheet will execute, and what neutralises them. It exists in
+both, pinned to one shared table in `testdata/csv-sanitize-cases.json`, because a
+trigger added on one side alone would leave the other exporting CSVs a
+spreadsheet runs. CSV *writing* is plumbing, and stays with each language's
+serializer.
+
 ### hdf-utilities vs. hdf-validators
 
 | hdf-utilities | hdf-validators |
