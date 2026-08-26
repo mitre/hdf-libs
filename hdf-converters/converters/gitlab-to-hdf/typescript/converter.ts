@@ -20,7 +20,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
-import {buildNoFindingsRequirement, inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, validateInputSize, serializeHdf} from '../../../shared/typescript/converterutil.js';
+import {buildNoFindingsRequirement, inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, markUnratedSeverity, validateInputSize, serializeHdf} from '../../../shared/typescript/converterutil.js';
 
 // --- GitLab Security Report input types ---
 
@@ -321,6 +321,7 @@ export async function convertGitlabToHdf(input: string, converterVersion = '1.0.
       extras[key] = values;
     }
     const tags = buildNistCciTags(nistTags, cciTags, Object.keys(extras).length > 0 ? extras : undefined);
+    markUnratedSeverity(tags, vuln.severity);
 
     // Build descriptions
     const descriptions: Array<{label: string; data: string}> = [];

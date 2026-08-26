@@ -561,3 +561,57 @@ func TestConvertConveyor_VerificationMethod(t *testing.T) {
 		}
 	}
 }
+
+func TestAbsentScore_NotReviewed(t *testing.T) {
+	// A result block with no score carries no verdict: notReviewed @ 0.0 with
+	// the reason in the message — never a silent pass. A genuine score of 0
+	// stays a clean pass, and a positive score stays failed at score/1000.
+	input := []byte(`{
+		"api_error_message": "",
+		"api_response": {
+			"file_tree": {
+				"sha-absent": {"name": ["absent.bin"], "sha256": "sha-absent"},
+				"sha-zero": {"name": ["zero.bin"], "sha256": "sha-zero"},
+				"sha-scored": {"name": ["scored.bin"], "sha256": "sha-scored"}
+			},
+			"results": {
+				"sha-absent.SvcA.v1.k1": {"sha256": "sha-absent", "response": {"service_name": "SvcA", "milestones": {}}, "result": {"sections": [{"title_text": "t", "body": null, "body_format": "TEXT", "classification": "TLP:C", "depth": 0}]}},
+				"sha-zero.SvcA.v1.k2": {"sha256": "sha-zero", "response": {"service_name": "SvcA", "milestones": {}}, "result": {"score": 0, "sections": []}},
+				"sha-scored.SvcA.v1.k3": {"sha256": "sha-scored", "response": {"service_name": "SvcA", "milestones": {}}, "result": {"score": 500, "sections": []}}
+			},
+			"times": {}
+		}
+	}`)
+	res, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	var all []hdf.EvaluatedRequirement
+	for _, b := range res.Baselines {
+		all = append(all, b.Requirements...)
+	}
+	byID := func(id string) *hdf.EvaluatedRequirement {
+		for i := range all {
+			if all[i].ID == id {
+				return &all[i]
+			}
+		}
+		return nil
+	}
+
+	absent := byID("sha-absent")
+	require.NotNil(t, absent)
+	assert.Equal(t, hdf.NotReviewed, absent.Results[0].Status)
+	assert.Equal(t, 0.0, absent.Impact)
+	require.NotNil(t, absent.Results[0].Message)
+	assert.Contains(t, *absent.Results[0].Message, "no score")
+
+	zero := byID("sha-zero")
+	require.NotNil(t, zero)
+	assert.Equal(t, hdf.Passed, zero.Results[0].Status)
+	assert.Equal(t, 0.0, zero.Impact)
+
+	scored := byID("sha-scored")
+	require.NotNil(t, scored)
+	assert.Equal(t, hdf.Failed, scored.Results[0].Status)
+	assert.Equal(t, 0.5, scored.Impact)
+}

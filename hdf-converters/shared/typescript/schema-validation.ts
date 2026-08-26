@@ -48,13 +48,25 @@ export function loadSchemaValidatorWithResources(
 }
 
 /**
+ * Report a document's schema violations, or null when it is valid.
+ *
+ * Callers that need to assert a document is *invalid* — the corpus tier-B
+ * contract — cannot use assertSchemaValid, which throws on exactly the outcome
+ * they are asserting.
+ */
+export function schemaErrors(validate: ValidateFunction, doc: unknown): string | null {
+  if (validate(doc)) return null;
+  return (validate.errors ?? [])
+    .map((e) => `  ${e.instancePath || '/'} ${e.message ?? ''}`)
+    .join('\n');
+}
+
+/**
  * Assert that a document satisfies the schema, reporting every violation on
  * failure so a red run pinpoints exactly what is wrong.
  */
 export function assertSchemaValid(validate: ValidateFunction, label: string, doc: unknown): void {
-  if (validate(doc)) return;
-  const errors = (validate.errors ?? [])
-    .map((e) => `  ${e.instancePath || '/'} ${e.message ?? ''}`)
-    .join('\n');
+  const errors = schemaErrors(validate, doc);
+  if (errors === null) return;
   throw new Error(`${label}: document does not satisfy the schema:\n${errors}`);
 }

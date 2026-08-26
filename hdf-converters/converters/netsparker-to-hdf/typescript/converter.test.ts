@@ -217,6 +217,61 @@ describe('Netsparker to HDF converter', () => {
     expect(req?.tags?.cci).toBeDefined();
   });
 
+  it('tags unrated severities with severity_rating: unrated', async () => {
+    // Absent <severity> → unrated marker; rated severities — including
+    // Information — must not carry the tag.
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise generated="03/07/2023 03:15 PM">
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>vuln-unrated</LookupId>
+			<name>No Severity Vuln</name>
+		</vulnerability>
+		<vulnerability>
+			<LookupId>vuln-high</LookupId>
+			<name>High Severity Vuln</name>
+			<severity>High</severity>
+		</vulnerability>
+		<vulnerability>
+			<LookupId>vuln-info</LookupId>
+			<name>Information Severity Vuln</name>
+			<severity>Information</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    expect(findRequirement(hdf, 'vuln-unrated')?.tags?.['severity_rating']).toBe('unrated');
+    expect(findRequirement(hdf, 'vuln-high')?.tags?.['severity_rating']).toBeUndefined();
+    expect(findRequirement(hdf, 'vuln-info')?.tags?.['severity_rating']).toBeUndefined();
+  });
+
+  it('maps Critical to 0.9 like the Go twin (shared standard map, not 1.0)', async () => {
+    const input = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise generated="03/07/2023 03:15 PM">
+	<target>
+		<url>https://example.com/</url>
+	</target>
+	<vulnerabilities>
+		<vulnerability>
+			<LookupId>vuln-critical</LookupId>
+			<name>Critical Severity Vuln</name>
+			<severity>Critical</severity>
+		</vulnerability>
+		<vulnerability>
+			<LookupId>vuln-bp</LookupId>
+			<name>Best Practice Vuln</name>
+			<severity>Best_Practice</severity>
+		</vulnerability>
+	</vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    expect(findRequirement(hdf, 'vuln-critical')?.impact).toBe(0.9);
+    expect(findRequirement(hdf, 'vuln-bp')?.impact).toBe(0.0);
+  });
+
   // ---- Classification tags (capec / wasc / iso27001 / pci32) ----
 
   it('maps classification fields to tags with the source values', async () => {
@@ -490,7 +545,8 @@ describe('Netsparker to HDF converter', () => {
     const req = findRequirement(hdf, 'no-class-1');
     expect(req).toBeDefined();
     // With no CWE/OWASP, should fall back to default NIST tags
-    expect(req!.impact).toBe(1.0);
+    // Critical maps to 0.9 via the shared standard map (Go parity).
+    expect(req!.impact).toBe(0.9);
     // Should have check description from exploitation-skills + proof-of-concept
     const check = findDescription(req!.descriptions!, 'check');
     expect(check).toBeDefined();

@@ -175,6 +175,26 @@ describe('twistlock to HDF converter', async () => {
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44832');
       expect(req?.impact).toBe(0.5);
     });
+
+    it('should map info to 0.0 like the Go twin (shared standard map)', async () => {
+      const input = JSON.stringify({
+        results: [{
+          vulnerabilities: [{ id: 'CVE-INFO', severity: 'info', description: 'desc' }],
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
+    });
+
+    it('defaults an absent severity field to 0.5 without throwing (Go zero-value parity)', async () => {
+      const input = JSON.stringify({
+        results: [{
+          vulnerabilities: [{ id: 'CVE-NOSEV', description: 'desc' }],
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
   });
 
   describe('tags', async () => {
@@ -606,5 +626,34 @@ describe('twistlock to HDF converter', async () => {
         '}',
       );
     });
+  });
+});
+
+// Impact is deliberately NOT asserted here: the TS severity-to-impact switch
+// lacks the info/none cases Go's standard map has (known latent parity gap,
+// tracked separately). The marker predicate itself is shared and parity-safe.
+describe('unrated severity marker', () => {
+  it('tags unrated severities with severity_rating: unrated and leaves rated untagged', async () => {
+    const input = JSON.stringify({
+      results: [{
+        name: 'synthetic-image',
+        vulnerabilities: [
+          { id: 'CVE-2099-1001', severity: '', description: 'empty severity' },
+          { id: 'CVE-2099-1002', severity: 'unknown', description: 'unknown severity' },
+          { id: 'CVE-2099-1003', severity: 'moderate', description: 'rated severity' },
+          { id: 'CVE-2099-1004', severity: 'info', description: 'zero-impact tier is rated' },
+        ],
+      }],
+    });
+    const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+    const byId = (id: string) => reqs.find((r) => r.id === id);
+
+    expect(byId('CVE-2099-1001')?.tags?.['severity_rating']).toBe('unrated');
+    expect(byId('CVE-2099-1002')?.tags?.['severity_rating']).toBe('unrated');
+    // Tag-only assertions: the zero-impact tier is RATED (no marker); impact is
+    // deliberately not asserted here (tracked TS info/none impact-map gap).
+    expect(byId('CVE-2099-1003')?.tags).not.toHaveProperty('severity_rating');
+    expect(byId('CVE-2099-1004')?.tags).not.toHaveProperty('severity_rating');
   });
 });

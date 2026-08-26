@@ -51,7 +51,7 @@ export { findValuesByKey, extractColumn, findRows } from './object/index.js';
 export { stripHtml, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps } from './string/index.js';
 
 // Severity/impact mapping
-export { severityToImpact, impactToSeverity, cvssScoreToSeverity, roundImpact } from './severity/index.js';
+export { severityToImpact, severityToImpactWithAliases, impactToSeverity, cvssScoreToSeverity, isUnratedSeverity, roundImpact } from './severity/index.js';
 
 // Canonical status ordering + effective-status computation
 export {
@@ -83,3 +83,6 @@ export { parseCpe, type ParsedCpe, type CpePart } from './cpe/index.js';
 
 // PURL (Package URL) parser
 export { parsePurl, type ParsedPurl } from './purl/index.js';
+
+// Input-size guard (schema-free; used by the engine loader)
+export { validateInputSize, DEFAULT_MAX_INPUT_SIZE } from './size/index.js';

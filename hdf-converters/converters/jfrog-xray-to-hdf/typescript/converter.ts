@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, inputChecksum, limitArray, mapCWEToNIST, markUnratedSeverity, validateInputSize, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
 import { buildCvss as buildSharedCvss, cvssVersionFromVector, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type {
@@ -271,6 +271,7 @@ function buildRequirement(entryID: string, entries: XrayEntry[], scanTime: Date)
   if (cveIDs.length > 0) {
     tags['cve'] = cveIDs;
   }
+  markUnratedSeverity(tags, rep.severity);
 
   const descriptions: Description[] = [
     { label: 'default', data: formatDescription(rep) },

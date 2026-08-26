@@ -1,0 +1,96 @@
+{
+  "results": [
+    {
+      "name": "zero-baselines",
+      "hdfValid": true,
+      "input": "{\"baselines\":[],\"generator\":{\"name\":\"testhdf\",\"version\":\"0.0.0\"}}"
+    },
+    {
+      "name": "no-timestamp",
+      "hdfValid": true,
+      "input": "{\"baselines\":[{\"name\":\"test\",\"requirements\":[{\"code\":\"c\",\"descriptions\":[{\"data\":\"V-1\",\"label\":\"default\"}],\"id\":\"V-1\",\"impact\":0,\"results\":[{\"codeDesc\":\"V-1\",\"startTime\":\"2020-01-01T00:00:00Z\",\"status\":\"notReviewed\"}],\"severity\":\"medium\",\"tags\":{},\"title\":\"t\"}]}],\"generator\":{\"name\":\"testhdf\",\"version\":\"0.0.0\"}}"
+    },
+    {
+      "name": "requirement-without-title",
+      "hdfValid": true,
+      "input": "{\"baselines\":[{\"name\":\"test\",\"requirements\":[{\"code\":\"c\",\"descriptions\":[{\"data\":\"V-1\",\"label\":\"default\"}],\"id\":\"V-1\",\"impact\":0,\"results\":[{\"codeDesc\":\"V-1\",\"startTime\":\"2020-01-01T00:00:00Z\",\"status\":\"notReviewed\"}],\"severity\":\"medium\",\"tags\":{}}]}],\"generator\":{\"name\":\"testhdf\",\"version\":\"0.0.0\"},\"timestamp\":\"2020-01-01T00:00:00Z\"}"
+    },
+    {
+      "name": "requirement-without-code",
+      "hdfValid": true,
+      "input": "{\"baselines\":[{\"name\":\"test\",\"requirements\":[{\"descriptions\":[{\"data\":\"V-1\",\"label\":\"default\"}],\"id\":\"V-1\",\"impact\":0,\"results\":[{\"codeDesc\":\"V-1\",\"startTime\":\"2020-01-01T00:00:00Z\",\"status\":\"notReviewed\"}],\"severity\":\"medium\",\"tags\":{},\"title\":\"t\"}]}],\"generator\":{\"name\":\"testhdf\",\"version\":\"0.0.0\"},\"timestamp\":\"2020-01-01T00:00:00Z\"}"
+    },
+    {
+      "name": "requirement-without-severity",
+      "hdfValid": true,
+      "input": "{\"baselines\":[{\"name\":\"test\",\"requirements\":[{\"code\":\"c\",\"descriptions\":[{\"data\":\"V-1\",\"label\":\"default\"}],\"id\":\"V-1\",\"impact\":0,\"results\":[{\"codeDesc\":\"V-1\",\"startTime\":\"2020-01-01T00:00:00Z\",\"status\":\"notReviewed\"}],\"tags\":{},\"title\":\"t\"}]}],\"generator\":{\"name\":\"testhdf\",\"version\":\"0.0.0\"},\"timestamp\":\"2020-01-01T00:00:00Z\"}"
+    },
+    {
+      "name": "baselines-missing",
+      "hdfValid": false,
+      "input": "{\"generator\":{\"name\":\"t\",\"version\":\"0.0.0\"}}"
+    },
+    {
+      "name": "baselines-null",
+      "hdfValid": false,
+      "input": "{\"baselines\":null}"
+    },
+    {
+      "name": "baselines-wrong-type",
+      "hdfValid": false,
+      "input": "{\"baselines\":\"not-an-array\"}"
+    },
+    {
+      "name": "baseline-empty-requirements",
+      "hdfValid": false,
+      "input": "{\"baselines\":[{\"name\":\"b\",\"requirements\":[]}]}"
+    },
+    {
+      "name": "requirement-empty-results",
+      "hdfValid": false,
+      "input": "{\"baselines\":[{\"name\":\"b\",\"requirements\":[{\"descriptions\":[{\"data\":\"d\",\"label\":\"default\"}],\"id\":\"V-1\",\"impact\":0,\"results\":[],\"tags\":{}}]}]}"
+    },
+    {
+      "name": "requirement-missing-id",
+      "hdfValid": false,
+      "input": "{\"baselines\":[{\"name\":\"b\",\"requirements\":[{\"descriptions\":[{\"data\":\"d\",\"label\":\"default\"}],\"impact\":0,\"results\":[{\"codeDesc\":\"c\",\"startTime\":\"2020-01-01T00:00:00Z\",\"status\":\"passed\"}],\"tags\":{}}]}]}"
+    },
+    {
+      "name": "top-level-array",
+      "hdfValid": false,
+      "input": "[]"
+    }
+  ],
+  "amendments": [
+    {
+      "name": "override-empty-reason",
+      "hdfValid": true,
+      "input": "{\"name\":\"a\",\"overrides\":[{\"appliedAt\":\"2020-01-01T00:00:00Z\",\"appliedBy\":{\"identifier\":\"test\",\"type\":\"simple\"},\"expiresAt\":\"2099-12-31T00:00:00Z\",\"reason\":\"\",\"requirementId\":\"CVE-2021-44228\",\"status\":\"failed\",\"type\":\"waiver\"}]}"
+    },
+    {
+      "name": "override-no-milestones",
+      "hdfValid": true,
+      "input": "{\"name\":\"a\",\"overrides\":[{\"appliedAt\":\"2020-01-01T00:00:00Z\",\"appliedBy\":{\"identifier\":\"test\",\"type\":\"simple\"},\"expiresAt\":\"2099-12-31T00:00:00Z\",\"reason\":\"accepted\",\"requirementId\":\"CVE-2021-44228\",\"status\":\"failed\",\"type\":\"waiver\"}]}"
+    },
+    {
+      "name": "evidence-without-description",
+      "hdfValid": true,
+      "input": "{\"name\":\"a\",\"overrides\":[{\"appliedAt\":\"2020-01-01T00:00:00Z\",\"appliedBy\":{\"identifier\":\"test\",\"type\":\"simple\"},\"evidence\":[{\"data\":\"https://example.com/advisory\",\"type\":\"url\"}],\"expiresAt\":\"2099-12-31T00:00:00Z\",\"reason\":\"accepted\",\"requirementId\":\"CVE-2021-44228\",\"status\":\"failed\",\"type\":\"waiver\"}]}"
+    },
+    {
+      "name": "overrides-missing",
+      "hdfValid": false,
+      "input": "{\"name\":\"a\"}"
+    },
+    {
+      "name": "overrides-empty",
+      "hdfValid": false,
+      "input": "{\"name\":\"a\",\"overrides\":[]}"
+    },
+    {
+      "name": "top-level-array",
+      "hdfValid": false,
+      "input": "[]"
+    }
+  ]
+}

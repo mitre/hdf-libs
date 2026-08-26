@@ -151,6 +151,17 @@ describe('jfrog-xray to HDF converter', async () => {
       const hasLow = reqs.some(r => r.impact === 0.3);
       expect(hasLow).toBe(true);
     });
+
+    // Go parity: an entry with no severity field converts without throwing and
+    // takes the shared 0.5 default (Go: hdfutil.SeverityToImpact("", 0.5)).
+    it('should default impact to 0.5 without throwing when severity is absent (Go parity)', async () => {
+      const input = JSON.stringify({
+        total_count: 1,
+        data: [{ id: 'XRAY-NOSEV', summary: 'entry with no severity field' }],
+      });
+      const hdf = JSON.parse(await convertJfrogXrayToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
   });
 
   describe('ID generation', async () => {
@@ -336,5 +347,25 @@ describe('jfrog-xray to HDF converter', async () => {
       expect(req.results[0]!.codeDesc).toContain('JFrog Xray');
       expect(req.results[0]!.codeDesc).toContain('zero vulnerable components');
     });
+  });
+});
+
+describe('unrated severity marker', () => {
+  it('tags Unknown severity with severity_rating: unrated, leaves rated tiers untagged', async () => {
+    const input = JSON.stringify({
+      total_count: 3,
+      data: [
+        {id: 'XRAY-UNRATED', severity: 'Unknown', summary: 'Unrated finding', component: 'a', source_comp_id: 'npm://a:1.0.0'},
+        {id: 'XRAY-RATED', severity: 'High', summary: 'Rated finding', component: 'b', source_comp_id: 'npm://b:1.0.0'},
+        {id: 'XRAY-INFO', severity: 'Information', summary: 'Informational finding', component: 'c', source_comp_id: 'npm://c:1.0.0'},
+      ],
+    });
+    const hdf = JSON.parse(await convertJfrogXrayToHdf(input)) as HDFResults;
+    const byId = new Map(hdf.baselines[0]!.requirements.map((r) => [r.id, r.tags]));
+
+    expect(byId.get('XRAY-UNRATED')?.['severity_rating']).toBe('unrated');
+    for (const id of ['XRAY-RATED', 'XRAY-INFO']) {
+      expect(byId.get(id), id).not.toHaveProperty('severity_rating');
+    }
   });
 });

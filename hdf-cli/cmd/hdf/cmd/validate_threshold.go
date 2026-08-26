@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
+
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -71,7 +73,11 @@ Designed for CI/CD compliance gates.`,
 				return err
 			}
 
-			compliance := calculateCompliance(counts)
+			compliance := hdfengine.CalculateCompliance(counts)
+
+			if !quiet {
+				fmt.Fprintln(os.Stderr, agentOverrideReadout(countAgentOverrides(data)))
+			}
 
 			// Build control ID map for per-control validation
 			controlMap, mapErr := mapControlIDs(data)
@@ -80,7 +86,7 @@ Designed for CI/CD compliance gates.`,
 			}
 
 			// Validate all thresholds
-			violations := validateThresholds(&config, counts, compliance, controlMap)
+			violations := hdfengine.ValidateThresholds(&config, counts, compliance, controlMap)
 			if len(violations) > 0 {
 				for _, v := range violations {
 					fmt.Fprintf(os.Stderr, "FAIL: %s\n", v)
@@ -230,81 +236,4 @@ func getOrCreateStatusSeverity(config *ThresholdConfig, status string) *Threshol
 	default:
 		return &ThresholdSeverity{}
 	}
-}
-
-// validateThresholds checks all threshold bounds against observed counts.
-// Returns a list of human-readable violation messages.
-func validateThresholds(config *ThresholdConfig, counts *StatusCounts, compliance float64, controlMap []ControlIDMapping) []string {
-	var violations []string
-
-	// Build lookup: controlID → {status, severity}
-	actualControls := make(map[string]ControlIDMapping)
-	for _, m := range controlMap {
-		actualControls[m.ID] = m
-	}
-
-	// Compliance
-	if config.Compliance != nil {
-		if config.Compliance.Min != nil && compliance < *config.Compliance.Min {
-			violations = append(violations, fmt.Sprintf(
-				"compliance %.2f%% is below minimum %.2f%%", compliance, *config.Compliance.Min))
-		}
-		if config.Compliance.Max != nil && compliance > *config.Compliance.Max {
-			violations = append(violations, fmt.Sprintf(
-				"compliance %.2f%% exceeds maximum %.2f%%", compliance, *config.Compliance.Max))
-		}
-	}
-
-	// Per-status checks
-	violations = append(violations, checkSeverityThreshold(thresholdPassed, config.Passed, &counts.Passed, actualControls)...)
-	violations = append(violations, checkSeverityThreshold(thresholdFailed, config.Failed, &counts.Failed, actualControls)...)
-	violations = append(violations, checkSeverityThreshold(thresholdSkipped, config.Skipped, &counts.Skipped, actualControls)...)
-	violations = append(violations, checkSeverityThreshold(thresholdError, config.Error, &counts.Error, actualControls)...)
-	violations = append(violations, checkSeverityThreshold(thresholdNoImpact, config.NoImpact, &counts.NoImpact, actualControls)...)
-
-	return violations
-}
-
-// checkSeverityThreshold validates all severity bounds within a status category.
-func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts, actualControls map[string]ControlIDMapping) []string {
-	if threshold == nil {
-		return nil
-	}
-
-	var violations []string
-	check := func(label string, bound *ThresholdBound, actualCount int) {
-		if bound == nil {
-			return
-		}
-		path := fmt.Sprintf("%s.%s", status, label)
-		if bound.Min != nil && actualCount < *bound.Min {
-			violations = append(violations, fmt.Sprintf(
-				"%s: %d is below minimum %d", path, actualCount, *bound.Min))
-		}
-		if bound.Max != nil && actualCount > *bound.Max {
-			violations = append(violations, fmt.Sprintf(
-				"%s: %d exceeds maximum %d", path, actualCount, *bound.Max))
-		}
-		// Check control IDs if specified
-		for _, expectedID := range bound.Controls {
-			actual, found := actualControls[expectedID]
-			if !found {
-				violations = append(violations, fmt.Sprintf(
-					"%s: expected control %s not found in results", path, expectedID))
-			} else if actual.Status != status || actual.Severity != label {
-				violations = append(violations, fmt.Sprintf(
-					"%s: control %s expected %s/%s but found %s/%s",
-					path, expectedID, status, label, actual.Status, actual.Severity))
-			}
-		}
-	}
-
-	check("critical", threshold.Critical, actual.Critical)
-	check("high", threshold.High, actual.High)
-	check("medium", threshold.Medium, actual.Medium)
-	check("low", threshold.Low, actual.Low)
-	check("none", threshold.None, actual.None)
-	check("total", threshold.Total, actual.Total)
-
-	return violations
 }

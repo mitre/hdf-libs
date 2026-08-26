@@ -1,9 +1,9 @@
-import { parseJSON, parseTimestamp, roundImpact } from '@mitre/hdf-utilities';
+import { isUnratedSeverity, parseJSON, parseTimestamp, roundImpact } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { parseBom, buildBom, BOMType, type BuildBomParts } from '../../../shared/typescript/bom/index.js';
 import { canonicalize } from '../../../shared/typescript/exportmap.js';
 import {
@@ -140,7 +140,30 @@ const CVSS_METHODS = new Set([
 // NOTE: heimdall2 mapped info/unknown severity to NotReviewed status.
 // We intentionally do NOT replicate that — a vulnerability is a finding
 // regardless of severity confidence. Info/unknown severity vulns are Failed
-// with impact from the severity mapping (info→0.1, unknown→0.5).
+// with impact from the severity mapping (info→0.0, unknown→0.5).
+
+/**
+ * Reports whether no rating carries rating information: no CVSS score and no
+ * rated severity token. Covers the empty-ratings default and the fabricated-
+ * "medium" (empty severity, no score) paths, both of which land on impact 0.5
+ * without the source having asserted a severity.
+ */
+function vulnIsUnrated(ratings: CycloneDXRating[]): boolean {
+  for (const rating of ratings) {
+    if (
+      rating.method &&
+      CVSS_METHODS.has(rating.method) &&
+      rating.score !== undefined &&
+      rating.score !== null
+    ) {
+      return false;
+    }
+    if (!isUnratedSeverity(rating.severity)) {
+      return false;
+    }
+  }
+  return true;
+}
 
 /**
  * Computes the maximum impact across all ratings for a vulnerability.
@@ -643,6 +666,9 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
       nist,
       cci: cciTags,
     };
+    if (vulnIsUnrated(ratings)) {
+      markUnratedSeverity(tags, '');
+    }
 
     // CWE identifiers are first-class on requirement.cwe[]; the CWE→NIST mapping
     // is retained in tags.nist.

@@ -686,3 +686,33 @@ func TestConvertFortifyToHDF_VerificationMethod(t *testing.T) {
 			"requirement %q should be marked automated", req.ID)
 	}
 }
+
+// Unrated-severity marker: a representative instance with no InstanceSeverity
+// element (Fortify's 1.0-5.0 scale; zero value = absent) carries the shared
+// severity_rating tag; a rated instance omits it.
+func TestConvertFortifyToHDF_UnratedSeverityMarker(t *testing.T) {
+	build := func(instanceInfo string) []byte {
+		return []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>CU</ClassID><DefaultSeverity>3.0</DefaultSeverity></ClassInfo>
+    ` + instanceInfo + `
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="CU"><Abstract>a</Abstract><Explanation>e</Explanation></Description>
+</FVDL>`)
+	}
+
+	unratedResult, err := ConvertFortifyToHDF(build(`<InstanceInfo><InstanceID>I</InstanceID></InstanceInfo>`), converterVersion)
+	require.NoError(t, err)
+	unrated := unratedResult.Baselines[0].Requirements[0]
+	assert.Equal(t, shared.UnratedSeverityValue, unrated.Tags[shared.UnratedSeverityTag],
+		"absent InstanceSeverity must carry the unrated marker")
+
+	ratedResult, err := ConvertFortifyToHDF(build(`<InstanceInfo><InstanceID>I</InstanceID><InstanceSeverity>3.0</InstanceSeverity></InstanceInfo>`), converterVersion)
+	require.NoError(t, err)
+	rated := ratedResult.Baselines[0].Requirements[0]
+	_, present := rated.Tags[shared.UnratedSeverityTag]
+	assert.False(t, present, "a rated InstanceSeverity must not carry the marker")
+}

@@ -31,7 +31,7 @@ interface DDResponse {
 interface DDFinding {
   id: number;
   title: string;
-  severity: string;
+  severity?: string;
   description?: string;
   mitigation?: string;
   impact?: string;

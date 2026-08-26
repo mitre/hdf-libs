@@ -48,7 +48,7 @@ func parseTime(ts string) time.Time {
 }
 
 // convertResult converts a v1.0 result to v2.0 RequirementResult.
-func convertResult(v1 V1Result) hdf.RequirementResult {
+func convertResult(v1 LegacyResult) hdf.RequirementResult {
 	status := normalizeStatus(v1.Status)
 
 	v2 := hdf.RequirementResult{
@@ -204,7 +204,7 @@ func convertRefs(refs []interface{}) []hdf.Reference {
 }
 
 // convertControl converts a v1.0 control to v2.0 EvaluatedRequirement.
-func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
+func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 	v2 := hdf.EvaluatedRequirement{
 		ID:     v1.ID,
 		Impact: v1.Impact,
@@ -349,7 +349,7 @@ func convertAttributes(attrs []map[string]interface{}) []hdf.Input {
 
 // convertGroup converts a v1.0 group to v2.0 RequirementGroup.
 // Renames controls array to requirements.
-func convertGroup(v1 V1Group) hdf.RequirementGroup {
+func convertGroup(v1 LegacyGroup) hdf.RequirementGroup {
 	return hdf.RequirementGroup{
 		ID:           v1.ID,
 		Title:        v1.Title,
@@ -358,7 +358,7 @@ func convertGroup(v1 V1Group) hdf.RequirementGroup {
 }
 
 // convertDependency converts a v1.0 dependency to v2.0 Dependency.
-func convertDependency(v1 V1Dependency) hdf.Dependency {
+func convertDependency(v1 LegacyDependency) hdf.Dependency {
 	return hdf.Dependency{
 		Name:        v1.Name,
 		URL:         v1.URL,
@@ -406,7 +406,7 @@ func convertSupports(supports []map[string]interface{}) []hdf.SupportedPlatform 
 }
 
 // convertProfile converts a v1.0 profile to v2.0 EvaluatedBaseline.
-func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
+func convertProfile(v1 LegacyProfile) hdf.EvaluatedBaseline {
 	v2 := hdf.EvaluatedBaseline{
 		Name:           v1.Name,
 		Version:        v1.Version,
@@ -506,7 +506,7 @@ func toolIdentity(version string) *hdf.Tool {
 // assessment's effective as-of instant, and the value `hdf events derive`
 // consumes as the next document's occurrence time. Returns nil only when the
 // source carries no usable time; never the wall clock.
-func documentTimestamp(v1 *HDFV1Results) *time.Time {
+func documentTimestamp(v1 *LegacyHDFResults) *time.Time {
 	if v1.Timestamp != nil {
 		if t := hdfutil.ParseTimestamp(*v1.Timestamp); !t.IsZero() {
 			return &t
@@ -533,16 +533,16 @@ func documentTimestamp(v1 *HDFV1Results) *time.Time {
 	return &latest
 }
 
-// ConvertV1ToV2 converts HDF v1.0 results to v2.0 format.
+// ConvertLegacyHDF converts HDF v1.0 results to v2.0 format.
 //
 // Performs comprehensive transformation at all levels:
 //   - Top-level: version → tool/generator/timestamp, profiles → baselines, platform → targets
 //   - Baselines: sha256 → checksum, controls → requirements, field renaming
 //   - Requirements: snake_case → camelCase, status → effectiveStatus
 //   - Results: snake_case → camelCase for all fields
-func ConvertV1ToV2(v1 *HDFV1Results, converterVersion string) *hdf.HDFResults {
+func ConvertLegacyHDF(v1 *LegacyHDFResults, converterVersion string) *hdf.HDFResults {
 	if converterVersion == "" {
-		converterVersion = "1.0.0" // mirrors the TS convertV1ToV2 default
+		converterVersion = "1.0.0" // mirrors the TS convertLegacyHdf default
 	}
 	generator := v1.Generator
 	if generator == nil {

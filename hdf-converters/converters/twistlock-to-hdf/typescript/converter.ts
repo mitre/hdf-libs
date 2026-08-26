@@ -1,9 +1,9 @@
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { buildCvss as buildSharedCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
@@ -62,7 +62,7 @@ interface TwistlockVuln {
   cvss?: number;
   vector?: string;
   description: string;
-  severity: string;
+  severity?: string;
   packageName?: string;
   packageVersion?: string;
   packageType?: string;
@@ -85,26 +85,15 @@ interface TwistlockDistribution {
   total: number;
 }
 
-/**
- * Maps Twistlock severity strings to HDF impact values.
- * Includes "important" (alias for critical) and "moderate" (alias for medium)
- * which appear in some Twistlock outputs.
- */
-function twistlockSeverityToImpact(severity: string): number {
-  switch (severity.toLowerCase()) {
-    case 'critical':
-    case 'important':
-      return 0.9;
-    case 'high':
-      return 0.7;
-    case 'medium':
-    case 'moderate':
-      return 0.5;
-    case 'low':
-      return 0.3;
-    default:
-      return 0.5;
-  }
+// Mirrors the Go twin: "important" (critical-tier) and "moderate" (medium-tier)
+// are the Twistlock-specific aliases; standard levels come from the shared map.
+const TWISTLOCK_ALIASES: Record<string, number> = {
+  important: 0.9,
+  moderate: 0.5,
+};
+
+function twistlockSeverityToImpact(severity: string | undefined): number {
+  return severityToImpactWithAliases(severity, TWISTLOCK_ALIASES, 0.5);
 }
 
 /**
@@ -342,6 +331,7 @@ function buildRequirement(
   }
 
   const tags = buildNistCciTags(nist, cciTags, extras);
+  markUnratedSeverity(tags, vuln.severity);
 
   const descriptions: Description[] = [
     { label: 'default', data: vuln.description },

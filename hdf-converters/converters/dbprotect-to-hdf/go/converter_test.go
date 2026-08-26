@@ -511,6 +511,23 @@ func TestBuildRequirement_CheckCategoryAbsent(t *testing.T) {
 	assert.False(t, present, "check_category tag must be omitted when source field is absent")
 }
 
+// Unrated-severity marker: an empty/absent Risk DV carries the shared
+// severity_rating tag; any rated value — including Informational, a genuine
+// rated tier — omits it.
+func TestBuildRequirement_UnratedSeverityMarker(t *testing.T) {
+	unrated := buildRequirement("100", []finding{{"Check": "x"}}, false)
+	assert.Equal(t, shared.UnratedSeverityValue, unrated.Tags[shared.UnratedSeverityTag],
+		"absent Risk DV must carry the unrated marker")
+
+	rated := buildRequirement("101", []finding{{"Check": "x", "Risk DV": "High"}}, false)
+	_, present := rated.Tags[shared.UnratedSeverityTag]
+	assert.False(t, present, "rated Risk DV must not carry the marker")
+
+	info := buildRequirement("102", []finding{{"Check": "x", "Risk DV": "Informational"}}, false)
+	_, present = info.Tags[shared.UnratedSeverityTag]
+	assert.False(t, present, "Informational is a rated tier and must not carry the marker")
+}
+
 // ---- Scan target component (database identity) ----
 
 // The scan target is a database asset built from the "IP Address, Port,

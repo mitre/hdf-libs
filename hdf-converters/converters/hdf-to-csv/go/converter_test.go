@@ -2,6 +2,7 @@ package hdftocsv
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -142,52 +144,16 @@ func TestConvertHDFToCSV_NoRequirements(t *testing.T) {
 }
 
 func TestConvertHDFToCSV_MultipleBaselines(t *testing.T) {
-	input := `{
-		"baselines": [
-			{
-				"name": "Baseline 1",
-				"version": "1.0.0",
-				"title": "First Baseline",
-				"maintainer": "Test",
-				"supports": [],
-				"inputs": [],
-				"groups": [],
-				"checksum": { "algorithm": "sha256", "value": "abc" },
-				"requirements": [{
-					"id": "REQ-001",
-					"title": "Test Requirement",
-					"descriptions": [{ "label": "default", "data": "Test description" }],
-					"impact": 0.5,
-					"tags": { "severity": "medium" },
-					"sourceLocation": { "ref": "REQ-001", "line": 1 },
-					"results": [{ "status": "passed", "codeDesc": "Test", "startTime": "2026-01-29T18:00:00.000Z" }]
-				}]
-			},
-			{
-				"name": "Baseline 2",
-				"version": "2.0.0",
-				"title": "Second Baseline",
-				"maintainer": "Test",
-				"supports": [],
-				"inputs": [],
-				"groups": [],
-				"checksum": { "algorithm": "sha256", "value": "def" },
-				"requirements": [{
-					"id": "REQ-002",
-					"title": "Another Requirement",
-					"descriptions": [{ "label": "default", "data": "Another description" }],
-					"impact": 0.7,
-					"tags": { "severity": "high" },
-					"sourceLocation": { "ref": "REQ-002", "line": 1 },
-					"results": [{ "status": "failed", "codeDesc": "Test", "startTime": "2026-01-29T18:00:00.000Z" }]
-				}]
-			}
-		],
-		"components": [],
-		"statistics": { "duration": 0 }
-	}`
+	input, _ := json.Marshal(testhdf.Doc(
+		testhdf.Baseline("Baseline 1", testhdf.Req("REQ-001",
+			testhdf.Title("Test Requirement"), testhdf.Desc("Test description"),
+			testhdf.Impact(0.5), testhdf.Tag("severity", "medium"), testhdf.Status(hdf.Passed))),
+		testhdf.Baseline("Baseline 2", testhdf.Req("REQ-002",
+			testhdf.Title("Another Requirement"), testhdf.Desc("Another description"),
+			testhdf.Impact(0.7), testhdf.Tag("severity", "high"), testhdf.Status(hdf.Failed))),
+	))
 
-	result, err := ConvertHDFToCSV([]byte(input))
+	result, err := ConvertHDFToCSV(input)
 	require.NoError(t, err, "Conversion should succeed")
 
 	// Parse CSV
@@ -283,60 +249,18 @@ func TestConvertHDFToCSV_FieldExtraction(t *testing.T) {
 }
 
 func TestConvertHDFToCSV_CSVInjection(t *testing.T) {
-	input := `{
-		"baselines": [{
-			"name": "Test",
-			"version": "1.0.0",
-			"title": "Test",
-			"maintainer": "Test",
-			"supports": [],
-			"inputs": [],
-			"groups": [],
-			"checksum": { "algorithm": "sha256", "value": "abc" },
-			"requirements": [
-				{
-					"id": "REQ-001",
-					"title": "=1+1",
-					"descriptions": [{ "label": "default", "data": "=SUM(A1:A10)" }],
-					"impact": 0.5,
-					"tags": { "severity": "medium" },
-					"sourceLocation": { "ref": "REQ-001", "line": 1 },
-					"results": [{ "status": "passed", "codeDesc": "Test", "startTime": "2026-01-29T18:00:00.000Z" }]
-				},
-				{
-					"id": "REQ-002",
-					"title": "+dangerous",
-					"descriptions": [{ "label": "default", "data": "test" }],
-					"impact": 0.5,
-					"tags": { "severity": "medium" },
-					"sourceLocation": { "ref": "REQ-002", "line": 1 },
-					"results": [{ "status": "passed", "codeDesc": "Test", "startTime": "2026-01-29T18:00:00.000Z" }]
-				},
-				{
-					"id": "REQ-003",
-					"title": "-dangerous",
-					"descriptions": [{ "label": "default", "data": "test" }],
-					"impact": 0.5,
-					"tags": { "severity": "medium" },
-					"sourceLocation": { "ref": "REQ-003", "line": 1 },
-					"results": [{ "status": "passed", "codeDesc": "Test", "startTime": "2026-01-29T18:00:00.000Z" }]
-				},
-				{
-					"id": "REQ-004",
-					"title": "@dangerous",
-					"descriptions": [{ "label": "default", "data": "test" }],
-					"impact": 0.5,
-					"tags": { "severity": "medium" },
-					"sourceLocation": { "ref": "REQ-004", "line": 1 },
-					"results": [{ "status": "passed", "codeDesc": "Test", "startTime": "2026-01-29T18:00:00.000Z" }]
-				}
-			]
-		}],
-		"components": [],
-		"statistics": { "duration": 0 }
-	}`
+	mkReq := func(id, title, desc string) hdf.EvaluatedRequirement {
+		return testhdf.Req(id, testhdf.Title(title), testhdf.Desc(desc),
+			testhdf.Impact(0.5), testhdf.Tag("severity", "medium"), testhdf.Status(hdf.Passed))
+	}
+	input, _ := json.Marshal(testhdf.Doc(testhdf.Baseline("Test",
+		mkReq("REQ-001", "=1+1", "=SUM(A1:A10)"),
+		mkReq("REQ-002", "+dangerous", "test"),
+		mkReq("REQ-003", "-dangerous", "test"),
+		mkReq("REQ-004", "@dangerous", "test"),
+	)))
 
-	result, err := ConvertHDFToCSV([]byte(input))
+	result, err := ConvertHDFToCSV(input)
 	require.NoError(t, err, "Conversion should succeed")
 
 	resultStr := string(result)

@@ -221,14 +221,18 @@ func TestConverterCoverage_HDFToOSCALPOAM_CLI(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestConverterCoverage_OscalSSP_InvalidJSON(t *testing.T) {
-	// oscalSSPRawConvert wraps ConvertSSPToHDF — feed garbage to hit error.
-	out, err := oscalSSPRawConvert([]byte("not json"), "test")
+	// Exercise the oscal-ssp raw converter through the registry — feed garbage.
+	conv, err := GetConverter("oscal-ssp", "hdf")
+	require.NoError(t, err)
+	out, err := conv.Convert([]byte("not json"))
 	assert.Error(t, err)
 	assert.Nil(t, out)
 }
 
 func TestConverterCoverage_OscalSSP_EmptyInput(t *testing.T) {
-	out, err := oscalSSPRawConvert([]byte(""), "test")
+	conv, err := GetConverter("oscal-ssp", "hdf")
+	require.NoError(t, err)
+	out, err := conv.Convert([]byte(""))
 	assert.Error(t, err)
 	assert.Nil(t, out)
 }

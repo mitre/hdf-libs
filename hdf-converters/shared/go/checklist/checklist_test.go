@@ -633,3 +633,29 @@ func TestExportCklbOverridesObject(t *testing.T) {
 	assert.Equal(t, "low", rv.SeverityOverride)
 	assert.Equal(t, "downgraded", rv.SeverityJustification)
 }
+
+func TestSeverityEnumSanitized(t *testing.T) {
+	// An off-vocabulary CKL severity must not be cast raw into the schema's
+	// Severity enum (schema-invalid output); it stays discoverable via
+	// tags.severity. In-vocabulary values keep the typed field.
+	cl := &Checklist{
+		Format: "ckl",
+		Stigs: []Stig{{
+			StigID: "S",
+			Vulns: []Vuln{
+				{VulnNum: "V-1", RuleTitle: "t", Severity: "wibble", Status: StatusOpen},
+				{VulnNum: "V-2", RuleTitle: "t", Severity: "high", Status: StatusOpen},
+			},
+		}},
+	}
+	results := ChecklistToHDF(cl, shared.InputChecksum([]byte("x")), "1.0.0", "test-converter")
+	reqs := results.Baselines[0].Requirements
+
+	off := reqs[0]
+	assert.Nil(t, off.Severity, "off-vocabulary severity must not reach the enum field")
+	assert.Equal(t, "wibble", off.Tags["severity"], "raw value stays discoverable as a tag")
+
+	ok := reqs[1]
+	require.NotNil(t, ok.Severity)
+	assert.Equal(t, hdf.SeverityHigh, *ok.Severity)
+}

@@ -395,7 +395,7 @@ func buildCWERequirements(severities []Severity, firstBuildDate string) []hdf.Ev
 		impact := veracodeSeverityToImpact(sev.Level)
 
 		for _, cat := range sev.Categories {
-			req := buildCWERequirement(cat, impact, firstBuildDate)
+			req := buildCWERequirement(cat, sev.Level, impact, firstBuildDate)
 			requirements = append(requirements, req)
 		}
 	}
@@ -404,7 +404,7 @@ func buildCWERequirements(severities []Severity, firstBuildDate string) []hdf.Ev
 }
 
 // buildCWERequirement creates a single requirement from a CWE category.
-func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hdf.EvaluatedRequirement {
+func buildCWERequirement(cat Category, sevLevel string, impact float64, firstBuildDate string) hdf.EvaluatedRequirement {
 	// Collect CWE IDs for NIST mapping
 	cweIDs := make([]string, 0, len(cat.CWEs))
 	for _, c := range cat.CWEs {
@@ -434,6 +434,7 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 	}
 
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
+	shared.MarkUnratedSeverity(tags, sevLevel)
 
 	// First-class CWE identifiers ("CWE-NN"). The category cweid attributes are
 	// bare numbers; prefix them to match the schema's CWE-N convention.
@@ -635,6 +636,7 @@ func buildCVERequirement(vuln Vulnerability, components []Component, firstBuildD
 	}
 	cciTags := cci.NISTToCCI(nist)
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, nil)
+	shared.MarkUnratedSeverity(tags, vuln.Severity)
 
 	// Build results: one per affected component
 	results := make([]hdf.RequirementResult, len(components))

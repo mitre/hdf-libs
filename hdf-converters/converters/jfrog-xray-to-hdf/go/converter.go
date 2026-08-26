@@ -312,6 +312,7 @@ func buildRequirement(entryID string, entries []XrayEntry, scanTime time.Time) h
 		extras["cve"] = hdfutil.StringsToInterfaces(cveIDs)
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
+	shared.MarkUnratedSeverity(tags, rep.Severity)
 
 	descText := formatDescription(rep)
 	descriptions := []hdf.Description{

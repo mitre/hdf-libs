@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -84,7 +85,7 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 		}
 
 		// Read the referenced document (validate path stays within package directory)
-		refPath, pathErr := safePath(pkgDir, uri)
+		refPath, pathErr := hdfutil.SafePath(pkgDir, uri)
 		if pathErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", uri, pathErr)
 			continue

@@ -3,7 +3,7 @@ import { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -149,6 +149,7 @@ function buildRequirement(checkId: string, group: CheckWithType[], scanTime: Dat
   if (rep.bc_check_id) {
     tags['bc_check_id'] = rep.bc_check_id;
   }
+  markUnratedSeverity(tags, rep.severity);
 
   const descriptions: Description[] = [
     { label: 'default', data: rep.check_name },

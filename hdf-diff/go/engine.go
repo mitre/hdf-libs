@@ -3,6 +3,7 @@
 package diff
 
 import (
+	"context"
 	"math"
 	"reflect"
 	"sort"
@@ -67,12 +68,12 @@ func buildMatchOptions(opts Options) matching.Options {
 // Returns an error if the match strategy is invalid.
 //
 //nolint:revive // matches TypeScript export name
-func DiffHdf(oldResults hdf.HDFResults, newResults []hdf.HDFResults, opts Options) (HdfComparison, error) {
+func DiffHdf(ctx context.Context, oldResults hdf.HDFResults, newResults []hdf.HDFResults, opts Options) (HdfComparison, error) {
 	opts = resolveOptions(opts)
 	matchOpts := buildMatchOptions(opts)
 
 	if opts.ComparisonMode == ModeFleet {
-		return diffFleet(oldResults, newResults, opts, matchOpts)
+		return diffFleet(ctx, oldResults, newResults, opts, matchOpts)
 	}
 
 	// Non-fleet modes: use first element of newResults
@@ -89,7 +90,7 @@ func DiffHdf(oldResults hdf.HDFResults, newResults []hdf.HDFResults, opts Option
 	newTimestamp := formatTimestamp(newDoc.Timestamp)
 
 	// Compute baseline and requirement diffs
-	baselineDiffs, requirementDiffs, err := comparePair(oldResults, newDoc, oldTimestamp, newTimestamp, opts.TrackedFields, matchOpts)
+	baselineDiffs, requirementDiffs, err := comparePair(ctx, oldResults, newDoc, oldTimestamp, newTimestamp, opts.TrackedFields, matchOpts)
 	if err != nil {
 		return HdfComparison{}, err
 	}
@@ -131,6 +132,7 @@ func buildSources(mode ComparisonMode) []Source {
 
 // diffFleet compares a reference document against one or more system documents.
 func diffFleet(
+	ctx context.Context,
 	reference hdf.HDFResults,
 	systems []hdf.HDFResults,
 	opts Options,
@@ -155,7 +157,7 @@ func diffFleet(
 		})
 
 		sysTimestamp := formatTimestamp(sys.Timestamp)
-		baselineDiffs, requirementDiffs, err := comparePair(reference, sys, refTimestamp, sysTimestamp, opts.TrackedFields, matchOpts)
+		baselineDiffs, requirementDiffs, err := comparePair(ctx, reference, sys, refTimestamp, sysTimestamp, opts.TrackedFields, matchOpts)
 		if err != nil {
 			return HdfComparison{}, err
 		}
@@ -211,11 +213,15 @@ func diffFleet(
 // oldTimestamp and newTimestamp are RFC3339 strings from the source documents, used
 // to evaluate override expiration relative to each document's assessment time.
 func comparePair(
+	ctx context.Context,
 	oldDoc, newDoc hdf.HDFResults,
 	oldTimestamp, newTimestamp string,
 	trackedFields []string,
 	matchOpts matching.Options,
 ) ([]BaselineDiff, []RequirementDiff, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, nil, err
+	}
 	// Build baseline maps by name
 	oldBaselineMap := make(map[string]hdf.EvaluatedBaseline)
 	for _, b := range oldDoc.Baselines {
@@ -285,6 +291,9 @@ func comparePair(
 	// Use the matching system to pair requirements
 	matchResult, err := matching.MatchRequirementsWithError(oldReqs, newReqs, matchOpts)
 	if err != nil {
+		return nil, nil, err
+	}
+	if err := ctx.Err(); err != nil {
 		return nil, nil, err
 	}
 

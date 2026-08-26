@@ -529,3 +529,22 @@ describe('snyk to HDF converter', async () => {
     });
   });
 });
+
+describe('unrated severity marker', () => {
+  it('tags absent severity with severity_rating: unrated, leaves rated severities untagged', async () => {
+    const input = JSON.stringify({
+      ok: false,
+      projectName: 'unrated-project',
+      packageManager: 'npm',
+      vulnerabilities: [
+        {id: 'SNYK-UNRATED-1', title: 'No severity', description: 'd', identifiers: {}, from: ['a@1.0.0']},
+        {id: 'SNYK-RATED-1', title: 'High severity', description: 'd', severity: 'high', identifiers: {}, from: ['b@1.0.0']},
+      ],
+    });
+    const hdf = JSON.parse(await convertSnykToHdf(input)) as HDFResults;
+    const byId = new Map(hdf.baselines[0]!.requirements.map((r) => [r.id, r.tags]));
+
+    expect(byId.get('SNYK-UNRATED-1')?.['severity_rating']).toBe('unrated');
+    expect(byId.get('SNYK-RATED-1')).not.toHaveProperty('severity_rating');
+  });
+});

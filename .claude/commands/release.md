@@ -65,7 +65,8 @@ These are the traps this skill exists to prevent. Real failure modes from the 3.
    - Empty → patch (next `3.x.y`). Recommend patch; the mechanical sweep / archive / doc / spec phases will be skipped.
    - **Never recommend a major bump.** Per project rule, major bumps happen only when the user explicitly says "this is a major." If the user picks major without saying so, ask them to confirm.
 3. Ask the user for the target version, presenting the schema-diff-derived recommendation as the default. Capture it as `NEW_VERSION`. A consumer-visible behavior change with no schema change is still a patch by default — confirm the user wants to escalate before treating it as a minor.
-4. Record `BASE=$(git describe --tags --abbrev=0)` (last release tag) — Phase 1 reviews everything from `BASE` to `HEAD`.
+4. **Sweep pending breaking changes.** Run `bd list --label breaking-change`. These are deprecations/aliases parked awaiting a break (e.g. removing version-baked API aliases). For each, ask the user whether *this* release removes it — a major is the natural home, but the project has also shipped breaking changes as a patch with a loud CHANGELOG call-out, so it's the user's call, not automatic. Anything removed this release gets closed here and documented under CHANGELOG "Removed" in Phase 5; anything deferred simply carries forward (the label keeps it visible next time). This is the recurring reminder that a deprecation added in an earlier release doesn't get forgotten.
+5. Record `BASE=$(git describe --tags --abbrev=0)` (last release tag) — Phase 1 reviews everything from `BASE` to `HEAD`.
 
 ### Phase 1 — Pre-release swarm review (release gate)
 
@@ -190,10 +191,11 @@ These edits are uniform across the workspace and safe to script. Use a small Pyt
 
 | File pattern | What to change |
 |---|---|
-| Workspace `package.json` (9 files: `hdf-cli`, `hdf-converters`, `hdf-diff`, `hdf-extension-graph`, `hdf-generators`, `hdf-mappings`, `hdf-parsers`, `hdf-utilities`, `hdf-validators`) | `"version": "OLD"` → `"version": "NEW"` |
+| Workspace `package.json` (10 files: `hdf-cli`, `hdf-converters`, `hdf-diff`, `hdf-engine`, `hdf-extension-graph`, `hdf-generators`, `hdf-mappings`, `hdf-parsers`, `hdf-utilities`, `hdf-validators`) | `"version": "OLD"` → `"version": "NEW"` |
 | `hdf-schema/package.json` | Same |
+| `hdf-engine/go/engine.go` — the `Version()` constant | `return "OLD"` → `return "NEW"`. TestVersion asserts this equals `hdf-engine/package.json`, so a missed bump fails CI (bead 4908.19). It is NOT an ldflags stamp — the engine is consumed as a library where no linker flags are set. |
 | `hdf-schema/src/schemas/*.schema.json` (7 root schemas) | `"$id"` URLs ending in `/vOLD` → `/vNEW`. Also any `$ref` URLs in primitives that quote a version path. |
-| Cross-module `go.mod` requires (`hdf-converters/go.mod`, `hdf-cli/go.mod`, `hdf-diff/go/go.mod`, `hdf-parsers/go/go.mod`, `hdf-generators/go/go.mod`) | Lines matching `github.com/mitre/hdf-libs/<x>/v3 vOLD` → `vNEW`. Regex: `s/(hdf-libs/[^ ]+) vOLD/$1 vNEW/g` |
+| Cross-module `go.mod` requires (`hdf-converters/go.mod`, `hdf-cli/go.mod`, `hdf-diff/go/go.mod`, `hdf-engine/go/go.mod`, `hdf-parsers/go/go.mod`, `hdf-generators/go/go.mod`) | Lines matching `github.com/mitre/hdf-libs/<x>/v3 vOLD` → `vNEW`. Regex: `s/(hdf-libs/[^ ]+) vOLD/$1 vNEW/g` |
 
 Use `git status` after the script run to spot-check no `node_modules`, `dist/`, or `.git/` paths got touched.
 

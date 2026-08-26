@@ -249,3 +249,49 @@ describe('trivy-to-hdf routing', () => {
     expect(hdf.baselines[0].name).not.toBe('Trivy Scan');
   });
 });
+
+describe('unrated-severity marker', () => {
+  it('tags UNKNOWN/absent severities on every finding class; rated severities stay untagged', async () => {
+    const synthetic = JSON.stringify({
+      SchemaVersion: 2,
+      ArtifactName: 'x',
+      ArtifactType: 'filesystem',
+      Results: [
+        {
+          Class: 'os-pkgs',
+          Vulnerabilities: [
+            {VulnerabilityID: 'CVE-UNRATED', PkgName: 'p', InstalledVersion: '1', Severity: 'UNKNOWN'},
+            {VulnerabilityID: 'CVE-RATED', PkgName: 'p', InstalledVersion: '1', Severity: 'LOW'},
+          ],
+        },
+        {
+          Target: 'Dockerfile',
+          Class: 'config',
+          Misconfigurations: [
+            {ID: 'M-UNRATED', Title: 't', Status: 'FAIL'},
+            {ID: 'M-RATED', Title: 't', Severity: 'LOW', Status: 'FAIL'},
+          ],
+        },
+        {Target: 'f', Class: 'secret', Secrets: [
+          {RuleID: 'unrated-secret', StartLine: 1},
+          {RuleID: 'rated-secret', Severity: 'HIGH', StartLine: 2},
+        ]},
+        {Target: 'L', Class: 'license', Licenses: [
+          {PkgName: 'pk', Name: 'MIT'},
+          {PkgName: 'pk2', Name: 'MIT', Severity: 'LOW'},
+        ]},
+      ],
+    });
+    const hdf = JSON.parse(await convertTrivyToHdf(synthetic, '0.1.0')) as HDFResults;
+    for (const id of ['Trivy/CVE-UNRATED', 'Trivy/M-UNRATED', 'Trivy/secret/unrated-secret@f:1', 'Trivy/license/pk/MIT']) {
+      const req = findReq(hdf, id);
+      expect(req, id).toBeDefined();
+      expect(req?.tags, id).toMatchObject({severity_rating: 'unrated'});
+    }
+    for (const id of ['Trivy/CVE-RATED', 'Trivy/M-RATED', 'Trivy/secret/rated-secret@f:2', 'Trivy/license/pk2/MIT']) {
+      const req = findReq(hdf, id);
+      expect(req, id).toBeDefined();
+      expect(req?.tags, id).not.toHaveProperty('severity_rating');
+    }
+  });
+});

@@ -1,0 +1,107 @@
+{
+  "baselines": [
+    {
+      "name": "RHEL9-STIG",
+      "version": "1.0.0",
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "requirements": [
+        {
+          "id": "V-PASS-01",
+          "title": "Password complexity is enforced",
+          "descriptions": [
+            {"label": "default", "data": "The system must enforce password complexity."}
+          ],
+          "impact": 0.7,
+          "tags": {
+            "nist": ["IA-5"],
+            "cci": ["CCI-000192"],
+            "stig_id": "RHEL-09-611010"
+          },
+          "results": [
+            {"status": "passed", "codeDesc": "complexity enforced", "startTime": "2025-01-15T10:00:00Z"}
+          ]
+        },
+        {
+          "id": "V-FAIL-CRIT-02",
+          "title": "Root login over SSH is disabled",
+          "descriptions": [
+            {"label": "default", "data": "The system must disable root SSH login."}
+          ],
+          "impact": 0.95,
+          "tags": {
+            "nist": ["AC-6"],
+            "cci": ["CCI-000366"],
+            "stig_id": "RHEL-09-255045"
+          },
+          "results": [
+            {"status": "failed", "codeDesc": "PermitRootLogin yes", "startTime": "2025-01-15T10:00:00Z"}
+          ]
+        },
+        {
+          "id": "V-FAIL-MED-03",
+          "title": "Audit records are configured",
+          "descriptions": [
+            {"label": "default", "data": "The system must configure audit records for CM-6."}
+          ],
+          "impact": 0.5,
+          "tags": {
+            "nist": ["CM-6"],
+            "cci": ["CCI-000172"]
+          },
+          "results": [
+            {"status": "failed", "codeDesc": "auditd misconfigured", "startTime": "2025-01-15T10:00:00Z"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "K8S-NODE-STIG",
+      "version": "1.0.0",
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "0000000000000000000000000000000000000000000000000000000000000002"
+      },
+      "requirements": [
+        {
+          "id": "V-NA-04",
+          "title": "Informational note not applicable to this node",
+          "descriptions": [
+            {"label": "default", "data": "This requirement does not apply."}
+          ],
+          "impact": 0.0,
+          "tags": {
+            "nist": ["AU-3"]
+          },
+          "results": [
+            {"status": "passed", "codeDesc": "n/a", "startTime": "2025-01-15T10:00:00Z"}
+          ]
+        },
+        {
+          "id": "V-ERR-LOW-05",
+          "title": "Kubelet certificate rotation check errored",
+          "descriptions": [
+            {"label": "default", "data": "The kubelet check could not complete."}
+          ],
+          "impact": 0.3,
+          "tags": {
+            "nist": ["SC-7"],
+            "cci": ["CCI-002418"]
+          },
+          "results": [
+            {"status": "error", "codeDesc": "probe timeout", "startTime": "2025-01-15T10:00:00Z"}
+          ]
+        }
+      ]
+    }
+  ],
+  "components": [
+    {"name": "rhel9-host-01", "type": "host"},
+    {"name": "k8s-node-01", "type": "host"}
+  ],
+  "statistics": {
+    "duration": 12.5
+  }
+}

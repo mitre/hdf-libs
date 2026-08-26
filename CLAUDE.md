@@ -26,7 +26,8 @@ pnpm workspace with 11 packages + a VitePress schema documentation site:
 | `hdf-parsers` | Parse and flatten HDF documents | TS + Go |
 | `hdf-converters` | 40+ security tool converters (dual TS + Go) | TS + Go |
 | `hdf-generators` | Generate InSpec profiles from baselines | TS + Go |
-| `hdf-diff` | Structural diff engine for assessments | TS |
+| `hdf-diff` | Structural diff engine for assessments | TS + Go |
+| `hdf-engine` | Schema-typed read-side engines: document detection, query/filtering, compliance rollups | TS + Go |
 | `hdf-extension-graph` | InSpec overlay/extension chain resolution | TS + Go |
 | `hdf-fixtures` | Shared real-world HDF test data corpus (private; cross-package tests only) | TS + Go |
 | `hdf-cli` | Go CLI wrapping all of the above | Go |
@@ -120,8 +121,8 @@ hdf-converters/converters/<name>/
 ### Timestamps (canonical = trimmed-UTC RFC3339)
 Always parse tool timestamps with `hdfutil.ParseTimestamp` (Go) / `parseTimestamp` from `@mitre/hdf-utilities` (TS) — **never** raw `new Date(value)` or `time.Parse(time.RFC3339, ...)` (zone-less input is read as host-local and diverges across languages). Serialize via `buildHdfResults`/`serializeHdf` (TS) so the fraction is trimmed. Result `startTime` is schema-required → on a missing/unparseable source time, fall back to a valid value (never omit). Enforced by an ESLint rule + `pnpm lint:timestamps`. Full convention: `site/docs/contributing/developer-guide.md` (Timestamp Handling); rationale in beads memory `hdf-timestamp-canonical-utc`.
 
-### CLI integration
-Every converter registers in `hdf-cli/cmd/hdf/cmd/converter_registry.go` via `registerHDFConverter()`. CLI thin wrappers live in `converter_<name>.go`.
+### Converter registration
+The convert registry lives in the cobra-free, importable package `hdf-converters/registry/convert` (package `convert`, imported as `convreg`), so the CLI and the MCP share one populated registry. Register a converter by adding `hdf-converters/registry/convert/converter_<name>.go` with an `init()` that calls the right helper for its output type — `registerHDFConverter` (results), `registerHDFBaselineConverter` (baseline), `registerHDFPlanConverter` (plan), or `registerHDFAmendmentsConverter` (amendments, e.g. the VEX family). Register the converter's fingerprint for auto-detect with a blank import in `hdf-converters/registry/all/all.go`. `hdf-cli/cmd/hdf/cmd/converter_registry.go` is now only a thin re-export layer (type aliases + bindings to `convreg`) — no registration logic lives there. The CLI integration *test* still lives at `hdf-cli/cmd/hdf/cmd/converter_<name>_test.go` (exercising the re-exported `GetConverter`).
 
 ## Go Module Structure
 
@@ -201,7 +202,7 @@ The sections below apply to Claude (and other AI coding agents) working in this 
 - **HDF CLI integration required.** Converters are not considered fully implemented until integrated into hdf-cli.
 - Each converter must have both:
   1. Converter implementation and tests in `hdf-converters/converters/{name}/{typescript,go}/`
-  2. CLI integration in `hdf-cli/cmd/hdf/cmd/converter_{name}.go` with corresponding tests
+  2. Registry integration: an `init()` wrapper in `hdf-converters/registry/convert/converter_{name}.go` (+ a fingerprint blank-import in `hdf-converters/registry/all/all.go`), with the CLI integration test at `hdf-cli/cmd/hdf/cmd/converter_{name}_test.go`
 - Spot check converter output via CLI before committing: `hdf convert {from} to {to} input.json output.{ext}`
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:7510c1e2 -->

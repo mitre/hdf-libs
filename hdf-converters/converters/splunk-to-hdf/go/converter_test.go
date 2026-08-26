@@ -391,3 +391,33 @@ func TestConvertSplunkToHDF_VerificationMethod(t *testing.T) {
 			"requirement %q expected verificationMethod=automated", req.ID)
 	}
 }
+
+func TestMapStatus_CaseInsensitive(t *testing.T) {
+	// Splunk-stored statuses are canonically lowercase, but a case-variant
+	// document must map by meaning rather than collapse to notReviewed; the
+	// TS peer already folds case.
+	assert.Equal(t, hdf.Passed, mapStatus("Passed"))
+	assert.Equal(t, hdf.Failed, mapStatus("FAILED"))
+	assert.Equal(t, hdf.NotReviewed, mapStatus("Skipped"))
+	assert.Equal(t, hdf.Error, mapStatus("Error"))
+	assert.Equal(t, hdf.NotReviewed, mapStatus("wibble"))
+}
+
+func TestAbsentImpact_DefaultsToZero(t *testing.T) {
+	// A stored control with no impact field yields 0.0 (float zero value);
+	// the TS peer must emit the same rather than dropping the required field.
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadMinimalFixture(t), &events))
+	for _, e := range events {
+		if meta, ok := e["meta"].(map[string]interface{}); ok && meta["subtype"] == "control" {
+			delete(e, "impact")
+		}
+	}
+	raw, err := json.Marshal(events)
+	require.NoError(t, err)
+	result, err := ConvertSplunkToHDF(raw, testConverterVersion)
+	require.NoError(t, err)
+	for _, req := range result.Baselines[0].Requirements {
+		assert.Equal(t, 0.0, req.Impact)
+	}
+}

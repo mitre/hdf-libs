@@ -6,7 +6,7 @@
  * - Re-exports of shared constants and utilities
  */
 
-import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp } from '@mitre/hdf-utilities';
+import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp, isUnratedSeverity } from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
@@ -587,4 +587,16 @@ export function buildNoFindingsRequirement(
     ],
     tags: {},
   };
+}
+
+/**
+ * Shared marker converters emit when a source severity is unrated
+ * (isUnratedSeverity), so a defaulted impact stays distinguishable from a
+ * genuine rated medium. TS peer of MarkUnratedSeverity in converterutil.go.
+ */
+export const UNRATED_SEVERITY_TAG = 'severity_rating';
+export const UNRATED_SEVERITY_VALUE = 'unrated';
+
+export function markUnratedSeverity(tags: Record<string, unknown>, severity?: string | null): void {
+  if (isUnratedSeverity(severity)) tags[UNRATED_SEVERITY_TAG] = UNRATED_SEVERITY_VALUE;
 }

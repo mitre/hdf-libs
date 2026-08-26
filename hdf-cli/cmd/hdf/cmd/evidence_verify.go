@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -79,11 +79,16 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 	}
 
 	pkgDir := filepath.Dir(pkgPath)
-	contents, _ := doc["contents"].([]interface{})
+	planRef, contents, err := hdfengine.ParseEvidencePackage(data)
+	if err != nil {
+		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
+	}
 
-	// Always verify checksums
-	results, counts := verifyContents(contents, pkgDir)
-	renderVerifyOutput(doc, results, counts)
+	// Always verify checksums. Path confinement stays here (the adapter); the
+	// engine performs no IO and classifies match/mismatch/skipped/error.
+	fetch := confinedFetch(pkgDir)
+	results, counts := toVerifyResults(hdfengine.VerifyChecksums(contents, fetch))
+	renderVerifyOutput(doc, results, counts, aggregateAgentOverrides(fetch, contents))
 
 	if counts.mismatch > 0 || counts.errors > 0 {
 		return fmt.Errorf("%d checksum mismatches, %d errors", counts.mismatch, counts.errors)
@@ -94,8 +99,7 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 		return nil
 	}
 
-	planRef, hasPlanRef := doc["planRef"].(string)
-	if !hasPlanRef || planRef == "" {
+	if planRef == "" {
 		fmt.Fprintf(os.Stderr, "Note: no planRef in evidence package — skipping completeness check\n")
 		return nil
 	}
@@ -103,175 +107,139 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 	return verifyCompleteness(pkgDir, planRef, contents)
 }
 
-// verifyCompleteness checks that every baseline in the plan has a
-// corresponding results document in the evidence package.
-func verifyCompleteness(pkgDir, planRef string, contents []interface{}) error { //nolint:gocyclo // complexity from path validation error handling
-	// Load the plan (validate path stays within package directory)
-	planPath, err := safePath(pkgDir, planRef)
+// confinedFetch returns a FetchFunc that resolves a content URI relative to the
+// package directory, confined by SafePath. SafePath and read failures both
+// surface as errors, which VerifyChecksums classifies as an error status.
+func confinedFetch(pkgDir string) hdfengine.FetchFunc {
+	return func(uri string) ([]byte, error) {
+		path, err := hdfutil.SafePath(pkgDir, uri)
+		if err != nil {
+			return nil, err
+		}
+		return os.ReadFile(path) //nolint:gosec // validated by SafePath
+	}
+}
+
+// verifyCompleteness checks that every baseline in the plan has a corresponding
+// results document in the package. The planned/covered extraction and the diff
+// are the engine's; path confinement and schema-validation warnings stay here.
+func verifyCompleteness(pkgDir, planRef string, contents []hdfengine.EvidenceContent) error {
+	planPath, err := hdfutil.SafePath(pkgDir, planRef)
 	if err != nil {
 		return fmt.Errorf("invalid plan reference: %w", err)
 	}
-	planData, err := os.ReadFile(planPath) //nolint:gosec // validated by safePath
+	planData, err := os.ReadFile(planPath) //nolint:gosec // validated by SafePath
 	if err != nil {
 		return fmt.Errorf("failed to read plan %s: %w", planRef, err)
 	}
-
-	var plan map[string]interface{}
-	if err := json.Unmarshal(planData, &plan); err != nil {
+	planned, err := hdfengine.PlannedBaselineRefs(planData)
+	if err != nil {
 		return fmt.Errorf("failed to parse plan %s: %w", planRef, err)
 	}
 
-	// Extract planned baselines
-	assessments, _ := plan["assessments"].([]interface{})
-	plannedBaselines := make(map[string]bool)
-	for _, aRaw := range assessments {
-		a, ok := aRaw.(map[string]interface{})
-		if !ok {
+	var covered []string
+	for _, c := range contents {
+		if c.Type != "hdf-results" || c.URI == "" {
 			continue
 		}
-		if ref, ok := a["baselineRef"].(string); ok {
-			plannedBaselines[ref] = false // false = not yet covered
-		}
-	}
-
-	// Load each results document in the package and extract baseline names
-	for _, cRaw := range contents {
-		entry, ok := cRaw.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		docType, _ := entry["type"].(string)
-		if docType != "hdf-results" {
-			continue
-		}
-		uri, _ := entry["uri"].(string)
-		if uri == "" {
-			continue
-		}
-
-		resultsPath, pathErr := safePath(pkgDir, uri)
+		resultsPath, pathErr := hdfutil.SafePath(pkgDir, c.URI)
 		if pathErr != nil {
-			return fmt.Errorf("invalid results URI %q: %w", uri, pathErr)
+			return fmt.Errorf("invalid results URI %q: %w", c.URI, pathErr)
 		}
-		resultsData, readErr := os.ReadFile(resultsPath) //nolint:gosec // validated by safePath
+		resultsData, readErr := os.ReadFile(resultsPath) //nolint:gosec // validated by SafePath
 		if readErr != nil {
 			continue // checksum verification already reported this
 		}
-
-		results, validateErr := loadAndValidateHDFDoc(resultsData, "results")
-		if validateErr != nil {
+		if _, validateErr := loadAndValidateHDFDoc(resultsData, "results"); validateErr != nil {
 			// Checksum verification only confirms the bytes match the recorded
-			// hash; it does not validate schema. If we silently skip a
-			// schema-invalid results doc here, the user sees a downstream
-			// "missing results for baseline X" error and can't tell that the
-			// real cause is the malformed doc. Surface it explicitly.
-			fmt.Fprintf(os.Stderr, "Warning: results doc %q failed schema validation; skipping for completeness check: %v\n", uri, validateErr)
+			// hash; it does not validate schema. Surfacing this keeps a
+			// schema-invalid results doc from masquerading as a missing baseline.
+			fmt.Fprintf(os.Stderr, "Warning: results doc %q failed schema validation; skipping for completeness check: %v\n", c.URI, validateErr)
 			continue
 		}
-
-		baselines, _ := results["baselines"].([]interface{})
-		for _, bRaw := range baselines {
-			b, ok := bRaw.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			name, _ := b["name"].(string)
-			if _, planned := plannedBaselines[name]; planned {
-				plannedBaselines[name] = true
-			}
+		names, nameErr := hdfengine.CoveredBaselineNames(resultsData)
+		if nameErr != nil {
+			continue
 		}
+		covered = append(covered, names...)
 	}
 
-	// Report missing baselines
-	var missing []string
-	for baseline, covered := range plannedBaselines {
-		if !covered {
-			missing = append(missing, baseline)
-		}
-	}
-
-	if len(missing) > 0 {
+	comp := hdfengine.Completeness(planned, covered)
+	if !comp.Complete {
 		fmt.Fprintf(os.Stderr, "\nCompleteness check FAILED:\n")
-		for _, m := range missing {
+		for _, m := range comp.Missing {
 			fmt.Fprintf(os.Stderr, "  Missing results for baseline: %s\n", m)
 		}
 		return &exitCodeError{
 			code:    1,
-			message: fmt.Sprintf("evidence package incomplete: missing results for %s", missing[0]),
+			message: fmt.Sprintf("evidence package incomplete: missing results for %s", comp.Missing[0]),
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "Completeness check passed: all %d planned baselines have results\n", len(plannedBaselines))
+	fmt.Fprintf(os.Stderr, "Completeness check passed: all %d planned baselines have results\n", len(comp.Planned))
 	return nil
 }
 
-func verifyContents(contents []interface{}, pkgDir string) ([]evidenceVerifyResult, verifyCounts) {
-	results := make([]evidenceVerifyResult, 0, len(contents))
+// toVerifyResults maps engine checksum results to the CLI's render/count shape.
+func toVerifyResults(checksums []hdfengine.ChecksumResult) ([]evidenceVerifyResult, verifyCounts) {
+	results := make([]evidenceVerifyResult, 0, len(checksums))
 	var counts verifyCounts
-
-	for _, cRaw := range contents {
-		entry, ok := cRaw.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		uri, _ := entry["uri"].(string)
-		docType, _ := entry["type"].(string)
-		r := verifyContentEntry(entry, uri, docType, pkgDir)
-		results = append(results, r)
-
-		switch r.Status {
-		case verifyMatch:
+	for _, c := range checksums {
+		results = append(results, evidenceVerifyResult{
+			URI:      c.URI,
+			Type:     c.Type,
+			Status:   string(c.Status),
+			Expected: c.Expected,
+			Actual:   c.Actual,
+			Error:    c.Error,
+		})
+		switch c.Status {
+		case hdfengine.ChecksumMatch:
 			counts.match++
-		case verifyMismatch:
+		case hdfengine.ChecksumMismatch:
 			counts.mismatch++
-		case verifySkipped:
+		case hdfengine.ChecksumSkipped:
 			counts.skipped++
-		case verifyError:
+		case hdfengine.ChecksumError:
 			counts.errors++
 		}
 	}
-
 	return results, counts
 }
 
-func verifyContentEntry(entry map[string]interface{}, uri, docType, pkgDir string) evidenceVerifyResult {
-	checksumObj, hasChecksum := entry["checksum"].(map[string]interface{})
-	if !hasChecksum {
-		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifySkipped}
+// aggregateAgentOverrides sums the agent-attributed override count across the
+// hdf-results documents the evidence package references, reusing the shared
+// engine count. Unreadable or non-results entries are skipped (checksum
+// verification already reports read failures); the read is the same SafePath-
+// confined fetch used for checksums.
+func aggregateAgentOverrides(fetch hdfengine.FetchFunc, contents []hdfengine.EvidenceContent) int {
+	total := 0
+	for _, c := range contents {
+		if c.Type != "hdf-results" || c.URI == "" {
+			continue
+		}
+		data, err := fetch(c.URI)
+		if err != nil {
+			continue
+		}
+		results, err := parseHDFResults(data)
+		if err != nil {
+			continue
+		}
+		total += hdfengine.AgentOverrideCount(results)
 	}
-
-	expectedHash, _ := checksumObj["value"].(string)
-	if expectedHash == "" {
-		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifySkipped}
-	}
-
-	filePath, pathErr := safePath(pkgDir, uri)
-	if pathErr != nil {
-		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifyError, Error: pathErr.Error()}
-	}
-	fileData, err := os.ReadFile(filePath) //nolint:gosec // validated by safePath
-	if err != nil {
-		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifyError, Error: err.Error()}
-	}
-
-	actualHash := sha256.Sum256(fileData)
-	actualHex := hex.EncodeToString(actualHash[:])
-
-	if actualHex == expectedHash {
-		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifyMatch}
-	}
-	return evidenceVerifyResult{URI: uri, Type: docType, Status: verifyMismatch, Expected: expectedHash, Actual: actualHex}
+	return total
 }
 
-func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResult, counts verifyCounts) {
+func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResult, counts verifyCounts, agentOverrides int) {
 	if jsonOutput {
 		out := map[string]interface{}{
-			"results":    results,
-			"matched":    counts.match,
-			"mismatched": counts.mismatch,
-			"skipped":    counts.skipped,
-			"errors":     counts.errors,
+			"results":        results,
+			"matched":        counts.match,
+			"mismatched":     counts.mismatch,
+			"skipped":        counts.skipped,
+			"errors":         counts.errors,
+			"agentOverrides": agentOverrides,
 		}
 		output, _ := json.MarshalIndent(out, "", "  ")
 		fmt.Println(string(output))
@@ -303,4 +271,5 @@ func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResu
 		fmt.Printf(", %d skipped", counts.skipped)
 	}
 	fmt.Println()
+	fmt.Println(agentOverrideReadout(agentOverrides))
 }

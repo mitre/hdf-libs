@@ -1,6 +1,6 @@
 import { inspec } from '@mitre/hdf-fixtures';
 import { runSnapshotTests } from '../../../shared/typescript/snapshot.js';
-import { convertV1ToV2, type HDFV1Results } from './converter.js';
+import { convertLegacyHdf, type LegacyHDFResults } from './converter.js';
 
 // Asserts the SAME fixtures/expected/<input>.hdf.json goldens the Go snapshot
 // test asserts, under the same normalization — the TS<->Go parity guarantee
@@ -20,7 +20,7 @@ const SHARED_INPUTS: Record<string, () => string> = {
 
 runSnapshotTests(
   'legacyhdf-to-hdf',
-  (input: string) => convertV1ToV2(JSON.parse(input) as HDFV1Results),
+  (input: string) => convertLegacyHdf(JSON.parse(input) as LegacyHDFResults),
   [],
   (inputName) => SHARED_INPUTS[inputName]?.(),
 );

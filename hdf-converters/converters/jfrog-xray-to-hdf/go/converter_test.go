@@ -600,3 +600,31 @@ func TestConvertJfrogXray_EntryAnchor(t *testing.T) {
 	shared.AssertRequirementCount(t, result, countDistinctEntryIDs(t, input),
 		"jfrog_xray_sample.json: one requirement per distinct data[] entry ID")
 }
+
+func TestConvertJfrogXrayToHDF_UnratedSeverityMarker(t *testing.T) {
+	// Xray "Unknown" is unrated → severity_rating: unrated; rated tiers
+	// (High, Information) must not carry the marker.
+	input := []byte(`{
+		"total_count": 3,
+		"data": [
+			{"id": "XRAY-UNRATED", "severity": "Unknown", "summary": "Unrated finding", "component": "a", "source_comp_id": "npm://a:1.0.0"},
+			{"id": "XRAY-RATED", "severity": "High", "summary": "Rated finding", "component": "b", "source_comp_id": "npm://b:1.0.0"},
+			{"id": "XRAY-INFO", "severity": "Information", "summary": "Informational finding", "component": "c", "source_comp_id": "npm://c:1.0.0"}
+		]
+	}`)
+	result, err := ConvertJfrogXrayToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	tagsByID := map[string]map[string]interface{}{}
+	for _, req := range result.Baselines[0].Requirements {
+		tagsByID[req.ID] = req.Tags
+	}
+	require.Contains(t, tagsByID, "XRAY-UNRATED")
+	assert.Equal(t, shared.UnratedSeverityValue, tagsByID["XRAY-UNRATED"][shared.UnratedSeverityTag],
+		"Unknown severity must carry severity_rating: unrated")
+	for _, id := range []string{"XRAY-RATED", "XRAY-INFO"} {
+		require.Contains(t, tagsByID, id)
+		_, has := tagsByID[id][shared.UnratedSeverityTag]
+		assert.False(t, has, "%s: rated severity must not carry the severity_rating tag", id)
+	}
+}

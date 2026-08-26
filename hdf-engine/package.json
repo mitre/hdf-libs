@@ -1,0 +1,59 @@
+{
+  "name": "@mitre/hdf-engine",
+  "version": "3.5.0",
+  "description": "Shared schema-typed read-side engines for HDF documents — detection, query/filtering, and compliance rollups",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "clean": "rimraf dist",
+    "test": "pnpm run test:ts",
+    "test:ts": "vitest run",
+    "test:go": "cd go && go test ./...",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitre/hdf-libs.git",
+    "directory": "hdf-engine"
+  },
+  "author": "MITRE Corporation",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@mitre/hdf-schema": "workspace:^",
+    "@mitre/hdf-utilities": "workspace:^",
+    "@mitre/hdf-parsers": "workspace:^"
+  },
+  "devDependencies": {
+    "@mitre/hdf-validators": "workspace:^"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "keywords": [
+    "hdf",
+    "heimdall",
+    "engine",
+    "query",
+    "compliance",
+    "security",
+    "compliance"
+  ]
+}

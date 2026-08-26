@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -68,6 +70,145 @@ func writeTestResults(t *testing.T) string {
 	return path
 }
 
+// Impact-0 requirements whose RAW result status is notReviewed, not
+// notApplicable — the InSpec skip shape (a skip serialises as a notReviewed
+// result; Not Applicable is signalled by impact==0, with an explicit non-zero
+// STIG severity tag still present). Raw counting miscounts these as skipped;
+// effective-status counting resolves impact==0 to notApplicable (no_impact).
+// Effective distribution: 1 passed(high), 1 failed(high), 1 skipped(medium,
+// genuine notReviewed at impact 0.5), 2 no_impact(1 high + 1 medium).
+const testResultsImpactZeroNotReviewed = `{
+	"baselines": [{
+		"name": "impact-zero-threshold-test",
+		"requirements": [
+			{
+				"id": "SV-NA-1",
+				"title": "NA via impact 0, raw notReviewed, high severity",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.0,
+				"severity": "high",
+				"tags": {},
+				"results": [{"status": "notReviewed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SV-NA-2",
+				"title": "NA via impact 0, raw notReviewed, medium severity",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.0,
+				"severity": "medium",
+				"tags": {},
+				"results": [{"status": "notReviewed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SV-SKIP",
+				"title": "Genuine notReviewed at impact 0.5",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.5,
+				"severity": "medium",
+				"tags": {},
+				"results": [{"status": "notReviewed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SV-PASS",
+				"title": "Passed high",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.7,
+				"severity": "high",
+				"tags": {},
+				"results": [{"status": "passed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SV-FAIL",
+				"title": "Failed high",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.7,
+				"severity": "high",
+				"tags": {},
+				"results": [{"status": "failed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			}
+		],
+		"supports": [],
+		"groups": []
+	}],
+	"platform": {"name": "test", "release": "1.0"},
+	"statistics": {"duration": 1.0},
+	"version": "2.0.0"
+}`
+
+func writeImpactZeroResults(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "results.json")
+	require.NoError(t, os.WriteFile(path, []byte(testResultsImpactZeroNotReviewed), 0o644))
+	return path
+}
+
+// TestCountByStatusSeverity_ImpactZeroNotReviewedIsNoImpact is the lj0g.8
+// regression guard: impact-0 requirements whose raw result status is notReviewed
+// must count as no_impact (Not Applicable), never skipped, and must leave the
+// compliance denominator. Fails on the pre-fix raw-counting path (which would
+// report no_impact.total=0, skipped.total=3, compliance=20%).
+func TestCountByStatusSeverity_ImpactZeroNotReviewedIsNoImpact(t *testing.T) {
+	data := []byte(testResultsImpactZeroNotReviewed)
+
+	counts, err := countControlsByStatusSeverity(data)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, counts.NoImpact.Total, "impact-0 notReviewed controls are Not Applicable")
+	assert.Equal(t, 1, counts.NoImpact.High)
+	assert.Equal(t, 1, counts.NoImpact.Medium)
+	assert.Equal(t, 1, counts.Skipped.Total, "only the genuine impact>0 notReviewed control is skipped")
+	assert.Equal(t, 1, counts.Skipped.Medium)
+	assert.Equal(t, 1, counts.Passed.Total)
+	assert.Equal(t, 1, counts.Failed.Total)
+	assert.Equal(t, 0, counts.Error.Total)
+
+	// Not Applicable leaves the denominator: 1 passed / (1 passed + 1 failed +
+	// 1 skipped) = 33.33%, not the raw-path 1/(1+1+3) = 20%.
+	compliance := hdfengine.CalculateCompliance(counts)
+	assert.InDelta(t, 33.33, compliance, 0.01)
+}
+
+// TestThresholdCounting_ParseError covers the parse-failure branch of both
+// counting entry points (the CLI's gated pipeline rejecting non-HDF input).
+func TestThresholdCounting_ParseError(t *testing.T) {
+	_, err := countControlsByStatusSeverity([]byte("not valid hdf"))
+	require.Error(t, err)
+	_, err = mapControlIDs([]byte("not valid hdf"))
+	require.Error(t, err)
+}
+
+// TestMapControlIDs_ImpactZeroNotReviewedIsNoImpact guards the per-control
+// listing path (used by --include-controls and per-control threshold checks):
+// impact-0 notReviewed controls must map to the no_impact key, matching counts.
+func TestMapControlIDs_ImpactZeroNotReviewedIsNoImpact(t *testing.T) {
+	data := []byte(testResultsImpactZeroNotReviewed)
+
+	mappings, err := mapControlIDs(data)
+	require.NoError(t, err)
+
+	byID := map[string]ControlIDMapping{}
+	for _, m := range mappings {
+		byID[m.ID] = m
+	}
+	assert.Equal(t, thresholdNoImpact, byID["SV-NA-1"].Status)
+	assert.Equal(t, thresholdNoImpact, byID["SV-NA-2"].Status)
+	assert.Equal(t, thresholdSkipped, byID["SV-SKIP"].Status)
+	assert.Equal(t, thresholdPassed, byID["SV-PASS"].Status)
+	assert.Equal(t, thresholdFailed, byID["SV-FAIL"].Status)
+}
+
+// TestValidateThreshold_NoImpactSectionIsLive proves the no_impact.* threshold
+// section is no longer dead: a no_impact.total bound is satisfiable against a
+// document with impact-0 notReviewed controls. On the pre-fix path no_impact was
+// always 0, so no_impact.total.min:2 could never pass.
+func TestValidateThreshold_NoImpactSectionIsLive(t *testing.T) {
+	resultsPath := writeImpactZeroResults(t)
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{no_impact.total.min: 2}, {skipped.total.max: 1}")
+	require.NoError(t, err, "no_impact.total.min:2 and skipped.total.max:1 hold under effective status")
+}
+
 // --- Counting logic tests ---
 
 func TestCountByStatusSeverity(t *testing.T) {
@@ -94,7 +235,7 @@ func TestCalculateCompliance(t *testing.T) {
 		Passed: SeverityCounts{Total: 2},
 		Failed: SeverityCounts{Total: 1},
 	}
-	compliance := calculateCompliance(counts)
+	compliance := hdfengine.CalculateCompliance(counts)
 	assert.InDelta(t, 66.67, compliance, 0.01)
 }
 
@@ -102,14 +243,14 @@ func TestCalculateCompliance_AllPassed(t *testing.T) {
 	counts := &StatusCounts{
 		Passed: SeverityCounts{Total: 10},
 	}
-	assert.Equal(t, 100.0, calculateCompliance(counts))
+	assert.Equal(t, 100.0, hdfengine.CalculateCompliance(counts))
 }
 
 func TestCalculateCompliance_NoneRelevant(t *testing.T) {
 	counts := &StatusCounts{
 		NoImpact: SeverityCounts{Total: 5},
 	}
-	assert.Equal(t, 0.0, calculateCompliance(counts))
+	assert.Equal(t, 0.0, hdfengine.CalculateCompliance(counts))
 }
 
 // --- Generate threshold tests ---

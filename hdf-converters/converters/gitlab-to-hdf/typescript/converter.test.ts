@@ -623,3 +623,33 @@ describe('gitlab-to-hdf refs and remediation backfill', () => {
     expect(unfixed.descriptions?.some((d) => d.label === 'remediation')).toBe(false);
   });
 });
+
+describe('unrated severity marker', () => {
+  it('tags Unknown/absent severities with severity_rating: unrated, leaves rated tiers untagged', async () => {
+    const input = JSON.stringify({
+      version: '15.1.0',
+      scan: {
+        scanner: {id: 'semgrep', name: 'Semgrep', version: '1.34.0'},
+        start_time: '2024-01-15T10:00:00',
+        end_time: '2024-01-15T10:01:30',
+        status: 'success',
+        type: 'sast',
+      },
+      vulnerabilities: [
+        {id: 'vuln-unknown', name: 'Unknown severity', severity: 'Unknown'},
+        {id: 'vuln-absent', name: 'Absent severity'},
+        {id: 'vuln-high', name: 'High severity', severity: 'High'},
+        {id: 'vuln-info', name: 'Info severity', severity: 'Info'},
+      ],
+    });
+    const hdf = JSON.parse(await convertGitlabToHdf(input)) as HDFResults;
+    const byId = new Map(hdf.baselines[0]!.requirements.map((r) => [r.id, r.tags]));
+
+    for (const id of ['vuln-unknown', 'vuln-absent']) {
+      expect(byId.get(id)?.['severity_rating'], id).toBe('unrated');
+    }
+    for (const id of ['vuln-high', 'vuln-info']) {
+      expect(byId.get(id), id).not.toHaveProperty('severity_rating');
+    }
+  });
+});

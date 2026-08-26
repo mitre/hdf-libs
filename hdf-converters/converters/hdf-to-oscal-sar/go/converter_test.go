@@ -10,6 +10,7 @@ import (
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -76,32 +77,14 @@ func TestConvertRequirementWithoutDescriptionsOrResults(t *testing.T) {
 // minimalHDFResults returns a minimal valid HDF Results JSON document
 // with one baseline, one requirement, and one result.
 func minimalHDFResults(status hdf.ResultStatus) []byte {
-	results := hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{
-			{
-				Name: "test-baseline",
-				Requirements: []hdf.EvaluatedRequirement{
-					{
-						ID:     "AC-1",
-						Impact: 0.5,
-						Tags: map[string]interface{}{
-							"nist": []interface{}{"AC-1"},
-						},
-						Descriptions: []hdf.Description{
-							{Label: "default", Data: "Test requirement description"},
-						},
-						Results: []hdf.RequirementResult{
-							{
-								Status:   status,
-								CodeDesc: "Test code description",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	data, _ := json.Marshal(results)
+	data, _ := json.Marshal(testhdf.Doc(testhdf.Baseline("test-baseline",
+		testhdf.Req("AC-1",
+			testhdf.Impact(0.5),
+			testhdf.Tag("nist", []interface{}{"AC-1"}),
+			testhdf.Desc("Test requirement description"),
+			testhdf.Status(status),
+			testhdf.CodeDesc("Test code description"),
+		))))
 	return data
 }
 
@@ -508,27 +491,14 @@ func TestConvertHDFToOSCALSAR_StatusMapping(t *testing.T) {
 
 func TestConvertHDFToOSCALSAR_EnhancedControlID(t *testing.T) {
 	// Build HDF with an enhanced control like "AC-2 (3)"
-	results := hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{
-			{
-				Name: "test",
-				Requirements: []hdf.EvaluatedRequirement{
-					{
-						ID:     "AC-2 (3)",
-						Impact: 0.7,
-						Tags:   map[string]interface{}{"nist": []interface{}{"AC-2 (3)"}},
-						Descriptions: []hdf.Description{
-							{Label: "default", Data: "Enhanced control"},
-						},
-						Results: []hdf.RequirementResult{
-							{Status: hdf.Passed, CodeDesc: "test"},
-						},
-					},
-				},
-			},
-		},
-	}
-	data, _ := json.Marshal(results)
+	data, _ := json.Marshal(testhdf.Doc(testhdf.Baseline("test",
+		testhdf.Req("AC-2 (3)",
+			testhdf.Impact(0.7),
+			testhdf.Tag("nist", []interface{}{"AC-2 (3)"}),
+			testhdf.Desc("Enhanced control"),
+			testhdf.Status(hdf.Passed),
+			testhdf.CodeDesc("test"),
+		))))
 
 	output, err := ConvertHDFToOSCALSAR(data, "1.0.0")
 	require.NoError(t, err)
@@ -572,22 +542,15 @@ func TestConvertHDFToOSCALSAR_UUIDsUnique(t *testing.T) {
 
 func TestConvertHDFToOSCALSAR_PlanRef(t *testing.T) {
 	planRef := "https://example.com/assessment-plan"
-	results := hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{
-			{
-				Name: "test",
-				Requirements: []hdf.EvaluatedRequirement{
-					{
-						ID: "AC-1", Impact: 0.5,
-						Tags:         map[string]interface{}{"nist": []interface{}{"AC-1"}},
-						Descriptions: []hdf.Description{{Label: "default", Data: "desc"}},
-						Results:      []hdf.RequirementResult{{Status: hdf.Passed, CodeDesc: "test"}},
-					},
-				},
-			},
-		},
-		PlanRef: &planRef,
-	}
+	results := testhdf.Doc(testhdf.Baseline("test",
+		testhdf.Req("AC-1",
+			testhdf.Impact(0.5),
+			testhdf.Tag("nist", []interface{}{"AC-1"}),
+			testhdf.Desc("desc"),
+			testhdf.Status(hdf.Passed),
+			testhdf.CodeDesc("test"),
+		)))
+	results.PlanRef = &planRef
 	data, _ := json.Marshal(results)
 
 	output, err := ConvertHDFToOSCALSAR(data, "1.0.0")
@@ -648,28 +611,21 @@ func TestConvertHDFToOSCALSAR_EmptyBaselines(t *testing.T) {
 }
 
 func TestConvertHDFToOSCALSAR_MultipleRequirements(t *testing.T) {
-	results := hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{
-			{
-				Name: "multi-test",
-				Requirements: []hdf.EvaluatedRequirement{
-					{
-						ID: "AC-1", Impact: 0.5,
-						Tags:         map[string]interface{}{"nist": []interface{}{"AC-1"}},
-						Descriptions: []hdf.Description{{Label: "default", Data: "first"}},
-						Results:      []hdf.RequirementResult{{Status: hdf.Passed, CodeDesc: "test1"}},
-					},
-					{
-						ID: "AC-2", Impact: 0.7,
-						Tags:         map[string]interface{}{"nist": []interface{}{"AC-2"}},
-						Descriptions: []hdf.Description{{Label: "default", Data: "second"}},
-						Results:      []hdf.RequirementResult{{Status: hdf.Failed, CodeDesc: "test2"}},
-					},
-				},
-			},
-		},
-	}
-	data, _ := json.Marshal(results)
+	data, _ := json.Marshal(testhdf.Doc(testhdf.Baseline("multi-test",
+		testhdf.Req("AC-1",
+			testhdf.Impact(0.5),
+			testhdf.Tag("nist", []interface{}{"AC-1"}),
+			testhdf.Desc("first"),
+			testhdf.Status(hdf.Passed),
+			testhdf.CodeDesc("test1"),
+		),
+		testhdf.Req("AC-2",
+			testhdf.Impact(0.7),
+			testhdf.Tag("nist", []interface{}{"AC-2"}),
+			testhdf.Desc("second"),
+			testhdf.Status(hdf.Failed),
+			testhdf.CodeDesc("test2"),
+		))))
 
 	output, err := ConvertHDFToOSCALSAR(data, "1.0.0")
 	require.NoError(t, err)
@@ -735,22 +691,15 @@ func TestConvertHDFToOSCALSAR_ValidJSON(t *testing.T) {
 
 func TestConvertHDFToOSCALSAR_BaselineTitle(t *testing.T) {
 	title := "My Custom Baseline Title"
-	results := hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{
-			{
-				Name:  "test",
-				Title: &title,
-				Requirements: []hdf.EvaluatedRequirement{
-					{
-						ID: "AC-1", Impact: 0.5,
-						Tags:         map[string]interface{}{"nist": []interface{}{"AC-1"}},
-						Descriptions: []hdf.Description{{Label: "default", Data: "desc"}},
-						Results:      []hdf.RequirementResult{{Status: hdf.Passed, CodeDesc: "test"}},
-					},
-				},
-			},
-		},
-	}
+	results := testhdf.Doc(testhdf.Baseline("test",
+		testhdf.Req("AC-1",
+			testhdf.Impact(0.5),
+			testhdf.Tag("nist", []interface{}{"AC-1"}),
+			testhdf.Desc("desc"),
+			testhdf.Status(hdf.Passed),
+			testhdf.CodeDesc("test"),
+		)))
+	results.Baselines[0].Title = &title
 	data, _ := json.Marshal(results)
 
 	output, err := ConvertHDFToOSCALSAR(data, "1.0.0")
@@ -763,22 +712,14 @@ func TestConvertHDFToOSCALSAR_BaselineTitle(t *testing.T) {
 }
 
 func TestConvertHDFToOSCALSAR_ZeroImpactNoRisk(t *testing.T) {
-	results := hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{
-			{
-				Name: "test",
-				Requirements: []hdf.EvaluatedRequirement{
-					{
-						ID: "AC-1", Impact: 0.0,
-						Tags:         map[string]interface{}{"nist": []interface{}{"AC-1"}},
-						Descriptions: []hdf.Description{{Label: "default", Data: "desc"}},
-						Results:      []hdf.RequirementResult{{Status: hdf.Passed, CodeDesc: "test"}},
-					},
-				},
-			},
-		},
-	}
-	data, _ := json.Marshal(results)
+	data, _ := json.Marshal(testhdf.Doc(testhdf.Baseline("test",
+		testhdf.Req("AC-1",
+			testhdf.Impact(0.0),
+			testhdf.Tag("nist", []interface{}{"AC-1"}),
+			testhdf.Desc("desc"),
+			testhdf.Status(hdf.Passed),
+			testhdf.CodeDesc("test"),
+		))))
 
 	output, err := ConvertHDFToOSCALSAR(data, "1.0.0")
 	require.NoError(t, err)

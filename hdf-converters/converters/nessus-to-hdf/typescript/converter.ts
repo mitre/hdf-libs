@@ -1,4 +1,4 @@
-import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, parseTimestamp, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
@@ -95,15 +95,16 @@ interface ReportItem {
   'compliance-actual-value'?: string;
 }
 
-// Severity to impact mapping from heimdall2
-const IMPACT_MAPPING: Record<string, number> = {
+// Nessus numeric severity / CAT compliance aliases; mirrors Go's nessusAliases
+// (canonical reference: heimdall2 nessus-mapper.ts).
+const NESSUS_ALIASES: Record<string, number> = {
   '4': 0.9,   // Critical
   '3': 0.7,   // High
-  'i': 0.7,
+  'i': 0.7,   // CAT I
   '2': 0.5,   // Medium
-  'ii': 0.5,
+  'ii': 0.5,  // CAT II
   '1': 0.3,   // Low
-  'iii': 0.3,
+  'iii': 0.3, // CAT III
   '0': 0.0,   // Info
 };
 
@@ -529,11 +530,10 @@ function buildDescriptions(item: ReportItem, isCompliance: boolean): Description
 function calculateImpact(item: ReportItem, isCompliance: boolean): number {
   if (isCompliance && item['compliance-reference']) {
     const cat = parseComplianceRef(item['compliance-reference'], 'CAT')[0];
-    const catKey = cat?.toLowerCase();
-    return catKey ? (IMPACT_MAPPING[catKey] ?? 0.5) : 0.5;
+    return cat ? severityToImpactWithAliases(cat, NESSUS_ALIASES, 0.5) : 0.5;
   }
 
-  return IMPACT_MAPPING[item['severity']] ?? 0.0;
+  return severityToImpactWithAliases(item['severity'], NESSUS_ALIASES, 0.0);
 }
 
 function buildTags(item: ReportItem, isCompliance: boolean): Record<string, unknown> {

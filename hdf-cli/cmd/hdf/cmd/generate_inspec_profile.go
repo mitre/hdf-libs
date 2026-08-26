@@ -11,6 +11,7 @@ import (
 	xccdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/xccdf-results-to-hdf/go"
 	generators "github.com/mitre/hdf-libs/hdf-generators/go/v3"
 	schema "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
@@ -171,7 +172,7 @@ func writeInSpecProfile(profile generators.InSpecProfile, outputDir string) erro
 	sort.Strings(filenames)
 
 	for _, name := range filenames {
-		controlPath, pathErr := safePath(outputDir, name)
+		controlPath, pathErr := hdfutil.SafePath(outputDir, name)
 		if pathErr != nil {
 			return fmt.Errorf("unsafe control path %q: %w", name, pathErr)
 		}

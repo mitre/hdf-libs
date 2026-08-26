@@ -276,6 +276,7 @@ func buildRequirement(rec prismaRecord, scanTime time.Time) hdf.EvaluatedRequire
 	} else {
 		tags = shared.BuildNISTCCITags(nist, cciTags)
 	}
+	shared.MarkUnratedSeverity(tags, rec.Severity)
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: rec.Description},

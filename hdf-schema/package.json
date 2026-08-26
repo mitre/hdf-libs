@@ -17,6 +17,10 @@
       "types": "./dist/helpers.d.ts",
       "import": "./dist/helpers.js"
     },
+    "./testhdf": {
+      "types": "./testhdf/index.d.ts",
+      "import": "./testhdf/index.js"
+    },
     "./hdf-results": {
       "types": "./dist/ts/hdf.d.ts",
       "import": "./dist/ts/hdf.js"
@@ -47,7 +51,9 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "testhdf/index.js",
+    "testhdf/index.d.ts"
   ],
   "scripts": {
     "build": "pnpm run clean && pnpm run build:schemas && pnpm run build:types && pnpm run build:index",
@@ -60,7 +66,7 @@
     "clean": "rimraf dist",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
-    "test:go": "echo 'No Go tests in hdf-schema'",
+    "test:go": "cd testhdf/go && go test ./...",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit",

@@ -5,10 +5,34 @@ import (
 	"fmt"
 	"os"
 
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
+
+// agentOverrideReadout is the §3 detective line surfaced by the validate,
+// validate threshold, and evidence verify readouts: the count of overrides an AI
+// agent applied (appliedBy.type=="agent"), which auditors scrutinize separately
+// from deterministic system/human overrides. Read directly from the applied
+// results — the attribution survives the apply step and is never back-traced to
+// the amendments document.
+func agentOverrideReadout(n int) string {
+	return fmt.Sprintf("Agent-attributed overrides: %d", n)
+}
+
+// countAgentOverrides parses HDF results bytes and returns the agent-attributed
+// override count via the shared engine function (the same one the MCP
+// hdf_compliance tool consumes). Parse failures yield 0 — callers surface the
+// count only for documents already confirmed to be valid results.
+func countAgentOverrides(data []byte) int {
+	results, err := parseHDFResults(data)
+	if err != nil {
+		return 0
+	}
+	return hdfengine.AgentOverrideCount(results)
+}
 
 // Global flag variables for validate command (used by runValidate).
 var (
@@ -121,7 +145,7 @@ func runValidate(_ *cobra.Command, args []string) error {
 		// Build line map for file inputs (not stdin) to annotate errors
 		var lineMap map[string]int
 		if filename != "-" {
-			lineMap = jsonPathLineMap(data)
+			lineMap = hdfutil.JSONPathLineMap(data)
 		}
 
 		if jsonOutput {
@@ -139,10 +163,16 @@ func runValidate(_ *cobra.Command, args []string) error {
 			"file":  displayName,
 			"type":  schemaType,
 		}
+		if schemaType == "results" {
+			result["agentOverrides"] = countAgentOverrides(data)
+		}
 		output, _ := json.MarshalIndent(result, "", "  ")
 		fmt.Println(string(output))
 	} else if !quiet {
 		fmt.Printf("✓ %s is a valid HDF %s file\n", displayName, schemaType)
+		if schemaType == "results" {
+			fmt.Println(agentOverrideReadout(countAgentOverrides(data)))
+		}
 	}
 
 	return nil
@@ -174,13 +204,13 @@ func outputValidationHuman(displayName, schemaType string, vr *validators.Valida
 	for _, e := range vr.Errors {
 		line := 0
 		if lineMap != nil {
-			line = lookupLineNumber(lineMap, e.Field)
+			line = hdfutil.LookupLineNumber(lineMap, e.Field)
 		}
 
 		switch {
-		case line > 0 && e.Field != "" && e.Field != fieldRoot:
+		case line > 0 && e.Field != "" && e.Field != hdfutil.FieldRoot:
 			fmt.Fprintf(os.Stderr, "    line %d: %s: %s\n", line, e.Field, e.Description)
-		case e.Field != "" && e.Field != fieldRoot:
+		case e.Field != "" && e.Field != hdfutil.FieldRoot:
 			fmt.Fprintf(os.Stderr, "    %s: %s\n", e.Field, e.Description)
 		default:
 			fmt.Fprintf(os.Stderr, "    %s\n", e.Description)
@@ -201,7 +231,7 @@ func outputValidationJSON(displayName, schemaType string, vr *validators.Validat
 	for _, e := range vr.Errors {
 		ewl := errorWithLine{Field: e.Field, Description: e.Description}
 		if lineMap != nil {
-			ewl.Line = lookupLineNumber(lineMap, e.Field)
+			ewl.Line = hdfutil.LookupLineNumber(lineMap, e.Field)
 		}
 		errors = append(errors, ewl)
 	}

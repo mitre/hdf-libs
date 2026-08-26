@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Notable behavior changes
+
+- **`hdf validate threshold` / `hdf generate threshold` now count by effective status — Not Applicable (impact 0) no longer inflates `skipped` or the compliance denominator.** Previously the threshold path counted raw result statuses: on InSpec-derived scans (where a skip serializes as a `notReviewed` result and Not Applicable is signalled by `impact == 0`), every impact-0 requirement was miscounted as `skipped`, the `no_impact.*` threshold section was effectively dead (always 0, never satisfiable), and compliance was understated by keeping Not Applicable in the denominator. Threshold counting now applies the canonical effective-status rule (`impact == 0 → notApplicable`, non-expired overrides honored) — the same rule the MCP read tools and HDF's compliance rollups use, so a CLI gate and `hdf_compliance` agree on the same document. **This changes CI-gate pass/fail outcomes on container-heavy corpora:** measured on real container InSpec scans, compliance rose ~30 points (e.g. 16.18% → 46.67%) as ~113 Not Applicable controls moved from `skipped` to `no_impact`. Threshold files that pinned `skipped.*` counts or relied on the understated compliance number must be regenerated (`hdf generate threshold`); `no_impact.*` bounds are now meaningful and enforceable.
+
 ## [3.5.1] - 2026-08-11
 
 Patch release: a new SPDX-VEX importer, NIST Rev 4 ↔ Rev 5 revision infrastructure, export-side field fidelity (the override channel now survives export), broad import-converter field backfills, and supply-chain hardening. No schema changes — schema `$id` URLs remain at v3.5.0.

@@ -366,6 +366,7 @@ func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro
 		extras["cvss_base_score"] = vuln.CVSS
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
+	shared.MarkUnratedSeverity(tags, vuln.Severity)
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: vuln.Description},

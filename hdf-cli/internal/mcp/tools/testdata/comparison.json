@@ -1,0 +1,96 @@
+{
+  "formatVersion": "1.0.0",
+  "comparisonMode": "temporal",
+  "sources": [
+    {
+      "role": "old",
+      "label": "rhel9-results.json"
+    },
+    {
+      "role": "new",
+      "label": "postgres-results.json"
+    }
+  ],
+  "summary": {
+    "fixed": 0,
+    "regressed": 0,
+    "new": 1,
+    "absent": 1,
+    "unchanged": 0,
+    "updated": 0,
+    "total": 2,
+    "matchedCount": 0,
+    "unmatchedOldCount": 1,
+    "unmatchedNewCount": 1
+  },
+  "requirementDiffs": [
+    {
+      "id": "SV-233512",
+      "state": "new",
+      "changeReasons": [],
+      "before": null,
+      "after": {
+        "descriptions": [
+          {
+            "data": "Verify access controls",
+            "label": "default"
+          }
+        ],
+        "id": "SV-233512",
+        "impact": 0.5,
+        "results": [
+          {
+            "codeDesc": "check pg_hba.conf",
+            "startTime": "2026-03-30T00:00:00Z",
+            "status": "passed"
+          }
+        ],
+        "tags": {},
+        "title": "PostgreSQL must enforce authorized access"
+      },
+      "fieldChanges": [],
+      "newEffectiveStatus": "passed",
+      "title": "PostgreSQL must enforce authorized access",
+      "baseline": "PostgreSQL-STIG"
+    },
+    {
+      "id": "SV-257777",
+      "state": "absent",
+      "changeReasons": [],
+      "before": {
+        "descriptions": [
+          {
+            "data": "Check vendor support status",
+            "label": "default"
+          }
+        ],
+        "id": "SV-257777",
+        "impact": 0.7,
+        "results": [
+          {
+            "codeDesc": "check version",
+            "startTime": "2026-03-30T00:00:00Z",
+            "status": "passed"
+          }
+        ],
+        "tags": {},
+        "title": "RHEL 9 must be a vendor-supported release"
+      },
+      "after": null,
+      "fieldChanges": [],
+      "oldEffectiveStatus": "passed",
+      "title": "RHEL 9 must be a vendor-supported release",
+      "baseline": "RHEL9-STIG"
+    }
+  ],
+  "baselineDiffs": [
+    {
+      "name": "RHEL9-STIG",
+      "state": "absent"
+    },
+    {
+      "name": "PostgreSQL-STIG",
+      "state": "new"
+    }
+  ]
+}

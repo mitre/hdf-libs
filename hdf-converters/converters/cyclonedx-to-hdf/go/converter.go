@@ -377,10 +377,26 @@ func maxImpact(ratings []CDXRating) float64 {
 	return maxVal
 }
 
+// vulnIsUnrated reports whether no rating carries rating information: no CVSS
+// score and no rated severity token. Covers the empty-ratings default and the
+// fabricated-"medium" (empty severity, no score) paths, both of which land on
+// impact 0.5 without the source having asserted a severity.
+func vulnIsUnrated(ratings []CDXRating) bool {
+	for _, r := range ratings {
+		if cvssMethods[r.Method] && r.Score != nil {
+			return false
+		}
+		if !hdfutil.IsUnratedSeverity(r.Severity) {
+			return false
+		}
+	}
+	return true
+}
+
 // NOTE: heimdall2 mapped info/unknown severity to NotReviewed status.
 // We intentionally do NOT replicate that behavior — a vulnerability is a
 // finding regardless of severity confidence. Info/unknown severity vulns
-// are Failed with impact derived from the severity mapping (info→0.1,
+// are Failed with impact derived from the severity mapping (info→0.0,
 // unknown→0.5). NotReviewed means "not evaluated" which is incorrect
 // when a scanner has identified a CVE.
 
@@ -597,6 +613,9 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		}
 
 		tags := shared.BuildNISTCCITags(nist, cciTags)
+		if vulnIsUnrated(vuln.Ratings) {
+			shared.MarkUnratedSeverity(tags, "")
+		}
 
 		// Build descriptions (must always include a 'default' label per HDF schema)
 		descriptions := []hdf.Description{}

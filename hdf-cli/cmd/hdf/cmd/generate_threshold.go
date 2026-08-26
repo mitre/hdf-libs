@@ -4,43 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
-
-// ThresholdBound represents a min/max bound for a threshold value,
-// with an optional list of expected control IDs.
-type ThresholdBound struct {
-	Min      *int     `yaml:"min,omitempty" json:"min,omitempty"`
-	Max      *int     `yaml:"max,omitempty" json:"max,omitempty"`
-	Controls []string `yaml:"controls,omitempty" json:"controls,omitempty"`
-}
-
-// ThresholdSeverity holds bounds for each severity level plus a total.
-type ThresholdSeverity struct {
-	Critical *ThresholdBound `yaml:"critical,omitempty" json:"critical,omitempty"`
-	High     *ThresholdBound `yaml:"high,omitempty" json:"high,omitempty"`
-	Medium   *ThresholdBound `yaml:"medium,omitempty" json:"medium,omitempty"`
-	Low      *ThresholdBound `yaml:"low,omitempty" json:"low,omitempty"`
-	None     *ThresholdBound `yaml:"none,omitempty" json:"none,omitempty"`
-	Total    *ThresholdBound `yaml:"total,omitempty" json:"total,omitempty"`
-}
-
-// ComplianceBound holds min/max for compliance percentage.
-type ComplianceBound struct {
-	Min *float64 `yaml:"min,omitempty" json:"min,omitempty"`
-	Max *float64 `yaml:"max,omitempty" json:"max,omitempty"`
-}
-
-// ThresholdConfig is the top-level threshold YAML structure.
-type ThresholdConfig struct {
-	Compliance *ComplianceBound   `yaml:"compliance,omitempty" json:"compliance,omitempty"`
-	Passed     *ThresholdSeverity `yaml:"passed,omitempty" json:"passed,omitempty"`
-	Failed     *ThresholdSeverity `yaml:"failed,omitempty" json:"failed,omitempty"`
-	Skipped    *ThresholdSeverity `yaml:"skipped,omitempty" json:"skipped,omitempty"`
-	Error      *ThresholdSeverity `yaml:"error,omitempty" json:"error,omitempty"`
-	NoImpact   *ThresholdSeverity `yaml:"no_impact,omitempty" json:"no_impact,omitempty"`
-}
 
 func newGenerateThresholdCmd() *cobra.Command {
 	var (
@@ -88,7 +55,7 @@ so the validator checks that each control has the expected status.`,
 				return err
 			}
 
-			compliance := calculateCompliance(counts)
+			compliance := hdfengine.CalculateCompliance(counts)
 			config := buildThresholdConfig(counts, compliance, exact)
 
 			if includeControls {

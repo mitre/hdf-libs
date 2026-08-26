@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -275,7 +276,7 @@ func runDiff(_ *cobra.Command, args []string, flags *diffFlags) error {
 		return err
 	}
 
-	comp, err := diff.DiffHdf(oldResults, []hdf.HDFResults{newResults}, diff.Options{})
+	comp, err := diff.DiffHdf(context.Background(), oldResults, []hdf.HDFResults{newResults}, diff.Options{})
 	if err != nil {
 		return fmt.Errorf("comparison failed: %w", err)
 	}
@@ -980,7 +981,7 @@ func runSystemDiff(oldData, newData []byte, flags *diffFlags, oldFile, newFile s
 		return fmt.Errorf("failed to parse new system document: %w", err)
 	}
 
-	comp, err := diff.DiffSystems(oldSys, newSys)
+	comp, err := diff.DiffSystems(context.Background(), oldSys, newSys)
 	if err != nil {
 		return fmt.Errorf("system comparison failed: %w", err)
 	}

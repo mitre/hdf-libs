@@ -1,0 +1,150 @@
+{
+  "hdf_apply_amendment": {
+    "changedRequirementCount": 1,
+    "projectedCompliance": {
+      "after": 50,
+      "before": 0
+    },
+    "valid": true
+  },
+  "hdf_author": {
+    "docType": "system",
+    "itemCount": 1,
+    "name": "S",
+    "valid": true
+  },
+  "hdf_compliance": {
+    "agentOverrides": {
+      "complianceDelta": 25,
+      "count": 1
+    },
+    "compliance": 75,
+    "counts": {
+      "error": {
+        "total": 0
+      },
+      "failed": {
+        "medium": 1,
+        "total": 1
+      },
+      "no_impact": {
+        "none": 1,
+        "total": 1
+      },
+      "passed": {
+        "critical": 1,
+        "high": 1,
+        "medium": 1,
+        "total": 3
+      },
+      "skipped": {
+        "total": 0
+      }
+    },
+    "docType": "results",
+    "engineSchemaVersion": "3.5.0"
+  },
+  "hdf_convert": {
+    "baselineCount": 1,
+    "docType": "results",
+    "requirementCount": 3,
+    "valid": true
+  },
+  "hdf_diff": {
+    "changes": [
+      {
+        "changeReasons": [
+          "overrideAdded",
+          "dispositionChanged",
+          "effectiveImpactChanged"
+        ],
+        "id": "V-FIX-01",
+        "newStatus": "passed",
+        "oldStatus": "failed",
+        "state": "fixed"
+      },
+      {
+        "changeReasons": [
+          "resultChanged"
+        ],
+        "id": "V-REG-02",
+        "newStatus": "failed",
+        "oldStatus": "passed",
+        "state": "regressed"
+      }
+    ],
+    "fromHandle": "eyJwYXRoIjoiZnJvbS5qc29uIiwic2l6ZSI6ODE3LCJjb250ZW50U2hhMjU2IjoiOGEzYjJiNjNlZDE2Nzk0NmU1MzA1NzZlYTVmYzE2NTBiNGU4MWZlNDczZTg3YzFlMWIzYzk5OWQxZjFmMTJhNiIsImRvY1R5cGUiOiJyZXN1bHRzIiwiZW5naW5lU2NoZW1hVmVyc2lvbiI6IjMuNS4wIn0=",
+    "mode": "temporal",
+    "returned": 2,
+    "summary": {
+      "absent": 0,
+      "fixed": 1,
+      "matchedCount": 2,
+      "new": 0,
+      "regressed": 1,
+      "total": 2,
+      "unchanged": 0,
+      "unmatchedNewCount": 0,
+      "unmatchedOldCount": 0,
+      "updated": 0
+    },
+    "toHandle": "eyJwYXRoIjoidG8uanNvbiIsInNpemUiOjExMTAsImNvbnRlbnRTaGEyNTYiOiIyYjJlYjhjZDcxMmJmNmY0ZTFkZTAxMjQ1NzFiMzdiYThlMjYzM2ZmZTk5Yzg4YmZlZjQzZjU0MGUzZGRkMzY5IiwiZG9jVHlwZSI6InJlc3VsdHMiLCJlbmdpbmVTY2hlbWFWZXJzaW9uIjoiMy41LjAifQ==",
+    "total": 2
+  },
+  "hdf_inspect": {
+    "docType": "system",
+    "engineSchemaVersion": "3.5.0",
+    "structure": {
+      "components": {
+        "byType": {
+          "application": 2
+        },
+        "count": 2
+      },
+      "controls": {
+        "count": 0
+      },
+      "dataflows": {
+        "count": 0
+      },
+      "metadata": {
+        "authorizationStatus": "",
+        "name": "Portal Prod",
+        "systemID": "aaaaaaaa-1111-2222-3333-444444444444"
+      }
+    },
+    "valid": true
+  },
+  "hdf_open": {
+    "docType": "system",
+    "engineSchemaVersion": "3.5.0",
+    "summary": {
+      "componentByType": {
+        "application": 2
+      },
+      "componentCount": 2
+    },
+    "valid": true
+  },
+  "hdf_query": {
+    "docType": "results",
+    "engineSchemaVersion": "3.5.0",
+    "requirements": [
+      {
+        "id": "V-D-FAIL",
+        "impact": 0.4,
+        "severity": "medium",
+        "status": "failed",
+        "title": "Audit log directory permissions"
+      }
+    ],
+    "returned": 1,
+    "total": 1
+  },
+  "hdf_validate": {
+    "docType": "system",
+    "errors": [],
+    "mode": "schema",
+    "valid": true
+  }
+}

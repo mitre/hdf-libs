@@ -580,3 +580,20 @@ func ValidateXMLInput(input []byte, maxSize int) error {
 	}
 	return nil
 }
+
+// UnratedSeverityTag / UnratedSeverityValue are the shared marker converters
+// emit when a source severity is unrated (hdfutil.IsUnratedSeverity), so a
+// defaulted impact stays distinguishable from a genuine rated medium.
+const (
+	UnratedSeverityTag   = "severity_rating"
+	UnratedSeverityValue = "unrated"
+)
+
+// MarkUnratedSeverity sets the shared unrated-severity marker tag when the
+// source severity carries no rating. No-op for rated severities or a nil map.
+func MarkUnratedSeverity(tags map[string]interface{}, severity string) {
+	if tags == nil || !hdfutil.IsUnratedSeverity(severity) {
+		return
+	}
+	tags[UnratedSeverityTag] = UnratedSeverityValue
+}

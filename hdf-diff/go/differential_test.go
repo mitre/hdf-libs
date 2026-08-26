@@ -10,6 +10,7 @@ package diff
 // changeReasons, etc.).
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -101,7 +102,7 @@ func TestDifferential_V2_BeforeAfter(t *testing.T) {
 	oldDoc := loadV2Fixture(t, "scan-before.json")
 	newDoc := loadV2Fixture(t, "scan-after.json")
 
-	comp, err := DiffHdf(oldDoc, []hdf.HDFResults{newDoc}, Options{})
+	comp, err := DiffHdf(context.Background(), oldDoc, []hdf.HDFResults{newDoc}, Options{})
 	if err != nil {
 		t.Fatalf("DiffHdf returned error: %v", err)
 	}
@@ -318,7 +319,7 @@ func TestDifferential_V2_BeforeAfter(t *testing.T) {
 func TestDifferential_V2_Identical(t *testing.T) {
 	doc := loadV2Fixture(t, "scan-before.json")
 
-	comp, err := DiffHdf(doc, []hdf.HDFResults{doc}, Options{})
+	comp, err := DiffHdf(context.Background(), doc, []hdf.HDFResults{doc}, Options{})
 	if err != nil {
 		t.Fatalf("DiffHdf returned error: %v", err)
 	}
@@ -349,7 +350,7 @@ func TestDifferential_V2_WithOverride(t *testing.T) {
 	oldDoc := loadV2Fixture(t, "scan-before.json")
 	newDoc := loadV2Fixture(t, "scan-with-override.json")
 
-	comp, err := DiffHdf(oldDoc, []hdf.HDFResults{newDoc}, Options{})
+	comp, err := DiffHdf(context.Background(), oldDoc, []hdf.HDFResults{newDoc}, Options{})
 	if err != nil {
 		t.Fatalf("DiffHdf returned error: %v", err)
 	}
@@ -394,7 +395,7 @@ func TestDifferential_V1_Nginx(t *testing.T) {
 	nginxFailing := loadV1Fixture(t, "nginx-failing.json")
 	nginxClean := loadV1Fixture(t, "nginx-clean.json")
 
-	comp, err := DiffHdf(nginxFailing, []hdf.HDFResults{nginxClean}, Options{})
+	comp, err := DiffHdf(context.Background(), nginxFailing, []hdf.HDFResults{nginxClean}, Options{})
 	if err != nil {
 		t.Fatalf("DiffHdf returned error: %v", err)
 	}
@@ -486,7 +487,7 @@ func TestDifferential_V1_Ubuntu(t *testing.T) {
 	vanilla := loadV1Fixture(t, "ubuntu-22-vanilla.json")
 	hardened := loadV1Fixture(t, "ubuntu-22-hardened.json")
 
-	comp, err := DiffHdf(vanilla, []hdf.HDFResults{hardened}, Options{})
+	comp, err := DiffHdf(context.Background(), vanilla, []hdf.HDFResults{hardened}, Options{})
 	if err != nil {
 		t.Fatalf("DiffHdf returned error: %v", err)
 	}

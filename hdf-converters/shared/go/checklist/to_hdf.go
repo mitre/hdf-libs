@@ -91,11 +91,18 @@ func vulnToRequirement(v *Vuln, startTime time.Time) hdf.EvaluatedRequirement {
 		Results:      []hdf.RequirementResult{buildResult(v, startTime)},
 		ControlType:  shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
 	}
-	if severity != "" {
+	// Gate the typed field on the schema enum: an off-vocabulary CKL severity
+	// must not be cast raw (schema-invalid output); it stays discoverable via
+	// tags.severity. Same sanitization stance as the xccdf converter.
+	if validSeverities[severity] {
 		sv := hdf.Severity(severity)
 		req.Severity = &sv
 	}
 	return req
+}
+
+var validSeverities = map[string]bool{
+	"critical": true, "high": true, "medium": true, "low": true, "informational": true,
 }
 
 func buildTags(v *Vuln) map[string]interface{} {

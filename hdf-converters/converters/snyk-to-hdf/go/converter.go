@@ -256,6 +256,7 @@ func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageMan
 		extras["ghsaid"] = rep.Identifiers.GHSA
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
+	shared.MarkUnratedSeverity(tags, rep.Severity)
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: rep.Description},

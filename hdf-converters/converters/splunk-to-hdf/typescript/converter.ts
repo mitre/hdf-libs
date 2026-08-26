@@ -272,7 +272,9 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
             control.id,
             control.title,
             descriptions,
-            control.impact,
+            // Absent stored impact matches the Go zero value (0.0) rather than
+            // dropping the schema-required field.
+            control.impact ?? 0,
             results,
             options,
           ) as EvaluatedRequirement;

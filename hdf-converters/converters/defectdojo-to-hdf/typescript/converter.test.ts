@@ -169,6 +169,14 @@ describe('defectdojo-to-hdf converter', () => {
     }
   });
 
+  // Go parity: a finding with no severity field converts without throwing and
+  // takes the shared 0.5 default (Go: hdfutil.SeverityToImpact("", 0.5)).
+  it('defaults impact to 0.5 without throwing when severity is absent (Go parity)', async () => {
+    // severity: undefined is dropped by JSON.stringify, so the field is truly absent
+    const r = await convertOne({severity: undefined});
+    expect(r.impact).toBe(0.5);
+  });
+
   it('falls back to a valid startTime when the finding has no date', async () => {
     const r = await convertOne({date: undefined});
     expect(r.results[0].startTime).toBeTruthy();

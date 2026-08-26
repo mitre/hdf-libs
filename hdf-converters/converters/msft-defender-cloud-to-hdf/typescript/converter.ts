@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, severityToImpact } from '@mitre/hdf-utilities';
 import { inputChecksum, limitArray, validateInputSize, buildHdfResults, buildNoFindingsRequirement } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
@@ -57,22 +57,13 @@ interface Metadata {
   description: string;
   remediationDescription: string;
   categories: string[];
-  severity: string;
+  severity?: string;
   userImpact: string;
   implementationEffort: string;
   threats: string[];
   tactics: string[];
   techniques: string[];
 }
-
-/**
- * Severity to HDF impact mapping.
- */
-const IMPACT_MAPPING: Record<string, number> = {
-  high: 0.7,
-  medium: 0.5,
-  low: 0.3,
-};
 
 /**
  * Maps Azure status code to HDF ResultStatus.
@@ -114,7 +105,8 @@ function buildRequirement(assessmentID: string, assessments: Assessment[], scanT
   const rep = assessments[0]!;
   const meta = rep.properties.metadata;
 
-  const impact = IMPACT_MAPPING[meta.severity.toLowerCase()] ?? 0.5;
+  // Shared standard map, default 0.5 — mirrors the Go twin's SeverityToImpact.
+  const impact = severityToImpact(meta.severity);
 
   const tags: Record<string, unknown> = {};
 

@@ -78,8 +78,10 @@ interface ConveyorMilestone {
   service_completed?: string;
 }
 
+// score is optional so an absent field (no verdict) stays distinguishable
+// from a genuine 0 (service ran clean) — mirrors the Go model's *float64.
 interface ConveyorScore {
-  score: number;
+  score?: number;
   sections: ConveyorSection[];
 }
 
@@ -280,11 +282,17 @@ function buildRequirementFromResult(
   const startTimeStr = result.response.milestones?.service_started ?? '';
   const startTime = (startTimeStr ? parseTimestamp(startTimeStr) : null) ?? new Date('0001-01-01T00:00:00Z');
   const runTime = computeRunTime(result.response.milestones?.service_started, result.response.milestones?.service_completed);
+  // An absent score carries no verdict: the service entry exists but nothing
+  // was adjudicated — notReviewed with the reason in the message, never a
+  // silent pass (or the old failed@NaN). A genuine 0 stays a clean pass.
   const score = result.result.score;
-  const status = determineStatus(score);
+  const scoreless = score === undefined || score === null;
+  const status = scoreless ? ResultStatus.NotReviewed : determineStatus(score);
+  const message = scoreless ? 'Conveyor result carries no score; verdict not evaluated.' : undefined;
 
-  // Conveyor carries no per-section explanation, so results carry no message key.
-  const toResult = (codeDesc: string): RequirementResult => createResult(status, undefined, { codeDesc, startTime, runTime });
+  // Conveyor carries no per-section explanation, so results carry a message
+  // only for the scoreless case above.
+  const toResult = (codeDesc: string): RequirementResult => createResult(status, message, { codeDesc, startTime, runTime });
 
   const results = result.result.sections.length > 0
     ? result.result.sections.map(section => toResult(buildCodeDesc(section, scannerName)))
@@ -294,7 +302,7 @@ function buildRequirementFromResult(
     result.sha256,
     filename,
     descriptions,
-    scoreToImpact(score),
+    scoreless ? 0 : scoreToImpact(score),
     results,
     { tags },
   ) as EvaluatedRequirement;

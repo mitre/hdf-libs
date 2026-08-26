@@ -425,6 +425,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		} else {
 			tags = shared.BuildNISTCCITags(nistTags, cciTags)
 		}
+		shared.MarkUnratedSeverity(tags, vuln.Severity)
 
 		// Build descriptions
 		var descriptions []hdf.Description

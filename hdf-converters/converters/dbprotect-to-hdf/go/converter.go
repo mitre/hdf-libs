@@ -273,6 +273,7 @@ func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.Ev
 	if checkCategory := rep["Check Category"]; checkCategory != "" {
 		tags["check_category"] = checkCategory
 	}
+	shared.MarkUnratedSeverity(tags, rep["Risk DV"])
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: formatDesc(rep)},

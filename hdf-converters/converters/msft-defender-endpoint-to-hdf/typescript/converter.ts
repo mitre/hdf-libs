@@ -1,4 +1,4 @@
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp, severityToImpact } from '@mitre/hdf-utilities';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
@@ -36,7 +36,7 @@ interface MdeAlert {
   id: string;
   incidentId?: string;
   status: string;
-  severity: string;
+  severity?: string;
   classification?: string | null;
   determination?: string | null;
   serviceSource?: string;
@@ -88,23 +88,6 @@ interface MdeImageFile {
 interface MdeParentProcess {
   processId?: number;
   imageFile?: MdeImageFile;
-}
-
-/**
- * Severity to HDF impact mapping.
- */
-const IMPACT_MAPPING: Record<string, number> = {
-  high: 0.7,
-  medium: 0.5,
-  low: 0.3,
-  informational: 0.0,
-};
-
-/**
- * Maps MDE severity to HDF impact value.
- */
-function severityToImpact(severity: string): number {
-  return IMPACT_MAPPING[severity.toLowerCase()] ?? 0.5;
 }
 
 /**
@@ -234,7 +217,7 @@ function formatMessage(alert: MdeAlert): string {
   const parts: string[] = [];
   parts.push(`Alert: ${alert.title}`);
   parts.push(`Status: ${alert.status}`);
-  parts.push(`Severity: ${alert.severity}`);
+  parts.push(`Severity: ${alert.severity ?? ''}`);
   if (alert.threatDisplayName) {
     parts.push(`Threat: ${alert.threatDisplayName}`);
   }
@@ -390,6 +373,7 @@ function deriveScanTimestamp(alerts: MdeAlert[]): Date | null {
  * Converts a single MDE alert to an HDF EvaluatedRequirement.
  */
 function alertToRequirement(alert: MdeAlert, scanTime: Date): EvaluatedRequirement {
+  // Shared standard map, default 0.5 — mirrors the Go twin's SeverityToImpact.
   const impact = severityToImpact(alert.severity);
 
   const codeDesc = formatEvidence(alert.evidence ?? []);

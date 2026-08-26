@@ -16,7 +16,7 @@
           "results": [
             {
               "codeDesc": "Resource: aws_iam_policy.ebs_csi_policy\nFile: /main.tf (lines [100,102])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-16T05:17:20.504861Z",
               "status": "passed"
             }
           ],
@@ -34,7 +34,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "100 data \"aws_iam_policy\" \"ebs_csi_policy\" {\n101   arn = \"arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy\"\n102 }",
           "title": "Disallow policies from using the AWS AdministratorAccess policy",
@@ -54,7 +55,7 @@
           "results": [
             {
               "codeDesc": "Resource: aws.default\nFile: /main.tf (lines [4,6])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-16T05:17:20.504861Z",
               "status": "passed"
             }
           ],
@@ -72,7 +73,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "4 provider \"aws\" {\n5   region = var.region\n6 }",
           "title": "Ensure no hard coded AWS access key and secret key exists in provider",
@@ -92,12 +94,12 @@
           "results": [
             {
               "codeDesc": "Resource: vpc\nFile: /main.tf (lines [26,49])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-16T05:17:20.504861Z",
               "status": "failed"
             },
             {
               "codeDesc": "Resource: eks\nFile: /main.tf (lines [51,96])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-16T05:17:20.504861Z",
               "status": "failed"
             }
           ],
@@ -115,7 +117,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "26 module \"vpc\" {\n27   source  = \"terraform-aws-modules/vpc/aws\"\n28   version = \"5.8.1\"\n29 \n30   name = \"education-vpc\"",
           "title": "Ensure Terraform module sources use a commit hash",
@@ -136,7 +139,7 @@
             {
               "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115,119])",
               "message": "Skipping access logging for demo bucket",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-16T05:17:20.504861Z",
               "status": "notReviewed"
             }
           ],
@@ -154,7 +157,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
           "title": "Ensure the S3 bucket has access logging enabled",
@@ -175,7 +179,7 @@
             {
               "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115,119])",
               "message": "Skipping public access block for demo",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-16T05:17:20.504861Z",
               "status": "notReviewed"
             }
           ],
@@ -193,7 +197,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
           "title": "Ensure that S3 bucket has a Public Access block",
@@ -213,7 +218,7 @@
           "results": [
             {
               "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1,41])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-16T05:17:20.504861Z",
               "status": "passed"
             }
           ],
@@ -231,7 +236,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "1 FROM node:22 AS installer\n2 COPY . /juice-shop\n3 WORKDIR /juice-shop\n4 RUN npm i -g typescript ts-node\n5 RUN npm install --omit=dev --unsafe-perm",
           "title": "Ensure From Alias are unique for multistage builds.",
@@ -251,7 +257,7 @@
           "results": [
             {
               "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1,41])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-16T05:17:20.504861Z",
               "status": "passed"
             }
           ],
@@ -269,7 +275,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "1 FROM node:22 AS installer\n2 COPY . /juice-shop\n3 WORKDIR /juice-shop\n4 RUN npm i -g typescript ts-node\n5 RUN npm install --omit=dev --unsafe-perm",
           "title": "Ensure update instructions are not use alone in the Dockerfile",
@@ -289,7 +296,7 @@
           "results": [
             {
               "codeDesc": "Resource: /Dockerfile.FROM\nFile: /Dockerfile (lines [22,22])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-16T05:17:20.504861Z",
               "status": "failed"
             }
           ],
@@ -307,7 +314,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "22 FROM gcr.io/distroless/nodejs22-debian12",
           "title": "Ensure the base image uses a non latest version tag",
@@ -327,7 +335,7 @@
           "results": [
             {
               "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1,41])",
-              "startTime": "2026-07-12T23:25:21.464819Z",
+              "startTime": "2026-08-16T05:17:20.504861Z",
               "status": "failed"
             }
           ],
@@ -345,7 +353,8 @@
             "nist": [
               "SA-11",
               "RA-5"
-            ]
+            ],
+            "severity_rating": "unrated"
           },
           "code": "1 FROM node:22 AS installer\n2 COPY . /juice-shop\n3 WORKDIR /juice-shop\n4 RUN npm i -g typescript ts-node\n5 RUN npm install --omit=dev --unsafe-perm",
           "title": "Ensure that HEALTHCHECK instructions have been added to container images",
@@ -363,7 +372,7 @@
     "name": "checkov-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:25:21.464819Z",
+  "timestamp": "2026-08-16T05:17:20.504861Z",
   "tool": {
     "name": "Checkov",
     "version": "3.2.524"

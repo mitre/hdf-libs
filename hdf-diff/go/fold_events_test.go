@@ -1,6 +1,7 @@
 package diff
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -48,7 +49,7 @@ func feBatchDiffs(t *testing.T, seedBytes, nextBytes []byte) map[string]Requirem
 	require.NoError(t, json.Unmarshal(seedBytes, &seedDoc))
 	require.NoError(t, json.Unmarshal(nextBytes, &nextDoc))
 
-	batch, err := DiffHdf(seedDoc, []hdf.HDFResults{nextDoc}, Options{ComparisonMode: ModeSystemDrift})
+	batch, err := DiffHdf(context.Background(), seedDoc, []hdf.HDFResults{nextDoc}, Options{ComparisonMode: ModeSystemDrift})
 	require.NoError(t, err)
 
 	out := map[string]RequirementDiff{}

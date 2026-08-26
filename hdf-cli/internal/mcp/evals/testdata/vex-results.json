@@ -1,0 +1,26 @@
+{
+  "baselines": [
+    {
+      "name": "CVE-scan",
+      "requirements": [
+        {
+          "id": "CVE-2024-1000",
+          "impact": 0.7,
+          "title": "Dependency flagged for CVE-2024-1000",
+          "descriptions": [{"label": "default", "data": "Scanner reported this dependency as vulnerable."}],
+          "results": [{"status": "failed", "codeDesc": "vulnerable package present", "startTime": "2025-01-01T00:00:00Z"}],
+          "tags": {}
+        },
+        {
+          "id": "CVE-2024-2000",
+          "impact": 0.5,
+          "title": "Dependency flagged for CVE-2024-2000",
+          "descriptions": [{"label": "default", "data": "Scanner reported this dependency as vulnerable."}],
+          "results": [{"status": "failed", "codeDesc": "vulnerable package present", "startTime": "2025-01-01T00:00:00Z"}],
+          "tags": {}
+        }
+      ]
+    }
+  ],
+  "statistics": {"duration": 1.0}
+}

@@ -290,6 +290,30 @@ describe('Veracode to HDF converter', () => {
     const sev0 = baseline.requirements.find(r => r.id === '17');
     expect(sev0!.impact).toBe(0.0);
   });
+
+  it('maps a word severity through the shared standard map after the numeric aliases (Go parity)', async () => {
+    const xml = `<?xml version="1.0"?>
+<detailedreport app_name="t" first_build_submitted_date="2021-12-29 22:16:36 UTC">
+  <severity level="low">
+    <category categoryid="42" categoryname="Word Severity Category">
+      <desc><para text="d"/></desc>
+      <recommendations><para text="r"/></recommendations>
+    </category>
+  </severity>
+  <severity level="0">
+    <category categoryid="43" categoryname="Zero Severity Category">
+      <desc><para text="d"/></desc>
+      <recommendations><para text="r"/></recommendations>
+    </category>
+  </severity>
+</detailedreport>`;
+    const output: HDFResults = JSON.parse(await convert(xml));
+    const reqs = output.baselines[0]!.requirements;
+    // "low" misses the numeric 0-5 aliases and falls through to the shared
+    // standard map (0.3), matching Go's SeverityToImpactWithAliases.
+    expect(reqs.find(r => r.id === '42')!.impact).toBe(0.3);
+    expect(reqs.find(r => r.id === '43')!.impact).toBe(0.0);
+  });
 });
 
 describe('veracode structured scoring (CVSS / CWE)', () => {
@@ -492,5 +516,52 @@ describe('veracode result.message (exploitability note)', () => {
       .flatMap(r => r.results)
       .some(res => res.message === undefined);
     expect(withoutMessage).toBe(true);
+  });
+});
+
+describe('veracode unrated severity marker (CWE path)', () => {
+  it('tags severity_rating unrated for an absent severity level and omits it for rated levels', async () => {
+    const xml = `<?xml version="1.0" encoding="ISO-8859-1"?>
+<detailedreport xmlns="https://www.veracode.com/schema/reports/export/1.0" app_name="Unrated" first_build_submitted_date="2021-12-29 22:16:36 UTC">
+  <severity>
+    <category categoryid="90" categoryname="No Level" pcirelated="false">
+      <cwe cweid="78" cwename="OS Command Injection" pcirelated="false">
+        <staticflaws>
+          <flaw severity="" categoryname="No Level" count="1" issueid="1" module="app.war" type="exec" description="d" cweid="78" sourcefile="A.java" line="1" sourcefilepath="com/x/"/>
+        </staticflaws>
+      </cwe>
+    </category>
+  </severity>
+  <severity level="3">
+    <category categoryid="91" categoryname="Rated" pcirelated="false">
+      <cwe cweid="89" cwename="SQL Injection" pcirelated="false">
+        <staticflaws>
+          <flaw severity="3" categoryname="Rated" count="1" issueid="2" module="app.war" type="sql" description="d" cweid="89" sourcefile="B.java" line="2" sourcefilepath="com/x/"/>
+        </staticflaws>
+      </cwe>
+    </category>
+  </severity>
+  <severity level="0">
+    <category categoryid="92" categoryname="Informational" pcirelated="false">
+      <cwe cweid="94" cwename="Code Injection" pcirelated="false">
+        <staticflaws>
+          <flaw severity="0" categoryname="Informational" count="1" issueid="3" module="app.war" type="info" description="d" cweid="94" sourcefile="C.java" line="3" sourcefilepath="com/x/"/>
+        </staticflaws>
+      </cwe>
+    </category>
+  </severity>
+</detailedreport>`;
+    const output: HDFResults = JSON.parse(await convert(xml));
+    const reqs = output.baselines[0]!.requirements;
+
+    const unrated = reqs.find(r => r.id === '90')!;
+    expect(unrated.tags!['severity_rating']).toBe('unrated');
+
+    const rated = reqs.find(r => r.id === '91')!;
+    expect(rated.tags!['severity_rating']).toBeUndefined();
+
+    // Level 0 is the rated informational tier, not unrated.
+    const info = reqs.find(r => r.id === '92')!;
+    expect(info.tags!['severity_rating']).toBeUndefined();
   });
 });

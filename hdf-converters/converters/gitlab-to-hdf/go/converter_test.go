@@ -575,3 +575,37 @@ func TestConvertGitlabToHDF_RemediationDescription(t *testing.T) {
 		assert.NotEqual(t, "remediation", d.Label, "unmatched vuln must carry no remediation description")
 	}
 }
+
+func TestConvertGitlabToHDF_UnratedSeverityMarker(t *testing.T) {
+	// "Unknown" and absent severities are unrated → severity_rating: unrated;
+	// rated tiers (High, Info) must not carry the marker.
+	input := []byte(`{
+		"version": "15.1.0",
+		"scan": {
+			"scanner": {"id": "semgrep", "name": "Semgrep", "version": "1.34.0"},
+			"start_time": "2024-01-15T10:00:00",
+			"end_time": "2024-01-15T10:01:30",
+			"status": "success",
+			"type": "sast"
+		},
+		"vulnerabilities": [
+			{"id": "vuln-unknown", "name": "Unknown severity", "severity": "Unknown"},
+			{"id": "vuln-absent", "name": "Absent severity"},
+			{"id": "vuln-high", "name": "High severity", "severity": "High"},
+			{"id": "vuln-info", "name": "Info severity", "severity": "Info"}
+		]
+	}`)
+	result, err := ConvertGitlabToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, id := range []string{"vuln-unknown", "vuln-absent"} {
+		req := reqByID(t, result, id)
+		assert.Equal(t, shared.UnratedSeverityValue, req.Tags[shared.UnratedSeverityTag],
+			"%s: unrated severity must carry severity_rating: unrated", id)
+	}
+	for _, id := range []string{"vuln-high", "vuln-info"} {
+		req := reqByID(t, result, id)
+		_, has := req.Tags[shared.UnratedSeverityTag]
+		assert.False(t, has, "%s: rated severity must not carry the severity_rating tag", id)
+	}
+}

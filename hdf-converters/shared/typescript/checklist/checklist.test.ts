@@ -566,3 +566,26 @@ describe('checklist shared model', () => {
     expect(noTags.stigs[0].vulns[0].ccis).toEqual([]);
   });
 });
+
+describe('severity enum sanitization', () => {
+  it('keeps off-vocabulary severities out of the enum field but in tags', () => {
+    // Schema-invalid raw casts break consumers; the raw value stays
+    // discoverable via tags.severity. In-vocabulary values keep the field.
+    const cl: Checklist = {
+      format: 'ckl',
+      asset: {},
+      stigs: [{
+        stigID: 'S',
+        vulns: [
+          { vulnNum: 'V-1', ruleTitle: 't', severity: 'wibble', status: CheckStatus.Open, ccis: [] },
+          { vulnNum: 'V-2', ruleTitle: 't', severity: 'high', status: CheckStatus.Open, ccis: [] },
+        ],
+      }],
+    };
+    const hdf = checklistToHdf(cl, CHECKSUM, 'test-converter');
+    const [off, ok] = hdf.baselines[0].requirements;
+    expect(off.severity).toBeUndefined();
+    expect(off.tags?.['severity']).toBe('wibble');
+    expect(ok.severity).toBe('high');
+  });
+});

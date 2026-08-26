@@ -775,6 +775,28 @@ describe('selectSeverity', () => {
     expect(got.source).toBe(wantSource);
     expect(got.impact).toBe(wantImpact);
   });
+
+  // Go lowercases before lookup on both axes (Go parity: case-insensitive).
+  it('maps lowercase legacy blocker to 1.0', () => {
+    const got = selectSeverity(
+      { severity: 'blocker', impacts: [] },
+    );
+    expect(got.source).toBe('legacy');
+    expect(got.impact).toBe(1.0);
+  });
+
+  it('ranks and maps lowercase MQR severities', () => {
+    const got = selectSeverity({
+      severity: 'MINOR',
+      impacts: [
+        { softwareQuality: 'MAINTAINABILITY', severity: 'low' },
+        { softwareQuality: 'SECURITY', severity: 'blocker' },
+      ],
+    });
+    expect(got.severity).toBe('blocker');
+    expect(got.source).toBe('mqr');
+    expect(got.impact).toBe(1.0);
+  });
 });
 
 // Mirrors the Go TestConvertSonarqubeToHDF_OwaspNistFold value-pins. Modern

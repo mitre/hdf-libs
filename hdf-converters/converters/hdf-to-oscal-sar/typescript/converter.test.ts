@@ -3,6 +3,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import { results } from '@mitre/hdf-fixtures';
+import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { convertHdfToOscalSar, aggregateStatus } from './converter.js';
 import { nistTagToControlId as nistTagToControlID, impactToSeverity } from '../../oscal-to-hdf/typescript/shared.js';
 import { maskVolatileJson } from '../../../shared/typescript/golden-mask.js';
@@ -21,30 +22,20 @@ const SAR_VOLATILE_KEYS = ['last-modified'];
  * one requirement, and one result.
  */
 function minimalHDFResults(status: string): string {
-  return JSON.stringify({
-    baselines: [
-      {
-        name: 'test-baseline',
-        requirements: [
-          {
-            id: 'AC-1',
-            impact: 0.5,
-            tags: { nist: ['AC-1'] },
-            descriptions: [
-              { label: 'default', data: 'Test requirement description' },
-            ],
-            results: [
-              {
-                status,
-                codeDesc: 'Test code description',
-                startTime: '2026-01-01T00:00:00Z',
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  });
+  return JSON.stringify(
+    testhdf.doc(
+      testhdf.baseline(
+        'test-baseline',
+        testhdf.req('AC-1', {
+          impact: 0.5,
+          tags: { nist: ['AC-1'] },
+          desc: 'Test requirement description',
+          status,
+          codeDesc: 'Test code description',
+        }),
+      ),
+    ),
+  );
 }
 
 describe('convertHdfToOscalSar', () => {
@@ -328,24 +319,14 @@ describe('convertHdfToOscalSar', () => {
   });
 
   it('should handle enhanced control IDs', async () => {
-    const input = JSON.stringify({
-      baselines: [
-        {
-          name: 'test',
-          requirements: [
-            {
-              id: 'AC-2 (3)',
-              impact: 0.7,
-              tags: { nist: ['AC-2 (3)'] },
-              descriptions: [{ label: 'default', data: 'Enhanced control' }],
-              results: [
-                { status: 'passed', codeDesc: 'test', startTime: '2026-01-01T00:00:00Z' },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+    const input = JSON.stringify(testhdf.doc(testhdf.baseline('test',
+      testhdf.req('AC-2 (3)', {
+        impact: 0.7,
+        tags: { nist: ['AC-2 (3)'] },
+        desc: 'Enhanced control',
+        status: 'passed',
+        codeDesc: 'test',
+      }))));
 
     const output = await convertHdfToOscalSar(input);
     const doc = JSON.parse(output);
@@ -384,22 +365,14 @@ describe('convertHdfToOscalSar', () => {
   it('should use planRef when provided', async () => {
     const planRef = 'https://example.com/assessment-plan';
     const input = JSON.stringify({
-      baselines: [
-        {
-          name: 'test',
-          requirements: [
-            {
-              id: 'AC-1',
-              impact: 0.5,
-              tags: { nist: ['AC-1'] },
-              descriptions: [{ label: 'default', data: 'desc' }],
-              results: [
-                { status: 'passed', codeDesc: 'test', startTime: '2026-01-01T00:00:00Z' },
-              ],
-            },
-          ],
-        },
-      ],
+      ...testhdf.doc(testhdf.baseline('test',
+        testhdf.req('AC-1', {
+          impact: 0.5,
+          tags: { nist: ['AC-1'] },
+          desc: 'desc',
+          status: 'passed',
+          codeDesc: 'test',
+        }))),
       planRef,
     });
 
@@ -425,33 +398,21 @@ describe('convertHdfToOscalSar', () => {
   });
 
   it('should handle multiple requirements', async () => {
-    const input = JSON.stringify({
-      baselines: [
-        {
-          name: 'multi-test',
-          requirements: [
-            {
-              id: 'AC-1',
-              impact: 0.5,
-              tags: { nist: ['AC-1'] },
-              descriptions: [{ label: 'default', data: 'first' }],
-              results: [
-                { status: 'passed', codeDesc: 'test1', startTime: '2026-01-01T00:00:00Z' },
-              ],
-            },
-            {
-              id: 'AC-2',
-              impact: 0.7,
-              tags: { nist: ['AC-2'] },
-              descriptions: [{ label: 'default', data: 'second' }],
-              results: [
-                { status: 'failed', codeDesc: 'test2', startTime: '2026-01-01T00:00:00Z' },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+    const input = JSON.stringify(testhdf.doc(testhdf.baseline('multi-test',
+      testhdf.req('AC-1', {
+        impact: 0.5,
+        tags: { nist: ['AC-1'] },
+        desc: 'first',
+        status: 'passed',
+        codeDesc: 'test1',
+      }),
+      testhdf.req('AC-2', {
+        impact: 0.7,
+        tags: { nist: ['AC-2'] },
+        desc: 'second',
+        status: 'failed',
+        codeDesc: 'test2',
+      }))));
 
     const output = await convertHdfToOscalSar(input);
     const doc = JSON.parse(output);
@@ -463,25 +424,18 @@ describe('convertHdfToOscalSar', () => {
   });
 
   it('should use baseline title when provided', async () => {
-    const input = JSON.stringify({
-      baselines: [
-        {
-          name: 'test',
-          title: 'My Custom Baseline Title',
-          requirements: [
-            {
-              id: 'AC-1',
-              impact: 0.5,
-              tags: { nist: ['AC-1'] },
-              descriptions: [{ label: 'default', data: 'desc' }],
-              results: [
-                { status: 'passed', codeDesc: 'test', startTime: '2026-01-01T00:00:00Z' },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+    const base = {
+      ...testhdf.baseline('test',
+        testhdf.req('AC-1', {
+          impact: 0.5,
+          tags: { nist: ['AC-1'] },
+          desc: 'desc',
+          status: 'passed',
+          codeDesc: 'test',
+        })),
+      title: 'My Custom Baseline Title',
+    };
+    const input = JSON.stringify(testhdf.doc(base));
 
     const output = await convertHdfToOscalSar(input);
     const doc = JSON.parse(output);
@@ -490,24 +444,14 @@ describe('convertHdfToOscalSar', () => {
   });
 
   it('should not produce a risk for zero impact', async () => {
-    const input = JSON.stringify({
-      baselines: [
-        {
-          name: 'test',
-          requirements: [
-            {
-              id: 'AC-1',
-              impact: 0.0,
-              tags: { nist: ['AC-1'] },
-              descriptions: [{ label: 'default', data: 'desc' }],
-              results: [
-                { status: 'passed', codeDesc: 'test', startTime: '2026-01-01T00:00:00Z' },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+    const input = JSON.stringify(testhdf.doc(testhdf.baseline('test',
+      testhdf.req('AC-1', {
+        impact: 0.0,
+        tags: { nist: ['AC-1'] },
+        desc: 'desc',
+        status: 'passed',
+        codeDesc: 'test',
+      }))));
 
     const output = await convertHdfToOscalSar(input);
     const doc = JSON.parse(output);

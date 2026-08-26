@@ -7,10 +7,13 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
+
 	hdfpassthrough "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-passthrough/go"
 	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/registry/all" // register all fingerprints via init()
+	convreg "github.com/mitre/hdf-libs/hdf-converters/v3/registry/convert"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/hdfversion"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 	"github.com/spf13/cobra"
@@ -207,6 +210,10 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		return err
 	}
 
+	// Sync the CLI --catalog flag into the lifted registry so the oscal-profile
+	// converter can read it (the registry owns the catalog path now, not cmd).
+	convreg.SetOSCALCatalogPath(oscalCatalogFlag)
+
 	// Get converter
 	converter, err := GetConverter(fromFormat, toFormat)
 	if err != nil {
@@ -238,7 +245,7 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		if err != nil {
 			return fmt.Errorf("invalid --labels flag: %w", err)
 		}
-		output, err = applyLabels(output, labels)
+		output, err = hdfdoc.ApplyLabels(output, labels)
 		if err != nil {
 			return fmt.Errorf("failed to apply labels: %w", err)
 		}
@@ -248,7 +255,7 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	// Apply --component-id if provided
 	componentID, _ := cmd.Flags().GetString("component-id")
 	if componentID != "" {
-		output, err = applyComponentIDs(output, componentID, false)
+		output, err = hdfdoc.ApplyComponentID(output, componentID, false)
 		if err != nil {
 			return fmt.Errorf("failed to apply component-id: %w", err)
 		}
@@ -315,7 +322,7 @@ func normalizeLegacyHDFInput(data []byte, fromFormat, fromVersion, toFormat stri
 	}
 	// Detect the legacy shape by content so `--from hdf`, `--from hdf@2`, and
 	// auto-detected legacyhdf input are all handled; modern HDF is left untouched.
-	if !legacyhdf.IsHDFV1(data) {
+	if !legacyhdf.IsLegacyHDF(data) {
 		return data, fromFormat, fromVersion, nil
 	}
 	upgraded, _, err := hdfversion.TransformHDF(data, hdfversion.LegacyVersion, hdfversion.ModernVersion)
@@ -353,9 +360,9 @@ func runVersionedConvert(converter Converter, data []byte, fromVersion, toVersio
 	// Post-process: downgrade HDF version if --to hdf@N was specified
 	// (only for non-HDF→HDF converters; the hdf→hdf converter handles it internally)
 	if toVersion != "" && toVersion != hdfversion.ModernVersion {
-		if _, isHDFVer := converter.(*hdfVersionConverter); !isHDFVer {
+		if !convreg.HandlesOutputVersionInternally(converter) {
 			printDebug("Post-processing output to HDF version %s", toVersion)
-			output, err = PostProcessToVersion(output, toVersion)
+			output, err = convreg.PostProcessToVersion(output, toVersion)
 			if err != nil {
 				return nil, err
 			}

@@ -6,7 +6,7 @@ import {
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, inputChecksum, limitArray, mapCWEToNIST, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { buildCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import type {
   Cvss,
@@ -46,7 +46,7 @@ interface SnykVuln {
   id: string;
   title: string;
   description: string;
-  severity: string;
+  severity?: string;
   severityWithCritical?: string;
   cvssScore?: number;
   CVSSv3?: string;
@@ -303,6 +303,7 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, pac
   if (rep.identifiers.GHSA && rep.identifiers.GHSA.length > 0) {
     tags['ghsaid'] = rep.identifiers.GHSA;
   }
+  markUnratedSeverity(tags, rep.severity);
 
   const descriptions: Description[] = [
     { label: 'default', data: rep.description },
@@ -325,7 +326,7 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[], scanTime: Date, pac
     vulnID,
     rep.title,
     descriptions,
-    severityToImpact(rep.severity),
+    severityToImpact(rep.severity ?? ''),
     results,
     { tags }
   ) as EvaluatedRequirement;

@@ -1,0 +1,62 @@
+{
+  "baselines": [
+    {
+      "name": "RHEL9-STIG",
+      "version": "1.0.0",
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "00000000000000000000000000000000000000000000000000000000000000c1"
+      },
+      "requirements": [
+        {
+          "id": "V-A-AGENT",
+          "title": "Root SSH login disabled",
+          "descriptions": [{"label": "default", "data": "Raw failed; an agent waived it."}],
+          "impact": 0.95,
+          "tags": {"nist": ["AC-6"], "cci": ["CCI-000366"]},
+          "results": [{"status": "failed", "codeDesc": "PermitRootLogin yes", "startTime": "2025-01-15T10:00:00Z"}],
+          "statusOverrides": [
+            {
+              "type": "waiver",
+              "reason": "Compensating control accepted by the autonomous agent.",
+              "status": "passed",
+              "appliedBy": {"type": "agent", "identifier": "hdf-mcp-agent"},
+              "appliedAt": "2025-02-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-B-SYSTEM",
+          "title": "Audit records configured",
+          "descriptions": [{"label": "default", "data": "Raw failed; a deterministic system override moved it."}],
+          "impact": 0.5,
+          "tags": {"nist": ["CM-6"], "cci": ["CCI-000172"]},
+          "results": [{"status": "failed", "codeDesc": "auditd misconfigured", "startTime": "2025-01-15T10:00:00Z"}],
+          "statusOverrides": [
+            {
+              "type": "falsePositive",
+              "reason": "VEX not_affected mapped deterministically; no agent judgment.",
+              "status": "passed",
+              "appliedBy": {"type": "system", "identifier": "hdf-amend-from-vex"},
+              "appliedAt": "2025-02-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-C-PASS",
+          "title": "Password complexity enforced",
+          "descriptions": [{"label": "default", "data": "Passed on its own merits."}],
+          "impact": 0.7,
+          "tags": {"nist": ["IA-5"], "cci": ["CCI-000192"]},
+          "results": [{"status": "passed", "codeDesc": "complexity enforced", "startTime": "2025-01-15T10:00:00Z"}]
+        }
+      ]
+    }
+  ],
+  "components": [
+    {"name": "rhel9-host-01", "type": "host"}
+  ],
+  "statistics": {"duration": 10.0}
+}

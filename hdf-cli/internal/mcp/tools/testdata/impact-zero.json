@@ -1,0 +1,21 @@
+{
+  "baselines": [{
+    "name": "debian-stig",
+    "version": "1.0.0",
+    "integrity": {"algorithm": "sha256", "checksum": "00000000000000000000000000000000000000000000000000000000000000e0"},
+    "requirements": [
+      {"id": "V-NA-1", "title": "N/A control 1", "descriptions": [{"label":"default","data":"impact 0, skipped by InSpec"}], "impact": 0.0, "severity": "medium", "tags": {"nist":["AC-2"]},
+       "results": [{"status":"notReviewed","codeDesc":"Skipped control due to only_if condition","startTime":"2025-01-15T10:00:00Z"}]},
+      {"id": "V-NA-2", "title": "N/A control 2", "descriptions": [{"label":"default","data":"impact 0, skipped by InSpec"}], "impact": 0.0, "severity": "medium", "tags": {"nist":["AC-3"]},
+       "results": [{"status":"notReviewed","codeDesc":"Skipped control due to only_if condition","startTime":"2025-01-15T10:00:00Z"}]},
+      {"id": "V-NA-3", "title": "N/A control 3", "descriptions": [{"label":"default","data":"impact 0, skipped by InSpec"}], "impact": 0.0, "severity": "medium", "tags": {"nist":["AC-4"]},
+       "results": [{"status":"notReviewed","codeDesc":"Skipped control due to only_if condition","startTime":"2025-01-15T10:00:00Z"}]},
+      {"id": "V-SKIP", "title": "Genuinely not reviewed", "descriptions": [{"label":"default","data":"impact 0.5, actually skipped"}], "impact": 0.5, "tags": {"nist":["CM-6"]},
+       "results": [{"status":"notReviewed","codeDesc":"Profile error prevented evaluation","startTime":"2025-01-15T10:00:00Z"}]},
+      {"id": "V-PASS", "title": "Passing control", "descriptions": [{"label":"default","data":"impact 0.7, passed"}], "impact": 0.7, "tags": {"nist":["IA-5"]},
+       "results": [{"status":"passed","codeDesc":"compliant","startTime":"2025-01-15T10:00:00Z"}]}
+    ]
+  }],
+  "components": [{"name":"debian-host","type":"host"}],
+  "statistics": {"duration": 3.0}
+}

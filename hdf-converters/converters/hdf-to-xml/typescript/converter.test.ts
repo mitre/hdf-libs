@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { results } from '@mitre/hdf-fixtures';
+import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { convertHdfToXml } from './converter.js';
 import { normalizeXmlForGolden } from '../../../shared/typescript/xml-golden.js';
 
@@ -166,23 +167,12 @@ describe('hdf-to-xml Converter', () => {
   describe('Complex structures', () => {
     it('should handle multiple baselines and targets', () => {
       const input = JSON.stringify({
-        baselines: [
-          {
-            name: 'Baseline 1',
-            version: '1.0.0',
-            integrity: { algorithm: 'sha256', checksum: 'abc' },
-            requirements: [{
-              id: 'REQ-001',
-              title: 'Test Requirement',
-              descriptions: [{ label: 'default', data: 'Test description' }],
-              impact: 0.5,
-              tags: {},
-              results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
-            }]
-          }
-        ],
+        ...testhdf.doc(testhdf.baseline('Baseline 1',
+          testhdf.req('REQ-001', {
+            title: 'Test Requirement', desc: 'Test description', impact: 0.5, status: 'passed',
+          }))),
         components: [{ name: 'Target 1', type: 'host' }],
-        statistics: { duration: 10.5 }
+        statistics: { duration: 10.5 },
       });
 
       const result = convertHdfToXml(input);
@@ -213,21 +203,10 @@ describe('hdf-to-xml Converter', () => {
     });
 
     it('should preserve special characters in XML', () => {
-      const input = JSON.stringify({
-        baselines: [{
-          name: 'Test & < > " \'',
-          integrity: { algorithm: 'sha256', checksum: 'abc' },
-          requirements: [{
-            id: 'REQ-001',
-            title: 'Description with <tags> & special chars',
-            descriptions: [{ label: 'default', data: 'Data' }],
-            impact: 0.5,
-            tags: {},
-            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
-          }]
-        }],
-        statistics: {}
-      });
+      const input = JSON.stringify(testhdf.doc(testhdf.baseline('Test & < > " \'',
+        testhdf.req('REQ-001', {
+          title: 'Description with <tags> & special chars', desc: 'Data', impact: 0.5, status: 'passed',
+        }))));
 
       const result = convertHdfToXml(input);
 
@@ -285,19 +264,10 @@ describe('hdf-to-xml Converter', () => {
     });
 
     it('should handle baselines with no integrity', () => {
-      const input = JSON.stringify({
-        baselines: [{
-          name: 'NoIntegrity',
-          requirements: [{
-            id: 'REQ-001',
-            title: 'Test',
-            descriptions: [{ label: 'default', data: 'desc' }],
-            impact: 0.5,
-            tags: { custom: 'value' },
-            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
-          }]
-        }],
-      });
+      const input = JSON.stringify(testhdf.doc(testhdf.baseline('NoIntegrity',
+        testhdf.req('REQ-001', {
+          title: 'Test', desc: 'desc', impact: 0.5, tags: { custom: 'value' }, status: 'passed',
+        }))));
       const result = convertHdfToXml(input);
       expect(result).toContain('NoIntegrity');
       expect(result).not.toContain('integrity');

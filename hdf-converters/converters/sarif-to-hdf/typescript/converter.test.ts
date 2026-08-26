@@ -180,6 +180,24 @@ describe('SARIF Converter', async () => {
       expect(result.baselines[0].requirements[0].impact).toBe(0.3);
     });
 
+    // Go parity: getImpact lowercases the level, checks the SARIF aliases,
+    // falls through to the shared standard severity map, then floors a 0.0
+    // impact to 0.1.
+    it('should map an off-spec "critical" level through the shared standard map (Go parity)', async () => {
+      const result = await convertWithLevel('critical');
+      expect(result.baselines[0].requirements[0].impact).toBe(0.9);
+    });
+
+    it('should lowercase the level before mapping (Go parity)', async () => {
+      const result = await convertWithLevel('Error');
+      expect(result.baselines[0].requirements[0].impact).toBe(0.7);
+    });
+
+    it('should floor a zero-impact "info" level to 0.1 (Go parity)', async () => {
+      const result = await convertWithLevel('info');
+      expect(result.baselines[0].requirements[0].impact).toBe(0.1);
+    });
+
     it('should default to warning (0.5) for missing level', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
