@@ -81,7 +81,7 @@ func TestConvertHDFToCSV_Minimal(t *testing.T) {
 	assert.Contains(t, row1[16], "IA-5 (1)")                                                  // NIST Controls
 	assert.Contains(t, row1[17], "CCI-000192")                                                // CCI Controls
 	assert.Equal(t, "passed", row1[22])                                                       // Effective Status (fallback)
-	assert.Equal(t, "0.7", row1[23])                                                          // Effective Impact (fallback)
+	assert.Equal(t, "0.70", row1[23])                                                         // Effective Impact (fallback, canonical 2dp)
 	assert.Equal(t, "", row1[24])                                                             // Disposition
 	assert.Equal(t, "test-server-01.example.com", row1[32])                                   // Target FQDN
 	assert.Equal(t, "10.1.2.3", row1[33])                                                     // Target IP
@@ -94,7 +94,7 @@ func TestConvertHDFToCSV_Minimal(t *testing.T) {
 	assert.Equal(t, "failed", row2[15])                                                                           // Status (raw)
 	assert.Equal(t, "Audit logging is not configured", row2[21])                                                  // Result Message
 	assert.Equal(t, "passed", row2[22])                                                                           // Effective Status (override)
-	assert.Equal(t, "0.0", row2[23])                                                                              // Effective Impact (override)
+	assert.Equal(t, "0.00", row2[23])                                                                             // Effective Impact (override, canonical 2dp)
 	assert.Equal(t, "falsePositive", row2[24])                                                                    // Disposition
 	assert.Equal(t, "Authentication logging is handled by an external SIEM the scanner cannot observe", row2[25]) // Override Reason
 	assert.Equal(t, "jdoe", row2[26])                                                                             // Applied By
@@ -123,6 +123,11 @@ func TestConvertHDFToCSV_EmptyBaselines(t *testing.T) {
 	assert.Empty(t, result, "Result should be empty for no data")
 }
 
+// A baseline with an empty requirements array is malformed, not empty:
+// requirements carries minItems 1. It was previously converted to an empty
+// report, which is indistinguishable from a valid assessment that evaluated
+// nothing — and top-level baselines, which genuinely has no minItems, is the
+// shape that legitimately produces that.
 func TestConvertHDFToCSV_NoRequirements(t *testing.T) {
 	input := `{
 		"baselines": [{
@@ -140,9 +145,9 @@ func TestConvertHDFToCSV_NoRequirements(t *testing.T) {
 		"statistics": { "duration": 0 }
 	}`
 
-	result, err := ConvertHDFToCSV([]byte(input))
-	require.NoError(t, err, "Conversion should succeed")
-	assert.Empty(t, result, "Result should be empty for no requirements")
+	_, err := ConvertHDFToCSV([]byte(input))
+	require.Error(t, err, "an empty requirements array is malformed, not an empty assessment")
+	assert.EqualError(t, err, `hdf-to-csv: baseline "Empty Baseline" has no requirements`)
 }
 
 func TestConvertHDFToCSV_MultipleBaselines(t *testing.T) {
@@ -464,4 +469,140 @@ func TestConvertHDFToCSV_MalformedResultsShapes(t *testing.T) {
 			})
 		})
 	}
+}
+
+// Impact's canonical precision is 2 decimal places — it is defined on 0.0-1.0
+// with a natural 0.01 grid, which is why hdf-utilities' RoundImpact rounds to
+// that grid wherever impact is computed. Rendering it at one decimal discarded
+// the second digit of every value that used it (0.45 became "0.5"), silently, in
+// a compliance artifact.
+//
+// Precision alone does not settle the digits: fmt rounds halves to even and
+// JavaScript's toFixed rounds them away from zero, so raising the precision only
+// moved the tie from 0.25 to 0.125. Both languages agree because every numeric
+// cell goes through hdfutil.FormatFixed, whose rule matches toFixed; the tie
+// values themselves are pinned by the parity fixtures.
+//
+// CVSS scores keep one decimal: that is the precision the CVSS spec defines and
+// the source format carries, so a second digit there would be invented.
+func TestConvertHDFToCSV_NumericPrecision(t *testing.T) {
+	const (
+		impactCol    = 14
+		effImpactCol = 23
+		cvssCol      = 28
+	)
+
+	for _, tc := range []struct {
+		name                        string
+		impact, effImpact, cvss     string
+		wantImpact, wantEff, wantCV string
+	}{
+		{"two-decimal impact is preserved", "0.45", "0.45", "7.5", "0.45", "0.45", "7.5"},
+		{"the tie value both languages once disagreed on", "0.25", "0.25", "2.5", "0.25", "0.25", "2.5"},
+		{"one-decimal impact is padded to canonical precision", "0.5", "0.5", "9.8", "0.50", "0.50", "9.8"},
+		{"a whole impact keeps the grid", "1", "1", "10", "1.00", "1.00", "10.0"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"V-1",` +
+				`"impact":` + tc.impact + `,"effectiveImpact":` + tc.effImpact + `,"tags":{},` +
+				`"cvss":[{"baseScore":` + tc.cvss + `}],` +
+				`"descriptions":[{"label":"default","data":"d"}],` +
+				`"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}]}]}`)
+
+			out, err := ConvertHDFToCSV(input)
+			require.NoError(t, err)
+
+			rows, err := csv.NewReader(bytes.NewReader(out)).ReadAll()
+			require.NoError(t, err)
+			require.Len(t, rows, 2, "header plus one data row")
+
+			assert.Equal(t, tc.wantImpact, rows[1][impactCol], "Impact")
+			assert.Equal(t, tc.wantEff, rows[1][effImpactCol], "Effective Impact")
+			assert.Equal(t, tc.wantCV, rows[1][cvssCol], "CVSS keeps the source precision")
+		})
+	}
+}
+
+// parityShapes are awkward-but-plausible HDF documents that once made the two
+// languages disagree on cell VALUES rather than on whether to convert at all —
+// splits the shared corpus cannot see, because it is about converter contracts.
+// Go owns the expected output; TypeScript verifies against it.
+func parityShapes(t *testing.T) map[string]json.RawMessage {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "fixtures", "input", "parity-shapes.json"))
+	require.NoError(t, err)
+
+	var file struct {
+		Shapes map[string]json.RawMessage `json:"shapes"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &file))
+	require.NotEmpty(t, file.Shapes, "an empty shape set would pass vacuously")
+	return file.Shapes
+}
+
+func TestConvertHDFToCSV_ParityShapesGolden(t *testing.T) {
+	shapes := parityShapes(t)
+	outputs := make(map[string]string, len(shapes))
+	for name, doc := range shapes {
+		out, err := shared.ConvertNoPanic(ConvertHDFToCSV, doc)
+		if err != nil {
+			outputs[name] = corpusRejected
+			continue
+		}
+		outputs[name] = string(out)
+	}
+
+	actual, err := json.MarshalIndent(outputs, "", "  ")
+	require.NoError(t, err)
+	actual = append(actual, '\n')
+
+	path := filepath.Join("..", "fixtures", "expected", "parity-outputs.json")
+	if shared.UpdateSnapshots() {
+		require.NoError(t, os.WriteFile(path, actual, 0o600))
+		t.Logf("updated %s", path)
+		return
+	}
+	expected, err := os.ReadFile(path)
+	require.NoError(t, err, "missing parity golden; regenerate with -update")
+	require.JSONEq(t, string(expected), string(actual),
+		"parity shape output changed; if intentional regenerate with: go test ./converters/hdf-to-csv/go/ -update")
+}
+
+// requirements and descriptions both carry minItems 1 on top of being required,
+// so absent or empty is malformed input — the same reasoning that made an empty
+// results array a rejection. Go used to skip such a baseline silently and emit a
+// row with a blank Description; TypeScript threw a TypeError. Top-level baselines
+// is deliberately excluded: it carries no minItems, so an assessment that
+// evaluated nothing is legal HDF and still yields an empty report.
+func TestConvertHDFToCSV_MalformedContainersAreRejected(t *testing.T) {
+	for _, tc := range []struct{ name, doc, want string }{
+		{"baseline with no requirements key", `{"baselines":[{"name":"b"}]}`,
+			`hdf-to-csv: baseline "b" has no requirements`},
+		{"baseline with empty requirements", `{"baselines":[{"name":"b","requirements":[]}]}`,
+			`hdf-to-csv: baseline "b" has no requirements`},
+		{"requirement with no descriptions key",
+			`{"baselines":[{"name":"b","requirements":[{"id":"V-1","impact":0,"tags":{},` +
+				`"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}]}]}`,
+			`hdf-to-csv: requirement "V-1" has no descriptions`},
+		{"requirement with empty descriptions",
+			`{"baselines":[{"name":"b","requirements":[{"id":"V-1","impact":0,"tags":{},"descriptions":[],` +
+				`"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}]}]}`,
+			`hdf-to-csv: requirement "V-1" has no descriptions`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NotPanics(t, func() {
+				_, err := ConvertHDFToCSV([]byte(tc.doc))
+				require.Error(t, err)
+				assert.EqualError(t, err, tc.want)
+			})
+		})
+	}
+
+	// The boundary: baselines has no minItems, so an assessment that evaluated
+	// nothing stays a valid document and still converts to an empty report.
+	t.Run("zero baselines is still valid", func(t *testing.T) {
+		out, err := ConvertHDFToCSV([]byte(`{"baselines":[]}`))
+		require.NoError(t, err)
+		assert.Empty(t, out)
+	})
 }

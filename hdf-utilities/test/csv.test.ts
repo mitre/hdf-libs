@@ -650,3 +650,63 @@ break","Has newline"`;
     });
   });
 });
+
+// Go's encoding/csv quotes a field whose first rune is Unicode whitespace, and
+// the literal `\.`; d3-dsv quotes for none of those. The Go converters and their
+// TypeScript twins must emit the same bytes, so buildCsv closes the gap — the
+// same reason terminateFinalRecord exists. An earlier version tested [ \t] to
+// skip the work and \s to decide, so exotic whitespace slipped through. The
+// class is now Go's unicode.IsSpace spelled out; these cases cover the members
+// the two languages once disagreed on, in both directions.
+describe('buildCsv quoting matches Go encoding/csv', () => {
+  // Everything after the header, minus the final terminator — split('\n') would
+  // cut a value that legitimately contains a newline.
+  const cell = (value: string): string => {
+    const csv = buildCsv([{ a: value }]);
+    return csv.slice(csv.indexOf('\n') + 1).replace(/\n$/, '');
+  };
+
+  it.each([
+    ['leading space', ' x', '" x"'],
+    ['leading tab', '\tx', '"\tx"'],
+    ['leading non-breaking space U+00A0', ' x', '" x"'],
+    ['leading em space U+2003', ' x', '" x"'],
+    ['leading ideographic space U+3000', '　x', '"　x"'],
+    ['leading vertical tab', '\v x', '"\v x"'],
+    ['leading NEL U+0085', '\u0085x', '"\u0085x"'],
+    ['leading line separator U+2028', '\u2028x', '"\u2028x"'],
+    ['leading ogham space U+1680', '\u1680x', '"\u1680x"'],
+    ['leading form feed', '\f x', '"\f x"'],
+    ['a single space', ' ', '" "'],
+    ['the literal backslash-dot', '\\.', '"\\."'],
+  ])('quotes %s', (_label, value, want) => {
+    expect(cell(value)).toBe(want);
+  });
+
+  it.each([
+    ['trailing whitespace only', 'x ', 'x '],
+    ['plain text', 'x', 'x'],
+    ['empty', '', ''],
+    ['leading BOM U+FEFF', '\ufeffx', '\ufeffx'],
+    ['leading zero-width space U+200B', '\u200bx', '\u200bx'],
+  ])('leaves %s unquoted, as Go does', (_label, value, want) => {
+    expect(cell(value)).toBe(want);
+  });
+
+  // d3-dsv already quotes these; the added rule must not double-quote or escape twice.
+  it.each([
+    ['a comma', 'a,b', '"a,b"'],
+    ['a quote', 'a"b', '"a""b"'],
+    ['a newline', 'a\nb', '"a\nb"'],
+    ['a comma after leading space', ' a,b', '" a,b"'],
+    ['a quote after leading space', ' a"b', '" a""b"'],
+  ])('still handles %s exactly once', (_label, value, want) => {
+    expect(cell(value)).toBe(want);
+  });
+
+  it('round-trips every quoted form back to the original value', () => {
+    const values = [' x', ' x', 'x ', 'a,b', 'a"b', 'a\nb', ' a,b', '\\.'];
+    const csv = buildCsv(values.map((v) => ({ a: v })));
+    expect(parseCsv(csv).map((r) => (r as { a: string }).a)).toEqual(values);
+  });
+});

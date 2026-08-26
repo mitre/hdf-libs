@@ -74,7 +74,13 @@ export function convertHdfToCsv(input: string): string {
 
   // Iterate through each baseline
   for (const baseline of hdf.baselines) {
-    // Iterate through each requirement in the baseline
+    // requirements carries minItems 1 on top of being required, so an absent or
+    // empty one is malformed input, not a baseline that evaluated nothing.
+    // Top-level baselines is the opposite case — no minItems — so an empty
+    // assessment stays valid and simply produces an empty report.
+    if (!Array.isArray(baseline.requirements) || baseline.requirements.length === 0) {
+      throw new Error(`hdf-to-csv: baseline "${text(baseline.name)}" has no requirements`);
+    }
     for (const requirement of baseline.requirements) {
       // Create a row for each target
       for (const target of targetList) {
@@ -88,14 +94,53 @@ export function convertHdfToCsv(input: string): string {
 }
 
 /**
- * The requirement id as text. HDF makes id required, but nested-invalid input
- * reaches the converter, and an absent id reached sanitizeCsvValue's String()
- * as the literal "undefined" — where Go, formatting a zero-value string, wrote
- * nothing. Used for the Requirement ID column and for the no-results message,
- * which would otherwise name the requirement "undefined".
+ * The CWE cell. Unlike tags — an untyped map where Go filters non-string entries,
+ * so this side filters too — cwe is typed string[] in HDF, and a non-string entry
+ * fails Go's typed decode and rejects the whole document. Rejecting here keeps
+ * the two languages agreeing on WHETHER a document converts; the message text
+ * differs by construction, since Go's comes from encoding/json.
  */
+function cweCell(requirement: EvaluatedRequirement): string {
+  const cwe = requirement.cwe;
+  if (cwe === undefined || cwe === null) return '';
+  if (!Array.isArray(cwe)) {
+    throw new Error(
+      `hdf-to-csv: requirement "${requirementIdText(requirement.id)}" has a non-array cwe`,
+    );
+  }
+  if (!cwe.every((v) => typeof v === 'string')) {
+    throw new Error(
+      `hdf-to-csv: requirement "${requirementIdText(requirement.id)}" has a non-string cwe entry`,
+    );
+  }
+  return cwe.join('; ');
+}
+
+/**
+ * A schema-required number as a number. Go decodes an absent one to the zero
+ * value and cannot tell it apart from a real zero — impact 0 legitimately means
+ * Not Applicable — so distinguishing them would need a schema validation pass
+ * the converters deliberately do not do. Rendering 0 here matches what Go emits,
+ * where reading .toFixed off an absent value threw a raw TypeError instead.
+ */
+function numeric(value: number | undefined | null): number {
+  return typeof value === 'number' ? value : 0;
+}
+
+/**
+ * A schema-required string as text. Nested-invalid input reaches the converter
+ * with these absent, and an absent value reached sanitizeCsvValue's String() as
+ * the literal "undefined" — where Go, formatting a zero-value string, wrote
+ * nothing. Every schema-required STRING cell goes through here; the numeric
+ * ones go through numeric(), which serves the same purpose for a different type.
+ */
+function text(value: string | undefined | null): string {
+  return typeof value === 'string' ? value : '';
+}
+
+/** The requirement id as text; also names the requirement in the no-results error. */
 function requirementIdText(id: string | undefined): string {
-  return typeof id === 'string' ? id : '';
+  return text(id);
 }
 
 /**
@@ -106,9 +151,24 @@ function createRow(
   requirement: EvaluatedRequirement,
   target: TargetIdentity
 ): CsvRow {
+  // results and descriptions both carry minItems 1 on top of being required, so
+  // an absent or empty one is malformed input, not a row with unknown values.
+  // Checked before ANY field access: descriptions was read at the top of this
+  // function, so a guard further down reported a TypeError instead of the cause.
+  // Array.isArray also covers null, which reaches here as a non-array.
+  const results = Array.isArray(requirement.results) ? requirement.results : [];
+  const [firstResult] = results;
+  if (!firstResult) {
+    throw new Error(`hdf-to-csv: requirement "${requirementIdText(requirement.id)}" has no results`);
+  }
+  if (!Array.isArray(requirement.descriptions) || requirement.descriptions.length === 0) {
+    throw new Error(
+      `hdf-to-csv: requirement "${requirementIdText(requirement.id)}" has no descriptions`,
+    );
+  }
+
   // Get default description (required to be present per schema)
-  const defaultDesc = requirement.descriptions.find((d: Description) => d.label === 'default');
-  const description = defaultDesc?.data || '';
+  const description = descriptionByLabel(requirement, 'default');
 
   // Other conventional description labels (check/fix/rationale) — empty when absent
   const check = descriptionByLabel(requirement, 'check');
@@ -120,17 +180,6 @@ function createRow(
   // Get severity from tags or derive from impact
   const severity = getSeverity(requirement);
 
-  // results carries minItems 1, and "not evaluated" is expressed as a result with
-  // status notReviewed — so an absent one is malformed input with no legitimate
-  // producer, not a row with an unknown status. Checked at the index rather than
-  // in the caller so the type checker sees the narrowing too. Array.isArray also
-  // covers a null results, which reaches here as a non-array and would otherwise
-  // throw a TypeError from the destructure before the guard could report it.
-  const results = Array.isArray(requirement.results) ? requirement.results : [];
-  const [firstResult] = results;
-  if (!firstResult) {
-    throw new Error(`hdf-to-csv: requirement "${requirementIdText(requirement.id)}" has no results`);
-  }
   const status = firstResult.status;
   const message = firstResult.message ?? '';
 
@@ -140,16 +189,22 @@ function createRow(
 
   // Post-override posture: effective columns fall back to the raw value when no
   // override governs, so the column is always populated and sortable.
-  const effectiveStatus = requirement.effectiveStatus ? String(requirement.effectiveStatus) : String(status);
-  const effectiveImpact = (requirement.effectiveImpact ?? requirement.impact).toFixed(1);
+  // Presence, not truthiness: Go's EffectiveStatus is a pointer, so an explicit
+  // empty string is present and renders empty, where a truthy test fell through
+  // to the raw status and reported a different posture than the document states.
+  const effectiveStatus =
+    requirement.effectiveStatus !== undefined && requirement.effectiveStatus !== null
+      ? String(requirement.effectiveStatus)
+      : text(status);
+  const effectiveImpact = numeric(requirement.effectiveImpact ?? requirement.impact).toFixed(2);
   const disposition = requirement.disposition ? String(requirement.disposition) : '';
 
   return {
-    'Baseline ID': baseline.name,
+    'Baseline ID': text(baseline.name),
     'Baseline Version': baseline.version || '',
     'Baseline Title': baseline.title || '',
-    'Target ID': target.name,
-    'Target Type': target.type,
+    'Target ID': text(target.name),
+    'Target Type': text(target.type),
     'Requirement ID': requirementIdText(requirement.id),
     'Requirement Title': requirement.title || '',
     'Description': description,
@@ -159,8 +214,8 @@ function createRow(
     'Code': code,
     'References': references,
     'Severity': severity,
-    'Impact': requirement.impact.toFixed(1),
-    'Status': String(status),
+    'Impact': numeric(requirement.impact).toFixed(2),
+    'Status': text(status),
     'NIST Controls': nistControls,
     'CCI Controls': cciControls,
     'Control Type': requirement.controlType ?? '',
@@ -174,8 +229,8 @@ function createRow(
     'Applied By': joinOverrides(requirement.statusOverrides, o => o.appliedBy?.identifier ?? ''),
     'Expires At': joinOverrides(requirement.statusOverrides, o => formatExpires(o.expiresAt)),
     'CVSS': cvssScores(requirement.cvss),
-    'CWE': Array.isArray(requirement.cwe) ? requirement.cwe.join('; ') : '',
-    'EPSS': requirement.epss ? requirement.epss.score.toFixed(5) : '',
+    'CWE': cweCell(requirement),
+    'EPSS': requirement.epss ? numeric(requirement.epss.score).toFixed(5) : '',
     'KEV': requirement.kev ? (requirement.kev.inKev ? 'true' : 'false') : '',
     'Target FQDN': target.fqdn,
     'Target IP': target.ipAddress
@@ -195,6 +250,11 @@ function joinOverrides(
   }
   const out: string[] = [];
   for (const o of overrides) {
+    // A null element is a zero-value struct in Go, so every picked field is
+    // empty and the entry drops out; reading through it threw here instead.
+    if (o === null || o === undefined) {
+      continue;
+    }
     const v = pick(o);
     if (v) {
       out.push(v);
@@ -214,7 +274,9 @@ function formatExpires(value: StatusOverride['expiresAt']): string {
 
 /**
  * Render each CVSS entry's score (computed when present, else base) to one
- * decimal, joined with '; ' to preserve multi-CVE findings.
+ * decimal — the precision the CVSS spec defines and the source carries — joined
+ * with '; ' to preserve multi-CVE findings. The Go peer rounds through a shared
+ * helper matching toFixed, so a .x5 score renders the same digits in both.
  */
 function cvssScores(entries: Cvss[] | undefined): string {
   if (!Array.isArray(entries)) {
@@ -222,8 +284,14 @@ function cvssScores(entries: Cvss[] | undefined): string {
   }
   const out: string[] = [];
   for (const c of entries) {
+    // A null entry is a zero-value struct in Go, whose scores are absent. And an
+    // explicit null score passed a !== undefined check while still throwing on
+    // .toFixed, so the test is for a number rather than against undefined.
+    if (c === null || c === undefined) {
+      continue;
+    }
     const score = c.computedScore ?? c.baseScore;
-    if (score !== undefined) {
+    if (typeof score === 'number') {
       out.push(score.toFixed(1));
     }
   }
@@ -241,8 +309,10 @@ function getSeverity(requirement: EvaluatedRequirement): string {
       if (typeof sev === 'string') {
         return sev;
       }
-      if (Array.isArray(sev) && sev.length > 0) {
-        return String(sev[0]);
+      // Only a string first item: a numeric severity is not one of the bands,
+      // and stringifying it produced a Severity cell of "1". Matches the Go peer.
+      if (Array.isArray(sev) && typeof sev[0] === 'string') {
+        return sev[0];
       }
     }
   }
@@ -267,7 +337,9 @@ function extractArrayFromTags(
 
   const value = tags[key];
   if (Array.isArray(value)) {
-    return value.map(v => String(v)).join('; ');
+    // Only string items: a number or null in a nist array is not a control id,
+    // and stringifying it invented one. Matches the Go peer's type assertion.
+    return value.filter((v): v is string => typeof v === 'string').join('; ');
   }
 
   return '';
@@ -280,13 +352,21 @@ function descriptionByLabel(
   requirement: EvaluatedRequirement,
   label: string
 ): string {
-  const match = requirement.descriptions.find((d: Description) => d.label === label);
+  // A null element decodes to a zero-value struct in Go, which is simply not the
+  // label being looked for; reading .label off it threw here instead. Both the
+  // default lookup and the check/fix/rationale lookups come through here, so the
+  // guard cannot be applied to one and missed on the other.
+  const match = requirement.descriptions.find(
+    (d: Description | null | undefined) => d !== null && d !== undefined && d.label === label,
+  );
   return match?.data || '';
 }
 
 /**
  * Flatten a requirement's refs to one string: each Reference rendered as its
- * url/uri (or a string `ref`); array-form refs are skipped. Joined with '; ' to
+ * url/uri (or a string `ref`); array-form refs are skipped here, though a document
+ * containing one never reaches this function in Go, whose typed decode rejects
+ * it outright — a reject-versus-degrade split tracked on its own card. Joined with '; ' to
  * match the NIST/CCI column convention.
  */
 function flattenRefs(refs: EvaluatedRequirement['refs']): string {
