@@ -37,11 +37,17 @@ type inspectOutput struct {
 }
 
 // RegisterInspect registers hdf_inspect on the server.
+// inspectToolDescription — see queryToolDescription for why the payload boundary
+// is stated here rather than left to be discovered (hdf-libs-uqhe.13).
+const inspectToolDescription = "Inspect an HDF document's structure and metadata for any of the eight document types " +
+	"(counts, inventories, envelopes) — never a requirement collection. To list requirements, use hdf_query. " +
+	"Structure only: the scanner's original finding is retained in each requirement's `code` but is not " +
+	"projected by this or any read tool, so a tool-specific field must be read from the source file."
+
 func RegisterInspect(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
-		Name: "hdf_inspect",
-		Description: "Inspect an HDF document's structure and metadata for any of the eight document types " +
-			"(counts, inventories, envelopes) — never a requirement collection. To list requirements, use hdf_query.",
+		Name:        "hdf_inspect",
+		Description: inspectToolDescription,
 		Annotations: appmcp.ReadOnly(),
 	}, hdfInspect(ldr))
 }

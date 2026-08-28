@@ -113,11 +113,21 @@ var queryDispatch = map[string]func(*loader.Result) hdf.HDFResults{
 
 // RegisterQuery registers the hdf_query tool on the server. ldr is the shared
 // document loader.
+// queryToolDescription is what a model reads before choosing this tool, so it
+// states the read surface's one deliberate blind spot (hdf-libs-uqhe.13):
+// conversion keeps each scanner finding verbatim in the requirement's `code`,
+// but no read tool projects it. Saying so costs a sentence; discovering it costs
+// the agent a wrong or incomplete answer.
+const queryToolDescription = "Filter requirements in an HDF results or baseline document. The only path to a " +
+	"requirement collection; for other document types call hdf_inspect. " +
+	"Returns normalized fields only: the scanner's original finding is preserved verbatim in each " +
+	"requirement's `code`, but no read tool projects it, so a question about a tool-specific field " +
+	"(a matcher, match provenance, a vendor extension) cannot be answered from this surface — read the source file instead."
+
 func RegisterQuery(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
-		Name: "hdf_query",
-		Description: "Filter requirements in an HDF results or baseline document. The only path to a " +
-			"requirement collection; for other document types call hdf_inspect.",
+		Name:        "hdf_query",
+		Description: queryToolDescription,
 		Annotations: appmcp.ReadOnly(),
 	}, hdfQuery(ldr))
 }

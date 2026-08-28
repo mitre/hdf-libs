@@ -139,6 +139,35 @@ should work with, and leave `HDF_MCP_ENABLE_WRITES` unset for a read-only
 trial — the write tools still work, returning previews, so you can see
 exactly what they would produce before granting write access.
 
+## What the read surface deliberately does not return
+
+Conversion is close to lossless: `hdf convert` preserves each scanner's original
+finding **verbatim** in the requirement's `code` field. The read tools do not
+project that field, and this is a deliberate boundary rather than an oversight.
+
+The reason is the token budget this surface exists to protect. Measured against a
+real Grype scan of 89 findings:
+
+| | tokens |
+|---|---:|
+| a bounded `hdf_query` response | ~295 |
+| one requirement's `code` payload | ~1,607 (median; 929–2,566) |
+| all 89 `code` payloads | ~149,735 |
+| the entire raw scan file | ~155,964 |
+
+Returning every payload costs within 4% of simply handing the agent the raw file,
+while still charging for the tool surface on top. A single payload costs about
+five times a normal response. So the tools return normalized fields, and a
+question about a **tool-specific** field — a matcher, match provenance, a vendor
+extension — is answered by reading the source file, not through this server.
+
+Both `hdf_query` and `hdf_inspect` say so in their own descriptions, so an agent
+learns the limit before it spends a call discovering it.
+
+This may be revisited if tool-specific questions turn out to be common in
+practice; the shape it would take is an explicit, bounded, per-requirement fetch
+— never a widening of the default response.
+
 ## Budget guidance for agent hosts
 
 The HDF tools are analysis-heavy and naturally loopable
