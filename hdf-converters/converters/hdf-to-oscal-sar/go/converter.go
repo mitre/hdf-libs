@@ -5,6 +5,7 @@
 package hdftooscalsar
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -86,19 +87,28 @@ func buildOSCALDocument(hdfResults *hdf.HDFResults) *oscalSARDocument {
 	// same subject identity (and subject-uuid) for a given component.
 	subjects := buildSubjects(hdfResults.Components)
 
-	// Build results from baselines
+	// Build results from baselines, collecting the back-matter resources
+	// (embedded check source code) their findings link to.
 	results := make([]oscal.Result, 0, len(hdfResults.Baselines))
+	var resources []oscal.Resource
 	for i := range hdfResults.Baselines {
-		result := baselineToResult(&hdfResults.Baselines[i], now, toolActorUUID, subjects)
+		result, res := baselineToResult(&hdfResults.Baselines[i], now, toolActorUUID, subjects)
 		results = append(results, result)
+		resources = append(resources, res...)
+	}
+
+	var backMatter *oscal.BackMatter
+	if len(resources) > 0 {
+		backMatter = &oscal.BackMatter{Resources: resources}
 	}
 
 	return &oscalSARDocument{
 		AssessmentResults: oscal.AssessmentResults{
-			UUID:     oscal.GenerateUUID(),
-			Metadata: metadata,
-			ImportAP: importAP,
-			Results:  results,
+			UUID:       oscal.GenerateUUID(),
+			Metadata:   metadata,
+			ImportAP:   importAP,
+			Results:    results,
+			BackMatter: backMatter,
 		},
 	}
 }
@@ -164,8 +174,9 @@ func assessmentStart(baseline *hdf.EvaluatedBaseline, fallback string) string {
 	return formatAssessmentTime(earliest, fallback)
 }
 
-// baselineToResult converts a single EvaluatedBaseline to an OSCAL Result.
-func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolActorUUID string, subjects []oscal.SubjectRef) oscal.Result {
+// baselineToResult converts a single EvaluatedBaseline to an OSCAL Result plus
+// any back-matter resources (embedded check source code) its findings link to.
+func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolActorUUID string, subjects []oscal.SubjectRef) (oscal.Result, []oscal.Resource) {
 	title := baseline.Name
 	if baseline.Title != nil && *baseline.Title != "" {
 		title = *baseline.Title
@@ -185,6 +196,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 	var findings []oscal.Finding
 	var observations []oscal.Observation
 	var risks []oscal.Risk
+	var resources []oscal.Resource
 
 	// OSCAL requires result.reviewed-controls: the set of controls assessed.
 	// Populate it from the control each requirement targets (deduped).
@@ -193,13 +205,16 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 
 	for i := range baseline.Requirements {
 		req := &baseline.Requirements[i]
-		f, obs, rsk := requirementToFindingSet(req, timestamp, toolActorUUID, subjects)
+		f, obs, rsk, res := requirementToFindingSet(req, timestamp, toolActorUUID, subjects)
 		findings = append(findings, f)
 		if obs != nil {
 			observations = append(observations, *obs)
 		}
 		if rsk != nil {
 			risks = append(risks, *rsk)
+		}
+		if res != nil {
+			resources = append(resources, *res)
 		}
 		if cid := oscal.NistTagToControlID(req.ID); cid != "" && !seenControl[cid] {
 			seenControl[cid] = true
@@ -217,7 +232,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		Findings:         findings,
 		Observations:     observations,
 		Risks:            risks,
-	}
+	}, resources
 }
 
 // buildSubjects turns the top-level HDF components[] into OSCAL assessment
@@ -268,7 +283,7 @@ func descriptionByLabel(descriptions []hdf.Description, label string) string {
 	return ""
 }
 
-func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, toolActorUUID string, subjects []oscal.SubjectRef) (oscal.Finding, *oscal.Observation, *oscal.Risk) {
+func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, toolActorUUID string, subjects []oscal.SubjectRef) (oscal.Finding, *oscal.Observation, *oscal.Risk, *oscal.Resource) {
 	controlID := oscal.NistTagToControlID(req.ID)
 
 	// Determine the finding state from the effective (post-override) status when
@@ -281,8 +296,11 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	// Build finding description from requirement descriptions
 	findingDesc := extractDefaultDescription(req.Descriptions)
 
-	// Build props from control mappings (nist/cci), code, non-default
-	// descriptions (check/fix/rationale), and v3.2 classification fields.
+	// Build props from control mappings (nist/cci), non-default descriptions
+	// (check/fix/rationale), and v3.2 classification fields. OSCAL prop values
+	// are StringDatatype (no newlines, no edge whitespace), so prose-capable
+	// fields emit a single-line preview as the value and carry the full text in
+	// the prop's own remarks (markup-multiline).
 	var props []oscal.Property
 	// OSCAL prop values must be non-empty strings, so skip any empty value
 	// (e.g. an empty source `code`) rather than emitting a schema-invalid value: "".
@@ -290,6 +308,17 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		if value != "" {
 			props = append(props, oscal.Property{Name: name, Value: value})
 		}
+	}
+	addProseProp := func(name, text string) {
+		preview := previewLine(text)
+		if preview == "" {
+			return
+		}
+		p := oscal.Property{Name: name, Value: preview}
+		if preview != text {
+			p.Remarks = text
+		}
+		props = append(props, p)
 	}
 	pushTagValues := func(key string) {
 		if raw, ok := req.Tags[key]; ok {
@@ -304,11 +333,13 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	}
 	pushTagValues("nist")
 	pushTagValues("cci")
-	if req.Code != nil {
-		addProp("code", *req.Code)
-	}
-	for _, label := range []string{"check", "fix", "rationale"} {
-		addProp(label, descriptionByLabel(req.Descriptions, label))
+	addProseProp("check", descriptionByLabel(req.Descriptions, "check"))
+	addProseProp("rationale", descriptionByLabel(req.Descriptions, "rationale"))
+	// fix text's OSCAL home is risk.remediations (built below when impact > 0,
+	// the reverse importer's read path). Only an impact-0 requirement, which
+	// emits no risk, carries it as a finding prop instead.
+	if req.Impact <= 0 {
+		addProseProp("fix", descriptionByLabel(req.Descriptions, "fix"))
 	}
 	if req.ControlType != nil {
 		addProp("control-type", string(*req.ControlType))
@@ -357,7 +388,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		case r.URI != nil:
 			links = append(links, oscal.Link{Href: *r.URI, Rel: "reference"})
 		case r.Ref != nil && r.Ref.String != nil:
-			props = append(props, oscal.Property{Name: "reference", Value: *r.Ref.String})
+			addProseProp("reference", *r.Ref.String)
 		}
 	}
 
@@ -373,6 +404,21 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	title := req.ID
 	if req.Title != nil && *req.Title != "" {
 		title = *req.Title
+	}
+
+	// Source code is an artifact with a media type, not a StringDatatype prop:
+	// embed it as a back-matter resource and point at it with a rel="code" link.
+	var codeResource *oscal.Resource
+	if req.Code != nil && strings.TrimSpace(*req.Code) != "" {
+		codeResource = &oscal.Resource{
+			UUID:  oscal.GenerateUUID(),
+			Title: "Check source code for " + req.ID,
+			Base64: &oscal.Base64{
+				Value:     base64.StdEncoding.EncodeToString([]byte(*req.Code)),
+				MediaType: "text/plain",
+			},
+		}
+		links = append(links, oscal.Link{Href: "#" + codeResource.UUID, Rel: "code"})
 	}
 
 	// OSCAL requires a non-empty finding description; fall back to the title
@@ -470,7 +516,25 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		}
 	}
 
-	return finding, observation, risk
+	return finding, observation, risk, codeResource
+}
+
+// previewLine reduces prose to a single line legal as an OSCAL StringDatatype
+// prop value: the first non-empty line, trimmed, truncated to 120 runes.
+func previewLine(text string) string {
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		const maxRunes = 120
+		runes := []rune(line)
+		if len(runes) > maxRunes {
+			line = strings.TrimSpace(string(runes[:maxRunes-3])) + "..."
+		}
+		return line
+	}
+	return ""
 }
 
 // effectiveState derives the OSCAL finding target state/reason from the

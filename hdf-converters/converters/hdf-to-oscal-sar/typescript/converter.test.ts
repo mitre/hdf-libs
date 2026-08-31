@@ -84,21 +84,36 @@ describe('convertHdfToOscalSar', () => {
         }],
       }],
     });
-    const finding = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0].findings[0];
+    const doc = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'];
+    const finding = doc.results[0].findings[0];
     const propVal = (name: string) => finding.props.find((p: { name: string; value: string }) => p.name === name)?.value;
     expect(propVal('cci')).toBe('CCI-000012');
-    expect(propVal('code')).toContain("control 'SV-1'");
+    // Single-line prose keeps its full text as the prop value (no remarks needed).
     expect(propVal('check')).toBe('check text');
-    expect(propVal('fix')).toBe('fix text');
     expect(propVal('rationale')).toBe('rationale text');
     expect(propVal('control-type')).toBe('technical');
     expect(propVal('verification-method')).toBe('automated');
     expect(propVal('applicability')).toBe('required');
     expect(propVal('reference')).toBe('Handbook 3');
-    expect(finding.links.map((l: { href: string }) => l.href)).toEqual(['https://example.gov/a', 'https://example.gov/b']);
+
+    // impact > 0: fix text's home is the risk remediation, not a finding prop.
+    expect(propVal('fix')).toBeUndefined();
+    expect(doc.results[0].risks[0].remediations[0].description).toBe('fix text');
+
+    // code is an embedded back-matter resource linked from the finding, not a prop.
+    expect(propVal('code')).toBeUndefined();
+    const codeLink = finding.links.find((l: { rel?: string }) => l.rel === 'code');
+    expect(codeLink).toBeDefined();
+    const referenceHrefs = finding.links
+      .filter((l: { rel?: string }) => l.rel !== 'code')
+      .map((l: { href: string }) => l.href);
+    expect(referenceHrefs).toEqual(['https://example.gov/a', 'https://example.gov/b']);
+    const resource = doc['back-matter'].resources[0];
+    expect(codeLink.href).toBe(`#${resource.uuid}`);
+    expect(Buffer.from(resource.base64.value, 'base64').toString('utf-8')).toContain("control 'SV-1'");
     // url/uri refs are also emitted as observation relevant-evidence so they
     // round-trip through the reverse importer (which ignores finding.links).
-    const obs = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0].observations[0];
+    const obs = doc.results[0].observations[0];
     expect(obs['relevant-evidence'].map((e: { href: string }) => e.href)).toEqual([
       'https://example.gov/a',
       'https://example.gov/b',
