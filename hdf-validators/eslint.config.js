@@ -1,5 +1,6 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
+import { deprecatedAliasGuardBlock } from '../scripts/eslint-deprecated-alias-guard.mjs';
 
 export default [
   {
@@ -48,4 +49,5 @@ export default [
       'no-console': 'off', // Allow console in tests
     },
   },
+  deprecatedAliasGuardBlock(tsparser, ['typescript/**/*.ts']),
 ];

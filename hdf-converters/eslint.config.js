@@ -1,5 +1,6 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
+import { deprecatedAliasGuardBlock } from '../scripts/eslint-deprecated-alias-guard.mjs';
 
 // The timestamp guard (forbid `new Date(value)` on tool timestamps) is shared
 // across the packages that parse timestamps — see
@@ -105,4 +106,5 @@ export default [
       'no-console': 'off', // Allow console in tests
     },
   },
+  deprecatedAliasGuardBlock(tsparser, ['src/**/*.ts', 'converters/**/*.ts', 'shared/**/*.ts']),
 ];
