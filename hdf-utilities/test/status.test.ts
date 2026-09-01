@@ -172,13 +172,40 @@ describe('computeEffectiveStatus', () => {
     ).toBe('notApplicable');
   });
 
-  it('honors effectiveStatus only when no overrides are present', () => {
+  it('treats stored effectiveStatus as an output cache and never reads it', () => {
+    // The only sanctioned channel for status to diverge from the results is a
+    // governing override; an unprovenanced stored value is ignored in BOTH
+    // directions, optimistic and pessimistic.
     expect(
       computeEffectiveStatus(
-        { impact: 0.7, effectiveStatus: 'passed', resultStatuses: ['failed'] },
+        { impact: 0.7, effectiveStatus: 'passed', resultStatuses: ['failed', 'passed'] },
+        REF
+      )
+    ).toBe('failed');
+    expect(
+      computeEffectiveStatus(
+        { impact: 0.7, effectiveStatus: 'error', resultStatuses: ['passed', 'passed'] },
         REF
       )
     ).toBe('passed');
+  });
+
+  it('lets a governing override adjudicate an impact-0 requirement regardless of termination', () => {
+    // The override sits at the top of the ladder: whether the check failed,
+    // passed, or errored, a signed non-expired override governs uniformly —
+    // impact 0 does not silence it.
+    for (const resultStatuses of [['failed'], ['passed'], ['error']]) {
+      expect(
+        computeEffectiveStatus(
+          {
+            impact: 0,
+            resultStatuses,
+            overrides: [{ status: 'passed', appliedAt: APPLIED_OLD, expiresAt: FAR_FUTURE }],
+          },
+          REF
+        )
+      ).toBe('passed');
+    }
   });
 
   it('lets an error roll-up beat a stored effectiveStatus when no overrides govern (issue #257)', () => {

@@ -232,12 +232,14 @@ func TestComputeEffectiveStatus(t *testing.T) {
 			expected:           statusNotReviewed,
 		},
 		{
-			name: "uses effectiveStatus field directly when present and no overrides exist",
+			// Delegation pin: the stored effectiveStatus is an output cache —
+			// absent a governing override the roll-up wins in both directions.
+			name: "ignores stored effectiveStatus when no overrides exist",
 			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = []hdf.RequirementResult{stMakeResult(hdf.Failed)}
 				r.EffectiveStatus = stPtrResultStatus(hdf.Passed)
 			}),
-			expected: stStatusPassed,
+			expected: stStatusFailed,
 		},
 		{
 			name: "returns notApplicable when impact is 0 and no result errored",
@@ -282,13 +284,13 @@ func TestComputeEffectiveStatus(t *testing.T) {
 			expected: stStatusPassed,
 		},
 		{
-			name: "uses effectiveStatus when overrides array is empty",
+			name: "ignores stored effectiveStatus when overrides array is empty",
 			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = []hdf.RequirementResult{stMakeResult(hdf.Failed)}
 				r.EffectiveStatus = stPtrResultStatus(hdf.Passed)
 				r.StatusOverrides = []hdf.StatusOverride{}
 			}),
-			expected: stStatusPassed,
+			expected: stStatusFailed,
 		},
 		{
 			name: "returns notReviewed when results slice is nil",

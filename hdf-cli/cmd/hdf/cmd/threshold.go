@@ -31,11 +31,12 @@ const (
 	thresholdNoImpact = hdfengine.ThresholdNoImpact
 )
 
-// effectiveStatus resolves a requirement's canonical effective status (impact==0
-// → notApplicable unless the roll-up is error, non-expired overrides honored,
-// worst-wins) in the schema vocabulary. Threshold gating counts by this — the same rule HDF's read tools
-// use — so a CLI gate agrees with hdf_compliance and never keeps Not Applicable
-// controls (impact==0) in the compliance denominator.
+// effectiveStatus resolves a requirement's canonical effective status via the
+// ladder in status-determination.md (governing override → error roll-up →
+// impact-0 notApplicable → worst-wins roll-up). Threshold gating counts by
+// this — the same rule HDF's read tools use — so a CLI gate agrees with
+// hdf_compliance and never keeps Not Applicable controls (impact==0) in the
+// compliance denominator.
 func effectiveStatus(req hdf.EvaluatedRequirement) string {
 	return hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(req), time.Time{})
 }

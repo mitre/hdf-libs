@@ -166,12 +166,14 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req, '2025-06-01T00:00:00Z')).toBe('notReviewed');
   });
 
-  it('uses effectiveStatus field directly when present and no overrides exist', () => {
+  it('ignores stored effectiveStatus when no overrides exist', () => {
+    // Delegation pin: the stored effectiveStatus is an output cache — absent
+    // a governing override the roll-up wins in both directions.
     const req = makeRequirement({
       results: [makeResult('failed')],
       effectiveStatus: 'passed',
     });
-    expect(computeEffectiveStatus(req)).toBe('passed');
+    expect(computeEffectiveStatus(req)).toBe('failed');
   });
 
   it('returns "notApplicable" when impact is 0 and no result errored', () => {
@@ -245,13 +247,13 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req, '2025-06-01T00:00:00Z')).toBe('passed');
   });
 
-  it('uses effectiveStatus when overrides array is empty', () => {
+  it('ignores stored effectiveStatus when overrides array is empty', () => {
     const req = makeRequirement({
       results: [makeResult('failed')],
       effectiveStatus: 'passed',
       statusOverrides: [],
     });
-    expect(computeEffectiveStatus(req)).toBe('passed');
+    expect(computeEffectiveStatus(req)).toBe('failed');
   });
 
   it('returns "notReviewed" when results field is undefined', () => {

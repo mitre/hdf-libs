@@ -217,14 +217,46 @@ func TestComputeEffectiveStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("effectiveStatus honored only when no overrides present", func(t *testing.T) {
-		got := ComputeEffectiveStatus(EffectiveStatusInput{
-			Impact:          0.7,
-			EffectiveStatus: "passed",
-			ResultStatuses:  []string{"failed"},
-		}, statusRef)
-		if got != "passed" {
-			t.Errorf("got %q, want passed", got)
+	t.Run("stored effectiveStatus is an output cache and is never read", func(t *testing.T) {
+		// The only sanctioned channel for status to diverge from the results
+		// is a governing override; an unprovenanced stored value is ignored in
+		// BOTH directions, optimistic and pessimistic.
+		cases := []struct {
+			label   string
+			stored  string
+			results []string
+			want    string
+		}{
+			{"stale optimistic: stored passed over failing results", "passed", []string{"failed", "passed"}, "failed"},
+			{"stale pessimistic: stored error over passing results", "error", []string{"passed", "passed"}, "passed"},
+		}
+		for _, c := range cases {
+			got := ComputeEffectiveStatus(EffectiveStatusInput{
+				Impact:          0.7,
+				EffectiveStatus: c.stored,
+				ResultStatuses:  c.results,
+			}, statusRef)
+			if got != c.want {
+				t.Errorf("%s: got %q, want %q", c.label, got, c.want)
+			}
+		}
+	})
+
+	t.Run("governing override adjudicates an impact-0 requirement regardless of termination", func(t *testing.T) {
+		// The override sits at the top of the ladder: whether the check
+		// failed, passed, or errored, a signed non-expired override governs
+		// uniformly — impact 0 does not silence it.
+		for _, statuses := range [][]string{{"failed"}, {"passed"}, {"error"}} {
+			got := ComputeEffectiveStatus(EffectiveStatusInput{
+				Impact:         0,
+				ResultStatuses: statuses,
+				Overrides: []StatusOverrideInput{
+					{Status: "passed", AppliedAt: appliedOld, ExpiresAt: farFuture},
+				},
+			}, statusRef)
+			if got != "passed" {
+				t.Errorf("results %v: got %q, want passed (override governs)", statuses, got)
+			}
 		}
 	})
 

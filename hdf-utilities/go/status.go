@@ -98,48 +98,35 @@ func GoverningStatusOverride(overrides []StatusOverrideInput, ref time.Time) *St
 // effective-status computation.
 type EffectiveStatusInput struct {
 	Impact float64
-	// EffectiveStatus is the requirement's stored effectiveStatus field;
-	// empty means unset.
+	// EffectiveStatus is the requirement's stored effectiveStatus field.
+	// Ignored by ComputeEffectiveStatus (the field is an output cache);
+	// retained only until callers stop populating it.
 	EffectiveStatus string
 	ResultStatuses  []string
 	Overrides       []StatusOverrideInput
 }
 
 // ComputeEffectiveStatus determines a requirement's effective status. This is
-// the single canonical implementation of the precedence in
-// status-determination.md:
+// the single canonical implementation of the ladder in status-determination.md:
 //
-//  1. impact == 0 -> "notApplicable", regardless of results or overrides —
-//     UNLESS the result roll-up is "error": an execution error means the check
-//     never ran, so nothing was established about applicability. Error ranks
-//     above the impact-0 short-circuit (issue #257), matching InSpec
-//     EnhancedOutcomes and Heimdall inspecjs, and the normal precedence below
-//     then applies (so a governing override can still adjudicate the error)
-//  2. the governing (most recent non-expired) status override's status
-//  3. the stored effectiveStatus, honored only when NO overrides are present —
-//     effectiveStatus is state derived from overrides, so when every override
-//     has expired it is stale and the result roll-up wins — and only when the
-//     result roll-up is not "error": with no overrides the invariant says the
-//     stored value must equal the roll-up, so a stored value contradicting an
-//     error roll-up is stale data hiding a check that never ran (the shape
-//     documents converted before the issue #257 fix carry)
-//  4. worst-wins roll-up of the result statuses
-//  5. no results -> "notReviewed"
+//  1. the governing (most recent non-expired) status override's status
+//  2. else result roll-up "error" -> "error"
+//  3. else impact == 0 -> "notApplicable"
+//  4. else worst-wins roll-up of the result statuses (empty -> "notReviewed")
 //
-// A zero ref time means "now".
+// The stored effectiveStatus field is an output cache and is never read: the
+// only sanctioned channel for status to diverge from the results is a
+// governing override. A zero ref time means "now".
 func ComputeEffectiveStatus(input EffectiveStatusInput, ref time.Time) string {
+	if governing := GoverningStatusOverride(input.Overrides, ref); governing != nil {
+		return governing.Status
+	}
 	rolledUp := WorstStatus(input.ResultStatuses)
-	if input.Impact == 0 && rolledUp != "error" {
+	if rolledUp == "error" {
+		return "error"
+	}
+	if input.Impact == 0 {
 		return "notApplicable"
-	}
-	if len(input.Overrides) > 0 {
-		if governing := GoverningStatusOverride(input.Overrides, ref); governing != nil {
-			return governing.Status
-		}
-		return rolledUp
-	}
-	if input.EffectiveStatus != "" && rolledUp != "error" {
-		return input.EffectiveStatus
 	}
 	return rolledUp
 }
