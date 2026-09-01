@@ -118,7 +118,11 @@ type EffectiveStatusInput struct {
 //  2. the governing (most recent non-expired) status override's status
 //  3. the stored effectiveStatus, honored only when NO overrides are present —
 //     effectiveStatus is state derived from overrides, so when every override
-//     has expired it is stale and the result roll-up wins
+//     has expired it is stale and the result roll-up wins — and only when the
+//     result roll-up is not "error": with no overrides the invariant says the
+//     stored value must equal the roll-up, so a stored value contradicting an
+//     error roll-up is stale data hiding a check that never ran (the shape
+//     documents converted before the issue #257 fix carry)
 //  4. worst-wins roll-up of the result statuses
 //  5. no results -> "notReviewed"
 //
@@ -133,7 +137,7 @@ func ComputeEffectiveStatus(input EffectiveStatusInput, ref time.Time) string {
 		}
 		return WorstStatus(input.ResultStatuses)
 	}
-	if input.EffectiveStatus != "" {
+	if input.EffectiveStatus != "" && WorstStatus(input.ResultStatuses) != "error" {
 		return input.EffectiveStatus
 	}
 	return WorstStatus(input.ResultStatuses)

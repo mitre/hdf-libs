@@ -53,7 +53,7 @@ When a control has multiple test results with different statuses, the overall st
 
 ### effectiveStatus Field
 
-The `effectiveStatus` field on `EvaluatedRequirement` is the authoritative status. When present, consumers should use it directly. When absent, consumers derive status from results using the precedence above.
+The `effectiveStatus` field on `EvaluatedRequirement` carries the post-adjudication status a producer computed at write time. It is **derived state, not an independent authority**: the canonical `computeEffectiveStatus` honors a stored value only when no `statusOverrides` are present (overrides are re-evaluated live, since they expire) and only when the raw result roll-up is not `error` — with no overrides the invariant below says the stored value must equal the roll-up, so a stored value contradicting an `error` roll-up is stale data hiding a check that never ran (the shape documents converted before the issue #257 fix carry). Consumers that cannot run the computation may read the field directly, accepting those staleness caveats.
 
 ### In hdf-libs
 
@@ -61,7 +61,7 @@ The single canonical implementation is `computeEffectiveStatus` in `@mitre/hdf-u
 
 - **hdf-converters**: converters that bake `effectiveStatus` at ingest (e.g. `legacyhdf-to-hdf` for v1 InSpec data) derive it through the canonical implementation.
 - **hdf-cli** (`determineControlStatus` in `stats.go`): calls the canonical implementation and maps the result to display form via `SchemaStatusToDisplay`. The `threshold` and `mcp` paths inject the same computation as their status resolver.
-- **@mitre/hdf-schema `helpers`** (`computeEffectiveStatus`): a documented back-compat variant that honors an already-set `effectiveStatus` first and does not consult `statusOverrides`; its impact-0/error ordering matches the canonical rule.
+- **@mitre/hdf-schema `helpers`** (`computeEffectiveStatus`): a documented back-compat variant that honors an already-set `effectiveStatus` first — unconditionally, including over an `error` roll-up, unlike the canonical implementation — and does not consult `statusOverrides`. Its impact-0/error ordering for the derivation path matches the canonical rule.
 
 ### Schema Note
 
