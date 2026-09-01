@@ -12,7 +12,8 @@ import (
 
 // computeEffectiveStatus derives effectiveStatus from impact and v2 results,
 // via the canonical worst-wins ordering in hdf-utilities (impact=0 →
-// notApplicable; error > failed > passed > notApplicable > notReviewed).
+// notApplicable unless the roll-up is error; error > failed > passed >
+// notApplicable > notReviewed).
 func computeEffectiveStatus(impact float64, results []hdf.RequirementResult) hdf.ResultStatus {
 	statuses := make([]string, len(results))
 	for i, r := range results {
@@ -280,8 +281,8 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 	}
 
 	// Always compute effectiveStatus when not explicitly set.
-	// Uses InSpec enhanced outcomes precedence:
-	// impact=0 → notApplicable, error > failed > passed > notApplicable > notReviewed
+	// Uses InSpec enhanced outcomes precedence: impact=0 → notApplicable unless
+	// the roll-up is error, error > failed > passed > notApplicable > notReviewed
 	if v2.EffectiveStatus == nil {
 		es := computeEffectiveStatus(v1.Impact, v2.Results)
 		v2.EffectiveStatus = &es

@@ -291,8 +291,9 @@ function normalizeStatus(status: string): string {
 
 /**
  * Compute effectiveStatus from impact and v2 results via the canonical
- * worst-wins ordering in @mitre/hdf-utilities (impact=0 → notApplicable;
- * error > failed > passed > notApplicable > notReviewed).
+ * worst-wins ordering in @mitre/hdf-utilities (impact=0 → notApplicable
+ * unless the roll-up is error; error > failed > passed > notApplicable >
+ * notReviewed).
  */
 function computeEffectiveStatus(impact: number, results: V2Result[]): string {
   return canonicalEffectiveStatus({
@@ -444,8 +445,8 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
   }
 
   // Always compute effectiveStatus when not explicitly set.
-  // Uses InSpec enhanced outcomes precedence:
-  // impact=0 → notApplicable, error > failed > passed > notApplicable > notReviewed
+  // Uses InSpec enhanced outcomes precedence: impact=0 → notApplicable unless
+  // the roll-up is error, error > failed > passed > notApplicable > notReviewed
   if (!v2Req.effectiveStatus) {
     v2Req.effectiveStatus = computeEffectiveStatus(v1Control.impact, v2Req.results ?? []);
   }

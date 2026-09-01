@@ -32,8 +32,8 @@ const (
 )
 
 // effectiveStatus resolves a requirement's canonical effective status (impact==0
-// → notApplicable, non-expired overrides honored, worst-wins) in the schema
-// vocabulary. Threshold gating counts by this — the same rule HDF's read tools
+// → notApplicable unless the roll-up is error, non-expired overrides honored,
+// worst-wins) in the schema vocabulary. Threshold gating counts by this — the same rule HDF's read tools
 // use — so a CLI gate agrees with hdf_compliance and never keeps Not Applicable
 // controls (impact==0) in the compliance denominator.
 func effectiveStatus(req hdf.EvaluatedRequirement) string {

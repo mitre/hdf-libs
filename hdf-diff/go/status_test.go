@@ -240,7 +240,7 @@ func TestComputeEffectiveStatus(t *testing.T) {
 			expected: stStatusPassed,
 		},
 		{
-			name: "returns notApplicable when impact is 0 regardless of results",
+			name: "returns notApplicable when impact is 0 and no result errored",
 			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Impact = 0
 				r.Results = []hdf.RequirementResult{
@@ -249,6 +249,17 @@ func TestComputeEffectiveStatus(t *testing.T) {
 				}
 			}),
 			expected: statusNotAppl,
+		},
+		{
+			// Delegation pin: the canonical implementation lets error escape
+			// the impact-0 short-circuit (issue #257), and this wrapper
+			// inherits it.
+			name: "returns error when impact is 0 but a result errored (issue #257)",
+			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Impact = 0
+				r.Results = []hdf.RequirementResult{stMakeResult(hdf.Error)}
+			}),
+			expected: statusError,
 		},
 		{
 			name: "uses now when overrides exist but no referenceTimestamp provided",

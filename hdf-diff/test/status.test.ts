@@ -174,12 +174,22 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req)).toBe('passed');
   });
 
-  it('returns "notApplicable" when impact is 0 regardless of results', () => {
+  it('returns "notApplicable" when impact is 0 and no result errored', () => {
     const req = makeRequirement({
       impact: 0,
       results: [makeResult('passed'), makeResult('failed')],
     });
     expect(computeEffectiveStatus(req)).toBe('notApplicable');
+  });
+
+  it('returns "error" when impact is 0 but a result errored (issue #257)', () => {
+    // Delegation pin: the canonical implementation lets error escape the
+    // impact-0 short-circuit, and this wrapper inherits it.
+    const req = makeRequirement({
+      impact: 0,
+      results: [makeResult('error')],
+    });
+    expect(computeEffectiveStatus(req)).toBe('error');
   });
 
   it('uses Date.now() when overrides exist but no referenceTimestamp provided', () => {

@@ -22,7 +22,8 @@ interface OverrideLike {
  * overrides, delegating to the canonical shared implementation in
  * `@mitre/hdf-utilities` (see status-determination.md):
  *
- * 1. impact === 0 → notApplicable (regardless of results)
+ * 1. impact === 0 → notApplicable — unless the result roll-up is error
+ *    (a crashed check never established applicability; issue #257)
  * 2. the governing (most recent non-expired) status override's status
  * 3. effectiveStatus field set (and no statusOverrides) → use it
  * 4. Aggregate results using worst-wins
