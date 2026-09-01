@@ -157,17 +157,18 @@ export function computeEffectiveStatus(
   input: EffectiveStatusInput,
   referenceTimestamp?: string
 ): string {
-  if (input.impact === 0 && worstStatus(input.resultStatuses ?? []) !== 'error') {
+  const rolledUp = worstStatus(input.resultStatuses ?? []);
+  if (input.impact === 0 && rolledUp !== 'error') {
     return 'notApplicable';
   }
   const overrides = input.overrides ?? [];
   if (overrides.length > 0) {
     const governing = governingStatusOverride(overrides, referenceTimestamp);
     if (governing?.status) return governing.status;
-    return worstStatus(input.resultStatuses ?? []);
+    return rolledUp;
   }
-  if (input.effectiveStatus && worstStatus(input.resultStatuses ?? []) !== 'error') {
+  if (input.effectiveStatus && rolledUp !== 'error') {
     return input.effectiveStatus;
   }
-  return worstStatus(input.resultStatuses ?? []);
+  return rolledUp;
 }

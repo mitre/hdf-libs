@@ -128,17 +128,18 @@ type EffectiveStatusInput struct {
 //
 // A zero ref time means "now".
 func ComputeEffectiveStatus(input EffectiveStatusInput, ref time.Time) string {
-	if input.Impact == 0 && WorstStatus(input.ResultStatuses) != "error" {
+	rolledUp := WorstStatus(input.ResultStatuses)
+	if input.Impact == 0 && rolledUp != "error" {
 		return "notApplicable"
 	}
 	if len(input.Overrides) > 0 {
 		if governing := GoverningStatusOverride(input.Overrides, ref); governing != nil {
 			return governing.Status
 		}
-		return WorstStatus(input.ResultStatuses)
+		return rolledUp
 	}
-	if input.EffectiveStatus != "" && WorstStatus(input.ResultStatuses) != "error" {
+	if input.EffectiveStatus != "" && rolledUp != "error" {
 		return input.EffectiveStatus
 	}
-	return WorstStatus(input.ResultStatuses)
+	return rolledUp
 }
