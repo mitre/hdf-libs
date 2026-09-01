@@ -239,4 +239,26 @@ describe('agent-override detective surface — parity with go/compliance_test.go
     // An absent resolver maps everything to skipped.
     expect(mapControlIDsByStatus(results)[0]!.status).toBe('skipped');
   });
+
+  it('impact-0 errored control resolves to the error bucket, not no_impact (issue #257)', () => {
+    // A crashed check at impact 0 must surface as error so hdf threshold's
+    // error.total gate sees it. Parity: go/compliance_test.go.
+    const errored: EvaluatedRequirement = {
+      id: 'SV-ERR',
+      impact: 0.0,
+      results: [{ status: 'error' } as RequirementResult],
+    } as EvaluatedRequirement;
+    const results = { baselines: [{ requirements: [errored] }] } as HDFResults;
+
+    const eff = mapControlIDsByStatus(results, (req) => computeEffectiveStatus(statusInput(req)));
+    expect(eff).toHaveLength(1);
+    expect(eff[0]!.id).toBe('SV-ERR');
+    expect(eff[0]!.status).toBe('error');
+
+    const counts = countControlsByStatus(results, (req) =>
+      computeEffectiveStatus(statusInput(req))
+    );
+    expect(counts.error.total).toBe(1);
+    expect(counts.no_impact.total).toBe(0);
+  });
 });

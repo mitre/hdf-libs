@@ -159,13 +159,47 @@ func TestGoverningOverrideIndex(t *testing.T) {
 func TestComputeEffectiveStatus(t *testing.T) {
 	waived := "notApplicable"
 
-	t.Run("impact zero always notApplicable", func(t *testing.T) {
+	t.Run("impact zero notApplicable for non-error results", func(t *testing.T) {
+		for _, statuses := range [][]string{{"failed"}, {"passed"}, nil} {
+			got := ComputeEffectiveStatus(EffectiveStatusInput{
+				Impact:         0,
+				ResultStatuses: statuses,
+			}, statusRef)
+			if got != "notApplicable" {
+				t.Errorf("results %v: got %q, want notApplicable", statuses, got)
+			}
+		}
+	})
+
+	t.Run("errored scan escapes the impact-0 short-circuit (issue #257)", func(t *testing.T) {
+		// An execution error means the check never ran, so nothing was
+		// established about applicability — error ranks above the impact-0
+		// short-circuit, matching InSpec EnhancedOutcomes and Heimdall inspecjs.
+		for _, statuses := range [][]string{{"error"}, {"passed", "error"}} {
+			got := ComputeEffectiveStatus(EffectiveStatusInput{
+				Impact:         0,
+				ResultStatuses: statuses,
+			}, statusRef)
+			if got != "error" {
+				t.Errorf("results %v: got %q, want error", statuses, got)
+			}
+		}
+	})
+
+	t.Run("governing override still adjudicates an errored impact-0 requirement", func(t *testing.T) {
+		// Overrides rank above the raw roll-up everywhere else; an explicit
+		// non-expired override on a crashed impact-0 check governs the same
+		// way. "passed" (a falsePositive adjudication) distinguishes the
+		// override branch from the impact-0 short-circuit's own notApplicable.
 		got := ComputeEffectiveStatus(EffectiveStatusInput{
 			Impact:         0,
-			ResultStatuses: []string{"failed"},
+			ResultStatuses: []string{"error"},
+			Overrides: []StatusOverrideInput{
+				{Status: "passed", AppliedAt: appliedOld, ExpiresAt: farFuture},
+			},
 		}, statusRef)
-		if got != "notApplicable" {
-			t.Errorf("got %q, want notApplicable", got)
+		if got != "passed" {
+			t.Errorf("got %q, want passed", got)
 		}
 	})
 

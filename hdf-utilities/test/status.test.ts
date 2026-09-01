@@ -121,10 +121,41 @@ describe('governingStatusOverride', () => {
 });
 
 describe('computeEffectiveStatus', () => {
-  it('forces notApplicable at impact zero regardless of results', () => {
+  it('forces notApplicable at impact zero for non-error results', () => {
     expect(computeEffectiveStatus({ impact: 0, resultStatuses: ['failed'] }, REF)).toBe(
       'notApplicable'
     );
+    expect(computeEffectiveStatus({ impact: 0, resultStatuses: ['passed'] }, REF)).toBe(
+      'notApplicable'
+    );
+    expect(computeEffectiveStatus({ impact: 0 }, REF)).toBe('notApplicable');
+  });
+
+  it('lets an errored scan escape the impact-0 short-circuit (issue #257)', () => {
+    // An execution error means the check never ran, so nothing was established
+    // about applicability — error ranks above the impact-0 short-circuit,
+    // matching InSpec EnhancedOutcomes and Heimdall inspecjs.
+    expect(computeEffectiveStatus({ impact: 0, resultStatuses: ['error'] }, REF)).toBe('error');
+    expect(computeEffectiveStatus({ impact: 0, resultStatuses: ['passed', 'error'] }, REF)).toBe(
+      'error'
+    );
+  });
+
+  it('still lets a governing override adjudicate an errored impact-0 requirement', () => {
+    // Overrides rank above the raw roll-up everywhere else; an explicit
+    // non-expired override on a crashed impact-0 check governs the same way.
+    // 'passed' (a falsePositive adjudication) distinguishes the override
+    // branch from the impact-0 short-circuit's own notApplicable.
+    expect(
+      computeEffectiveStatus(
+        {
+          impact: 0,
+          resultStatuses: ['error'],
+          overrides: [{ status: 'passed', appliedAt: APPLIED_OLD, expiresAt: FAR_FUTURE }],
+        },
+        REF
+      )
+    ).toBe('passed');
   });
 
   it('lets the governing override win over results and effectiveStatus', () => {

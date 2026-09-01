@@ -169,6 +169,16 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req(0, []))).toBe('notApplicable');
   });
 
+  it('should return error when impact is 0 but a result errored (issue #257)', () => {
+    // An execution error means the check never ran, so nothing was established
+    // about applicability — error ranks above the impact-0 short-circuit,
+    // aligned with the canonical @mitre/hdf-utilities computeEffectiveStatus.
+    expect(computeEffectiveStatus(req(0, [{ status: 'error' }]))).toBe('error');
+    expect(
+      computeEffectiveStatus(req(0, [{ status: 'passed' }, { status: 'error' }]))
+    ).toBe('error');
+  });
+
   // --- no results ---
 
   it('should return notReviewed when no results and impact > 0', () => {
